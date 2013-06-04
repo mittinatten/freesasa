@@ -14,14 +14,6 @@ typedef enum {
 	apolar, polar, charged, unknown
 } atom_class;
 
-typedef struct {
-	atom_type* at;
-	atom_class* at;
-	char** res_name
-	char** atom_name;
-	vector3* coord;
-} atoms;
-
 double atom_radius (atom_type);
 
 atom_class atom_type2class (atom_type); 
