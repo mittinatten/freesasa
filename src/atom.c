@@ -1,4 +1,5 @@
 #include <string.h>
+#include <assert.h>
 #include "atom.h"
 
 // regular amino acids
@@ -57,6 +58,9 @@ atom_class atom_type2class(atom_type a)
 atom_type atom_name2type (const char *res_name, const char *atom_name)
 {
 	atom_type type = atom_type_unknown;
+	assert(strlen(atom_name) == ATOM_NAME_STRL);
+	assert(strlen(res_name) == ATOM_RES_NAME_STRL);
+
 	// backbone
 	if (! strcmp(atom_name, " C  ")) return carbo_C;
 	if (! strcmp(atom_name, " N  ")) return amide_N;
