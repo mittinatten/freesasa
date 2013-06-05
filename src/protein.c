@@ -1,33 +1,32 @@
+// why?
+#define _GNU_SOURCE
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 #include "protein.h"
-
-#define ATOM_NAME_L 4
-#define RES_NAME_L 3
-#define RES_NUMBER_L 4
 
 void protein_get_atom_name_pdbline(const char *line, char *name)
 {
-    strncpy(name,line+12,ATOM_NAME_L);
-    name[ATOM_NAME_L+1] = '\0';
+    strncpy(name,line+12,ATOM_NAME_STRL);
+    name[ATOM_NAME_STRL+1] = '\0';
 }
 
 void protein_get_res_name_pdbline(const char *line, char *name)
 {
-    strncpy(name, line+17, RES_NAME_L);
-    name[RES_NAME_L+1] = '\0';
+    strncpy(name, line+17, ATOM_RES_NAME_STRL);
+    name[ATOM_RES_NAME_STRL+1] = '\0';
 }
 void protein_get_coord_pdbline(const char *line, vector3 *coord) 
 {
     sscanf(line+30, "%lf%lf%lf", &coord->x, &coord->y, &coord->z);
 }
-void protein_get_residue_numer(const char* line, char *number)
+void protein_get_res_number_pdbline(const char* line, char *number)
 {
-	strncpy(number, line+22, RES_NUMBER_L);
-	number[RES_NUMBER_L+1] = '\0';
+	strncpy(number, line+22, ATOM_RES_NUMBER_STRL);
+	number[ATOM_RES_NUMBER_STRL+1] = '\0';
 }
-char protein_get_chain_label(const char* line)
+char protein_get_chain_label_pdbline(const char* line)
 {
 	return line[21];
 }
@@ -42,19 +41,8 @@ protein* protein_init()
 }
 void protein_free(protein *p) 
 {
-	// ...
-	free(p->at);
-	free(p->ac);
-	free(p->coord);
-	free(p->chain);
-	for (size_t i = 0; i < number_atoms; ++i) {
-		free(p->res_name[i]);
-		free(p->atom_name[i]);
-		free(p->res_number[i]);
-	}
-	free(p->res_name);
-	free(p->atom_name);
-	free(p->res_number);
+	free(p->a);
+	free(p->xyz);
 	free(p);
 }
 
@@ -68,44 +56,32 @@ protein* protein_init_from_pdb(FILE *pdb_file)
 	   with second alternative since that has to be implemented
 	   anyway. */
 	size_t len = 80;
-	char line[len];
+	char *line = (char*) malloc(sizeof(char)*(len+1));
 	while (getline(&line, &len, pdb_file) != -1) {
 		if (strncmp("ATOM",line,4)==0) {
-			vector3* v;
-			char atom_name[5];
-			char res_name[5];
-			char res_number[5];
-			char chain_label = protein_get_chain_pdbline(&line);
-			protein_get_coord_pdbline(&line, &v);
-			protein_get_atom_name_pdbline(&line, atom_name);
-			protein_get_res_name_pdbline(&line, res_name);
-			protein_get_res_number_pdbline(&line, res_number);
-			protein_add_atom(p,atom_name,res_name,chain_label,
-							 res_number, v.x, v.y, v.z);
+			vector3 v;
+			atom a;
+			a.chain_label = protein_get_chain_label_pdbline(line);
+			protein_get_coord_pdbline(line, &v);
+			protein_get_atom_name_pdbline(line, a.atom_name);
+			protein_get_res_name_pdbline(line, a.res_name);
+			protein_get_res_number_pdbline(line, a.res_number);
+			protein_add_atom(p,a.atom_name,a.res_name,a.res_number,
+							 a.chain_label, v.x, v.y, v.z);
         }
     }
-	//free(line);
+	free(line);
 	return p;
 }
 
-void protein_add_one(protein *p)
+void protein_alloc_one(protein *p)
 {
-	int *na = &p->number_atoms;
+	size_t *na = &p->number_atoms;
 	++*na;
-	p->at = (atom_type*) realloc(p->at,sizeof(atom_type)*(*na));
-	p->ac = (atom_class*) realloc(p->ac,sizeof(atom_type)*(*na));
-	p->res_name = (char**) realloc(p->res_name,sizeof(char*)*(*na));
-	p->atom_name = (char**) realloc(p->atom_name,sizeof(char*)*(*na));
-	p->res_number = (char**) realloc(p->atom_name,sizeof(char*)*(*na));
-	p->chain = (char*) realloc(p->chain,sizeof(char)*(*na));	
-	p->coord = (vector3*) realloc(p->coord,sizeof(vector3)*(*na));
-	
-	p->res_name[na-1] = (char*) realloc(p->res_name[na-1],
-										sizeof(char)*RES_NAME_L);
-	p->atom_name[na-1] = (char*) realloc(p->atom_name[na-1],
-										 sizeof(char)*ATOM_NAME_L);
-	p->res_number[na-1] = (char*) realloc(p->res_number[na-1],
-										  sizeof(char)*RES_NUMBER_L);
+	p->a = (atom*) realloc(p->r,sizeof(atom)*(*na));
+	p->xyz = (vector3*) realloc(p->xyz,sizeof(vector3)*(*na));
+	p->r = (double*) realloc(p->r,sizeof(double)*(*na));
+	p->a[*na-1].xyz = &p->xyz[*na-1];
 }
 
 void protein_add_atom(protein *p, 
@@ -117,28 +93,41 @@ void protein_add_atom(protein *p,
 					  const double y, 
 					  const double z)
 {
-	// possibly check input for consistency
-	// we want to keep this fast though..
-
+	// check input for consistency
+	assert(strlen(atom_name) == ATOM_NAME_STRL);
+	assert(strlen(residue_name) == ATOM_RES_NAME_STRL);
+	assert(strlen(residue_number) == ATOM_RES_NUMBER_STRL);
+	
 	// allocate memory, increase number of atoms counter
-	protein_add_one(p);
+	protein_alloc_one(p);
 
 	size_t na = p->number_atoms;
-	strcpy(p->atom_name[na-1],atom_name);
-	strcpy(p->res_name[na-1],residue_name);
-	strcpy(p->res_number[na-1],residue_number);
-	p->chain[na-1] = chain_label;
-	vector3_set(&p->coord[na-1],x,y,z);
+
+	vector3_set(&p->xyz[na-1],x,y,z);
+
+	atom *a = &p->a[na-1];
+	strcpy(a->atom_name,atom_name);
+	strcpy(a->res_name,residue_name);
+	strcpy(a->res_number,residue_number);
+	a->chain_label = chain_label;
+	a->at = atom_name2type(residue_name,atom_name);
+	a->ac = atom_type2class(a->at);
+
+	p->r[na-1] = atom_type2radius(a->at);
 
 	/* here we assume atoms are ordered sequentially, i.e. chains are
-	   not mixed in input, i.e. if two sequential atoms have different
+	   not mixed in input: if two sequential atoms have different
 	   residue numbers or chain labels a new residue or new chain is
 	   assumed to begin */
-	if (p->number_chains == 0) ++p->number_chains; 
-	if (na > 2 && chain_label != p->chain[na-2]) ++p->number_chains;
+	if (p->number_chains == 0) 
+		++p->number_chains; 
+	if (na > 2 && chain_label != p->a[na-2].chain_label) 
+		++p->number_chains;
 
-	if (p->number_residues == 0) ++p->number_residues;
-	if (na > 2 && strcmp(residue_name,p->chain[na-2])) ++p->number_residues;
+	if (p->number_residues == 0) 
+		++p->number_residues;
+	if (na > 2 && strcmp(residue_number,p->a[na-2].res_number)) 
+		++p->number_residues;
 
 	// what else?
 	// deal with alternate location indicators...

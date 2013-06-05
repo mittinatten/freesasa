@@ -15,7 +15,9 @@ atom_type atom_gly(const char*);
 // nonstandard/uncommon ones
 atom_type atom_sec(const char*);
 
-double atom_radius (atom_type a) 
+
+
+double atom_type2radius(atom_type a) 
 {
     //OONS Radii [Ooi et al. PNAS 84:3086 (1987)]
 	switch (a)
@@ -28,7 +30,7 @@ double atom_radius (atom_type a)
     case carbo_O: return 1.40;
     case hydroxyl_O: return 1.40;
     case sulfur: return 2.00;
-    case Unknown: 
+    case atom_type_unknown: 
     default: return 0.0;
 	}
 }
@@ -37,7 +39,6 @@ atom_class atom_type2class(atom_type a)
 {
 	switch (a) 
 	{
-	case hydrogen: return unknown;
     case aliphatic_C: return apolar;
     case aromatic_C: return apolar;
     case carbo_C: return apolar;
@@ -45,8 +46,9 @@ atom_class atom_type2class(atom_type a)
     case carbo_O: return polar;
     case hydroxyl_O: return polar;
     case sulfur: return polar;
-    case Unknown: 
-    default: return unknown;  
+	case hydrogen:
+    case atom_type_unknown: 
+    default: return atom_class_unknown;  
 	}
 }
 
@@ -54,7 +56,7 @@ atom_class atom_type2class(atom_type a)
 // pyrrolysine
 atom_type atom_name2type (const char *res_name, const char *atom_name)
 {
-	atom_type type = unknown;
+	atom_type type = atom_type_unknown;
 	// backbone
 	if (! strcmp(atom_name, " C  ")) return carbo_C;
 	if (! strcmp(atom_name, " N  ")) return amide_N;
@@ -107,17 +109,12 @@ atom_type atom_name2type (const char *res_name, const char *atom_name)
 	return type;
 }
 
-//all atoms handled above
-atom_type atom_ala(const char*)
-{
-	return unknown;
-}
 
 atom_type atom_RK(const char* a)
 {
 	if (a[1] == 'C') return aliphatic_C;
 	if (a[1] == 'N') return amide_N;
-	return unknown;
+	return atom_type_unknown;
 }
 atom_type atom_NQDE(const char* a)
 {
@@ -125,12 +122,12 @@ atom_type atom_NQDE(const char* a)
 	if (a[1] == 'N') return amide_N;
 	if (a[1] == 'O') return carbo_O;
 	if (a[1] == 'X') return unknown_polar;
-	return unknown;
+	return atom_type_unknown;
 }
 atom_type atom_VIL(const char* a) 
 {
 	if (a[1] == 'C') return aliphatic_C;
-	return unknown;
+	return atom_type_unknown;
 }
 atom_type atom_FHPYW(const char* a)
 {
@@ -138,19 +135,26 @@ atom_type atom_FHPYW(const char* a)
 	if (a[1] == 'O') return hydroxyl_O;
 	if (a[1] == 'N') return amide_N;
 }
-atom_type atom_gly(const char*)
-{
-	return unknown;
-}
-atom_type atom_CMST(const char*) {
+
+atom_type atom_CMST(const char* a) {
 	if (a[1] == 'C') return aliphatic_C;
 	if (a[1] == 'O') return hydroxyl_O;
 	if (a[1] == 'S') return sulfur;
-	return unknown;
+	return atom_type_unknown;
 }
 
-atom_type atom_sec(const char*)
+atom_type atom_sec(const char* a)
 {
 	if (a[1] == 'S' && a[2] == 'E') return selenium;
-	return unknown;
+	return atom_type_unknown;
+}
+
+//all atoms handled above
+atom_type atom_ala(const char* a)
+{
+	return atom_type_unknown;
+}
+atom_type atom_gly(const char* a)
+{
+	return atom_type_unknown;
 }

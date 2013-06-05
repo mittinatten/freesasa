@@ -5,13 +5,9 @@
 #include "vector3.h"
 
 typedef struct {
-	atom_type *at;
-	atom_class *ac;
-	char **res_name;
-	char **atom_name;
-	char **res_number;
-	char *chain;
-	vector3 *coord;
+	atom *a;
+	vector3 *xyz;
+	double *r;
 	size_t number_atoms;
 	size_t number_residues;
 	size_t number_chains;
