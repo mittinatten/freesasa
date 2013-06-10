@@ -8,24 +8,24 @@
 #include "vector3.h"
 
 typedef enum {
-	hydrogen, aliphatic_C, aromatic_C,
+    hydrogen, aliphatic_C, aromatic_C,
     carbo_C, amide_N, carbo_O, 
-	hydroxyl_O, sulfur, selenium,
-	unknown_polar, atom_type_unknown
+    hydroxyl_O, sulfur, selenium,
+    unknown_polar, atom_type_unknown
 } atom_type;
 
 typedef enum {
-	apolar, polar, charged, atom_class_unknown
+    apolar, polar, charged, atom_class_unknown
 } atom_class;
 
 typedef struct {
-	atom_type at;
-	atom_class ac;
-	char res_name[ATOM_RES_NAME_STRL];
-	char res_number[ATOM_RES_NUMBER_STRL];
-	char atom_name[ATOM_NAME_STRL];
-	char chain_label;
-	vector3 *xyz; //coordinates should be stored elsewhere (for speed)
+    atom_type at;
+    atom_class ac;
+    char res_name[ATOM_RES_NAME_STRL];
+    char res_number[ATOM_RES_NUMBER_STRL];
+    char atom_name[ATOM_NAME_STRL];
+    char chain_label;
+    vector3 *xyz; //coordinates should be stored elsewhere (for speed)
 } atom;
 
 double atom_type2radius(atom_type);

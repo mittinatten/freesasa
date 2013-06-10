@@ -39,7 +39,7 @@ void vector3_setlength(vector3* v, double L);
 /** calculate distance-vector v2-v1 */
 void vector3_diff(vector3* diff, const vector3* v1, const vector3* v2);
 
-/** add two 3-vectors */ 
+/** add two 3-vectors */
 void vector3_sum(vector3* sum, const vector3* v1, const vector3* v2);
 
 /** add v2 to v1 */
@@ -72,9 +72,9 @@ double vector3_torsion(const vector3* v1, const vector3* v2, const vector3* v3);
 
 /** rotate vectors in v angle phi around axis at origin from index i1 to i2 (inclusive) */
 void vector3_rotate_block(vector3* v, int i1, int i2,
-			  const vector3* axis, 
-			  const vector3* origin, 
-			  double phi);
+                          const vector3* axis,
+                          const vector3* origin,
+                          double phi);
 
 /** For systems with symmetric periodic boundary conditions, how much
     must be added to v to but it in box of side L. Adding the
