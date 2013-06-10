@@ -17,7 +17,6 @@ atom_type atom_gly(const char*);
 atom_type atom_sec(const char*);
 
 
-
 double atom_type2radius(atom_type a)
 {
     //OONS Radii [Ooi et al. PNAS 84:3086 (1987)]
@@ -52,6 +51,35 @@ atom_class atom_type2class(atom_type a)
     default: return atom_class_unknown;
     }
 }
+
+const char* atom_type2str(atom_type a) 
+{
+    switch(a)
+    {
+    case aliphatic_C: return "aliphatic_C";
+    case aromatic_C:  return "aromatic_C";
+    case carbo_C:     return "carbo_C";
+    case amide_N:     return "amide_N";
+    case carbo_O:     return "carbo_O";
+    case hydroxyl_O:  return "hydroxyl_O";
+    case sulfur:      return "sulfur";
+    case hydrogen:    return "hydrogen";
+    case atom_type_unknown: 
+    default: return "unknown";
+    }
+}
+
+const char* atom_class2str(atom_class a)
+{
+    switch(a)
+    {
+    case polar: return "polar";
+    case apolar: return "apolar";
+    case atom_class_unknown:
+    default: return "unknown";	
+    }
+}
+
 
 // support for RNA/DNA should be added at some point..
 // pyrrolysine

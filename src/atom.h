@@ -21,9 +21,9 @@ typedef enum {
 typedef struct {
     atom_type at;
     atom_class ac;
-    char res_name[ATOM_RES_NAME_STRL];
-    char res_number[ATOM_RES_NUMBER_STRL];
-    char atom_name[ATOM_NAME_STRL];
+    char res_name[ATOM_RES_NAME_STRL+1];
+    char res_number[ATOM_RES_NUMBER_STRL+1];
+    char atom_name[ATOM_NAME_STRL+1];
     char chain_label;
     vector3 *xyz; //coordinates should be stored elsewhere (for speed)
 } atom;
@@ -35,5 +35,9 @@ atom_class atom_type2class(atom_type);
 /* Give the padded strings as arguments, i.e. positions 13-16 and
    18-20 of an PDB ATOM entry as atom_name and res_name */
 atom_type atom_name2type(const char* res_name, const char* atom_name);
+
+const char* atom_type2str(atom_type);
+
+const char* atom_class2str(atom_class);
 
 #endif

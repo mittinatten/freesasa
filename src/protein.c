@@ -10,13 +10,13 @@
 void protein_get_atom_name_pdbline(const char *line, char *name)
 {
     strncpy(name,line+12,ATOM_NAME_STRL);
-    name[ATOM_NAME_STRL+1] = '\0';
+    name[ATOM_NAME_STRL] = '\0';
 }
 
 void protein_get_res_name_pdbline(const char *line, char *name)
 {
     strncpy(name, line+17, ATOM_RES_NAME_STRL);
-    name[ATOM_RES_NAME_STRL+1] = '\0';
+    name[ATOM_RES_NAME_STRL] = '\0';
 }
 void protein_get_coord_pdbline(const char *line, vector3 *coord)
 {
@@ -25,7 +25,7 @@ void protein_get_coord_pdbline(const char *line, vector3 *coord)
 void protein_get_res_number_pdbline(const char* line, char *number)
 {
     strncpy(number, line+22, ATOM_RES_NUMBER_STRL);
-    number[ATOM_RES_NUMBER_STRL+1] = '\0';
+    number[ATOM_RES_NUMBER_STRL] = '\0';
 }
 char protein_get_chain_label_pdbline(const char* line)
 {
@@ -38,18 +38,22 @@ protein* protein_init()
     p->number_atoms = 0;
     p->number_residues = 0;
     p->number_chains = 0;
+    p->a = (atom*) malloc(sizeof(atom));
+    p->r = (double*) malloc(sizeof(double));
+    p->xyz = (vector3*) malloc(sizeof(vector3));
     return p;
 }
 void protein_free(protein *p)
 {
     free(p->a);
+    free(p->r);
     free(p->xyz);
     free(p);
 }
 
 protein* protein_init_from_pdb(FILE *pdb_file)
 {
-    protein* p = protein_init();
+    protein *p = protein_init();
     /* two possible implementations, either read file in two passes,
        first to determine number of atoms, second to read them in,
        keeping the number of mallocs/reallocs to a minimum.  Or read
@@ -77,12 +81,11 @@ protein* protein_init_from_pdb(FILE *pdb_file)
 
 void protein_alloc_one(protein *p)
 {
-    size_t *na = &p->number_atoms;
-    ++*na;
-    p->a = (atom*) realloc(p->r,sizeof(atom)*(*na));
-    p->xyz = (vector3*) realloc(p->xyz,sizeof(vector3)*(*na));
-    p->r = (double*) realloc(p->r,sizeof(double)*(*na));
-    p->a[*na-1].xyz = &p->xyz[*na-1];
+    size_t na = ++p->number_atoms;
+    p->a = (atom*) realloc(p->a,sizeof(atom)*na);
+    p->xyz = (vector3*) realloc(p->xyz,sizeof(vector3)*na);
+    p->r = (double*) realloc(p->r,sizeof(double)*na);
+    p->a[na-1].xyz = &p->xyz[na-1];
 }
 
 void protein_add_atom(protein *p,
