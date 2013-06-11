@@ -102,6 +102,10 @@ void protein_add_atom(protein *p,
     assert(strlen(residue_name) == ATOM_RES_NAME_STRL);
     assert(strlen(residue_number) == ATOM_RES_NUMBER_STRL);
 
+    // skip hydrogens and unrecognized atoms
+    atom_type at = atom_name2type(residue_name, atom_name);
+    if (at == hydrogen || at == atom_type_unknown) return;
+
     // allocate memory, increase number of atoms counter
     protein_alloc_one(p);
 
@@ -114,7 +118,7 @@ void protein_add_atom(protein *p,
     strcpy(a->res_name,residue_name);
     strcpy(a->res_number,residue_number);
     a->chain_label = chain_label;
-    a->at = atom_name2type(residue_name,atom_name);
+    a->at = at;
     a->ac = atom_type2class(a->at);
 
     p->r[na-1] = atom_type2radius(a->at);
