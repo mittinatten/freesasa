@@ -7,6 +7,9 @@
 //don't change this without actually generating new points
 #define MAX_SR_POINTS 2000
 
+//this should be made a user option eventually
+#define PROBE_RADIUS 1.4 
+
 /** Solvent accessible surface area for each atom is written to the
     array 'sasa'. The user is responsible for making sure this has the
     right size.  'n_points' is the number of points (<= MAX_SR_POINTS)
