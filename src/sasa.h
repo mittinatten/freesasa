@@ -1,10 +1,11 @@
 #ifndef SASA_H
 #define SASA_H
 
+#include <stdlib.h>
+#include "vector3.h"
+
 //don't change this without actually generating new points
 #define MAX_SR_POINTS 2000
-
-#include "vector3.h"
 
 /** Solvent accessible surface area for each atom is written to the
     array 'sasa'. The user is responsible for making sure this has the

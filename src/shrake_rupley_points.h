@@ -1,3 +1,5 @@
+#ifndef SHRAKE_RUPLEY_POINTS_H
+#define SHRAKE_RUPLEY_POINTS_H
 
 //not pretty, but I don't want to keep loading this from a file
 const double shrake_rupley_points[MAX_SR_POINTS*3] = {
@@ -1004,3 +1006,5 @@ const double shrake_rupley_points[MAX_SR_POINTS*3] = {
     0.008043614235,  0.4956563335,  -0.8684814905,
 
 };
+
+#endif
