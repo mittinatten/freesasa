@@ -31,10 +31,10 @@ void sasa_shrake_rupley(double *sasa,
             spcount[k] = 0;
         }
 
-        double ri = r[i];
+        double ri = r[i]+PROBE_RADIUS;
         for (int j = 0; j < n_atoms; ++j) {
             if (j == i) continue;
-            const double rj = r[j];
+            const double rj = r[j]+PROBE_RADIUS;
             const double cut2 = (ri+rj)*(ri+rj);
             if (vector3_dist2(&xyz[i],&xyz[j]) > cut2)
                 continue;
@@ -47,7 +47,7 @@ void sasa_shrake_rupley(double *sasa,
                 vector3_copy(&test, &srp_v3[k]);
 		
 		// test-point vectors have length 1.0
-                vector3_multiply(&test, ri+PROBE_RADIUS);
+                vector3_multiply(&test, ri);
                 vector3_add(&test, &xyz[i]);
 
                 if (vector3_dist2(&test, &xyz[j]) <= rj*rj) {
@@ -57,20 +57,20 @@ void sasa_shrake_rupley(double *sasa,
                    overlap. */
             }
         }
-        int n_overlap = 0;
+        int n_surface = 0;
         for (int k = 0; k < n_points; ++k) {
-            if (spcount[k]) ++n_overlap;
+            if (!spcount[k]) ++n_surface;
 #ifdef DEBUG
-	    if (spcount[k]) {
+	    if (!spcount[k]) {
 		vector3_copy(&test,&srp_v3[k]);
-		vector3_multiply(&test,ri+PROBE_RADIUS);
+		vector3_multiply(&test,ri);
 		vector3_add(&test,&xyz[i]);
 		printf("%f %f %f\n",test.x,test.y,test.z);
 	    }
 #endif
         }
         //paranthesis too make sure floating point division is used.
-        sasa[i] = (4.0*PI*ri*ri*n_overlap)/n_points;
+        sasa[i] = (4.0*PI*ri*ri*n_surface)/n_points;
     }
 }
 
