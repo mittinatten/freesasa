@@ -20,10 +20,17 @@ void protein_add_atom(protein *p,
 		      const char* atom_name,
 		      const char* residue_name, 
 		      const char* residue_number,
-		      const char chain_label,
-		      const double x, 
-		      const double y, 
-		      const double z);
+		      char chain_label,
+		      double x, double y, double z);
+
+/** not tested yet */
+void protein_update_atom(protein *p, int number, vector3 *coord);
+
+/** not tested yet */
+void protein_update_atom_xyz(protein *p, int number, 
+			 double x, double y, double z);
+/** not tested yet */
+void protein_update_atoms(protein *p, vector3**);
 
 /** get array of coordinates */
 const vector3* protein_xyz(const protein *p);
@@ -34,7 +41,8 @@ const double* protein_r(const protein *p);
 /** get number of atoms */
 size_t protein_n(const protein *p);
 
-
+/** get array of atoms */
+const atom* protein_atoms(const protein *p);
 
 
 

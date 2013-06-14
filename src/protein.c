@@ -25,6 +25,12 @@ typedef enum {
 typedef enum {GLY=0, ALA, VAL, LEU, ILE, MET, PHE, TRP, PRO,
 	      SER, THR, CYS, SEC, ASN, GLN, HIS, TYR,
 	      ASP, GLU, ARG, LYS, residue_unknown} residue_type;
+const int protein_n_residue_types = residue_unknown + 1;
+
+const char *residue_types[] =  
+{   "GLY", "ALA", "VAL", "LEU", "ILE", "MET", "PHE", "TRP", "PRO",
+    "SER", "THR", "CYS", "SEC", "ASN", "GLN", "HIS", "TYR",
+    "ASP", "GLU", "ARG", "LYS", "UNK"};
 
 typedef enum {residue_hydrophobic,residue_polar} residue_class;
 
@@ -157,10 +163,8 @@ void protein_add_atom(protein *p,
                       const char *atom_name,
                       const char *residue_name,
                       const char *residue_number,
-                      const char chain_label,
-                      const double x,
-                      const double y,
-                      const double z)
+                      char chain_label,
+                      double x, double y, double z)
 {
     // check input for consistency
     assert(strlen(atom_name) == ATOM_NAME_STRL);
@@ -205,6 +209,25 @@ void protein_add_atom(protein *p,
     // what else?
     // deal with alternate location indicators...
 }
+
+void protein_update_atom_xyz(protein* p, int number,
+			     double x, double y, double z)
+{
+    vector3_set(&p->xyz[number], x, y, z);
+}
+
+void protein_update_atom(protein* p, int number, vector3 *v)
+{
+    vector3_copy(&p->xyz[number], v);
+}
+
+void protein_update_atoms(protein* p, vector3 **v) 
+{
+    for (int i = 0; i < p->number_atoms; ++i) {
+	vector3_copy(&p->xyz[i],v[i]);
+    }
+}
+
 const vector3* protein_xyz(const protein *p)
 {
     return p->xyz;
