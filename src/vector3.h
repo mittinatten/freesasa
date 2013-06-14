@@ -70,7 +70,8 @@ double vector3_theta(const vector3* v1, const vector3* v2);
 /** measure rotation of v3 around v2 compared to v1 */
 double vector3_torsion(const vector3* v1, const vector3* v2, const vector3* v3);
 
-/** rotate vectors in v angle phi around axis at origin from index i1 to i2 (inclusive) */
+/** rotate vectors in v angle phi around axis at origin from index i1
+    to i2 (inclusive) */
 void vector3_rotate_block(vector3* v, int i1, int i2,
                           const vector3* axis,
                           const vector3* origin,
@@ -82,6 +83,8 @@ void vector3_rotate_block(vector3* v, int i1, int i2,
 void vector3_distance_to_box(vector3* diff, const vector3* v, double L);
 
 /** Returns the closest distance between p3 and a line passing p1 and p3*/
-double vector3_passage_distance(const vector3 *p1, const vector3 *p2, const vector3 *p3);
+double vector3_passage_distance(const vector3 *p1,
+                                const vector3 *p2,
+                                const vector3 *p3);
 
 #endif

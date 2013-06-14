@@ -9,7 +9,7 @@
 int main (int argc, char **argv) {
     protein *p = protein_init_from_pdb(stdin);
     double *sasa = (double*) malloc(sizeof(double)*p->number_atoms);
-    sasa_shrake_rupley(sasa,p->xyz,p->r,p->number_atoms,100);
+    sasa_shrake_rupley(sasa,p->xyz,p->r,p->number_atoms,1000);
     for (int i = 0; i < p->number_atoms; ++i) {
 	atom *a = &p->a[i];
 	printf("%5i,%4s,%3s,%4s,%c,%12s,%10s,%6.2f\n",

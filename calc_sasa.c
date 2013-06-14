@@ -66,9 +66,10 @@ int main (int argc, char **argv) {
     }
 
     p  = protein_init_from_pdb(input);
-    sasa = (double*) malloc(sizeof(double)*p->number_atoms);
+    sasa = (double*) malloc(sizeof(double)*protein_n(p));
 
-    sasa_shrake_rupley(sasa,p->xyz,p->r,p->number_atoms,n_sr_points);
+    sasa_shrake_rupley(sasa,protein_xyz(p),
+		       protein_r(p),protein_n(p),n_sr_points);
 
     protein_free(p);
     free(sasa);

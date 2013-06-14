@@ -1,18 +1,10 @@
 #ifndef PROTEIN_H
 #define PROTEIN_H
 
-#include "atom.h"
 #include "vector3.h"
 
-typedef struct {
-    atom *a;
-    vector3 *xyz;
-    double *r;
-    size_t number_atoms;
-    size_t number_residues;
-    size_t number_chains;
-} protein;
-
+typedef struct protein protein;
+typedef struct atom atom; 
 
 /** init empty protein */
 protein* protein_init();
@@ -32,5 +24,18 @@ void protein_add_atom(protein *p,
 		      const double x, 
 		      const double y, 
 		      const double z);
+
+/** get array of coordinates */
+const vector3* protein_xyz(const protein *p);
+
+/** get array of radii */
+const double* protein_r(const protein *p);
+
+/** get number of atoms */
+size_t protein_n(const protein *p);
+
+
+
+
 
 #endif

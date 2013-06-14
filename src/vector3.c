@@ -81,7 +81,6 @@ double vector3_dist2(const vector3* v1, const vector3* v2)
     return dx*dx + dy*dy + dz*dz;
 }
 
-
 void vector3_copy(vector3* u, const vector3* v)
 {
     u->x = v->x;
