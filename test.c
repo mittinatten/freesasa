@@ -8,18 +8,24 @@
 
 int main (int argc, char **argv) {
     protein *p = protein_init_from_pdb(stdin);
-    double *sasa = (double*) malloc(sizeof(double)*p->number_atoms);
-    sasa_shrake_rupley(sasa,p->xyz,p->r,p->number_atoms,1000);
-    for (int i = 0; i < p->number_atoms; ++i) {
-	atom *a = &p->a[i];
-	printf("%5i,%4s,%3s,%4s,%c,%12s,%10s,%6.2f\n",
-	       i,a->atom_name,a->res_name,
-	       a->res_number,a->chain_label,
-	       atom_type2str(a->at),
-	       atom_class2str(a->ac),
+    double *sasa = (double*) malloc(sizeof(double)*protein_n(p));
+    double *r = (double*) malloc(sizeof(double)*protein_n(p));
+    protein_r_def(p,r);
+    sasa_shrake_rupley(sasa,protein_xyz(p),r,protein_n(p),1000);
+    printf ("%ul\n",protein_n(p));
+    for (int i = 0; i < protein_n(p); ++i) {
+	printf("%5i,%4s,%3s,%4s,%c,%6.2f\n",
+	       i,
+	       protein_atom_name(p,i),
+	       protein_atom_res_name(p,i),
+	       protein_atom_res_number(p,i),
+	       protein_atom_chain(p,i),
+	       //atom_type2str(a->at),
+	       //atom_class2str(a->ac),
 	       sasa[i]);
 	
     }
     protein_free(p);
     free(sasa);
+    free(r);
 }

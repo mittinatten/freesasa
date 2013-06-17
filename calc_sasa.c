@@ -66,12 +66,17 @@ int main (int argc, char **argv) {
     }
 
     p  = protein_init_from_pdb(input);
+    double *r = (double*) malloc(sizeof(double)*protein_n(p));
     sasa = (double*) malloc(sizeof(double)*protein_n(p));
+    
+    //calc OONS radii
+    protein_r_def(p,r);
 
     sasa_shrake_rupley(sasa,protein_xyz(p),
-		       protein_r(p),protein_n(p),n_sr_points);
+		       r,protein_n(p),n_sr_points);
 
     protein_free(p);
     free(sasa);
+    free(r);
     fclose(input);
 }
