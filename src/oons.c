@@ -4,15 +4,26 @@
 #include "pdbutil.h"
 
 typedef enum {
-    hydrogen, aliphatic_C, aromatic_C,
+    hydrogen=0, aliphatic_C, aromatic_C,
     carbo_C, amide_N, carbo_O, 
     hydroxyl_O, sulfur, selenium,
     unknown_polar, oons_type_unknown
 } oons_type;
 
 typedef enum {
-    apolar, polar, charged, oons_class_unknown
+    apolar=0, polar, charged, oons_class_unknown
 } oons_class;
+
+const char *oons_t2s[] = {
+    "hydrogen", "aliphatic_C", "aromatic_C",
+    "carbo_C", "amide_N", "carbo_O",
+    "hydroxyl_O", "sulfur", "selenium",
+    "unknown_polar", "unknown"
+};
+
+const char *oons_c2s[] = {
+    "apolar", "polar", "charged", "oons_class_unknown"
+};
 
 oons_type oons_name2type (const char *res_name, const char *atom_name);
 
@@ -68,6 +79,9 @@ oons_class oons_type2class(oons_type a)
 
 const char* oons_type2str(oons_type a) 
 {
+    assert(a <= oons_type_unknown && a >= 0);
+    return oons_t2s[a];
+    /*
     switch(a)
     {
     case aliphatic_C: return "aliphatic_C";
@@ -81,10 +95,14 @@ const char* oons_type2str(oons_type a)
     case oons_type_unknown: 
     default: return "unknown";
     }
+    */
 }
 
 const char* oons_class2str(oons_class a)
 {
+    assert(a <= oons_class_unknown && a >= 0);
+    return oons_c2s[a];
+    /*
     switch(a)
     {
     case polar: return "polar";
@@ -92,6 +110,7 @@ const char* oons_class2str(oons_class a)
     case oons_class_unknown:
     default: return "unknown";	
     }
+    */
 }
 
 
@@ -106,6 +125,34 @@ double oons_radius_pdbline(const char *pdb_line)
 
 double oons_radius(const char *res_name, const char *atom_name) {
     return oons_type2radius(oons_name2type(res_name, atom_name));
+}
+
+int oons_classifier(const char *res_name, const char *atom_name)
+{
+    return oons_type2class(oons_name2type(res_name,atom_name));
+}
+
+int oons_typefier(const char *res_name, const char *atom_name)
+{
+    return oons_name2type(res_name,atom_name);
+}
+
+atomclassifier oons_classes()
+{
+    atomclassifier a;
+    a.nclasses = oons_class_unknown+1;
+    a.class2str = oons_c2s;
+    a.classify = &oons_classifier;
+    return a;
+}
+
+atomclassifier oons_types()
+{
+    atomclassifier a;
+    a.nclasses = oons_type_unknown+1;
+    a.class2str = oons_t2s;
+    a.classify = &oons_typefier;
+    return a;
 }
 
 // support for RNA/DNA should be added at some point..
