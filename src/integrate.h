@@ -6,7 +6,7 @@
 #include "protein.h"
 
 /**  */
-void integrate_sasa_per_atomclass(FILE*, atomclassifier*, 
+void integrate_sasa_per_atomclass(FILE*, atomclassifier, 
 				  protein*, double *sasa);
 
 

@@ -4,6 +4,8 @@
 
 #include "src/protein.h"
 #include "src/sasa.h"
+#include "src/integrate.h"
+#include "src/oons.h"
 
 #define DEF_SR_POINTS 100
 
@@ -64,16 +66,19 @@ int main (int argc, char **argv) {
 	    break;
 	}
     }
-
     p  = protein_init_from_pdb(input);
     double *r = (double*) malloc(sizeof(double)*protein_n(p));
     sasa = (double*) malloc(sizeof(double)*protein_n(p));
-    
+
     //calc OONS radii
     protein_r_def(p,r);
 
     sasa_shrake_rupley(sasa,protein_xyz(p),
 		       r,protein_n(p),n_sr_points);
+    integrate_sasa_per_atomclass(stdout,oons_classes(),p,sasa);
+
+    printf("\n");
+    integrate_sasa_per_atomclass(stdout,oons_types(),p,sasa);
 
     protein_free(p);
     free(sasa);

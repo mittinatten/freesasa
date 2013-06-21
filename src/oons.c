@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 #include "oons.h"
 #include "pdbutil.h"
 
@@ -11,7 +12,7 @@ typedef enum {
 } oons_type;
 
 typedef enum {
-    apolar=0, polar, charged, oons_class_unknown
+    apolar=0, polar, oons_class_unknown
 } oons_class;
 
 const char *oons_t2s[] = {
@@ -22,7 +23,7 @@ const char *oons_t2s[] = {
 };
 
 const char *oons_c2s[] = {
-    "apolar", "polar", "charged", "oons_class_unknown"
+    "apolar", "polar", "oons_class_unknown"
 };
 
 oons_type oons_name2type (const char *res_name, const char *atom_name);
@@ -160,6 +161,7 @@ atomclassifier oons_types()
 oons_type oons_name2type (const char *res_name, const char *atom_name)
 {
     oons_type type = oons_type_unknown;
+
     assert(strlen(atom_name) == PDB_ATOM_NAME_STRL);
     assert(strlen(res_name) == PDB_ATOM_RES_NAME_STRL);
 
@@ -208,6 +210,7 @@ oons_type oons_name2type (const char *res_name, const char *atom_name)
     if (! strcmp(res_name, "XLE")) return oons_VIL(atom_name);
     // haven't found any PDB files with SEC yet, probably needs work
     if (! strcmp(res_name, "SEC")) return oons_sec(atom_name);
+    if (! strcmp(res_name, "CSE")) return oons_sec(atom_name);
 
     //need to find PDB file that contains PYL to implement
     //if (! strcmp(res_name, "PYL")) return oons_pyl(atom_name);

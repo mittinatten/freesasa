@@ -10,18 +10,6 @@
 #include "oons.h"
 
 
-typedef enum {GLY=0, ALA, VAL, LEU, ILE, MET, PHE, TRP, PRO,
-	      SER, THR, CYS, SEC, ASN, GLN, HIS, TYR,
-	      ASP, GLU, ARG, LYS, residue_unknown} residue_type;
-const int protein_n_residue_types = residue_unknown + 1;
-
-const char *residue_types[] =  
-{   "GLY", "ALA", "VAL", "LEU", "ILE", "MET", "PHE", "TRP", "PRO",
-    "SER", "THR", "CYS", "SEC", "ASN", "GLN", "HIS", "TYR",
-    "ASP", "GLU", "ARG", "LYS", "UNK"};
-
-typedef enum {residue_hydrophobic,residue_polar} residue_class;
-
 struct atom {
     char res_name[PDB_ATOM_RES_NAME_STRL+1];
     char res_number[PDB_ATOM_RES_NUMBER_STRL+1];
@@ -36,18 +24,6 @@ struct protein {
     size_t number_residues;
     size_t number_chains;
 };
-
-const char* residue_type2str(residue_type);
-
-residue_type residue_str2type(const char*);
-
-residue_class residue_type2class(residue_type);
-
-inline residue_class residue_str2class(const char *str)
-{
-    residue_type2class(residue_str2type(str));
-}
-
 
 protein* protein_init()
 {
