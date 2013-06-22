@@ -5,7 +5,6 @@
 
 #include "shrake_rupley_points.h"
 
-
 void sasa_exposed_angles(int n_slice, double *x, double *y, double *r, double *exposed_angle);
 double sasa_calc_exposed_angle(int n_buried, double *a, double *b);
 
@@ -98,13 +97,15 @@ void sasa_lee_richards(double *sasa,
 	double z = xyz[i].z;
 	max_z = z > max_z ? z : max_z;
 	min_z = z < min_z ? z : min_z;
+	sasa[i] = 0;
     }
+
     // loop over slices
     for (double z = min_z + 0.5*delta; z < max_z; z += delta) {
 	double x[n_atoms], y[n_atoms], r[n_atoms];
 	int n_slice = 0;
 	double exposed_angle[n_atoms];
-	int *idx;
+	int idx[n_atoms];
 	// locate atoms in each slice
 	for (size_t i = 0; i < n_atoms; ++i) {
 	    double ri = radii[i] + PROBE_RADIUS;
@@ -121,6 +122,7 @@ void sasa_lee_richards(double *sasa,
 	// calculate contribution to each atom's SASA from the present slice
 	for (int i = 0; i < n_slice; ++i) {
 	    sasa[idx[i]] += exposed_angle[i]*r[i]*delta; 
+	    //printf("s[%d]: %f\n",idx[i],sasa[idx[i]]);
 	}
     }    
 }
@@ -141,14 +143,14 @@ void sasa_exposed_angles(int n_slice, double *x, double *y, double *r, double *e
 	    
 	    // reasons to skip calculation
 	    if (rij > ri + rj) continue;     // atoms aren't in contact
-	    if (rij > ri && rij < rj) break; // circle i is completely inside j
-	    if (rij > rj && rij < ri) continue; // circle j is completely inside i
+	    if (rij+ri < rj) break; // circle i is completely inside j
+	    if (rij+rj < ri) continue; // circle j is completely inside i
 	    
 	    // half the arclength occluded from circle i
-	    double alpha = acos ((ri*ri+rij*rij-rj*rj)/(2*ri*rij));
+	    double alpha = acos ((ri*ri+rij*rij-rj*rj)/(2.0*ri*rij));
 	    // the polar coordinates angle of the vector connecting i and j
 	    double gamma = atan2 (yij,xij);
-	    
+
 	    a[n_buried] = gamma - alpha;
 	    b[n_buried] = gamma + alpha; 
 	    ++n_buried;
