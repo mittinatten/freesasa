@@ -74,9 +74,14 @@ int main (int argc, char **argv) {
 
     sasa_shrake_rupley(sasa,protein_xyz(p),
 		       r,protein_n(p),n_sr_points);
-    sasa_per_atomclass(stdout,oons_classes(),p,sasa);
+    //sasa_per_atomclass(stdout,oons_classes(),p,sasa);
+    //
+    //printf("\n");
+    sasa_per_atomclass(stdout,oons_types(),p,sasa);
 
     printf("\n");
+
+    sasa_lee_richards(sasa,protein_xyz(p),r,protein_n(p),.1);
     sasa_per_atomclass(stdout,oons_types(),p,sasa);
 
     protein_free(p);

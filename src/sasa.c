@@ -5,6 +5,10 @@
 
 #include "shrake_rupley_points.h"
 
+
+void sasa_exposed_angles(int n_slice, double *x, double *y, double *r, double *exposed_angle);
+double sasa_calc_exposed_angle(int n_buried, double *a, double *b);
+
 void sasa_shrake_rupley(double *sasa,
                         const vector3 *xyz,
                         const double *r,
@@ -79,8 +83,103 @@ void sasa_lee_richards(double *sasa,
                        const vector3 *xyz,
                        const double *radii,
                        size_t n_atoms,
-                       double grid)
+                       double delta)
 {
+    /* Steps:
+       Define slice range
+       For each slice:
+         1. Identify member atoms
+	 2. Calculate their radii in slice
+         3. Calculate exposed arc-lengths for each atom
+       Sum up arc-length*delta for each atom
+     */
+    double max_z=-1e50, min_z=1e50, start_z;
+    for (size_t i = 0; i < n_atoms; ++i) {
+	double z = xyz[i].z;
+	max_z = z > max_z ? z : max_z;
+	min_z = z < min_z ? z : min_z;
+    }
+    // loop over slices
+    for (double z = min_z + 0.5*delta; z < max_z; z += delta) {
+	double x[n_atoms], y[n_atoms], r[n_atoms];
+	int n_slice = 0;
+	double exposed_angle[n_atoms];
+	int *idx;
+	// locate atoms in each slice
+	for (size_t i = 0; i < n_atoms; ++i) {
+	    double ri = radii[i] + PROBE_RADIUS;
+	    double d = fabs(xyz[i].z-z);
+	    if (d < ri) {
+		x[n_slice] = xyz[i].x;
+		y[n_slice] = xyz[i].y;
+		r[n_slice] = sqrt(ri*ri-d*d);
+		idx[n_slice] = i;
+		++n_slice;
+	    }
+	}
+	sasa_exposed_angles(n_slice, x, y, r, exposed_angle);
+	// calculate contribution to each atom's SASA from the present slice
+	for (int i = 0; i < n_slice; ++i) {
+	    sasa[idx[i]] += exposed_angle[i]*r[i]*delta; 
+	}
+    }    
+}
+
+void sasa_exposed_angles(int n_slice, double *x, double *y, double *r, double *exposed_angle)
+{
+    for (int i = 0; i < n_slice; ++i) {
+	double ri = r[i];
+	double a[n_slice], b[n_slice];
+	int n_buried = 0;
+	// loop over atoms in slice
+	for (int j = 0; j < n_slice; ++j) {
+	    if (i == j) continue;
+	    double rj = r[j];
+	    double xij = x[j]-x[i];
+	    double yij = y[j]-y[i];
+	    double rij = sqrt(xij*xij+yij*yij);
+	    
+	    // reasons to skip calculation
+	    if (rij > ri + rj) continue;     // atoms aren't in contact
+	    if (rij > ri && rij < rj) break; // circle i is completely inside j
+	    if (rij > rj && rij < ri) continue; // circle j is completely inside i
+	    
+	    // half the arclength occluded from circle i
+	    double alpha = acos ((ri*ri+rij*rij-rj*rj)/(2*ri*rij));
+	    // the polar coordinates angle of the vector connecting i and j
+	    double gamma = atan2 (yij,xij);
+	    
+	    a[n_buried] = gamma - alpha;
+	    b[n_buried] = gamma + alpha; 
+	    ++n_buried;
+	}
+	exposed_angle[i] = sasa_calc_exposed_angle(n_buried,a,b);
+    }
+}
+
+// does not leave a and b arrays unchanged
+double sasa_calc_exposed_angle(int n_buried, double *a, double *b)
+{
+    // loop over buried arcs
+    for (int j = 0; j < n_buried; ++j) {
+	double bj = b[j] > 2*PI ? b[j]-2*PI : b[j];
+	for (int k = 0; k < n_buried; ++k) {
+	    if (j == k) continue;
+	    double bk = b[k] > 2*PI ? b[k]-2*PI : b[k];
+	    // overlap condition (multiples of 2*PI already handled)
+	    if (a[j] < bk && bj > a[k]) {
+		// interval j is the union between j and k, and k is made empty.
+		a[j] = a[j] < a[k] ? a[j] : a[k]; 
+		b[j] = b[j] > b[k] ? b[j] : b[k]; // important not to use bj and bk here
+		a[k] = b[k] = 0;
+	    }
+	}
+    }
+    double arc = 0;
+    for (int j = 0; j < n_buried; ++j) arc += b[j]-a[j];
+    arc = 2*PI - arc; // the exposed arc
+    if (arc < 0) arc = 0; // will be the case for almost all buried atoms
+    return arc;
 }
 
 void sasa_per_atomclass(FILE *out, atomclassifier ac,
