@@ -1,8 +1,10 @@
 #ifndef SASA_H
 #define SASA_H
 
-#include <stdlib.h>
+#include <stdio.h>
 #include "vector3.h"
+#include "atomclassifier.h"
+#include "protein.h"
 
 //don't change this without actually generating new points
 #define MAX_SR_POINTS 2000
@@ -32,5 +34,10 @@ void sasa_lee_richards(double* sasa,
                        double grid);
 
 // other algorithms?
+
+/** Writes result of SASA_calculation to FILE* summed up for the 
+    atom-classes according to the provided atomclassifier. */
+void sasa_per_atomclass(FILE*, atomclassifier, 
+			protein*, double *sasa);
 
 #endif

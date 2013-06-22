@@ -4,7 +4,6 @@
 
 #include "src/protein.h"
 #include "src/sasa.h"
-#include "src/integrate.h"
 #include "src/oons.h"
 
 #define DEF_SR_POINTS 100
@@ -75,10 +74,10 @@ int main (int argc, char **argv) {
 
     sasa_shrake_rupley(sasa,protein_xyz(p),
 		       r,protein_n(p),n_sr_points);
-    integrate_sasa_per_atomclass(stdout,oons_classes(),p,sasa);
+    sasa_per_atomclass(stdout,oons_classes(),p,sasa);
 
     printf("\n");
-    integrate_sasa_per_atomclass(stdout,oons_types(),p,sasa);
+    sasa_per_atomclass(stdout,oons_types(),p,sasa);
 
     protein_free(p);
     free(sasa);
