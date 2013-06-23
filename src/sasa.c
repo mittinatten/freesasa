@@ -93,12 +93,16 @@ void sasa_lee_richards(double *sasa,
        Sum up arc-length*delta for each atom
      */
     double max_z=-1e50, min_z=1e50, start_z;
+    double max_r = 0;
     for (size_t i = 0; i < n_atoms; ++i) {
-	double z = xyz[i].z;
+	double z = xyz[i].z, r = radii[i];
 	max_z = z > max_z ? z : max_z;
 	min_z = z < min_z ? z : min_z;
 	sasa[i] = 0;
+	max_r = r > max_r ? r : max_r;
     }
+    min_z -= max_r;
+    max_z += max_r;
 
     // loop over slices
     for (double z = min_z + 0.5*delta; z < max_z; z += delta) {
