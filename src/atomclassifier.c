@@ -32,4 +32,5 @@ int atomclassifier_residue_classify(const char *res_name,
     }
     if (! strcmp(res_name,"SEC")) return CSE;
     if (! strcmp(res_name,"PYL")) return PYH;
+    return residue_unknown;
 }

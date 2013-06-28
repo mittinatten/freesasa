@@ -30,7 +30,7 @@ void short_help(const char* argv0) {
 int main (int argc, char **argv) {
     int n_sr_points = DEF_SR_POINTS;
     protein *p; 
-    double *sasa;
+    double *sasa_lr, *sasa_sr;
     FILE *input = stdin;
 
     extern char *optarg;
@@ -67,25 +67,30 @@ int main (int argc, char **argv) {
     }
     p  = protein_init_from_pdb(input);
     double *r = (double*) malloc(sizeof(double)*protein_n(p));
-    sasa = (double*) malloc(sizeof(double)*protein_n(p));
+    sasa_sr = (double*) malloc(sizeof(double)*protein_n(p));
+    sasa_lr = (double*) malloc(sizeof(double)*protein_n(p));
 
     //calc OONS radii
     protein_r_def(p,r);
 
-    sasa_shrake_rupley(sasa,protein_xyz(p),
+    sasa_shrake_rupley(sasa_sr,protein_xyz(p),
 		       r,protein_n(p),n_sr_points);
     //sasa_per_atomclass(stdout,oons_classes(),p,sasa);
     //
     //printf("\n");
-    sasa_per_atomclass(stdout,oons_types(),p,sasa);
-
+    sasa_per_atomclass(stdout,oons_types(),p,sasa_sr);
     printf("\n");
 
-    sasa_lee_richards(sasa,protein_xyz(p),r,protein_n(p),.1);
-    sasa_per_atomclass(stdout,oons_types(),p,sasa);
+    sasa_lee_richards(sasa_lr,protein_xyz(p),r,protein_n(p),.25);
+    sasa_per_atomclass(stdout,oons_types(),p,sasa_lr);
+    
+    /* for (int i = 0; i < protein_n(p); ++i) { */
+    /* 	printf("%6.2f %6.2f\n",sasa_sr[i],sasa_lr[i]); */
+    /* } */
 
     protein_free(p);
-    free(sasa);
+    free(sasa_lr);
+    free(sasa_sr);
     free(r);
     fclose(input);
 }

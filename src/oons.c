@@ -242,6 +242,7 @@ oons_type oons_FHPYW(const char* a)
     if (a[1] == 'C') return aromatic_C;
     if (a[1] == 'O') return hydroxyl_O;
     if (a[1] == 'N') return amide_N;
+    return oons_type_unknown;
 }
 
 oons_type oons_CMST(const char* a) {
