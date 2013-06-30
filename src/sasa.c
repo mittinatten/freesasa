@@ -6,7 +6,9 @@
 
 #include "shrake_rupley_points.h"
 
-void sasa_exposed_angles(int n_slice, double *x, double *y, double z, double *r, double *exposed_angle, int **nb, int *nn);
+void sasa_exposed_angles(int n_slice, const double *x, const double *y, double z, 
+			 const double *r, double *exposed_angle, 
+			 const int **nb, const int *nn);
 double sasa_sum_angles(int n_buried, double *a, double *b);
 
 void sasa_shrake_rupley(double *sasa,
@@ -81,7 +83,7 @@ void sasa_shrake_rupley(double *sasa,
 
 void sasa_lee_richards(double *sasa,
                        const vector3 *xyz,
-                       const double *radii,
+                       const double *atom_radii,
                        size_t n_atoms,
                        double delta)
 {
@@ -93,9 +95,13 @@ void sasa_lee_richards(double *sasa,
        3. Calculate exposed arc-lengths for each atom
        Sum up arc-length*delta for each atom
     */
+
+    // determine slice range
     double max_z=-1e50, min_z=1e50;
     double max_r = 0;
+    double radii[n_atoms];
     for (size_t i = 0; i < n_atoms; ++i) {
+	radii[i] = atom_radii[i] + PROBE_RADIUS;
         double z = xyz[i].z, r = radii[i];
         max_z = z > max_z ? z : max_z;
         min_z = z < min_z ? z : min_z;
@@ -115,9 +121,9 @@ void sasa_lee_richards(double *sasa,
 
     // determine which atoms are neighbours (speeds up calculations a bit later on (factor 2 or so)).
     for (int i = 0; i < n_atoms; ++i) {
-        double ri = radii[i]+PROBE_RADIUS;
+        double ri = radii[i];
         for (int j = i+1; j < n_atoms; ++j) {
-            double rj = radii[j] + PROBE_RADIUS;
+            double rj = radii[j];
             double cut = ri + rj;
             if (vector3_dist2(&xyz[i],&xyz[j]) < cut*cut) {
                 contact[i][j] = contact[j][i] = 1;
@@ -131,10 +137,10 @@ void sasa_lee_richards(double *sasa,
         double x[n_atoms], y[n_atoms], r[n_atoms];
         int n_slice = 0;
         double exposed_angle[n_atoms];
-        int idx[n_atoms];
+        int idx[n_atoms], nn[n_atoms];
         // locate atoms in each slice
         for (size_t i = 0; i < n_atoms; ++i) {
-            double ri = radii[i] + PROBE_RADIUS;
+            double ri = radii[i];
             double d = fabs(xyz[i].z-z);
             if (d < ri) {
                 x[n_slice] = xyz[i].x;
@@ -144,8 +150,10 @@ void sasa_lee_richards(double *sasa,
                 ++n_slice;
             }
         }
-        int nn[n_atoms];
-        for (int i = 0; i < n_slice; ++i) nn[i] = 0;
+        for (int i = 0; i < n_slice; ++i) { 
+	    nn[i] = 0;
+	    exposed_angle[i] = 0;
+	}
         for (int i = 0; i < n_slice; ++i) {
             for (int j = i+1; j < n_slice; ++j) {
                 if (contact[idx[i]][idx[j]]) {
@@ -155,7 +163,7 @@ void sasa_lee_richards(double *sasa,
             }
             assert(nn[i] < 200 && "An atom had 200 or more neighbors, this should not be possible.");
         }
-        sasa_exposed_angles(n_slice, x, y, z, r, exposed_angle, nb, nn);
+        sasa_exposed_angles(n_slice, x, y, z, r, exposed_angle, (const int**)nb, nn);
         // calculate contribution to each atom's SASA from the present slice
         for (int i = 0; i < n_slice; ++i) {
             sasa[idx[i]] += exposed_angle[i]*r[i]*delta;
@@ -170,8 +178,8 @@ void sasa_lee_richards(double *sasa,
     free(nb);
 }
 
-void sasa_exposed_angles(int n_slice, double *x, double *y, double z, double *r,
-                         double *exposed_angle, int **nb, int *nn)
+void sasa_exposed_angles(int n_slice, const double *x, const double *y, double z, const double *r,
+                         double *exposed_angle, const int **nb, const int *nn)
 {
     int is_buried[n_slice]; // keep track of completely buried circles
     for (int i = 0; i < n_slice; ++i) is_buried[i] = 0;
