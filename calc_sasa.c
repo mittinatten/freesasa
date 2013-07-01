@@ -7,6 +7,10 @@
 #include "src/oons.h"
 
 #define DEF_SR_POINTS 100
+#define DEF_LR_SPACING 0.25
+
+enum algorithms {LEE_RICHARDS, SHRAKE_RUPLEY};
+const char *alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
 #if __STDC__
 extern int getopt(int, char * const *, const char *);
@@ -17,9 +21,13 @@ void help(const char* argv0) {
     fprintf(stderr,"\nOptions are:\n"
 	           "       -h  print this message\n"
                    "       -f  pdb-file\n"
+	           "       -S  use Shrake & Rupley alogrithm [default]\n"
 	           "       -n  number of test points in Shrake & Rupley algorithm\n"
-	           "           Default is %d, max value is %d.\n"
-	    ,DEF_SR_POINTS,MAX_SR_POINTS);
+	           "           Default is %d, max value is %d\n"
+	           "       -L  use Lee & Richards algorithm\n"
+	           "       -d  grid spacing in Lee & Richards algorithm\n"
+	           "           Default value is %4.2f Å\n"
+	    ,DEF_SR_POINTS,MAX_SR_POINTS,DEF_LR_SPACING);
     fprintf(stderr,"\nIf no pdb-file is specified STDIN is used for input.\n\n");
 }
 
@@ -28,15 +36,18 @@ void short_help(const char* argv0) {
 }
 
 int main (int argc, char **argv) {
+
     int n_sr_points = DEF_SR_POINTS;
+    double d_lr = DEF_LR_SPACING;
+    int use_alg = SHRAKE_RUPLEY, alg_set = 0;
     protein *p; 
-    double *sasa_lr, *sasa_sr;
+    double *sasa;
     FILE *input = stdin;
 
     extern char *optarg;
     char opt;
 
-    while ((opt = getopt(argc, argv, "f:n:h")) != -1) {
+    while ((opt = getopt(argc, argv, "f:n:d:hLS")) != -1) {
         switch(opt) {
 	case 'h':
 	    help(argv[0]);
@@ -59,6 +70,17 @@ int main (int argc, char **argv) {
 		exit(1);
 	    }
 	    break;
+	case 'S':
+	    use_alg = SHRAKE_RUPLEY;
+	    ++alg_set;
+	    break;
+	case 'L':
+	    use_alg = LEE_RICHARDS;
+	    ++alg_set;
+	    break;
+	case 'd':
+	    d_lr = atof(optarg);
+	    break;
 	default:
 	    fprintf(stderr, "\nWarning: unknown option '%c' (will be ignored)\n\n", 
 		    opt);
@@ -67,30 +89,44 @@ int main (int argc, char **argv) {
     }
     p  = protein_init_from_pdb(input);
     double *r = (double*) malloc(sizeof(double)*protein_n(p));
-    sasa_sr = (double*) malloc(sizeof(double)*protein_n(p));
-    sasa_lr = (double*) malloc(sizeof(double)*protein_n(p));
+    sasa = (double*) malloc(sizeof(double)*protein_n(p));
+    
+    printf("\n\n### SASALIB 2013 ###\n\n");
+	   
+    printf("# Using van der Waals radii and atom classes defined \n"
+	   "# by Ooi et al (PNAS 1987, 84:3086-3090) and a probe raidus\n"
+	   "# of %f Å.\n\n", PROBE_RADIUS);
 
     //calc OONS radii
     protein_r_def(p,r);
 
-    sasa_shrake_rupley(sasa_sr,protein_xyz(p),
-		       r,protein_n(p),n_sr_points);
-    //sasa_per_atomclass(stdout,oons_classes(),p,sasa);
-    //
-    //printf("\n");
-    sasa_per_atomclass(stdout,oons_types(),p,sasa_sr);
-    printf("\n");
+    switch(use_alg) {
+    case SHRAKE_RUPLEY:
+	printf("# Using Shrake & Rupley algorithm with %d test-points\n",n_sr_points);
+	sasa_shrake_rupley(sasa,protein_xyz(p),r,protein_n(p),n_sr_points);
+	break;
+    case LEE_RICHARDS:
+	printf("# Using Lee & Richards algorithm with grid spacing of %f Å.\n",d_lr);
+	sasa_lee_richards(sasa,protein_xyz(p),r,protein_n(p),d_lr);
+	break;
+    default:
+	fprintf(stderr,"Error: no SASA algorithm specified.\n");
+	return 0;
+    }
 
-    sasa_lee_richards(sasa_lr,protein_xyz(p),r,protein_n(p),.25);
-    sasa_per_atomclass(stdout,oons_types(),p,sasa_lr);
+    printf("\n# SASA values in Å^2 for polar and non-polar atoms\n");
+    sasa_per_atomclass(stdout,oons_classes(),p,sasa);
+
+    printf("\n# SASA values in Å^2 for atom classes\n");
+    sasa_per_atomclass(stdout,oons_types(),p,sasa);
     
-    /* for (int i = 0; i < protein_n(p); ++i) { */
-    /* 	printf("%6.2f %6.2f\n",sasa_sr[i],sasa_lr[i]); */
-    /* } */
-
+    printf("\n# SASA values in Å^2 for residue types\n");
+    sasa_per_atomclass(stdout,atomclassifier_residue(),p,sasa);
+    
+    printf("\n");
+    
     protein_free(p);
-    free(sasa_lr);
-    free(sasa_sr);
+    free(sasa);
     free(r);
     fclose(input);
 }

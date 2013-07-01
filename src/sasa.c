@@ -344,6 +344,6 @@ void sasa_per_atomclass(FILE *out, atomclassifier ac,
         s[class] += sasa[i];
     }
     for (int i = 0; i < nc; ++i) {
-        fprintf(out,"%s\t%6.2f\n",ac.class2str[i],s[i]);
+	if (s[i] > 0.0) fprintf(out,"%12s  %9.2f\n",ac.class2str[i],s[i]);
     }
 }
