@@ -1,6 +1,14 @@
+CCFLAGS=-O3 -std=c99 -Wall -pedantic
+LDFLAGS=-lm
 
-all:
-	gcc calc_sasa.c -o calc_sasa src/*.c -O3 -std=c99 -Wall -pedantic -lm
-test:
-	gcc test.c -o test src/*.c -g -p -DDEBUG -std=c99 -lm
-	gcc calc_sasa.c -o calc_sasa src/*.c -g -p -std=c99 -lm
+all: calc_sasa
+
+calc_sasa:
+	gcc calc_sasa.c -o calc_sasa src/*.c $(CCFLAGS) -DNDEBUG $(LDFLAGS)
+debug:
+	gcc test.c -o test src/*.c $(CCFLAGS) -g -p -DDEBUG $(LDFLAGS)
+	gcc calc_sasa.c -o calc_sasa src/*.c $(CCFLAGS) -g -p $(LDFLAGS)
+
+clean:
+	if [ -a calc_sasa ] ; then rm calc_sasa; fi;	
+	if [ -a test ] ; then rm test; fi;	
