@@ -27,3 +27,7 @@ that could be added to library?
 
 Main thing to do now is to test for compatibility with a larger set of 
 PDBs.
+
+Has only been tested with GNU compiler, both in Linux and Mac OS X, but 
+should work with any C99-compatible compiler. Only requires standard C 
+and GNU libraries. 
