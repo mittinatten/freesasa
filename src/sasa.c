@@ -6,10 +6,43 @@
 
 #include "shrake_rupley_points.h"
 
+void sasa_add_slice_area(double *sasa, double z, double delta, const int **contact, 
+			 const vector3 *xyz, const double *radii,
+			 int **nb, int n_atoms);
 void sasa_exposed_angles(int n_slice, const double *x, const double *y, double z, 
 			 const double *r, double *exposed_angle, 
 			 const int **nb, const int *nn);
 double sasa_sum_angles(int n_buried, double *a, double *b);
+
+//assumes contacts has right size
+void sasa_get_contacts(int **contact, int n_atoms, 
+		       const vector3 *xyz, const double *radii)
+{
+    for (int i = 0; i < n_atoms; ++i) {
+        double ri = radii[i];
+        const vector3 *vi = &xyz[i];
+	double xi = vi->x, yi = vi->y, zi = vi->z;
+	for (int j = i+1; j < n_atoms; ++j) {
+            double rj = radii[j];
+            double cut = ri + rj;
+	    double cut2 = cut*cut;
+	    const vector3 *vj = &xyz[j];
+	    double xj = vj->x, yj = vj->y, zj = vj->z;
+	    //this form gives marginal speed improvement over simply
+            //having the next if
+            if ((xj-xi)*(xj-xi) > cut2 ||
+		(yj-yi)*(yj-yi) > cut2 ||
+		(zj-zi)*(zj-zi) > cut2) {
+                contact[i][j] = contact[j][i] = 0;
+	    } else if (vector3_dist2(vi,vj) < cut2) {
+                contact[i][j] = contact[j][i] = 1;
+            } else {
+                contact[i][j] = contact[j][i] = 0;
+            }
+        }
+    }
+}
+
 
 void sasa_shrake_rupley(double *sasa,
                         const vector3 *xyz,
@@ -120,55 +153,13 @@ void sasa_lee_richards(double *sasa,
     }
 
     // determine which atoms are neighbours (speeds up calculations a bit later on (factor 2 or so)).
-    for (int i = 0; i < n_atoms; ++i) {
-        double ri = radii[i];
-        for (int j = i+1; j < n_atoms; ++j) {
-            double rj = radii[j];
-            double cut = ri + rj;
-            if (vector3_dist2(&xyz[i],&xyz[j]) < cut*cut) {
-                contact[i][j] = contact[j][i] = 1;
-            } else {
-                contact[i][j] = contact[j][i] = 0;
-            }
-        }
-    }
+    sasa_get_contacts(contact,n_atoms,xyz,radii);
+
+    
     // loop over slices
     for (double z = min_z + 0.5*delta; z < max_z; z += delta) {
-        double x[n_atoms], y[n_atoms], r[n_atoms];
-        int n_slice = 0;
-        double exposed_angle[n_atoms];
-        int idx[n_atoms], nn[n_atoms];
-        // locate atoms in each slice
-        for (size_t i = 0; i < n_atoms; ++i) {
-            double ri = radii[i];
-            double d = fabs(xyz[i].z-z);
-            if (d < ri) {
-                x[n_slice] = xyz[i].x;
-                y[n_slice] = xyz[i].y;
-                r[n_slice] = sqrt(ri*ri-d*d);
-                idx[n_slice] = i;
-                ++n_slice;
-            }
-        }
-        for (int i = 0; i < n_slice; ++i) { 
-	    nn[i] = 0;
-	    exposed_angle[i] = 0;
-	}
-        for (int i = 0; i < n_slice; ++i) {
-            for (int j = i+1; j < n_slice; ++j) {
-                if (contact[idx[i]][idx[j]]) {
-                    nb[i][nn[i]++] = j;
-                    nb[j][nn[j]++] = i;
-                }
-            }
-            assert(nn[i] < 200 && "An atom had 200 or more neighbors, this should not be possible.");
-        }
-        sasa_exposed_angles(n_slice, x, y, z, r, exposed_angle, (const int**)nb, nn);
-        // calculate contribution to each atom's SASA from the present slice
-        for (int i = 0; i < n_slice; ++i) {
-            sasa[idx[i]] += exposed_angle[i]*r[i]*delta;
-            //printf("s[%d]: %f\n",idx[i],sasa[idx[i]]);
-        }
+	sasa_add_slice_area(sasa,z,delta,(const int**)contact,xyz,radii,nb,n_atoms);
+	//could be trivially parallelized if summation is moved outside of above function
     }
     for (int i = 0; i < n_atoms; ++i) {
         free(contact[i]);
@@ -178,17 +169,56 @@ void sasa_lee_richards(double *sasa,
     free(nb);
 }
 
+void sasa_add_slice_area(double *sasa, double z, double delta, const int **contact, 
+			 const vector3 *xyz, const double *radii, int **nb,
+			 int n_atoms)
+{
+    double x[n_atoms], y[n_atoms], r[n_atoms];
+    int n_slice = 0;
+    double exposed_angle[n_atoms];
+    int idx[n_atoms], nn[n_atoms];
+    // locate atoms in each slice
+    for (size_t i = 0; i < n_atoms; ++i) {
+	double ri = radii[i];
+	double d = fabs(xyz[i].z-z);
+	if (d < ri) {
+	    x[n_slice] = xyz[i].x;
+	    y[n_slice] = xyz[i].y;
+	    r[n_slice] = sqrt(ri*ri-d*d);
+	    idx[n_slice] = i;
+	    ++n_slice;
+	}
+    }
+    for (int i = 0; i < n_slice; ++i) { 
+	nn[i] = 0;
+	exposed_angle[i] = 0;
+    }
+    for (int i = 0; i < n_slice; ++i) {
+	for (int j = i+1; j < n_slice; ++j) {
+	    if (contact[idx[i]][idx[j]]) {
+		nb[i][nn[i]++] = j;
+		nb[j][nn[j]++] = i;
+	    }
+	}
+	assert(nn[i] < 200 && "An atom had 200 or more neighbors, this should not be possible.");
+    }
+    sasa_exposed_angles(n_slice, x, y, z, r, exposed_angle, (const int**)nb, nn);
+    // calculate contribution to each atom's SASA from the present slice
+    for (int i = 0; i < n_slice; ++i) {
+	sasa[idx[i]] += exposed_angle[i]*r[i]*delta;
+    }
+}
 void sasa_exposed_angles(int n_slice, const double *x, const double *y, double z, const double *r,
                          double *exposed_angle, const int **nb, const int *nn)
 {
-    int is_buried[n_slice]; // keep track of completely buried circles
-    for (int i = 0; i < n_slice; ++i) is_buried[i] = 0;
+    int is_completely_buried[n_slice]; // keep track of completely buried circles
+    for (int i = 0; i < n_slice; ++i) is_completely_buried[i] = 0;
     //loop over atoms in slice
     for (int i = 0; i < n_slice; ++i) {
         double ri = r[i], a[n_slice], b[n_slice];
         int n_buried = 0;
         exposed_angle[i] = 0;
-        if (is_buried[i]) {
+        if (is_completely_buried[i]) {
             continue;
         }
         // loop over neighbors in slice
@@ -199,8 +229,14 @@ void sasa_exposed_angles(int n_slice, const double *x, const double *y, double z
             double d = sqrt(xij*xij+yij*yij);
             // reasons to skip calculation
             if (d >= ri + rj) continue;     // atoms aren't in contact
-            if (d + ri < rj) {is_buried[i] = 1; break;} // circle i is completely inside j
-            if (d + rj < ri) {is_buried[j] = 1; continue;} // circle j is completely inside i
+            if (d + ri < rj) { // circle i is completely inside j
+		is_completely_buried[i] = 1; 
+		break;
+	    } 
+            if (d + rj < ri) { // circle j is completely inside i
+		is_completely_buried[j] = 1;
+		continue;
+	    } 
 
             // half the arclength occluded from circle i due to verlap with circle j
             double alpha = acos ((ri*ri + d*d - rj*rj)/(2.0*ri*d));
@@ -212,10 +248,11 @@ void sasa_exposed_angles(int n_slice, const double *x, const double *y, double z
 
             ++n_buried;
         }
-	if (is_buried[i] != 0) exposed_angle[i] = sasa_sum_angles(n_buried,a,b);
+	if (is_completely_buried[i] == 0) 
+	    exposed_angle[i] = sasa_sum_angles(n_buried,a,b);
 
 #ifdef DEBUG
-        if (is_buried != 0) {
+	if (is_completely_buried[i] == 0) {
             for (double c = 0; c < 2*PI; c += PI/45.0) {
                 int is_exp = 1;
                 for (int i = 0; i < n_buried; ++i) {
@@ -235,13 +272,10 @@ void sasa_exposed_angles(int n_slice, const double *x, const double *y, double z
 double sasa_sum_angles(int n_buried, double *a, double *b)
 {
     int excluded[n_buried];
-    //static int i = 0; ++i; printf("\n%d\n",i);
     for (int i = 0; i < n_buried; ++i)  {
 	excluded[i] = 0;
 	assert(a[i] > 0);
-	//printf("[%4.2f, %4.2f] ",(b[i]-a[i])/PI,(b[i]+a[i])/PI);
     }
-    //printf("\n");
    
     for (int i = 0; i < n_buried; ++i) {
         if (excluded[i]) continue;
@@ -251,7 +285,6 @@ double sasa_sum_angles(int n_buried, double *a, double *b)
             double d;
 	    double bi = b[i], ai = a[i]; //will be updating throughout the loop
 	    double bj = b[j], aj = a[j];
-	    //printf ("{%4.2f, %4.2f, %4.2f, %4.2f}\n",(bi-ai)/PI,(bi+ai)/PI,(bj-aj)/PI,(bj+aj)/PI);
             for(;;) {
                 d = bj - bi;
                 if (d > PI) bj -= 2*PI;
@@ -263,7 +296,6 @@ double sasa_sum_angles(int n_buried, double *a, double *b)
             double sup_i = bi+ai, sup_j = bj+aj;
             double inf = inf_i < inf_j ? inf_i : inf_j;
             double sup = sup_i > sup_j ? sup_i : sup_j;
-	    //printf("%4.2f %4.2f %4.2f\n", d/PI, inf/PI, sup/PI);
             b[i] = (inf + sup)/2.0;
             a[i] = fabs(sup - inf)/2.0;
             b[j] = a[j] = 0;
@@ -277,14 +309,9 @@ double sasa_sum_angles(int n_buried, double *a, double *b)
     for (int i = 0; i < n_buried; ++i) {
 	//if (excluded[i] == 0) // should not be used!! 
 	buried_angle += 2.0*a[i];
-	//if (a[i] > 0 ) 
-	//    printf("[%4.2f, %4.2f] ",(b[i]-a[i])/PI,(b[i]+a[i])/PI);
     }
     double exposed_angle = 2*PI - buried_angle;
     if (exposed_angle < 0) exposed_angle = 0; // will be the case for almost all buried atoms
-    
-    //printf("%4.2f\n",exposed_angle/PI);
-    //if (i > 992) exit(0);
 
     return exposed_angle;
 }
