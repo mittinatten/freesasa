@@ -173,7 +173,7 @@ void sasa_add_slice_area(double *sasa, double z, double delta, const int **conta
 			 const vector3 *xyz, const double *radii, int **nb,
 			 int n_atoms)
 {
-    double x[n_atoms], y[n_atoms], r[n_atoms];
+    double x[n_atoms], y[n_atoms], r[n_atoms], DR[n_atoms];
     int n_slice = 0;
     double exposed_angle[n_atoms];
     int idx[n_atoms], nn[n_atoms];
@@ -185,6 +185,9 @@ void sasa_add_slice_area(double *sasa, double z, double delta, const int **conta
 	    x[n_slice] = xyz[i].x;
 	    y[n_slice] = xyz[i].y;
 	    r[n_slice] = sqrt(ri*ri-d*d);
+	    //multiplicative factor when arcs are summed up later (according to L&R paper)
+	    DR[n_slice] = ri/r[n_slice]*(delta/2. +
+			      (delta/2. < ri-d ? delta/2. : ri-d));
 	    idx[n_slice] = i;
 	    ++n_slice;
 	}
@@ -205,7 +208,7 @@ void sasa_add_slice_area(double *sasa, double z, double delta, const int **conta
     sasa_exposed_angles(n_slice, x, y, z, r, exposed_angle, (const int**)nb, nn);
     // calculate contribution to each atom's SASA from the present slice
     for (int i = 0; i < n_slice; ++i) {
-	sasa[idx[i]] += exposed_angle[i]*r[i]*delta;
+	sasa[idx[i]] += exposed_angle[i]*r[i]*DR[i];
     }
 }
 void sasa_exposed_angles(int n_slice, const double *x, const double *y, double z, const double *r,
