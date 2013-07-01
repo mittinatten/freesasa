@@ -50,7 +50,7 @@ void protein_r(const protein *p,
 void protein_r_def(const protein *p, double *r);
 
 /** get number of atoms */
-size_t protein_n(const protein *p);
+int protein_n(const protein *p);
 
 /** get array of atoms */
 const atom* protein_atoms(const protein *p);

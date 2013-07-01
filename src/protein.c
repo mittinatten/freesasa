@@ -20,9 +20,9 @@ struct atom {
 struct protein {
     atom *a;
     vector3 *xyz;
-    size_t number_atoms;
-    size_t number_residues;
-    size_t number_chains;
+    int number_atoms;
+    int number_residues;
+    int number_chains;
 };
 
 protein* protein_init()
@@ -74,7 +74,7 @@ protein* protein_init_from_pdb(FILE *pdb_file)
 
 void protein_alloc_one(protein *p)
 {
-    size_t na = ++p->number_atoms;
+    int na = ++p->number_atoms;
     p->a = (atom*) realloc(p->a,sizeof(atom)*na);
     p->xyz = (vector3*) realloc(p->xyz,sizeof(vector3)*na);
 }
@@ -94,7 +94,7 @@ void protein_add_atom(protein *p,
     // allocate memory, increase number of atoms counter
     protein_alloc_one(p);
 
-    size_t na = p->number_atoms;
+    int na = p->number_atoms;
 
     vector3_set(&p->xyz[na-1],x,y,z);
 
@@ -129,7 +129,7 @@ void protein_r(const protein *p,
 	       double (*atom2radius)(const char *res_name, 
 				     const char *atom_name))
 {
-    for (size_t i = 0; i < p->number_atoms; ++i) {
+    for (int i = 0; i < p->number_atoms; ++i) {
 	r[i] = atom2radius(p->a[i].res_name, p->a[i].atom_name);
     }
 }
@@ -166,7 +166,7 @@ const vector3* protein_xyz(const protein *p)
     return p->xyz;
 }
 
-size_t protein_n(const protein *p)
+int protein_n(const protein *p)
 {
     return p->number_atoms;
 }

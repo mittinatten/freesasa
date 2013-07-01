@@ -6,18 +6,23 @@
 
 #include "shrake_rupley_points.h"
 
+/** internal functions for L&R calculations **/
 void sasa_add_slice_area(double *sasa, double z, double delta, const int **contact, 
 			 const vector3 *xyz, const double *radii,
 			 int **nb, int n_atoms);
-void sasa_exposed_angles(int n_slice, const double *x, const double *y, double z, 
+void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z, 
 			 const double *r, double *exposed_angle, 
 			 const int **nb, const int *nn);
 double sasa_sum_angles(int n_buried, double *a, double *b);
 
-//assumes contacts has right size
+/** Calculate contact map, given coordinates and radii, 
+    assumes contacts array has dimensions n_atoms * n_atoms. **/
 void sasa_get_contacts(int **contact, int n_atoms, 
 		       const vector3 *xyz, const double *radii)
 {
+    /* Could this be improved by using cell lists? 
+       For low resolution L&R this is the bottleneck in speed. 
+       Will depend on number of atoms. */
     for (int i = 0; i < n_atoms; ++i) {
         double ri = radii[i];
         const vector3 *vi = &xyz[i];
@@ -29,7 +34,7 @@ void sasa_get_contacts(int **contact, int n_atoms,
 	    const vector3 *vj = &xyz[j];
 	    double xj = vj->x, yj = vj->y, zj = vj->z;
 	    //this form gives marginal speed improvement over simply
-            //having the next if
+            //having the next if, should make a bigger difference for larger proteins
             if ((xj-xi)*(xj-xi) > cut2 ||
 		(yj-yi)*(yj-yi) > cut2 ||
 		(zj-zi)*(zj-zi) > cut2) {
@@ -42,7 +47,6 @@ void sasa_get_contacts(int **contact, int n_atoms,
         }
     }
 }
-
 
 void sasa_shrake_rupley(double *sasa,
                         const vector3 *xyz,
@@ -109,7 +113,7 @@ void sasa_shrake_rupley(double *sasa,
             }
 #endif
         }
-        //paranthesis too make sure floating point division is used (I am paranoid about this).
+        //paranthesis to make sure floating point division is used (I am paranoid about this).
         sasa[i] = (4.0*PI*ri*ri*n_surface)/n_points;
     }
 }
@@ -129,7 +133,7 @@ void sasa_lee_richards(double *sasa,
        Sum up arc-length*delta for each atom
     */
 
-    // determine slice range
+    // determine slice range and init radii and sasa arrays
     double max_z=-1e50, min_z=1e50;
     double max_r = 0;
     double radii[n_atoms];
@@ -175,15 +179,15 @@ void sasa_add_slice_area(double *sasa, double z, double delta, const int **conta
 {
     double x[n_atoms], y[n_atoms], r[n_atoms], DR[n_atoms];
     int n_slice = 0;
-    double exposed_angle[n_atoms];
+    double exposed_arc[n_atoms];
     int idx[n_atoms], nn[n_atoms];
-    // locate atoms in each slice
+
+    // locate atoms in each slice and do some initialization
     for (size_t i = 0; i < n_atoms; ++i) {
 	double ri = radii[i];
 	double d = fabs(xyz[i].z-z);
 	if (d < ri) {
-	    x[n_slice] = xyz[i].x;
-	    y[n_slice] = xyz[i].y;
+	    x[n_slice] = xyz[i].x; y[n_slice] = xyz[i].y;
 	    r[n_slice] = sqrt(ri*ri-d*d);
 	    //multiplicative factor when arcs are summed up later (according to L&R paper)
 	    DR[n_slice] = ri/r[n_slice]*(delta/2. +
@@ -194,8 +198,10 @@ void sasa_add_slice_area(double *sasa, double z, double delta, const int **conta
     }
     for (int i = 0; i < n_slice; ++i) { 
 	nn[i] = 0;
-	exposed_angle[i] = 0;
+	exposed_arc[i] = 0;
     }
+
+    // generate neighbor registry
     for (int i = 0; i < n_slice; ++i) {
 	for (int j = i+1; j < n_slice; ++j) {
 	    if (contact[idx[i]][idx[j]]) {
@@ -205,14 +211,17 @@ void sasa_add_slice_area(double *sasa, double z, double delta, const int **conta
 	}
 	assert(nn[i] < 200 && "An atom had 200 or more neighbors, this should not be possible.");
     }
-    sasa_exposed_angles(n_slice, x, y, z, r, exposed_angle, (const int**)nb, nn);
+
+    //find exposed arcs
+    sasa_exposed_arcs(n_slice, x, y, z, r, exposed_arc, (const int**)nb, nn);
+    
     // calculate contribution to each atom's SASA from the present slice
     for (int i = 0; i < n_slice; ++i) {
-	sasa[idx[i]] += exposed_angle[i]*r[i]*DR[i];
+	sasa[idx[i]] += exposed_arc[i]*r[i]*DR[i];
     }
 }
-void sasa_exposed_angles(int n_slice, const double *x, const double *y, double z, const double *r,
-                         double *exposed_angle, const int **nb, const int *nn)
+void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z, const double *r,
+		       double *exposed_arc, const int **nb, const int *nn)
 {
     int is_completely_buried[n_slice]; // keep track of completely buried circles
     for (int i = 0; i < n_slice; ++i) is_completely_buried[i] = 0;
@@ -220,7 +229,7 @@ void sasa_exposed_angles(int n_slice, const double *x, const double *y, double z
     for (int i = 0; i < n_slice; ++i) {
         double ri = r[i], a[n_slice], b[n_slice];
         int n_buried = 0;
-        exposed_angle[i] = 0;
+        exposed_arc[i] = 0;
         if (is_completely_buried[i]) {
             continue;
         }
@@ -252,7 +261,7 @@ void sasa_exposed_angles(int n_slice, const double *x, const double *y, double z
             ++n_buried;
         }
 	if (is_completely_buried[i] == 0) 
-	    exposed_angle[i] = sasa_sum_angles(n_buried,a,b);
+	    exposed_arc[i] = sasa_sum_angles(n_buried,a,b);
 
 #ifdef DEBUG
 	if (is_completely_buried[i] == 0) {
@@ -274,7 +283,7 @@ void sasa_exposed_angles(int n_slice, const double *x, const double *y, double z
 
 double sasa_sum_angles(int n_buried, double *a, double *b)
 {
-    int excluded[n_buried];
+    int excluded[n_buried], n_exc = 0;
     for (int i = 0; i < n_buried; ++i)  {
 	excluded[i] = 0;
 	assert(a[i] > 0);
@@ -306,7 +315,9 @@ double sasa_sum_angles(int n_buried, double *a, double *b)
             if (b[i] > PI) b[i] -= 2*PI;
             if (b[i] < -PI) b[i] += 2*PI;
             excluded[j] = 1;
+	    if (++n_exc == n_buried-1) break;
         }
+	if (n_exc == n_buried-1) break; // means everything's been counted
     }
     double buried_angle = 0;
     for (int i = 0; i < n_buried; ++i) {
