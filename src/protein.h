@@ -31,8 +31,9 @@ protein* protein_init();
 /** free allocated memory */
 void protein_free(protein*);
 
-/** init protein with coordinates from pdb-file, 
-    automatically skips hydrogens */
+/** Init protein with coordinates from pdb-file.  Automatically skips
+    hydrogens. If an atom has alternative coordinates, only the first
+    alternative is used. */
 protein* protein_init_from_pdb(FILE *pdb_file);
 
 /** string residue numbers allow for nonstandard formats, will include
