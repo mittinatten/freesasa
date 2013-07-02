@@ -46,6 +46,11 @@ char pdbutil_get_chain_label(const char* line)
     return line[21];
 }
 
+char pdbutil_get_alt_coord_label(const char* line)
+{
+    return line[16];
+}
+
 int pdbutil_ishydrogen(const char* line)
 {
     if (line[12] == 'H' || line[13] == 'H') return 1;

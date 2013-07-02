@@ -3,9 +3,10 @@ LDFLAGS=-lm
 
 all: calc_sasa
 
-calc_sasa:
-	gcc calc_sasa.c -o calc_sasa src/*.c $(CCFLAGS) -DNDEBUG $(LDFLAGS)
-debug:
+calc_sasa: calc_sasa.c src/*.c src/*.h
+	gcc calc_sasa.c -o calc_sasa src/*.c $(CCFLAGS) $(LDFLAGS)
+
+debug: test.c calc_sasa.c src/*.c src/*.h
 	gcc test.c -o test src/*.c $(CCFLAGS) -g -p -DDEBUG $(LDFLAGS)
 	gcc calc_sasa.c -o calc_sasa src/*.c $(CCFLAGS) -g -p $(LDFLAGS)
 

@@ -48,6 +48,10 @@ void pdbutil_get_res_number(const char* line, char *number);
     (i.e. A, B, C, ...) */
 char pdbutil_get_chain_label(const char* line);
 
+/** If there is more than one set of coordinates for an atom there
+    will be a label 'A', 'B', etc*/
+char pdbutil_get_alt_coord_label(const char* line);
+
 /** Returns 1 if the atom in an ATOM pdb-line is a hydrogen, 0
     otherwise. */
 int pdbutil_ishydrogen(const char* line);

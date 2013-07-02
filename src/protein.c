@@ -62,6 +62,17 @@ void protein_free(protein *p)
     free(p);
 }
 
+/* returns alt_label if there is any */
+char protein_get_pdb_atom(const char *line, atom *a, vector3 *v)
+{
+    a->chain_label = pdbutil_get_chain_label(line);
+    pdbutil_get_coord(line, v);
+    pdbutil_get_atom_name(line, a->atom_name);
+    pdbutil_get_res_name(line, a->res_name);
+    pdbutil_get_res_number(line, a->res_number);
+    return pdbutil_get_alt_coord_label(line);
+}
+
 protein* protein_init_from_pdb(FILE *pdb_file)
 {
     protein *p = protein_init();
@@ -73,19 +84,23 @@ protein* protein_init_from_pdb(FILE *pdb_file)
        anyway. */
     size_t len = 80;
     char *line = (char*) malloc(sizeof(char)*(len+1));
+    char the_alt = ' ';
     while (getline(&line, &len, pdb_file) != -1) {
         if (strncmp("ATOM",line,4)==0) {
 	    if (pdbutil_ishydrogen(line)) continue;
             vector3 v;
             atom a;
-            a.chain_label = pdbutil_get_chain_label(line);
-            pdbutil_get_coord(line, &v);
-            pdbutil_get_atom_name(line, a.atom_name);
-            pdbutil_get_res_name(line, a.res_name);
-            pdbutil_get_res_number(line, a.res_number);
-            protein_add_atom(p,a.atom_name,a.res_name,a.res_number,
-                             a.chain_label, v.x, v.y, v.z);
-        }
+	    char alt = protein_get_pdb_atom(line,&a,&v);
+	    if ((alt != ' ' && the_alt == ' ') || (alt == ' ')) { 
+		the_alt = alt;
+	    } else if (alt != ' ' && alt != the_alt) {
+		continue;
+	    } 
+	    
+	    printf("# '%c' '%c'\n",alt,the_alt);
+	    protein_add_atom(p,a.atom_name,a.res_name,a.res_number,
+			     a.chain_label, v.x, v.y, v.z);
+	}
     }
     free(line);
     return p;
