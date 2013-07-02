@@ -100,6 +100,7 @@ protein* protein_init_from_pdb(FILE *pdb_file)
 	    protein_add_atom(p,a.atom_name,a.res_name,a.res_number,
 			     a.chain_label, v.x, v.y, v.z);
 	}
+	if (strncmp("ENDMDL",line,4)==0) break;
     }
     free(line);
     return p;

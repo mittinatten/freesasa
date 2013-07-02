@@ -33,7 +33,11 @@ void protein_free(protein*);
 
 /** Init protein with coordinates from pdb-file.  Automatically skips
     hydrogens. If an atom has alternative coordinates, only the first
-    alternative is used. */
+    alternative is used. If a file has more than one MODEL (as in NMR
+    structures) only the first model is used. If non-default behavior
+    is wanted the pdb-file needs to be modified before calling this
+    function, or atoms can be added manually using
+    protein_add_atom(). */
 protein* protein_init_from_pdb(FILE *pdb_file);
 
 /** string residue numbers allow for nonstandard formats, will include
