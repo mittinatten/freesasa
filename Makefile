@@ -10,5 +10,5 @@ debug:
 	gcc calc_sasa.c -o calc_sasa src/*.c $(CCFLAGS) -g -p $(LDFLAGS)
 
 clean:
-	if [ -a calc_sasa ] ; then rm calc_sasa; fi;	
-	if [ -a test ] ; then rm test; fi;	
+	if [ -e calc_sasa ] ; then rm calc_sasa; fi;	
+	if [ -e test ] ; then rm test; fi;	
