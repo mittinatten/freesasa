@@ -37,35 +37,8 @@ double sasa_sum_angles(int n_buried, double *a, double *b);
 /** Calculate contact map, given coordinates and radii, 
     assumes contacts array has dimensions n_atoms * n_atoms. **/
 void sasa_get_contacts(int **contact, int n_atoms, 
-		       const vector3 *xyz, const double *radii)
-{
-    /* Could this be improved by using cell lists? 
-       For low resolution L&R this is the bottleneck in speed. 
-       Will depend on number of atoms. */
-    for (int i = 0; i < n_atoms; ++i) {
-        double ri = radii[i];
-        const vector3 *vi = &xyz[i];
-	double xi = vi->x, yi = vi->y, zi = vi->z;
-	for (int j = i+1; j < n_atoms; ++j) {
-            double rj = radii[j];
-            double cut = ri + rj;
-	    double cut2 = cut*cut;
-	    const vector3 *vj = &xyz[j];
-	    double xj = vj->x, yj = vj->y, zj = vj->z;
-	    //this form gives marginal speed improvement over simply
-            //having the next if, should make a bigger difference for larger proteins
-            if ((xj-xi)*(xj-xi) > cut2 ||
-		(yj-yi)*(yj-yi) > cut2 ||
-		(zj-zi)*(zj-zi) > cut2) {
-                contact[i][j] = contact[j][i] = 0;
-	    } else if (vector3_dist2(vi,vj) < cut2) {
-                contact[i][j] = contact[j][i] = 1;
-            } else {
-                contact[i][j] = contact[j][i] = 0;
-            }
-        }
-    }
-}
+		       const vector3 *xyz, const double *radii);
+
 
 void sasa_shrake_rupley(double *sasa,
                         const vector3 *xyz,
@@ -175,9 +148,9 @@ void sasa_lee_richards(double *sasa,
         nb[i] = (int*) malloc(sizeof(int)*200); //assume atom won't have more than 200 neighbours;
     }
 
-    // determine which atoms are neighbours (speeds up calculations a bit later on (factor 2 or so)).
+    // determine which atoms are neighbours (speeds up calculations a
+    // bit later on (factor 2 or so)).
     sasa_get_contacts(contact,n_atoms,xyz,radii);
-
     
     // loop over slices
     for (double z = min_z + 0.5*delta; z < max_z; z += delta) {
@@ -365,4 +338,135 @@ void sasa_per_atomclass(FILE *out, atomclassifier ac,
     for (int i = 0; i < nc; ++i) {
 	if (s[i] > 0.0) fprintf(out,"%12s  %9.2f\n",ac.class2str[i],s[i]);
     }
+}
+
+void sasa_get_contacts(int **contact, int n_atoms, 
+		       const vector3 *xyz, const double *radii)
+{
+    /* For low resolution L&R this function is the bottleneck in
+       speed. Will also depend on number of atoms. */
+
+    for (int i = 0; i < n_atoms; ++i) {
+        double ri = radii[i];
+        const vector3 *vi = &xyz[i];
+	double xi = vi->x, yi = vi->y, zi = vi->z;
+	for (int j = i+1; j < n_atoms; ++j) {
+            double rj = radii[j];
+            double cut = ri + rj;
+	    double cut2 = cut*cut;
+	    const vector3 *vj = &xyz[j];
+	    double xj = vj->x, yj = vj->y, zj = vj->z;
+
+	    //this form gives marginal speed improvement over simply
+            //having the next if, should make a bigger difference for larger proteins
+            if ((xj-xi)*(xj-xi) > cut2 ||
+		(yj-yi)*(yj-yi) > cut2 ||
+		(zj-zi)*(zj-zi) > cut2) {
+                contact[i][j] = contact[j][i] = 0;
+	    } else if (vector3_dist2(vi,vj) < cut2) {
+                contact[i][j] = contact[j][i] = 1;
+            } else {
+                contact[i][j] = contact[j][i] = 0;
+            }
+        }
+    }
+
+    /* The commented out code calculates cell lists in an attempt to
+       improve speed. But the improvement was only marginal at the
+       cost of a lot of extra complexity, even for large proteins
+       (something is not 100 % correct there either). */
+   
+    /* double min_x=1e50, min_y=1e50, min_z=1e50; */
+    /* double max_x=-1e50, max_y=-1e50, max_z=-1e50; */
+    /* double cellw = 2*max_r; */
+    /* for (int i = 0; i < n_atoms; ++i) { */
+    /* 	const vector3 *v = &xyz[i];  */
+    /* 	min_x = min_x < v->x ? min_x : v->x; */
+    /* 	min_y = min_y < v->y ? min_y : v->y; */
+    /* 	min_z = min_z < v->z ? min_z : v->z; */
+    /* 	max_x = max_x > v->x ? max_x : v->x; */
+    /* 	max_y = max_y > v->y ? max_y : v->y; */
+    /* 	max_z = max_z > v->z ? max_z : v->z; */
+    /* } */
+    /* min_x -= max_r; min_y -= max_r; min_z -= max_r; */
+    /* max_x += max_r; max_y += max_r; max_z += max_z; */
+    /* int n_x = (int)(max_x - min_x)/cellw + 2; */
+    /* int n_y = (int)(max_y - min_y)/cellw + 2; */
+    /* int n_z = (int)(max_z - min_z)/cellw + 2; */
+    /* int n_cell = n_x*n_y*n_z; */
+
+    /* int in_cell[n_atoms]; */
+    /* int **cell = (int**)malloc(sizeof(int*)*n_cell); */
+    /* int *ccount = (int*)malloc(sizeof(int)*n_cell); */
+    /* int **nb = (int**)malloc(sizeof(int*)*n_cell); */
+    /* int *nn = (int*)malloc(sizeof(int)*n_cell); */
+
+    /* for (int i = 0; i < n_cell; ++i) { */
+    /*     //no more than 50 atoms per cell */
+    /* 	cell[i] = (int*)malloc(sizeof(int)*50); */
+    /* 	nb[i] = (int*)malloc(sizeof(int)*27); */
+    /* 	ccount[i] = 0; */
+    /* 	nn[i] = 0; */
+    /* } */
+
+    /* //calculate neighborhood map */
+    /* for (int x = 0; x < n_x; ++x) { */
+    /* 	for (int y = 0; y < n_y; ++y) { */
+    /* 	    for (int z = 0; z < n_z; ++z) { */
+    /* 		int c = x*n_y*n_z+y*n_z+z; */
+    /* 		for (int i = -1; i < 2; ++i) { */
+    /* 		    if (x+i < 0) continue; */
+    /* 		    for (int j = -1; j < 2; ++j) { */
+    /* 			if (y+j < 0) continue; */
+    /* 			for (int k = -1; k < 2; ++k) { */
+    /* 			    if (z+j < 0) continue; */
+    /* 			    nb[c][nn[c]++] = (x+i)*n_y*n_z + (y+j)*n_z + z+j; */
+    /* 			} */
+    /* 		    } */
+    /* 		} */
+    /* 	    } */
+    /* 	} */
+    /* } */
+
+    /* //put atoms in cells */
+    /* for (int i = 0; i < n_atoms; ++i) { */
+    /* 	int i_x = (int)((xyz[i].x - min_x)/cellw); */
+    /* 	int i_y = (int)((xyz[i].y - min_y)/cellw); */
+    /* 	int i_z = (int)((xyz[i].z - min_z)/cellw); */
+    /* 	int i_c = i_x*n_y*n_z + i_y*n_z + i_z; */
+    /* 	assert(i_c < n_cell); */
+    /* 	cell[i_c][ccount[i_c]++] = i; */
+    /* 	assert(ccount[i_c] < 50); */
+    /* 	in_cell[i] = i_c; */
+    /* } */
+    /* for (int i = 0; i < n_atoms; ++i) { */
+    /* 	for (int j = i; j < n_atoms; ++j) { */
+    /* 	    contact[i][j] = contact[j][i] = 0; */
+    /* 	} */
+    /* } */
+
+    /* for (int i = 0; i < n_atoms; ++i) { */
+    /* 	int i_c = in_cell[i]; */
+    /* 	double ri = radii[i]; */
+    /* 	//loop through neighbor-cells (including i_c) */
+    /* 	for (int i_n = 0; i_n < nn[i_c]; ++i_n) { */
+    /* 	    int j_c = nb[i_c][i_n]; //index of i_n:th neighbor to cell i_c */
+    /* 	    for (int k = 0; k < ccount[j_c]; ++k) { */
+    /* 		int j = cell[j_c][k]; //k:th atom in j_c:th cell */
+    /* 		double rj = radii[j]; */
+    /* 		double cut = ri + rj; */
+    /* 		if (vector3_dist2(&xyz[i],&xyz[j]) < cut*cut) { */
+    /* 		    contact[i][j] = contact[j][i] = 1; */
+    /* 		}  */
+    /* 	    } */
+    /* 	} */
+    /* } */
+    /* for (int i = 0; i < n_cell; ++i) { */
+    /* 	free(cell[i]); */
+    /* 	free(nb[i]); */
+    /* } */
+    /* free(cell); */
+    /* free(ccount); */
+    /* free(nb); */
+    /* free(nn); */
 }
