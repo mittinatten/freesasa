@@ -97,7 +97,6 @@ protein* protein_init_from_pdb(FILE *pdb_file)
 		continue;
 	    } 
 	    
-	    printf("# '%c' '%c'\n",alt,the_alt);
 	    protein_add_atom(p,a.atom_name,a.res_name,a.res_number,
 			     a.chain_label, v.x, v.y, v.z);
 	}
