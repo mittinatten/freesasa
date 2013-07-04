@@ -1,0 +1,147 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8x]{inputenc}
+\usepackage[OT1]{fontenc}
+\usepackage[english]{babel}
+
+\usepackage{amsmath}
+\usepackage[charter]{mathdesign}
+
+\author{Simon Mitternacht}
+\date{\today}
+\title{Sasalib Manual}
+
+\begin{document}
+\maketitle
+
+The program/library Sasalib, including this manual, is licensed under
+GPLv3, and can be downloaded from the github at: 
+\begin{center}
+\texttt{https://github.com/mittinatten/sasalib/}
+\end{center}
+
+This is still a draft and not complete in any way.
+
+\newpage
+\section{Introduction}
+
+Sasalib is a program to calculate solvent accessible surface areas
+(SASA) for proteins. It can both be used as a standalone command line
+program or as a C library. The library interface allows the user to
+set most parameters of the calculation, and returns the SASA of the
+individual atoms, allowing summation of SASA over user-defined
+atom-classes. The library implements both Lee \& Richards' and Shrake
+\& Rupley's algorithms.
+
+To author's knowledge there aren't any fully open source programs for
+calculating solvent accessible surface areas (SASA) of
+proteins. Neither are there any packages designed to be easily
+integrated as a library in other programs. 
+
+The SASA is defined as the surface area of protein accessible to a
+spherical probe rolling over the surface of the protein, including
+internal cavities. The probe represents a solvent molecule, and
+therefore cavities that are too small for the solvent to enter are not
+counted at all. The position of the center of the probe sphere is used
+to define the surface area, not the point of contact.
+
+\section{Algorithms}
+
+There are two classical approximate algorithms that can be used to
+calculate SASA, by Lee \& Richards and Shrake \& Rupley
+respectively. Below are brief presentations of both. 
+
+\subsection{Lee \& Richards}
+
+Let each atom swell by adding the radius of the probe sphere to its
+radius.  Divide the protein into slices. Each atom in the slice is
+then represented by a circle. In each slice, some of these circles are
+completely buried, completely exposed, or have some exposed arcs. The
+exposed arc lengths for each atom can be calculated exactly. By
+multiplying the arc-lengths by the slice thickness and adding up the
+slices, an approximation of the surface area is calculated. As the
+slice thickness goes to zero the calculated SASA approaches the exact
+value.
+
+\subsection{Shrake \& Rupley}
+
+Let each atom $i$ swell by adding the radius of the probe sphere,
+$r_\text{P}$ to the atom radius, $r_i$, giving the new radius $R_i =
+r_i + r_\text{P}$. For each atom $i$, use a set of test points evenly
+distributed (approximately) over the sphere of radius $R_i$, and count
+how many of the test points are not inside any of the other extended
+spheres of radius $R_j$. The number of exposed testpoints divided by
+the total number of test points gives the exposed solid angle of that
+atom.
+
+\section{Implementation}
+
+\section{Using Sasalib}
+
+\subsection{Installing}
+
+The repository can be cloned from the github either using git
+directly with the command
+\begin{verbatim}
+    $ git clone https://github.com/mittinatten/sasalib.git
+\end{verbatim}
+or by downloading the zipped archive from
+\begin{verbatim}
+    https://github.com/mittinatten/sasalib/archive/master.zip
+\end{verbatim}
+Since Sasalib only depends on regular C and GNU libraries most users
+will be able to compile it by simply typing \texttt{make}\footnote{Has
+  been tested on Linux and Mac OS X machines.}. If any other compiler
+than the Gnu C Compiler is preferred the makefile will need to be
+changed accordingly.
+
+\subsection{Stand-alone program}
+
+Compilation creates the binary \texttt{calc\_sasa}, which can be used
+to calculate the SASA of a PDB-file. By default the program reads the
+PDB from STDIN
+\begin{verbatim} 
+    $ calc_sasa < PDB-file    
+\end{verbatim}
+The PDB-file can also be specified using the flag \texttt{-f}
+\begin{verbatim}
+    $ calc_sasa -f PDB-file
+\end{verbatim}
+Other options for running are displayed with the flag
+\texttt{-h}. These options allow the user to specify which algorithm
+to use, and parameters for the algorithm. By default the Shrake \&
+Rupley algorithm is used, with 100 test points. This option gives a
+fast calculation, for high precision the number of test points should
+be increased.
+ 
+\subsection{Library interface}
+
+To calculate the SASA of a protein using the library interface the
+following steps need to be followed:
+\begin{enumerate}
+  \item Initiate a protein. Either by reading a pdb-file or by adding
+    atoms manually one-by-one.
+  \item Give each atom a radius. Sasalib can calculate atomic radii
+    according to Ooi et al (OONS-radii) for the 20 canonical amino
+    acid types. The user can also specify the radius for each
+    individual atom. The two methods can be combined if a protein has
+    a few non-standard atoms.
+  \item Perform the SASA calculation, using the algorithm of choice.
+  \item Integrate the results of the SASA calculation to get for
+    example the polar and apolar surface areas. This can be done using
+    some default setups based on the OONS classification, or by the
+    user.
+\end{enumerate}
+
+\section{Known issues}
+
+The atoms of non-standard amino acids will be labelled unknown type,
+and their contribution to for example the polar/apolar area will have
+to be integrated manually by the user.
+
+\section{Ideas for improvement and extension}
+
+Perl and Python bindings.
+
+Other, faster or more exact algorithms.
+
+\end{document}
