@@ -50,28 +50,52 @@ There are two classical approximate algorithms that can be used to
 calculate SASA, by Lee \& Richards and Shrake \& Rupley
 respectively. Below are brief presentations of both. 
 
+An atom $i$ has a van der Waals radius $r_i$, the surface probe has
+radius $r_\text{P}$ and when these are added we get $R_i = r_i +
+r_\text{P}$. The SASA is calculated by adding up the surface patches
+of the spheres of radius $R_i$ that are not overlapping with any other
+sphere.
+
 \subsection{Lee \& Richards}
 
-Let each atom swell by adding the radius of the probe sphere to its
-radius.  Divide the protein into slices. Each atom in the slice is
-then represented by a circle. In each slice, some of these circles are
-completely buried, completely exposed, or have some exposed arcs. The
-exposed arc lengths for each atom can be calculated exactly. By
-multiplying the arc-lengths by the slice thickness and adding up the
-slices, an approximation of the surface area is calculated. As the
-slice thickness goes to zero the calculated SASA approaches the exact
-value.
+Divide the protein into slices of thickness $\delta$ along an
+axis. The position of the slice along that axis is denoted $z$. The
+position of the center of atom $i$ along the same axis is $z_i$. In
+the slice, each atom is thus a circle of radius $R_i^\prime =
+\sqrt{R_i^2-(z-z_i)^2}$. Some of these circles are completely buried,
+completely exposed, or partially exposed.
+
+The exposed arc lengths for each atom can be calculated exactly. For
+each pair of atoms $i,j$, the distance between their centers is
+$d_{ij}$. If $d_{ij} < R_i^\prime + R_j^\prime$, there is an
+overlap. If $d_{ij} < R_j^\prime - R_i^\prime$ circle $i$ is
+completely inside $j$, and the other way around. If $d_{ij}$ lies
+between these two cases the angle of circle $i$ that is buried due to
+circle $j$ is $$\alpha = 2\arccos \bigl[({R_i^\prime}^2 + d_{ij}^2 -
+  {R_{j}^\prime}^2)/(2R_i^\prime d_{ij})\bigr].$$ The middle point of
+the arc on the circle can be denoted as an angle $\beta$, and thus the
+arc spans the interval $[\beta-\alpha/2,\beta+\alpha/2]$. By adding up
+these arcs and taking into account any overlap between them we get
+the total buried angle $\gamma_i$ of circle $i$. The exposed arc length in
+this slice is thus $L_i = R_i^\prime(2\pi-\gamma_i)$.
+
+The contribution to the SASA from each slice is $$ S_\delta =
+\sum_{i \in \text{slice}}L_i\Delta_i $$ where
+$$
+  \Delta_i = \frac{R_i}{R_i^\prime} \Biggl[\frac{\delta}{2} 
+    + \min\Biggl(\frac{\delta}{2},R_i^\prime -
+    \lvert z - z_i \rvert\Biggr)\Biggr]. 
+$$ 
+Finally, the total SASA is obtained by adding up the contribution from
+all the slices, either for the whole protein, or atom by atom.
 
 \subsection{Shrake \& Rupley}
 
-Let each atom $i$ swell by adding the radius of the probe sphere,
-$r_\text{P}$ to the atom radius, $r_i$, giving the new radius $R_i =
-r_i + r_\text{P}$. For each atom $i$, use a set of test points evenly
-distributed (approximately) over the sphere of radius $R_i$, and count
-how many of the test points are not inside any of the other extended
-spheres of radius $R_j$. The number of exposed testpoints divided by
-the total number of test points gives the exposed solid angle of that
-atom.
+For each atom $i$, use a set of test points evenly distributed
+(approximately) over the sphere of radius $R_i$, and count how many of
+the test points are not inside any of the other extended spheres of
+radius $R_j$. The number of exposed testpoints divided by the total
+number of test points gives the exposed solid angle of that atom.
 
 \section{Implementation}
 
