@@ -22,8 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "sasa.h"
-
-#include "shrake_rupley_points.h"
+#include "srp.h"
 
 /** internal functions for L&R calculations **/
 void sasa_add_slice_area(double *sasa, double z, double delta, const int **contact, 
@@ -46,8 +45,7 @@ void sasa_shrake_rupley(double *sasa,
                         size_t n_atoms,
                         int n_points)
 {
-    assert(n_points <= MAX_SR_POINTS);
-    const double *srp = shrake_rupley_points;
+    const double *srp = srp_get_points(n_points);
 
     //turn test-points into vector3's
     vector3 srp_v3[n_points];
@@ -268,6 +266,7 @@ void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z, 
                 if (is_exp) printf("%6.2f %6.2f %6.2f %7.5f\n",x[i]+ri*cos(c),y[i]+ri*sin(c),z,c);
 		//if (is_exp) exposed_angle[i] += PI/45.0;
 	    }
+	    printf("\n");
         }
 #endif
     }

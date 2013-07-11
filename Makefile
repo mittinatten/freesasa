@@ -8,7 +8,7 @@ calc_sasa: calc_sasa.c src/*.c src/*.h
 
 debug: test.c calc_sasa.c src/*.c src/*.h
 	gcc test.c -o test src/*.c $(CCFLAGS) -g -p -DDEBUG $(LDFLAGS)
-	gcc calc_sasa.c -o calc_sasa src/*.c $(CCFLAGS) -g -p $(LDFLAGS)
+	gcc calc_sasa.c -o calc_sasa src/*.c $(CCFLAGS) -g -p -DDEBUG $(LDFLAGS)
 
 clean:
 	if [ -e calc_sasa ] ; then rm calc_sasa; fi;	

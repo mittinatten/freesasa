@@ -24,6 +24,7 @@
 #include "src/protein.h"
 #include "src/sasa.h"
 #include "src/oons.h"
+#include "src/srp.h"
 
 #define DEF_SR_POINTS 100
 #define DEF_LR_SPACING 0.25
@@ -38,15 +39,17 @@ extern int getopt(int, char * const *, const char *);
 void help(const char* argv0) {
     fprintf(stderr,"\nUsage: %s [options] [< pdb-file]\n",argv0);
     fprintf(stderr,"\nOptions are:\n"
-	           "       -h  print this message\n"
-                   "       -f  pdb-file\n"
-	           "       -S  use Shrake & Rupley alogrithm [default]\n"
-	           "       -n  number of test points in Shrake & Rupley algorithm\n"
-	           "           Default is %d, max value is %d\n"
-	           "       -L  use Lee & Richards algorithm\n"
+	    "       -h  print this message\n"
+	    "       -f  pdb-file\n"
+	    "       -S  use Shrake & Rupley alogrithm [default]\n"
+	    "       -n  number of test points in Shrake & Rupley algorithm\n"
+	    "           Default is %d, allowed values are:\n"
+	    "           ",DEF_SR_POINTS);
+    srp_print_n_opt(stderr);
+    fprintf(stderr,"       -L  use Lee & Richards algorithm\n"
 	           "       -d  grid spacing in Lee & Richards algorithm\n"
 	           "           Default value is %4.2f Å\n"
-	    ,DEF_SR_POINTS,MAX_SR_POINTS,DEF_LR_SPACING);
+	    ,DEF_LR_SPACING);
     fprintf(stderr,"\nIf no pdb-file is specified STDIN is used for input.\n\n");
 }
 
@@ -82,12 +85,6 @@ int main (int argc, char **argv) {
 	    break;
 	case 'n':
 	    n_sr_points = atoi(optarg);
-	    if (n_sr_points > MAX_SR_POINTS) {
-		fprintf(stderr,"\nError: n = %d is too large (%d is limit).\n\n",
-			n_sr_points, MAX_SR_POINTS);
-		short_help(argv[0]);
-		exit(1);
-	    }
 	    break;
 	case 'S':
 	    use_alg = SHRAKE_RUPLEY;
