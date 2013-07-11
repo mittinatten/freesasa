@@ -28,8 +28,9 @@
 void sasa_add_slice_area(double *sasa, double z, double delta, const int **contact, 
 			 const vector3 *xyz, const double *radii,
 			 int **nb, int n_atoms);
+// the z argument is only really necessary for the debugging section
 void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z, 
-			 const double *r, double *exposed_angle, 
+			 const double *r, double *exposed_arc, 
 			 const int **nb, const int *nn);
 //does not necessarily leave a and b in a consistent state
 double sasa_sum_angles(int n_buried, double *a, double *b);
@@ -256,16 +257,20 @@ void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z, 
 
 #ifdef DEBUG
 	if (is_completely_buried[i] == 0) {
-            for (double c = 0; c < 2*PI; c += PI/45.0) {
+	    //exposed_arc[i] = 0;
+	    for (double c = 0; c < 2*PI; c += PI/45.0) {
                 int is_exp = 1;
                 for (int i = 0; i < n_buried; ++i) {
                     if ((c > b[i]-a[i] && c < b[i]+a[i]) ||
                         (c - 2*PI > b[i]-a[i] && c - 2*PI < b[i]+a[i]) ||
-                        (c + 2*PI > b[i]-a[i] && c + 2*PI < b[i]+a[i])) { is_exp = 0; break; }
+                        (c + 2*PI > b[i]-a[i] && c + 2*PI < b[i]+a[i])) { 
+			is_exp = 0; break; 
+		    }
                 }
                 // print the arcs used in calculation
-                if (is_exp) printf("%6.2f %6.2f %6.2f %7.5f\n",x[i]+ri*cos(c),y[i]+ri*sin(c),z,c);
-		//if (is_exp) exposed_angle[i] += PI/45.0;
+                if (is_exp) printf("%6.2f %6.2f %6.2f %7.5f\n",
+				   x[i]+ri*cos(c),y[i]+ri*sin(c),z,c);
+		//if (is_exp) exposed_arc[i] += PI/45.0;
 	    }
 	    printf("\n");
         }
@@ -275,17 +280,18 @@ void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z, 
 
 double sasa_sum_angles(int n_buried, double *a, double *b)
 {
-    int excluded[n_buried], n_exc = 0;
+    int excluded[n_buried], n_exc = 0, n_overlap = 0;
     for (int i = 0; i < n_buried; ++i)  {
 	excluded[i] = 0;
 	assert(a[i] > 0);
     }
-   
     for (int i = 0; i < n_buried; ++i) {
         if (excluded[i]) continue;
         for (int j = 0; j < n_buried; ++j) {
 	    if (excluded[j]) continue;
 	    if (i == j) continue;
+	    
+	    //check for overlap
 	    double bi = b[i], ai = a[i]; //will be updating throughout the loop
 	    double bj = b[j], aj = a[j];
 	    double d;
@@ -296,30 +302,45 @@ double sasa_sum_angles(int n_buried, double *a, double *b)
 		else break;
 	    }
 	    if (fabs(d) > ai+aj) continue;
-            double inf_i = bi-ai, inf_j = bj-aj;
+	    ++n_overlap;
+
+	    //calculate new joint interval
+	    double inf_i = bi-ai, inf_j = bj-aj;
             double sup_i = bi+ai, sup_j = bj+aj;
             double inf = inf_i < inf_j ? inf_i : inf_j;
             double sup = sup_i > sup_j ? sup_i : sup_j;
             b[i] = (inf + sup)/2.0;
-            a[i] = fabs(sup - inf)/2.0;
+            a[i] = (sup - inf)/2.0;
 	    if (a[i] > PI) return 0;
-            b[j] = a[j] = 0;
             if (b[i] > PI) b[i] -= 2*PI;
             if (b[i] < -PI) b[i] += 2*PI;
+	    
+            a[j] = 0; // the j:th interval should be ignored 
             excluded[j] = 1;
 	    if (++n_exc == n_buried-1) break;
         }
 	if (n_exc == n_buried-1) break; // means everything's been counted
     }
+
+    // recursion until no overlapping intervals
+    if (n_overlap) {
+	double b2[n_buried], a2[n_buried];
+	int n = 0;
+	for (int i = 0; i < n_buried; ++i) {
+	    if (excluded[i] == 0) {
+		b2[n] = b[i];
+		a2[n] = a[i];
+		++n;
+	    }
+	}
+	return sasa_sum_angles(n,a2,b2);
+    }
+    // else return angle
     double buried_angle = 0;
     for (int i = 0; i < n_buried; ++i) {
-	//if (excluded[i] == 0) // should not be used!! 
 	buried_angle += 2.0*a[i];
     }
-    double exposed_angle = 2*PI - buried_angle;
-    if (exposed_angle < 0) exposed_angle = 0; // will be the case for almost all buried atoms
-
-    return exposed_angle;
+    return 2*PI - buried_angle;
 }
 
 void sasa_per_atomclass(FILE *out, atomclassifier ac,
