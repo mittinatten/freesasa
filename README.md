@@ -15,10 +15,12 @@ this library can be used by any C/C++ program and to provide a
 standalone program with a simple command line interface with some
 configuration capabilities.
 
-So far the algorithms by Lee & Richards and Shrake & Rupley have been 
-implemented. Verification has been done by comparing the results of 
-the two calculations and by visual inspection of the surfaces found by 
-them.
+So far the algorithms by Lee & Richards and Shrake & Rupley have been
+implemented. Verification has been done by comparing the results of
+the two calculations and by visual inspection of the surfaces found by
+them. There are still some discrepancies, and it seems that Lee &
+Richards is the where the problem lies, so Lee & Richards should not
+be used for anything serious yet.
 
 The OONS atom-classification and radii are used by default (Ooi et al. 
 PNAS 1987). Users should be easily able to add their own schemes by 

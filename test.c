@@ -27,13 +27,15 @@
 
 int main (int argc, char **argv) {
     protein *p = protein_init_from_pdb(stdin);
-    double *sasa = (double*) malloc(sizeof(double)*protein_n(p));
+    double *sasa_sr = (double*) malloc(sizeof(double)*protein_n(p));
+    double *sasa_lr = (double*) malloc(sizeof(double)*protein_n(p));
     double *r = (double*) malloc(sizeof(double)*protein_n(p));
     protein_r_def(p,r);
-    sasa_shrake_rupley(sasa,protein_xyz(p),r,protein_n(p),1000);
+    sasa_shrake_rupley(sasa_sr,protein_xyz(p),r,protein_n(p),5000);
+    sasa_lee_richards(sasa_lr,protein_xyz(p),r,protein_n(p),0.01);
     printf ("%ul\n",protein_n(p));
     for (int i = 0; i < protein_n(p); ++i) {
-	printf("%5i,%4s,%3s,%4s,%c,%6.2f\n",
+	printf("%5i\t%4s\t%3s\t%4s\t%c\t%6.2f\t%6.2f\t\n",
 	       i,
 	       protein_atom_name(p,i),
 	       protein_atom_res_name(p,i),
@@ -41,10 +43,12 @@ int main (int argc, char **argv) {
 	       protein_atom_chain(p,i),
 	       //atom_type2str(a->at),
 	       //atom_class2str(a->ac),
-	       sasa[i]);
+	       sasa_sr[i], sasa_lr[i]
+	    );
 	
     }
     protein_free(p);
-    free(sasa);
+    free(sasa_sr);
+    free(sasa_lr);
     free(r);
 }

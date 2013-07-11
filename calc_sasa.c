@@ -123,6 +123,7 @@ int main (int argc, char **argv) {
 	break;
     case LEE_RICHARDS:
 	printf("# Using Lee & Richards algorithm with grid spacing of %f Å.\n",d_lr);
+	printf("# Warning this algorithm might still have some bug, use with caution\.n");
 	sasa_lee_richards(sasa,protein_xyz(p),r,protein_n(p),d_lr);
 	break;
     default:
