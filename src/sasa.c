@@ -31,6 +31,7 @@ void sasa_add_slice_area(double *sasa, double z, double delta, const int **conta
 void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z, 
 			 const double *r, double *exposed_angle, 
 			 const int **nb, const int *nn);
+//does not necessarily leave a and b in a consistent state
 double sasa_sum_angles(int n_buried, double *a, double *b);
 
 /** Calculate contact map, given coordinates and radii, 
@@ -285,24 +286,24 @@ double sasa_sum_angles(int n_buried, double *a, double *b)
         for (int j = 0; j < n_buried; ++j) {
 	    if (excluded[j]) continue;
 	    if (i == j) continue;
-            double d;
 	    double bi = b[i], ai = a[i]; //will be updating throughout the loop
 	    double bj = b[j], aj = a[j];
-            for(;;) {
-                d = bj - bi;
-                if (d > PI) bj -= 2*PI;
-                else if (d < -PI) bj += 2*PI;
-                else break;
-            }
-            if (fabs(d) > ai+aj) continue;
+	    double d;
+	    for (;;) {
+		d = bj - bi;
+		if (d > PI) bj -= 2*PI;
+		else if (d < -PI) bj += 2*PI;
+		else break;
+	    }
+	    if (fabs(d) > ai+aj) continue;
             double inf_i = bi-ai, inf_j = bj-aj;
             double sup_i = bi+ai, sup_j = bj+aj;
             double inf = inf_i < inf_j ? inf_i : inf_j;
             double sup = sup_i > sup_j ? sup_i : sup_j;
             b[i] = (inf + sup)/2.0;
             a[i] = fabs(sup - inf)/2.0;
-            b[j] = a[j] = 0;
 	    if (a[i] > PI) return 0;
+            b[j] = a[j] = 0;
             if (b[i] > PI) b[i] -= 2*PI;
             if (b[i] < -PI) b[i] += 2*PI;
             excluded[j] = 1;
@@ -349,15 +350,16 @@ void sasa_get_contacts(int **contact, int n_atoms,
         double ri = radii[i];
         const vector3 *vi = &xyz[i];
 	double xi = vi->x, yi = vi->y, zi = vi->z;
+	contact[i][i] = 0;
 	for (int j = i+1; j < n_atoms; ++j) {
             double rj = radii[j];
-            double cut = ri + rj;
-	    double cut2 = cut*cut;
+	    double cut2 = (ri+rj)*(ri+rj);
 	    const vector3 *vj = &xyz[j];
 	    double xj = vj->x, yj = vj->y, zj = vj->z;
 
-	    //this form gives marginal speed improvement over simply
-            //having the next if, should make a bigger difference for larger proteins
+	    /* this form gives marginal speed improvement over simply
+	       having the next if, should make a bigger difference for
+	       larger proteins */
             if ((xj-xi)*(xj-xi) > cut2 ||
 		(yj-yi)*(yj-yi) > cut2 ||
 		(zj-zi)*(zj-zi) > cut2) {
