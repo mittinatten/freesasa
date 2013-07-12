@@ -2,9 +2,11 @@
 \usepackage[utf8x]{inputenc}
 \usepackage[OT1]{fontenc}
 \usepackage[english]{babel}
-
+\usepackage[margin=1.5in]{geometry}
 \usepackage{amsmath}
-\usepackage[charter]{mathdesign}
+\usepackage{cite}
+
+%\usepackage{fancyvrb}
 
 \author{Simon Mitternacht}
 \date{\today}
@@ -12,14 +14,14 @@
 
 \begin{document}
 \maketitle
-
+\noindent
 The program/library Sasalib, including this manual, is licensed under
 GPLv3, and can be downloaded from the github at: 
 \begin{center}
 \texttt{https://github.com/mittinatten/sasalib/}
 \end{center}
 
-This is still a draft and not complete in any way.
+This document is still a draft and not complete in any way.
 
 \newpage
 \section{Introduction}
@@ -29,8 +31,8 @@ Sasalib is a program to calculate solvent accessible surface areas
 program or as a C library. The library interface allows the user to
 set most parameters of the calculation, and returns the SASA of the
 individual atoms, allowing summation of SASA over user-defined
-atom-classes. The library implements both Lee \& Richards' and Shrake
-\& Rupley's algorithms.
+atom-classes. The library provides both the Lee \& Richards
+\cite{LnR} and Shrake \& Rupley \cite{SnR} algorithms.
 
 To author's knowledge there aren't any fully open source programs for
 calculating solvent accessible surface areas (SASA) of
@@ -47,8 +49,8 @@ to define the surface area, not the point of contact.
 \section{Algorithms}
 
 There are two classical approximate algorithms that can be used to
-calculate SASA, by Lee \& Richards and Shrake \& Rupley
-respectively. Below are brief presentations of both. 
+calculate SASA, by Lee \& Richards \cite{LnR} and Shrake \& Rupley
+respectively \cite{SnR}. Below are brief presentations of both. 
 
 An atom $i$ has a van der Waals radius $r_i$, the surface probe has
 radius $r_\text{P}$ and when these are added we get $R_i = r_i +
@@ -82,9 +84,9 @@ this slice is thus $L_i = R_i^\prime(2\pi-\gamma_i)$.
 The contribution to the SASA from each slice is $$ S_\delta =
 \sum_{i \in \text{slice}}L_i\Delta_i $$ where
 $$
-  \Delta_i = \frac{R_i}{R_i^\prime} \Biggl[\frac{\delta}{2} 
-    + \min\Biggl(\frac{\delta}{2},R_i -
-    \lvert z - z_i \rvert\Biggr)\Biggr]. 
+  \Delta_i = \frac{R_i}{R_i^\prime} \biggl[\frac{\delta}{2} 
+    + \min\biggl(\frac{\delta}{2},R_i -
+    \lvert z - z_i \rvert\biggr)\biggr]. 
 $$ 
 Finally, the total SASA is obtained by adding up the contribution from
 all the slices, either for the whole protein, or atom by atom.
@@ -96,6 +98,11 @@ For each atom $i$, use a set of test points evenly distributed
 the test points are not inside any of the other extended spheres of
 radius $R_j$. The number of exposed testpoints divided by the total
 number of test points gives the exposed solid angle of that atom.
+
+\subsection{Comparison of the two}
+
+Speed as function of $N$ for a given accuracy and/or accuracy as a
+function of speed.
 
 \section{Implementation}
 
@@ -135,26 +142,178 @@ Other options for running are displayed with the flag
 to use, and parameters for the algorithm. By default the Shrake \&
 Rupley algorithm is used, with 100 test points. This option gives a
 fast calculation, for high precision the number of test points should
-be increased.
- 
+be increased. 
+
 \subsection{Library interface}
 
-To calculate the SASA of a protein using the library interface the
-following steps need to be followed:
+Sasalib provides functions for doing the following steps in a SASA
+calculation:
 \begin{enumerate}
-  \item Initiate a protein. Either by reading a pdb-file or by adding
-    atoms manually one-by-one.
-  \item Give each atom a radius. Sasalib can calculate atomic radii
-    according to Ooi et al (OONS-radii) for the 20 canonical amino
-    acid types. The user can also specify the radius for each
-    individual atom. The two methods can be combined if a protein has
-    a few non-standard atoms.
-  \item Perform the SASA calculation, using the algorithm of choice.
-  \item Integrate the results of the SASA calculation to get for
-    example the polar and apolar surface areas. This can be done using
-    some default setups based on the OONS classification, or by the
-    user.
+  \item Initialize protein.
+  \item Calculate atomic radii.
+  \item Calculate SASA.
+  \item Output results grouping atoms/residues in different ways.
 \end{enumerate}
+The third step is the core functionality of the library and can be
+used separately if users wish to handle the other steps
+themselves. Below follows a brief description for the functionality
+provided for each of the four steps, but first a sample program
+showing a complete workflow.
+
+\subsubsection{Sample program}
+The following lines read a PDB-structure from a file, calculates
+SASA using Lee \& Richards' algorithm and outputs the values for the
+polar and apolar atoms respectively.
+\begin{verbatim}
+#include <stdio.h>
+#include <stdlib.h>
+#include "protein.h"
+#include "sasa.h"
+
+int main(int argc, char **argv) {
+    // initialization from STDIN
+    protein *p = protein_init_from_pdb(stdin);
+
+    // allocate memory
+    double *sasa = (double*) malloc(sizeof(double)*protein_n(p));
+    double *r = (double*) malloc(sizeof(double)*protein_n(p));
+
+    // calculate atomic radii
+    protein_r_def(p,r);
+    
+    // SASA calculation using Lee & Richards with 
+    // slices of width 0.25 Å
+    sasa_lee_richards(sasa,protein_xyz(p),r,protein_n(p),0.25);
+
+    // Output SASA for polar/apolar atoms
+    sasa_per_atomclass(stdout,oons_classes(),p,sasa);
+   
+    // free memory
+    protein_free(p);
+    free(sasa);
+    free(r);
+
+    return 0;
+}
+\end{verbatim}
+
+\subsubsection{Initiate a protein}
+
+A protein is represented by the struct texttt{protein}, which is
+declared in the header \texttt{protein.h}. A proteins can be
+initialized either by reading a PDB-file or by adding atoms manually
+one-by-one.
+
+The following function initializes a protein from a PDB-file
+\begin{verbatim}
+    protein* protein_init_from_pdb(FILE*); 
+\end{verbatim}
+The pointer is freed using
+\begin{verbatim}
+    void protein_free(protein*);
+\end{verbatim}
+An empty protein struct is allocated with 
+\begin{verbatim}
+    protein* protein_init();
+\end{verbatim}
+which can then be used to add atoms one by one
+\begin{verbatim}
+    void protein_add_atom(protein *p, 
+                          const char* atom_name,
+                          const char* residue_name, 
+                          const char* residue_number,
+                          char chain_label,
+                          double x, double y, double z);
+
+\end{verbatim}
+for example like this
+\begin{verbatim}
+    protein *p = protein_init();
+    protein_add_atom(p, " CA ", "GLY", "   1", "A",
+                     x, y, z);
+\end{verbatim}
+Here the labels for the atom are as they would be in a PDB file,
+including whitespace. The atom name is a 4-character string, like the
+second argument above, the residue name a 3-character string, like the
+third argument, the residue number has 4 characters, and the chain
+label 1. The last three arguments are the coordinates of the atom. The
+reason residue numbers are not represented as integers here, is that
+in some PDB files have number sequences such as 1A, 1B, 1C, 1D, 2, 3,
+4, \ldots.
+
+The rationale for directly using the strings found in PDB files is
+twofold. (i) Most programs that handle proteins will have routines for
+generating PDB-files and it should thus be fairly straightforward to
+integrate this library into such a program. (ii) Non-standard atoms
+can be added with the labels they have in the input, making
+sub-sequent analysis more straightforward. This means that no analysis
+is performed of the atom types, to check for consistency, etc. The
+atom types are only used later for assigning radii to the atoms,
+something that can also be done manually.
+
+\subsubsection{Assign atomic radii}
+Give each atom a radius. Sasalib can calculate atomic radii according
+to Ooi et al (OONS-radii) for the 20 canonical amino acid types. The
+user can also specify the radius for each individual atom. The two
+methods can be combined if a protein has a few non-standard atoms.
+
+Functions for OONS-classification are found in \texttt{oons.h}. There
+are two versions
+\begin{verbatim}
+    double oons_radius_pdbline(const char *pdb_line);
+    double oons_radius(const char *res_name,
+                       const char *atom_name);
+\end{verbatim}
+where the argument in the first version is a line from a PDB-file, and
+in the second case residue name and atom name according to the above
+(e.g. \texttt{"GLY", " CA "}). To get all radii for a protein in one
+go, use
+\begin{verbatim}
+    void protein_r_def(const protein *p, double *r);
+\end{verbatim} 
+Here the array \texttt{r} is assumed to be of the same size as the
+protein, i.e. the user is responsible for allocating and freeing the
+memory. The function
+\begin{verbatim}
+    int protein_n(protein *p);
+\end{verbatim}
+A user-defined atom-classification scheme can be used by calling 
+\begin{verbatim}
+    void protein_r(const protein *p, 
+                   double *r,
+                   double (*atom2radius)(const char *res_name, 
+                                         const char *atom_name));
+\end{verbatim}
+The function \texttt{protein\_r\_def}, defined above, uses
+\texttt{protein\_r} internally. It consists of the single line
+\begin{verbatim}
+    protein_r(p,r,oons_radius);
+\end{verbatim}
+which illustrates the use of the functions \texttt{protein\_r} and
+\texttt{oons\_radius}.
+
+\subsubsection{Perform SASA calculations}
+Perform the SASA calculation, using the algorithm of choice, calling
+the functions in \texttt{sasa.h}
+\begin{verbatim}
+    void sasa_shrake_rupley(double *sasa,
+                            const vector3 *xyz,
+                            const double *radii,
+                            size_t n_atoms,
+                            int n_points);
+    void sasa_lee_richards(double* sasa,
+                           const vector3 *xyz,
+                           const double *radii,
+                           size_t n_atoms,
+                           double grid);
+
+\end{verbatim}
+The protein struct is deliberately
+
+\subsubsection{Output results}
+Integrate the results of the SASA calculation to get for example the
+polar and apolar surface areas. This can be done using some default
+setups based on the OONS classification, or by the user.
 
 \section{Known issues}
 
@@ -164,8 +323,30 @@ to be integrated manually by the user.
 
 \section{Ideas for improvement and extension}
 
-Perl and Python bindings.
+In no specific order
+\begin{itemize}
+\item Perl and Python bindings.
+\item Other, faster or more exact algorithms.
+\item Molecular surface calculations?
+\item Add a library of commonly seen atoms, such as those in capping
+  end groups and in phosphorylated amino acids.
+\item Replacing the B-values in a PDB-file with the SASA values for
+  each atom.
+\item S \& R, and parts of L \& R, can be trivially
+  parallelized. There is probably no sense in doing a large scale
+  parallelization, but making the calculations multithreaded would
+  allow the users to take advantage of multicore processors.
+\item Interface to download PDB-file and calculate SASA given only PDB
+  code.
+\end{itemize}
 
-Other, faster or more exact algorithms.
+\begin{thebibliography}{50}
+
+\bibitem{LnR} 
+  Lee B, Richards FM (1971) The interpretation of protein structures: estimation of static accessibility. Journal of molecular biology 55: 379–400.
+
+\bibitem{SnR} 
+  Shrake A, Rupley JA (1973) Environment and exposure to solvent of protein atoms. Lysozyme and insulin. Journal of Molecular Biology 79: 351–371.
+\end{thebibliography}
 
 \end{document}
