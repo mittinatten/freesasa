@@ -26,7 +26,7 @@ This document is still a draft and not complete in any way.
 \newpage
 \section{Introduction}
 
-Sasalib is a program to calculate solvent accessible surface areas
+Sasalib is a program for calculating solvent accessible surface areas
 (SASA) for proteins. It can both be used as a standalone command line
 program or as a C library. The library interface allows the user to
 set most parameters of the calculation, and returns the SASA of the
@@ -34,14 +34,14 @@ individual atoms, allowing summation of SASA over user-defined
 atom-classes. The library provides both the Lee \& Richards
 \cite{LnR} and Shrake \& Rupley \cite{SnR} algorithms.
 
-To author's knowledge there aren't any fully open source programs for
+To the author's knowledge there aren't any fully open source programs for
 calculating solvent accessible surface areas (SASA) of
 proteins. Neither are there any packages designed to be easily
 integrated as a library in other programs. 
 
-The SASA is defined as the surface area of protein accessible to a
-spherical probe rolling over the surface of the protein, including
-internal cavities. The probe represents a solvent molecule, and
+The SASA is defined as the surface area of a protein accessible to a
+spherical probe rolling over the protein, including internal
+cavities. The probe represents a solvent molecule (i.e. water), and
 therefore cavities that are too small for the solvent to enter are not
 counted at all. The position of the center of the probe sphere is used
 to define the surface area, not the point of contact.
@@ -50,32 +50,39 @@ to define the surface area, not the point of contact.
 
 There are two classical approximate algorithms that can be used to
 calculate SASA, by Lee \& Richards \cite{LnR} and Shrake \& Rupley
-respectively \cite{SnR}. Below are brief presentations of both. 
+respectively \cite{SnR}. Both can be calculated to arbitrary precision
+by refining the resolution.
 
-An atom $i$ has a van der Waals radius $r_i$, the surface probe has
-radius $r_\text{P}$ and when these are added we get $R_i = r_i +
-r_\text{P}$. The SASA is calculated by adding up the surface patches
-of the spheres of radius $R_i$ that are not overlapping with any other
-sphere.
+We will use the following notation: An atom $i$ has a van der Waals
+radius $r_i$, the surface probe has radius $r_\text{P}$ and when these
+are added we get $R_i = r_i + r_\text{P}$. The SASA is calculated by
+adding up the surface patches of the spheres of radius $R_i$ that are
+not overlapping with any other sphere.
 
 \subsection{Lee \& Richards}
 
+Lee \& Richards' algorithm calculates the surface area by slicing the
+protein, calculating the length of the solvent exposed contours in
+each slice and then adding up the length multiplied by the slice
+thickness. Precision is increased by making the slices thinner and the
+calculation time scales as the number of slices.
+
 Divide the protein into slices of thickness $\delta$ along an
-axis. The position of the slice along that axis is denoted $z$. The
-position of the center of atom $i$ along the same axis is $z_i$. In
-the slice, each atom is thus a circle of radius $R_i^\prime =
-\sqrt{R_i^2-(z-z_i)^2}$. Some of these circles are completely buried,
+arbitrary axis. The position of the slice along that axis is denoted
+$z$. The position of the center of atom $i$ along the same axis is
+$z_i$. In the slice, each atom is thus a circle of radius $$R_i^\prime
+= \sqrt{R_i^2-(z-z_i)^2}\,.$$ These circles are either completely buried,
 completely exposed, or partially exposed.
 
 The exposed arc lengths for each atom can be calculated exactly. For
 each pair of atoms $i,j$, the distance between their centers is
-$d_{ij}$. If $d_{ij} < R_i^\prime + R_j^\prime$, there is an
+$d_{ij}$. If $d_{ij} > R_i^\prime + R_j^\prime$, there is no
 overlap. If $d_{ij} < R_j^\prime - R_i^\prime$ circle $i$ is
 completely inside $j$, and the other way around. If $d_{ij}$ lies
 between these two cases the angle of circle $i$ that is buried due to
 circle $j$ is $$\alpha = 2\arccos \bigl[({R_i^\prime}^2 + d_{ij}^2 -
   {R_{j}^\prime}^2)/(2R_i^\prime d_{ij})\bigr].$$ The middle point of
-the arc on the circle can be denoted as an angle $\beta$, and thus the
+the arc on the circle is at an angle $\beta$ in circle $i$, and thus the
 arc spans the interval $[\beta-\alpha/2,\beta+\alpha/2]$. By adding up
 these arcs and taking into account any overlap between them we get
 the total buried angle $\gamma_i$ of circle $i$. The exposed arc length in
@@ -97,7 +104,10 @@ For each atom $i$, use a set of test points evenly distributed
 (approximately) over the sphere of radius $R_i$, and count how many of
 the test points are not inside any of the other extended spheres of
 radius $R_j$. The number of exposed testpoints divided by the total
-number of test points gives the exposed solid angle of that atom.
+number of test points gives the exposed solid angle of that atom. The
+precision of the algorithm is increased by increasing the number of
+test points, and calculation time scales linearly with the number of
+test points.
 
 \subsection{Comparison of the two}
 
@@ -199,7 +209,7 @@ int main(int argc, char **argv) {
 
 \subsubsection{Initiate a protein}
 
-A protein is represented by the struct texttt{protein}, which is
+A protein is represented by the struct \texttt{protein}, which is
 declared in the header \texttt{protein.h}. A proteins can be
 initialized either by reading a PDB-file or by adding atoms manually
 one-by-one.
