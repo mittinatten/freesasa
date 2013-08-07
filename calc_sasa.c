@@ -34,13 +34,13 @@ const char *alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
 #if __STDC__
 extern int getopt(int, char * const *, const char *);
+extern int optind;
 #endif
 
 void help(const char* argv0) {
-    fprintf(stderr,"\nUsage: %s [options] [< pdb-file]\n",argv0);
+    fprintf(stderr,"\nUsage: %s [options] pdb-file(s)\n",argv0);
     fprintf(stderr,"\nOptions are:\n"
 	    "       -h  print this message\n"
-	    "       -f  pdb-file\n"
 	    "       -S  use Shrake & Rupley alogrithm [default]\n"
 	    "       -n  number of test points in Shrake & Rupley algorithm\n"
 	    "           Default is %d, allowed values are:\n"
@@ -57,14 +57,58 @@ void short_help(const char* argv0) {
     fprintf(stderr,"Run '%s -h' for help.\n\n", argv0);
 }
 
+void run_analysis(FILE *input, int use_alg, const char *name, void *param) {
+    protein *p; 
+    double *sasa, *r;
+    p  = protein_init_from_pdb(input);
+    r = (double*) malloc(sizeof(double)*protein_n(p));
+    sasa = (double*) malloc(sizeof(double)*protein_n(p));
+
+    printf("# Protein: %s\n\n",name);
+    printf("# Using van der Waals radii and atom classes defined \n"
+	   "# by Ooi et al (PNAS 1987, 84:3086-3090) and a probe raidus\n"
+	   "# of %f Å.\n\n", PROBE_RADIUS);
+
+    //calc OONS radii
+    protein_r_def(p,r);
+
+    switch(use_alg) {
+    case SHRAKE_RUPLEY:
+	printf("# Using Shrake & Rupley algorithm with %d test-points\n",*(int *)param);
+	sasa_shrake_rupley(sasa,protein_xyz(p),r,protein_n(p),*(int *)param);
+	break;
+    case LEE_RICHARDS:
+	printf("# Using Lee & Richards algorithm with grid spacing of %f Å.\n",*(double *)param);
+	sasa_lee_richards(sasa,protein_xyz(p),r,protein_n(p),*(double *)param);
+	break;
+    default:
+	fprintf(stderr,"Error: no SASA algorithm specified.\n");
+	exit(0);
+    }
+
+    printf("\n# SASA values in Å^2 for polar and non-polar atoms\n");
+    sasa_per_atomclass(stdout,oons_classes(),p,sasa);
+
+    printf("\n# SASA values in Å^2 for atom classes\n");
+    sasa_per_atomclass(stdout,oons_types(),p,sasa);
+    
+    printf("\n# SASA values in Å^2 for residue types\n");
+    sasa_per_atomclass(stdout,atomclassifier_residue(),p,sasa);
+    
+    printf("\n");
+    
+    protein_free(p);
+    free(sasa);
+    free(r);    
+}
+
 int main (int argc, char **argv) {
 
     int n_sr_points = DEF_SR_POINTS;
     double d_lr = DEF_LR_SPACING;
+    void *param;
     int use_alg = SHRAKE_RUPLEY, alg_set = 0;
-    protein *p; 
-    double *sasa;
-    FILE *input = stdin;
+    FILE *input = NULL;
 
     extern char *optarg;
     char opt;
@@ -103,46 +147,28 @@ int main (int argc, char **argv) {
 	    break;
 	}
     }
-    p  = protein_init_from_pdb(input);
-    double *r = (double*) malloc(sizeof(double)*protein_n(p));
-    sasa = (double*) malloc(sizeof(double)*protein_n(p));
-    
-    printf("\n\n### SASALIB 2013 ###\n\n");
-	   
-    printf("# Using van der Waals radii and atom classes defined \n"
-	   "# by Ooi et al (PNAS 1987, 84:3086-3090) and a probe raidus\n"
-	   "# of %f Å.\n\n", PROBE_RADIUS);
-
-    //calc OONS radii
-    protein_r_def(p,r);
-
-    switch(use_alg) {
-    case SHRAKE_RUPLEY:
-	printf("# Using Shrake & Rupley algorithm with %d test-points\n",n_sr_points);
-	sasa_shrake_rupley(sasa,protein_xyz(p),r,protein_n(p),n_sr_points);
-	break;
-    case LEE_RICHARDS:
-	printf("# Using Lee & Richards algorithm with grid spacing of %f Å.\n",d_lr);
-	sasa_lee_richards(sasa,protein_xyz(p),r,protein_n(p),d_lr);
-	break;
-    default:
-	fprintf(stderr,"Error: no SASA algorithm specified.\n");
-	return 0;
+    if (alg_set > 1) {
+	fprintf(stderr, "Error: multiple algorithms specified.\n");
+	exit(0);
     }
+    if (use_alg == LEE_RICHARDS) param = &d_lr;
+    if (use_alg == SHRAKE_RUPLEY) param = &n_sr_points;
 
-    printf("\n# SASA values in Å^2 for polar and non-polar atoms\n");
-    sasa_per_atomclass(stdout,oons_classes(),p,sasa);
-
-    printf("\n# SASA values in Å^2 for atom classes\n");
-    sasa_per_atomclass(stdout,oons_types(),p,sasa);
+    printf("\n\n### SASALIB 2013 ###\n\n");
     
-    printf("\n# SASA values in Å^2 for residue types\n");
-    sasa_per_atomclass(stdout,atomclassifier_residue(),p,sasa);
-    
-    printf("\n");
-    
-    protein_free(p);
-    free(sasa);
-    free(r);
-    fclose(input);
+    if (argc > 0) {
+	for (int i = optind; i < argc; ++i) {
+	    input = fopen(argv[i],"r");
+	    if (input != NULL) {
+		run_analysis(input,use_alg,argv[i],param);
+		fclose(input);
+	    } else {
+		fprintf(stderr, "Error opening file '%s'\n", argv[i]);
+		exit(0);
+	    }	    
+	}
+    } else {
+	run_analysis(stdin,use_alg,"stdin",param);
+    }    
+    return 0;
 }
