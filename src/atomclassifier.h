@@ -27,6 +27,7 @@
 typedef struct {
     int nclasses;
     const char **class2str;
+    const char *name;
     int (*classify)(const char *res_name, const char *atom_name);
 } atomclassifier;
 

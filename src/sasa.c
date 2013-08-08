@@ -356,9 +356,11 @@ void sasa_per_atomclass(FILE *out, atomclassifier ac,
                                 protein_atom_name(p,i));
         s[class] += sasa[i];
     }
+    fprintf(out,"\n> %s\n",ac.name);
     for (int i = 0; i < nc; ++i) {
-	if (s[i] > 0.0) fprintf(out,"%12s  %9.2f\n",ac.class2str[i],s[i]);
+	if (s[i] > 0.0) fprintf(out,"%s %9.2f\n",ac.class2str[i],s[i]);
     }
+    fprintf(out,"<\n");
 }
 
 void sasa_get_contacts(int **contact, int n_atoms, 

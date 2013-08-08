@@ -163,6 +163,7 @@ atomclassifier oons_classes()
     a.nclasses = oons_class_unknown+1;
     a.class2str = oons_c2s;
     a.classify = &oons_classifier;
+    a.name = "polar_apolar";
     return a;
 }
 
@@ -172,6 +173,7 @@ atomclassifier oons_types()
     a.nclasses = oons_type_unknown+1;
     a.class2str = oons_t2s;
     a.classify = &oons_typefier;
+    a.name = "OONS_type";
     return a;
 }
 

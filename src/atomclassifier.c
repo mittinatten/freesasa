@@ -38,6 +38,7 @@ atomclassifier atomclassifier_residue()
 {
     atomclassifier residue_classifier = 
 	{ .nclasses = residue_unknown+1, 
+	  .name = "residue",
 	  .class2str = residue_types, 
 	  .classify = &atomclassifier_residue_classify };
     return residue_classifier;
