@@ -29,10 +29,14 @@ const char *residue_types[] =
     "SER", "THR", "CYS", "CSE", "ASN", "GLN", "HIS", "TYR",
     "ASP", "GLU", "ARG", "LYS", "PYH", "ASX", "GLX", "UNK"};
 
+const char *all_types[] = { "total" };
+
 //typedef enum {residue_hydrophobic,residue_polar} residue_class;
 
 int atomclassifier_residue_classify(const char *res_name, 
 				    const char *atom_name);
+int atomclassifier_all_classify(const char *res_name, 
+				const char *atom_name);
 
 atomclassifier atomclassifier_residue() 
 {
@@ -53,4 +57,20 @@ int atomclassifier_residue_classify(const char *res_name,
     if (! strcmp(res_name,"SEC")) return CSE;
     if (! strcmp(res_name,"PYL")) return PYH;
     return residue_unknown;
+}
+
+atomclassifier atomclassifier_all()
+{
+    atomclassifier ac = 
+	{ .nclasses = 1,
+	  .name = "all",
+	  .class2str = all_types,
+	  .classify = &atomclassifier_all_classify };
+    return ac;
+}
+
+int atomclassifier_all_classify(const char *res_name,
+				const char *atom_name)
+{
+    return 0;
 }

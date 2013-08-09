@@ -360,7 +360,6 @@ void sasa_per_atomclass(FILE *out, atomclassifier ac,
     for (int i = 0; i < nc; ++i) {
 	if (s[i] > 0.0) fprintf(out,"%s %9.2f\n",ac.class2str[i],s[i]);
     }
-    fprintf(out,"<\n");
 }
 
 void sasa_get_contacts(int **contact, int n_atoms, 

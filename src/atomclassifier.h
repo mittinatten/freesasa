@@ -38,4 +38,8 @@ typedef struct {
     example PDB files). */
 atomclassifier atomclassifier_residue();
 
+/** Another classifier that puts all atoms in the same class, can be
+    used to calculate total SASA. */
+atomclassifier atomclassifier_all();
+
 #endif

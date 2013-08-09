@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "src/protein.h"
 #include "src/sasa.h"
@@ -60,6 +61,7 @@ void short_help(const char* argv0) {
 void run_analysis(FILE *input, int use_alg, const char *name, void *param) {
     protein *p; 
     double *sasa, *r;
+    clock_t t;
     p  = protein_init_from_pdb(input);
     r = (double*) malloc(sizeof(double)*protein_n(p));
     sasa = (double*) malloc(sizeof(double)*protein_n(p));
@@ -74,7 +76,9 @@ void run_analysis(FILE *input, int use_alg, const char *name, void *param) {
     protein_r_def(p,r);
 
     printf("algorithm: %s\n",alg_names[use_alg]);
-
+    
+    t = clock();
+    
     switch(use_alg) {
     case SHRAKE_RUPLEY:
 	printf("N_testpoint: %d\n",*(int *)param);
@@ -88,9 +92,14 @@ void run_analysis(FILE *input, int use_alg, const char *name, void *param) {
 	fprintf(stderr,"Error: no SASA algorithm specified.\n");
 	exit(0);
     }
+
+    printf("time_elapsed: %f s\n",((double)(clock()-t))/CLOCKS_PER_SEC);
+    printf("n_atoms: %d\n", protein_n(p));
+
     sasa_per_atomclass(stdout,oons_classes(),p,sasa);
-    sasa_per_atomclass(stdout,oons_types(),p,sasa);
-    sasa_per_atomclass(stdout,atomclassifier_residue(),p,sasa);
+    sasa_per_atomclass(stdout,atomclassifier_all(),p,sasa);
+    //sasa_per_atomclass(stdout,oons_types(),p,sasa);
+    //sasa_per_atomclass(stdout,atomclassifier_residue(),p,sasa);
     
     protein_free(p);
     free(sasa);
