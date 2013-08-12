@@ -25,9 +25,9 @@
 #include "srp.h"
 
 /** internal functions for L&R calculations **/
-void sasa_add_slice_area(double *sasa, double z, double delta, const int **contact, 
-			 const vector3 *xyz, const double *radii,
-			 int **nb, int n_atoms);
+void sasa_add_slice_area(double *sasa, double z, double delta, const vector3 *xyz, 
+			 const double *radii, const int **nb, const int *nn, 
+			 int n_atoms);
 // the z argument is only really necessary for the debugging section
 void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z, 
 			 const double *r, double *exposed_arc, 
@@ -35,11 +35,13 @@ void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z,
 //does not necessarily leave a and b in a consistent state
 double sasa_sum_angles(int n_buried, double *a, double *b);
 
-/** Calculate contact map, given coordinates and radii, 
-    assumes contacts array has dimensions n_atoms * n_atoms. **/
-void sasa_get_contacts(int **contact, int n_atoms, 
+/** Calculate contacts, given coordinates and radii. The array nb will
+    have a list of neighbors to each atom, nn will say how many
+    neighbors each atom has. The arrays nn and nb should be of size
+    n_atoms. The elements of n_atoms are dynamically allocated to be
+    of size nn[i]. **/
+void sasa_get_contacts(int **nb, int *nn, int n_atoms, 
 		       const vector3 *xyz, const double *radii);
-
 
 void sasa_shrake_rupley(double *sasa,
                         const vector3 *xyz,
@@ -140,39 +142,28 @@ void sasa_lee_richards(double *sasa,
     min_z -= max_r;
     max_z += max_r;
 
-    //allocate some arrays to keep track of things
-    int **contact = (int**) malloc(sizeof(int*)*n_atoms);
-    int **nb = (int**) malloc(sizeof(int*)*n_atoms);
-    for (int i = 0; i < n_atoms; ++i) {
-        contact[i] = (int*) malloc(sizeof(int)*n_atoms);
-        nb[i] = (int*) malloc(sizeof(int)*200); //assume atom won't have more than 200 neighbours;
-    }
-
-    // determine which atoms are neighbours (speeds up calculations a
-    // bit later on (factor 2 or so)).
-    sasa_get_contacts(contact,n_atoms,xyz,radii);
+    
+    // determine which atoms are neighbours
+    int *nb[n_atoms], nn[n_atoms];
+    sasa_get_contacts((int**)nb,(int*)nn,n_atoms,xyz,radii);
     
     // loop over slices
     for (double z = min_z + 0.5*delta; z < max_z; z += delta) {
-	sasa_add_slice_area(sasa,z,delta,(const int**)contact,xyz,radii,nb,n_atoms);
+	sasa_add_slice_area(sasa,z,delta,xyz,radii,(const int**)nb,(int*)nn,n_atoms);
 	//could be trivially parallelized if summation is moved outside of above function
     }
     for (int i = 0; i < n_atoms; ++i) {
-        free(contact[i]);
-        free(nb[i]);
+	free(nb[i]);
     }
-    free(contact);
-    free(nb);
 }
 
-void sasa_add_slice_area(double *sasa, double z, double delta, const int **contact, 
-			 const vector3 *xyz, const double *radii, int **nb,
-			 int n_atoms)
+void sasa_add_slice_area(double *sasa, double z, double delta, const vector3 *xyz, 
+			 const double *radii, const int **nb, const int *nn, int n_atoms)
 {
     double x[n_atoms], y[n_atoms], r[n_atoms], DR[n_atoms];
     int n_slice = 0;
     double exposed_arc[n_atoms];
-    int idx[n_atoms], nn[n_atoms];
+    int idx[n_atoms], xdi[n_atoms], in_slice[n_atoms], nn_slice[n_atoms], *nb_slice[n_atoms];
 
     // locate atoms in each slice and do some initialization
     for (size_t i = 0; i < n_atoms; ++i) {
@@ -185,27 +176,32 @@ void sasa_add_slice_area(double *sasa, double z, double delta, const int **conta
 	    DR[n_slice] = ri/r[n_slice]*(delta/2. +
 			      (delta/2. < ri-d ? delta/2. : ri-d));
 	    idx[n_slice] = i;
+	    xdi[i] = n_slice;
 	    ++n_slice;
+	    in_slice[i] = 1;
+	} else {
+	    in_slice[i] = 0;
 	}
     }
     for (int i = 0; i < n_slice; ++i) { 
-	nn[i] = 0;
+	nn_slice[i] = 0;
 	exposed_arc[i] = 0;
     }
 
-    // generate neighbor registry
     for (int i = 0; i < n_slice; ++i) {
-	for (int j = i+1; j < n_slice; ++j) {
-	    if (contact[idx[i]][idx[j]]) {
-		nb[i][nn[i]++] = j;
-		nb[j][nn[j]++] = i;
+	int i2 = idx[i];
+	int j2;
+	for (int j = 0; j < nn[i2]; ++j) {
+	    if (in_slice[j2 = nb[i2][j]]) {
+		++nn_slice[i];
+		nb_slice[i] = realloc(nb_slice[i],sizeof(int)*nn_slice[i]);
+		nb_slice[i][nn_slice[i]-1] = xdi[j2];
 	    }
 	}
-	assert(nn[i] < 200 && "An atom had 200 or more neighbors, this should not be possible.");
     }
 
     //find exposed arcs
-    sasa_exposed_arcs(n_slice, x, y, z, r, exposed_arc, (const int**)nb, nn);
+    sasa_exposed_arcs(n_slice, x, y, z, r, exposed_arc, (const int**)nb_slice, nn_slice);
     
     // calculate contribution to each atom's SASA from the present slice
     for (int i = 0; i < n_slice; ++i) {
@@ -362,134 +358,44 @@ void sasa_per_atomclass(FILE *out, atomclassifier ac,
     }
 }
 
-void sasa_get_contacts(int **contact, int n_atoms, 
+void sasa_get_contacts(int **nb, int *nn, int n_atoms, 
 		       const vector3 *xyz, const double *radii)
 {
     /* For low resolution L&R this function is the bottleneck in
        speed. Will also depend on number of atoms. */
+    
+    for (int i = 0; i < n_atoms; ++i) {
+	nn[i] = 0;
+	nb[i] = NULL;
+    }
 
     for (int i = 0; i < n_atoms; ++i) {
         double ri = radii[i];
         const vector3 *vi = &xyz[i];
-	double xi = vi->x, yi = vi->y, zi = vi->z;
-	contact[i][i] = 0;
+	//double xi = vi->x, yi = vi->y, zi = vi->z;
 	for (int j = i+1; j < n_atoms; ++j) {
             double rj = radii[j];
 	    double cut2 = (ri+rj)*(ri+rj);
 	    const vector3 *vj = &xyz[j];
+	    
+	    /* could be minor speed improvement, most pairs of atoms will be
+	       far away from each other on at least one axis */
+	    /*
 	    double xj = vj->x, yj = vj->y, zj = vj->z;
-
-	    /* this form gives marginal speed improvement over simply
-	       having the next if, should make a bigger difference for
-	       larger proteins */
             if ((xj-xi)*(xj-xi) > cut2 ||
 		(yj-yi)*(yj-yi) > cut2 ||
 		(zj-zi)*(zj-zi) > cut2) {
-                contact[i][j] = contact[j][i] = 0;
-	    } else if (vector3_dist2(vi,vj) < cut2) {
-                contact[i][j] = contact[j][i] = 1;
-            } else {
-                contact[i][j] = contact[j][i] = 0;
-            }
-        }
+		continue;
+		}*/
+	    if (vector3_dist2(vi,vj) < cut2) {
+		++nn[i]; ++nn[j];
+		nb[i] = realloc(nb[i],sizeof(int)*nn[i]);
+		nb[j] = realloc(nb[j],sizeof(int)*nn[j]);
+		nb[i][nn[i]-1] = j;
+		nb[j][nn[j]-1] = i;
+	    }
+	}
     }
 
-    /* The commented out code calculates cell lists in an attempt to
-       improve speed. But the improvement was only marginal at the
-       cost of a lot of extra complexity, even for large proteins
-       (something is not 100 % correct there either). */
-   
-    /* double min_x=1e50, min_y=1e50, min_z=1e50; */
-    /* double max_x=-1e50, max_y=-1e50, max_z=-1e50; */
-    /* double cellw = 2*max_r; */
-    /* for (int i = 0; i < n_atoms; ++i) { */
-    /* 	const vector3 *v = &xyz[i];  */
-    /* 	min_x = min_x < v->x ? min_x : v->x; */
-    /* 	min_y = min_y < v->y ? min_y : v->y; */
-    /* 	min_z = min_z < v->z ? min_z : v->z; */
-    /* 	max_x = max_x > v->x ? max_x : v->x; */
-    /* 	max_y = max_y > v->y ? max_y : v->y; */
-    /* 	max_z = max_z > v->z ? max_z : v->z; */
-    /* } */
-    /* min_x -= max_r; min_y -= max_r; min_z -= max_r; */
-    /* max_x += max_r; max_y += max_r; max_z += max_z; */
-    /* int n_x = (int)(max_x - min_x)/cellw + 2; */
-    /* int n_y = (int)(max_y - min_y)/cellw + 2; */
-    /* int n_z = (int)(max_z - min_z)/cellw + 2; */
-    /* int n_cell = n_x*n_y*n_z; */
-
-    /* int in_cell[n_atoms]; */
-    /* int **cell = (int**)malloc(sizeof(int*)*n_cell); */
-    /* int *ccount = (int*)malloc(sizeof(int)*n_cell); */
-    /* int **nb = (int**)malloc(sizeof(int*)*n_cell); */
-    /* int *nn = (int*)malloc(sizeof(int)*n_cell); */
-
-    /* for (int i = 0; i < n_cell; ++i) { */
-    /*     //no more than 50 atoms per cell */
-    /* 	cell[i] = (int*)malloc(sizeof(int)*50); */
-    /* 	nb[i] = (int*)malloc(sizeof(int)*27); */
-    /* 	ccount[i] = 0; */
-    /* 	nn[i] = 0; */
-    /* } */
-
-    /* //calculate neighborhood map */
-    /* for (int x = 0; x < n_x; ++x) { */
-    /* 	for (int y = 0; y < n_y; ++y) { */
-    /* 	    for (int z = 0; z < n_z; ++z) { */
-    /* 		int c = x*n_y*n_z+y*n_z+z; */
-    /* 		for (int i = -1; i < 2; ++i) { */
-    /* 		    if (x+i < 0) continue; */
-    /* 		    for (int j = -1; j < 2; ++j) { */
-    /* 			if (y+j < 0) continue; */
-    /* 			for (int k = -1; k < 2; ++k) { */
-    /* 			    if (z+j < 0) continue; */
-    /* 			    nb[c][nn[c]++] = (x+i)*n_y*n_z + (y+j)*n_z + z+j; */
-    /* 			} */
-    /* 		    } */
-    /* 		} */
-    /* 	    } */
-    /* 	} */
-    /* } */
-
-    /* //put atoms in cells */
-    /* for (int i = 0; i < n_atoms; ++i) { */
-    /* 	int i_x = (int)((xyz[i].x - min_x)/cellw); */
-    /* 	int i_y = (int)((xyz[i].y - min_y)/cellw); */
-    /* 	int i_z = (int)((xyz[i].z - min_z)/cellw); */
-    /* 	int i_c = i_x*n_y*n_z + i_y*n_z + i_z; */
-    /* 	assert(i_c < n_cell); */
-    /* 	cell[i_c][ccount[i_c]++] = i; */
-    /* 	assert(ccount[i_c] < 50); */
-    /* 	in_cell[i] = i_c; */
-    /* } */
-    /* for (int i = 0; i < n_atoms; ++i) { */
-    /* 	for (int j = i; j < n_atoms; ++j) { */
-    /* 	    contact[i][j] = contact[j][i] = 0; */
-    /* 	} */
-    /* } */
-
-    /* for (int i = 0; i < n_atoms; ++i) { */
-    /* 	int i_c = in_cell[i]; */
-    /* 	double ri = radii[i]; */
-    /* 	//loop through neighbor-cells (including i_c) */
-    /* 	for (int i_n = 0; i_n < nn[i_c]; ++i_n) { */
-    /* 	    int j_c = nb[i_c][i_n]; //index of i_n:th neighbor to cell i_c */
-    /* 	    for (int k = 0; k < ccount[j_c]; ++k) { */
-    /* 		int j = cell[j_c][k]; //k:th atom in j_c:th cell */
-    /* 		double rj = radii[j]; */
-    /* 		double cut = ri + rj; */
-    /* 		if (vector3_dist2(&xyz[i],&xyz[j]) < cut*cut) { */
-    /* 		    contact[i][j] = contact[j][i] = 1; */
-    /* 		}  */
-    /* 	    } */
-    /* 	} */
-    /* } */
-    /* for (int i = 0; i < n_cell; ++i) { */
-    /* 	free(cell[i]); */
-    /* 	free(nb[i]); */
-    /* } */
-    /* free(cell); */
-    /* free(ccount); */
-    /* free(nb); */
-    /* free(nn); */
 }
+
