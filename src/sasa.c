@@ -185,6 +185,7 @@ void sasa_add_slice_area(double *sasa, double z, double delta, const vector3 *xy
     }
     for (int i = 0; i < n_slice; ++i) { 
 	nn_slice[i] = 0;
+	nb_slice[i] = NULL;
 	exposed_arc[i] = 0;
     }
 
@@ -206,6 +207,9 @@ void sasa_add_slice_area(double *sasa, double z, double delta, const vector3 *xy
     // calculate contribution to each atom's SASA from the present slice
     for (int i = 0; i < n_slice; ++i) {
 	sasa[idx[i]] += exposed_arc[i]*r[i]*DR[i];
+    }
+    for (int i = 0; i < n_slice; ++i) {
+	free(nb_slice[i]);
     }
 }
 void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z, const double *r,
