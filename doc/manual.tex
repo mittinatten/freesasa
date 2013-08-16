@@ -3,6 +3,7 @@
 \usepackage[OT1]{fontenc}
 \usepackage[english]{babel}
 \usepackage[margin=1.5in]{geometry}
+\usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{cite}
 
@@ -115,8 +116,48 @@ potential (using simulated annealing).
 
 \subsection{Comparison of the two}
 
-Speed as function of $N$ for a given accuracy and/or accuracy as a
-function of speed.
+\subsection{Speed}
+
+In the limit of low precision the calculation time will be limited by
+the time it takes to find which atoms are neighbours, which scales as
+the square of the number of atoms. This calculation can be linearized,
+but with a relatively large constant, making it worthwhile only for
+large proteins. (Do more tests here?)
+
+In the limit of high precision the calculation time of both algorithms
+will instead scale as the number of atoms: If the number of
+test-points is large in S\&R, most of the time will be spent
+calculating the overlap, instead of which atoms are in contact. If
+there are many slices in L\&R, the calculation time will be
+proportional to the number of slices, and the time of each
+slice linear in the number of atoms in the slice. 
+
+The point where the calculation time crosses over from linear to
+quadratic in the number of atoms thus depends on the precision as
+figure~\ref{fig:time} shows. The same figure also shows that there is
+more variation in time needed for S\&R than for L\&R, which is
+probably because the S\&R is more sensitive to the density of the
+protein than the L\&R. L\&R is mainly limited by the number of slices
+and the number of atoms in the slice, with a smaller cost of actually
+analyzing the overlap between atoms in each slice, wheras the
+calculation in S\&R is completely dominated by the number of overlaps
+that are calculated. The fact that the effect is largest for the case
+with the most test points supports this interpretation.
+
+\begin{figure}
+  \includegraphics{../analysis/plots/time}
+  \caption{Calculation time as function of number of atoms for
+    different levels of precision. In both cases the cross-over from
+    linear to quadratic scaling as function of protein size is only
+    clearly visible for the lowest precision used. The discretization
+    is because time was measured with a precision of 1
+    ms.\label{fig:time}}
+\end{figure}
+
+\subsection{Accuracy as function of speed}
+
+...
+
 
 \section{Implementation}
 
