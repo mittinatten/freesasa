@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <time.h>
+#include <sys/time.h>
 
 #include "src/protein.h"
 #include "src/sasa.h"
@@ -61,7 +61,8 @@ void short_help(const char* argv0) {
 void run_analysis(FILE *input, int use_alg, const char *name, void *param) {
     protein *p; 
     double *sasa, *r;
-    clock_t t;
+    struct timeval t1, t2;
+    double elapsed_time;
     p  = protein_init_from_pdb(input);
     r = (double*) malloc(sizeof(double)*protein_n(p));
     sasa = (double*) malloc(sizeof(double)*protein_n(p));
@@ -77,7 +78,7 @@ void run_analysis(FILE *input, int use_alg, const char *name, void *param) {
 
     printf("algorithm: %s\n",alg_names[use_alg]);
     
-    t = clock();
+    gettimeofday(&t1,NULL);
     
     switch(use_alg) {
     case SHRAKE_RUPLEY:
@@ -92,8 +93,12 @@ void run_analysis(FILE *input, int use_alg, const char *name, void *param) {
 	fprintf(stderr,"Error: no SASA algorithm specified.\n");
 	exit(0);
     }
-
-    printf("time_elapsed: %f s\n",((double)(clock()-t))/CLOCKS_PER_SEC);
+    gettimeofday(&t2,NULL);
+    
+    elapsed_time = (t2.tv_sec-t1.tv_sec); 
+    elapsed_time += (t2.tv_usec-t1.tv_usec) / 1e6; // s
+    
+    printf("time_elapsed: %f s\n",elapsed_time);
     printf("n_atoms: %d\n", protein_n(p));
 
     sasa_per_atomclass(stdout,oons_classes(),p,sasa);
