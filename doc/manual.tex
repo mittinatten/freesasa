@@ -2,7 +2,7 @@
 \usepackage[utf8x]{inputenc}
 \usepackage[OT1]{fontenc}
 \usepackage[english]{babel}
-\usepackage[margin=1.5in]{geometry}
+\usepackage[margin=1.2in]{geometry}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{cite}
@@ -116,7 +116,18 @@ potential (using simulated annealing).
 
 \subsection{Comparison of the two}
 
-\subsection{Speed}
+\subsubsection{Dataset}
+
+For evaluating and comparing the two algorithms a list of proteins was
+downloaded from the PISCES server (on Aug 12, 2013). The proteins have
+less than 20\,\% sequence identity, and the structures a resolution of
+1.6~Å or less and R-factors less than 0.25. The list specifies which
+chain to use in a specific PDB-file. For the calculations here, whole
+PDB-files are used, giving a larger variation in protein size, which
+is useful for our purposes. The 2117 chains in the list gave a set of
+2056 protein structures used for all calculations below.
+
+\subsubsection{Speed}
 
 In the limit of low precision the calculation time will be limited by
 the time it takes to find which atoms are neighbours, which scales as
@@ -154,9 +165,25 @@ with the most test points supports this interpretation.
     ms.\label{fig:time}}
 \end{figure}
 
-\subsection{Accuracy as function of speed}
+\subsubsection{Accuracy as function of speed}
 
-...
+The 
+
+\begin{figure}
+  \begin{center}
+  \includegraphics{../analysis/plots/precision}
+  \caption{The error $\delta$ in calculated SASA vs calculation time
+    for the two algorithms, both normalized by the number of atoms in
+    each protein. The reference SASA, $S_\text{ref}$, was calculated
+    using L\&R with slice width 0.001~Å, and the error, for a SASA
+    value $S$, calculated as $\lvert S - S_\text{ref} \rvert / N$
+    (where $N$ is the number of atoms in the protein). For the
+    different S\&R calculations 20, 50, 100, 200, 500, 1000, 2000 and
+    5000 test points were used. For L\&R slice thicknesses 0.01, 0.1,
+    0.2, 0.3, 0.4, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5 and 5.0 Å.
+    \label{fig:precision}}
+  \end{center}
+\end{figure}
 
 
 \section{Implementation}
@@ -404,10 +431,15 @@ In no specific order
 \begin{thebibliography}{50}
 
 \bibitem{LnR} 
-  Lee B, Richards FM (1971) The interpretation of protein structures: estimation of static accessibility. Journal of molecular biology 55: 379–400.
+  Lee B, Richards FM (1971) The interpretation of protein structures: estimation of static accessibility. Journal of molecular biology 55: 379–-400.
 
 \bibitem{SnR} 
-  Shrake A, Rupley JA (1973) Environment and exposure to solvent of protein atoms. Lysozyme and insulin. Journal of Molecular Biology 79: 351–371.
+  Shrake A, Rupley JA (1973) Environment and exposure to solvent of protein atoms. Lysozyme and insulin. Journal of Molecular Biology 79: 351–-371.
+
+\bibitem{PISCES}
+  Wang G, Dunbrack RL (2003) PISCES: a protein sequence culling server. 
+  Bioinformatics 19:1589--1591.
+
 \end{thebibliography}
 
 \end{document}
