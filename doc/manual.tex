@@ -60,7 +60,7 @@ are added we get $R_i = r_i + r_\text{P}$. The SASA is calculated by
 adding up the surface patches of the spheres of radius $R_i$ that are
 not overlapping with any other sphere.
 
-\subsection{Lee \& Richards}
+\subsection{Lee \& Richards} \label{sec:alg_LnR}
 
 Lee \& Richards' algorithm calculates the surface area by slicing the
 protein, calculating the length of the solvent exposed contours in
@@ -165,22 +165,29 @@ with the most test points supports this interpretation.
     ms.\label{fig:time}}
 \end{figure}
 
-\subsubsection{Accuracy as function of speed}
+\subsubsection{Accuracy as function of speed}\label{sec:accuracy}
 
-The 
+To measure accuracy of the two algorithms a reference SASA value,
+$S_\text{ref}$ was calculated using L\&R with slice thickness
+0.001~Å. The error of a given SASA-value, $S$ is then $\delta = \lvert
+S - S_\text{ref} \rvert / N$, where $N$ is the number of atoms in the
+protein. Figure~\ref{fig:precision} shows the results of these
+calculations for the 2056 proteins described above. In accordance with
+figure~\ref{fig:time} S\&R gives a more varied behavior than L\&R,
+i.e. a broader distribution of values. It is clear from this picture
+that S\&R is on average an order of magnitude more accurate than L\&R
+given the same computational effort -- in the present implementation.
 
 \begin{figure}
   \begin{center}
   \includegraphics{../analysis/plots/precision}
   \caption{The error $\delta$ in calculated SASA vs calculation time
-    for the two algorithms, both normalized by the number of atoms in
-    each protein. The reference SASA, $S_\text{ref}$, was calculated
-    using L\&R with slice width 0.001~Å, and the error, for a SASA
-    value $S$, calculated as $\lvert S - S_\text{ref} \rvert / N$
-    (where $N$ is the number of atoms in the protein). For the
-    different S\&R calculations 20, 50, 100, 200, 500, 1000, 2000 and
-    5000 test points were used. For L\&R slice thicknesses 0.01, 0.1,
-    0.2, 0.3, 0.4, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5 and 5.0 Å.
+    $t$ for the two algorithms. For the different S\&R calculations
+    20, 50, 100, 200, 500, 1000, 2000 and 5000 test points were
+    used. For L\&R slice thicknesses 0.01, 0.1, 0.2, 0.3, 0.5, 1.0,
+    2.5 and 5.0 Å. The borders of the boxes indicate the quartiles of
+    the distribution of $t$ and $\delta$ (i.e. 50~\% of the data are
+    within the box), and the error bars 5th and 95th percentiles.
     \label{fig:precision}}
   \end{center}
 \end{figure}
@@ -188,12 +195,46 @@ The
 
 \section{Implementation}
 
-\section{Using Sasalib}
+This section describes the implementation of the algorithms in general
+terms. For the library and command-line interfaces see section
+\ref{sec:using}. In both cases the implementations are rather
+straightforward keeping the implementation rather simple and
+transparent.
+
+\subsection{Lee \& Richards}
+
+The L\&R-calculation needs to know which atoms make contacts for each
+slice. Therefore the calculation begins by constructing adjacency
+lists for the protein. An contact matrix was used in early versions of
+the library, but the $O(N^2)$ memory requirements were prohibitive for
+large proteins. For each slice the adjacency lists are condensed to
+separate lists only containing the atoms in that particular
+slice. Each pair of adjacent atoms is then checked for adjacency in
+the particular slice and the overlapping arcs are calculated as
+described in section \ref{sec:alg_LnR}. When all buried arcs are
+counted for a given atom they are reduced to non-overlapping intervals
+recursively. In most cases this is done in one step, sometimes in two
+or three. The arc-lengths are then summed up for all atoms in the
+slice to calculate the total contribution to the area as described in
+\ref{sec:alg_LnR}.
+
+As described in section \ref{sec:accuracy}, this algorithm is
+significantly slower than S\&R, but this is inherent to the algorithm
+[references??]. Profiling runs give no hints at obvious
+improvements. The calculations can however be trivially parallelized
+by calculating each slice in a separate thread, similar improvements
+can be achieved by treating atoms separately in S\&R.
+
+\subsection{Shrake \& Rupley}
+
+
+
+\section{Using Sasalib} \label{sec:using}
 
 \subsection{Installing}
 
-The repository can be cloned from the github either using git
-directly with the command
+The repository can be cloned from the github either using git directly
+with the command
 \begin{verbatim}
     $ git clone https://github.com/mittinatten/sasalib.git
 \end{verbatim}
