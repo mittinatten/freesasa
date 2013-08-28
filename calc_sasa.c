@@ -91,7 +91,7 @@ void run_analysis(FILE *input, int use_alg, const char *name, void *param) {
 	break;
     default:
 	fprintf(stderr,"Error: no SASA algorithm specified.\n");
-	exit(0);
+	exit(EXIT_FAILURE);
     }
     gettimeofday(&t2,NULL);
     
@@ -126,14 +126,14 @@ int main (int argc, char **argv) {
         switch(opt) {
 	case 'h':
 	    help(argv[0]);
-	    exit(0);
+	    exit(EXIT_SUCCESS);
 	case 'f':
 	    input = fopen(optarg, "r");
 	    if (input == NULL) {
 		fprintf(stderr,"\nError: could not open file '%s'.\n\n", 
 			optarg);
 		short_help(argv[0]);
-		exit(1);
+		exit(EXIT_FAILURE);
 	    }
 	    break;
 	case 'n':
@@ -158,7 +158,7 @@ int main (int argc, char **argv) {
     }
     if (alg_set > 1) {
 	fprintf(stderr, "Error: multiple algorithms specified.\n");
-	exit(0);
+	exit(EXIT_FAILURE);
     }
     if (use_alg == LEE_RICHARDS) param = &d_lr;
     if (use_alg == SHRAKE_RUPLEY) param = &n_sr_points;
@@ -173,11 +173,11 @@ int main (int argc, char **argv) {
 		fclose(input);
 	    } else {
 		fprintf(stderr, "Error opening file '%s'\n", argv[i]);
-		exit(0);
+		exit(EXIT_FAILURE);
 	    }	    
 	}
     } else {
 	run_analysis(stdin,use_alg,"stdin",param);
     }    
-    return 0;
+    return EXIT_SUCCESS;
 }
