@@ -51,6 +51,10 @@ void help(const char* argv0) {
 	           "       -d  grid spacing in Lee & Richards algorithm\n"
 	           "           Default value is %4.2f Å\n"
 	    ,DEF_LR_SPACING);
+#ifdef PTHREADS
+    fprintf(stderr,"       -t  number of threads to use in calculation (for multicore CPUs)\n");
+    fprintf(stderr,"           (only implemented for Shrake & Rupley so far)\n");
+#endif    
     fprintf(stderr,"\nIf no pdb-file is specified STDIN is used for input.\n\n");
 }
 
@@ -58,7 +62,7 @@ void short_help(const char* argv0) {
     fprintf(stderr,"Run '%s -h' for help.\n\n", argv0);
 }
 
-void run_analysis(FILE *input, int use_alg, const char *name, void *param) {
+void run_analysis(FILE *input, int use_alg, const char *name, void *param, int n_threads) {
     protein *p; 
     double *sasa, *r;
     struct timeval t1, t2;
@@ -68,7 +72,7 @@ void run_analysis(FILE *input, int use_alg, const char *name, void *param) {
     sasa = (double*) malloc(sizeof(double)*protein_n(p));
 
     printf("# Using van der Waals radii and atom classes defined \n"
-	   "# by Ooi et al (PNAS 1987, 84:3086-3090) and a probe raidus\n"
+	   "# by Ooi et al (PNAS 1987, 84:3086-3090) and a probe radius\n"
 	   "# of %f Å.\n\n", PROBE_RADIUS);
 
     printf("File: %s\n",name);
@@ -83,7 +87,7 @@ void run_analysis(FILE *input, int use_alg, const char *name, void *param) {
     switch(use_alg) {
     case SHRAKE_RUPLEY:
 	printf("N_testpoint: %d\n",*(int *)param);
-	sasa_shrake_rupley(sasa,protein_xyz(p),r,protein_n(p),*(int *)param);
+	sasa_shrake_rupley(sasa,protein_xyz(p),r,protein_n(p),*(int *)param,n_threads);
 	break;
     case LEE_RICHARDS:
 	printf("d_slice: %f Å.\n",*(double *)param);
@@ -116,13 +120,13 @@ int main (int argc, char **argv) {
     int n_sr_points = DEF_SR_POINTS;
     double d_lr = DEF_LR_SPACING;
     void *param;
+    int n_threads = 1;
     int use_alg = SHRAKE_RUPLEY, alg_set = 0;
     FILE *input = NULL;
 
     extern char *optarg;
     char opt;
-
-    while ((opt = getopt(argc, argv, "f:n:d:hLS")) != -1) {
+    while ((opt = getopt(argc, argv, "f:n:d:t:hLS")) != -1) {
         switch(opt) {
 	case 'h':
 	    help(argv[0]);
@@ -150,6 +154,14 @@ int main (int argc, char **argv) {
 	case 'd':
 	    d_lr = atof(optarg);
 	    break;
+	case 't':
+#ifdef PTHREADS	    
+	    n_threads = atoi(optarg);
+#else 
+	    fprintf(stderr, "Warning: option 't' only defined if program"
+		    " compiled with thread support.\n");
+#endif
+	    break;
 	default:
 	    fprintf(stderr, "\nWarning: unknown option '%c' (will be ignored)\n\n", 
 		    opt);
@@ -163,13 +175,13 @@ int main (int argc, char **argv) {
     if (use_alg == LEE_RICHARDS) param = &d_lr;
     if (use_alg == SHRAKE_RUPLEY) param = &n_sr_points;
 
-    printf("\n# SASALIB 2013\n");
+    printf("\n# SASALIB 2013\n# Run '%s -h' for usage\n",argv[0]);
     
     if (argc > 0) {
 	for (int i = optind; i < argc; ++i) {
 	    input = fopen(argv[i],"r");
 	    if (input != NULL) {
-		run_analysis(input,use_alg,argv[i],param);
+		run_analysis(input,use_alg,argv[i],param,n_threads);
 		fclose(input);
 	    } else {
 		fprintf(stderr, "Error opening file '%s'\n", argv[i]);
@@ -177,7 +189,7 @@ int main (int argc, char **argv) {
 	    }	    
 	}
     } else {
-	run_analysis(stdin,use_alg,"stdin",param);
+	run_analysis(stdin,use_alg,"stdin",param,n_threads);
     }    
     return EXIT_SUCCESS;
 }

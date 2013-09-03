@@ -35,12 +35,15 @@
     array 'sasa'. The user is responsible for making sure this has the
     right size.  'n_points' is the number of points (<= MAX_SR_POINTS)
     to use. Fewer points lead to faster but less accurate
-    calculations. */
+    calculations. Last argument sets the number of threads in parallel
+    computation, only used if the program was compiled with
+    -DPTHREADS. */
 void sasa_shrake_rupley(double *sasa,
                         const vector3 *xyz,
                         const double *radii,
                         size_t n_atoms,
-                        int n_points);
+                        int n_points,
+			int n_threads);
 
 /** Solvent accessible surface area for each atom is written to the
     array 'sasa'. The user is responsible for making sure this has the

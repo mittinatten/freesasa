@@ -1,5 +1,5 @@
-CFLAGS=-O3 -std=c99 -Wall -pedantic
-LDFLAGS=-lm
+CFLAGS=-O3 -std=c99 -Wall -pedantic -DPTHREADS
+LDFLAGS=-lm -lpthread
 
 all: calc_sasa
 
