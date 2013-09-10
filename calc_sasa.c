@@ -81,6 +81,9 @@ void run_analysis(FILE *input, int use_alg, const char *name, void *param, int n
     protein_r_def(p,r);
 
     printf("algorithm: %s\n",alg_names[use_alg]);
+#ifdef PTHREADS
+    printf("n_thread: %d\n",n_threads);
+#endif
     
     gettimeofday(&t1,NULL);
     
@@ -91,7 +94,7 @@ void run_analysis(FILE *input, int use_alg, const char *name, void *param, int n
 	break;
     case LEE_RICHARDS:
 	printf("d_slice: %f Å.\n",*(double *)param);
-	sasa_lee_richards(sasa,protein_xyz(p),r,protein_n(p),*(double *)param);
+	sasa_lee_richards(sasa,protein_xyz(p),r,protein_n(p),*(double *)param,n_threads);
 	break;
     default:
 	fprintf(stderr,"Error: no SASA algorithm specified.\n");

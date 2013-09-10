@@ -53,7 +53,8 @@ void sasa_lee_richards(double* sasa,
                        const vector3 *xyz,
                        const double *radii,
                        size_t n_atoms,
-                       double grid);
+                       double grid,
+		       int n_threads);
 
 // other algorithms?
 
