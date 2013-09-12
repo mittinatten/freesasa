@@ -4,8 +4,8 @@ use warnings;
 use Statistics::Descriptive;
 
 my @ref_files = `ls reference/*`;
-my @sr_files = `ls SR/*/*`;
-my @lr_files = `ls LR/*/*`;
+my @sr_files = `ls SR1/*/*`;
+my @lr_files = `ls LR1/*/*`;
 
 my %ref_data;
 my %sr_data;
