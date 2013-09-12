@@ -27,7 +27,7 @@ function LR {
 function SR {
     dir=SR$t
     if [ ! -d "$dir" ]; then mkdir $dir; fi
-    for n in 20 50 100 200 500 2000 5000
+    for n in 20 50 100 200 500 1000 2000 5000
     do
 	outputdir=$dir/$n/
 	if [ ! -d "$outputdir" ]; then mkdir $outputdir; fi
