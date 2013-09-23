@@ -24,6 +24,9 @@
     comma-separated list, ending with newline. */
 void srp_print_n_opt(FILE*);
 
+/** Returns 1 if n-value is allowed, 0 if not. */
+int srp_n_is_valid(int n);
+
 /** Returns an array of n test points (array has size 3*n). If n is
     not one of the legal values, an error message is printed and
     exit(1) is called. */

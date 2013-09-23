@@ -81,14 +81,16 @@ double sasa_sum_angles(int n_buried, double *a, double *b);
 void sasa_get_contacts(int **nb, int *nn, int n_atoms, 
 		       const vector3 *xyz, const double *radii);
 
-void sasa_shrake_rupley(double *sasa,
-                        const vector3 *xyz,
-                        const double *r,
-                        size_t n_atoms,
-                        int n_points,
-			int n_threads)
+int sasa_shrake_rupley(double *sasa,
+		       const vector3 *xyz,
+		       const double *r,
+		       size_t n_atoms,
+		       int n_points,
+		       int n_threads)
 {
     const double *srp = srp_get_points(n_points);
+    if (srp == NULL) return 1;
+
     char spcount_0[n_points];
     vector3 srp_v3[n_points];
 
@@ -124,6 +126,7 @@ void sasa_shrake_rupley(double *sasa,
 	    sasa[i] = sasa_sr_calc_atom(i,sr);
 	}
     }
+    return 0;
 }
 
 void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
@@ -172,7 +175,7 @@ double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
     const int n_points = sr.n_points;
     const vector3 *xyz = sr.xyz;
     char spcount[n_points];
-    const double ri = sr.r[i]+PROBE_RADIUS;
+    const double ri = sr.r[i]+SASA_PROBE_RADIUS;
     /* testpoints for this atom */
     vector3 srp_v3_ri[n_points];
     
@@ -189,7 +192,7 @@ double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
     
     for (int j = 0; j < sr.n_atoms; ++j) {
 	if (j == i) continue;
-	const double rj = sr.r[j]+PROBE_RADIUS;
+	const double rj = sr.r[j]+SASA_PROBE_RADIUS;
 	const double cut2 = (ri+rj)*(ri+rj);
 	if (vector3_dist2(&xyz[i],&xyz[j]) > cut2)
 	    continue;
@@ -209,12 +212,12 @@ double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
     return (4.0*PI*ri*ri*n_surface)/n_points;
 }
 
-void sasa_lee_richards(double *sasa,
-                       const vector3 *xyz,
-                       const double *atom_radii,
-                       size_t n_atoms,
-                       double delta,
-		       int n_threads)
+int sasa_lee_richards(double *sasa,
+		      const vector3 *xyz,
+		      const double *atom_radii,
+		      size_t n_atoms,
+		      double delta,
+		      int n_threads)
 {
     /* Steps:
        Define slice range
@@ -230,7 +233,7 @@ void sasa_lee_richards(double *sasa,
     double max_r = 0;
     double radii[n_atoms];
     for (size_t i = 0; i < n_atoms; ++i) {
-	radii[i] = atom_radii[i] + PROBE_RADIUS;
+	radii[i] = atom_radii[i] + SASA_PROBE_RADIUS;
         double z = xyz[i].z, r = radii[i];
         max_z = z > max_z ? z : max_z;
         min_z = z < min_z ? z : min_z;
@@ -262,6 +265,7 @@ void sasa_lee_richards(double *sasa,
 	}
     }    
     for (int i = 0; i < n_atoms; ++i) free(nb[i]);
+    return 0;
 }
 
 #ifdef PTHREADS

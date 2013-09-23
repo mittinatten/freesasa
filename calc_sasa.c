@@ -73,7 +73,7 @@ void run_analysis(FILE *input, int use_alg, const char *name, void *param, int n
 
     printf("# Using van der Waals radii and atom classes defined \n"
 	   "# by Ooi et al (PNAS 1987, 84:3086-3090) and a probe radius\n"
-	   "# of %f Å.\n\n", PROBE_RADIUS);
+	   "# of %f Å.\n\n", SASA_PROBE_RADIUS);
 
     printf("File: %s\n",name);
 
