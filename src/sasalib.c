@@ -19,15 +19,14 @@
 
 #include <sys/time.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
+
 #include "sasa.h"
 #include "pdbutil.h"
 #include "sasalib.h"
 #include "srp.h"
 #include "oons.h"
-
-#define SASALIB_DEF_SR_N 100
-#define SASALIB_DEF_LR_D 0.25
 
 struct _sasalib_t {
     sasalib_algorithm alg;
@@ -40,9 +39,11 @@ struct _sasalib_t {
     double elapsed_time;
     int owns_protein;
     int customized;
+    int inited;
     double total;
     double polar;
     double apolar;
+    char proteinname[SASALIB_NAME_LIMIT];
 }; 
 
 const sasalib_t sasalib_def_param = {
@@ -56,9 +57,11 @@ const sasalib_t sasalib_def_param = {
     .elapsed_time = 0,
     .owns_protein = 0,
     .customized = 0,
+    .inited = 0,
     .total = 0.,
     .polar = 0.,
-    .apolar = 0.
+    .apolar = 0.,
+    .proteinname = "undef"
 };
 
 const char *sasalib_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
@@ -103,8 +106,18 @@ sasalib_t* sasalib_init()
 {
     sasalib_t *s = (sasalib_t*) malloc(sizeof(sasalib_t));
     *s = sasalib_def_param;
+    s->inited = 1;
     return s;
 }
+
+void sasalib_copy_param(sasalib_t *target, const sasalib_t *source)
+{
+    target->alg = source->alg;
+    target->n_sr = source->n_sr;
+    target->d_lr = source->d_lr;
+    target->n_threads = source->n_threads;
+}
+
 void sasalib_free(sasalib_t *s)
 {
     if (s->owns_protein) {
@@ -112,7 +125,7 @@ void sasalib_free(sasalib_t *s)
     }
     free(s->sasa);
     free(s->r);
-    free(s);
+    if (s->inited) free(s);
 }
 
 int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
@@ -165,7 +178,8 @@ int sasalib_set_sr_points(sasalib_t *s, int n) {
 
 int sasalib_get_sr_points(const sasalib_t* s)
 {
-    return s->n_sr;
+    if (s->alg == SHRAKE_RUPLEY) return s->n_sr;
+    return -1;
 }
 
 int sasalib_set_lr_delta(sasalib_t *s, double d)
@@ -183,7 +197,8 @@ int sasalib_set_lr_delta(sasalib_t *s, double d)
 
 int sasalib_get_lr_delta(const sasalib_t *s)
 {
-    return s->d_lr;
+    if (s->alg == LEE_RICHARDS) return s->d_lr;
+    return -1.0;
 }
 
 #ifdef PTHREADS
@@ -242,11 +257,30 @@ double sasalib_radius_atom(const sasalib_t *s, int i)
     fprintf(stderr,"Error: Atom index %d invalid.\n",i);
     return -1.0;
 }
+
+void sasalib_set_proteinname(sasalib_t *s,const char *name)
+{
+    int n;
+    if ((n = strlen(name)) > SASALIB_NAME_LIMIT) {
+	strcpy(s->proteinname,"...");
+	sprintf(s->proteinname+3,"%.*s",SASALIB_NAME_LIMIT-3,
+		name+n+3-SASALIB_NAME_LIMIT);
+    } else {
+	strcpy(s->proteinname,name);
+    }
+}
+
+const char* sasalib_get_proteinname(const sasalib_t *s) 
+{
+    return s->proteinname;
+}
+
 int sasalib_log(FILE *log, const sasalib_t *s)
 {
     fprintf(log,"# Using van der Waals radii and atom classes defined \n"
 	    "# by Ooi et al (PNAS 1987, 84:3086-3090) and a probe radius\n"
 	    "# of %f Å.\n\n", SASA_PROBE_RADIUS);
+    fprintf(log,"name: %s\n",s->proteinname);
     fprintf(log,"algorithm: %s\n",sasalib_alg_names[s->alg]);
 #ifdef PTHREADS
     fprintf(log,"n_thread: %d\n",s->n_threads);
@@ -257,7 +291,7 @@ int sasalib_log(FILE *log, const sasalib_t *s)
 	fprintf(log,"N_testpoint: %d\n",s->n_sr);
 	break;
     case LEE_RICHARDS:
-	fprintf(log,"d_slice: %f Å.\n",s->d_lr);
+	fprintf(log,"d_slice: %f Å\n",s->d_lr);
 	break;
     default:
 	fprintf(log,"Error: no SASA algorithm specified.\n");

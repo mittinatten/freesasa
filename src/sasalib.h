@@ -30,6 +30,14 @@
 typedef struct _sasalib_t sasalib_t;
 typedef enum {LEE_RICHARDS, SHRAKE_RUPLEY} sasalib_algorithm;
 
+// Limit for protein name lengths
+#define SASALIB_NAME_LIMIT 30
+
+// Default parameters
+#define SASALIB_DEF_SR_N 100
+#define SASALIB_DEF_LR_D 0.25
+
+
 /** Allocates empty sasalib_t obejct with default parameters. Must be
     called before calculation. */
 sasalib_t* sasalib_init();
@@ -38,6 +46,12 @@ sasalib_t* sasalib_init();
     internally stored protein will be freed. If the protein was
     supplied by the user, it will not be freed by this function. */
 void sasalib_free(sasalib_t *s);
+
+/** Copies all algorithm parameters of source to target. Data from
+    calculations are not copied, i.e. this can be used for setting up
+    several calculations with identical parameters for different
+    proteins. */
+void sasalib_copy_param(sasalib_t *target, const sasalib_t *source);
 
 /** performs calculations on PDB-file. Results stored in parameter
     s. If s is not initialized default values are used, these are
@@ -83,6 +97,15 @@ int sasalib_set_nthreads(sasalib_t*,int n);
 /** Returns the number of threads used in the calcultion */
 int sasalib_get_nthreads(const sasalib_t*);
 #endif
+
+/** Sets name of protein, useful for logging. Uses last
+    SASALIB_NAME_LIMIT characters if name is too long (since then it
+    is probably a file name and the last characters are the most
+    interesting). */
+void sasalib_set_proteinname(sasalib_t*,const char*);
+
+/** Returns protein name. */
+const char* sasalib_get_proteinname(const sasalib_t*);
 
 /** Print the results of the calculation to STDOUT. */
 void sasalib_print(FILE* out,const sasalib_t *data);
