@@ -37,10 +37,10 @@ individual atoms, allowing summation of SASA over user-defined
 atom-classes. The library provides both the Lee \& Richards
 \cite{LnR} and Shrake \& Rupley \cite{SnR} algorithms.
 
-To the author's knowledge there aren't any fully open source programs for
-calculating solvent accessible surface areas (SASA) of
+To the author's knowledge there aren't any fully open source programs
+for calculating solvent accessible surface areas (SASA) of
 proteins. Neither are there any packages designed to be easily
-integrated as a library in other programs. 
+integrated as a library in other programs.
 
 The SASA is defined as the surface area of a protein accessible to a
 spherical probe rolling over the protein, including internal
@@ -49,7 +49,7 @@ therefore cavities that are too small for the solvent to enter are not
 counted at all. The position of the center of the probe sphere is used
 to define the surface area, not the point of contact.
 
-\section{Getting started}
+\section{Simple sample program}\label{sec:simple_sample}
 
 The following shows a minimal program that performs a SASA-calculation
 using a PDB-file as input. No error checking is done, the example
@@ -66,7 +66,9 @@ int main(int argc, char **argv) {
     //structure from STDIN
     sasalib_calc_pdb(s,stdin);
 
-    sasalib_print(stdout,s);     //print results to STDOUT
+    //print results
+    sasalib_log(stdout,s);
+    printf("Total area: %f Å2\n", sasalib_total(s));
 
     //clean up
     sasalib_free(s);
@@ -78,24 +80,17 @@ The output of the program is (using the structure with PDB code 1UBQ):
 \begin{verbatim}
 name: undef
 algorithm: Shrake & Rupley
+n_thread: 1
 N_testpoint: 100
-time_elapsed: 0.018549 s
+time_elapsed: 0.012870 s
 n_atoms: 602
-
-> polar_apolar
-apolar   2788.07
-polar   1968.06
-
-> all
-total   4756.12
+Total area: 4756.124034 Å2
 \end{verbatim}
-The first 3 lines show the name of the protein, the algorithm and the
+The first 4 lines show the name of the protein, the algorithm and the
 parameters of the algorithm (the ones shown here are default
 values). Then comes data over calculation time and the size of the
-protein. Each result begins with \texttt{>} followed by the grouping
-of atoms used. The label \texttt{polar\_apolar} means that the atoms
-have been divided into polar and apolar atoms (based on Ooi et
-al. \cite{OONS}). The SASA values are given in Å$^2$.
+protein. Finally the result of the calculation is printed, here the
+total SASA values in Å$^2$.
 
 \section{Algorithms}
 
@@ -325,8 +320,19 @@ for two PDB-files.
 
 \subsection{Library interface}
 
-Sasalib provides functions for doing the following steps in a SASA
-calculation:
+Sasalib has two levels of library interface. The simplest interface
+assumes the user does not want to access the results in any raw form
+and takes care of most of the allocation of resources. This
+functionality is specified in the header \texttt{sasalib.h}. The
+sample program in section \ref{sec:simple_sample} uses this interface.
+In addition to what is shown in the example this interface also allows
+setting user settings. This is documented in the header, and the program
+\texttt{calc\_sasa.c} illustrates how this can be used.
+
+To gain data access to atom-per-atom data, to specify custom radii or
+to define one's own groups of atoms to calculate SASA over, a deeper
+level is also available. The library mainly provides functions for
+doing the following in different ways
 \begin{enumerate}
   \item Initialize protein.
   \item Calculate atomic radii.

@@ -22,6 +22,21 @@
 
 #include "atomclassifier.h"
 
+/** the return values of the atomclassifier-function in
+    oons_classes() */
+typedef enum {
+    apolar=0, polar, oons_class_unknown
+} oons_class;
+
+/** the return values of the atomclassifier-function in
+    oons_types() */
+typedef enum {
+    hydrogen=0, aliphatic_C, aromatic_C,
+    carbo_C, amide_N, carbo_O, 
+    hydroxyl_O, sulfur, selenium,
+    unknown_polar, oons_type_unknown
+} oons_type;
+
 double oons_radius_pdbline(const char *pdb_line);
 
 double oons_radius(const char *res_name, const char *atom_name);
@@ -31,6 +46,7 @@ atomclassifier oons_classes();
 
 /** carbo_O/aliphatic_C/aromatic_C/etc */
 atomclassifier oons_types();
+
 
 
 #endif

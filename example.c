@@ -29,7 +29,8 @@ int main(int argc, char **argv) {
     sasalib_calc_pdb(s,stdin);
 
     //print results
-    sasalib_print(stdout,s);
+    sasalib_log(stdout,s);
+    printf("Total area: %f Å2\n", sasalib_total(s));
 
     //clean up
     sasalib_free(s);

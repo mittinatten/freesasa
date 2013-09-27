@@ -58,7 +58,9 @@ void run_analysis(FILE *input, const char *name, const sasalib_t *settings) {
     sasalib_copy_param(s,settings);
     sasalib_set_proteinname(s,name);
     sasalib_calc_pdb(s,input);
-    sasalib_print(stdout,s);
+    sasalib_log(stdout,s);
+    printf("\nTotal: %9.2f Å2\nPolar: %9.2f Å2\nApolar: %9.2f Å2\n",
+           sasalib_total(s), sasalib_polar(s), sasalib_apolar(s));
     sasalib_free(s);
 }
 
