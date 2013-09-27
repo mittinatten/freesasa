@@ -97,13 +97,25 @@ void vector3_rotate_block(vector3* v, int i1, int i2,
                           double phi);
 
 /** For systems with symmetric periodic boundary conditions, how much
-    must be added to v to but it in box of side L. Adding the
+    must be added to v to put it in box of side L. Adding the
     calculated vector diff to v will achieve this. */
 void vector3_distance_to_box(vector3* diff, const vector3* v, double L);
 
-/** Returns the closest distance between p3 and a line passing p1 and p3*/
+/** Returns the closest distance between p3 and a line passing p1 and
+    p3*/
 double vector3_passage_distance(const vector3 *p1,
                                 const vector3 *p2,
                                 const vector3 *p3);
+
+
+/** Allocates an array of vector3 from arrays of x, y and z
+    coordinates. Array can be freed with regular free(). */
+vector3* vector3_xyz_alloc(const double *x, const double *y, 
+			   const double *z, int n);
+
+/** Allocates an array of vector3 from an array of size 3*n with
+    coordinates in order x1,y1,z1,x2,y2,z2. Array can be freed with
+    regular free(). */
+vector3* vector3_x3n_alloc(const double *x3n, int n);
 
 #endif

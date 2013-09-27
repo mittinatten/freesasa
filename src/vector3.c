@@ -21,6 +21,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <assert.h>
+#include <stdlib.h>
 
 const vector3 vector_zero = {0, 0, 0};
 const vector3 vector_ex = {1, 0, 0};
@@ -219,4 +220,24 @@ double vector3_passage_distance(const vector3 *p1, const vector3 *p2, const vect
     vector3_sum(&D, &p1p3, &p1p2);
 
     return vector3_mag(&D);
+}
+
+
+vector3* vector3_xyz_alloc(const double *x, const double *y, 
+			   const double *z, int n)
+{
+    vector3 *v = malloc(sizeof(vector3)*n);
+    for (int i = 0; i < n; ++i) {
+	vector3_set(&v[i],x[i],y[i],z[i]);
+    }
+    return v;
+}
+
+vector3* vector3_x3n_alloc(const double *x, int n)
+{
+    vector3 *v = malloc(sizeof(vector3)*n);
+    for (int i = 0; i < n; ++i) {
+	vector3_set(&v[i],x[3*i],x[3*i+1],x[3*i+2]);
+    }
+    return v;
 }

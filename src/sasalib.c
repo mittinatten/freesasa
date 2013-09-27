@@ -28,7 +28,7 @@
 #include "srp.h"
 #include "oons.h"
 
-struct _sasalib_t {
+struct sasalib_t {
     sasalib_algorithm alg;
     double *sasa;
     double *r;

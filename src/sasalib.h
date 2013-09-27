@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include "protein.h"
 
-typedef struct _sasalib_t sasalib_t;
+typedef struct sasalib_t sasalib_t;
 typedef enum {LEE_RICHARDS, SHRAKE_RUPLEY} sasalib_algorithm;
 
 // Limit for protein name lengths

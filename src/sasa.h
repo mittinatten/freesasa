@@ -25,7 +25,7 @@
 #include "atomclassifier.h"
 #include "protein.h"
 
-//this should be made a user option eventually
+//this could be made a user option
 #define SASA_PROBE_RADIUS 1.4 
 
 /** Solvent accessible surface area for each atom is written to the
