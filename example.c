@@ -24,18 +24,15 @@ int main(int argc, char **argv) {
     //initialize sasalib-object with default parameters
     sasalib_t *s = sasalib_init();
 
-    //open PDB-file given as commandline argument
-    FILE *pdb_file = fopen(argv[1],"r");
-
-    //do the calculation using default parameters with PDB-file as input
-    sasalib_calc_pdb(s,pdb_file);
+    //do the calculation using default parameters with protein
+    //structure from STDIN
+    sasalib_calc_pdb(s,stdin);
 
     //print results
     sasalib_print(stdout,s);
 
     //clean up
     sasalib_free(s);
-    fclose(pdb_file);
 
     return EXIT_SUCCESS;
 }

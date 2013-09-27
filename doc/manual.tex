@@ -62,17 +62,14 @@ int main(int argc, char **argv) {
     //initialize sasalib-object with default parameters
     sasalib_t *s = sasalib_init();
 
-    //open the PDB-file given as commandline argument
-    FILE *pdb_file = fopen(argv[1],"r");
+    //do the calculation using default parameters with protein
+    //structure from STDIN
+    sasalib_calc_pdb(s,stdin);
 
-    //do the calculation using default parameters with PDB-file as input
-    sasalib_calc_pdb(s,pdb_file);
-
-    sasalib_print(stdout,s);     //print results
+    sasalib_print(stdout,s);     //print results to STDOUT
 
     //clean up
     sasalib_free(s);
-    fclose(pdb_file);
 
     return EXIT_SUCCESS;
 }
@@ -82,7 +79,7 @@ The output of the program is (using the structure with PDB code 1UBQ):
 name: undef
 algorithm: Shrake & Rupley
 N_testpoint: 100
-time_elapsed: 0.041654 s
+time_elapsed: 0.018549 s
 n_atoms: 602
 
 > polar_apolar
