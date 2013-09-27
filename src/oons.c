@@ -23,17 +23,6 @@
 #include "oons.h"
 #include "pdbutil.h"
 
-typedef enum {
-    hydrogen=0, aliphatic_C, aromatic_C,
-    carbo_C, amide_N, carbo_O, 
-    hydroxyl_O, sulfur, selenium,
-    unknown_polar, oons_type_unknown
-} oons_type;
-
-typedef enum {
-    apolar=0, polar, oons_class_unknown
-} oons_class;
-
 const char *oons_t2s[] = {
     "hydrogen", "aliphatic_C", "aromatic_C",
     "carbo_C", "amide_N", "carbo_O",

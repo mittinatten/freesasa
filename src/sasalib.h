@@ -107,9 +107,6 @@ void sasalib_set_proteinname(sasalib_t*,const char*);
 /** Returns protein name. */
 const char* sasalib_get_proteinname(const sasalib_t*);
 
-/** Print the results of the calculation to STDOUT. */
-void sasalib_print(FILE* out,const sasalib_t *data);
-
 /** Returns the total SASA. Negative return value and warning printed
     if calculation hasn't been performed yet. */
 // not implemented yet
