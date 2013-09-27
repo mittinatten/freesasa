@@ -7,6 +7,8 @@
 \usepackage{amsmath}
 \usepackage{cite}
 
+\usepackage{pslatex}
+
 %\usepackage{fancyvrb}
 
 \author{Simon Mitternacht}
@@ -46,6 +48,57 @@ cavities. The probe represents a solvent molecule (i.e. water), and
 therefore cavities that are too small for the solvent to enter are not
 counted at all. The position of the center of the probe sphere is used
 to define the surface area, not the point of contact.
+
+\section{Getting started}
+
+The following shows a minimal program that performs a SASA-calculation
+using a PDB-file as input. No error checking is done, the example
+simply illustrates the most basic functionality of the library.
+\begin{verbatim}
+#include <stdlib.h>
+#include <sasalib.h> // if in include-path
+
+int main(int argc, char **argv) { 
+    //initialize sasalib-object with default parameters
+    sasalib_t *s = sasalib_init();
+
+    //open the PDB-file given as commandline argument
+    FILE *pdb_file = fopen(argv[1],"r");
+
+    //do the calculation using default parameters with PDB-file as input
+    sasalib_calc_pdb(s,pdb_file);
+
+    sasalib_print(stdout,s);     //print results
+
+    //clean up
+    sasalib_free(s);
+    fclose(pdb_file);
+
+    return EXIT_SUCCESS;
+}
+\end{verbatim}
+The output of the program is (using the structure with PDB code 1UBQ):
+\begin{verbatim}
+name: undef
+algorithm: Shrake & Rupley
+N_testpoint: 100
+time_elapsed: 0.041654 s
+n_atoms: 602
+
+> polar_apolar
+apolar   2788.07
+polar   1968.06
+
+> all
+total   4756.12
+\end{verbatim}
+The first 3 lines show the name of the protein, the algorithm and the
+parameters of the algorithm (the ones shown here are default
+values). Then comes data over calculation time and the size of the
+protein. Each result begins with \texttt{>} followed by the grouping
+of atoms used. The label \texttt{polar\_apolar} means that the atoms
+have been divided into polar and apolar atoms (based on Ooi et
+al. \cite{OONS}). The SASA values are given in Å$^2$.
 
 \section{Algorithms}
 
@@ -471,11 +524,21 @@ In no specific order
 
 \begin{thebibliography}{50}
 
+\bibitem{OONS} 
+  Ooi T, Oobatake M, Némethy G, Scheraga H (1987)
+  Accessible surface areas as a measure of the thermodynamic
+  parameters of hydration of peptides. Proceedings of the National
+  Academy of Sciences of the United States of America 84: 3086–3090.
+
 \bibitem{LnR} 
-  Lee B, Richards FM (1971) The interpretation of protein structures: estimation of static accessibility. Journal of molecular biology 55: 379–-400.
+  Lee B, Richards FM (1971) The interpretation of protein
+  structures: estimation of static accessibility. Journal of molecular
+  biology 55: 379–-400.
 
 \bibitem{SnR} 
-  Shrake A, Rupley JA (1973) Environment and exposure to solvent of protein atoms. Lysozyme and insulin. Journal of Molecular Biology 79: 351–-371.
+  Shrake A, Rupley JA (1973) Environment and exposure to
+  solvent of protein atoms. Lysozyme and insulin. Journal of Molecular
+  Biology 79: 351–-371.
 
 \bibitem{PISCES}
   Wang G, Dunbrack RL (2003) PISCES: a protein sequence culling server. 

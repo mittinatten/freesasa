@@ -129,6 +129,7 @@ int sasa_shrake_rupley(double *sasa,
     return 0;
 }
 
+#ifdef PTHREADS
 void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
 {
 	pthread_t thread[n_threads];
@@ -168,6 +169,7 @@ void *sasa_sr_thread(void* arg)
     free(sasa);
     pthread_exit(NULL);
 }
+#endif
 
 double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
     /* this array keeps track of which testpoints belonging to
