@@ -21,17 +21,55 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "sasa.h"
 #include "srp.h"
 
+/** internal functions for S&R calculations **/
+// calculation parameters (results stored in *sasa)
+typedef struct {
+    int i1,i2;
+    int n_atoms;
+    int n_points;
+    const vector3 *xyz;
+    const vector3 *srp_v3;
+    const double *r;
+    double *sasa;
+    char *spcount_0;
+} sasa_sr_t;
+
+#ifdef PTHREADS
+void sasa_sr_do_threads(int n_threads, sasa_sr_t sr);
+void *sasa_sr_thread(void *arg);
+#endif 
+
+double sasa_sr_calc_atom(int i,sasa_sr_t);
+
 /** internal functions for L&R calculations **/
-void sasa_add_slice_area(double *sasa, double z, double delta, const vector3 *xyz, 
-			 const double *radii, const int **nb, const int *nn, 
-			 int n_atoms);
+//calculation parameters (results stored in *sasa)
+typedef struct {
+    int n_atoms;
+    const double *radii;
+    const vector3 *xyz;
+    const int **nb;
+    const int *nn;
+    double delta;
+    double min_z;
+    double max_z;
+    double *sasa;
+} sasa_lr_t; 
+
+#ifdef PTHREADS
+void sasa_lr_do_threads(int n_threads, sasa_lr_t);
+void *sasa_lr_thread(void *arg);
+#endif
+
+void sasa_add_slice_area(double z, sasa_lr_t);
+
 // the z argument is only really necessary for the debugging section
 void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z, 
-			 const double *r, double *exposed_arc, 
-			 const int **nb, const int *nn);
+		       const double *r, double *exposed_arc, 
+		       const int **nb, const int *nn);
 //does not necessarily leave a and b in a consistent state
 double sasa_sum_angles(int n_buried, double *a, double *b);
 
@@ -43,80 +81,145 @@ double sasa_sum_angles(int n_buried, double *a, double *b);
 void sasa_get_contacts(int **nb, int *nn, int n_atoms, 
 		       const vector3 *xyz, const double *radii);
 
-void sasa_shrake_rupley(double *sasa,
-                        const vector3 *xyz,
-                        const double *r,
-                        size_t n_atoms,
-                        int n_points)
+int sasa_shrake_rupley(double *sasa,
+		       const vector3 *xyz,
+		       const double *r,
+		       size_t n_atoms,
+		       int n_points,
+		       int n_threads)
 {
     const double *srp = srp_get_points(n_points);
+    if (srp == NULL) return 1;
 
-    //turn test-points into vector3's
+    char spcount_0[n_points];
     vector3 srp_v3[n_points];
+
+    //turn test-points into vector3's of unit length
     for (int k = 0; k < n_points; ++k) {
         vector3_set(&srp_v3[k],srp[k*3],srp[k*3+1],srp[k*3+2]);
         vector3_setlength(&srp_v3[k],1.0); //just to be sure
     }
-    vector3 test;
 
-    //calculate SASA
-    for (int i = 0; i < n_atoms; ++i) {
-
-        /* this array keeps track of which testpoints belonging to
-           a certain atom overlap with other atoms */
-        char spcount[n_points];
-        for (int k = 0; k < n_points; ++k) {
-            spcount[k] = 0;
-        }
-
-        double ri = r[i]+PROBE_RADIUS;
-        for (int j = 0; j < n_atoms; ++j) {
-            if (j == i) continue;
-            const double rj = r[j]+PROBE_RADIUS;
-            const double cut2 = (ri+rj)*(ri+rj);
-            if (vector3_dist2(&xyz[i],&xyz[j]) > cut2)
-                continue;
-            for (int k = 0; k < n_points; ++k) {
-                if (spcount[k]) continue;
-
-                /* this probably cannot be done beforehand, because
-                   changing the length repeatedly could cause
-                   round-off errors */
-                vector3_copy(&test, &srp_v3[k]);
-
-                // test-point vectors have length 1.0
-                vector3_multiply(&test, ri);
-                vector3_add(&test, &xyz[i]);
-
-                if (vector3_dist2(&test, &xyz[j]) <= rj*rj) {
-                    spcount[k] = 1;
-                }
-                /* i.e. if |xyz[i]+ri*srp[k] - xyz[j]| <= rj we have an
-                   overlap. */
-            }
-        }
-        int n_surface = 0;
-        for (int k = 0; k < n_points; ++k) {
-            if (!spcount[k]) ++n_surface;
-#ifdef DEBUG
-            if (!spcount[k]) {
-                vector3_copy(&test,&srp_v3[k]);
-                vector3_multiply(&test,ri);
-                vector3_add(&test,&xyz[i]);
-                printf("%f %f %f\n",test.x,test.y,test.z);
-            }
-#endif
-        }
-        //paranthesis to make sure floating point division is used (I am paranoid about this).
-        sasa[i] = (4.0*PI*ri*ri*n_surface)/n_points;
+    /* a reference zero array is prepared so that it won't need to be
+       initialized for each atom */
+    for (int k = 0; k < n_points; ++k) {
+	spcount_0[k] = 0;
     }
+    //store parameters and reference arrays
+    sasa_sr_t sr = {.n_atoms = n_atoms, .n_points = n_points, 
+		    .xyz = xyz, .srp_v3 = srp_v3,
+		    .r = r, .spcount_0 = spcount_0,
+		    .sasa = sasa};
+
+    //calculate SASA 
+    if (n_threads > 1) {
+#ifdef PTHREADS
+	sasa_sr_do_threads(n_threads, sr);
+#else 
+	perror("Error: program compiled for single-threaded used, but multiple threads were requested.");
+	exit(EXIT_FAILURE);
+#endif
+    }
+    else {
+	// don't want the overhead of generating threads if only one is used
+	for (int i = 0; i < n_atoms; ++i) {
+	    sasa[i] = sasa_sr_calc_atom(i,sr);
+	}
+    }
+    return 0;
 }
 
-void sasa_lee_richards(double *sasa,
-                       const vector3 *xyz,
-                       const double *atom_radii,
-                       size_t n_atoms,
-                       double delta)
+#ifdef PTHREADS
+void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
+{
+	pthread_t thread[n_threads];
+	sasa_sr_t srt[n_threads];
+	int n_atoms = sr.n_atoms;
+	int thread_block_size = n_atoms/n_threads;
+	for (int t = 0; t < n_threads; ++t) {
+	    srt[t] = sr;
+	    srt[t].i1 = t*thread_block_size;
+	    if (t == n_threads-1) srt[t].i2 = n_atoms;
+	    else srt[t].i2 = (t+1)*thread_block_size;
+	    int res = pthread_create(&thread[t], NULL, sasa_sr_thread, (void *) &srt[t]);
+	    if (res) {
+		perror("Thread creation failed");
+		exit(EXIT_FAILURE);
+	    }
+	}
+	for (int t = 0; t < n_threads; ++t) {
+	    void *thread_result;
+	    int res = pthread_join(thread[t],&thread_result);
+	    if (res) {
+		perror("Thread join failed");
+		exit(EXIT_FAILURE);
+	    }
+	}
+}
+void *sasa_sr_thread(void* arg)
+{
+    sasa_sr_t sr = *((sasa_sr_t*) arg);
+    int n = sr.i2-sr.i1;
+    double *sasa = (double*)malloc(sizeof(double)*n);
+    for (int i = 0; i < n; ++i) {
+	sasa[i] = sasa_sr_calc_atom(i+sr.i1,sr);
+    }
+    // mutex should not be necessary, but might be safer to have one here?
+    memcpy(&sr.sasa[sr.i1],sasa,sizeof(double)*n);
+    free(sasa);
+    pthread_exit(NULL);
+}
+#endif
+
+double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
+    /* this array keeps track of which testpoints belonging to
+       a certain atom overlap with other atoms */
+    const int n_points = sr.n_points;
+    const vector3 *xyz = sr.xyz;
+    char spcount[n_points];
+    const double ri = sr.r[i]+SASA_PROBE_RADIUS;
+    /* testpoints for this atom */
+    vector3 srp_v3_ri[n_points];
+    
+    memcpy(spcount,sr.spcount_0,sizeof(char)*n_points);
+
+    /* Initialize testpoints for this atom*/
+    memcpy(srp_v3_ri,sr.srp_v3,sizeof(vector3)*n_points);
+    for (int j = 0; j < n_points; ++j) {
+	//set length (the reference vectors should have length 1.0)
+	vector3_multiply(&srp_v3_ri[j],ri);
+	//translate vectors to surround correct atom
+	vector3_add(&srp_v3_ri[j],&xyz[i]);
+    }
+    
+    for (int j = 0; j < sr.n_atoms; ++j) {
+	if (j == i) continue;
+	const double rj = sr.r[j]+SASA_PROBE_RADIUS;
+	const double cut2 = (ri+rj)*(ri+rj);
+	if (vector3_dist2(&xyz[i],&xyz[j]) > cut2)
+	    continue;
+	for (int k = 0; k < n_points; ++k) {
+	    if (spcount[k]) continue;
+	    if (vector3_dist2(&srp_v3_ri[k], &xyz[j]) <= rj*rj) {
+		spcount[k] = 1;
+	    }
+	    /* i.e. if |xyz[i]+ri*srp[k] - xyz[j]| <= rj we have an
+	       overlap. */
+	}
+    }
+    int n_surface = 0;
+    for (int k = 0; k < n_points; ++k) {
+	if (!spcount[k]) ++n_surface;
+    }
+    return (4.0*PI*ri*ri*n_surface)/n_points;
+}
+
+int sasa_lee_richards(double *sasa,
+		      const vector3 *xyz,
+		      const double *atom_radii,
+		      size_t n_atoms,
+		      double delta,
+		      int n_threads)
 {
     /* Steps:
        Define slice range
@@ -132,7 +235,7 @@ void sasa_lee_richards(double *sasa,
     double max_r = 0;
     double radii[n_atoms];
     for (size_t i = 0; i < n_atoms; ++i) {
-	radii[i] = atom_radii[i] + PROBE_RADIUS;
+	radii[i] = atom_radii[i] + SASA_PROBE_RADIUS;
         double z = xyz[i].z, r = radii[i];
         max_z = z > max_z ? z : max_z;
         min_z = z < min_z ? z : min_z;
@@ -141,36 +244,100 @@ void sasa_lee_richards(double *sasa,
     }
     min_z -= max_r;
     max_z += max_r;
-
-    
+    min_z += 0.5*delta;
+ 
     // determine which atoms are neighbours
     int *nb[n_atoms], nn[n_atoms];
     sasa_get_contacts((int**)nb,(int*)nn,n_atoms,xyz,radii);
+    sasa_lr_t lr = {.n_atoms = n_atoms, .radii = radii, .xyz = xyz,
+		    .nb = (const int**)nb, .nn = nn, .delta = delta, 
+		    .min_z = min_z, .max_z = max_z, .sasa = sasa};
     
-    // loop over slices
-    for (double z = min_z + 0.5*delta; z < max_z; z += delta) {
-	sasa_add_slice_area(sasa,z,delta,xyz,radii,(const int**)nb,(int*)nn,n_atoms);
-	//could be trivially parallelized if summation is moved outside of above function
+    if (n_threads > 1) {
+#ifdef PTHREADS
+	sasa_lr_do_threads(n_threads, lr);
+#else
+	perror("Error: program compiled for single-threaded used, but multiple threads were requested.");
+	exit(EXIT_FAILURE);
+#endif
+    } else {
+	// loop over slices
+	for (double z = min_z; z < max_z; z += delta) {
+	    sasa_add_slice_area(z,lr);
+	}
+    }    
+    for (int i = 0; i < n_atoms; ++i) free(nb[i]);
+    return 0;
+}
+
+#ifdef PTHREADS
+void sasa_lr_do_threads(int n_threads, sasa_lr_t lr) 
+{
+    double *t_sasa[n_threads];
+    pthread_t thread[n_threads];
+    sasa_lr_t lrt[n_threads];
+    const double max_z = lr.max_z, min_z = lr.min_z, delta = lr.delta;
+    int n_slices = (int)ceil((max_z-min_z)/delta);
+    int n_perthread = n_slices/n_threads;
+    for (int t = 0; t < n_threads; ++t) {
+	t_sasa[t] = (double*)malloc(sizeof(double)*lr.n_atoms);
+	for (int i = 0; i < lr.n_atoms; ++i) t_sasa[t][i] = 0;
+	lrt[t] = lr;
+	lrt[t].sasa = t_sasa[t];
+	lrt[t].min_z = min_z + t*n_perthread*delta;
+	if (t < n_threads - 1) {
+	    lrt[t].max_z = lrt[t].min_z + n_perthread*delta;
+	} else {
+	    lrt[t].max_z = max_z;
+	}
+	int res = pthread_create(&thread[t], NULL, sasa_lr_thread, (void *) &lrt[t]);
+	if (res) {
+	    perror("Thread creation failed");
+	    exit(EXIT_FAILURE);
+	}
     }
-    for (int i = 0; i < n_atoms; ++i) {
-	free(nb[i]);
+    for (int t = 0; t < n_threads; ++t) {
+	void *thread_result;
+	int res = pthread_join(thread[t],&thread_result);
+	if (res) {
+	    perror("Thread join failed");
+	    exit(EXIT_FAILURE);
+	}
+    }
+    
+    for (int t = 0; t < n_threads; ++t) {
+	for (int i = 0; i < lr.n_atoms; ++i) {
+	    lr.sasa[i] += t_sasa[t][i];
+	}
+	free(t_sasa[t]);
     }
 }
 
-void sasa_add_slice_area(double *sasa, double z, double delta, const vector3 *xyz, 
-			 const double *radii, const int **nb, const int *nn, int n_atoms)
+void *sasa_lr_thread(void *arg)
 {
+    sasa_lr_t lr = *((sasa_lr_t*) arg);
+    for (double z = lr.min_z; z < lr.max_z; z += lr.delta) {
+	sasa_add_slice_area(z, lr);
+    }
+    pthread_exit(NULL);
+}
+#endif
+
+void sasa_add_slice_area(double z, sasa_lr_t lr)
+{
+    int n_atoms = lr.n_atoms;
     double x[n_atoms], y[n_atoms], r[n_atoms], DR[n_atoms];
+    double delta = lr.delta;
     int n_slice = 0;
     double exposed_arc[n_atoms];
     int idx[n_atoms], xdi[n_atoms], in_slice[n_atoms], nn_slice[n_atoms], *nb_slice[n_atoms];
 
     // locate atoms in each slice and do some initialization
     for (size_t i = 0; i < n_atoms; ++i) {
-	double ri = radii[i];
-	double d = fabs(xyz[i].z-z);
+	double ri = lr.radii[i];
+	double d = fabs(lr.xyz[i].z-z);
 	if (d < ri) {
-	    x[n_slice] = xyz[i].x; y[n_slice] = xyz[i].y;
+	    x[n_slice] = lr.xyz[i].x; y[n_slice] = lr.xyz[i].y;
 	    r[n_slice] = sqrt(ri*ri-d*d);
 	    //multiplicative factor when arcs are summed up later (according to L&R paper)
 	    DR[n_slice] = ri/r[n_slice]*(delta/2. +
@@ -192,8 +359,8 @@ void sasa_add_slice_area(double *sasa, double z, double delta, const vector3 *xy
     for (int i = 0; i < n_slice; ++i) {
 	int i2 = idx[i];
 	int j2;
-	for (int j = 0; j < nn[i2]; ++j) {
-	    if (in_slice[j2 = nb[i2][j]]) {
+	for (int j = 0; j < lr.nn[i2]; ++j) {
+	    if (in_slice[j2 = lr.nb[i2][j]]) {
 		++nn_slice[i];
 		nb_slice[i] = realloc(nb_slice[i],sizeof(int)*nn_slice[i]);
 		nb_slice[i][nn_slice[i]-1] = xdi[j2];
@@ -206,7 +373,7 @@ void sasa_add_slice_area(double *sasa, double z, double delta, const vector3 *xy
     
     // calculate contribution to each atom's SASA from the present slice
     for (int i = 0; i < n_slice; ++i) {
-	sasa[idx[i]] += exposed_arc[i]*r[i]*DR[i];
+	lr.sasa[idx[i]] += exposed_arc[i]*r[i]*DR[i];
     }
     for (int i = 0; i < n_slice; ++i) {
 	free(nb_slice[i]);
@@ -376,21 +543,21 @@ void sasa_get_contacts(int **nb, int *nn, int n_atoms,
     for (int i = 0; i < n_atoms; ++i) {
         double ri = radii[i];
         const vector3 *vi = &xyz[i];
-	//double xi = vi->x, yi = vi->y, zi = vi->z;
+	double xi = vi->x, yi = vi->y, zi = vi->z;
 	for (int j = i+1; j < n_atoms; ++j) {
             double rj = radii[j];
 	    double cut2 = (ri+rj)*(ri+rj);
 	    const vector3 *vj = &xyz[j];
 	    
-	    /* could be minor speed improvement, most pairs of atoms will be
-	       far away from each other on at least one axis */
-	    /*
+	    /* most pairs of atoms will be far away from each other on
+	       at least one axis, the following improves speed
+	       significantly for large proteins */	    
 	    double xj = vj->x, yj = vj->y, zj = vj->z;
             if ((xj-xi)*(xj-xi) > cut2 ||
 		(yj-yi)*(yj-yi) > cut2 ||
 		(zj-zi)*(zj-zi) > cut2) {
 		continue;
-		}*/
+	    }
 	    if (vector3_dist2(vi,vj) < cut2) {
 		++nn[i]; ++nn[j];
 		nb[i] = realloc(nb[i],sizeof(int)*nn[i]);
