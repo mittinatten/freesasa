@@ -7,7 +7,7 @@
 \usepackage{amsmath}
 \usepackage{cite}
 
-\usepackage{pslatex}
+%\usepackage{pslatex}
 
 %\usepackage{fancyvrb}
 
@@ -17,16 +17,16 @@
 
 \begin{document}
 \maketitle
+\hrule\vspace{0.5cm}
 \noindent
 The program/library Sasalib, including this manual, is licensed under
-GPLv3, and can be downloaded from the github at: 
+GPLv3, and can be downloaded from github at: 
 \begin{center}
 \texttt{https://github.com/mittinatten/sasalib/}
 \end{center}
-
-This document is still a draft and not complete in any way.
-
-\newpage
+NB: This document is still a draft and not complete in any way.
+\vspace{0.5cm}
+\hrule
 \section{Introduction}
 
 Sasalib is a program for calculating solvent accessible surface areas
@@ -42,21 +42,100 @@ for calculating solvent accessible surface areas (SASA) of
 proteins. Neither are there any packages designed to be easily
 integrated as a library in other programs.
 
-The SASA is defined as the surface area of a protein accessible to a
-spherical probe rolling over the protein, including internal
-cavities. The probe represents a solvent molecule (i.e. water), and
-therefore cavities that are too small for the solvent to enter are not
-counted at all. The position of the center of the probe sphere is used
-to define the surface area, not the point of contact.
+To define the SASA, $A$, of given molecule, let a spherical probe roll
+over the surface of the molecule, including internal cavities. $A$ is
+then the surface drawn by the center of the probe as it rolls over the
+surface.~\cite{LnR} The probe represents a solvent molecule
+(i.e. water), and therefore cavities that are too small for the
+solvent to enter do not contribute to $A$.
 
-\section{Simple sample program}\label{sec:simple_sample}
+This document is organized as follows. Section \ref{sec:howto_short}
+give a brief introduction to the library, presenting the command line
+interface and a short sample program that gives a general idea of how
+to use the library. Section \ref{sec:alg} describes the algorithms and
+compares their performance in terms of computational cost and
+precision. In section \ref{sec:imp} the implementations are
+described. Finally, section \ref{sec:using} gives a detailed
+description of the library interface.
 
-The following shows a minimal program that performs a SASA-calculation
-using a PDB-file as input. No error checking is done, the example
-simply illustrates the most basic functionality of the library.
+
+\section{Getting started}\label{sec:howto_short}
+
+The source files \texttt{calc\_sasa.c} and \texttt{example.c} contain
+a complete command-line interface and a minimal program to illustrate
+how to use the library interface, respectively. 
+
+\subsection{Installation} \label{sec:installing}
+
+The repository can be cloned from github, either by using git directly
+with the command
+\begin{verbatim}
+    $ git clone https://github.com/mittinatten/sasalib.git
+\end{verbatim}
+or by downloading the zipped archive from
+\begin{verbatim}
+    https://github.com/mittinatten/sasalib/archive/master.zip
+\end{verbatim}
+Since Sasalib only depends on regular C and GNU libraries most users
+will be able to compile it by simply typing \texttt{make}\footnote{Has
+  been tested on Linux and Mac OS X machines.}. If any other compiler
+than the Gnu C Compiler is preferred the makefile will need to be
+changed accordingly. The command \texttt{make example} compiles the
+example program described in section \ref{sec:simple_sample}.
+
+\subsection{Command-line interface (\texttt{calc\_sasa.c})}
+
+Compilation creates the binary \texttt{calc\_sasa}, which can be used
+to calculate the SASA of a PDB-file. The simplest program call, with
+default parameters would be
+\begin{verbatim}
+    $ ./calc_sasa PDB-file
+\end{verbatim}
+Or, from STDIN:
+\begin{verbatim} 
+    $ ./calc_sasa < PDB-file    
+\end{verbatim}
+STDIN is only read if no file is specified.
+
+Other options for running are displayed with the flag \texttt{-h}.
+These options allow the user to specify which algorithm to use, and
+parameters for the algorithm. By default the Shrake \& Rupley
+algorithm is used, with 100 test points. This option gives a fast
+calculation, for high precision the number of test points should be
+increased. The following uses Lee \& Richards with slice width 0.1 Å
+for two PDB-files.
+\begin{verbatim}
+    $ ./calc_sasa -L -d 0.1 1abc.pdb 2abc.pdb
+\end{verbatim}
+Running \texttt{calc\_sasa} with default parameters and PDB structure
+1UBQ as input gives the following output.
+\begin{verbatim}
+    name: [path to pdb-files]/1ubq.pdb
+    algorithm: Shrake & Rupley
+    n_thread: 1
+    n_testpoint: 100
+    time_elapsed: 0.019065 s
+    n_atoms: 602
+
+    Total:   4756.12 Å2
+    Polar:   1968.06 Å2
+    Apolar:   2788.07 Å2
+\end{verbatim}
+The first 4 lines show the protein, the algorithm and the parameters
+of the algorithm. This is followed by data over calculation time and
+the size of the protein. Finally the result of the calculation is
+printed, with SASA values in Å$^2$.
+
+\subsection{Simple example (\texttt{example.c})}\label{sec:simple_sample}
+
+The following shows the minimal program \texttt{example.c} that
+performs a SASA-calculation using a PDB-file as input. This program is
+basically a stripped down version of \texttt{calc\_sasa.c} without
+error handling, and without any commandline options. This code is
+meant to illustrate the most basic parts of the library interface.
 \begin{verbatim}
 #include <stdlib.h>
-#include <sasalib.h> // if in include-path
+#include "src/sasalib.h"
 
 int main(int argc, char **argv) { 
     //initialize sasalib-object with default parameters
@@ -76,23 +155,10 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 \end{verbatim}
-The output of the program is (using the structure with PDB code 1UBQ):
-\begin{verbatim}
-name: undef
-algorithm: Shrake & Rupley
-n_thread: 1
-N_testpoint: 100
-time_elapsed: 0.012870 s
-n_atoms: 602
-Total area: 4756.124034 Å2
-\end{verbatim}
-The first 4 lines show the name of the protein, the algorithm and the
-parameters of the algorithm (the ones shown here are default
-values). Then comes data over calculation time and the size of the
-protein. Finally the result of the calculation is printed, here the
-total SASA values in Å$^2$.
+This program generates results similar to that in the previous
+section.
 
-\section{Algorithms}
+\section{Algorithms}\label{sec:alg}
 
 There are two classical approximate algorithms that can be used to
 calculate SASA, by Lee \& Richards \cite{LnR} and Shrake \& Rupley
@@ -158,6 +224,62 @@ test points.
 The test points used in Sasalib were generated by placing a set of
 equal point charges on the surface of a sphere and minimizing the Coulomb
 potential (using simulated annealing).
+
+
+\section{Implementation}\label{sec:imp}
+
+This section describes the implementation of the algorithms in general
+terms. In both cases the implementations are rather straightforward
+keeping the implementation rather simple and transparent. See sections
+\ref{sec:howto_short} and \ref{sec:using} for instructions for how to
+install and use the library. 
+
+The implementations were tested by performing high precision SASA
+calculations using both algorithms for a large number of proteins and
+comparing the results. Also the surface test points and slice contours
+where plotted to verify correctness by visual inspection.
+
+\subsection{Lee \& Richards}
+
+The L\&R-calculation needs to know which atoms make contacts for each
+slice. Therefore the calculation begins by constructing adjacency
+lists for the protein. An contact matrix was used in early versions of
+the library, but the $O(N^2)$ memory requirements were prohibitive for
+large proteins. For each slice the adjacency lists are condensed to
+separate lists only containing the atoms in that particular
+slice. Each pair of adjacent atoms is then checked for adjacency in
+the particular slice and the overlapping arcs are calculated as
+described in section \ref{sec:alg_LnR}. When all buried arcs are
+counted for a given atom they are reduced to non-overlapping intervals
+recursively. In most cases this is done in one step, sometimes in two
+or three. The arc-lengths are then summed up for all atoms in the
+slice to calculate the total contribution to the area as described in
+\ref{sec:alg_LnR}.
+
+As described in section \ref{sec:accuracy}, this algorithm is
+significantly slower than S\&R, but this is inherent to the algorithm
+[references??]. Profiling runs give no hints at obvious
+improvements. The calculations of each slice are however completely
+independent and the current implementation allows division of labor
+to an arbitrary number of threads. 
+
+\subsection{Shrake \& Rupley}
+
+In the Shrake \& Rupley algorithm the list of neighbors for each atom
+is only used once, hence it is not precalculated. Generally the cost
+of calculating overlap between two spheres is much larger than
+identifying which atoms are neighbors, except in the case of very few
+test points. Calculating atom contacts on the fly also allows trivial
+parallelization of the whole calculation.
+
+Test points were generated by placing a given number of equally
+charged particles on the surface of a sphere and then minimizing the
+Coulomb potential using a simple Monte Carlo simulation. The obtained
+sets of test-points are then stored as static arrays in a special
+source file, to make the program independent of any auxiliary input
+files. Sets containing 20, 50, 100, 200, 500, 1000, 2000 and 5000 test
+points are included in the program. This set should cover most users
+need for speed and accuracy.
 
 \subsection{Comparison of the two}
 
@@ -237,86 +359,7 @@ given the same computational effort -- in the present implementation.
   \end{center}
 \end{figure}
 
-
-\section{Implementation}
-
-This section describes the implementation of the algorithms in general
-terms. For the library and command-line interfaces see section
-\ref{sec:using}. In both cases the implementations are rather
-straightforward keeping the implementation rather simple and
-transparent.
-
-\subsection{Lee \& Richards}
-
-The L\&R-calculation needs to know which atoms make contacts for each
-slice. Therefore the calculation begins by constructing adjacency
-lists for the protein. An contact matrix was used in early versions of
-the library, but the $O(N^2)$ memory requirements were prohibitive for
-large proteins. For each slice the adjacency lists are condensed to
-separate lists only containing the atoms in that particular
-slice. Each pair of adjacent atoms is then checked for adjacency in
-the particular slice and the overlapping arcs are calculated as
-described in section \ref{sec:alg_LnR}. When all buried arcs are
-counted for a given atom they are reduced to non-overlapping intervals
-recursively. In most cases this is done in one step, sometimes in two
-or three. The arc-lengths are then summed up for all atoms in the
-slice to calculate the total contribution to the area as described in
-\ref{sec:alg_LnR}.
-
-As described in section \ref{sec:accuracy}, this algorithm is
-significantly slower than S\&R, but this is inherent to the algorithm
-[references??]. Profiling runs give no hints at obvious
-improvements. The calculations can however be trivially parallelized
-by calculating each slice in a separate thread, similar improvements
-can be achieved by treating atoms separately in S\&R.
-
-\subsection{Shrake \& Rupley}
-
-
-
 \section{Using Sasalib} \label{sec:using}
-
-\subsection{Installing}
-
-The repository can be cloned from the github either using git directly
-with the command
-\begin{verbatim}
-    $ git clone https://github.com/mittinatten/sasalib.git
-\end{verbatim}
-or by downloading the zipped archive from
-\begin{verbatim}
-    https://github.com/mittinatten/sasalib/archive/master.zip
-\end{verbatim}
-Since Sasalib only depends on regular C and GNU libraries most users
-will be able to compile it by simply typing \texttt{make}\footnote{Has
-  been tested on Linux and Mac OS X machines.}. If any other compiler
-than the Gnu C Compiler is preferred the makefile will need to be
-changed accordingly.
-
-\subsection{Stand-alone program}
-
-Compilation creates the binary \texttt{calc\_sasa}, which can be used
-to calculate the SASA of a PDB-file. The simplest program call, with
-default parameters would be
-\begin{verbatim}
-    $ calc_sasa PDB-file
-\end{verbatim}
-Or, from STDIN:
-\begin{verbatim} 
-    $ calc_sasa < PDB-file    
-\end{verbatim}
-STDIN is only read if no file is specified.
-
-Other options for running are displayed with the flag
-\texttt{-h}. These options allow the user to specify which algorithm
-to use, and parameters for the algorithm. By default the Shrake \&
-Rupley algorithm is used, with 100 test points. This option gives a
-fast calculation, for high precision the number of test points should
-be increased. The following uses Lee \& Richards with slice width 0.1 Å
-for two PDB-files.
-\begin{verbatim}
-    $ calc_sasa -L -d 0.1 1abc.pdb 2abc.pdb
-\end{verbatim}
 
 \subsection{Library interface}
 

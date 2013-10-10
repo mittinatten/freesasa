@@ -303,7 +303,7 @@ int sasalib_log(FILE *log, const sasalib_t *s)
     
     switch(s->alg) {
     case SHRAKE_RUPLEY:
-        fprintf(log,"N_testpoint: %d\n",s->n_sr);
+        fprintf(log,"n_testpoint: %d\n",s->n_sr);
         break;
     case LEE_RICHARDS:
         fprintf(log,"d_slice: %f Å\n",s->d_lr);
