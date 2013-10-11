@@ -72,9 +72,9 @@ sub read_file
     my %tmp;
     while (<$fh>) {
 	next if (/^#/);
-	$pdbfile = $1      if (/^File: (\S+)/);
+	$pdbfile = $1      if (/^(name|File): (\S+)/);
 	# both should not be present in the same file
-	$tmp{par} = $1     if (/^N_testpoint: (\d+)/);
+	$tmp{par} = $1     if (/^n_testpoint: (\d+)/);
 	$tmp{par} = $1     if (/^d_slice: (\S+)/);
 	$tmp{t} = $1       if (/^time_elapsed: (\S+)/);
 	$tmp{n_atoms} = $1 if (/^n_atoms: (\d+)/);

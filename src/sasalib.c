@@ -206,7 +206,7 @@ int sasalib_get_sr_points(const sasalib_t* s)
 
 int sasalib_set_lr_delta(sasalib_t *s, double d)
 {
-    if (d > 0 && d < 5.0) {
+    if (d > 0 && d < 5.01) {
         s->d_lr = d;
         return 0;
     }

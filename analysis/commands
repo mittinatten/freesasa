@@ -1,11 +1,7 @@
 # Some bash one-liners used in analysis
 
-# Calculate SASA for all pdbs in given set (PDB-files located in
-#  ~/pdb/), here using S&R with 20 points:
-
-for P in `cat cullpdb_pc20_res1.6_R0.25_d130730_chains2117 | cut -b1-4`; do p=`echo $P|awk '{print tolower($0)}'`; echo $p; ../calc_sasa -S -n 20 ~/pdb/$p.pdb > SR/20/$p.sasa; done
-
 # Extract the number of atoms and the calculation time from the output
 # of the above command (assuming data are in sub-directories of LR and SR):
 
-for d in LR/* SR/*; do t=`echo $d | perl -pi -e 's/^(LR|SR)\/(\S+)$/$1\_$2/'`; f=data/time_$t.dat; for s in $d/*.sasa; do n=`grep n_atoms $s | cut -b10-16`; t=`grep time_elapsed $s | cut -b15-30`; echo "$n $t" >> $f; done; done 
+for d in LR*/* SR*/*; do t=`echo $d | perl -pi -e 's/^(LR.|SR.)\/(\S+)$/$1\_$2/'`; f=data/time_$t.dat; for s in $d/*.sasa; do n=`grep n_atoms $s | cut -b10-16`; t=`grep time_elapsed $s | cut -b15-30`; echo "$n $t" >> $f; done; done
+
