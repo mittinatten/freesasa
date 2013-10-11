@@ -407,15 +407,15 @@ themselves. Below follows a brief description for the functionality
 provided for each of the four steps, but first a sample program
 showing a complete workflow.
 
-\subsubsection{Sample program}
+\subsubsection{Sample program using low-level interface}
 The following lines read a PDB-structure from a file, calculates
 SASA using Lee \& Richards' algorithm and outputs the values for the
 polar and apolar atoms respectively.
 \begin{verbatim}
 #include <stdio.h>
 #include <stdlib.h>
-#include "protein.h"
-#include "sasa.h"
+#include "src/protein.h"
+#include "src/sasa.h"
 
 int main(int argc, char **argv) {
     // initialization from STDIN
@@ -567,9 +567,41 @@ using the function \texttt{vector3\_x3n\_alloc()}. The generated array
 can then be used as input for the two functions above.
 
 \subsubsection{Output results}
-Integrate the results of the SASA calculation to get for example the
-polar and apolar surface areas. This can be done using some default
-setups based on the OONS classification, or by the user.
+The header \texttt{atomclassifier.h} specifies an interface for
+classifying atoms in a protein. The struct \texttt{atomclassifier} has
+a function pointer to a function that turns a residue- and atom-name
+to an integer, and an array of strings that explains what these
+integers means. The function \texttt{atomclassifier\_all()} returns an
+\texttt{atomclassifier} object that puts all atoms in the same class,
+which can be used to calculate the total SASA of a protein. The header
+\texttt{oons.h} has functions to generate two types of
+\texttt{atomclassifier}s. One that returns an \texttt{atomclassifier}
+for polar/apolar atoms, and another for the classes aliphatic C,
+aromatic C, hydroxyl O, etc (as specified in reference \cite{OONS}),
+respectively. Users interested in implementing their own classifiers
+can use the source for these functions as an illustration.
+
+In \texttt{sasa.h}, the function
+\begin{verbatim}
+    void sasa_per_atomclass(FILE*, atomclassifier, 
+                            protein*, double *sasa);
+\end{verbatim}
+integrates the results of the SASA calculation using an
+\texttt{atomclassifier} to get for example the polar and apolar
+surface areas. The statement
+\begin{verbatim}
+    sasa_per_atomclass(stdout, oons_classes(),p,s);
+\end{verbatim}
+where \texttt{p} is a pointer to a \texttt{protein} object, and
+\texttt{s} an array of appropriate size containing SASA values for the
+atoms of the protein, will output the following
+\begin{verbatim}
+    > polar_apolar
+    polar 1234.56
+    apolar 7890.12 
+\end{verbatim}
+That is the name of classifier, and the SASA values for each class of
+atoms, in this cased the two classes \emph{polar} and \emph{apolar}.
 
 \section{Known issues}
 
@@ -584,8 +616,8 @@ In no specific order
 \item Perl and Python bindings.
 \item Other, faster or more exact algorithms.
 \item Molecular surface calculations?
-\item Add a library of commonly seen atoms, such as those in capping
-  end groups and in phosphorylated amino acids.
+\item Add a library of commonly seen non-standard atoms, such as those
+  in capping end groups and in phosphorylated amino acids.
 \item Interface to download PDB-file and calculate SASA given only PDB
   code.
 \end{itemize}
