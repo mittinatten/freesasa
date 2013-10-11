@@ -5,11 +5,11 @@ C-library for calculating Solvent Accessible Surface Areas.
 
 License: GPLv3 (see file COPYING). Copyright: Simon Mitternacht 2013.
 
-This code has been tested for functionality for a small set of PDBs. 
+This code has been tested for functionality for a set of around 2000 PDBs. 
 A standalone version can be compiled by running 'make'. The command 
 './calc_sasa -h' will give information about usage.
 
-Incomplete description of the algorithms and the API can be found in
+A description of the algorithms and the library can be found in
 doc/manual.tex.
 
 It is my intention to keep the interface so general and flexible that
@@ -25,8 +25,7 @@ give identical results.
 
 The OONS atom-classification and radii are used by default (Ooi et al. 
 PNAS 1987). Users should be easily able to add their own schemes by 
-defining new classification functions. Are there other standard radii 
-that could be added to library?
+defining new classification functions. 
 
 Has only been tested with GNU compiler, both in Linux and Mac OS X, but 
 should work with any C99-compatible compiler. Only requires standard C 
