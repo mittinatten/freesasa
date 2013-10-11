@@ -94,7 +94,7 @@ int sasalib_calc(sasalib_t *s)
     s->r = (double*) malloc(sizeof(double)*protein_n(s->p));
     s->sasa = (double*) malloc(sizeof(double)*protein_n(s->p));
     //calc OONS radii
-    protein_r_def(s->p,s->r);
+    protein_r_def(s->r,s->p);
 
     gettimeofday(&t1,NULL);
     

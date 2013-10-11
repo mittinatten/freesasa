@@ -158,8 +158,8 @@ void protein_add_atom(protein *p,
 
 /** get array of radii using custom conversion function, the array r is
     assumed to be of correct size already */
-void protein_r(const protein *p, 
-	       double *r,
+void protein_r(double *r,
+	       const protein *p, 
 	       double (*atom2radius)(const char *res_name, 
 				     const char *atom_name))
 {
@@ -170,9 +170,9 @@ void protein_r(const protein *p,
 
 /** get array of radii using default OONS radii, the array r is
     assumed to of correct size already */
-void protein_r_def(const protein *p, double *r)
+void protein_r_def(double *r, const protein *p)
 {
-    protein_r(p,r,oons_radius);
+    protein_r(r,p,oons_radius);
 }
 
 void protein_update_atom_xyz(protein* p, int number,
