@@ -144,12 +144,12 @@ void protein_add_atom(protein *p,
        assumed to begin */
     if (p->number_chains == 0)
         ++p->number_chains;
-    if (na > 2 && chain_label != p->a[na-2].chain_label)
+    if (na > 1 && chain_label != p->a[na-2].chain_label)
         ++p->number_chains;
 
     if (p->number_residues == 0)
         ++p->number_residues;
-    if (na > 2 && strcmp(residue_number,p->a[na-2].res_number))
+    if (na > 1 && strcmp(residue_number,p->a[na-2].res_number))
         ++p->number_residues;
 
     // what else?
