@@ -28,6 +28,8 @@
 #include "srp.h"
 #include "oons.h"
 
+#define NBUF 100
+
 struct sasalib_t {
     sasalib_algorithm alg;
     double *sasa;
@@ -315,4 +317,22 @@ int sasalib_log(FILE *log, const sasalib_t *s)
     fprintf(log,"time_elapsed: %f s\n",s->elapsed_time);
     fprintf(log,"n_atoms: %d\n", protein_n(s->p));
     return 0;
+}
+
+void sasalib_per_residue(FILE *output, const sasalib_t *s)
+{
+    double sasa = 0;
+    char buf[NBUF] = "", prev_buf[NBUF] = "";
+    for (int i = 0; i < protein_n(s->p); ++i) {
+	sprintf(buf,"%c_%d_%s",protein_atom_chain(s->p,i),
+		atoi(protein_atom_res_number(s->p,i)),
+		protein_atom_res_name(s->p,i));
+	sasa += s->sasa[i];
+	if (strcmp(buf,prev_buf)) {
+	    printf("%s %f\n",buf,sasa);
+	    strcpy(prev_buf,buf);
+	    sasa = 0;
+	}
+	
+    }
 }

@@ -76,9 +76,6 @@ void protein_r_def(double *r, const protein *p);
 /** get number of atoms */
 int protein_n(const protein *p);
 
-/** get array of atoms */
-const atom* protein_atoms(const protein *p);
-
 /** get name of atom i */
 const char* protein_atom_name(const protein *p, int i);
 

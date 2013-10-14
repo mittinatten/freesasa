@@ -17,7 +17,7 @@
   along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// why?
+// needed for getline()
 #define _GNU_SOURCE
 
 #include <string.h>

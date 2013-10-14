@@ -134,4 +134,7 @@ double sasalib_radius_atom(const sasalib_t*, int i);
     success, 1 on failure. */
 int sasalib_log(FILE *log, const sasalib_t*);
 
+/** Prints the total SASA for each residue of the protein */
+void sasalib_per_residue(FILE *output, const sasalib_t*);
+
 #endif

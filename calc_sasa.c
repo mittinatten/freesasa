@@ -29,6 +29,16 @@ extern int getopt(int, char * const *, const char *);
 extern int optind;
 #endif
 
+typedef struct  {
+    sasalib_t *s;
+    int per_residue;
+} settings_t;
+
+settings_t def_settings = {
+    .s = NULL,
+    .per_residue = 0
+};
+
 void help(const char* argv0) {
     fprintf(stderr,"\nUsage: %s [options] pdb-file(s)\n",argv0);
     fprintf(stderr,"\nOptions are:\n"
@@ -46,6 +56,7 @@ void help(const char* argv0) {
     fprintf(stderr,"       -t  number of threads to use in calculation (for multicore CPUs)\n");
     fprintf(stderr,"           (only implemented for Shrake & Rupley so far)\n");
 #endif    
+    fprintf(stderr,"       -r  print SASA for each residue\n");
     fprintf(stderr,"\nIf no pdb-file is specified STDIN is used for input.\n\n");
 }
 
@@ -53,25 +64,31 @@ void short_help(const char* argv0) {
     fprintf(stderr,"Run '%s -h' for help.\n\n", argv0);
 }
 
-void run_analysis(FILE *input, const char *name, const sasalib_t *settings) {
+void run_analysis(FILE *input, const char *name, const settings_t *settings) {
     sasalib_t *s = sasalib_init();
-    sasalib_copy_param(s,settings);
+    sasalib_copy_param(s,settings->s);
     sasalib_set_proteinname(s,name);
     sasalib_calc_pdb(s,input);
     sasalib_log(stdout,s);
     printf("\nTotal: %9.2f Å2\nPolar: %9.2f Å2\nApolar: %9.2f Å2\n",
            sasalib_total(s), sasalib_polar(s), sasalib_apolar(s));
+    if (settings->per_residue) { 
+	printf("\n>SASA per residue\n");
+	sasalib_per_residue(stdout,s);
+	printf("\n");
+    }
     sasalib_free(s);
 }
 
 int main (int argc, char **argv) {
     int alg_set = 0;
     FILE *input = NULL;
-    sasalib_t *settings = sasalib_init();
+    settings_t settings = def_settings;
+    settings.s = sasalib_init();
     extern char *optarg;
     char opt;
 
-    while ((opt = getopt(argc, argv, "f:n:d:t:hLS")) != -1) {
+    while ((opt = getopt(argc, argv, "f:n:d:t:hLSr")) != -1) {
         switch(opt) {
 	case 'h':
 	    help(argv[0]);
@@ -86,22 +103,25 @@ int main (int argc, char **argv) {
 	    }
 	    break;
 	case 'n':
-	    sasalib_set_sr_points(settings,atoi(optarg));
+	    sasalib_set_sr_points(settings.s,atoi(optarg));
 	    break;
 	case 'S':
-	    sasalib_set_algorithm(settings,SHRAKE_RUPLEY);
+	    sasalib_set_algorithm(settings.s,SHRAKE_RUPLEY);
 	    ++alg_set;
 	    break;
 	case 'L':
-	    sasalib_set_algorithm(settings,LEE_RICHARDS);
+	    sasalib_set_algorithm(settings.s,LEE_RICHARDS);
 	    ++alg_set;
 	    break;
 	case 'd':
-	    sasalib_set_lr_delta(settings,atof(optarg));
+	    sasalib_set_lr_delta(settings.s,atof(optarg));
+	    break;
+	case 'r':
+	    settings.per_residue = 1;
 	    break;
 	case 't':
 #ifdef PTHREADS	    
-	    sasalib_set_nthreads(settings,atoi(optarg));
+	    sasalib_set_nthreads(settings.s,atoi(optarg));
 #else 
 	    fprintf(stderr, "Warning: option 't' only defined if program"
 		    " compiled with thread support.\n");
@@ -124,7 +144,7 @@ int main (int argc, char **argv) {
 	for (int i = optind; i < argc; ++i) {
 	    input = fopen(argv[i],"r");
 	    if (input != NULL) {
-		run_analysis(input,argv[i],settings);
+		run_analysis(input,argv[i],&settings);
 		fclose(input);
 	    } else {
 		fprintf(stderr, "Error opening file '%s'\n", argv[i]);
@@ -132,10 +152,10 @@ int main (int argc, char **argv) {
 	    }	    
 	}
     } else {
-	run_analysis(stdin,"stdin",settings);
+	run_analysis(stdin,"stdin",&settings);
     }    
 
-    sasalib_free(settings);
+    sasalib_free(settings.s);
 
     return EXIT_SUCCESS;
 }
