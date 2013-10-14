@@ -329,10 +329,10 @@ void sasalib_per_residue(FILE *output, const sasalib_t *s)
 		protein_atom_res_name(s->p,i));
 	sasa += s->sasa[i];
 	if (strcmp(buf,prev_buf)) {
-	    printf("%s %f\n",buf,sasa);
+	    fprintf(output,"%s %f\n",prev_buf,sasa);
 	    strcpy(prev_buf,buf);
 	    sasa = 0;
 	}
-	
     }
+    fprintf(output,"%s %f\n",buf,sasa);
 }
