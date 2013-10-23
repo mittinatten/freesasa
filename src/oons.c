@@ -188,9 +188,10 @@ oons_type oons_name2type (const char *res_name, const char *atom_name)
         else return aliphatic_C;
     }
 
-    /* Hydrogens (important to do them here, so they can be skipped
-       below */
-    if (atom_name[1] == 'H' || atom_name[0] == 'H') return hydrogen;
+    /* Hydrogens and deuteriums (important to do them here, so they
+       can be skipped below */
+    if (atom_name[1] == 'H' || atom_name[0] == 'H' ||
+	atom_name[1] == 'D' || atom_name[0] == 'D') return hydrogen;
 
     /* Amino acids are sorted by frequency of occurence for
        optimization (probably has minimal effect, but easy to do) */
