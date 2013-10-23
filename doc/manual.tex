@@ -44,22 +44,22 @@ solvent to enter do not contribute to $A$.
 Calculating Solvent Accessible Surface Areas (SASA) is a
 run-of-the-mill type calculation in protein structure studies. To the
 author's knowledge there are no fully open source standalone programs
-for doing this. Neither are there any packages designed to be easily
-integrated as a library in other programs. The present library is
-meant to resolve both these problems, and is released under the GNU
-General Public License 3.0.
+for doing this. Neither are there any libraries designed to be easily
+integrated in other programs. The present library is an attempt to
+resolve both these issues, and is released under the GNU General
+Public License 3.0.
 
 Sasalib is a both a standalone command line program and a C library
-for protein SASA calculations. The library provides a high level
-interface that takes PDB-files as input. It has default parameters to
-allow straightforward calculations, but also allows the user to change
-most parameters of the calculation. In addition, there is a lower
-level interface where the user can treat the calculation as a purely
+for protein SASA calculations. The library provides a simple interface
+that takes PDB-files as input. It has default parameters to allow
+straightforward calculations, but also allows the user to change most
+parameters of the calculation. In addition, there is a lower level
+interface where the user can treat the calculation as a purely
 mathematical operation on a set of spheres, specifying only
 coordinates and radii. Both Lee \& Richards' \cite{LnR} and Shrake \&
 Rupley's \cite{SnR} algorithms are available. They will be referred to
-as L\&R and S\&R throughout this document. Future versions might
-include other algorithms as well.
+as L\&R and S\&R throughout this document. Future versions of the
+library might include other algorithms as well.
 
 This document is organized as follows. Section \ref{sec:howto_short}
 give a brief introduction to the library, presenting the command line
@@ -108,13 +108,13 @@ Or, from STDIN:
 \end{verbatim}
 STDIN is only read if no file is specified.  By default the Shrake \&
 Rupley algorithm is used, with 100 test points. Section \ref{sec:CLI}
-shows how to specify algorithm and parameters. For a quick look, the 
-command
+shows how to specify algorithm and parameters. For a quick look at
+command-line options, use the command
 \begin{verbatim}
     $ ./calc_sasa -h
 \end{verbatim}
-displays the options. Running the program using the default parameters
-on the PDB structure 1UBQ gives the following output
+Running the program using the default parameters on the PDB structure
+1UBQ gives the following output
 \begin{verbatim}
     name: [path to pdb-files]/1ubq.pdb
     algorithm: Shrake & Rupley
@@ -127,10 +127,10 @@ on the PDB structure 1UBQ gives the following output
     Polar:   1968.06 Å2
     Apolar:   2788.07 Å2
 \end{verbatim}
-The first 4 lines show the protein, the algorithm and the parameters
-of the algorithm. This is followed by data over calculation time and
-the size of the protein. Finally the result of the calculation is
-printed, with SASA values in Å$^2$.
+The first 4 lines contain info about input and parameters. This is
+followed by data over calculation time and the size of the
+protein. Finally the result of the calculation is printed, with SASA
+values in Å$^2$.
 
 \subsection{Simple example (\texttt{example.c})}\label{sec:simple_sample}
 
@@ -168,16 +168,27 @@ section.
 
 There are two classical approximate algorithms that can be used to
 calculate SASA, by Lee \& Richards \cite{LnR} and Shrake \& Rupley
-respectively \cite{SnR}. Both can be calculated to arbitrary precision
-by refining the resolution.
+\cite{SnR} respectively. Both can be calculated to arbitrary precision
+by refining the resolution. 
+
+As will be clear from this section and the analysis in section
+\ref{sec:compare}, S\&R is the simpler and faster of the
+two. Therefore the casual user is recommended to use S\&R. L\&R is
+mainly included for reference, and for the fact that the precision is
+only limited by floating point precision. In the current
+implementation S\&R can only be used with a predefined set of levels
+of precision. However, since SASA is not a fundamental measure or
+concept, it is not obvious what applications would require very high
+precision.
 
 We will use the following notation: An atom $i$ has a van der Waals
-radius $r_i$, the surface probe has radius $r_\text{P}$ and when these
-are added we get $R_i = r_i + r_\text{P}$. The SASA for a molecule is
-then obtained by calculating the non-buried surface area of all the
-individual spheres with radius $R_i$ atom and adding them up.
+radius $r_i$, the rolling sphere (or \emph{probe}) has radius
+$r_\text{P}$ and when these are added we get $R_i = r_i +
+r_\text{P}$. The SASA for a molecule is then obtained by calculating
+the non-buried surface area of all the individual spheres with radius
+$R_i$ atom and adding them up.
 
-\subsection{Lee \& Richards} \label{sec:alg_LnR}
+\subsection{L\&R} \label{sec:alg_LnR}
 
 Lee \& Richards' algorithm calculates the surface area by slicing the
 protein, calculating the length of the solvent exposed contours in
@@ -187,25 +198,25 @@ calculation time scales approximately as the number of slices.
 
 Divide the protein into slices of thickness $\delta$ along an
 arbitrary axis. The position of the slice along that axis is denoted
-$z$. The position of the center of atom $i$ along the same axis is
-$z_i$. In the slice, each atom is thus a circle of radius $$R_i^\prime
-= \sqrt{R_i^2-(z-z_i)^2}\,.$$ These circles are either completely buried,
-completely exposed, or partially exposed.
+$z$. The center of atom $i$, along the same axis, is at $z_i$. In the
+slice, each atom is thus a circle of radius $$R_i^\prime =
+\sqrt{R_i^2-(z-z_i)^2}\,.$$ These circles are either completely
+buried, completely exposed, or partially exposed.
 
 The exposed arc lengths for each atom can be calculated exactly. For
-each pair of atoms $i,j$, the distance between their centers is
-$d_{ij}$. If $d_{ij} > R_i^\prime + R_j^\prime$, there is no
-overlap. If $d_{ij} < R_j^\prime - R_i^\prime$ circle $i$ is
-completely inside $j$ (and the other way around). If $d_{ij}$ lies
-between these two cases the angle of circle $i$ that is buried due to
-circle $j$ is $$\alpha = 2\arccos \bigl[({R_i^\prime}^2 + d_{ij}^2 -
-  {R_{j}^\prime}^2)/(2R_i^\prime d_{ij})\bigr].$$ The middle point of
-the arc on the circle is at an angle $\beta$ in circle $i$, and thus
-the arc spans the interval $[\beta-\alpha/2,\beta+\alpha/2]$ on the
-circle. By adding up these arcs and taking into account any overlap
-between them we get the total buried angle $\gamma_i$ of circle
-$i$. The exposed arc length in this slice is thus $L_i =
-R_i^\prime(2\pi-\gamma_i)$.
+each pair of atoms $i,j$, the distance between their centers projected
+on the slice is $d_{ij}$ (independent of $z$). If $d_{ij} > R_i^\prime
++ R_j^\prime$, there is no overlap. If $d_{ij} < R_j^\prime -
+R_i^\prime$ circle $i$ is completely inside $j$ (and the other way
+around). If $d_{ij}$ lies between these two cases the angle of circle
+$i$ that is buried due to circle $j$ is $$\alpha = 2\arccos
+\bigl[({R_i^\prime}^2 + d_{ij}^2 - {R_{j}^\prime}^2)/(2R_i^\prime
+  d_{ij})\bigr].$$ The middle point of the arc on the circle is at an
+angle $\beta$ in circle $i$, and thus the arc spans the interval
+$[\beta-\alpha/2,\beta+\alpha/2]$ on the circle. By adding up these
+arcs and taking into account any overlap between them we get the total
+buried angle $\gamma_i$ of circle $i$. The exposed arc length in this
+slice is thus $L_i = R_i^\prime(2\pi-\gamma_i)$.
 
 The contribution to the SASA from each slice is $$ S_\delta =
 \sum_{i \in \text{slice}}L_i\Delta_i $$ where
@@ -214,10 +225,13 @@ $$
     + \min\biggl(\frac{\delta}{2},R_i -
     \lvert z - z_i \rvert\biggr)\biggr]. 
 $$ 
-Finally, the total SASA is obtained by adding up the contribution from
-all the slices, either for the whole protein, or atom by atom.
+The factor $R_i/R_i^\prime$ comes from approximating the area by a
+conical segment tangent to the sphere in the slice, instead of a
+cylinder.  Finally, the total SASA is obtained by adding up the
+contribution from all the slices, either for the whole protein, or
+atom by atom.
 
-\subsection{Shrake \& Rupley}
+\subsection{S\&R}
 
 For each atom $i$, use a set of test points evenly distributed
 (approximately) over the sphere of radius $R_i$, and count how many of
@@ -233,7 +247,7 @@ the number of test points.
 
 This section describes the implementation of the algorithms in general
 terms. In both cases the implementations are rather straightforward,
-to make them simple and straightforward. See sections
+to make them simple and transparent. See sections
 \ref{sec:howto_short} and \ref{sec:using} for instructions for how to
 install and use the library.
 
@@ -243,7 +257,7 @@ section \ref{sec:dataset}) and comparing the results. Also, the
 calculated surface test points and slice contours were verified by
 visual inspection.
 
-\subsection{Lee \& Richards}
+\subsection{L\&R}
 
 The L\&R-calculation needs to know which atoms make contacts for each
 slice. Therefore the calculation begins by constructing adjacency
@@ -261,20 +275,29 @@ slice to calculate the total contribution to the area as described in
 \ref{sec:alg_LnR}.
 
 As described in section \ref{sec:accuracy}, this algorithm is
-significantly slower than S\&R, but this is inherent to the algorithm
-[references??]. Profiling runs give no hints at obvious
-improvements. The calculations of each slice are however completely
-independent and the current implementation allows division of labor
-to an arbitrary number of threads. 
+significantly slower than S\&R. Profiling runs give no hints at
+obvious improvements. The calculations of each slice are however
+completely independent and the current implementation allows division
+of labor to an arbitrary number of threads. The $O(N^2)$ calculation
+of adjacency lists has not been parallelized in the current
+implementation. The calculation could be both linearized and
+parallelized by using cell lists, but since the adjacency lists are
+only calculated once for each protein the overhead of setting up the
+cell lists is likely to be prohibitive for all but the largest
+proteins.\footnote{A preliminary, somewhat buggy implementation of
+  cell lists verified that at least linearization alone was not worth
+  the effort. Might be worth investigating how it performs in
+  parallel.}
 
-\subsection{Shrake \& Rupley}
 
-In the Shrake \& Rupley algorithm the list of neighbors for each atom
-is only used once, hence it is not precalculated. Generally the cost
-of calculating overlap between two spheres is much larger than
-identifying which atoms are neighbors, except in the case of very few
-test points. Calculating atom contacts on the fly also allows trivial
-parallelization of the whole calculation.
+\subsection{S\&R}
+
+In S\&R the list of neighbors for each atom is only used once, hence
+it is not precalculated. Generally the cost of calculating overlap
+between two spheres is much larger than identifying which atoms are
+neighbors, except in the case of very few test points. Calculating
+atom contacts on the fly also allows trivial parallelization of the
+whole calculation.
 
 Test points were generated by placing a given number of equally
 charged particles on the surface of a sphere and then minimizing the
@@ -285,7 +308,7 @@ auxiliary input files. Sets containing 20, 50, 100, 200, 500, 1000,
 2000 and 5000 test points are included in the program. This set should
 cover most users' need for speed and accuracy.
 
-\subsection{Comparison of the two}
+\subsection{Comparison of the two}\label{sec:compare}
 
 \subsubsection{Data set}\label{sec:dataset}
 
@@ -305,21 +328,22 @@ structures used for all calculations below.
 
 In the limit of low precision the calculation time will be limited by
 the time it takes to find which atoms are neighbors, which scales as
-the square of the number of atoms. This calculation can be linearized,
-but with a relatively large proportionality constant, making it
+the square of the number of atoms. As described above this calculation
+can be linearized, but with a relatively large overhead making it
 worthwhile only for large proteins.
 
 In the limit of high precision the calculation time of both algorithms
 will instead scale as the number of atoms: If the number of
 test-points is large in S\&R, most of the time will be spent
-calculating the overlap, instead of which atoms are in contact. If
-there are many slices in L\&R, the calculation time will be
-proportional to the number of slices, and the time of each slice
+calculating the extent of overlap, instead of which atoms are in
+contact. If there are many slices in L\&R, the calculation time will
+be proportional to the number of slices, and the time of each slice
 linear in the number of atoms in the slice.  The point where the
 calculation time crosses over from linear to quadratic in the number
 of atoms thus depends on the precision as figure~\ref{fig:time} shows.
 
 \begin{figure}
+  \begin{center}
   \includegraphics{../analysis/plots/time}
   \caption{(Top) Calculation time as function of number of atoms for
     different levels of precision. In both cases the cross-over from
@@ -332,7 +356,8 @@ of atoms thus depends on the precision as figure~\ref{fig:time} shows.
     above 2 are likely due to noise, i.e. in the very short
     simulations the timing is both inexact and might be affected by
     random factors such as background system processes.
-\label{fig:time}}
+    \label{fig:time}}
+  \end{center}
 \end{figure}
 
 Where it can be done trivially, both algorithms have been

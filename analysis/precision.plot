@@ -1,4 +1,4 @@
-set term post eps enhanced solid size 12cm,9cm 10 color
+set term post eps enhanced solid size 8cm,6cm 10 color
 
 set output "plots/precision.eps"
 set encoding utf8

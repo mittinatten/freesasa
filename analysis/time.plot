@@ -1,4 +1,4 @@
-set term post eps enhanced solid size 15cm,15cm 10 color
+set term post eps enhanced solid size 10cm,10cm 10 color
 
 set encoding utf8
 set output "plots/time.eps"
@@ -10,7 +10,7 @@ set ylabel "time (s)"
 set multiplot
 set size 0.5,0.5 
 set size square
-set key at graph 0.3,0.95
+set key at graph 0.45,0.95
 
 set style line 1 ps 0.3 pt 7 lc rgb "#CC3333"
 set style line 2 ps 0.3 pt 7 lc rgb "#33CC33"
