@@ -27,11 +27,12 @@ const char *oons_t2s[] = {
     "hydrogen", "aliphatic_C", "aromatic_C",
     "carbo_C", "amide_N", "carbo_O",
     "hydroxyl_O", "sulfur", "selenium",
-    "unknown_polar", "unknown"
+    "carbon", "oxygen", "nitrogen", "phosphorus",
+    "nucleic", "unknown_polar", "unknown"
 };
 
 const char *oons_c2s[] = {
-    "apolar", "polar", "oons_class_unknown"
+    "apolar", "polar", "nucleic", "oons_class_unknown"
 };
 
 oons_type oons_name2type (const char *res_name, const char *atom_name);
@@ -43,20 +44,18 @@ oons_type oons_VIL(const char*);
 oons_type oons_FHPYW(const char*);
 oons_type oons_CMST(const char*);
 
-// these will probably never be called
-oons_type oons_ala(const char*);
-oons_type oons_gly(const char*);
-
 // nonstandard/uncommon ones
-oons_type oons_sec(const char*);
+oons_type oons_cse(const char*);
 
+oons_type oons_unk(const char*);
 
 double oons_type2radius(oons_type a)
 {
     //OONS Radii [Ooi et al. PNAS 84:3086 (1987)]
+    // + elemental vdw-radii for atoms in unknown chemical context
     switch (a)
     {
-    case hydrogen: return 0.00; //??
+    case hydrogen: return 0.00; //?? should ideally not happen
     case aliphatic_C: return 2.00;
     case aromatic_C: return 1.75;
     case carbo_C: return 1.55;
@@ -64,6 +63,11 @@ double oons_type2radius(oons_type a)
     case carbo_O: return 1.40;
     case hydroxyl_O: return 1.40;
     case sulfur: return 2.00;
+    case carbon:
+    case oxygen:
+    case nitrogen:
+    case phosphorus:
+    case type_nucleic: return 1.6; //arbitrary, should be done properly
     case oons_type_unknown:
     default: return 0.0;
     }
@@ -80,6 +84,7 @@ oons_class oons_type2class(oons_type a)
     case carbo_O: return polar;
     case hydroxyl_O: return polar;
     case sulfur: return polar;
+    case type_nucleic: return class_nucleic;
     case hydrogen:
     case oons_type_unknown:
     default: return oons_class_unknown;
@@ -90,38 +95,13 @@ const char* oons_type2str(oons_type a)
 {
     assert(a <= oons_type_unknown && a >= 0);
     return oons_t2s[a];
-    /*
-    switch(a)
-    {
-    case aliphatic_C: return "aliphatic_C";
-    case aromatic_C:  return "aromatic_C";
-    case carbo_C:     return "carbo_C";
-    case amide_N:     return "amide_N";
-    case carbo_O:     return "carbo_O";
-    case hydroxyl_O:  return "hydroxyl_O";
-    case sulfur:      return "sulfur";
-    case hydrogen:    return "hydrogen";
-    case oons_type_unknown: 
-    default: return "unknown";
-    }
-    */
 }
 
 const char* oons_class2str(oons_class a)
 {
     assert(a <= oons_class_unknown && a >= 0);
     return oons_c2s[a];
-    /*
-    switch(a)
-    {
-    case polar: return "polar";
-    case apolar: return "apolar";
-    case oons_class_unknown:
-    default: return "unknown";	
-    }
-    */
 }
-
 
 double oons_radius_pdbline(const char *pdb_line)
 {
@@ -219,12 +199,24 @@ oons_type oons_name2type (const char *res_name, const char *atom_name)
     if (! strcmp(res_name, "ASX")) return oons_NQDE(atom_name);
     if (! strcmp(res_name, "GLX")) return oons_NQDE(atom_name);
     if (! strcmp(res_name, "XLE")) return oons_VIL(atom_name);
-    // haven't found any PDB files with SEC yet, probably needs work
-    if (! strcmp(res_name, "SEC")) return oons_sec(atom_name);
-    if (! strcmp(res_name, "CSE")) return oons_sec(atom_name);
 
-    //need to find PDB file that contains PYL to implement
-    //if (! strcmp(res_name, "PYL")) return oons_pyl(atom_name);
+    // haven't found any PDB files with seleno-cysteine yet, 
+    // probably needs work
+    //if (! strcmp(res_name, "CSE")) return oons_cse(atom_name);
+
+    //nucleic acids
+    if (pdbutil_residuenucleic(res_name)) return class_nucleic;
+
+    if (! strcmp(res_name, "UNK")) {
+	fprintf(stderr,"Warning: residue of type 'UNK', atom '%s'. "
+                " Atom will be classified only according to element.\n",
+		atom_name);
+	return oons_unk(atom_name);
+    }
+
+    fprintf(stderr,"Warning: combination '%s' '%s' unknown. Atom "
+	    "will be assigned radius 0 Å.\n",
+	    res_name,atom_name);
 
     return type;
 }
@@ -256,25 +248,31 @@ oons_type oons_FHPYW(const char* a)
     return oons_type_unknown;
 }
 
-oons_type oons_CMST(const char* a) {
+oons_type oons_CMST(const char* a) 
+{
     if (a[1] == 'C') return aliphatic_C;
     if (a[1] == 'O') return hydroxyl_O;
     if (a[1] == 'S') return sulfur;
     return oons_type_unknown;
 }
 
-oons_type oons_sec(const char* a)
+oons_type oons_cse(const char* a)
 {
     if (a[1] == 'S' && a[2] == 'E') return selenium;
     return oons_type_unknown;
 }
 
-//all atoms handled above
-oons_type oons_ala(const char* a)
+oons_type oons_unk(const char* a)
 {
-    return oons_type_unknown;
-}
-oons_type oons_gly(const char* a)
-{
+    if ((a[0] == 'C') || (a[0] == ' ' && a[1] == 'C'))
+	return carbon;
+    if ((a[0] == 'O') || (a[0] == ' ' && a[1] == 'O'))
+	return oxygen;
+    if ((a[0] == 'N') || (a[0] == ' ' && a[1] == 'N'))
+	return nitrogen;
+    if ((a[0] == 'S') || (a[0] == ' ' && a[1] == 'S'))
+	return sulfur;
+    if ((a[0] == 'P') || (a[0] == ' ' && a[1] == 'P'))
+	return phosphorus;
     return oons_type_unknown;
 }

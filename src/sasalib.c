@@ -45,6 +45,7 @@ struct sasalib_t {
     double total;
     double polar;
     double apolar;
+    double nucleic;
     char proteinname[SASALIB_NAME_LIMIT];
 }; 
 
@@ -86,6 +87,7 @@ void sasalib_get_classes(sasalib_t *s)
     }
     s->polar = sasa_class[polar];
     s->apolar = sasa_class[apolar];
+    s->nucleic = sasa_class[class_nucleic];
 }
 
 int sasalib_calc(sasalib_t *s)
@@ -257,6 +259,10 @@ double sasalib_apolar(const sasalib_t *s)
     return s->apolar;
 }
 
+double sasalib_nucleic(const sasalib_t *s)
+{
+    return s->nucleic;
+}
 double sasalib_sasa_atom(const sasalib_t *s, int i)
 {
     if (i >= 0 && i < protein_n(s->p)) {

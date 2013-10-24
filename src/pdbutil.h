@@ -52,8 +52,14 @@ char pdbutil_get_chain_label(const char* line);
     will be a label 'A', 'B', etc*/
 char pdbutil_get_alt_coord_label(const char* line);
 
-/** Returns 1 if the atom in an ATOM pdb-line is a hydrogen, 0
-    otherwise. */
+/** Returns 1 if the atom in an ATOM pdb-line is a hydrogen (or
+    deuterium), 0 otherwise. */
 int pdbutil_ishydrogen(const char* line);
 
+/** Returns 1 if an ATOM pdb-line represents a nucleic acid, 0
+    otherwise. */
+int pdbutil_isnucleicacid(const char* line);
+
+/** Same as above but using residue name extracted from line. */
+int pdbutil_residuenucleic(const char* res_name);
 #endif

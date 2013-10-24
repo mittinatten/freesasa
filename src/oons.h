@@ -25,7 +25,7 @@
 /** the return values of the atomclassifier-function in
     oons_classes() */
 typedef enum {
-    apolar=0, polar, oons_class_unknown
+    apolar=0, polar, class_nucleic, oons_class_unknown
 } oons_class;
 
 /** the return values of the atomclassifier-function in
@@ -34,14 +34,15 @@ typedef enum {
     hydrogen=0, aliphatic_C, aromatic_C,
     carbo_C, amide_N, carbo_O, 
     hydroxyl_O, sulfur, selenium,
-    unknown_polar, oons_type_unknown
+    carbon, oxygen, nitrogen, phosphorus, 
+    unknown_polar, type_nucleic, oons_type_unknown
 } oons_type;
 
 double oons_radius_pdbline(const char *pdb_line);
 
 double oons_radius(const char *res_name, const char *atom_name);
 
-/** polar/apolar/unknown */
+/** polar/apolar/nucleic/unknown */
 atomclassifier oons_classes();
 
 /** carbo_O/aliphatic_C/aromatic_C/etc */
