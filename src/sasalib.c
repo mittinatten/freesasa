@@ -34,7 +34,7 @@ struct sasalib_t {
     sasalib_algorithm alg;
     double *sasa;
     double *r;
-    protein *p;
+    structure_t *p;
     int n_sr;
     double d_lr;
     int n_threads;
@@ -72,16 +72,16 @@ const char *sasalib_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 void sasalib_get_classes(sasalib_t *s)
 {
     atomclassifier ac = oons_classes();
-    protein *p = s->p;
+    structure_t *p = s->p;
     int nc = ac.nclasses;
     double sasa_class[nc];
     s->total = 0.;
     for (int i = 0; i < nc; ++i) {
         sasa_class[i] = 0;
     }
-    for (size_t i = 0; i < protein_n(p); ++i) {
-        int class = ac.classify(protein_atom_res_name(p,i),
-                                protein_atom_name(p,i));
+    for (size_t i = 0; i < structure_n(p); ++i) {
+        int class = ac.classify(structure_atom_res_name(p,i),
+                                structure_atom_name(p,i));
         sasa_class[class] += s->sasa[i];
         s->total += s->sasa[i];
     }
@@ -95,22 +95,22 @@ int sasalib_calc(sasalib_t *s)
     struct timeval t1, t2;
     int res;
 
-    s->r = (double*) malloc(sizeof(double)*protein_n(s->p));
-    s->sasa = (double*) malloc(sizeof(double)*protein_n(s->p));
+    s->r = (double*) malloc(sizeof(double)*structure_n(s->p));
+    s->sasa = (double*) malloc(sizeof(double)*structure_n(s->p));
     //calc OONS radii
-    protein_r_def(s->r,s->p);
+    structure_r_def(s->r,s->p);
 
     gettimeofday(&t1,NULL);
     
     switch(s->alg) {
     case SHRAKE_RUPLEY:
-        res = sasa_shrake_rupley(s->sasa,protein_xyz(s->p),
-                                 s->r,protein_n(s->p),
+        res = sasa_shrake_rupley(s->sasa,structure_xyz(s->p),
+                                 s->r,structure_n(s->p),
                                  s->n_sr,s->n_threads);
         break;
     case LEE_RICHARDS:
-        res = sasa_lee_richards(s->sasa,protein_xyz(s->p),
-                                s->r,protein_n(s->p),
+        res = sasa_lee_richards(s->sasa,structure_xyz(s->p),
+                                s->r,structure_n(s->p),
                                 s->d_lr,s->n_threads);
         break;
     default:
@@ -147,7 +147,7 @@ void sasalib_copy_param(sasalib_t *target, const sasalib_t *source)
 void sasalib_free(sasalib_t *s)
 {
     if (s->owns_protein) {
-        protein_free(s->p);
+        structure_free(s->p);
     }
     free(s->sasa);
     free(s->r);
@@ -156,12 +156,12 @@ void sasalib_free(sasalib_t *s)
 
 int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
 {
-    s->p = protein_init_from_pdb(pdb_file);
+    s->p = structure_init_from_pdb(pdb_file);
     s->owns_protein = 1;
     return sasalib_calc(s);
 }
 
-int sasalib_calc_protein(sasalib_t *s, protein* p)
+int sasalib_calc_protein(sasalib_t *s, structure_t* p)
 {
     s->p = p;
     s->owns_protein = 0;
@@ -265,7 +265,7 @@ double sasalib_nucleic(const sasalib_t *s)
 }
 double sasalib_sasa_atom(const sasalib_t *s, int i)
 {
-    if (i >= 0 && i < protein_n(s->p)) {
+    if (i >= 0 && i < structure_n(s->p)) {
         return s->sasa[i];
     }
     fprintf(stderr,"Error: Atom index %d invalid.\n",i);
@@ -274,7 +274,7 @@ double sasalib_sasa_atom(const sasalib_t *s, int i)
 
 double sasalib_radius_atom(const sasalib_t *s, int i)
 {
-    if (i >= 0 && i < protein_n(s->p)) {
+    if (i >= 0 && i < structure_n(s->p)) {
         return s->r[i];
     }
     fprintf(stderr,"Error: Atom index %d invalid.\n",i);
@@ -321,7 +321,7 @@ int sasalib_log(FILE *log, const sasalib_t *s)
         return 1;
     }
     fprintf(log,"time_elapsed: %f s\n",s->elapsed_time);
-    fprintf(log,"n_atoms: %d\n", protein_n(s->p));
+    fprintf(log,"n_atoms: %d\n", structure_n(s->p));
     return 0;
 }
 
@@ -329,10 +329,10 @@ void sasalib_per_residue(FILE *output, const sasalib_t *s)
 {
     double sasa = 0;
     char buf[NBUF] = "", prev_buf[NBUF] = "";
-    for (int i = 0; i < protein_n(s->p); ++i) {
-	sprintf(buf,"%c_%d_%s",protein_atom_chain(s->p,i),
-		atoi(protein_atom_res_number(s->p,i)),
-		protein_atom_res_name(s->p,i));
+    for (int i = 0; i < structure_n(s->p); ++i) {
+	sprintf(buf,"%c_%d_%s",structure_atom_chain(s->p,i),
+		atoi(structure_atom_res_number(s->p,i)),
+		structure_atom_res_name(s->p,i));
 	sasa += s->sasa[i];
 	if (strcmp(buf,prev_buf)) {
 	    fprintf(output,"%s %f\n",prev_buf,sasa);
@@ -342,3 +342,4 @@ void sasalib_per_residue(FILE *output, const sasalib_t *s)
     }
     fprintf(output,"%s %f\n",buf,sasa);
 }
+

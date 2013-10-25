@@ -25,7 +25,7 @@
     user may optionally select algorithm and provide parameters. */
 
 #include <stdio.h>
-#include "protein.h"
+#include "structure.h"
 
 typedef struct sasalib_t sasalib_t;
 typedef enum {LEE_RICHARDS, SHRAKE_RUPLEY} sasalib_algorithm;
@@ -60,7 +60,7 @@ void sasalib_copy_param(sasalib_t *target, const sasalib_t *source);
 int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file);
 
 /** Same as sasalib_calcpdb but from already initialized protein. */
-int sasalib_calc_protein(sasalib_t*, protein*);
+int sasalib_calc_protein(sasalib_t*, structure_t*);
 
 /** Sets algorithm. Returns 0 if alg is valid, returns 1 else. */
 int sasalib_set_algorithm(sasalib_t*, sasalib_algorithm alg);
@@ -137,7 +137,7 @@ double sasalib_radius_atom(const sasalib_t*, int i);
     success, 1 on failure. */
 int sasalib_log(FILE *log, const sasalib_t*);
 
-/** Prints the total SASA for each residue of the protein */
+/** Prints the total SASA for each residue of the structure */
 void sasalib_per_residue(FILE *output, const sasalib_t*);
 
 #endif

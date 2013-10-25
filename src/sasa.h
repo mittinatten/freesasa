@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include "vector3.h"
 #include "atomclassifier.h"
-#include "protein.h"
+#include "structure.h"
 
 //this could be made a user option
 #define SASA_PROBE_RADIUS 1.4 
@@ -60,6 +60,6 @@ int sasa_lee_richards(double* sasa,
 /** Writes result of SASA_calculation to FILE* summed up for the 
     atom-classes according to the provided atomclassifier. */
 void sasa_per_atomclass(FILE*, atomclassifier, 
-			protein*, double *sasa);
+			structure_t*, double *sasa);
 
 #endif

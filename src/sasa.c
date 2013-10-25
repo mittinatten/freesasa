@@ -511,16 +511,16 @@ double sasa_sum_angles(int n_buried, double *a, double *b)
 }
 
 void sasa_per_atomclass(FILE *out, atomclassifier ac,
-                        protein *p, double *sasa)
+                        structure_t *p, double *sasa)
 {
     int nc = ac.nclasses;
     double s[nc];
     for (int i = 0; i < nc; ++i) {
         s[i] = 0;
     }
-    for (size_t i = 0; i < protein_n(p); ++i) {
-        int class = ac.classify(protein_atom_res_name(p,i),
-                                protein_atom_name(p,i));
+    for (size_t i = 0; i < structure_n(p); ++i) {
+        int class = ac.classify(structure_atom_res_name(p,i),
+                                structure_atom_name(p,i));
         s[class] += sasa[i];
     }
     fprintf(out,"\n> %s\n",ac.name);

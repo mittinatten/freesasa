@@ -24,38 +24,37 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include "protein.h"
+#include "structure.h"
 #include "pdbutil.h"
 #include "oons.h"
 
-
-struct atom {
+typedef struct {
     char res_name[PDB_ATOM_RES_NAME_STRL+1];
     char res_number[PDB_ATOM_RES_NUMBER_STRL+1];
     char atom_name[PDB_ATOM_NAME_STRL+1];
     char chain_label;
-};
+} atom_t;
 
-struct protein {
-    atom *a;
+struct structure_ {
+    atom_t *a;
     vector3 *xyz;
     int number_atoms;
     int number_residues;
     int number_chains;
 };
 
-protein* protein_init()
+structure_t* structure_init()
 {
-    protein *p = (protein*) malloc(sizeof(protein));
+    structure_t *p = (structure_t*) malloc(sizeof(structure_t));
     p->number_atoms = 0;
     p->number_residues = 0;
     p->number_chains = 0;
-    p->a = (atom*) malloc(sizeof(atom));
+    p->a = (atom_t*) malloc(sizeof(atom_t));
     p->xyz = (vector3*) malloc(sizeof(vector3));
     return p;
 }
 
-void protein_free(protein *p)
+void structure_free(structure_t *p)
 {
     free(p->a);
     free(p->xyz);
@@ -63,7 +62,7 @@ void protein_free(protein *p)
 }
 
 /* returns alt_label if there is any */
-char protein_get_pdb_atom(const char *line, atom *a, vector3 *v)
+char structure_get_pdb_atom(const char *line, atom_t *a, vector3 *v)
 {
     a->chain_label = pdbutil_get_chain_label(line);
     pdbutil_get_coord(line, v);
@@ -73,13 +72,13 @@ char protein_get_pdb_atom(const char *line, atom *a, vector3 *v)
     return pdbutil_get_alt_coord_label(line);
 }
 
-protein* protein_init_from_pdb(FILE *pdb_file)
+structure_t* structure_init_from_pdb(FILE *pdb_file)
 {
-    protein *p = protein_init();
+    structure_t *p = structure_init();
     /* two possible implementations, either read file in two passes,
        first to determine number of atoms, second to read them in,
        keeping the number of mallocs/reallocs to a minimum.  Or read
-       file once using protein_add_atom() for realloc.  Will begin
+       file once using structure_add_atom() for realloc.  Will begin
        with second alternative since that has to be implemented
        anyway. */
     size_t len = 80;
@@ -89,15 +88,15 @@ protein* protein_init_from_pdb(FILE *pdb_file)
         if (strncmp("ATOM",line,4)==0) {
 	    if (pdbutil_ishydrogen(line)) continue;
             vector3 v;
-            atom a;
-	    char alt = protein_get_pdb_atom(line,&a,&v);
+            atom_t a;
+	    char alt = structure_get_pdb_atom(line,&a,&v);
 	    if ((alt != ' ' && the_alt == ' ') || (alt == ' ')) { 
 		the_alt = alt;
 	    } else if (alt != ' ' && alt != the_alt) {
 		continue;
 	    } 
 	    
-	    protein_add_atom(p,a.atom_name,a.res_name,a.res_number,
+	    structure_add_atom(p,a.atom_name,a.res_name,a.res_number,
 			     a.chain_label, v.x, v.y, v.z);
 	}
 	if (strncmp("ENDMDL",line,4)==0) break;
@@ -106,14 +105,14 @@ protein* protein_init_from_pdb(FILE *pdb_file)
     return p;
 }
 
-void protein_alloc_one(protein *p)
+void structure_alloc_one(structure_t *p)
 {
     int na = ++p->number_atoms;
-    p->a = (atom*) realloc(p->a,sizeof(atom)*na);
+    p->a = (atom_t*) realloc(p->a,sizeof(atom_t)*na);
     p->xyz = (vector3*) realloc(p->xyz,sizeof(vector3)*na);
 }
 
-void protein_add_atom(protein *p,
+void structure_add_atom(structure_t *p,
                       const char *atom_name,
                       const char *residue_name,
                       const char *residue_number,
@@ -126,13 +125,13 @@ void protein_add_atom(protein *p,
     assert(strlen(residue_number) == PDB_ATOM_RES_NUMBER_STRL);
 
     // allocate memory, increase number of atoms counter
-    protein_alloc_one(p);
+    structure_alloc_one(p);
 
     int na = p->number_atoms;
 
     vector3_set(&p->xyz[na-1],x,y,z);
 
-    atom *a = &p->a[na-1];
+    atom_t *a = &p->a[na-1];
     strcpy(a->atom_name,atom_name);
     strcpy(a->res_name,residue_name);
     strcpy(a->res_number,residue_number);
@@ -158,8 +157,8 @@ void protein_add_atom(protein *p,
 
 /** get array of radii using custom conversion function, the array r is
     assumed to be of correct size already */
-void protein_r(double *r,
-	       const protein *p, 
+void structure_r(double *r,
+	       const structure_t *p, 
 	       double (*atom2radius)(const char *res_name, 
 				     const char *atom_name))
 {
@@ -170,60 +169,60 @@ void protein_r(double *r,
 
 /** get array of radii using default OONS radii, the array r is
     assumed to of correct size already */
-void protein_r_def(double *r, const protein *p)
+void structure_r_def(double *r, const structure_t *p)
 {
-    protein_r(r,p,oons_radius);
+    structure_r(r,p,oons_radius);
 }
 
-void protein_update_atom_xyz(protein* p, int number,
+void structure_update_atom_xyz(structure_t* p, int number,
 			     double x, double y, double z)
 {
     assert(number < p->number_atoms);
     vector3_set(&p->xyz[number], x, y, z);
 }
 
-void protein_update_atom(protein* p, int number, vector3 *v)
+void structure_update_atom(structure_t* p, int number, vector3 *v)
 {
     assert(number < p->number_atoms);
     vector3_copy(&p->xyz[number], v);
 }
 
-void protein_update_atoms(protein* p, vector3 **v) 
+void structure_update_atoms(structure_t* p, vector3 **v) 
 {
     for (int i = 0; i < p->number_atoms; ++i) {
 	vector3_copy(&p->xyz[i],v[i]);
     }
 }
 
-const vector3* protein_xyz(const protein *p)
+const vector3* structure_xyz(const structure_t *p)
 {
     return p->xyz;
 }
 
-int protein_n(const protein *p)
+int structure_n(const structure_t *p)
 {
     return p->number_atoms;
 }
 
-const char* protein_atom_name(const protein *p, int i)
+const char* structure_atom_name(const structure_t *p, int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].atom_name;
 }
 
-const char* protein_atom_res_name(const protein *p, int i)
+const char* structure_atom_res_name(const structure_t *p, int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].res_name;
 }
 
-const char* protein_atom_res_number(const protein *p, int i)
+const char* structure_atom_res_number(const structure_t *p, int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].res_number;
 }
 
-char protein_atom_chain(const protein *p, int i)
+char structure_atom_chain(const structure_t *p, int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].chain_label;
