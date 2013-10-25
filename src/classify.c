@@ -1,43 +1,48 @@
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include "pdbutil.h"
 #include "classify.h"
 
-const char *classify_classes[] = {
+const char *classes[] = {
     "Polar", "Apolar", "Nucleotide", "Unknown"
 };
 enum {polar,apolar,nucleotide,class_unknown};
 
-const char *classify_residue_names[] = {
+const char *residue_names[] = {
     //amino acids
     "ALA","ARG","ASN","ASP",
     "CYS","GLN","GLU","GLY",
     "HIS","ILE","LEU","LYS",
     "MET","PHE","PRO","SER",
-    "TRP","TYR","VAL","THR",
-    "CSE","ASX","GLX","UNK"
+    "THR","TRP","TYR","VAL",
+    "CSE","ASX","GLX","UNK",
     //DNA
     "DA","DC","DG","DT",
     //RNA
-    "A","C","G","U","I","T"
+    "A","C","G","U","I","T",
     //General nuceleotide
     "N"
 };
-enum {ALA,ARG,ASN,ASP,CYS,GLN,GLU,GLY,HIS,ILE,LEU,LYS,MET,PHE,
-      PRO,SER,THR,CSE,ASX,GLX,UNK,
+enum {ALA=0,ARG,ASN,ASP,
+      CYS,GLN,GLU,GLY,
+      HIS,ILE,LEU,LYS,
+      MET,PHE,PRO,SER,
+      THR,TRP,TYR,VAL,
+      CSE,ASX,GLX,UNK,
       DA,DC,DG,DT,
-      A,C,G,U,I,T,
-      N
+      RA,RC,RG,RU,RI,RT,
+      NN
 };
 
 // the elements seen in PDB Atom entries
-const char *classify_element_names[] = {
+const char *element_names[] = {
     "C","O","N","S","P","Se","H","unknown"
 };
 enum {carbon,oxygen,nitrogen,sulphur,phosphorus,selenium,
       hydrogen,element_unknown};
 
-const char *classify_oons_names[] = {
+const char *oons_names[] = {
     "aliphatic_C", "aromatic_C",
     "carbo_C", "amide_N", "carbo_O",
     "hydroxyl_O", "sulfur","unknown"
@@ -58,11 +63,47 @@ double classify_radius(const char *res_name, const char *atom_name)
 
 int classify_class(const char *res_name, const char *atom_name);
 
-const char* classify_class2str(int class);
+const char* classify_class2str(int class)
+{
+    if (class < 0 || class > class_unknown) {
+	return classes[class_unknown]; 
+    }
+    return classes[class];
+}
 
-int classify_residue(const char *res_name, const char *atom_name);
+int classify_residue(const char *res_name)
+{
+    
+    for (int i = ALA; i <= UNK; ++i) {
+        if (! strcmp(res_name,residue_names[i])) return i;
+    }
 
-const char* classify_residue2str(int res);
+    //for nucleotides we need to deal with whitespace..
+    char *buf = (char*) malloc(sizeof(char)*(PDB_ATOM_RES_NAME_STRL+1));
+    strcpy(buf,res_name);
+    char *last = buf+PDB_ATOM_RES_NAME_STRL-1;
+    char *first = buf;
+    while (*first == ' ') {
+	++first;
+    }
+    if (*last == ' ') {
+	*last = '\0';
+    }
+    for (int i = DA; i <= NN; ++i) {
+	if (! strcmp(first,residue_names[i])) return i;
+    }
+    free(buf);
+
+    // warning should perhaps be printed ...
+    return UNK;
+}
+
+const char* classify_residue2str(int res) {
+    if (res < 0 || res > NN) {
+	return residue_names[UNK];
+    }
+    return residue_names[res];
+}
 
 int classify_element(const char *atom_name)
 {
@@ -71,10 +112,10 @@ int classify_element(const char *atom_name)
 
 const char* classify_element2str(int element)
 {
-    if (element < 0 && element > element_unknown) {
-	return classify_element_names[element_unknown];
+    if (element < 0 || element > element_unknown) {
+	return element_names[element_unknown];
     }
-    return classify_element_names[element];
+    return element_names[element];
 }
 
 double classify_element_radius(int element)
@@ -100,7 +141,13 @@ int classify_oons(const char *res_name, const char *atom_name)
     return oons_unknown;
 }
 
-const char* classify_oons2str(int element);
+const char* classify_oons2str(int oons_type)
+{
+    if (oons_type < 0 || oons_type > oons_unknown) {
+	return oons_names[oons_type];
+    }    
+    return oons_names[oons_type];
+}
 
 double classify_oons_radius(int oons_type)
 {

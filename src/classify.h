@@ -7,7 +7,7 @@ int classify_class(const char *res_name, const char *atom_name);
 
 const char* classify_class2str(int class);
 
-int classify_residue(const char *res_name, const char *atom_name);
+int classify_residue(const char *res_name);
 
 const char* classify_residue2str(int res);
 
