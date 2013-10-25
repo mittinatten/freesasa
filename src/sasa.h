@@ -17,8 +17,8 @@
   along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SASA_H
-#define SASA_H
+#ifndef SASALIB_SASA_H
+#define SASALIB_SASA_H
 
 #include <stdio.h>
 #include "vector3.h"

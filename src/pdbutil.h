@@ -17,8 +17,8 @@
   along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PDBUTIL_H
-#define PDBUTIL_H
+#ifndef SASALIB_PDBUTIL_H
+#define SASALIB_PDBUTIL_H
 
 #include "vector3.h"
 

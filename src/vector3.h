@@ -17,8 +17,8 @@
   along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef VECTOR3_H
-#define VECTOR3_H
+#ifndef SASALIB_VECTOR3_H
+#define SASALIB_VECTOR3_H
 
 #include <math.h>
 

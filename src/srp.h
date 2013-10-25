@@ -17,8 +17,8 @@
   along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SRP_H
-#define SRP_H
+#ifndef SASALIB_SRP_H
+#define SASALIB_SRP_H
 
 /** Prints the legal values for the number of points as a
     comma-separated list, ending with newline. */

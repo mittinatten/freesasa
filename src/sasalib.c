@@ -30,7 +30,7 @@
 
 #define NBUF 100
 
-struct sasalib_t {
+struct sasalib_ {
     sasalib_algorithm alg;
     double *sasa;
     double *r;

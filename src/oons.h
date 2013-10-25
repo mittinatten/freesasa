@@ -17,8 +17,8 @@
   along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OONS_H
-#define OONS_H
+#ifndef SASALIB_OONS_H
+#define SASALIB_OONS_H
 
 #include "atomclassifier.h"
 
