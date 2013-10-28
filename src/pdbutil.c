@@ -22,7 +22,7 @@
 #include <assert.h>
 #include "pdbutil.h"
 
-void pdbutil_get_atom_name(const char *line, char *name)
+void pdbutil_get_atom_name(char *name, const char *line)
 {
     assert(strncmp(line,"ATOM",4) == 0);
     assert(strlen(line) > 12+PDB_ATOM_NAME_STRL);
@@ -30,20 +30,20 @@ void pdbutil_get_atom_name(const char *line, char *name)
     name[PDB_ATOM_NAME_STRL] = '\0';
 }
 
-void pdbutil_get_res_name(const char *line, char *name)
+void pdbutil_get_res_name(char *name, const char *line)
 {
     assert(strncmp(line,"ATOM",4) == 0);
     assert(strlen(line) > 17+PDB_ATOM_RES_NAME_STRL);
     strncpy(name, line+17, PDB_ATOM_RES_NAME_STRL);
     name[PDB_ATOM_RES_NAME_STRL] = '\0';
 }
-void pdbutil_get_coord(const char *line, vector3 *coord)
+void pdbutil_get_coord(vector3 *coord, const char *line)
 {
     assert(strncmp(line,"ATOM",4) == 0);
     assert(strlen(line) > 79);
     sscanf(line+30, "%lf%lf%lf", &coord->x, &coord->y, &coord->z);
 }
-void pdbutil_get_res_number(const char* line, char *number)
+void pdbutil_get_res_number(char *number, const char* line)
 {
     assert(strncmp(line,"ATOM",4) == 0);
     assert(strlen(line) > 22+PDB_ATOM_RES_NUMBER_STRL);
@@ -73,43 +73,4 @@ int pdbutil_ishydrogen(const char* line)
     //hydrogen
     if (line[12] == 'D' || line[13] == 'D') return 1;
     return 0;
-}
-
-int pdbutil_residuenucleic(const char* res_name)
-{
-    //most common first
-    if(! strcmp(res_name, "  A")) return 1;
-    if(! strcmp(res_name, "  C")) return 1;
-    if(! strcmp(res_name, "  G")) return 1;
-    if(! strcmp(res_name, "  T")) return 1;
-    if(! strcmp(res_name, "  U")) return 1;
-    if(! strcmp(res_name, " DA")) return 1;
-    if(! strcmp(res_name, " DC")) return 1;
-    if(! strcmp(res_name, " DG")) return 1;
-    if(! strcmp(res_name, " DT")) return 1;
-    if(! strcmp(res_name, " DU")) return 1;
-
-    //less common
-    if(! strcmp(res_name, "  N")) return 1;
-    if(! strcmp(res_name, "  I")) return 1;
-    if(! strcmp(res_name, " DI")) return 1;
-
-    //alternate formats (not so common?)
-    if(! strcmp(res_name, " A ")) return 1;
-    if(! strcmp(res_name, " C ")) return 1;
-    if(! strcmp(res_name, " G ")) return 1;
-    if(! strcmp(res_name, " I ")) return 1;
-    if(! strcmp(res_name, " N ")) return 1;
-    if(! strcmp(res_name, " T ")) return 1;
-    if(! strcmp(res_name, " U ")) return 1;
-    return 0;
-}
-
-/** Returns 1 if an ATOM pdb-line represents a nucleic acid, 0
-    otherwise. */
-int pdbutil_isnucleicacid(const char* line) 
-{
-    char res[PDB_ATOM_RES_NAME_STRL+1];
-    pdbutil_get_res_name(line,res);
-    return pdbutil_residuenucleic(res);
 }

@@ -26,7 +26,8 @@
 #include "pdbutil.h"
 #include "sasalib.h"
 #include "srp.h"
-#include "oons.h"
+//#include "oons.h"
+#include "classify.h"
 
 #define NBUF 100
 
@@ -46,6 +47,7 @@ struct sasalib_ {
     double polar;
     double apolar;
     double nucleic;
+    double unknown;
     char proteinname[SASALIB_NAME_LIMIT];
 }; 
 
@@ -64,6 +66,8 @@ const sasalib_t sasalib_def_param = {
     .total = 0.,
     .polar = 0.,
     .apolar = 0.,
+    .nucleic = 0.,
+    .unknown = 0.,
     .proteinname = "undef"
 };
 
@@ -71,23 +75,23 @@ const char *sasalib_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
 void sasalib_get_classes(sasalib_t *s)
 {
-    atomclassifier ac = oons_classes();
     structure_t *p = s->p;
-    int nc = ac.nclasses;
+    int nc = classify_nclasses();
     double sasa_class[nc];
     s->total = 0.;
     for (int i = 0; i < nc; ++i) {
         sasa_class[i] = 0;
     }
     for (size_t i = 0; i < structure_n(p); ++i) {
-        int class = ac.classify(structure_atom_res_name(p,i),
-                                structure_atom_name(p,i));
+        int class = classify_class(structure_atom_res_name(p,i),
+				   structure_atom_name(p,i));
         sasa_class[class] += s->sasa[i];
         s->total += s->sasa[i];
     }
-    s->polar = sasa_class[polar];
-    s->apolar = sasa_class[apolar];
-    s->nucleic = sasa_class[class_nucleic];
+    s->polar = sasa_class[classify_polar];
+    s->apolar = sasa_class[classify_apolar];
+    s->nucleic = sasa_class[classify_nucleicacid];
+    s->unknown = sasa_class[classify_unknown];
 }
 
 int sasalib_calc(sasalib_t *s)

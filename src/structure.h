@@ -43,18 +43,18 @@ structure_t* structure_init_from_pdb(FILE *pdb_file);
     hydrogens if added (i.e. up to caller to make sure these are
     excluded if necessesary) */
 void structure_add_atom(structure_t *p, 
-		      const char* atom_name,
-		      const char* residue_name, 
-		      const char* residue_number,
-		      char chain_label,
-		      double x, double y, double z);
+			const char* atom_name,
+			const char* residue_name, 
+			const char* residue_number,
+			char chain_label,
+			double x, double y, double z);
 
 /** not tested yet */
 void structure_update_atom(structure_t *p, int number, vector3 *coord);
 
 /** not tested yet */
 void structure_update_atom_xyz(structure_t *p, int number, 
-			 double x, double y, double z);
+			       double x, double y, double z);
 /** not tested yet */
 void structure_update_atoms(structure_t *p, vector3**);
 
@@ -64,12 +64,12 @@ const vector3* structure_xyz(const structure_t *p);
 /** get array of radii using custom conversion function, the array r is
     assumed to be of correct size already */
 void structure_r(double *r,
-	       const structure_t *p, 
-	       double (*atom2radius)(const char *res_name, 
-				     const char *atom_name));
+		 const structure_t *p, 
+		 double (*atom2radius)(const char *res_name, 
+				       const char *atom_name));
 
-/** get array of radii using default OONS radii, the array r is
-    assumed to of correct size already */
+/** get array of radii using classify_radius(), the array r is assumed
+    to of correct size already */
 void structure_r_def(double *r, const structure_t *p);
 
 /** get number of atoms */

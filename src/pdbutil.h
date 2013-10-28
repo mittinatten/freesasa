@@ -29,20 +29,20 @@
 /** Extracts the whole atom-name field from an ATOM pdb-line,
     including padding, i.e. a string of PDB_ATOM_NAME_STRL
     characters. For example " CA " for a regular c-alpha */
-void pdbutil_get_atom_name(const char *line, char *name);
+void pdbutil_get_atom_name(char *name, const char *line);
 
 /** Extracts the whole residue name from an ATOM pdb-line, i.e. a
     string of PDB_ATOM_RES_NAME_STRL characters. For example "ALA" for
     an alanine. */
-void pdbutil_get_res_name(const char *line, char *name);
+void pdbutil_get_res_name(char *name, const char *line);
 
 /** Extracts coordinates from an ATOM pdb-line. */
-void pdbutil_get_coord(const char *line, vector3 *coord);
+void pdbutil_get_coord(vector3 *coord, const char *line);
 
 /** Extracts residue number as a string from an ATOM pdb-line. String
     format is used because not all residue-numbers are
     numbers. String has length PDB_ATOM_RES_NUMBER_STRL. */
-void pdbutil_get_res_number(const char* line, char *number);
+void pdbutil_get_res_number(char *number, const char* line);
 
 /** Extracts the one character chain label from an ATOM pdb-line
     (i.e. A, B, C, ...) */
@@ -56,10 +56,4 @@ char pdbutil_get_alt_coord_label(const char* line);
     deuterium), 0 otherwise. */
 int pdbutil_ishydrogen(const char* line);
 
-/** Returns 1 if an ATOM pdb-line represents a nucleic acid, 0
-    otherwise. */
-int pdbutil_isnucleicacid(const char* line);
-
-/** Same as above but using residue name extracted from line. */
-int pdbutil_residuenucleic(const char* res_name);
 #endif

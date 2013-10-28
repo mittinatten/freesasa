@@ -26,7 +26,7 @@
 #include <assert.h>
 #include "structure.h"
 #include "pdbutil.h"
-#include "oons.h"
+#include "classify.h"
 
 typedef struct {
     char res_name[PDB_ATOM_RES_NAME_STRL+1];
@@ -62,13 +62,13 @@ void structure_free(structure_t *p)
 }
 
 /* returns alt_label if there is any */
-char structure_get_pdb_atom(const char *line, atom_t *a, vector3 *v)
+char structure_get_pdb_atom(atom_t *a, vector3 *v, const char *line)
 {
     a->chain_label = pdbutil_get_chain_label(line);
-    pdbutil_get_coord(line, v);
-    pdbutil_get_atom_name(line, a->atom_name);
-    pdbutil_get_res_name(line, a->res_name);
-    pdbutil_get_res_number(line, a->res_number);
+    pdbutil_get_coord(v, line);
+    pdbutil_get_atom_name(a->atom_name, line);
+    pdbutil_get_res_name(a->res_name, line);
+    pdbutil_get_res_number(a->res_number, line);
     return pdbutil_get_alt_coord_label(line);
 }
 
@@ -89,7 +89,7 @@ structure_t* structure_init_from_pdb(FILE *pdb_file)
 	    if (pdbutil_ishydrogen(line)) continue;
             vector3 v;
             atom_t a;
-	    char alt = structure_get_pdb_atom(line,&a,&v);
+	    char alt = structure_get_pdb_atom(&a,&v,line);
 	    if ((alt != ' ' && the_alt == ' ') || (alt == ' ')) { 
 		the_alt = alt;
 	    } else if (alt != ' ' && alt != the_alt) {
@@ -97,7 +97,7 @@ structure_t* structure_init_from_pdb(FILE *pdb_file)
 	    } 
 	    
 	    structure_add_atom(p,a.atom_name,a.res_name,a.res_number,
-			     a.chain_label, v.x, v.y, v.z);
+			       a.chain_label, v.x, v.y, v.z);
 	}
 	if (strncmp("ENDMDL",line,4)==0) break;
     }
@@ -158,9 +158,9 @@ void structure_add_atom(structure_t *p,
 /** get array of radii using custom conversion function, the array r is
     assumed to be of correct size already */
 void structure_r(double *r,
-	       const structure_t *p, 
-	       double (*atom2radius)(const char *res_name, 
-				     const char *atom_name))
+		 const structure_t *p, 
+		 double (*atom2radius)(const char *res_name, 
+				       const char *atom_name))
 {
     for (int i = 0; i < p->number_atoms; ++i) {
 	r[i] = atom2radius(p->a[i].res_name, p->a[i].atom_name);
@@ -171,7 +171,7 @@ void structure_r(double *r,
     assumed to of correct size already */
 void structure_r_def(double *r, const structure_t *p)
 {
-    structure_r(r,p,oons_radius);
+    structure_r(r,p,classify_radius);
 }
 
 void structure_update_atom_xyz(structure_t* p, int number,
