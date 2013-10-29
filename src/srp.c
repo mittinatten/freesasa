@@ -21,30 +21,30 @@
 #include <stdlib.h>
 #include "srp.h"
 
-const double srp_20[3*20];
-const double srp_50[3*50];
-const double srp_100[3*100];
-const double srp_200[3*200];
-const double srp_500[3*500];
-const double srp_1000[3*1000];
-const double srp_2000[3*2000];
-const double srp_5000[3*5000];
+static const double srp_20[3*20];
+static const double srp_50[3*50];
+static const double srp_100[3*100];
+static const double srp_200[3*200];
+static const double srp_500[3*500];
+static const double srp_1000[3*1000];
+static const double srp_2000[3*2000];
+static const double srp_5000[3*5000];
 
 #define SRP_N_SIZES 8
-const int srp_N[SRP_N_SIZES] = { 20, 50, 100, 200, 500, 1000, 2000, 5000 };
-const double* srp_p[SRP_N_SIZES] = { srp_20, srp_50, srp_100, srp_200,
-			        srp_500, srp_1000, srp_2000, srp_5000 };
+static const int srp_N[SRP_N_SIZES] = { 20, 50, 100, 200, 500, 1000, 2000, 5000 };
+static const double* srp_p[SRP_N_SIZES] = { srp_20, srp_50, srp_100, srp_200,
+                                            srp_500, srp_1000, srp_2000, srp_5000 };
 
 void srp_print_n_opt(FILE* f) {
     for (int i = 0; i < SRP_N_SIZES-1; ++i) {
-	fprintf(f,"%d, ",srp_N[i]);
+        fprintf(f,"%d, ",srp_N[i]);
     }
     fprintf(f,"%d\n",srp_N[SRP_N_SIZES-1]);
 }
 
 int srp_n_is_valid(int n) {
     for (int i = 0; i < SRP_N_SIZES; ++i) {
-	if (n == srp_N[i]) return 1;
+        if (n == srp_N[i]) return 1;
     }
     return 0;
 }
@@ -54,7 +54,7 @@ const double* srp_get_points(int n) {
 	if (n == srp_N[i]) return srp_p[i];
     }
     fprintf(stderr,"Warning: Number of test-points has to be"
-	    " one of the following values:\n  ");
+            " one of the following values:\n  ");
     srp_print_n_opt(stderr);
     return NULL;
 }
@@ -63,7 +63,7 @@ const double* srp_get_points(int n) {
    test-points as charges on a sphere, minimizing the energy using
    simulated annealing. */
 
-const double srp_20[3*20] = {
+static const double srp_20[3*20] = {
     0.96815, -0.0605922, -0.242928,
     0.0810561, 0.283949, 0.955407,
     0.196185, -0.82054, -0.536866,
@@ -85,7 +85,7 @@ const double srp_20[3*20] = {
     -0.489938, -0.867978, -0.0810844,
     0.398338, -0.38394, 0.833017
 };
-const double srp_50[3*50] = {
+static const double srp_50[3*50] = {
     -0.820884, 0.565893, 0.0769008,
     0.645765, -0.654002, -0.394042,
     0.0248197, -0.989817, 0.140162,
@@ -137,7 +137,7 @@ const double srp_50[3*50] = {
     0.90617, -0.407675, 0.112506,
     -0.930253, -0.278052, -0.239408
 };
-const double srp_100[3*100] = {
+static const double srp_100[3*100] = {
     -0.222346, 0.593682, 0.773372,
     0.45146, 0.286805, -0.844942,
     -0.470066, -0.462201, -0.751937,
@@ -239,7 +239,7 @@ const double srp_100[3*100] = {
     -0.902549, 0.303012, -0.305924,
     -0.995695, 0.0921873, -0.00961754
 };
-const double srp_200[3*200] = {
+static const double srp_200[3*200] = {
     -0.253571, -0.0245966, 0.967004,
     -0.923202, -0.338718, 0.181571,
     -0.97269, -0.0322981, -0.229848,
@@ -441,7 +441,7 @@ const double srp_200[3*200] = {
     -0.233408, 0.400297, 0.886162,
     -0.774203, 0.267337, -0.573708
 };
-const double srp_500[3*500] = {
+static const double srp_500[3*500] = {
     -0.962028, -0.261613, -0.0778481,
     0.157693, -0.350292, 0.92327,
     0.785976, -0.523037, -0.329656,
@@ -943,7 +943,7 @@ const double srp_500[3*500] = {
     -0.120574, 0.167894, -0.978404,
     -0.0592427, -0.588233, 0.806518
 };
-const double srp_1000[3*1000] = {
+static const double srp_1000[3*1000] = {
     0.6855, 0.718982, -0.114693,
     0.541758, 0.686468, 0.485037,
     -0.921133, -0.348799, 0.172782,
@@ -1945,7 +1945,7 @@ const double srp_1000[3*1000] = {
     -0.867141, -0.354661, -0.349689,
     0.465229, -0.462261, -0.754902
 };
-const double srp_2000[3*2000] = {
+static const double srp_2000[3*2000] = {
     -0.913696, 0.326966, 0.241358,
     -0.452915, -0.219321, -0.864157,
     -0.991816, 0.0211331, 0.125917,
@@ -3947,7 +3947,7 @@ const double srp_2000[3*2000] = {
     0.514183, -0.845561, -0.143677,
     -0.259387, -0.192941, -0.946304
 };
-const double srp_5000[3*5000] = {
+static const double srp_5000[3*5000] = {
     -0.0979805, 0.858987, -0.502534,
     0.531381, -0.16279, 0.831344,
     0.0309442, -0.99131, 0.127857,

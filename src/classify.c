@@ -1,3 +1,22 @@
+/*
+  Copyright Simon Mitternacht 2013.
+
+  This file is part of Sasalib.
+  
+  Sasalib is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  Sasalib is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU General Public License
+  along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -5,9 +24,7 @@
 #include "pdbutil.h"
 #include "classify.h"
 
-
-
-const char *residue_names[] = {
+static const char *residue_names[] = {
     //amino acids
     "ALA","ARG","ASN","ASP",
     "CYS","GLN","GLU","GLY",
@@ -25,18 +42,18 @@ const char *residue_names[] = {
 };
 
 // the elements seen in PDB Atom entries
-const char *element_names[] = {
+static const char *element_names[] = {
     "C","O","N","S","P","Se","H","unknown"
 };
 
-const char *oons_names[] = {
+static const char *oons_names[] = {
     "aliphatic_C", "aromatic_C",
     "carbo_C", "amide_N", "carbo_O",
     "hydroxyl_O", "sulfur","unknown_polar","unknown"
 };
 
 /** helper function, trims whitespace from beginning and end of string */
-size_t trim_whitespace(char *target, const char *src, size_t length)
+static size_t trim_whitespace(char *target, const char *src, size_t length)
 {
     if (length == 0) { return 0; }
     char *buf = (char*) malloc(length+1);
@@ -189,13 +206,14 @@ double classify_element_radius(sasalib_element_t element)
 }
 
 /** Functions to deal with the different amino acids in OONS scheme */
-int classify_oons_RK(const char* a)
+static int classify_oons_RK(const char* a)
 {
     if (a[1] == 'C') return sasalib_aliphatic_C;
     if (a[1] == 'N') return sasalib_amide_N;
     return sasalib_oons_unknown;
 }
-int classify_oons_NQDE(const char* a)
+
+static int classify_oons_NQDE(const char* a)
 {
     if (a[1] == 'C') return sasalib_aliphatic_C;
     if (a[1] == 'N') return sasalib_amide_N;
@@ -203,12 +221,14 @@ int classify_oons_NQDE(const char* a)
     if (a[1] == 'X') return sasalib_oons_unknown_polar;
     return sasalib_oons_unknown;
 }
-int classify_oons_VIL(const char* a)
+
+static int classify_oons_VIL(const char* a)
 {
     if (a[1] == 'C') return sasalib_aliphatic_C;
     return sasalib_oons_unknown;
 }
-int classify_oons_FHPYW(const char* a)
+
+static int classify_oons_FHPYW(const char* a)
 {
     if (a[1] == 'C') return sasalib_aromatic_C;
     if (a[1] == 'O') return sasalib_hydroxyl_O;
@@ -216,7 +236,7 @@ int classify_oons_FHPYW(const char* a)
     return sasalib_oons_unknown;
 }
 
-int classify_oons_CMST(const char* a) 
+static int classify_oons_CMST(const char* a) 
 {
     if (a[1] == 'C') return sasalib_aliphatic_C;
     if (a[1] == 'O') return sasalib_hydroxyl_O;
@@ -224,7 +244,7 @@ int classify_oons_CMST(const char* a)
     return sasalib_oons_unknown;
 }
 
-int classify_oons_cse(const char* a)
+static int classify_oons_cse(const char* a)
 {
     if (a[1] == 'S' && a[2] == 'E') return sasalib_oons_unknown; //what to do about this
     return sasalib_oons_unknown;

@@ -1,7 +1,26 @@
+/*
+  Copyright Simon Mitternacht 2013.
+
+  This file is part of Sasalib.
+  
+  Sasalib is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  Sasalib is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU General Public License
+  along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef SASALIB_CLASSIFY_H
 #define SASALIB_CLASSIFY_H
 
-/** 4 classes of atoms/chemical groups used*/
+/** 4 classes of atoms/chemical groups used */
 typedef enum {
     sasalib_polar=0, sasalib_apolar, 
     sasalib_nucleicacid, sasalib_unknown

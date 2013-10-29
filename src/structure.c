@@ -105,7 +105,7 @@ structure_t* structure_init_from_pdb(FILE *pdb_file)
     return p;
 }
 
-void structure_alloc_one(structure_t *p)
+static void structure_alloc_one(structure_t *p)
 {
     int na = ++p->number_atoms;
     p->a = (atom_t*) realloc(p->a,sizeof(atom_t)*na);

@@ -43,6 +43,7 @@ struct sasalib_ {
     int owns_protein;
     int customized;
     int inited;
+    int calculated;
     double total;
     double polar;
     double apolar;
@@ -63,6 +64,7 @@ const sasalib_t sasalib_def_param = {
     .owns_protein = 0,
     .customized = 0,
     .inited = 0,
+    .calculated = 0,
     .total = 0.,
     .polar = 0.,
     .apolar = 0.,
@@ -129,6 +131,8 @@ int sasalib_calc(sasalib_t *s)
     s->elapsed_time = (t2.tv_sec-t1.tv_sec); 
     s->elapsed_time += (t2.tv_usec-t1.tv_usec) / 1e6; // s
     
+    s->calculated = 1;
+
     return res;
 }
 
@@ -250,25 +254,50 @@ int sasalib_get_nthreads(const sasalib_t *s)
 
 double sasalib_area_total(const sasalib_t *s)
 {
+    if (! s->calculated) {
+        fprintf(stderr,"Error: SASA calculation has not been performed, "
+                "no total SASA value available.\n");
+        return -1.0;
+    }
     return s->total;
 }
 
 double sasalib_area_polar(const sasalib_t *s)
-{
+{    
+    if (! s->calculated) {
+        fprintf(stderr,"Error: SASA calculation has not been performed, "
+                "no polar SASA value available.\n");
+        return -1.0;
+    }
     return s->polar;
 }
 
 double sasalib_area_apolar(const sasalib_t *s)
 {
+    if (! s->calculated) {
+        fprintf(stderr,"Error: SASA calculation has not been performed, "
+                "no apolar SASA value available.\n");
+        return -1.0;
+    }
     return s->apolar;
 }
 
 double sasalib_area_nucleicacid(const sasalib_t *s)
 {
+    if (! s->calculated) {
+        fprintf(stderr,"Error: SASA calculation has not been performed, "
+                "no nucleic acid SASA value available.\n");
+        return -1.0;
+    }
     return s->nucleic;
 }
 double sasalib_area_atom(const sasalib_t *s, int i)
 {
+    if (! s->calculated) {
+        fprintf(stderr,"Error: SASA calculation has not been performed, "
+                "no atomic SASA value available.\n");
+        return -1.0;
+    }
     if (i >= 0 && i < structure_n(s->p)) {
         return s->sasa[i];
     }

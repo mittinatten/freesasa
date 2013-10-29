@@ -109,7 +109,6 @@ const char* sasalib_get_proteinname(const sasalib_t*);
 
 /** Returns the total SASA. Negative return value and warning printed
     if calculation hasn't been performed yet. */
-// not implemented yet
 double sasalib_area_total(const sasalib_t*);
 
 /** Returns the polar SASA. Negative return value and warning printed
