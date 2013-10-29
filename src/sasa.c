@@ -510,25 +510,6 @@ double sasa_sum_angles(int n_buried, double *a, double *b)
     return 2*PI - buried_angle;
 }
 
-void sasa_per_atomclass(FILE *out, atomclassifier ac,
-                        structure_t *p, double *sasa)
-{
-    int nc = ac.nclasses;
-    double s[nc];
-    for (int i = 0; i < nc; ++i) {
-        s[i] = 0;
-    }
-    for (size_t i = 0; i < structure_n(p); ++i) {
-        int class = ac.classify(structure_atom_res_name(p,i),
-                                structure_atom_name(p,i));
-        s[class] += sasa[i];
-    }
-    fprintf(out,"\n> %s\n",ac.name);
-    for (int i = 0; i < nc; ++i) {
-	if (s[i] > 0.0) fprintf(out,"%s %9.2f\n",ac.class2str[i],s[i]);
-    }
-}
-
 void sasa_get_contacts(int **nb, int *nn, int n_atoms, 
 		       const vector3 *xyz, const double *radii)
 {

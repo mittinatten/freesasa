@@ -22,7 +22,6 @@
 
 #include <stdio.h>
 #include "vector3.h"
-#include "atomclassifier.h"
 #include "structure.h"
 
 //this could be made a user option
@@ -56,10 +55,5 @@ int sasa_lee_richards(double* sasa,
 		      int n_threads);
 
 // other algorithms?
-
-/** Writes result of SASA_calculation to FILE* summed up for the 
-    atom-classes according to the provided atomclassifier. */
-void sasa_per_atomclass(FILE*, atomclassifier, 
-			structure_t*, double *sasa);
 
 #endif
