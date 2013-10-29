@@ -71,9 +71,9 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
     sasalib_calc_pdb(s,input);
     sasalib_log(stdout,s);
     printf("\nTotal: %9.2f Å2\nPolar: %9.2f Å2\nApolar: %9.2f Å2\n",
-           sasalib_total(s), sasalib_polar(s), sasalib_apolar(s));
-    if (sasalib_nucleic(s) > 0) 
-	printf("Nucleic: %9.2f\n",sasalib_nucleic(s));
+           sasalib_area_total(s), sasalib_area_polar(s), sasalib_area_apolar(s));
+    if (sasalib_area_nucleicacid(s) > 0) 
+	printf("Nucleic: %9.2f\n",sasalib_area_nucleicacid(s));
     if (settings->per_residue) { 
 	printf("\n>SASA per residue\n");
 	sasalib_per_residue(stdout,s);

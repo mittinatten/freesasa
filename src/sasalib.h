@@ -110,24 +110,24 @@ const char* sasalib_get_proteinname(const sasalib_t*);
 /** Returns the total SASA. Negative return value and warning printed
     if calculation hasn't been performed yet. */
 // not implemented yet
-double sasalib_total(const sasalib_t*);
+double sasalib_area_total(const sasalib_t*);
 
 /** Returns the polar SASA. Negative return value and warning printed
     if calculation hasn't been performed yet. */
-double sasalib_polar(const sasalib_t*);
+double sasalib_area_polar(const sasalib_t*);
 
 /** Returns the apolar SASA. Negative return value and warning printed
     if calculation hasn't been performed yet. */
-double sasalib_apolar(const sasalib_t*);
+double sasalib_area_apolar(const sasalib_t*);
 
 /** Returns the SASA of any nucleic acids present in the
     structure. Negative return value and warning printed if
     calculation hasn't been performed yet. */
-double sasalib_nucleic(const sasalib_t*);
+double sasalib_area_nucleicacid(const sasalib_t*);
 
 /** Returns SASA value for atom i. Prints error and returns negative
     value if atom index is invalid. */
-double sasalib_sasa_atom(const sasalib_t*, int i);
+double sasalib_area_atom(const sasalib_t*, int i);
 
 /** Returns radius of atom i. Prints error and returns negative
     value if atom index is invalid. */

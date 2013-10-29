@@ -88,10 +88,10 @@ void sasalib_get_classes(sasalib_t *s)
         sasa_class[class] += s->sasa[i];
         s->total += s->sasa[i];
     }
-    s->polar = sasa_class[classify_polar];
-    s->apolar = sasa_class[classify_apolar];
-    s->nucleic = sasa_class[classify_nucleicacid];
-    s->unknown = sasa_class[classify_unknown];
+    s->polar = sasa_class[sasalib_polar];
+    s->apolar = sasa_class[sasalib_apolar];
+    s->nucleic = sasa_class[sasalib_nucleicacid];
+    s->unknown = sasa_class[sasalib_unknown];
 }
 
 int sasalib_calc(sasalib_t *s)
@@ -248,26 +248,26 @@ int sasalib_get_nthreads(const sasalib_t *s)
 }
 #endif
 
-double sasalib_total(const sasalib_t *s)
+double sasalib_area_total(const sasalib_t *s)
 {
     return s->total;
 }
 
-double sasalib_polar(const sasalib_t *s)
+double sasalib_area_polar(const sasalib_t *s)
 {
     return s->polar;
 }
 
-double sasalib_apolar(const sasalib_t *s)
+double sasalib_area_apolar(const sasalib_t *s)
 {
     return s->apolar;
 }
 
-double sasalib_nucleic(const sasalib_t *s)
+double sasalib_area_nucleicacid(const sasalib_t *s)
 {
     return s->nucleic;
 }
-double sasalib_sasa_atom(const sasalib_t *s, int i)
+double sasalib_area_atom(const sasalib_t *s, int i)
 {
     if (i >= 0 && i < structure_n(s->p)) {
         return s->sasa[i];
