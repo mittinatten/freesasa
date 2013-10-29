@@ -54,7 +54,7 @@ size_t trim_whitespace(char *target, const char *src, size_t length)
     strcpy(target,first);
 
     free(buf);
-    return (last-first);
+    return (last-first)+1;
 }
 
 double classify_radius(const char *res_name, const char *atom_name)
@@ -100,6 +100,7 @@ int classify_nclasses() {
 
 sasalib_residue_t classify_residue(const char *res_name)
 {
+    assert(strlen(res_name) == PDB_ATOM_RES_NAME_STRL);
     char cpy[PDB_ATOM_RES_NAME_STRL+1];
     int len = trim_whitespace(cpy,res_name,strlen(res_name));
     if (len > PDB_ATOM_RES_NAME_STRL) {
@@ -115,7 +116,7 @@ sasalib_residue_t classify_residue(const char *res_name)
 	if (! strcmp(cpy,residue_names[i])) return i;
     }
 
-    // warning should perhaps be printed ...
+    fprintf(stderr,"Warning: Residue '%s' unknown.\n",res_name);
     return sasalib_UNK;
 }
 
@@ -131,19 +132,28 @@ int classify_nresiduetypes()
     return sasalib_NN+1;
 }
 
-sasalib_element_t classify_element(const char *a)
+sasalib_element_t classify_element(const char *atom_name)
 {
-    if ((a[0] == 'C') || (a[0] == ' ' && a[1] == 'C'))
-	return sasalib_carbon;
-    if ((a[0] == 'O') || (a[0] == ' ' && a[1] == 'O'))
-	return sasalib_oxygen;
-    if ((a[0] == 'N') || (a[0] == ' ' && a[1] == 'N'))
-	return sasalib_nitrogen;
-    if ((a[0] == 'S') || (a[0] == ' ' && a[1] == 'S'))
-	return sasalib_sulfur;
-    if ((a[0] == 'P') || (a[0] == ' ' && a[1] == 'P'))
-	return sasalib_phosphorus;
-    // add Se
+    assert(strlen(atom_name) == PDB_ATOM_NAME_STRL);
+
+    //strip whitespace to simplify switch below
+    char a[PDB_ATOM_NAME_STRL+1];
+    int len = trim_whitespace(a,atom_name,strlen(atom_name));
+
+    if (len > 0) {
+	switch (a[0]) {
+	case 'C': return sasalib_carbon;
+	case 'O': return sasalib_oxygen;
+	case 'N': return sasalib_nitrogen;
+	case 'S': return sasalib_sulfur;
+	case 'P': return sasalib_phosphorus;
+    // what about Se?
+	default: 
+	    fprintf(stderr,"Warning: Atom '%s' unknown.\n",atom_name);
+	    return sasalib_element_unknown;
+	}
+    }
+
     return sasalib_element_unknown;
 }
 
@@ -221,28 +231,28 @@ int classify_oons_cse(const char* a)
 }
 
 /** Main OONS function */
-sasalib_oons_t classify_oons(const char *res_name, const char *atom_name)
+sasalib_oons_t classify_oons(const char *res_name, const char *a)
 {
-    assert(strlen(atom_name) == PDB_ATOM_NAME_STRL);
+    assert(strlen(a) == PDB_ATOM_NAME_STRL);
     assert(strlen(res_name) == PDB_ATOM_RES_NAME_STRL);
     
     sasalib_residue_t res = classify_residue(res_name);
 
     /* Hydrogens and deuteriums (important to do them here, so they
        can be skipped below */
-    if (atom_name[1] == 'H' || atom_name[0] == 'H' ||
-	atom_name[1] == 'D' || atom_name[0] == 'D') return sasalib_oons_unknown;
+    if (a[1] == 'H' || a[0] == 'H' ||
+	a[1] == 'D' || a[0] == 'D') return sasalib_oons_unknown;
 
     if (classify_is_aminoacid(res)) {
 	// backbone
-	if (! strcmp(atom_name, " C  ")) return sasalib_carbo_C;
-	if (! strcmp(atom_name, " N  ")) return sasalib_amide_N;
-	if (! strcmp(atom_name, " CA ")) return sasalib_aliphatic_C;
-	if (! strcmp(atom_name, " O  ") ||
-	    ! strcmp(atom_name, " OXT")) return sasalib_carbo_O;
+	if (! strcmp(a, " C  ")) return sasalib_carbo_C;
+	if (! strcmp(a, " N  ")) return sasalib_amide_N;
+	if (! strcmp(a, " CA ")) return sasalib_aliphatic_C;
+	if (! strcmp(a, " O  ") ||
+	    ! strcmp(a, " OXT")) return sasalib_carbo_O;
 	
 	// CB is almost always the same
-	if (! strcmp(atom_name, " CB ")) {
+	if (! strcmp(a, " CB ")) {
 	    if (! strcmp(res_name, "PRO")) return sasalib_aromatic_C;
 	    else return sasalib_aliphatic_C;
 	}
@@ -250,32 +260,32 @@ sasalib_oons_t classify_oons(const char *res_name, const char *atom_name)
     /* Amino acids are sorted by frequency of occurence for
        optimization (probably has minimal effect, but easy to do) */
     switch (res) {
-    case sasalib_LEU: return classify_oons_VIL(atom_name);
-    case sasalib_SER: return classify_oons_CMST(atom_name);
-    case sasalib_VAL: return classify_oons_VIL(atom_name);
-    case sasalib_GLU: return classify_oons_NQDE(atom_name);
-    case sasalib_LYS: return classify_oons_RK(atom_name);
-    case sasalib_ILE: return classify_oons_VIL(atom_name);
-    case sasalib_THR: return classify_oons_CMST(atom_name);
-    case sasalib_ASP: return classify_oons_NQDE(atom_name);
-    case sasalib_ARG: return classify_oons_RK(atom_name);
-    case sasalib_PRO: return classify_oons_FHPYW(atom_name);
-    case sasalib_ASN: return classify_oons_NQDE(atom_name);
-    case sasalib_PHE: return classify_oons_FHPYW(atom_name);
-    case sasalib_GLN: return classify_oons_NQDE(atom_name);
-    case sasalib_TYR: return classify_oons_FHPYW(atom_name);
-    case sasalib_MET: return classify_oons_CMST(atom_name);
-    case sasalib_HIS: return classify_oons_FHPYW(atom_name);
-    case sasalib_CYS: return classify_oons_CMST(atom_name);
-    case sasalib_TRP: return classify_oons_FHPYW(atom_name);
+    case sasalib_LEU: return classify_oons_VIL(a);
+    case sasalib_SER: return classify_oons_CMST(a);
+    case sasalib_VAL: return classify_oons_VIL(a);
+    case sasalib_GLU: return classify_oons_NQDE(a);
+    case sasalib_LYS: return classify_oons_RK(a);
+    case sasalib_ILE: return classify_oons_VIL(a);
+    case sasalib_THR: return classify_oons_CMST(a);
+    case sasalib_ASP: return classify_oons_NQDE(a);
+    case sasalib_ARG: return classify_oons_RK(a);
+    case sasalib_PRO: return classify_oons_FHPYW(a);
+    case sasalib_ASN: return classify_oons_NQDE(a);
+    case sasalib_PHE: return classify_oons_FHPYW(a);
+    case sasalib_GLN: return classify_oons_NQDE(a);
+    case sasalib_TYR: return classify_oons_FHPYW(a);
+    case sasalib_MET: return classify_oons_CMST(a);
+    case sasalib_HIS: return classify_oons_FHPYW(a);
+    case sasalib_CYS: return classify_oons_CMST(a);
+    case sasalib_TRP: return classify_oons_FHPYW(a);
 	// all atoms in Gly and Ala  have already been handled
     case sasalib_UNK: return sasalib_oons_unknown;
     case sasalib_ASX:
-    case sasalib_GLX: return classify_oons_NQDE(atom_name);
-    case sasalib_XLE: return classify_oons_VIL(atom_name);
+    case sasalib_GLX: return classify_oons_NQDE(a);
+    case sasalib_XLE: return classify_oons_VIL(a);
 	// haven't found any PDB files with seleno-cysteine yet,
 	// needs testing
-	//case sasalib_CSE: return classify_oons_cse(atom_name);	
+	//case sasalib_CSE: return classify_oons_cse(a);	
     default:
 	return sasalib_oons_unknown;
     }
@@ -304,6 +314,7 @@ sasalib_class_t classify_oons2class(sasalib_oons_t oons_type)
     case sasalib_carbo_O: return sasalib_polar;
     case sasalib_hydroxyl_O: return sasalib_polar;
     case sasalib_oons_sulfur: return sasalib_polar;
+    case sasalib_oons_unknown_polar: return sasalib_polar;
     default: return sasalib_unknown;
     }
 }
