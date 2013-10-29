@@ -17,7 +17,7 @@ const char *residue_names[] = {
     "CSE","ASX","GLX","XLE",
     "UNK",
     //DNA
-    "DA","DC","DG","DT",
+    "DA","DC","DG","DT","DU","DI",
     //RNA
     "A","C","G","U","I","T",
     //General nuceleotide
@@ -285,7 +285,11 @@ sasalib_oons_t classify_oons(const char *res_name, const char *a)
     case sasalib_XLE: return classify_oons_VIL(a);
 	// haven't found any PDB files with seleno-cysteine yet,
 	// needs testing
-	//case sasalib_CSE: return classify_oons_cse(a);	
+    case sasalib_CSE: 
+	fprintf(stderr,
+		"Warning: residue type '%s' only has limited support.\n",
+		res_name);
+	return classify_oons_cse(a);	
     default:
 	return sasalib_oons_unknown;
     }
@@ -331,6 +335,8 @@ double classify_oons_radius(sasalib_oons_t oons_type)
     case sasalib_carbo_O: return 1.40;
     case sasalib_hydroxyl_O: return 1.40;
     case sasalib_oons_sulfur: return 2.00;
+	//this corresponds to either N or O in ALX and GLX
+    case sasalib_oons_unknown_polar: return 1.5;
     case sasalib_oons_unknown:
     default: return 0.0;
     }

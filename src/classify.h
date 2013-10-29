@@ -20,6 +20,7 @@ typedef enum {
     sasalib_UNK, 
     //DNA
     sasalib_DA, sasalib_DC, sasalib_DG, sasalib_DT, 
+    sasalib_DU, sasalib_DI,  
     //RNA
     sasalib_A, sasalib_C, sasalib_G, sasalib_U, sasalib_I, sasalib_T, 
     //generic nucleotide
@@ -47,7 +48,8 @@ typedef enum {
     protein atoms are given radii according to OONS (see documentation
     for reference). Atoms in unknown amino acid residues or in nucleic
     acids are given radii based on element (see function
-    classify_element_radius()). */
+    classify_element_radius()). Unknown atom types and hydrogens are
+    assigned radius 0.0. */
 double classify_radius(const char *res_name, const char *atom_name);
 
 // Polar/Apolar/etc
