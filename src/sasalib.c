@@ -26,7 +26,6 @@
 #include "pdbutil.h"
 #include "sasalib.h"
 #include "srp.h"
-//#include "oons.h"
 #include "classify.h"
 
 #define NBUF 100

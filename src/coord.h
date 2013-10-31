@@ -34,8 +34,10 @@ coord_t* coord_copy(const coord_t *src);
 
 /** Creates a const coord_t-object that is linked to an array of
     coordinates owned by callee. This allows repeated calculations on
-    changing object without reinitialization. */
-const coord_t* coord_new_linked(const double *xyz, size_t n);
+    changing object without reinitialization. The const-ness of the
+    returned pointer makes sure coordinates can not be modified
+    later. It can however not be freed either. */
+const coord_t* coord_new_linked(double *xyz, size_t n);
 
 void coord_append(coord_t*,const double *xyz,size_t n);
 
@@ -51,7 +53,9 @@ void coord_set_all(coord_t*,const double* xyz,size_t n);
 void coord_set_all_xyz(coord_t*,const double* x, const double *y,
 		       const double *z, size_t n);
 
-void coord_set_length(coord_t*, int i, double l);
+void coord_set_length_i(coord_t*, int i, double l);
+
+void coord_set_length_all(coord_t *c, double l);
 
 void coord_i(double *xyz, int i, const coord_t*);
 

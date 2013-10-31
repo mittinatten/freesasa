@@ -51,14 +51,13 @@ coord_t* coord_copy(const coord_t *src)
     return c;
 }
 
-void coord_link(coord_t *c, double *xyz, size_t n)
+const coord_t* coord_new_linked(double *xyz, size_t n)
 {
-    assert(c   != NULL && "NULL-pointer passed to coord_link(3)");
-    assert(xyz != NULL && "NULL-pointer passed to coord_link(3)");
-    assert(c->n == 0 && "Trying to link to non-empty coord_t*");
-
+    assert(xyz != NULL);
+    coord_t *c = coord_new();
     c->xyz = xyz;
     c->n = n;
+    return c;
 }
 
 void coord_append(coord_t *c, const double *xyz, size_t n)
@@ -69,7 +68,7 @@ void coord_append(coord_t *c, const double *xyz, size_t n)
     size_t n_old = c->n;
     c->n += n;
     c->xyz = (double*) realloc(c->xyz, sizeof(double)*3*c->n);
-    double *dest = memcpy(c->xyz+3*n_old, xyz, n*3);
+    double *dest = memcpy(&(c->xyz[3*n_old]), xyz, sizeof(double)*n*3);
 
     assert(dest != NULL);
 }
@@ -119,7 +118,7 @@ void coord_set_all(coord_t *c,const double* xyz,size_t n)
     assert(xyz != NULL);
     if (c->xyz) free(c->xyz);
     c->n = 0;
-    coord_append(c, xyz, n);
+    coord_append(c,xyz,n);    
 }
 
 void coord_set_all_xyz(coord_t *c,const double* x, const double *y,
@@ -131,7 +130,7 @@ void coord_set_all_xyz(coord_t *c,const double* x, const double *y,
     coord_append_xyz(c, x, y, z, n);
 }
 
-void coord_set_length(coord_t *c, int i, double l)
+void coord_set_length_i(coord_t *c, int i, double l)
 {
     assert(c != NULL);
     assert(c->xyz != NULL);
@@ -141,6 +140,11 @@ void coord_set_length(coord_t *c, int i, double l)
     c->xyz[3*i]   *= l/r;
     c->xyz[3*i+1] *= l/r;
     c->xyz[3*i+2] *= l/r;
+}
+
+void coord_set_length_all(coord_t *c, double l)
+{
+    for (int i = 0; i < c->n; ++i) coord_set_length_i(c,i,l);
 }
 
 void coord_i(double *xyz, int i, const coord_t *c)
@@ -173,18 +177,17 @@ int coord_dist2_lt(const coord_t *c, int i, int j, double cutoff2)
     double *v2 = &c->xyz[3*j];
     double e = v1[0]-v2[0];
     double d = e*e;
-    if (d < cutoff2) return 1;
+    if (d > cutoff2) return 0;
     e = v1[1]-v2[1];
-    if (d += e*e < cutoff2) return 1;
+    if ((d += e*e) > cutoff2) return 0;
     e = v1[2]-v2[2];
-    if (d += e*e < cutoff2) return 1;
-    return 0;
+    if ((d += e*e) > cutoff2) return 0;
+    return 1;
 }
 
 const double* coord_all(const coord_t *c)
 {
     assert(c != NULL);
-    assert(c->xyz != NULL);
     return c->xyz;
 }
 
