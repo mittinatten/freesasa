@@ -51,11 +51,13 @@ coord_t* coord_copy(const coord_t *src)
     return c;
 }
 
-const coord_t* coord_new_linked(double *xyz, size_t n)
+const coord_t* coord_new_linked(const double *xyz, size_t n)
 {
     assert(xyz != NULL);
     coord_t *c = coord_new();
-    c->xyz = xyz;
+    /* for this assignment we need to remove const-ness. It will however
+        be preserved since return type is const. */
+    c->xyz = (double*)xyz; 
     c->n = n;
     return c;
 }

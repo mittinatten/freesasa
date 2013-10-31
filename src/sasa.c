@@ -31,9 +31,9 @@
 #endif
 
 #ifdef __GNUC__
-#define __pure __attribute__((pure))
+#define __attrib_pure__ __attribute__((pure))
 #else
-#define __pure
+#define __attrib_pure__
 #endif
 
 /** internal functions for S&R calculations **/
@@ -54,7 +54,7 @@ static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr);
 static void *sasa_sr_thread(void *arg);
 #endif 
 
-static double sasa_sr_calc_atom(int i,const sasa_sr_t) __pure;
+static double sasa_sr_calc_atom(int i,const sasa_sr_t) __attrib_pure__;
 
 /** internal functions for L&R calculations **/
 //calculation parameters (results stored in *sasa)
