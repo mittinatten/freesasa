@@ -147,15 +147,12 @@ void coord_set_length_all(coord_t *c, double l)
     for (int i = 0; i < c->n; ++i) coord_set_length_i(c,i,l);
 }
 
-void coord_i(double *xyz, int i, const coord_t *c)
+const double* coord_i(const coord_t *c, int i)
 {
     assert(c != NULL);
     assert(i < c->n);
     assert(i >= 0);
-
-    xyz[0] = c->xyz[3*i];
-    xyz[1] = c->xyz[3*i+1];
-    xyz[2] = c->xyz[3*i+2];
+    return &c->xyz[3*i];
 }
 
 double coord_dist(const coord_t *c, int i, int j)
@@ -163,26 +160,24 @@ double coord_dist(const coord_t *c, int i, int j)
     return sqrt(coord_dist2(c,i,j));
 }
 
+static inline double dist2(const double *v1, const double *v2)
+{
+    double dx = v1[0]-v2[0], dy = v1[1]-v2[1], dz = v1[2]-v2[2];
+    return dx*dx + dy*dy + dz*dz;    
+}
+
 double coord_dist2(const coord_t *c, int i, int j)
 {
     double *v1 = &c->xyz[3*i];
     double *v2 = &c->xyz[3*j];
-    double dx = v1[0]-v2[0], dy = v1[1]-v2[1], dz = v1[2]-v2[2];
-    return dx*dx + dy*dy + dz*dz;
+    return dist2(v1,v2);
 }
 
-int coord_dist2_lt(const coord_t *c, int i, int j, double cutoff2)
+double coord_dist2_12(const coord_t* c1, const coord_t* c2, int i1, int i2)
 {
-    double *v1 = &c->xyz[3*i];
-    double *v2 = &c->xyz[3*j];
-    double e = v1[0]-v2[0];
-    double d = e*e;
-    if (d > cutoff2) return 0;
-    e = v1[1]-v2[1];
-    if ((d += e*e) > cutoff2) return 0;
-    e = v1[2]-v2[2];
-    if ((d += e*e) > cutoff2) return 0;
-    return 1;
+    double *v1 = &c1->xyz[3*i1];
+    double *v2 = &c2->xyz[3*i2];
+    return dist2(v1,v2);
 }
 
 const double* coord_all(const coord_t *c)
@@ -213,3 +208,12 @@ void coord_translate_xyz(coord_t *c, double x, double y, double z)
 	c->xyz[3*i+2] += z; 
     }
 }
+
+void coord_scale(coord_t *c, double s)
+{
+    assert(c != NULL);
+    for (int i = 0; i < c->n*3; ++i) {
+	c->xyz[i] *= s;
+    }
+}
+

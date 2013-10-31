@@ -98,7 +98,7 @@ void sasalib_get_classes(sasalib_t *s)
 int sasalib_calc(sasalib_t *s)
 {
     struct timeval t1, t2;
-    int res;
+    int res = 0;
 
     s->r = (double*) malloc(sizeof(double)*structure_n(s->p));
     s->sasa = (double*) malloc(sizeof(double)*structure_n(s->p));
@@ -109,15 +109,13 @@ int sasalib_calc(sasalib_t *s)
     
     switch(s->alg) {
     case SHRAKE_RUPLEY:
-        res = sasa_shrake_rupley(s->sasa,structure_xyz(s->p),
-                                 s->r,structure_n(s->p),
-                                 s->n_sr,s->n_threads);
+        res = sasa_shrake_rupley(s->sasa, structure_xyz(s->p),
+                                 s->r, s->n_sr, s->n_threads);
         break;
     case LEE_RICHARDS:
-        res = sasa_lee_richards(s->sasa,structure_xyz(s->p),
-                                s->r,structure_n(s->p),
-                                s->d_lr,s->n_threads);
-        break;
+        res = sasa_lee_richards(s->sasa, structure_xyz(s->p),
+                                s->r, s->d_lr, s->n_threads);
+	break;
     default:
         fprintf(stderr,"Error: no SASA algorithm specified.\n");
         return 1;

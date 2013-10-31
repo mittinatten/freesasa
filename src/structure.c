@@ -27,6 +27,7 @@
 #include "structure.h"
 #include "pdbutil.h"
 #include "classify.h"
+#include "coord.h"
 
 typedef struct {
     char res_name[PDB_ATOM_RES_NAME_STRL+1];
@@ -37,7 +38,7 @@ typedef struct {
 
 struct structure_ {
     atom_t *a;
-    vector3 *xyz;
+    coord_t *xyz;
     int number_atoms;
     int number_residues;
     int number_chains;
@@ -50,7 +51,7 @@ structure_t* structure_init()
     p->number_residues = 0;
     p->number_chains = 0;
     p->a = (atom_t*) malloc(sizeof(atom_t));
-    p->xyz = (vector3*) malloc(sizeof(vector3));
+    p->xyz = coord_new();
     return p;
 }
 
@@ -62,10 +63,10 @@ void structure_free(structure_t *p)
 }
 
 /* returns alt_label if there is any */
-char structure_get_pdb_atom(atom_t *a, vector3 *v, const char *line)
+char structure_get_pdb_atom(atom_t *a, double *xyz, const char *line)
 {
     a->chain_label = pdbutil_get_chain_label(line);
-    pdbutil_get_coord(v, line);
+    pdbutil_get_coord(xyz, line);
     pdbutil_get_atom_name(a->atom_name, line);
     pdbutil_get_res_name(a->res_name, line);
     pdbutil_get_res_number(a->res_number, line);
@@ -87,9 +88,9 @@ structure_t* structure_init_from_pdb(FILE *pdb_file)
     while (getline(&line, &len, pdb_file) != -1) {
         if (strncmp("ATOM",line,4)==0) {
 	    if (pdbutil_ishydrogen(line)) continue;
-            vector3 v;
+            double v[3];
             atom_t a;
-	    char alt = structure_get_pdb_atom(&a,&v,line);
+	    char alt = structure_get_pdb_atom(&a,v,line);
 	    if ((alt != ' ' && the_alt == ' ') || (alt == ' ')) { 
 		the_alt = alt;
 	    } else if (alt != ' ' && alt != the_alt) {
@@ -97,7 +98,7 @@ structure_t* structure_init_from_pdb(FILE *pdb_file)
 	    } 
 	    
 	    structure_add_atom(p,a.atom_name,a.res_name,a.res_number,
-			       a.chain_label, v.x, v.y, v.z);
+			       a.chain_label, v[0], v[1], v[2]);
 	}
 	if (strncmp("ENDMDL",line,4)==0) break;
     }
@@ -109,7 +110,6 @@ static void structure_alloc_one(structure_t *p)
 {
     int na = ++p->number_atoms;
     p->a = (atom_t*) realloc(p->a,sizeof(atom_t)*na);
-    p->xyz = (vector3*) realloc(p->xyz,sizeof(vector3)*na);
 }
 
 void structure_add_atom(structure_t *p,
@@ -126,10 +126,8 @@ void structure_add_atom(structure_t *p,
 
     // allocate memory, increase number of atoms counter
     structure_alloc_one(p);
-
     int na = p->number_atoms;
-
-    vector3_set(&p->xyz[na-1],x,y,z);
+    coord_append_xyz(p->xyz,&x,&y,&z,1);
 
     atom_t *a = &p->a[na-1];
     strcpy(a->atom_name,atom_name);
@@ -174,27 +172,7 @@ void structure_r_def(double *r, const structure_t *p)
     structure_r(r,p,classify_radius);
 }
 
-void structure_update_atom_xyz(structure_t* p, int number,
-			     double x, double y, double z)
-{
-    assert(number < p->number_atoms);
-    vector3_set(&p->xyz[number], x, y, z);
-}
-
-void structure_update_atom(structure_t* p, int number, vector3 *v)
-{
-    assert(number < p->number_atoms);
-    vector3_copy(&p->xyz[number], v);
-}
-
-void structure_update_atoms(structure_t* p, vector3 **v) 
-{
-    for (int i = 0; i < p->number_atoms; ++i) {
-	vector3_copy(&p->xyz[i],v[i]);
-    }
-}
-
-const vector3* structure_xyz(const structure_t *p)
+const coord_t* structure_xyz(const structure_t *p)
 {
     return p->xyz;
 }

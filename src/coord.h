@@ -63,7 +63,7 @@ void coord_set_length_i(coord_t*, int i, double l);
 
 void coord_set_length_all(coord_t *c, double l);
 
-void coord_i(double *xyz, int i, const coord_t*);
+const double* coord_i(const coord_t*, int i);
 
 /** No index bounds checking (for speed) */
 double coord_dist(const coord_t*, int i, int j) __pure;
@@ -71,8 +71,9 @@ double coord_dist(const coord_t*, int i, int j) __pure;
 /** No index bounds checking (for speed) */
 double coord_dist2(const coord_t*, int i, int j) __pure;
 
-/** No index bounds checking (for speed) */
-int coord_dist2_lt(const coord_t*, int i, int j, double cutoff2) __pure;
+/** */
+double coord_dist2_12(const coord_t* c1, const coord_t* c2, int i1, int i2)
+    __pure;
 
 const double* coord_all(const coord_t*) __pure;
 
@@ -81,6 +82,8 @@ size_t coord_n(const coord_t*) __pure;
 void coord_translate(coord_t*, const double *xyz);
 
 void coord_translate_xyz(coord_t*, double x, double y, double z);
+
+void coord_scale(coord_t*, double s);
 
 #undef __pure
 

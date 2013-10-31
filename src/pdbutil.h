@@ -20,8 +20,6 @@
 #ifndef SASALIB_PDBUTIL_H
 #define SASALIB_PDBUTIL_H
 
-#include "vector3.h"
-
 #define PDB_ATOM_NAME_STRL 4
 #define PDB_ATOM_RES_NAME_STRL 3
 #define PDB_ATOM_RES_NUMBER_STRL 4
@@ -37,7 +35,7 @@ void pdbutil_get_atom_name(char *name, const char *line);
 void pdbutil_get_res_name(char *name, const char *line);
 
 /** Extracts coordinates from an ATOM pdb-line. */
-void pdbutil_get_coord(vector3 *coord, const char *line);
+void pdbutil_get_coord(double *coord, const char *line);
 
 /** Extracts residue number as a string from an ATOM pdb-line. String
     format is used because not all residue-numbers are

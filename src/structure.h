@@ -20,7 +20,7 @@
 #ifndef SASALIB_STRUCTURE_H
 #define SASALIB_STRUCTURE_H
 
-#include "vector3.h"
+#include "coord.h"
 
 typedef struct structure_ structure_t;
 
@@ -49,17 +49,8 @@ void structure_add_atom(structure_t *p,
 			char chain_label,
 			double x, double y, double z);
 
-/** not tested yet */
-void structure_update_atom(structure_t *p, int number, vector3 *coord);
-
-/** not tested yet */
-void structure_update_atom_xyz(structure_t *p, int number, 
-			       double x, double y, double z);
-/** not tested yet */
-void structure_update_atoms(structure_t *p, vector3**);
-
 /** get array of coordinates */
-const vector3* structure_xyz(const structure_t *p);
+const coord_t* structure_xyz(const structure_t *p);
 
 /** get array of radii using custom conversion function, the array r is
     assumed to be of correct size already */

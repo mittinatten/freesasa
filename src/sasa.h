@@ -21,8 +21,7 @@
 #define SASALIB_SASA_H
 
 #include <stdio.h>
-#include "vector3.h"
-#include "structure.h"
+#include "coord.h"
 
 //this could be made a user option
 #define SASA_PROBE_RADIUS 1.4 
@@ -36,9 +35,8 @@
     -DPTHREADS. Returns 0 on success, 1 on failure (with error
     message). */
 int sasa_shrake_rupley(double *sasa,
-		       const vector3 *xyz,
+		       const coord_t *c,
 		       const double *radii,
-		       size_t n_atoms,
 		       int n_points,
 		       int n_threads);
 
@@ -48,9 +46,8 @@ int sasa_shrake_rupley(double *sasa,
     points in Å.Returns 0 on success, 1 on failure (with error
     message). */
 int sasa_lee_richards(double* sasa,
-		      const vector3 *xyz,
+		      const coord_t *c,
 		      const double *radii,
-		      size_t n_atoms,
 		      double grid,
 		      int n_threads);
 

@@ -22,8 +22,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <math.h>
 #include "sasa.h"
 #include "srp.h"
+
+#ifndef PI
+#define PI 3.14159265358979323846
+#endif
 
 #ifdef __GNUC__
 #define __pure __attribute__((pure))
@@ -37,8 +42,8 @@ typedef struct {
     int i1,i2;
     int n_atoms;
     int n_points;
-    const vector3 *xyz;
-    const vector3 *srp_v3;
+    const coord_t *xyz;
+    const coord_t *srp;
     const double *r;
     double *sasa;
     char *spcount_0;
@@ -56,7 +61,7 @@ static double sasa_sr_calc_atom(int i,const sasa_sr_t) __pure;
 typedef struct {
     int n_atoms;
     const double *radii;
-    const vector3 *xyz;
+    const coord_t *xyz;
     const int **nb;
     const int *nn;
     double delta;
@@ -84,27 +89,23 @@ static double sasa_sum_angles(int n_buried, double *a, double *b);
     neighbors each atom has. The arrays nn and nb should be of size
     n_atoms. The elements of n_atoms are dynamically allocated to be
     of size nn[i]. **/
-static void sasa_get_contacts(int **nb, int *nn, int n_atoms, 
-                              const vector3 *xyz, const double *radii);
+static void sasa_get_contacts(int **nb, int *nn,
+                              const coord_t *xyz, const double *radii);
 
 int sasa_shrake_rupley(double *sasa,
-		       const vector3 *xyz,
+		       const coord_t *xyz,
 		       const double *r,
-		       size_t n_atoms,
 		       int n_points,
 		       int n_threads)
 {
-    const double *srp = srp_get_points(n_points);
-    if (srp == NULL) return 1;
+    size_t n_atoms = coord_n(xyz);
+    
+    // Initialize test-points
+    const double *srp_p = srp_get_points(n_points);
+    if (srp_p == NULL) return 1;
+    const coord_t *srp = coord_new_linked(srp_p,n_points);
 
     char spcount_0[n_points];
-    vector3 srp_v3[n_points];
-
-    //turn test-points into vector3's of unit length
-    for (int k = 0; k < n_points; ++k) {
-        vector3_set(&srp_v3[k],srp[k*3],srp[k*3+1],srp[k*3+2]);
-        vector3_setlength(&srp_v3[k],1.0); //just to be sure
-    }
 
     /* a reference zero array is prepared so that it won't need to be
        initialized for each atom */
@@ -113,7 +114,7 @@ int sasa_shrake_rupley(double *sasa,
     }
     //store parameters and reference arrays
     sasa_sr_t sr = {.n_atoms = n_atoms, .n_points = n_points, 
-		    .xyz = xyz, .srp_v3 = srp_v3,
+		    .xyz = xyz, .srp = srp,
 		    .r = r, .spcount_0 = spcount_0,
 		    .sasa = sasa};
 
@@ -180,38 +181,42 @@ static void *sasa_sr_thread(void* arg)
 
 static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
     const int n_points = sr.n_points;
-    const vector3 *xyz = sr.xyz;
+    const coord_t *xyz = sr.xyz;
     /* this array keeps track of which testpoints belonging to
        a certain atom overlap with other atoms */
     char spcount[n_points];
     const double ri = sr.r[i]+SASA_PROBE_RADIUS;
+    const double *vi = coord_i(xyz,i);
+    double xi = vi[0], yi = vi[1], zi = vi[2]; 
+    const double *v = coord_all(xyz);
 
     /* testpoints for this atom */
-    vector3 srp_v3_ri[n_points];
-    
-    memcpy(spcount,sr.spcount_0,sizeof(char)*n_points);
+    coord_t* tp_coord_ri = coord_copy(sr.srp);
+    coord_scale(tp_coord_ri, ri);
+    coord_translate(tp_coord_ri, vi);
+    const double *tp = coord_all(tp_coord_ri);
 
-    /* Initialize testpoints for this atom*/
-    memcpy(srp_v3_ri,sr.srp_v3,sizeof(vector3)*n_points);
-    for (int j = 0; j < n_points; ++j) {
-        //set length (the reference vectors should have length 1.0)
-        vector3_multiply(&srp_v3_ri[j],ri);
-        //translate vectors to surround correct atom
-        vector3_add(&srp_v3_ri[j],&xyz[i]);
-    }
+    memcpy(spcount,sr.spcount_0,sizeof(char)*n_points);
     
     for (int j = 0; j < sr.n_atoms; ++j) {
         if (j == i) continue;
-        const double rj = sr.r[j]+SASA_PROBE_RADIUS;
+	const double rj = sr.r[j]+SASA_PROBE_RADIUS;
         const double cut2 = (ri+rj)*(ri+rj);
-        if (vector3_dist2(&xyz[i],&xyz[j]) > cut2)
-            continue;
-        for (int k = 0; k < n_points; ++k) {
+
+	/* this turns out to be the fastest way (by far) to access the
+	   coordinates, probably because it's easier for the compiler
+	   to optimize */
+	double xj = v[3*j+0], yj = v[3*j+1], zj = v[3*j+2];
+	double dx = xj-xi, dy = yj-yi, dz = zj-zi;
+	if (dx*dx + dy*dy + dz*dz > cut2) continue;
+        
+	for (int k = 0; k < n_points; ++k) {
             if (spcount[k]) continue;
-            if (vector3_dist2(&srp_v3_ri[k], &xyz[j]) <= rj*rj) {
-                spcount[k] = 1;
-            }
-            /* i.e. if |xyz[i]+ri*srp[k] - xyz[j]| <= rj we have an
+	    double dx = tp[3*k]-xj, dy = tp[3*k+1]-yj, dz = tp[3*k+2]-zj;
+	    if (dx*dx + dy*dy + dz*dz < rj*rj) {
+		spcount[k] = 1;
+	    }
+	    /* i.e. if |xyz[i]+ri*srp[k] - xyz[j]| <= rj we have an
                overlap. */
         }
     }
@@ -223,9 +228,8 @@ static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
 }
 
 int sasa_lee_richards(double *sasa,
-                      const vector3 *xyz,
+                      const coord_t *xyz,
                       const double *atom_radii,
-                      size_t n_atoms,
                       double delta,
                       int n_threads)
 {
@@ -237,14 +241,16 @@ int sasa_lee_richards(double *sasa,
        3. Calculate exposed arc-lengths for each atom
        Sum up arc-length*delta for each atom
     */
+    size_t n_atoms = coord_n(xyz);
 
     // determine slice range and init radii and sasa arrays
     double max_z=-1e50, min_z=1e50;
     double max_r = 0;
     double radii[n_atoms];
+    const double *v = coord_all(xyz);
     for (size_t i = 0; i < n_atoms; ++i) {
         radii[i] = atom_radii[i] + SASA_PROBE_RADIUS;
-        double z = xyz[i].z, r = radii[i];
+        double z = v[3*i+2], r = radii[i];
         max_z = z > max_z ? z : max_z;
         min_z = z < min_z ? z : min_z;
         sasa[i] = 0;
@@ -256,7 +262,7 @@ int sasa_lee_richards(double *sasa,
  
     // determine which atoms are neighbours
     int *nb[n_atoms], nn[n_atoms];
-    sasa_get_contacts((int**)nb,(int*)nn,n_atoms,xyz,radii);
+    sasa_get_contacts((int**)nb, (int*)nn, xyz, radii);
     sasa_lr_t lr = {.n_atoms = n_atoms, .radii = radii, .xyz = xyz,
                     .nb = (const int**)nb, .nn = nn, .delta = delta, 
                     .min_z = min_z, .max_z = max_z, .sasa = sasa};
@@ -339,13 +345,14 @@ static void sasa_add_slice_area(double z, sasa_lr_t lr)
     int n_slice = 0;
     double exposed_arc[n_atoms];
     int idx[n_atoms], xdi[n_atoms], in_slice[n_atoms], nn_slice[n_atoms], *nb_slice[n_atoms];
-    
+    const double* v = coord_all(lr.xyz);
+
     // locate atoms in each slice and do some initialization
     for (size_t i = 0; i < n_atoms; ++i) {
         double ri = lr.radii[i];
-        double d = fabs(lr.xyz[i].z-z);
+        double d = fabs(v[3*i+2]-z);
         if (d < ri) {
-            x[n_slice] = lr.xyz[i].x; y[n_slice] = lr.xyz[i].y;
+            x[n_slice] = v[i*3]; y[n_slice] = v[i*3+1];
             r[n_slice] = sqrt(ri*ri-d*d);
             //multiplicative factor when arcs are summed up later (according to L&R paper)
             DR[n_slice] = ri/r[n_slice]*(delta/2. +
@@ -519,36 +526,36 @@ static double sasa_sum_angles(int n_buried, double *a, double *b)
     return 2*PI - buried_angle;
 }
 
-static void sasa_get_contacts(int **nb, int *nn, int n_atoms, 
-                              const vector3 *xyz, const double *radii)
+static void sasa_get_contacts(int **nb, int *nn, 
+                              const coord_t *xyz, const double *radii)
 {
     /* For low resolution L&R this function is the bottleneck in
        speed. Will also depend on number of atoms. */
-    
+    size_t n_atoms = coord_n(xyz);
     for (int i = 0; i < n_atoms; ++i) {
         nn[i] = 0;
         nb[i] = NULL;
     }
-    
+    const double *v = coord_all(xyz);
+
     for (int i = 0; i < n_atoms; ++i) {
         double ri = radii[i];
-        const vector3 *vi = &xyz[i];
-        double xi = vi->x, yi = vi->y, zi = vi->z;
+        double xi = v[i*3], yi = v[i*3+1], zi = v[i*3+2];
         for (int j = i+1; j < n_atoms; ++j) {
             double rj = radii[j];
             double cut2 = (ri+rj)*(ri+rj);
-            const vector3 *vj = &xyz[j];
             
             /* most pairs of atoms will be far away from each other on
                at least one axis, the following improves speed
                significantly for large proteins */	    
-            double xj = vj->x, yj = vj->y, zj = vj->z;
+            double xj = v[j*3], yj = v[j*3+1], zj = v[j*3+2];
             if ((xj-xi)*(xj-xi) > cut2 ||
                 (yj-yi)*(yj-yi) > cut2 ||
                 (zj-zi)*(zj-zi) > cut2) {
                 continue;
             }
-            if (vector3_dist2(vi,vj) < cut2) {
+	    double dx = xj-xi, dy = yj-yi, dz = zj-zi;
+            if (dx*dx + dy*dy + dz*dz < cut2) {
                 ++nn[i]; ++nn[j];
                 nb[i] = realloc(nb[i],sizeof(int)*nn[i]);
                 nb[j] = realloc(nb[j],sizeof(int)*nn[j]);

@@ -37,11 +37,11 @@ void pdbutil_get_res_name(char *name, const char *line)
     strncpy(name, line+17, PDB_ATOM_RES_NAME_STRL);
     name[PDB_ATOM_RES_NAME_STRL] = '\0';
 }
-void pdbutil_get_coord(vector3 *coord, const char *line)
+void pdbutil_get_coord(double *xyz, const char *line)
 {
     assert(strncmp(line,"ATOM",4) == 0);
     assert(strlen(line) > 79);
-    sscanf(line+30, "%lf%lf%lf", &coord->x, &coord->y, &coord->z);
+    sscanf(line+30, "%lf%lf%lf", &xyz[0], &xyz[1], &xyz[2]);
 }
 void pdbutil_get_res_number(char *number, const char* line)
 {
