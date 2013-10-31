@@ -197,29 +197,6 @@ size_t coord_n(const coord_t* c)
     return c->n;
 }
 
-/*
-void coord_add_to(coord_t* dest, const coord_t* src)
-{
-    assert(dest != NULL);
-    assert(src != NULL);
-    assert(dest->n == src->n);
-    for (int i = 0; i < 3*src->n; ++i) {
-	dest->xyz[i] += src->xyz[i];
-    }
-}
-
-coord_t* coord_sum(const coord_t *c1, const coord_t *c2)
-{
-    assert(c1 != NULL);
-    assert(c2 != NULL);
-    assert(c1->n == c2->n);
-    coord_t *c = coord_new();
-    coord_append(c, c1->xyz, c1->n);
-    coord_add_to(c, c2);
-    return c;
-}
-*/
-
 void coord_translate(coord_t *c, const double *xyz)
 {
     assert(xyz != NULL);

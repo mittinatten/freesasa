@@ -20,6 +20,12 @@
 #ifndef SASALIB_COORD_H
 #define SASALIB_COORD_H
 
+#ifdef __GNUC__
+#define __pure __attribute__((pure))
+#else
+#define __pure
+#endif
+
 /** This is only for internal use, hence all errors are handled with
     asserts */
 
@@ -60,26 +66,22 @@ void coord_set_length_all(coord_t *c, double l);
 void coord_i(double *xyz, int i, const coord_t*);
 
 /** No index bounds checking (for speed) */
-double coord_dist(const coord_t*, int i, int j);
+double coord_dist(const coord_t*, int i, int j) __pure;
 
 /** No index bounds checking (for speed) */
-double coord_dist2(const coord_t*, int i, int j);
+double coord_dist2(const coord_t*, int i, int j) __pure;
 
 /** No index bounds checking (for speed) */
-int coord_dist2_lt(const coord_t*, int i, int j, double cutoff2); 
+int coord_dist2_lt(const coord_t*, int i, int j, double cutoff2) __pure;
 
-const double* coord_all(const coord_t*);
+const double* coord_all(const coord_t*) __pure;
 
-size_t coord_n(const coord_t*);
-/*
-void coord_add_to(coord_t*, const coord_t*);
-
-coord_t* coord_sum(const coord_t*, const coord_t*);
-*/
+size_t coord_n(const coord_t*) __pure;
 
 void coord_translate(coord_t*, const double *xyz);
 
 void coord_translate_xyz(coord_t*, double x, double y, double z);
 
+#undef __pure
 
 #endif

@@ -25,6 +25,12 @@
 #include "sasa.h"
 #include "srp.h"
 
+#ifdef __GNUC__
+#define __pure __attribute__((pure))
+#else
+#define __pure
+#endif
+
 /** internal functions for S&R calculations **/
 // calculation parameters (results stored in *sasa)
 typedef struct {
@@ -43,7 +49,7 @@ static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr);
 static void *sasa_sr_thread(void *arg);
 #endif 
 
-static double sasa_sr_calc_atom(int i,sasa_sr_t);
+static double sasa_sr_calc_atom(int i,const sasa_sr_t) __pure;
 
 /** internal functions for L&R calculations **/
 //calculation parameters (results stored in *sasa)
@@ -381,6 +387,7 @@ static void sasa_add_slice_area(double z, sasa_lr_t lr)
         free(nb_slice[i]);
     }
 }
+
 static void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z, const double *r,
                               double *exposed_arc, const int **nb, const int *nn)
 {

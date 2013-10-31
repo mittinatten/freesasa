@@ -256,12 +256,12 @@ sasalib_oons_t classify_oons(const char *res_name, const char *a)
     assert(strlen(a) == PDB_ATOM_NAME_STRL);
     assert(strlen(res_name) == PDB_ATOM_RES_NAME_STRL);
     
-    sasalib_residue_t res = classify_residue(res_name);
-
     /* Hydrogens and deuteriums (important to do them here, so they
        can be skipped below */
     if (a[1] == 'H' || a[0] == 'H' ||
 	a[1] == 'D' || a[0] == 'D') return sasalib_oons_unknown;
+
+    sasalib_residue_t res = classify_residue(res_name);
 
     if (classify_is_aminoacid(res)) {
 	// backbone
@@ -273,10 +273,12 @@ sasalib_oons_t classify_oons(const char *res_name, const char *a)
 	
 	// CB is almost always the same
 	if (! strcmp(a, " CB ")) {
-	    if (! strcmp(res_name, "PRO")) return sasalib_aromatic_C;
+	    if (res == sasalib_PRO) return sasalib_aromatic_C;
 	    else return sasalib_aliphatic_C;
 	}
     }
+
+
     /* Amino acids are sorted by frequency of occurence for
        optimization (probably has minimal effect, but easy to do) */
     switch (res) {
