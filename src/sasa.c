@@ -79,8 +79,8 @@ static void sasa_add_slice_area(double z, sasa_lr_t);
 
 // the z argument is only really necessary for the debugging section
 static void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z, 
-		       const double *r, double *exposed_arc, 
-		       const int **nb, const int *nn);
+                              const double *r, double *exposed_arc, 
+                              const int **nb, const int *nn);
 //does not necessarily leave a and b in a consistent state
 static double sasa_sum_angles(int n_buried, double *a, double *b);
 
@@ -93,10 +93,10 @@ static void sasa_get_contacts(int **nb, int *nn,
                               const coord_t *xyz, const double *radii);
 
 int sasa_shrake_rupley(double *sasa,
-		       const coord_t *xyz,
-		       const double *r,
-		       int n_points,
-		       int n_threads)
+                       const coord_t *xyz,
+                       const double *r,
+                       int n_points,
+                       int n_threads)
 {
     size_t n_atoms = coord_n(xyz);
     
@@ -110,28 +110,28 @@ int sasa_shrake_rupley(double *sasa,
     /* a reference zero array is prepared so that it won't need to be
        initialized for each atom */
     for (int k = 0; k < n_points; ++k) {
-	spcount_0[k] = 0;
+        spcount_0[k] = 0;
     }
     //store parameters and reference arrays
     sasa_sr_t sr = {.n_atoms = n_atoms, .n_points = n_points, 
-		    .xyz = xyz, .srp = srp,
-		    .r = r, .spcount_0 = spcount_0,
-		    .sasa = sasa};
+                    .xyz = xyz, .srp = srp,
+                    .r = r, .spcount_0 = spcount_0,
+                    .sasa = sasa};
 
     //calculate SASA 
     if (n_threads > 1) {
 #ifdef PTHREADS
-	sasa_sr_do_threads(n_threads, sr);
+        sasa_sr_do_threads(n_threads, sr);
 #else 
-	perror("Error: program compiled for single-threaded used, but multiple threads were requested.");
-	exit(EXIT_FAILURE);
+        perror("Error: program compiled for single-threaded used, but multiple threads were requested.");
+        exit(EXIT_FAILURE);
 #endif
     }
     else {
-	// don't want the overhead of generating threads if only one is used
-	for (int i = 0; i < n_atoms; ++i) {
-	    sasa[i] = sasa_sr_calc_atom(i,sr);
-	}
+        // don't want the overhead of generating threads if only one is used
+        for (int i = 0; i < n_atoms; ++i) {
+            sasa[i] = sasa_sr_calc_atom(i,sr);
+        }
     }
     return 0;
 }
@@ -150,16 +150,16 @@ static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
 	    else srt[t].i2 = (t+1)*thread_block_size;
 	    int res = pthread_create(&thread[t], NULL, sasa_sr_thread, (void *) &srt[t]);
 	    if (res) {
-		perror("Thread creation failed");
-		exit(EXIT_FAILURE);
+            perror("Thread creation failed");
+            exit(EXIT_FAILURE);
 	    }
 	}
 	for (int t = 0; t < n_threads; ++t) {
 	    void *thread_result;
 	    int res = pthread_join(thread[t],&thread_result);
 	    if (res) {
-		perror("Thread join failed");
-		exit(EXIT_FAILURE);
+            perror("Thread join failed");
+            exit(EXIT_FAILURE);
 	    }
 	}
 }
@@ -170,7 +170,7 @@ static void *sasa_sr_thread(void* arg)
     int n = sr.i2-sr.i1;
     double *sasa = (double*)malloc(sizeof(double)*n);
     for (int i = 0; i < n; ++i) {
-	sasa[i] = sasa_sr_calc_atom(i+sr.i1,sr);
+        sasa[i] = sasa_sr_calc_atom(i+sr.i1,sr);
     }
     // mutex should not be necessary, but might be safer to have one here?
     memcpy(&sr.sasa[sr.i1],sasa,sizeof(double)*n);

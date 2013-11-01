@@ -40,10 +40,11 @@ coord_t* coord_copy(const coord_t *src);
 
 /** Creates a const coord_t-object that is linked to an array of
     coordinates owned by callee. This allows repeated calculations on
-    changing object without reinitialization. The const-ness of the
-    returned pointer makes sure coordinates can not be modified
-    later. It can however not be freed either. */
-const coord_t* coord_new_linked(const double *xyz, size_t n);
+    a changing object without reinitialization. The returned
+    coord_t-pointer is not explicitly const, to allow it to be freed
+    later, but objects initiated through this interface will not
+    change their coordinates. */
+coord_t* coord_new_linked(const double *xyz, size_t n);
 
 void coord_append(coord_t*,const double *xyz,size_t n);
 

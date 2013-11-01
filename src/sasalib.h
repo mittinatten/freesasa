@@ -53,14 +53,32 @@ void sasalib_free(sasalib_t *s);
     proteins. */
 void sasalib_copy_param(sasalib_t *target, const sasalib_t *source);
 
+/** Calculate SASA from given atom coordinates and radii. Doesn't even
+    have to be a protein. */
+int sasalib_calc_coord(sasalib_t*, const double *coord, 
+                       const double *r, size_t n);
+
 /** performs calculations on PDB-file. Results stored in parameter
     s. If s is not initialized default values are used, these are
     stored in s. Returns 0 if calculation successful, prints an error
-    and returns 1 if not.*/
+    and returns 1 if not. If the the object s has been used in
+    calculations previously these will be over-written. */
 int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file);
 
-/** Same as sasalib_calcpdb but from already initialized protein. */
-int sasalib_calc_protein(sasalib_t*, structure_t*);
+/** Link a set of coordinates to the sasalib_t object, if these
+    coordinates are updated sasalib_refresh(1) can be used to
+    recalculate SASA. Sasalib will not change the coordinates.  The
+    array coord is of size 3*n with coordinates in the order
+    x1,y1,z1,x2,y2,z2,... The array r should containt the radius of
+    each atom and be of size n. If the sasalib_t-object has been
+    initalized with a PDB file or structure_t-object these are
+    released. */
+int sasalib_link_coord(sasalib_t*, const double *coord,
+                       double *r, size_t n);
+
+/** Recalculates SASA, based on the assumption that a set of external
+    coordinates have been updated elsewhere. */
+int sasalib_refresh(sasalib_t*);
 
 /** Sets algorithm. Returns 0 if alg is valid, returns 1 else. */
 int sasalib_set_algorithm(sasalib_t*, sasalib_algorithm alg);

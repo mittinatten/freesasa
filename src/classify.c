@@ -24,6 +24,7 @@
 #include "pdbutil.h"
 #include "classify.h"
 
+/** Residue types */
 static const char *residue_names[] = {
     //amino acids
     "ALA","ARG","ASN","ASP",
@@ -40,10 +41,35 @@ static const char *residue_names[] = {
     //General nuceleotide
     "N"
 };
+enum {
+    //Regular amino acids
+    sasalib_ALA=0, sasalib_ARG, sasalib_ASN, sasalib_ASP, 
+    sasalib_CYS, sasalib_GLN, sasalib_GLU, sasalib_GLY, 
+    sasalib_HIS, sasalib_ILE, sasalib_LEU, sasalib_LYS, 
+    sasalib_MET, sasalib_PHE, sasalib_PRO, sasalib_SER, 
+    sasalib_THR, sasalib_TRP, sasalib_TYR, sasalib_VAL,
+    //some non-standard ones
+    sasalib_CSE, sasalib_ASX, sasalib_GLX, sasalib_XLE, 
+    sasalib_UNK, 
+    //DNA
+    sasalib_DA, sasalib_DC, sasalib_DG, sasalib_DT, 
+    sasalib_DU, sasalib_DI,  
+    //RNA
+    sasalib_A, sasalib_C, sasalib_G, sasalib_U, sasalib_I, sasalib_T, 
+    //generic nucleotide
+    sasalib_NN
+};
 
+/** Element types (in ATOM entries, HETATM atom types could be
+    anything) */
 // the elements seen in PDB Atom entries
 static const char *element_names[] = {
     "C","O","N","S","P","Se","H","unknown"
+};
+enum {
+    sasalib_carbon=0, sasalib_oxygen, sasalib_nitrogen,
+    sasalib_sulfur, sasalib_phosphorus, sasalib_selenium,
+    sasalib_hydrogen, sasalib_element_unknown
 };
 
 static const char *oons_names[] = {
@@ -51,6 +77,15 @@ static const char *oons_names[] = {
     "carbo_C", "amide_N", "carbo_O",
     "hydroxyl_O", "sulfur","unknown_polar","unknown"
 };
+enum {
+    sasalib_aliphatic_C=0, sasalib_aromatic_C,
+    sasalib_carbo_C, sasalib_amide_N, 
+    sasalib_carbo_O, sasalib_hydroxyl_O,
+    sasalib_oons_sulfur,
+    sasalib_oons_unknown_polar,
+    sasalib_oons_unknown
+};
+
 
 /** helper function, trims whitespace from beginning and end of string */
 static size_t trim_whitespace(char *target, const char *src, size_t length)
@@ -87,7 +122,7 @@ double classify_radius(const char *res_name, const char *atom_name)
     return classify_element_radius(classify_element(atom_name));
 }
 
-sasalib_class_t classify_class(const char *res_name, const char *atom_name)
+int classify_class(const char *res_name, const char *atom_name)
 {
     int res = classify_residue(res_name);
     int class;   
@@ -101,7 +136,7 @@ sasalib_class_t classify_class(const char *res_name, const char *atom_name)
     return sasalib_unknown;
 }
 
-const char* classify_class2str(sasalib_class_t class)
+const char* classify_class2str(int class)
 {
     switch (class) {
     case sasalib_polar: return "Polar";
@@ -115,7 +150,7 @@ int classify_nclasses() {
     return sasalib_unknown+1;
 }
 
-sasalib_residue_t classify_residue(const char *res_name)
+int classify_residue(const char *res_name)
 {
     assert(strlen(res_name) == PDB_ATOM_RES_NAME_STRL);
     char cpy[PDB_ATOM_RES_NAME_STRL+1];
@@ -137,7 +172,7 @@ sasalib_residue_t classify_residue(const char *res_name)
     return sasalib_UNK;
 }
 
-const char* classify_residue2str(sasalib_residue_t res) {
+const char* classify_residue2str(int res) {
     if (res < 0 || res > sasalib_NN) {
 	return residue_names[sasalib_UNK];
     }
@@ -149,7 +184,7 @@ int classify_nresiduetypes()
     return sasalib_NN+1;
 }
 
-sasalib_element_t classify_element(const char *atom_name)
+int classify_element(const char *atom_name)
 {
     assert(strlen(atom_name) == PDB_ATOM_NAME_STRL);
 
@@ -174,7 +209,7 @@ sasalib_element_t classify_element(const char *atom_name)
     return sasalib_element_unknown;
 }
 
-const char* classify_element2str(sasalib_element_t element)
+const char* classify_element2str(int element)
 {
     if (element < 0 || element > sasalib_element_unknown) {
 	return element_names[sasalib_element_unknown];
@@ -187,7 +222,7 @@ int classify_nelements()
     return sasalib_element_unknown+1;
 }
 
-double classify_element_radius(sasalib_element_t element)
+double classify_element_radius(int element)
 {
     // based on www.periodictable.com
     assert(element >= 0 && element <= sasalib_element_unknown);
@@ -251,7 +286,7 @@ static int classify_oons_cse(const char* a)
 }
 
 /** Main OONS function */
-sasalib_oons_t classify_oons(const char *res_name, const char *a)
+int classify_oons(const char *res_name, const char *a)
 {
     assert(strlen(a) == PDB_ATOM_NAME_STRL);
     assert(strlen(res_name) == PDB_ATOM_RES_NAME_STRL);
@@ -261,7 +296,7 @@ sasalib_oons_t classify_oons(const char *res_name, const char *a)
     if (a[1] == 'H' || a[0] == 'H' ||
 	a[1] == 'D' || a[0] == 'D') return sasalib_oons_unknown;
 
-    sasalib_residue_t res = classify_residue(res_name);
+    int res = classify_residue(res_name);
 
     if (classify_is_aminoacid(res)) {
 	// backbone
@@ -317,7 +352,7 @@ sasalib_oons_t classify_oons(const char *res_name, const char *a)
     }
 }
 
-const char* classify_oons2str(sasalib_oons_t oons_type)
+const char* classify_oons2str(int oons_type)
 {
     if (oons_type < 0 || oons_type > sasalib_oons_unknown) {
 	return oons_names[sasalib_oons_unknown];
@@ -330,7 +365,7 @@ int classify_noons()
     return sasalib_oons_unknown+1;
 }
 
-sasalib_class_t classify_oons2class(sasalib_oons_t oons_type)
+int classify_oons2class(int oons_type)
 {
     switch (oons_type) {
     case sasalib_aliphatic_C: return sasalib_apolar;
@@ -345,7 +380,7 @@ sasalib_class_t classify_oons2class(sasalib_oons_t oons_type)
     }
 }
 
-double classify_oons_radius(sasalib_oons_t oons_type)
+double classify_oons_radius(int oons_type)
 {
     assert(oons_type >= 0 && oons_type <= sasalib_oons_unknown);
     switch (oons_type)
@@ -364,14 +399,14 @@ double classify_oons_radius(sasalib_oons_t oons_type)
     }
 }
 
-int classify_is_aminoacid(sasalib_residue_t res)
+int classify_is_aminoacid(int res)
 {
     if (res >= sasalib_ALA && res <= sasalib_XLE) return 1;
     if (res >= sasalib_UNK && res <= sasalib_NN) return 0;
     return -1;
 }
 
-int classify_is_nucleicacid(sasalib_residue_t res)
+int classify_is_nucleicacid(int res)
 {
     if (res >= sasalib_ALA && res <= sasalib_UNK) return 0;
     if (res >= sasalib_DA && res <= sasalib_NN) return 1;

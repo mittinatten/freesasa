@@ -26,20 +26,22 @@
 struct coord_ {
     double *xyz;
     size_t n;
+    int is_const;
 };
 
 coord_t* coord_new() 
 {
-    coord_t* c = (coord_t*) malloc(sizeof(coord_t*));
+    coord_t* c = (coord_t*) malloc(sizeof(coord_t));
     c->xyz = NULL;
     c->n = 0;
+    c->is_const = 0;
     return c;
 }
 
 void coord_free(coord_t *c) 
 {
     assert(c != NULL && "NULL-pointer passed to coord_free(1)");
-    if (c->xyz) free(c->xyz);
+    if (c->xyz && !c->is_const) free(c->xyz);
     free(c);
 }
 
@@ -51,14 +53,13 @@ coord_t* coord_copy(const coord_t *src)
     return c;
 }
 
-const coord_t* coord_new_linked(const double *xyz, size_t n)
+coord_t* coord_new_linked(const double *xyz, size_t n)
 {
     assert(xyz != NULL);
     coord_t *c = coord_new();
-    /* for this assignment we need to remove const-ness. It will however
-        be preserved since return type is const. */
     c->xyz = (double*)xyz; 
     c->n = n;
+    c->is_const = 1;
     return c;
 }
 
@@ -66,30 +67,34 @@ void coord_append(coord_t *c, const double *xyz, size_t n)
 {
     assert(c   != NULL);
     assert(xyz != NULL);
+    assert(!c->is_const);
 
     size_t n_old = c->n;
     c->n += n;
     c->xyz = (double*) realloc(c->xyz, sizeof(double)*3*c->n);
+
     double *dest = memcpy(&(c->xyz[3*n_old]), xyz, sizeof(double)*n*3);
 
     assert(dest != NULL);
 }
 
 void coord_append_xyz(coord_t *c, const double *x, const double *y, 
-		      const double *z, size_t n)
+                      const double *z, size_t n)
 {
     assert(c != NULL);
     assert(x != NULL);
     assert(y != NULL);
     assert(z != NULL);
-
-    double *xyz = (double*) malloc(sizeof(double)*3*n);
+    assert(!c->is_const);
+    
+    double *xyz = (double*)malloc(sizeof(double)*n*3);
     for (int i = 0; i < n; ++i) {
-	xyz[i*3] = x[i];
-	xyz[i*3+1] = y[i];
-	xyz[i*3+2] = z[i];
+        xyz[i*3] = x[i];
+        xyz[i*3+1] = y[i];
+        xyz[i*3+2] = z[i];
     }
     coord_append(c,xyz,n);
+    free(xyz);
 }
 
 void coord_set_i(coord_t *c, int i, const double* xyz) 
@@ -98,6 +103,7 @@ void coord_set_i(coord_t *c, int i, const double* xyz)
     assert(xyz != NULL);
     assert(c->n > i);
     assert(i >= 0);
+    assert(!c->is_const);
     
     memcpy(&c->xyz[i*3], xyz, 3*sizeof(double));
 }
@@ -107,6 +113,7 @@ void coord_set_i_xyz(coord_t *c,int i,double x,double y,double z)
     assert(c   != NULL);
     assert(c->n > i);
     assert(i >= 0);
+    assert(!c->is_const);
 
     double *v_i = &c->xyz[i*3];
     *(v_i++) = x;
@@ -114,19 +121,22 @@ void coord_set_i_xyz(coord_t *c,int i,double x,double y,double z)
     *v_i = z;
 }
 
-void coord_set_all(coord_t *c,const double* xyz,size_t n) 
+void coord_set_all(coord_t *c, const double* xyz, size_t n) 
 {
     assert(c   != NULL);
     assert(xyz != NULL);
+    assert(!c->is_const);
+
     if (c->xyz) free(c->xyz);
     c->n = 0;
     coord_append(c,xyz,n);    
 }
 
 void coord_set_all_xyz(coord_t *c,const double* x, const double *y,
-		       const double *z, size_t n)
+                       const double *z, size_t n)
 {
     assert(c != NULL);
+    assert(!c->is_const);
     if (c->xyz) free(c->xyz);
     c->n = 0;
     coord_append_xyz(c, x, y, z, n);
@@ -136,6 +146,7 @@ void coord_set_length_i(coord_t *c, int i, double l)
 {
     assert(c != NULL);
     assert(c->xyz != NULL);
+    assert(!c->is_const);
     
     double x = c->xyz[3*i], y = c->xyz[3*i+1], z = c->xyz[3*i+2];
     double r = sqrt(x*x + y*y + z*z);
@@ -146,6 +157,8 @@ void coord_set_length_i(coord_t *c, int i, double l)
 
 void coord_set_length_all(coord_t *c, double l)
 {
+    assert(c != NULL);
+    assert(!c->is_const);
     for (int i = 0; i < c->n; ++i) coord_set_length_i(c,i,l);
 }
 
@@ -196,6 +209,7 @@ size_t coord_n(const coord_t* c)
 
 void coord_translate(coord_t *c, const double *xyz)
 {
+    assert(!c->is_const);
     assert(xyz != NULL);
     coord_translate_xyz(c,xyz[0],xyz[1],xyz[2]);
 }
@@ -203,19 +217,21 @@ void coord_translate(coord_t *c, const double *xyz)
 void coord_translate_xyz(coord_t *c, double x, double y, double z)
 {
     assert(c != NULL);
+    assert(!c->is_const);
     
     for (int i = 0; i < c->n; ++i) {
-	c->xyz[3*i]   += x; 
-	c->xyz[3*i+1] += y; 
-	c->xyz[3*i+2] += z; 
+        c->xyz[3*i]   += x; 
+        c->xyz[3*i+1] += y; 
+        c->xyz[3*i+2] += z; 
     }
 }
 
 void coord_scale(coord_t *c, double s)
 {
     assert(c != NULL);
+    assert(!c->is_const);
     for (int i = 0; i < c->n*3; ++i) {
-	c->xyz[i] *= s;
+        c->xyz[i] *= s;
     }
 }
 

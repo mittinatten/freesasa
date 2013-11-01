@@ -87,20 +87,20 @@ structure_t* structure_init_from_pdb(FILE *pdb_file)
     char the_alt = ' ';
     while (getline(&line, &len, pdb_file) != -1) {
         if (strncmp("ATOM",line,4)==0) {
-	    if (pdbutil_ishydrogen(line)) continue;
+            if (pdbutil_ishydrogen(line)) continue;
             double v[3];
             atom_t a;
-	    char alt = structure_get_pdb_atom(&a,v,line);
-	    if ((alt != ' ' && the_alt == ' ') || (alt == ' ')) { 
-		the_alt = alt;
-	    } else if (alt != ' ' && alt != the_alt) {
-		continue;
-	    } 
-	    
-	    structure_add_atom(p,a.atom_name,a.res_name,a.res_number,
-			       a.chain_label, v[0], v[1], v[2]);
-	}
-	if (strncmp("ENDMDL",line,4)==0) break;
+            char alt = structure_get_pdb_atom(&a,v,line);
+            if ((alt != ' ' && the_alt == ' ') || (alt == ' ')) { 
+                the_alt = alt;
+            } else if (alt != ' ' && alt != the_alt) {
+                continue;
+            } 
+            
+            structure_add_atom(p,a.atom_name,a.res_name,a.res_number,
+                               a.chain_label, v[0], v[1], v[2]);
+        }
+        if (strncmp("ENDMDL",line,4)==0) break;
     }
     free(line);
     return p;
@@ -113,11 +113,11 @@ static void structure_alloc_one(structure_t *p)
 }
 
 void structure_add_atom(structure_t *p,
-                      const char *atom_name,
-                      const char *residue_name,
-                      const char *residue_number,
-                      char chain_label,
-                      double x, double y, double z)
+                        const char *atom_name,
+                        const char *residue_name,
+                        const char *residue_number,
+                        char chain_label,
+                        double x, double y, double z)
 {
     // check input for consistency
     assert(strlen(atom_name) == PDB_ATOM_NAME_STRL);
@@ -128,7 +128,6 @@ void structure_add_atom(structure_t *p,
     structure_alloc_one(p);
     int na = p->number_atoms;
     coord_append_xyz(p->xyz,&x,&y,&z,1);
-
     atom_t *a = &p->a[na-1];
     strcpy(a->atom_name,atom_name);
     strcpy(a->res_name,residue_name);
