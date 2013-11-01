@@ -150,16 +150,16 @@ static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
 	    else srt[t].i2 = (t+1)*thread_block_size;
 	    int res = pthread_create(&thread[t], NULL, sasa_sr_thread, (void *) &srt[t]);
 	    if (res) {
-            perror("Thread creation failed");
-            exit(EXIT_FAILURE);
+		perror("Thread creation failed");
+		exit(EXIT_FAILURE);
 	    }
 	}
 	for (int t = 0; t < n_threads; ++t) {
 	    void *thread_result;
 	    int res = pthread_join(thread[t],&thread_result);
 	    if (res) {
-            perror("Thread join failed");
-            exit(EXIT_FAILURE);
+		perror("Thread join failed");
+		exit(EXIT_FAILURE);
 	    }
 	}
 }

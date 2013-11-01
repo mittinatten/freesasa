@@ -22,7 +22,12 @@
 
 /** sasalib.h provides functions to init and perform a SASA
     calculation using Sasalib with standard atom classifications. The
-    user may optionally select algorithm and provide parameters. */
+    user may optionally select algorithm and provide parameters. 
+    
+    If users wish to supply their own coordinates and radii, these are
+    accepted as arrays of doubles. The coordinate-array should have
+    size 3*n with coordinates in the order x1,y1,z1,x2,y2,z2,... 
+*/
 
 #include <stdio.h>
 #include "structure.h"
@@ -38,6 +43,10 @@ typedef enum {LEE_RICHARDS, SHRAKE_RUPLEY} sasalib_algorithm;
 #define SASALIB_DEF_LR_D 0.25
 
 
+/*****************************************/
+/** Initialization, freeing and copying **/
+/*****************************************/
+
 /** Allocates empty sasalib_t obejct with default parameters. Must be
     called before calculation. */
 sasalib_t* sasalib_init();
@@ -52,6 +61,10 @@ void sasalib_free(sasalib_t *s);
     several calculations with identical parameters for different
     proteins. */
 void sasalib_copy_param(sasalib_t *target, const sasalib_t *source);
+
+/**************************/
+/** Perform calculations **/
+/**************************/
 
 /** Calculate SASA from given atom coordinates and radii. Doesn't even
     have to be a protein. */
@@ -79,6 +92,14 @@ int sasalib_link_coord(sasalib_t*, const double *coord,
 /** Recalculates SASA, based on the assumption that a set of external
     coordinates have been updated elsewhere. */
 int sasalib_refresh(sasalib_t*);
+
+/** Returns the total SASA. Negative return value and warning printed
+    if calculation hasn't been performed yet. */
+double sasalib_area_total(const sasalib_t*);
+
+/******************************/
+/** Settings for calculation **/
+/******************************/
 
 /** Sets algorithm. Returns 0 if alg is valid, returns 1 else. */
 int sasalib_set_algorithm(sasalib_t*, sasalib_algorithm alg);
@@ -125,9 +146,9 @@ void sasalib_set_proteinname(sasalib_t*,const char*);
 /** Returns protein name. */
 const char* sasalib_get_proteinname(const sasalib_t*);
 
-/** Returns the total SASA. Negative return value and warning printed
-    if calculation hasn't been performed yet. */
-double sasalib_area_total(const sasalib_t*);
+/******************************/
+/** Result analysis for PDBs **/
+/******************************/
 
 /** Returns the polar SASA. Negative return value and warning printed
     if calculation hasn't been performed yet. */
@@ -142,19 +163,28 @@ double sasalib_area_apolar(const sasalib_t*);
     calculation hasn't been performed yet. */
 double sasalib_area_nucleicacid(const sasalib_t*);
 
+/** Prints the total SASA for each residue of the structure */
+void sasalib_per_residue(FILE *output, const sasalib_t*);
+
+/**********************************/
+/** Results for individual atoms **/
+/**********************************/
+
 /** Returns SASA value for atom i. Prints error and returns negative
     value if atom index is invalid. */
 double sasalib_area_atom(const sasalib_t*, int i);
+
+/** Returns array containg SASA for all atoms. Returns NULL if no
+    results available */
+const double* sasalib_area_atom(const sasalib_t*);
 
 /** Returns radius of atom i. Prints error and returns negative
     value if atom index is invalid. */
 double sasalib_radius_atom(const sasalib_t*, int i);
 
-/** Prints log to specified file (after the fact). Returns 0 on
+/** Prints log of calculation results to specified file. Returns 0 on
     success, 1 on failure. */
 int sasalib_log(FILE *log, const sasalib_t*);
 
-/** Prints the total SASA for each residue of the structure */
-void sasalib_per_residue(FILE *output, const sasalib_t*);
 
 #endif
