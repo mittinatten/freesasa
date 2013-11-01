@@ -61,6 +61,21 @@ Rupley's \cite{SnR} algorithms are available. They will be referred to
 as L\&R and S\&R throughout this document. Future versions of the
 library might include other algorithms as well.
 
+In constructing the library three possible use cases were considered. 
+\begin{enumerate}
+\item The user has a PDB-file and wishes to calculate total SASA of
+  the structure, or the SASA for certain groups or types of atoms.
+\item The user has a set of cartesian coordinates for atoms and radii
+  for these atoms and wants to calculate the total SASA for this object. 
+\item The user is simulating a molecule and wants to sample SASA of
+  different configurations during the simulation.
+\end{enumerate}
+For case 1 both the command-line interface (CLI) and the application
+programming interface (API) can be used. Using the API gives more
+flexibility in interpreting and analyzing the results. The other 2
+cases can only be handled through the API. Both the API and the CLI
+allow the user to set parameters for the calculation. 
+
 This document is organized as follows. Section \ref{sec:howto_short}
 give a brief introduction to the library, presenting the command line
 interface and a short sample program that gives a general idea of how
