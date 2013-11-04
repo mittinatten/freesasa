@@ -29,13 +29,24 @@
 #include "classify.h"
 
 #define NBUF 100
+typedef struct {
+    int *class;
+    int *residue;
+} class_t;
+
+typedef struct {
+    double *sasa;
+    double total;
+    double *class;
+    double *residue;
+} result_t;
 
 struct sasalib_ {
     sasalib_algorithm alg;
     double *sasa;
     double *r;
-    //    structure_t *p;
     coord_t *c;
+    class_t *class;
     int n_atoms;
     int n_sr;
     double d_lr;
@@ -46,56 +57,94 @@ struct sasalib_ {
     int customized;
     int inited;
     int calculated;
-    double total;
-    double polar;
-    double apolar;
-    double nucleic;
-    double unknown;
+    result_t *result;
     char proteinname[SASALIB_NAME_LIMIT];
 }; 
 
 const sasalib_t sasalib_def_param = {
     .alg = SHRAKE_RUPLEY,
-    .sasa = NULL,
     .r = NULL,
-    //.p = NULL,
     .c = NULL,
+    .class = NULL,
+    .result = NULL,
     .n_atoms = 0,
     .n_sr = SASALIB_DEF_SR_N,
     .d_lr = SASALIB_DEF_LR_D,
     .n_threads = 1,
     .elapsed_time = 0,
-    .owns_protein = 0,
     .owns_r = 0,
     .customized = 0,
     .inited = 0,
     .calculated = 0,
-    .total = 0.,
-    .polar = 0.,
-    .apolar = 0.,
-    .nucleic = 0.,
-    .unknown = 0.,
     .proteinname = "undef"
 };
 
 const char *sasalib_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
-void sasalib_get_classes(sasalib_t *s, structure_t *p)
+static class_t* sasalib_classify_structure(const structure_t *p)
 {
+    assert(p != NULL);
+    assert(structure_n(p) >= 0 && "Trying to analyze illegal structure.");
+    
+    size_t n = structure_n(p);
+    
+    class_t* c = (class_t*)malloc(sizeof(class_t));
+    c->class = (int*)malloc(sizeof(int)*n);
+    c->residue = (int*)malloc(sizeof(int)*n);
+
+    for (int i = 0; i < n; ++i) {
+	const char *res_name = structure_atom_res_name(p,i);
+	const char *atom_name = structure_atom_name(p,i);
+	c->class[i] = classify_class(res_name,atom_name);
+	c->residue[i] = classify_residue(res_name);
+    }
+
+    return c;
+}
+
+static void sasalib_class_free(class_t *c) 
+{
+    if (! c) return;
+    free(c->class);
+    free(c->residue);
+    free(c);
+}
+
+static result_t* sasalib_result_new(size_t n_atoms)
+{
+    result_t *r = (result_t*)malloc(sizeof(result_t));
+
     int nc = classify_nclasses();
-    double sasa_class[nc];
-    for (int i = 0; i < nc; ++i) {
-        sasa_class[i] = 0;
-    }
+    int nr = classify_nresiduetypes();
+    
+    r->sasa = (double*)malloc(sizeof(double)*n_atoms);
+    r->class = (double*)malloc(sizeof(double)*nc);
+    r->residue = (double*)malloc(sizeof(double)*nr);
+
+    for (int i = 0; i < nc; ++i) r->class[i] = 0;
+    for (int i = 0; i < nr; ++i) r->residue[i] = 0;
+    
+    return r;
+}
+
+static void sasalib_result_free(result_t *r)
+{
+    if (! r) return;
+    free(r->sasa);
+    free(r->class);
+    free(r->residue);
+    free(r);
+}
+
+static void sasalib_get_class_result(sasalib_t *s, structure_t *p)
+{
+    if (s->class) sasalib_class_free(s->class);
+    s->class = sasalib_classify_structure(p);
+    
     for (size_t i = 0; i < structure_n(p); ++i) {
-        int class = classify_class(structure_atom_res_name(p,i),
-                                   structure_atom_name(p,i));
-        sasa_class[class] += s->sasa[i];
+        s->result->class[s->class->class[i]] += s->result->sasa[i];
+	s->result->residue[s->class->residue[i]] += s->result->sasa[i];
     }
-    s->polar = sasa_class[sasalib_polar];
-    s->apolar = sasa_class[sasalib_apolar];
-    s->nucleic = sasa_class[sasalib_nucleicacid];
-    s->unknown = sasa_class[sasalib_unknown];
 }
 
 int sasalib_calc(sasalib_t *s, const coord_t *c, const double *r)
@@ -105,23 +154,28 @@ int sasalib_calc(sasalib_t *s, const coord_t *c, const double *r)
 
     gettimeofday(&t1,NULL);
 
-    if (s->sasa) free(s->sasa);
-    s->sasa = (double*)malloc(sizeof(double)*coord_n(c));
-    
+    if (s->result) sasalib_result_free(s->result);
+    result_t *result;
+    s->result = result = sasalib_result_new(s->n_atoms);
+
     switch(s->alg) {
     case SHRAKE_RUPLEY:
-        res = sasa_shrake_rupley(s->sasa, c, r, s->n_sr, s->n_threads);
+        res = sasa_shrake_rupley(result->sasa, c, r, 
+				 s->n_sr, s->n_threads);
         break;
     case LEE_RICHARDS:
-        res = sasa_lee_richards(s->sasa, c, r, s->d_lr, s->n_threads);
+        res = sasa_lee_richards(result->sasa, c, r, 
+				s->d_lr, s->n_threads);
 	break;
     default:
         fprintf(stderr,"Error: no SASA algorithm specified.\n");
         return 1;
     }
-    s->total = 0;
-    for (int i = 0; i < coord_n(c); ++i) s->total += s->sasa[i];
-    
+    result->total = 0;
+    for (int i = 0; i < coord_n(c); ++i) {
+	result->total += result->sasa[i];
+    }
+
     gettimeofday(&t2,NULL);
     
     s->elapsed_time = (t2.tv_sec-t1.tv_sec); 
@@ -154,6 +208,8 @@ void sasalib_free(sasalib_t *s)
     if (s->owns_r) {
         free(s->r);
     }
+    if (s->class) sasalib_class_free(s->class);
+    if (s->result) sasalib_result_free(s->result);
     if (s->inited) free(s);
 }
 
@@ -161,7 +217,6 @@ int sasalib_calc_coord(sasalib_t *s, const double *coord,
                        const double *r, size_t n)
 {
     s->n_atoms = n;
-    //if (s->p) structure_free(s->p);
     coord_t *c = coord_new_linked(coord,n);
     int res = sasalib_calc(s,c,r);
     coord_free(c);
@@ -172,7 +227,7 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
 {
     structure_t *p = structure_init_from_pdb(pdb_file);
     s->n_atoms = structure_n(p);
-    //if (s->p) structure_free(s->p);
+
     //calc OONS radii
     if (s->r) free(s->r);
     s->r = (double*) malloc(sizeof(double)*structure_n(p));
@@ -182,15 +237,8 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
     if (s->sasa) free(s->sasa);
     s->sasa = (double*) malloc(sizeof(double)*structure_n(p));
     int res = sasalib_calc(s,structure_xyz(p),s->r);
-    if (!res) sasalib_get_classes(s,p);
+    if (!res) sasalib_get_class_result(s,p);
     structure_free(p);
-    return res;
-}
-
-int sasalib_calc_protein(sasalib_t *s, structure_t* p)
-{
-    int res = sasalib_calc(s,structure_xyz(p),s->r);
-    if (!res) sasalib_get_classes(s,p);
     return res;
 }
 
@@ -302,7 +350,7 @@ double sasalib_area_total(const sasalib_t *s)
                 "no total SASA value available.\n");
         return -1.0;
     }
-    return s->total;
+    return s->result->total;
 }
 
 double sasalib_area_polar(const sasalib_t *s)
@@ -312,7 +360,7 @@ double sasalib_area_polar(const sasalib_t *s)
                 "no polar SASA value available.\n");
         return -1.0;
     }
-    return s->polar;
+    return s->result->class[sasalib_polar];
 }
 
 double sasalib_area_apolar(const sasalib_t *s)
@@ -322,7 +370,7 @@ double sasalib_area_apolar(const sasalib_t *s)
                 "no apolar SASA value available.\n");
         return -1.0;
     }
-    return s->apolar;
+    return s->result->class[sasalib_apolar];
 }
 
 double sasalib_area_nucleicacid(const sasalib_t *s)
@@ -332,7 +380,16 @@ double sasalib_area_nucleicacid(const sasalib_t *s)
                 "no nucleic acid SASA value available.\n");
         return -1.0;
     }
-    return s->nucleic;
+    return s->result->class[sasalib_nucleicacid];
+}
+double sasalib_area_class_unknown(const sasalib_t *s)
+{
+    if (! s->calculated) {
+        fprintf(stderr,"Error: SASA calculation has not been performed, "
+                "no nucleic acid SASA value available.\n");
+        return -1.0;
+    }
+    return s->result->class[sasalib_unknown];
 }
 double sasalib_area_atom(const sasalib_t *s, int i)
 {
@@ -342,12 +399,20 @@ double sasalib_area_atom(const sasalib_t *s, int i)
         return -1.0;
     }
     if (i >= 0 && i < s->n_atoms) {
-        return s->sasa[i];
+        return s->result->sasa[i];
     }
     fprintf(stderr,"Error: Atom index %d invalid.\n",i);
     return -1.0;
 }
-
+const double* sasalib_area_atom_array(const sasalib_t *s)
+{
+    if (! s->calculated) {
+        fprintf(stderr,"Error: SASA calculation has not been performed, "
+                "no atomic SASA values are available.\n");
+        return NULL;
+    }
+    return s->result->sasa;
+}
 double sasalib_radius_atom(const sasalib_t *s, int i)
 {
     if (i >= 0 && i < s->n_atoms) {

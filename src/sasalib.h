@@ -163,6 +163,11 @@ double sasalib_area_apolar(const sasalib_t*);
     calculation hasn't been performed yet. */
 double sasalib_area_nucleicacid(const sasalib_t*);
 
+/** Returns the SASA of atoms that are not polar, apolar or nucleic
+    acids. Negative return value and warning printed if calculation
+    hasn't been performed yet. */
+double sasalib_area_class_unknown(const sasalib_t*);
+
 /** Prints the total SASA for each residue of the structure */
 void sasalib_per_residue(FILE *output, const sasalib_t*);
 
@@ -175,8 +180,8 @@ void sasalib_per_residue(FILE *output, const sasalib_t*);
 double sasalib_area_atom(const sasalib_t*, int i);
 
 /** Returns array containg SASA for all atoms. Returns NULL if no
-    results available */
-const double* sasalib_area_atom(const sasalib_t*);
+    results available. */
+const double* sasalib_area_atom_array(const sasalib_t*);
 
 /** Returns radius of atom i. Prints error and returns negative
     value if atom index is invalid. */
