@@ -43,19 +43,16 @@ typedef struct {
 
 struct sasalib_ {
     sasalib_algorithm alg;
-    double *sasa;
     double *r;
-    coord_t *c;
+    coord_t *coord;
     class_t *class;
     int n_atoms;
     int n_sr;
     double d_lr;
     int n_threads;
     double elapsed_time;
-    int owns_protein;
     int owns_r;
     int customized;
-    int inited;
     int calculated;
     result_t *result;
     char proteinname[SASALIB_NAME_LIMIT];
@@ -64,7 +61,7 @@ struct sasalib_ {
 const sasalib_t sasalib_def_param = {
     .alg = SHRAKE_RUPLEY,
     .r = NULL,
-    .c = NULL,
+    .coord = NULL,
     .class = NULL,
     .result = NULL,
     .n_atoms = 0,
@@ -74,7 +71,6 @@ const sasalib_t sasalib_def_param = {
     .elapsed_time = 0,
     .owns_r = 0,
     .customized = 0,
-    .inited = 0,
     .calculated = 0,
     .proteinname = "undef"
 };
@@ -190,7 +186,6 @@ sasalib_t* sasalib_init()
 {
     sasalib_t *s = (sasalib_t*) malloc(sizeof(sasalib_t));
     *s = sasalib_def_param;
-    s->inited = 1;
     return s;
 }
 
@@ -204,13 +199,13 @@ void sasalib_copy_param(sasalib_t *target, const sasalib_t *source)
 
 void sasalib_free(sasalib_t *s)
 {
-    free(s->sasa);
+    if (! s) return;
     if (s->owns_r) {
         free(s->r);
     }
     if (s->class) sasalib_class_free(s->class);
     if (s->result) sasalib_result_free(s->result);
-    if (s->inited) free(s);
+    free(s);
 }
 
 int sasalib_calc_coord(sasalib_t *s, const double *coord, 
@@ -234,8 +229,6 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
     s->owns_r = 1;
     structure_r_def(s->r,p);
 
-    if (s->sasa) free(s->sasa);
-    s->sasa = (double*) malloc(sizeof(double)*structure_n(p));
     int res = sasalib_calc(s,structure_xyz(p),s->r);
     if (!res) sasalib_get_class_result(s,p);
     structure_free(p);
@@ -245,25 +238,22 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
 int sasalib_link_coord(sasalib_t *s, const double *coord,
                        double *r, size_t n) 
 {
-    s->c = coord_new_linked(coord,n);
+    s->coord = coord_new_linked(coord,n);
 
     if (s->r) free(s->r);
     s->r = r;
     s->owns_r = 0;
-
-    if (s->sasa) free(s->sasa);
-    s->sasa = (double*)malloc(sizeof(double)*n);
 
     return 0;
 }
 
 int refresh(sasalib_t *s)
 {
-    if (! s->c || ! s->r ) {
+    if (! s->coord || ! s->r ) {
         fprintf(stderr,"Error: trying to refresh unitialized sasalib_t-object.\n");
         return 1;
     }
-    sasalib_calc(s,s->c,s->r);
+    sasalib_calc(s,s->coord,s->r);
     return 0;
 }
 
@@ -342,6 +332,11 @@ int sasalib_get_nthreads(const sasalib_t *s)
     return s->n_threads;
 }
 #endif
+
+size_t sasalib_n_atoms(const sasalib_t *s)
+{
+    return s->n_atoms;
+}
 
 double sasalib_area_total(const sasalib_t *s)
 {

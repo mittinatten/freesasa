@@ -47,7 +47,7 @@ typedef enum {LEE_RICHARDS, SHRAKE_RUPLEY} sasalib_algorithm;
 /** Initialization, freeing and copying **/
 /*****************************************/
 
-/** Allocates empty sasalib_t obejct with default parameters. Must be
+/** Allocates empty sasalib_t object with default parameters. Must be
     called before calculation. */
 sasalib_t* sasalib_init();
 
@@ -96,6 +96,9 @@ int sasalib_refresh(sasalib_t*);
 /** Returns the total SASA. Negative return value and warning printed
     if calculation hasn't been performed yet. */
 double sasalib_area_total(const sasalib_t*);
+
+/** Returns the number of atoms in the latest SASA calculation. */
+size_t sasalib_n_atoms(const sasalib_t*);
 
 /******************************/
 /** Settings for calculation **/
