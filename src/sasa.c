@@ -103,7 +103,7 @@ int sasa_shrake_rupley(double *sasa,
     // Initialize test-points
     const double *srp_p = srp_get_points(n_points);
     if (srp_p == NULL) return 1;
-    const coord_t *srp = coord_new_linked(srp_p,n_points);
+    coord_t *srp = coord_new_linked(srp_p,n_points);
 
     char spcount_0[n_points];
 
@@ -133,35 +133,36 @@ int sasa_shrake_rupley(double *sasa,
             sasa[i] = sasa_sr_calc_atom(i,sr);
         }
     }
+    coord_free(srp);
     return 0;
 }
 
 #ifdef PTHREADS
 static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
 {
-	pthread_t thread[n_threads];
-	sasa_sr_t srt[n_threads];
-	int n_atoms = sr.n_atoms;
-	int thread_block_size = n_atoms/n_threads;
-	for (int t = 0; t < n_threads; ++t) {
-	    srt[t] = sr;
-	    srt[t].i1 = t*thread_block_size;
-	    if (t == n_threads-1) srt[t].i2 = n_atoms;
-	    else srt[t].i2 = (t+1)*thread_block_size;
-	    int res = pthread_create(&thread[t], NULL, sasa_sr_thread, (void *) &srt[t]);
-	    if (res) {
-		perror("Thread creation failed");
-		exit(EXIT_FAILURE);
-	    }
+    pthread_t thread[n_threads];
+    sasa_sr_t srt[n_threads];
+    int n_atoms = sr.n_atoms;
+    int thread_block_size = n_atoms/n_threads;
+    for (int t = 0; t < n_threads; ++t) {
+	srt[t] = sr;
+	srt[t].i1 = t*thread_block_size;
+	if (t == n_threads-1) srt[t].i2 = n_atoms;
+	else srt[t].i2 = (t+1)*thread_block_size;
+	int res = pthread_create(&thread[t], NULL, sasa_sr_thread, (void *) &srt[t]);
+	if (res) {
+	    perror("Thread creation failed");
+	    exit(EXIT_FAILURE);
 	}
-	for (int t = 0; t < n_threads; ++t) {
-	    void *thread_result;
-	    int res = pthread_join(thread[t],&thread_result);
-	    if (res) {
-		perror("Thread join failed");
-		exit(EXIT_FAILURE);
-	    }
+    }
+    for (int t = 0; t < n_threads; ++t) {
+	void *thread_result;
+	int res = pthread_join(thread[t],&thread_result);
+	if (res) {
+	    perror("Thread join failed");
+	    exit(EXIT_FAILURE);
 	}
+    }
 }
 
 static void *sasa_sr_thread(void* arg)
@@ -220,6 +221,7 @@ static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
                overlap. */
         }
     }
+    coord_free(tp_coord_ri);
     int n_surface = 0;
     for (int k = 0; k < n_points; ++k) {
         if (!spcount[k]) ++n_surface;

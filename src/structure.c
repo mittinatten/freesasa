@@ -58,7 +58,7 @@ structure_t* structure_init()
 void structure_free(structure_t *p)
 {
     free(p->a);
-    free(p->xyz);
+    coord_free(p->xyz);
     free(p);
 }
 

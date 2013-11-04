@@ -205,6 +205,7 @@ void sasalib_free(sasalib_t *s)
     }
     if (s->class) sasalib_class_free(s->class);
     if (s->result) sasalib_result_free(s->result);
+    if (s->coord) coord_free(s->coord);
     free(s);
 }
 
