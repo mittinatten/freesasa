@@ -34,8 +34,8 @@ p "data/time_LR1_d0.1.dat" t "d = 0.1 Å" ls 1, \
   x <=5000 ? b*x : 1/0 t "bx" ls 6, \
   x >= 5000 ? a*x**2 : 1/0 t "ax^2" ls 7
 
-a = 6.87765e-09
-b = 2.14678e-05
+a = 4.10423e-09
+b = 2.07026e-05
 
 set origin 0.5,0.5  
 set title "Shrake and Rupley"
