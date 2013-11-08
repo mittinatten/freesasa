@@ -127,27 +127,27 @@ int classify_class(const char *res_name, const char *atom_name)
     int res = classify_residue(res_name);
     int class;   
     if ((class = classify_oons2class(classify_oons(res_name,atom_name)))
-	!= sasalib_unknown) {
+	!= SASALIB_CLASS_UNKNOWN) {
 	return class;
     }
     else if (classify_is_nucleicacid(res)) { 
-	return sasalib_nucleicacid;
+	return SASALIB_NUCLEICACID;
     }
-    return sasalib_unknown;
+    return SASALIB_CLASS_UNKNOWN;
 }
 
 const char* classify_class2str(int class)
 {
     switch (class) {
-    case sasalib_polar: return "Polar";
-    case sasalib_apolar: return "Apolar";
-    case sasalib_nucleicacid: return "Nucleic";
+    case SASALIB_POLAR: return "Polar";
+    case SASALIB_APOLAR: return "Apolar";
+    case SASALIB_NUCLEICACID: return "Nucleic";
     default: return "Unknown";
     }
 }
 
 int classify_nclasses() {
-    return sasalib_unknown+1;
+    return SASALIB_CLASS_UNKNOWN+1;
 }
 
 int classify_residue(const char *res_name)
@@ -368,15 +368,15 @@ int classify_noons()
 int classify_oons2class(int oons_type)
 {
     switch (oons_type) {
-    case sasalib_aliphatic_C: return sasalib_apolar;
-    case sasalib_aromatic_C: return sasalib_apolar;
-    case sasalib_carbo_C: return sasalib_apolar;
-    case sasalib_amide_N: return sasalib_polar;
-    case sasalib_carbo_O: return sasalib_polar;
-    case sasalib_hydroxyl_O: return sasalib_polar;
-    case sasalib_oons_sulfur: return sasalib_polar;
-    case sasalib_oons_unknown_polar: return sasalib_polar;
-    default: return sasalib_unknown;
+    case sasalib_aliphatic_C: return SASALIB_APOLAR;
+    case sasalib_aromatic_C: return SASALIB_APOLAR;
+    case sasalib_carbo_C: return SASALIB_APOLAR;
+    case sasalib_amide_N: return SASALIB_POLAR;
+    case sasalib_carbo_O: return SASALIB_POLAR;
+    case sasalib_hydroxyl_O: return SASALIB_POLAR;
+    case sasalib_oons_sulfur: return SASALIB_POLAR;
+    case sasalib_oons_unknown_polar: return SASALIB_POLAR;
+    default: return SASALIB_CLASS_UNKNOWN;
     }
 }
 

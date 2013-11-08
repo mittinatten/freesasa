@@ -20,6 +20,8 @@
 #ifndef SASALIB_CLASSIFY_H
 #define SASALIB_CLASSIFY_H
 
+#include "sasalib.h"
+
 /** This set of functions maps between different classes of atoms and
     residues. In addition, the function classify_radius(2) maps atom
     type to radius, using the definitions by Ooi et al. (1987) for
@@ -45,12 +47,6 @@
     stay constant.
 */
 
-/** 4 classes of atoms/chemical groups used */
-enum sasalib_classes {
-    sasalib_polar=0, sasalib_apolar, 
-    sasalib_nucleicacid, sasalib_unknown
-};
-
 /** Given an atom this function returns an atomic radius. Regular
     protein atoms are given radii according to OONS (see documentation
     for reference). Atoms in unknown amino acid residues or in nucleic
@@ -64,8 +60,8 @@ double classify_radius(const char *res_name, const char *atom_name);
 /*********************/
 
 /** Returns the class of a given atom. The return value is one of
-    sasalib_polar, sasalib_apolar, sasalib_nucleicacid and
-    sasalib_unknown. */
+    SASALIB_POLAR, SASALIB_APOLAR, SASALIB_NUCLEICACID and
+    SASALIB_CLASS_UNKNOWN. */
 int classify_class(const char *res_name, const char *atom_name);
 
 /** Takes a class as argument and returns a string that describes that

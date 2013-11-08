@@ -66,14 +66,18 @@ void short_help(const char* argv0) {
 
 void run_analysis(FILE *input, const char *name, const settings_t *settings) {
     sasalib_t *s = sasalib_init();
+    double tmp;
     sasalib_copy_param(s,settings->s);
     sasalib_set_proteinname(s,name);
     sasalib_calc_pdb(s,input);
     sasalib_log(stdout,s);
     printf("\nTotal: %9.2f Å2\nPolar: %9.2f Å2\nApolar: %9.2f Å2\n",
-           sasalib_area_total(s), sasalib_area_polar(s), sasalib_area_apolar(s));
-    if (sasalib_area_nucleicacid(s) > 0) 
-	printf("Nucleic: %9.2f\n",sasalib_area_nucleicacid(s));
+           sasalib_area_total(s), sasalib_area_class(s,SASALIB_POLAR),
+	   sasalib_area_class(s, SASALIB_APOLAR));
+    if ((tmp = sasalib_area_class(s, SASALIB_NUCLEICACID)) > 0) 
+	printf("Nucleic: %9.2f Å2\n",tmp);
+    if ((tmp = sasalib_area_class(s, SASALIB_CLASS_UNKNOWN)) > 0) 
+	printf("Unknown: %9.2f Å2\n",tmp);
     if (settings->per_residue) { 
 	printf("\n>SASA per residue\n");
 	sasalib_per_residue(stdout,s);
@@ -108,11 +112,11 @@ int main (int argc, char **argv) {
 	    sasalib_set_sr_points(settings.s,atoi(optarg));
 	    break;
 	case 'S':
-	    sasalib_set_algorithm(settings.s,SHRAKE_RUPLEY);
+	    sasalib_set_algorithm(settings.s,SASALIB_SHRAKE_RUPLEY);
 	    ++alg_set;
 	    break;
 	case 'L':
-	    sasalib_set_algorithm(settings.s,LEE_RICHARDS);
+	    sasalib_set_algorithm(settings.s,SASALIB_LEE_RICHARDS);
 	    ++alg_set;
 	    break;
 	case 'd':

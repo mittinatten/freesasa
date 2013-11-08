@@ -52,14 +52,13 @@ struct sasalib_ {
     int n_threads;
     double elapsed_time;
     int owns_r;
-    int customized;
     int calculated;
     result_t *result;
     char proteinname[SASALIB_NAME_LIMIT];
 }; 
 
 const sasalib_t sasalib_def_param = {
-    .alg = SHRAKE_RUPLEY,
+    .alg = SASALIB_SHRAKE_RUPLEY,
     .r = NULL,
     .coord = NULL,
     .class = NULL,
@@ -70,7 +69,6 @@ const sasalib_t sasalib_def_param = {
     .n_threads = 1,
     .elapsed_time = 0,
     .owns_r = 0,
-    .customized = 0,
     .calculated = 0,
     .proteinname = "undef"
 };
@@ -155,11 +153,11 @@ int sasalib_calc(sasalib_t *s, const coord_t *c, const double *r)
     s->result = result = sasalib_result_new(s->n_atoms);
 
     switch(s->alg) {
-    case SHRAKE_RUPLEY:
+    case SASALIB_SHRAKE_RUPLEY:
         res = sasa_shrake_rupley(result->sasa, c, r, 
 				 s->n_sr, s->n_threads);
         break;
-    case LEE_RICHARDS:
+    case SASALIB_LEE_RICHARDS:
         res = sasa_lee_richards(result->sasa, c, r, 
 				s->d_lr, s->n_threads);
 	break;
@@ -260,7 +258,7 @@ int refresh(sasalib_t *s)
 
 int sasalib_set_algorithm(sasalib_t *s, sasalib_algorithm alg)
 {
-    if (alg == SHRAKE_RUPLEY || alg == LEE_RICHARDS) { 
+    if (alg == SASALIB_SHRAKE_RUPLEY || alg == SASALIB_LEE_RICHARDS) { 
         s->alg = alg;
         return 0;
     }
@@ -274,7 +272,7 @@ sasalib_algorithm sasalib_get_algorithm(const sasalib_t *s)
 
 const char* sasalib_algorithm_name(const sasalib_t *s)
 {
-    assert(s->alg == SHRAKE_RUPLEY || s->alg == LEE_RICHARDS);
+    assert(s->alg == SASALIB_SHRAKE_RUPLEY || s->alg == SASALIB_LEE_RICHARDS);
     return sasalib_alg_names[s->alg];
 }
 
@@ -294,7 +292,7 @@ int sasalib_set_sr_points(sasalib_t *s, int n) {
 
 int sasalib_get_sr_points(const sasalib_t* s)
 {
-    if (s->alg == SHRAKE_RUPLEY) return s->n_sr;
+    if (s->alg == SASALIB_SHRAKE_RUPLEY) return s->n_sr;
     return -1;
 }
 
@@ -313,7 +311,7 @@ int sasalib_set_lr_delta(sasalib_t *s, double d)
 
 int sasalib_get_lr_delta(const sasalib_t *s)
 {
-    if (s->alg == LEE_RICHARDS) return s->d_lr;
+    if (s->alg == SASALIB_LEE_RICHARDS) return s->d_lr;
     return -1.0;
 }
 
@@ -348,58 +346,23 @@ double sasalib_area_total(const sasalib_t *s)
     }
     return s->result->total;
 }
-
-double sasalib_area_polar(const sasalib_t *s)
+double sasalib_area_class(const sasalib_t* s, sasalib_class c)
 {    
     if (! s->calculated) {
         fprintf(stderr,"Error: SASA calculation has not been performed, "
-                "no polar SASA value available.\n");
-        return -1.0;
+                "no SASA value available. Aborting.\n");
+        exit(EXIT_FAILURE);
     }
-    return s->result->class[sasalib_polar];
+    if (c < SASALIB_POLAR || c > SASALIB_CLASS_UNKNOWN) {
+	fprintf(stderr,"Error: Requested SASA for illegal class of atoms "
+		"in function sasalib_area_class(2).\n"
+		"       Valid value are SASALIB_POLAR, SASALIB_APOLAR, "
+		"SASALIB_NUCLEICACID and SASALIB_UNKNOWN\n");
+	exit(EXIT_FAILURE);
+    }
+    return s->result->class[c];
 }
 
-double sasalib_area_apolar(const sasalib_t *s)
-{
-    if (! s->calculated) {
-        fprintf(stderr,"Error: SASA calculation has not been performed, "
-                "no apolar SASA value available.\n");
-        return -1.0;
-    }
-    return s->result->class[sasalib_apolar];
-}
-
-double sasalib_area_nucleicacid(const sasalib_t *s)
-{
-    if (! s->calculated) {
-        fprintf(stderr,"Error: SASA calculation has not been performed, "
-                "no nucleic acid SASA value available.\n");
-        return -1.0;
-    }
-    return s->result->class[sasalib_nucleicacid];
-}
-double sasalib_area_class_unknown(const sasalib_t *s)
-{
-    if (! s->calculated) {
-        fprintf(stderr,"Error: SASA calculation has not been performed, "
-                "no nucleic acid SASA value available.\n");
-        return -1.0;
-    }
-    return s->result->class[sasalib_unknown];
-}
-double sasalib_area_atom(const sasalib_t *s, int i)
-{
-    if (! s->calculated) {
-        fprintf(stderr,"Error: SASA calculation has not been performed, "
-                "no atomic SASA value available.\n");
-        return -1.0;
-    }
-    if (i >= 0 && i < s->n_atoms) {
-        return s->result->sasa[i];
-    }
-    fprintf(stderr,"Error: Atom index %d invalid.\n",i);
-    return -1.0;
-}
 const double* sasalib_area_atom_array(const sasalib_t *s)
 {
     if (! s->calculated) {
@@ -415,7 +378,7 @@ double sasalib_radius_atom(const sasalib_t *s, int i)
         return s->r[i];
     }
     fprintf(stderr,"Error: Atom index %d invalid.\n",i);
-    return -1.0;
+    exit(EXIT_FAILURE);
 }
 
 void sasalib_set_proteinname(sasalib_t *s,const char *name)
@@ -447,10 +410,10 @@ int sasalib_log(FILE *log, const sasalib_t *s)
 #endif
     
     switch(s->alg) {
-    case SHRAKE_RUPLEY:
+    case SASALIB_SHRAKE_RUPLEY:
         fprintf(log,"n_testpoint: %d\n",s->n_sr);
         break;
-    case LEE_RICHARDS:
+    case SASALIB_LEE_RICHARDS:
         fprintf(log,"d_slice: %f Å\n",s->d_lr);
         break;
     default:

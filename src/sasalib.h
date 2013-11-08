@@ -33,7 +33,16 @@
 #include "structure.h"
 
 typedef struct sasalib_ sasalib_t;
-typedef enum {LEE_RICHARDS, SHRAKE_RUPLEY} sasalib_algorithm;
+typedef enum {SASALIB_LEE_RICHARDS, SASALIB_SHRAKE_RUPLEY} 
+    sasalib_algorithm;
+
+/** 4 classes of atoms/chemical groups used */
+typedef enum {
+    SASALIB_POLAR=0, SASALIB_APOLAR, 
+    SASALIB_NUCLEICACID, SASALIB_CLASS_UNKNOWN
+} sasalib_class;
+
+
 
 // Limit for protein name lengths
 #define SASALIB_NAME_LIMIT 30
@@ -153,23 +162,9 @@ const char* sasalib_get_proteinname(const sasalib_t*);
 /** Result analysis for PDBs **/
 /******************************/
 
-/** Returns the polar SASA. Negative return value and warning printed
-    if calculation hasn't been performed yet. */
-double sasalib_area_polar(const sasalib_t*);
-
-/** Returns the apolar SASA. Negative return value and warning printed
-    if calculation hasn't been performed yet. */
-double sasalib_area_apolar(const sasalib_t*);
-
-/** Returns the SASA of any nucleic acids present in the
-    structure. Negative return value and warning printed if
-    calculation hasn't been performed yet. */
-double sasalib_area_nucleicacid(const sasalib_t*);
-
-/** Returns the SASA of atoms that are not polar, apolar or nucleic
-    acids. Negative return value and warning printed if calculation
-    hasn't been performed yet. */
-double sasalib_area_class_unknown(const sasalib_t*);
+/** Returns the SASA of class c (polar/apolar/nucleic/unknown). Exits
+    with signal EXIT_FAILURE if value of 'c' is invalid. */
+double sasalib_area_class(const sasalib_t*, sasalib_class c);
 
 /** Prints the total SASA for each residue of the structure */
 void sasalib_per_residue(FILE *output, const sasalib_t*);
