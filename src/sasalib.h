@@ -51,6 +51,10 @@ typedef enum {
 #define SASALIB_DEF_SR_N 100
 #define SASALIB_DEF_LR_D 0.25
 
+#define SASALIB_SUCCESS 0
+#define SASALIB_FAIL -1 /* Errors that mean results will be undefined */
+#define SASALIB_WARN -2 /* Errors that mean calculation can proceed
+			 * but will not comply to specification. */
 
 /*****************************************/
 /** Initialization, freeing and copying **/
@@ -122,27 +126,28 @@ sasalib_algorithm sasalib_get_algorithm(const sasalib_t*);
 /** Returns name of algorithm. */
 const char* sasalib_algorithm_name(const sasalib_t*);
 
-/** Sets number of points for S&R algorithm (default 100). Returns 0
-    if n is valid, prints error message and returns 1 else. */
+/** Sets number of points for S&R algorithm (default 100). Returns
+    SASALIB_SUCCESS if n is valid, prints error message and returns
+    SASALIB_WARN else. */
 int sasalib_set_sr_points(sasalib_t*, int n);
 
-/** Returns number of points for S&R algorithm. Returns negative
-    number if S&R algorithm not selected. */
+/** Returns number of points for S&R algorithm. Returns SASALIB_WARN
+    if S&R algorithm not selected. */
 int sasalib_get_sr_points(const sasalib_t*);
 
 /** Sets slice width for L&R algorithm in Ångström (default 0.25
-    Å). Returns 0 if n is valid, prints error message and returns 1
-    else. */
+    Å). Returns SASALIB_SUCCESS if n is valid, prints error message
+    and returns SASALIB_WARN else. */
 int sasalib_set_lr_delta(sasalib_t*, double d);
 
 /** Returns slice width for L&R algorithm in Ånström. Returns negative
     value if L&R algorithm not selected. */
-int sasalib_get_lr_delta(const sasalib_t*);
+double sasalib_get_lr_delta(const sasalib_t*);
 
 #ifdef PTHREADS
 /** Sets the number of threads for parallel computation, useful for
-    large proteins and high resolution. Returns 0 if n is valid, 1
-    else. */
+    large proteins and high resolution. Returns SASALIB_SUCCESS if n
+    is valid, SASALIB_WARN else. */
 int sasalib_set_nthreads(sasalib_t*,int n);
 
 /** Returns the number of threads used in the calcultion */
