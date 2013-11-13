@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <errno.h>
 #include <math.h>
 #include "sasa.h"
 #include "srp.h"
@@ -35,6 +36,8 @@
 #else
 #define __attrib_pure__
 #endif
+
+extern const char *sasalib_name;
 
 /** internal functions for S&R calculations **/
 // calculation parameters (results stored in *sasa)
@@ -123,7 +126,8 @@ int sasa_shrake_rupley(double *sasa,
 #ifdef PTHREADS
         sasa_sr_do_threads(n_threads, sr);
 #else 
-        perror("Error: program compiled for single-threaded used, but multiple threads were requested.");
+        fprintf(stderr,"%s: error: program compiled for single-threaded use, "
+		"but multiple threads were requested.",sasalib_name);
         exit(EXIT_FAILURE);
 #endif
     }
@@ -149,17 +153,19 @@ static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
 	srt[t].i1 = t*thread_block_size;
 	if (t == n_threads-1) srt[t].i2 = n_atoms;
 	else srt[t].i2 = (t+1)*thread_block_size;
+	errno = 0;
 	int res = pthread_create(&thread[t], NULL, sasa_sr_thread, (void *) &srt[t]);
 	if (res) {
-	    perror("Thread creation failed");
+	    perror(sasalib_name);
 	    exit(EXIT_FAILURE);
 	}
     }
     for (int t = 0; t < n_threads; ++t) {
 	void *thread_result;
+	errno = 0;
 	int res = pthread_join(thread[t],&thread_result);
 	if (res) {
-	    perror("Thread join failed");
+	    perror(sasalib_name);
 	    exit(EXIT_FAILURE);
 	}
     }
@@ -273,7 +279,8 @@ int sasa_lee_richards(double *sasa,
 #ifdef PTHREADS
         sasa_lr_do_threads(n_threads, lr);
 #else
-        perror("Error: program compiled for single-threaded used, but multiple threads were requested.");
+        fprintf("%s: error: program compiled for single-threaded use, "
+		"but multiple threads were requested.",sasalib_name);
         exit(EXIT_FAILURE);
 #endif
     } else {
@@ -308,7 +315,7 @@ static void sasa_lr_do_threads(int n_threads, sasa_lr_t lr)
         }
         int res = pthread_create(&thread[t], NULL, sasa_lr_thread, (void *) &lrt[t]);
         if (res) {
-            perror("Thread creation failed");
+            perror(sasalib_name);
             exit(EXIT_FAILURE);
         }
     }
@@ -316,7 +323,7 @@ static void sasa_lr_do_threads(int n_threads, sasa_lr_t lr)
         void *thread_result;
         int res = pthread_join(thread[t],&thread_result);
         if (res) {
-            perror("Thread join failed");
+            perror(sasalib_name);
             exit(EXIT_FAILURE);
         }
     }
@@ -455,7 +462,6 @@ static void sasa_exposed_arcs(int n_slice, const double *x, const double *y, dou
                 // print the arcs used in calculation
                 if (is_exp) printf("%6.2f %6.2f %6.2f %7.5f\n",
                                    x[i]+ri*cos(c),y[i]+ri*sin(c),z,c);
-                //if (is_exp) exposed_arc[i] += PI/45.0;
             }
             printf("\n");
         }

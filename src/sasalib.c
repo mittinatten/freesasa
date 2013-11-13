@@ -30,8 +30,6 @@
 
 #define NBUF 100
 
-extern char *program_invocation_short_name;
-
 const char *sasalib_name = "sasalib";
 
 typedef struct {
@@ -167,8 +165,8 @@ int sasalib_calc(sasalib_t *s, const coord_t *c, const double *r)
 				s->d_lr, s->n_threads);
 	break;
     default:
-        fprintf(stderr,"%s: %s error: no SASA algorithm specified.\n",
-		program_invocation_short_name, sasalib_name);
+        fprintf(stderr,"%s: error: no SASA algorithm specified.\n",
+		sasalib_name);
         return 1;
     }
     result->total = 0;
@@ -227,14 +225,14 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
 {
     structure_t *p = structure_init_from_pdb(pdb_file);
     if (!p) {
-	fprintf(stderr,"%s: %s error: failed to read pdb-file.\n",
-		program_invocation_short_name,sasalib_name);
+	fprintf(stderr,"%s: error: failed to read pdb-file.\n",
+		sasalib_name);
 	structure_free(p);
 	return SASALIB_FAIL;
     }
     if (!(s->n_atoms = structure_n(p))) {
-	fprintf(stderr,"%s: %s error: pdb-file was empty.\n",
-		program_invocation_short_name,sasalib_name);
+	fprintf(stderr,"%s: error: pdb-file was empty.\n",
+		sasalib_name);
 	structure_free(p);
 	return SASALIB_FAIL;
     }
@@ -267,9 +265,8 @@ int sasalib_link_coord(sasalib_t *s, const double *coord,
 int refresh(sasalib_t *s)
 {
     if (! s->coord || ! s->r ) {
-        fprintf(stderr,"%s: %s error: trying to refresh unitialized "
-		"sasalib_t-object.\n",program_invocation_short_name, 
-		sasalib_name);
+        fprintf(stderr,"%s: error: trying to refresh unitialized "
+		"sasalib_t-object.\n",sasalib_name);
         return SASALIB_FAIL;
     }
     sasalib_calc(s,s->coord,s->r);
@@ -301,12 +298,11 @@ int sasalib_set_sr_points(sasalib_t *s, int n) {
         s->n_sr = n;
         return SASALIB_SUCCESS;
     }
-    fprintf(stderr,"%s: %s error: Number of test-points must be"
-	    " one of the following:  ",
-	    program_invocation_short_name, sasalib_name);
+    fprintf(stderr,"%s: error: Number of test-points must be"
+	    " one of the following:  ", sasalib_name);
     srp_print_n_opt(stderr);
-    fprintf(stderr,"%s: %s error: Proceeding with default value (%d)\n",
-            program_invocation_short_name,sasalib_name,SASALIB_DEF_SR_N);
+    fprintf(stderr,"%s: error: Proceeding with default value (%d)\n",
+            sasalib_name,SASALIB_DEF_SR_N);
     s->n_sr = SASALIB_DEF_SR_N;
     return SASALIB_FAIL;
 }
@@ -323,10 +319,10 @@ int sasalib_set_lr_delta(sasalib_t *s, double d)
         s->d_lr = d;
         return SASALIB_SUCCESS;
     }
-    fprintf(stderr,"%s: %s error: slice width has to lie between 0 and 5 Å\n",
-	    program_invocation_short_name, sasalib_name);
-    fprintf(stderr,"%s: %s error: Proceeding with default value (%f)\n",
-            program_invocation_short_name, sasalib_name, SASALIB_DEF_LR_D);
+    fprintf(stderr,"%s: error: slice width has to lie between 0 and 5 Å\n",
+	    sasalib_name);
+    fprintf(stderr,"%s: error: Proceeding with default value (%f)\n",
+            sasalib_name, SASALIB_DEF_LR_D);
     s->d_lr = SASALIB_DEF_LR_D;
     return SASALIB_WARN;
 }
@@ -341,10 +337,10 @@ double sasalib_get_lr_delta(const sasalib_t *s)
 int sasalib_set_nthreads(sasalib_t *s,int n)
 {
     if ( n <= 0) {
-        fprintf(stderr,"%s: %s error: Number of threads has to be positive.\n",
-		program_invocation_short_name, sasalib_name);
-	fprintf(stderr,"%s: %s error: proceeding with default value (1).\n",
-		program_invocation_short_name, sasalib_name);
+        fprintf(stderr,"%s: error: Number of threads has to be positive.\n",
+		sasalib_name);
+	fprintf(stderr,"%s: error: proceeding with default value (1).\n",
+		sasalib_name);
         return SASALIB_WARN;
     }
     s->n_threads = n;
@@ -365,9 +361,8 @@ size_t sasalib_n_atoms(const sasalib_t *s)
 double sasalib_area_total(const sasalib_t *s)
 {
     if (! s->calculated) {
-        fprintf(stderr,"%s: %s error: SASA calculation has not been performed, "
-                "no total SASA value available.\n",
-		program_invocation_short_name, sasalib_name);
+        fprintf(stderr,"%s: error: SASA calculation has not been performed, "
+                "no total SASA value available.\n",sasalib_name);
         return -1.0;
     }
     return s->result->total;
@@ -375,9 +370,8 @@ double sasalib_area_total(const sasalib_t *s)
 double sasalib_area_class(const sasalib_t* s, sasalib_class c)
 {    
     if (! s->calculated) {
-        fprintf(stderr,"%s: %s error: SASA calculation has not been performed, "
-                "no SASA value available. Aborting.\n",
-		program_invocation_short_name, sasalib_name);
+        fprintf(stderr,"%s: error: SASA calculation has not been performed, "
+                "no SASA value available.\n",sasalib_name);
 	return -1.0;
     }
     assert(c >= SASALIB_POLAR && c <= SASALIB_CLASS_UNKNOWN &&
@@ -388,9 +382,8 @@ double sasalib_area_class(const sasalib_t* s, sasalib_class c)
 const double* sasalib_area_atom_array(const sasalib_t *s)
 {
     if (s->result->sasa == NULL) {
-        fprintf(stderr,"%s: %s error: SASA calculation has not been performed, "
-                "no atomic SASA values are available.\n",
-		program_invocation_short_name, sasalib_name);
+        fprintf(stderr,"%s: error: SASA calculation has not been performed, "
+                "no atomic SASA values are available.\n",sasalib_name);
         return NULL;
     }
     return s->result->sasa;
@@ -400,8 +393,8 @@ double sasalib_radius_atom(const sasalib_t *s, int i)
     if (i >= 0 && i < s->n_atoms) {
         return s->r[i];
     }
-    fprintf(stderr,"%s: %s error: Atom index %d invalid.\n",
-	    program_invocation_short_name,sasalib_name,i);
+    fprintf(stderr,"%s: error: Atom index %d invalid.\n",
+	    sasalib_name,i);
     exit(EXIT_FAILURE);
 }
 

@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
+#include <string.h>
 
 #include "src/sasalib.h"
 #include "src/srp.h"
@@ -27,6 +29,12 @@
 #if __STDC__
 extern int getopt(int, char * const *, const char *);
 extern int optind;
+#endif
+
+#ifdef __GNUC__
+extern char *program_invocation_short_name;
+#else
+char *program_invocation_short_name;
 #endif
 
 typedef struct  {
@@ -39,8 +47,9 @@ settings_t def_settings = {
     .per_residue = 0
 };
 
-void help(const char* argv0) {
-    fprintf(stderr,"\nUsage: %s [options] pdb-file(s)\n",argv0);
+void help() {
+    fprintf(stderr,"\nUsage: %s [options] pdb-file(s)\n",
+	    program_invocation_short_name);
     fprintf(stderr,"\nOptions are:\n"
 	    "       -h  print this message\n"
 	    "       -S  use Shrake & Rupley alogrithm [default]\n"
@@ -60,8 +69,9 @@ void help(const char* argv0) {
     fprintf(stderr,"\nIf no pdb-file is specified STDIN is used for input.\n\n");
 }
 
-void short_help(const char* argv0) {
-    fprintf(stderr,"Run '%s -h' for help.\n\n", argv0);
+void short_help() {
+    fprintf(stderr,"Run '%s -h' for help.\n\n",
+	    program_invocation_short_name);
 }
 
 void run_analysis(FILE *input, const char *name, const settings_t *settings) {
@@ -94,16 +104,21 @@ int main (int argc, char **argv) {
     extern char *optarg;
     char opt;
 
+#ifndef __GNUC__
+    program_invocation_short_name = argv[0];
+#endif
+
     while ((opt = getopt(argc, argv, "f:n:d:t:hLSr")) != -1) {
+	errno = 0;
         switch(opt) {
 	case 'h':
-	    help(argv[0]);
+	    help();
 	    exit(EXIT_SUCCESS);
 	case 'f':
 	    input = fopen(optarg, "r");
 	    if (input == NULL) {
-		fprintf(stderr,"\nError: could not open file '%s'.\n\n", 
-			optarg);
+		fprintf(stderr,"%s: error: could not open file '%s'; %s\n", 
+			program_invocation_short_name,optarg,strerror(errno));
 		short_help(argv[0]);
 		exit(EXIT_FAILURE);
 	    }
@@ -129,18 +144,20 @@ int main (int argc, char **argv) {
 #ifdef PTHREADS	    
 	    sasalib_set_nthreads(settings.s,atoi(optarg));
 #else 
-	    fprintf(stderr, "Warning: option 't' only defined if program"
-		    " compiled with thread support.\n");
+	    fprintf(stderr, "%s: warning: option 't' only defined if program"
+		    " compiled with thread support.\n",
+		    program_invocation_short_name);
 #endif
 	    break;
 	default:
-	    fprintf(stderr, "\nWarning: unknown option '%c' (will be ignored)\n\n", 
-		    opt);
+	    fprintf(stderr, "%s: warning: unknown option '%c' (will be ignored)\n", 
+		    program_invocation_short_name,opt);
 	    break;
 	}
     }
     if (alg_set > 1) {
-	fprintf(stderr, "Error: multiple algorithms specified.\n");
+	fprintf(stderr, "%s: error: multiple algorithms specified.\n",
+		program_invocation_short_name);
 	exit(EXIT_FAILURE);
     }
 
@@ -148,12 +165,14 @@ int main (int argc, char **argv) {
 
     if (argc > 0) {
 	for (int i = optind; i < argc; ++i) {
+	    errno = 0;
 	    input = fopen(argv[i],"r");
 	    if (input != NULL) {
 		run_analysis(input,argv[i],&settings);
 		fclose(input);
 	    } else {
-		fprintf(stderr, "Error opening file '%s'\n", argv[i]);
+		fprintf(stderr, "%s: error opening file '%s'; %s\n", 
+			program_invocation_short_name,argv[i],strerror(errno));
 		exit(EXIT_FAILURE);
 	    }	    
 	}
