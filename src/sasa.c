@@ -24,6 +24,7 @@
 #include <pthread.h>
 #include <errno.h>
 #include <math.h>
+#include "sasalib.h"
 #include "sasa.h"
 #include "srp.h"
 
@@ -102,7 +103,8 @@ int sasa_shrake_rupley(double *sasa,
                        int n_threads)
 {
     size_t n_atoms = coord_n(xyz);
-    
+    int return_value = SASALIB_SUCCESS;
+
     // Initialize test-points
     const double *srp_p = srp_get_points(n_points);
     if (srp_p == NULL) return 1;
@@ -127,18 +129,20 @@ int sasa_shrake_rupley(double *sasa,
         sasa_sr_do_threads(n_threads, sr);
 #else 
         fprintf(stderr,"%s: error: program compiled for single-threaded use, "
-		"but multiple threads were requested.",sasalib_name);
-        exit(EXIT_FAILURE);
+		"but multiple threads were requested. Will proceed in "
+		"single-threaded mode.\n",sasalib_name);
+	n_threads = 1;
+	return_value = SASALIB_WARN;
 #endif
     }
-    else {
+    if (n_threads == 1) {
         // don't want the overhead of generating threads if only one is used
         for (int i = 0; i < n_atoms; ++i) {
             sasa[i] = sasa_sr_calc_atom(i,sr);
         }
     }
     coord_free(srp);
-    return 0;
+    return return_value;
 }
 
 #ifdef PTHREADS
@@ -250,6 +254,7 @@ int sasa_lee_richards(double *sasa,
        Sum up arc-length*delta for each atom
     */
     size_t n_atoms = coord_n(xyz);
+    int return_value = SASALIB_SUCCESS;
 
     // determine slice range and init radii and sasa arrays
     double max_z=-1e50, min_z=1e50;
@@ -280,17 +285,20 @@ int sasa_lee_richards(double *sasa,
         sasa_lr_do_threads(n_threads, lr);
 #else
         fprintf("%s: error: program compiled for single-threaded use, "
-		"but multiple threads were requested.",sasalib_name);
-        exit(EXIT_FAILURE);
+		"but multiple threads were requested. Will proceed in "
+		"single-threaded mode.",sasalib_name);
+        n_threads = 1;
+	return_value = SASALIB_WARN;
 #endif
-    } else {
+    } 
+    if (n_threads == 1) {
         // loop over slices
         for (double z = min_z; z < max_z; z += delta) {
             sasa_add_slice_area(z,lr);
         }
     }    
     for (int i = 0; i < n_atoms; ++i) free(nb[i]);
-    return 0;
+    return return_value;
 }
 
 #ifdef PTHREADS

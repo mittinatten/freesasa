@@ -24,9 +24,31 @@
     calculation using Sasalib with standard atom classifications. The
     user may optionally select algorithm and provide parameters. 
     
+    * Coordinates *
+
     If users wish to supply their own coordinates and radii, these are
     accepted as arrays of doubles. The coordinate-array should have
     size 3*n with coordinates in the order x1,y1,z1,x2,y2,z2,... 
+
+    * Error-reporting * 
+
+    All errors are written to stderr and are prefixed with the string
+    'sasalib'. Two error values are returned by most of the functions
+    that have integer return values, SASALIB_WARN and SASALIB_FAIL
+    (see documentation of each function to see when this applies). The
+    former refers to minor errors where a calculations can still
+    proceed, but details might not be as intended (i.e. default
+    parameters are used instead of those provided by user). The latter
+    error value refers to error that are so serious that calculations
+    can not be performed reliably (usually invalid input-files or
+    arguments), or for some of the getter-functions, the calculation
+    hasn't been performed yet. The return value SASALIB_SUCCESS means
+    no errors have been spotted.
+
+    Functions that have real-valued return values return negative
+    numbers if calculation failed for some reason. The documentation
+    for each function explains when this can happen.
+
 */
 
 #include <stdio.h>
@@ -41,8 +63,6 @@ typedef enum {
     SASALIB_POLAR=0, SASALIB_APOLAR, 
     SASALIB_NUCLEICACID, SASALIB_CLASS_UNKNOWN
 } sasalib_class;
-
-
 
 // Limit for protein name lengths
 #define SASALIB_NAME_LIMIT 30
@@ -86,10 +106,17 @@ int sasalib_calc_coord(sasalib_t*, const double *coord,
 
 /** performs calculations on PDB-file. Results stored in parameter
     s. If s is not initialized default values are used, these are
-    stored in s. Returns 0 if calculation successful, prints an error
-    and returns 1 if not. If the the object s has been used in
-    calculations previously these will be over-written. */
+    stored in s. Returns SASALIB_SUCCESS if calculation successful,
+    prints an error and returns SASALIB_FAIL if not. If the object s
+    has been used in calculations previously, the results from these
+    will be over-written. */
 int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file);
+
+/** Reads pdb-file and calculates radii for each atom. Memory is
+    allocated to store them in the array 'r'. The return value is the
+    size of the allocated array. Prints error and returns SASALIB_FAIL
+    if reading input fails. */
+int sasalib_generate_radii(double **r, FILE *pdb_file);
 
 /** Link a set of coordinates to the sasalib_t object, if these
     coordinates are updated sasalib_refresh(1) can be used to
@@ -103,8 +130,10 @@ int sasalib_link_coord(sasalib_t*, const double *coord,
                        double *r, size_t n);
 
 /** Recalculates SASA, based on the assumption that a set of external
-    coordinates have been updated elsewhere. */
-int sasalib_refresh(sasalib_t*);
+    coordinates have been updated elsewhere. Returns SASALIB_FAIL if
+    no coordinates or radii are found in s. Returns SASALIB_SUCCESS
+    upon successful computation. */
+int sasalib_refresh(sasalib_t *s);
 
 /** Returns the total SASA. Negative return value and warning printed
     if calculation hasn't been performed yet. */
@@ -140,7 +169,7 @@ int sasalib_get_sr_points(const sasalib_t*);
     and returns SASALIB_WARN else. */
 int sasalib_set_lr_delta(sasalib_t*, double d);
 
-/** Returns slice width for L&R algorithm in Ånström. Returns negative
+/** Returns slice width for L&R algorithm in Ångström. Returns negative
     value if L&R algorithm not selected. */
 double sasalib_get_lr_delta(const sasalib_t*);
 
@@ -163,15 +192,16 @@ void sasalib_set_proteinname(sasalib_t*,const char*);
 /** Returns protein name. */
 const char* sasalib_get_proteinname(const sasalib_t*);
 
-/******************************/
-/** Result analysis for PDBs **/
-/******************************/
+/*********************************************************/
+/** Result analysis for calculations based on PDB input **/
+/*********************************************************/
 
-/** Returns the SASA of class c (polar/apolar/nucleic/unknown). Exits
-    with signal EXIT_FAILURE if value of 'c' is invalid. */
+/** Returns the SASA of class c
+    (polar/apolar/nucleic/unknown). Returns negative value if
+    calculation has not been performed yet. */
 double sasalib_area_class(const sasalib_t*, sasalib_class c);
 
-/** Prints the total SASA for each residue of the structure */
+/** Prints the total SASA for each residue of the structure. */
 void sasalib_per_residue(FILE *output, const sasalib_t*);
 
 /**********************************/

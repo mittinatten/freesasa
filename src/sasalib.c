@@ -167,7 +167,7 @@ int sasalib_calc(sasalib_t *s, const coord_t *c, const double *r)
     default:
         fprintf(stderr,"%s: error: no SASA algorithm specified.\n",
 		sasalib_name);
-        return 1;
+        return SASALIB_FAIL;
     }
     result->total = 0;
     for (int i = 0; i < coord_n(c); ++i) {

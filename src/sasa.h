@@ -32,8 +32,9 @@
     to use. Fewer points lead to faster but less accurate
     calculations. Last argument sets the number of threads in parallel
     computation, only used if the program was compiled with
-    -DPTHREADS. Returns 0 on success, 1 on failure (with error
-    message). */
+    -DPTHREADS. Returns SASALIB_SUCCESS on success, SASALIB_WARN if
+    multiple threads are requested when compiled in single-threaded
+    mode (with error message). */
 int sasa_shrake_rupley(double *sasa,
 		       const coord_t *c,
 		       const double *radii,
@@ -43,8 +44,9 @@ int sasa_shrake_rupley(double *sasa,
 /** Solvent accessible surface area for each atom is written to the
     array 'sasa'. The user is responsible for making sure this has the
     right size. The argument grid sets the distance between grid
-    points in Å.Returns 0 on success, 1 on failure (with error
-    message). */
+    points in Å. Returns SASALIB_SUCCESS on success, SASALIB_WARN if
+    multiple threads are requested when compiled in single-threaded
+    mode (with error message). */
 int sasa_lee_richards(double* sasa,
 		      const coord_t *c,
 		      const double *radii,
