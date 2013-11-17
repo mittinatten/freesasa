@@ -266,7 +266,7 @@ int refresh(sasalib_t *s)
 {
     if (! s->coord || ! s->r ) {
         fprintf(stderr,"%s: error: trying to refresh unitialized "
-		"sasalib_t-object.\n",sasalib_name);
+                "sasalib_t-object.\n",sasalib_name);
         return SASALIB_FAIL;
     }
     sasalib_calc(s,s->coord,s->r);
@@ -279,7 +279,9 @@ int sasalib_set_algorithm(sasalib_t *s, sasalib_algorithm alg)
         s->alg = alg;
         return SASALIB_SUCCESS;
     }
-    return SASALIB_FAIL;
+    fprintf(stderr,"%s: warning: undefined algorithm selected, "
+            "proceeding with default.\n",sasalib_name);
+    return SASALIB_WARN;
 }
 
 sasalib_algorithm sasalib_get_algorithm(const sasalib_t *s)
@@ -417,6 +419,13 @@ const char* sasalib_get_proteinname(const sasalib_t *s)
 
 int sasalib_log(FILE *log, const sasalib_t *s)
 {
+    if (! s->calculated) {
+        fprintf(stderr, "%s: warning: sasalib_log(2) called, but no calculation"
+                "has been performed.\n", sasalib_name);
+        fprintf(log, "error: sasalib_log(2) called, but no calculation"
+                "has been performed.\n");
+        return SASALIB_WARN;
+    }
     fprintf(log,"# Using van der Waals radii and atom classes defined \n"
             "# by Ooi et al (PNAS 1987, 84:3086-3090) and a probe radius\n"
             "# of %f Å.\n\n", SASA_PROBE_RADIUS);
@@ -434,31 +443,26 @@ int sasalib_log(FILE *log, const sasalib_t *s)
         fprintf(log,"d_slice: %f Å\n",s->d_lr);
         break;
     default:
-        fprintf(log,"Error: no SASA algorithm specified.\n");
-        return 1;
+        break;
     }
     fprintf(log,"time_elapsed: %f s\n",s->elapsed_time);
     fprintf(log,"n_atoms: %d\n", s->n_atoms);
-    return 0;
+    return SASALIB_SUCCESS;
 }
 
-void sasalib_per_residue(FILE *output, const sasalib_t *s)
+int sasalib_per_residue(FILE *output, const sasalib_t *s)
 {
-    /*
-    double sasa = 0;
-    char buf[NBUF] = "", prev_buf[NBUF] = "";
-    for (int i = 0; i < structure_n(s->p); ++i) {
-        sprintf(buf,"%c_%d_%s",structure_atom_chain(s->p,i),
-                atoi(structure_atom_res_number(s->p,i)),
-                structure_atom_res_name(s->p,i));
-        sasa += s->sasa[i];
-        if (strcmp(buf,prev_buf)) {
-            fprintf(output,"%s %f\n",prev_buf,sasa);
-            strcpy(prev_buf,buf);
-            sasa = 0;
+    if (! s->calculated) {
+        fprintf(stderr,"%s: warning: sasalib_per_residue(2) called, "
+                "but no calculation has been performed\n",sasalib_name);
+        return SASALIB_WARN;
+    }
+    for (int i = 0; i < classify_nresiduetypes(); ++i) {
+        double sasa = s->result->residue[i];
+        if (i < 20 || sasa > 0) {
+            fprintf(output,"%s %f\n",classify_residue2str(i),sasa);
         }
     }
-    fprintf(output,"%s %f\n",buf,sasa);
-    */
+    return SASALIB_SUCCESS;
 }
 

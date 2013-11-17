@@ -76,12 +76,7 @@ char structure_get_pdb_atom(atom_t *a, double *xyz, const char *line)
 structure_t* structure_init_from_pdb(FILE *pdb_file)
 {
     structure_t *p = structure_init();
-    /* two possible implementations, either read file in two passes,
-       first to determine number of atoms, second to read them in,
-       keeping the number of mallocs/reallocs to a minimum.  Or read
-       file once using structure_add_atom() for realloc.  Will begin
-       with second alternative since that has to be implemented
-       anyway. */
+
     size_t len = 80;
     char *line = (char*) malloc(sizeof(char)*(len+1));
     char the_alt = ' ';
@@ -152,8 +147,6 @@ void structure_add_atom(structure_t *p,
     // deal with alternate location indicators...
 }
 
-/** get array of radii using custom conversion function, the array r is
-    assumed to be of correct size already */
 void structure_r(double *r,
 		 const structure_t *p, 
 		 double (*atom2radius)(const char *res_name, 
@@ -164,8 +157,6 @@ void structure_r(double *r,
     }
 }
 
-/** get array of radii using default OONS radii, the array r is
-    assumed to of correct size already */
 void structure_r_def(double *r, const structure_t *p)
 {
     structure_r(r,p,classify_radius);

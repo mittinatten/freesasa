@@ -31,7 +31,7 @@ extern int getopt(int, char * const *, const char *);
 extern int optind;
 #endif
 
-#ifdef __GNUC__
+#if defined __GNUC__ && !defined  __APPLE__
 extern char *program_invocation_short_name;
 #else
 char *program_invocation_short_name;
@@ -119,7 +119,7 @@ int main (int argc, char **argv) {
 	    if (input == NULL) {
 		fprintf(stderr,"%s: error: could not open file '%s'; %s\n", 
 			program_invocation_short_name,optarg,strerror(errno));
-		short_help(argv[0]);
+		short_help();
 		exit(EXIT_FAILURE);
 	    }
 	    break;

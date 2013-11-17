@@ -33,17 +33,16 @@
     * Error-reporting * 
 
     All errors are written to stderr and are prefixed with the string
-    'sasalib'. Two error values are returned by most of the functions
-    that have integer return values, SASALIB_WARN and SASALIB_FAIL
-    (see documentation of each function to see when this applies). The
-    former refers to minor errors where a calculations can still
-    proceed, but details might not be as intended (i.e. default
-    parameters are used instead of those provided by user). The latter
-    error value refers to error that are so serious that calculations
-    can not be performed reliably (usually invalid input-files or
-    arguments), or for some of the getter-functions, the calculation
-    hasn't been performed yet. The return value SASALIB_SUCCESS means
-    no errors have been spotted.
+    'sasalib'. There are two error return values SASALIB_WARN and
+    SASALIB_FAIL (see documentation of each function to see when these
+    are used). The former refers to minor errors where a calculations
+    can still proceed, but details might not be as intended
+    (e.g. default parameters are used instead of those provided by
+    user). The latter error value refers to error that are so serious
+    that calculations can not be performed reliably (usually invalid
+    input-files or arguments), or for some of the getter-functions,
+    the calculation hasn't been performed yet. The return value
+    SASALIB_SUCCESS means no errors have been spotted.
 
     Functions that have real-valued return values return negative
     numbers if calculation failed for some reason. The documentation
@@ -115,7 +114,8 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file);
 /** Reads pdb-file and calculates radii for each atom. Memory is
     allocated to store them in the array 'r'. The return value is the
     size of the allocated array. Prints error and returns SASALIB_FAIL
-    if reading input fails. */
+    if reading input fails. This can be used if coordinates are linked
+    as below and default radii are to be used. */
 int sasalib_generate_radii(double **r, FILE *pdb_file);
 
 /** Link a set of coordinates to the sasalib_t object, if these
@@ -146,7 +146,8 @@ size_t sasalib_n_atoms(const sasalib_t*);
 /** Settings for calculation **/
 /******************************/
 
-/** Sets algorithm. Returns 0 if alg is valid, returns 1 else. */
+/** Sets algorithm. Returns SASALIB_SUCCESS if alg is valid, returns
+    SASALIB_WARN else. */
 int sasalib_set_algorithm(sasalib_t*, sasalib_algorithm alg);
 
 /** Returns algorithm. */
@@ -164,8 +165,8 @@ int sasalib_set_sr_points(sasalib_t*, int n);
     if S&R algorithm not selected. */
 int sasalib_get_sr_points(const sasalib_t*);
 
-/** Sets slice width for L&R algorithm in Ångström (default 0.25
-    Å). Returns SASALIB_SUCCESS if n is valid, prints error message
+/** Sets slice width d for L&R algorithm in Ångström (default 0.25
+    Å). Returns SASALIB_SUCCESS if d is valid, prints error message
     and returns SASALIB_WARN else. */
 int sasalib_set_lr_delta(sasalib_t*, double d);
 
@@ -201,8 +202,11 @@ const char* sasalib_get_proteinname(const sasalib_t*);
     calculation has not been performed yet. */
 double sasalib_area_class(const sasalib_t*, sasalib_class c);
 
-/** Prints the total SASA for each residue of the structure. */
-void sasalib_per_residue(FILE *output, const sasalib_t*);
+/** Prints name/value-pairs with the total SASA of each residue
+    type. The standard 20 amino acids are always included in output,
+    non-standard ones and nucleotides only if they were present in
+    input. */
+int sasalib_per_residue(FILE *output, const sasalib_t *s);
 
 /**********************************/
 /** Results for individual atoms **/
@@ -220,8 +224,13 @@ const double* sasalib_area_atom_array(const sasalib_t*);
     value if atom index is invalid. */
 double sasalib_radius_atom(const sasalib_t*, int i);
 
-/** Prints log of calculation results to specified file. Returns 0 on
-    success, 1 on failure. */
+/****************************/
+/** Other types of results **/
+/****************************/
+
+/** Prints log of calculation results to specified file. Returns
+    SASALIB_SUCCESS on success, SASALIB_WARN if inconsistencies are
+    detected (with explanatory error-message). */
 int sasalib_log(FILE *log, const sasalib_t*);
 
 

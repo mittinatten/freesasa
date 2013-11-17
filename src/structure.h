@@ -39,9 +39,9 @@ void structure_free(structure_t*);
     structure_add_atom(). */
 structure_t* structure_init_from_pdb(FILE *pdb_file);
 
-/** string residue numbers allow for nonstandard formats, will include
-    hydrogens if added (i.e. up to caller to make sure these are
-    excluded if necessesary) */
+/** storing residue numbers as strings allows for nonstandard formats,
+    will include hydrogens if added (i.e. up to caller to make sure
+    these are excluded if necessesary) */
 void structure_add_atom(structure_t *p, 
 			const char* atom_name,
 			const char* residue_name, 
