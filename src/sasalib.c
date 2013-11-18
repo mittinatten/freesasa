@@ -460,7 +460,7 @@ int sasalib_per_residue(FILE *output, const sasalib_t *s)
     for (int i = 0; i < classify_nresiduetypes(); ++i) {
         double sasa = s->result->residue[i];
         if (i < 20 || sasa > 0) {
-            fprintf(output,"%s %f\n",classify_residue2str(i),sasa);
+            fprintf(output,"%s %8.2f\n",classify_residue2str(i),sasa);
         }
     }
     return SASALIB_SUCCESS;

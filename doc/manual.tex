@@ -76,14 +76,23 @@ flexibility in interpreting and analyzing the results. The other 2
 cases can only be handled through the API. Both the API and the CLI
 allow the user to set parameters for the calculation. 
 
+A lot of the internals of the library are involved with classification
+and categorization of atoms, which is necessary for assigning radii
+and to present SASA values integrated over different atom types, amino
+acid types, etc. If the user wants Sasalib to classify atoms and
+assign radii, data in the PDB-format must be provided. Users can also
+provide their own radii, coordinates and get the SASA for each
+individual atom in order to do their own analysis.
+
 This document is organized as follows. Section \ref{sec:howto_short}
-give a brief introduction to the library, presenting the command line
+gives a brief introduction to the library, presenting the command line
 interface and a short sample program that gives a general idea of how
-to use the library. Section \ref{sec:alg} describes the algorithms and
+to use the library. This introduction is intended to cover most casual
+users' needs. Section \ref{sec:alg} describes the algorithms and
 compares their performance in terms of computational cost and
 precision. In section \ref{sec:imp} the implementations are
 described. Finally, section \ref{sec:using} gives a detailed
-description of the library interface.
+description of the API.
 
 \section{Getting started}\label{sec:howto_short}
 
@@ -104,10 +113,11 @@ or by downloading the zipped archive from
 \end{verbatim}
 Since Sasalib only depends on regular C and GNU libraries most users
 will be able to compile it by simply typing \texttt{make}\footnote{Has
-  been tested on Linux and Mac OS X machines.}. If any compiler other
-than the Gnu C Compiler is preferred the makefile will need to be
-changed accordingly. The command \texttt{make example} compiles the
-example program described in section \ref{sec:simple_sample}.
+  been tested in Linux and Mac OS X.}. If any compiler other than the
+Gnu C Compiler is preferred the makefile will need to be changed
+accordingly. The command \texttt{make example} compiles the example
+program described in section \ref{sec:simple_sample}. There is no
+\texttt{make install} at the moment.
 
 \subsection{Command-line interface}
 
@@ -122,12 +132,42 @@ Or, from STDIN:
     $ ./calc_sasa < PDB-file    
 \end{verbatim}
 STDIN is only read if no file is specified.  By default the Shrake \&
-Rupley algorithm is used, with 100 test points. Section \ref{sec:CLI}
-shows how to specify algorithm and parameters. For a quick look at
-command-line options, use the command
+Rupley algorithm is used, with 100 test points. 
+
+\subsubsection{Options}
+The following options are available
+\begin{itemize}
+  \item[-h] Prints help message.
+  \item[-S] Use Shrake \& Rupley algorithm (default).
+  \item[-L] Use Lee \& Richards algorithm.
+  \item[-n] Number of test points in Shrake \& Rupley algorithm.
+    Default is 100, allowed values are: 20, 50, 100, 200, 500, 1000,
+    2000, 5000.
+  \item[-d] Grid spacing in Lee \& Richards algorithm.
+  Default value is 0.25 Å.
+  \item[-t] Number of threads to use in calculation (for multicore
+    CPUs). See section \ref{sec:speed} for an analysis of when this
+    has a significant effect on calculation speed.
+  \item[-r] Print SASA for each residue.
+\end{itemize}
+As an illustration, the command
 \begin{verbatim}
-    $ ./calc_sasa -h
+   $ ./calc_sasa -L -d 0.1 -t 2 -r PDB-file
 \end{verbatim}
+calculates the SASA of the supplied pdb-file using Lee \& Richards,
+with a slice width of 0.1 Å, using two threads (only makes sense for
+CPUs with two or more cores) and will print the total SASA of each
+residue type in addition to the standard output.
+
+Several pdb-files can be analyzed in one call as well, the results
+will be printed consecutively for each input file:
+\begin{verbatim}
+   $ ./calc_sasa 1abc.pdb 2abc.pdb ...
+\end{verbatim}
+The two calculations will not be run in parallel if the option '-t' is
+used, instead each calculation is parallelized individually.
+
+\subsubsection{Output}
 Running the program using the default parameters on the PDB structure
 1UBQ gives the following output
 \begin{verbatim}
@@ -295,14 +335,14 @@ obvious improvements. The calculations of each slice are however
 completely independent and the current implementation allows division
 of labor to an arbitrary number of threads. The $O(N^2)$ calculation
 of adjacency lists has not been parallelized in the current
-implementation. The calculation could be both linearized and
-parallelized by using cell lists, but since the adjacency lists are
-only calculated once for each protein the overhead of setting up the
-cell lists is likely to be prohibitive for all but the largest
-proteins.\footnote{A preliminary, somewhat buggy implementation of
-  cell lists verified that at least linearization alone was not worth
-  the effort. Might be worth investigating how it performs in
-  parallel.}
+implementation (and is a performance bottleneck in some cases). The
+calculation could be both linearized and parallelized by using cell
+lists, but since the adjacency lists are only calculated once for each
+protein the overhead of setting up the cell lists is likely to be
+prohibitive for all but the largest proteins.\footnote{A preliminary,
+  somewhat buggy implementation of cell lists verified that at least
+  linearization alone was not worth the effort. Might be worth
+  investigating how it performs in parallel.}
 
 
 \subsection{S\&R}
@@ -339,7 +379,7 @@ a larger variation in protein size, which is useful for our
 purposes. The 2117 chains in the list gave a set of 2056 protein
 structures used for all calculations below.
 
-\subsubsection{Speed}
+\subsubsection{Speed}\label{sec:speed}
 
 In the limit of low precision the calculation time will be limited by
 the time it takes to find which atoms are neighbors, which scales as
@@ -414,27 +454,10 @@ present implementation.
   \end{center}
 \end{figure}
 
+\section{API} \label{sec:using}
 
-
-\section{Using Sasalib} \label{sec:using}
-
-\subsection{Command line interface}\label{sec:CLI}
-
-\subsection{Library interface}
-
-Sasalib has two levels of library interface. The simplest interface
-assumes the user does not want to access the results in any raw form
-and takes care of most of the allocation of resources. This
-functionality is specified in the header \texttt{sasalib.h}. The
-sample program in section \ref{sec:simple_sample} uses this interface.
-In addition to what is shown in the example this interface also allows
-setting user settings. This is documented in the header, and the program
-\texttt{calc\_sasa.c} illustrates how this can be used.
-
-To gain data access to atom-per-atom data, to specify custom radii or
-to define one's own groups of atoms to calculate SASA over, a deeper
-level is also available. The library mainly provides functions for
-doing the following in different ways
+The API is designed to cater to the three use cases outlined in the
+introduction. Any calculation involves the following four steps.
 \begin{enumerate}
   \item Initialize protein.
   \item Calculate atomic radii.
@@ -442,206 +465,18 @@ doing the following in different ways
   \item Output results grouping atoms/residues in different ways.
 \end{enumerate}
 The third step is the core functionality of the library and can be
-used separately if users wish to handle the other steps
-themselves. Below follows a brief description for the functionality
-provided for each of the four steps, but first a sample program
-showing a complete workflow.
+used separately if users wish to handle the other steps themselves. In
+addition to the description below, the source for \texttt{calc\_sasa.c}
+serves as an example of how to use the library, using a large portion
+of the available functionality.
 
-\subsubsection{Sample program using low-level interface}
-The following lines read a PDB-structure from a file, calculates
-SASA using Lee \& Richards' algorithm and outputs the values for the
-polar and apolar atoms respectively.
-\begin{verbatim}
-#include <stdio.h>
-#include <stdlib.h>
-#include "src/protein.h"
-#include "src/sasa.h"
+\subsection{PDB input}
 
-int main(int argc, char **argv) {
-    // initialization from STDIN
-    protein *p = protein_init_from_pdb(stdin);
+\subsection{Atom classification}
 
-    // allocate memory
-    double *sasa = (double*) malloc(sizeof(double)*protein_n(p));
-    double *r = (double*) malloc(sizeof(double)*protein_n(p));
+\subsection{Coordinates}
 
-    // calculate atomic radii
-    protein_r_def(p,r);
-    
-    // SASA calculation using Lee & Richards with 
-    // slices of width 0.25 Å
-    sasa_lee_richards(sasa,protein_xyz(p),r,protein_n(p),0.25);
-
-    // Output SASA for polar/apolar atoms
-    sasa_per_atomclass(stdout,oons_classes(),p,sasa);
-   
-    // free memory
-    protein_free(p);
-    free(sasa);
-    free(r);
-
-    return 0;
-}
-\end{verbatim}
-
-\subsubsection{Initiate a protein}
-
-A protein is represented by the struct \texttt{protein}, which is
-declared in the header \texttt{protein.h}. A proteins can be
-initialized either by reading a PDB-file or by adding atoms manually
-one-by-one.
-
-The following function initializes a protein from a PDB-file
-\begin{verbatim}
-    protein* protein_init_from_pdb(FILE*); 
-\end{verbatim}
-The pointer is freed using
-\begin{verbatim}
-    void protein_free(protein*);
-\end{verbatim}
-An empty protein struct is allocated with 
-\begin{verbatim}
-    protein* protein_init();
-\end{verbatim}
-which can then be used to add atoms one by one
-\begin{verbatim}
-    void protein_add_atom(protein *p, 
-                          const char* atom_name,
-                          const char* residue_name, 
-                          const char* residue_number,
-                          char chain_label,
-                          double x, double y, double z);
-
-\end{verbatim}
-for example like this
-\begin{verbatim}
-    protein *p = protein_init();
-    protein_add_atom(p, " CA ", "GLY", "   1", "A",
-                     x, y, z);
-\end{verbatim}
-Here the labels for the atom are as they would be in a PDB file,
-including whitespace. The atom name is a 4-character string, like the
-second argument above, the residue name a 3-character string, like the
-third argument, the residue number has 4 characters, and the chain
-label 1. The last three arguments are the coordinates of the atom. The
-reason residue numbers are not represented as integers here, is that
-some PDB files have number sequences such as 1A, 1B, 1C, 1D, 2, 3, 4,
-\ldots.
-
-The rationale for directly using the strings found in PDB files is
-twofold. (i) Most programs that handle proteins will have routines for
-generating PDB-files and it should thus be fairly straightforward to
-integrate this library into such a program. (ii) Non-standard atoms
-can be added with the labels they have in the input, making
-sub-sequent analysis more straightforward. This means that no analysis
-is performed of the atom types, to check for consistency, etc. The
-atom types are only used later for assigning radii to the atoms,
-something that can also be done manually.
-
-\subsubsection{Assign atomic radii}
-Give each atom a radius. Sasalib can calculate atomic radii according
-to Ooi et al (OONS-radii) for the 20 canonical amino acid types. The
-user can also specify the radius for each individual atom. The two
-methods can be combined if a protein has a few non-standard atoms.
-
-Functions for OONS-classification are found in \texttt{oons.h}. There
-are two versions
-\begin{verbatim}
-    double oons_radius_pdbline(const char *pdb_line);
-    double oons_radius(const char *res_name,
-                       const char *atom_name);
-\end{verbatim}
-where the argument in the first version is a line from a PDB-file, and
-in the second case residue name and atom name according to the above
-(e.g. \texttt{"GLY", " CA "}). To get all radii for a protein in one
-go, use
-\begin{verbatim}
-    void protein_r_def(double *r, const protein *p);
-\end{verbatim} 
-Here the array \texttt{r} is assumed to be of the same size as the
-protein, i.e. the user is responsible for allocating and freeing the
-memory. The function
-\begin{verbatim}
-    int protein_n(const protein *p);
-\end{verbatim}
-returns the number of atoms in a protein.  A user-defined
-atom-classification scheme can be used by calling
-\begin{verbatim}
-    void protein_r(double *r,
-                   const protein *p, 
-                   double (*atom2radius)(const char *res_name, 
-                                         const char *atom_name));
-\end{verbatim}
-The function \texttt{protein\_r\_def}, defined above, uses
-\texttt{protein\_r} internally. It consists of the single line
-\begin{verbatim}
-    protein_r(p,r,oons_radius);
-\end{verbatim}
-which illustrates the use of the functions \texttt{protein\_r} and
-\texttt{oons\_radius}.
-
-\subsubsection{Perform SASA calculations}
-Perform the SASA calculation, using the algorithm of choice, calling
-the functions in \texttt{sasa.h}
-\begin{verbatim}
-    void sasa_shrake_rupley(double *sasa,
-                            const vector3 *xyz,
-                            const double *radii,
-                            size_t n_atoms,
-                            int n_points);
-    void sasa_lee_richards(double* sasa,
-                           const vector3 *xyz,
-                           const double *radii,
-                           size_t n_atoms,
-                           double grid);
-
-\end{verbatim}
-The protein struct is deliberately not used here to allow users to
-only use this function independently of the rest of library. The
-header \texttt{vector3.h} provides an interface to generate arrays of
-type \texttt{vector3} for the coordinates from either three arrays of
-\texttt{double}s of size $N$ using the function
-\texttt{vector3\_xyz\_alloc()}, or one array of size $3N$ where the
-coordinates are arranged $x_1,y_1,z_1,x_2,y_2,z_2,\ldots,x_N,y_N,z_N$
-using the function \texttt{vector3\_x3n\_alloc()}. The generated array
-can then be used as input for the two functions above.
-
-\subsubsection{Output results}
-The header \texttt{atomclassifier.h} specifies an interface for
-classifying atoms in a protein. The struct \texttt{atomclassifier} has
-a function pointer to a function that turns a residue- and atom-name
-to an integer, and an array of strings that explains what these
-integers means. The function \texttt{atomclassifier\_all()} returns an
-\texttt{atomclassifier} object that puts all atoms in the same class,
-which can be used to calculate the total SASA of a protein. The header
-\texttt{oons.h} has functions to generate two types of
-\texttt{atomclassifier}s. One that returns an \texttt{atomclassifier}
-for polar/apolar atoms, and another for the classes aliphatic C,
-aromatic C, hydroxyl O, etc (as specified in reference \cite{OONS}),
-respectively. Users interested in implementing their own classifiers
-can use the source for these functions as an illustration.
-
-In \texttt{sasa.h}, the function
-\begin{verbatim}
-    void sasa_per_atomclass(FILE*, atomclassifier, 
-                            protein*, double *sasa);
-\end{verbatim}
-integrates the results of the SASA calculation using an
-\texttt{atomclassifier} to get for example the polar and apolar
-surface areas. The statement
-\begin{verbatim}
-    sasa_per_atomclass(stdout, oons_classes(),p,s);
-\end{verbatim}
-where \texttt{p} is a pointer to a \texttt{protein} object, and
-\texttt{s} an array of appropriate size containing SASA values for the
-atoms of the protein, will output the following
-\begin{verbatim}
-    > polar_apolar
-    polar 1234.56
-    apolar 7890.12 
-\end{verbatim}
-That is the name of classifier, and the SASA values for each class of
-atoms, in this cased the two classes \emph{polar} and \emph{apolar}.
+\subsection{Results}
 
 \section{Known issues}
 

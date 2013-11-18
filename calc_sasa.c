@@ -52,7 +52,7 @@ void help() {
 	    program_invocation_short_name);
     fprintf(stderr,"\nOptions are:\n"
 	    "       -h  print this message\n"
-	    "       -S  use Shrake & Rupley alogrithm [default]\n"
+	    "       -S  use Shrake & Rupley algorithm [default]\n"
 	    "       -n  number of test points in Shrake & Rupley algorithm\n"
 	    "           Default is %d, allowed values are:\n"
 	    "           ",SASALIB_DEF_SR_N);
@@ -63,7 +63,6 @@ void help() {
 	    ,SASALIB_DEF_LR_D);
 #ifdef PTHREADS
     fprintf(stderr,"       -t  number of threads to use in calculation (for multicore CPUs)\n");
-    fprintf(stderr,"           (only implemented for Shrake & Rupley so far)\n");
 #endif    
     fprintf(stderr,"       -r  print SASA for each residue\n");
     fprintf(stderr,"\nIf no pdb-file is specified STDIN is used for input.\n\n");
@@ -89,7 +88,7 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
     if ((tmp = sasalib_area_class(s, SASALIB_CLASS_UNKNOWN)) > 0) 
 	printf("Unknown: %9.2f Å2\n",tmp);
     if (settings->per_residue) { 
-	printf("\n>SASA per residue\n");
+	printf("\n");
 	sasalib_per_residue(stdout,s);
 	printf("\n");
     }
