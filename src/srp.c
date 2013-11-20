@@ -35,27 +35,27 @@ static const int srp_N[SRP_N_SIZES] = { 20, 50, 100, 200, 500, 1000, 2000, 5000 
 static const double* srp_p[SRP_N_SIZES] = { srp_20, srp_50, srp_100, srp_200,
                                             srp_500, srp_1000, srp_2000, srp_5000 };
 
-void srp_print_n_opt(FILE* f) {
+void sasalib_srp_print_n_opt(FILE* f) {
     for (int i = 0; i < SRP_N_SIZES-1; ++i) {
         fprintf(f,"%d, ",srp_N[i]);
     }
     fprintf(f,"%d\n",srp_N[SRP_N_SIZES-1]);
 }
 
-int srp_n_is_valid(int n) {
+int sasalib_srp_n_is_valid(int n) {
     for (int i = 0; i < SRP_N_SIZES; ++i) {
         if (n == srp_N[i]) return 1;
     }
     return 0;
 }
 
-const double* srp_get_points(int n) {
+const double* sasalib_srp_get_points(int n) {
     for (int i = 0; i < SRP_N_SIZES; ++i) {
 	if (n == srp_N[i]) return srp_p[i];
     }
     fprintf(stderr,"Warning: Number of test-points has to be"
             " one of the following values:\n  ");
-    srp_print_n_opt(stderr);
+    sasalib_srp_print_n_opt(stderr);
     return NULL;
 }
 

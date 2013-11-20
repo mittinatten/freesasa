@@ -56,7 +56,7 @@ void help() {
 	    "       -n  number of test points in Shrake & Rupley algorithm\n"
 	    "           Default is %d, allowed values are:\n"
 	    "           ",SASALIB_DEF_SR_N);
-    srp_print_n_opt(stderr);
+    sasalib_srp_print_n_opt(stderr);
     fprintf(stderr,"       -L  use Lee & Richards algorithm\n"
 	           "       -d  grid spacing in Lee & Richards algorithm\n"
 	           "           Default value is %4.2f Å\n"

@@ -35,11 +35,11 @@
     -DPTHREADS. Returns SASALIB_SUCCESS on success, SASALIB_WARN if
     multiple threads are requested when compiled in single-threaded
     mode (with error message). */
-int sasa_shrake_rupley(double *sasa,
-		       const coord_t *c,
-		       const double *radii,
-		       int n_points,
-		       int n_threads);
+int sasalib_shrake_rupley(double *sasa,
+			  const sasalib_coord_t *c,
+			  const double *radii,
+			  int n_points,
+			  int n_threads);
 
 /** Solvent accessible surface area for each atom is written to the
     array 'sasa'. The user is responsible for making sure this has the
@@ -47,11 +47,11 @@ int sasa_shrake_rupley(double *sasa,
     points in Å. Returns SASALIB_SUCCESS on success, SASALIB_WARN if
     multiple threads are requested when compiled in single-threaded
     mode (with error message). */
-int sasa_lee_richards(double* sasa,
-		      const coord_t *c,
-		      const double *radii,
-		      double grid,
-		      int n_threads);
+int sasalib_lee_richards(double* sasa,
+			 const sasalib_coord_t *c,
+			 const double *radii,
+			 double grid,
+			 int n_threads);
 
 // other algorithms?
 

@@ -23,7 +23,7 @@
 #include <assert.h>
 
 #include "sasa.h"
-#include "pdbutil.h"
+#include "pdb.h"
 #include "sasalib.h"
 #include "srp.h"
 #include "classify.h"
@@ -47,7 +47,7 @@ typedef struct {
 struct sasalib_ {
     sasalib_algorithm alg;
     double *r;
-    coord_t *coord;
+    sasalib_coord_t *coord;
     class_t *class;
     int n_atoms;
     int n_sr;
@@ -78,22 +78,23 @@ const sasalib_t sasalib_def_param = {
 
 const char *sasalib_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
-static class_t* sasalib_classify_structure(const structure_t *p)
+static class_t* sasalib_classify_structure(const sasalib_structure_t *p)
 {
     assert(p != NULL);
-    assert(structure_n(p) >= 0 && "Trying to classify atoms of illegal structure.");
+    assert(sasalib_structure_n(p) >= 0 && 
+	   "Trying to classify atoms of illegal structure.");
     
-    size_t n = structure_n(p);
+    size_t n = sasalib_structure_n(p);
     
     class_t* c = (class_t*)malloc(sizeof(class_t));
     c->class = (int*)malloc(sizeof(int)*n);
     c->residue = (int*)malloc(sizeof(int)*n);
 
     for (int i = 0; i < n; ++i) {
-	const char *res_name = structure_atom_res_name(p,i);
-	const char *atom_name = structure_atom_name(p,i);
-	c->class[i] = classify_class(res_name,atom_name);
-	c->residue[i] = classify_residue(res_name);
+	const char *res_name = sasalib_structure_atom_res_name(p,i);
+	const char *atom_name = sasalib_structure_atom_name(p,i);
+	c->class[i] = sasalib_classify_class(res_name,atom_name);
+	c->residue[i] = sasalib_classify_residue(res_name);
     }
 
     return c;
@@ -111,8 +112,8 @@ static result_t* sasalib_result_new(size_t n_atoms)
 {
     result_t *r = (result_t*)malloc(sizeof(result_t));
 
-    int nc = classify_nclasses();
-    int nr = classify_nresiduetypes();
+    int nc = sasalib_classify_nclasses();
+    int nr = sasalib_classify_nresiduetypes();
     
     r->sasa = (double*)malloc(sizeof(double)*n_atoms);
     r->class = (double*)malloc(sizeof(double)*nc);
@@ -133,36 +134,36 @@ static void sasalib_result_free(result_t *r)
     free(r);
 }
 
-static void sasalib_get_class_result(sasalib_t *s, structure_t *p)
+static void sasalib_get_class_result(sasalib_t *s, sasalib_structure_t *p)
 {
     if (s->class) sasalib_class_free(s->class);
     s->class = sasalib_classify_structure(p);
     
-    for (size_t i = 0; i < structure_n(p); ++i) {
+    for (size_t i = 0; i < sasalib_structure_n(p); ++i) {
         s->result->class[s->class->class[i]] += s->result->sasa[i];
 	s->result->residue[s->class->residue[i]] += s->result->sasa[i];
     }
 }
 
-int sasalib_calc(sasalib_t *s, const coord_t *c, const double *r)
+int sasalib_calc(sasalib_t *s, const sasalib_coord_t *c, const double *r)
 {
     struct timeval t1, t2;
     int res = 0;
 
     gettimeofday(&t1,NULL);
-
+    
     if (s->result) sasalib_result_free(s->result);
     result_t *result;
     s->result = result = sasalib_result_new(s->n_atoms);
-
+    
     switch(s->alg) {
     case SASALIB_SHRAKE_RUPLEY:
-        res = sasa_shrake_rupley(result->sasa, c, r, 
-				 s->n_sr, s->n_threads);
+        res = sasalib_shrake_rupley(result->sasa, c, r, 
+				    s->n_sr, s->n_threads);
         break;
     case SASALIB_LEE_RICHARDS:
-        res = sasa_lee_richards(result->sasa, c, r, 
-				s->d_lr, s->n_threads);
+        res = sasalib_lee_richards(result->sasa, c, r, 
+				   s->d_lr, s->n_threads);
 	break;
     default:
         fprintf(stderr,"%s: error: no SASA algorithm specified.\n",
@@ -170,7 +171,7 @@ int sasalib_calc(sasalib_t *s, const coord_t *c, const double *r)
         return SASALIB_FAIL;
     }
     result->total = 0;
-    for (int i = 0; i < coord_n(c); ++i) {
+    for (int i = 0; i < sasalib_coord_n(c); ++i) {
 	result->total += result->sasa[i];
     }
 
@@ -207,7 +208,7 @@ void sasalib_free(sasalib_t *s)
     }
     if (s->class) sasalib_class_free(s->class);
     if (s->result) sasalib_result_free(s->result);
-    if (s->coord) coord_free(s->coord);
+    if (s->coord) sasalib_coord_free(s->coord);
     free(s);
 }
 
@@ -215,45 +216,45 @@ int sasalib_calc_coord(sasalib_t *s, const double *coord,
                        const double *r, size_t n)
 {
     s->n_atoms = n;
-    coord_t *c = coord_new_linked(coord,n);
+    sasalib_coord_t *c = sasalib_coord_new_linked(coord,n);
     int res = sasalib_calc(s,c,r);
-    coord_free(c);
+    sasalib_coord_free(c);
     return res;
 }
 
 int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
 {
-    structure_t *p = structure_init_from_pdb(pdb_file);
+    sasalib_structure_t *p = sasalib_structure_init_from_pdb(pdb_file);
     if (!p) {
 	fprintf(stderr,"%s: error: failed to read pdb-file.\n",
 		sasalib_name);
-	structure_free(p);
+	sasalib_structure_free(p);
 	return SASALIB_FAIL;
     }
-    if (!(s->n_atoms = structure_n(p))) {
+    if (!(s->n_atoms = sasalib_structure_n(p))) {
 	fprintf(stderr,"%s: error: pdb-file was empty.\n",
 		sasalib_name);
-	structure_free(p);
+	sasalib_structure_free(p);
 	return SASALIB_FAIL;
     }
-    s->n_atoms = structure_n(p);
+    s->n_atoms = sasalib_structure_n(p);
 
     //calc OONS radii
     if (s->r) free(s->r);
-    s->r = (double*) malloc(sizeof(double)*structure_n(p));
+    s->r = (double*) malloc(sizeof(double)*sasalib_structure_n(p));
     s->owns_r = 1;
-    structure_r_def(s->r,p);
+    sasalib_structure_r_def(s->r,p);
 
-    int res = sasalib_calc(s,structure_xyz(p),s->r);
+    int res = sasalib_calc(s,sasalib_structure_xyz(p),s->r);
     if (!res) sasalib_get_class_result(s,p);
-    structure_free(p);
+    sasalib_structure_free(p);
     return res;
 }
 
 int sasalib_link_coord(sasalib_t *s, const double *coord,
                        double *r, size_t n) 
 {
-    s->coord = coord_new_linked(coord,n);
+    s->coord = sasalib_coord_new_linked(coord,n);
 
     if (s->r) free(s->r);
     s->r = r;
@@ -296,13 +297,13 @@ const char* sasalib_algorithm_name(const sasalib_t *s)
 }
 
 int sasalib_set_sr_points(sasalib_t *s, int n) {
-    if (srp_n_is_valid(n)) { 
+    if (sasalib_srp_n_is_valid(n)) { 
         s->n_sr = n;
         return SASALIB_SUCCESS;
     }
     fprintf(stderr,"%s: error: Number of test-points must be"
 	    " one of the following:  ", sasalib_name);
-    srp_print_n_opt(stderr);
+    sasalib_srp_print_n_opt(stderr);
     fprintf(stderr,"%s: error: Proceeding with default value (%d)\n",
             sasalib_name,SASALIB_DEF_SR_N);
     s->n_sr = SASALIB_DEF_SR_N;
@@ -457,10 +458,10 @@ int sasalib_per_residue(FILE *output, const sasalib_t *s)
                 "but no calculation has been performed\n",sasalib_name);
         return SASALIB_WARN;
     }
-    for (int i = 0; i < classify_nresiduetypes(); ++i) {
+    for (int i = 0; i < sasalib_classify_nresiduetypes(); ++i) {
         double sasa = s->result->residue[i];
         if (i < 20 || sasa > 0) {
-            fprintf(output,"%s %8.2f\n",classify_residue2str(i),sasa);
+            fprintf(output,"%s %8.2f\n",sasalib_classify_residue2str(i),sasa);
         }
     }
     return SASALIB_SUCCESS;

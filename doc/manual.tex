@@ -459,7 +459,7 @@ present implementation.
 The API is designed to cater to the three use cases outlined in the
 introduction. Any calculation involves the following four steps.
 \begin{enumerate}
-  \item Initialize protein.
+  \item Initialize structure/acquire coordinates.
   \item Calculate atomic radii.
   \item Calculate SASA.
   \item Output results grouping atoms/residues in different ways.
@@ -470,7 +470,16 @@ addition to the description below, the source for \texttt{calc\_sasa.c}
 serves as an example of how to use the library, using a large portion
 of the available functionality.
 
+The header \texttt{sasalib.h} contains all functions necessary for
+doing calculations with Sasalib. They wrap lower level functionality,
+simplifying I/O, housekeeping, and does sanity checks on parameters,
+etc. Users with specific needs can also use the functions in the other
+headers, but these will not be documented beyond comments in the
+header-files.
+
 \subsection{PDB input}
+
+
 
 \subsection{Atom classification}
 

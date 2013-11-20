@@ -46,8 +46,8 @@ typedef struct {
     int i1,i2;
     int n_atoms;
     int n_points;
-    const coord_t *xyz;
-    const coord_t *srp;
+    const sasalib_coord_t *xyz;
+    const sasalib_coord_t *srp;
     const double *r;
     double *sasa;
     char *spcount_0;
@@ -65,7 +65,7 @@ static double sasa_sr_calc_atom(int i,const sasa_sr_t) __attrib_pure__;
 typedef struct {
     int n_atoms;
     const double *radii;
-    const coord_t *xyz;
+    const sasalib_coord_t *xyz;
     const int **nb;
     const int *nn;
     double delta;
@@ -94,21 +94,21 @@ static double sasa_sum_angles(int n_buried, double *a, double *b);
     n_atoms. The elements of n_atoms are dynamically allocated to be
     of size nn[i]. **/
 static void sasa_get_contacts(int **nb, int *nn,
-                              const coord_t *xyz, const double *radii);
+                              const sasalib_coord_t *xyz, const double *radii);
 
-int sasa_shrake_rupley(double *sasa,
-                       const coord_t *xyz,
-                       const double *r,
-                       int n_points,
-                       int n_threads)
+int sasalib_shrake_rupley(double *sasa,
+			  const sasalib_coord_t *xyz,
+			  const double *r,
+			  int n_points,
+			  int n_threads)
 {
-    size_t n_atoms = coord_n(xyz);
+    size_t n_atoms = sasalib_coord_n(xyz);
     int return_value = SASALIB_SUCCESS;
 
     // Initialize test-points
-    const double *srp_p = srp_get_points(n_points);
+    const double *srp_p = sasalib_srp_get_points(n_points);
     if (srp_p == NULL) return 1;
-    coord_t *srp = coord_new_linked(srp_p,n_points);
+    sasalib_coord_t *srp = sasalib_coord_new_linked(srp_p,n_points);
 
     char spcount_0[n_points];
 
@@ -141,7 +141,7 @@ int sasa_shrake_rupley(double *sasa,
             sasa[i] = sasa_sr_calc_atom(i,sr);
         }
     }
-    coord_free(srp);
+    sasalib_coord_free(srp);
     return return_value;
 }
 
@@ -192,20 +192,20 @@ static void *sasa_sr_thread(void* arg)
 
 static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
     const int n_points = sr.n_points;
-    const coord_t *xyz = sr.xyz;
+    const sasalib_coord_t *xyz = sr.xyz;
     /* this array keeps track of which testpoints belonging to
        a certain atom overlap with other atoms */
     char spcount[n_points];
     const double ri = sr.r[i]+SASA_PROBE_RADIUS;
-    const double *vi = coord_i(xyz,i);
+    const double *vi = sasalib_coord_i(xyz,i);
     double xi = vi[0], yi = vi[1], zi = vi[2]; 
-    const double *v = coord_all(xyz);
+    const double *v = sasalib_coord_all(xyz);
 
     /* testpoints for this atom */
-    coord_t* tp_coord_ri = coord_copy(sr.srp);
-    coord_scale(tp_coord_ri, ri);
-    coord_translate(tp_coord_ri, vi);
-    const double *tp = coord_all(tp_coord_ri);
+    sasalib_coord_t* tp_coord_ri = sasalib_coord_copy(sr.srp);
+    sasalib_coord_scale(tp_coord_ri, ri);
+    sasalib_coord_translate(tp_coord_ri, vi);
+    const double *tp = sasalib_coord_all(tp_coord_ri);
 
     memcpy(spcount,sr.spcount_0,sizeof(char)*n_points);
     
@@ -231,7 +231,7 @@ static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
                overlap. */
         }
     }
-    coord_free(tp_coord_ri);
+    sasalib_coord_free(tp_coord_ri);
     int n_surface = 0;
     for (int k = 0; k < n_points; ++k) {
         if (!spcount[k]) ++n_surface;
@@ -239,11 +239,11 @@ static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
     return (4.0*PI*ri*ri*n_surface)/n_points;
 }
 
-int sasa_lee_richards(double *sasa,
-                      const coord_t *xyz,
-                      const double *atom_radii,
-                      double delta,
-                      int n_threads)
+int sasalib_lee_richards(double *sasa,
+			 const sasalib_coord_t *xyz,
+			 const double *atom_radii,
+			 double delta,
+			 int n_threads)
 {
     /* Steps:
        Define slice range
@@ -253,14 +253,14 @@ int sasa_lee_richards(double *sasa,
        3. Calculate exposed arc-lengths for each atom
        Sum up arc-length*delta for each atom
     */
-    size_t n_atoms = coord_n(xyz);
+    size_t n_atoms = sasalib_coord_n(xyz);
     int return_value = SASALIB_SUCCESS;
 
     // determine slice range and init radii and sasa arrays
     double max_z=-1e50, min_z=1e50;
     double max_r = 0;
     double radii[n_atoms];
-    const double *v = coord_all(xyz);
+    const double *v = sasalib_coord_all(xyz);
     for (size_t i = 0; i < n_atoms; ++i) {
         radii[i] = atom_radii[i] + SASA_PROBE_RADIUS;
         double z = v[3*i+2], r = radii[i];
@@ -362,7 +362,7 @@ static void sasa_add_slice_area(double z, sasa_lr_t lr)
     int n_slice = 0;
     double exposed_arc[n_atoms];
     int idx[n_atoms], xdi[n_atoms], in_slice[n_atoms], nn_slice[n_atoms], *nb_slice[n_atoms];
-    const double* v = coord_all(lr.xyz);
+    const double* v = sasalib_coord_all(lr.xyz);
 
     // locate atoms in each slice and do some initialization
     for (size_t i = 0; i < n_atoms; ++i) {
@@ -543,16 +543,16 @@ static double sasa_sum_angles(int n_buried, double *a, double *b)
 }
 
 static void sasa_get_contacts(int **nb, int *nn, 
-                              const coord_t *xyz, const double *radii)
+                              const sasalib_coord_t *xyz, const double *radii)
 {
     /* For low resolution L&R this function is the bottleneck in
        speed. Will also depend on number of atoms. */
-    size_t n_atoms = coord_n(xyz);
+    size_t n_atoms = sasalib_coord_n(xyz);
     for (int i = 0; i < n_atoms; ++i) {
         nn[i] = 0;
         nb[i] = NULL;
     }
-    const double *v = coord_all(xyz);
+    const double *v = sasalib_coord_all(xyz);
 
     for (int i = 0; i < n_atoms; ++i) {
         double ri = radii[i];

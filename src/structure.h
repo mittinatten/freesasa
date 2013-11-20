@@ -22,13 +22,13 @@
 
 #include "coord.h"
 
-typedef struct structure_ structure_t;
+typedef struct sasalib_structure_ sasalib_structure_t;
 
 /** init empty protein */
-structure_t* structure_init();
+sasalib_structure_t* sasalib_structure_init();
 
 /** free allocated memory */
-void structure_free(structure_t*);
+void sasalib_structure_free(sasalib_structure_t*);
 
 /** Init protein with coordinates from pdb-file.  Automatically skips
     hydrogens. If an atom has alternative coordinates, only the first
@@ -36,46 +36,49 @@ void structure_free(structure_t*);
     structures) only the first model is used. If non-default behavior
     is wanted the pdb-file needs to be modified before calling this
     function, or atoms can be added manually using
-    structure_add_atom(). */
-structure_t* structure_init_from_pdb(FILE *pdb_file);
+    sasalib_structure_add_atom(). */
+sasalib_structure_t* sasalib_structure_init_from_pdb(FILE *pdb_file);
 
 /** storing residue numbers as strings allows for nonstandard formats,
     will include hydrogens if added (i.e. up to caller to make sure
     these are excluded if necessesary) */
-void structure_add_atom(structure_t *p, 
-			const char* atom_name,
-			const char* residue_name, 
-			const char* residue_number,
-			char chain_label,
-			double x, double y, double z);
+void sasalib_structure_add_atom(sasalib_structure_t *p, 
+				const char* atom_name,
+				const char* residue_name, 
+				const char* residue_number,
+				char chain_label,
+				double x, double y, double z);
 
 /** get array of coordinates */
-const coord_t* structure_xyz(const structure_t *p);
+const sasalib_coord_t* sasalib_structure_xyz(const sasalib_structure_t *p);
 
 /** get array of radii using custom conversion function, the array r is
     assumed to be of correct size already */
-void structure_r(double *r,
-		 const structure_t *p, 
-		 double (*atom2radius)(const char *res_name, 
-				       const char *atom_name));
+void sasalib_structure_r(double *r,
+			 const sasalib_structure_t *p, 
+			 double (*atom2radius)(const char *res_name, 
+					       const char *atom_name));
 
 /** get array of radii using classify_radius(), the array r is assumed
     to of correct size already */
-void structure_r_def(double *r, const structure_t *p);
+void sasalib_structure_r_def(double *r, const sasalib_structure_t *p);
 
 /** get number of atoms */
-int structure_n(const structure_t *p);
+int sasalib_structure_n(const sasalib_structure_t *p);
 
 /** get name of atom i */
-const char* structure_atom_name(const structure_t *p, int i);
+const char* sasalib_structure_atom_name(const sasalib_structure_t *p, 
+					int i);
 
 /** get name of residue atom i belongs to */
-const char* structure_atom_res_name(const structure_t *p, int i);
+const char* sasalib_structure_atom_res_name(const sasalib_structure_t *p, 
+					    int i);
 
 /** get number of residue atom i belongs to */
-const char* structure_atom_res_number(const structure_t *p, int i);
+const char* sasalib_structure_atom_res_number(const sasalib_structure_t *p, 
+					      int i);
 
 /** get chain atom i belongs to */
-char structure_atom_chain(const structure_t *p, int i);
+char sasalib_structure_atom_chain(const sasalib_structure_t *p, int i);
 
 #endif

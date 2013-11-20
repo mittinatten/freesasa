@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "structure.h"
-#include "pdbutil.h"
+#include "pdb.h"
 #include "classify.h"
 #include "coord.h"
 
@@ -36,64 +36,65 @@ typedef struct {
     char chain_label;
 } atom_t;
 
-struct structure_ {
+struct sasalib_structure_ {
     atom_t *a;
-    coord_t *xyz;
+    sasalib_coord_t *xyz;
     int number_atoms;
     int number_residues;
     int number_chains;
 };
 
-structure_t* structure_init()
+sasalib_structure_t* sasalib_structure_init()
 {
-    structure_t *p = (structure_t*) malloc(sizeof(structure_t));
+    sasalib_structure_t *p 
+	= (sasalib_structure_t*) malloc(sizeof(sasalib_structure_t));
     p->number_atoms = 0;
     p->number_residues = 0;
     p->number_chains = 0;
     p->a = (atom_t*) malloc(sizeof(atom_t));
-    p->xyz = coord_new();
+    p->xyz = sasalib_coord_new();
     return p;
 }
 
-void structure_free(structure_t *p)
+void sasalib_structure_free(sasalib_structure_t *p)
 {
     free(p->a);
-    coord_free(p->xyz);
+    sasalib_coord_free(p->xyz);
     free(p);
 }
 
 /* returns alt_label if there is any */
-char structure_get_pdb_atom(atom_t *a, double *xyz, const char *line)
+char sasalib_structure_get_pdb_atom(atom_t *a, double *xyz, const char *line)
 {
-    a->chain_label = pdbutil_get_chain_label(line);
-    pdbutil_get_coord(xyz, line);
-    pdbutil_get_atom_name(a->atom_name, line);
-    pdbutil_get_res_name(a->res_name, line);
-    pdbutil_get_res_number(a->res_number, line);
-    return pdbutil_get_alt_coord_label(line);
+    a->chain_label = sasalib_pdb_get_chain_label(line);
+    sasalib_pdb_get_coord(xyz, line);
+    sasalib_pdb_get_atom_name(a->atom_name, line);
+    sasalib_pdb_get_res_name(a->res_name, line);
+    sasalib_pdb_get_res_number(a->res_number, line);
+    return sasalib_pdb_get_alt_coord_label(line);
 }
 
-structure_t* structure_init_from_pdb(FILE *pdb_file)
+sasalib_structure_t* sasalib_structure_init_from_pdb(FILE *pdb_file)
 {
-    structure_t *p = structure_init();
+    sasalib_structure_t *p = sasalib_structure_init();
 
     size_t len = 80;
     char *line = (char*) malloc(sizeof(char)*(len+1));
     char the_alt = ' ';
     while (getline(&line, &len, pdb_file) != -1) {
         if (strncmp("ATOM",line,4)==0) {
-            if (pdbutil_ishydrogen(line)) continue;
+            if (sasalib_pdb_ishydrogen(line)) continue;
             double v[3];
             atom_t a;
-            char alt = structure_get_pdb_atom(&a,v,line);
+            char alt = sasalib_structure_get_pdb_atom(&a,v,line);
             if ((alt != ' ' && the_alt == ' ') || (alt == ' ')) { 
                 the_alt = alt;
             } else if (alt != ' ' && alt != the_alt) {
                 continue;
             } 
             
-            structure_add_atom(p,a.atom_name,a.res_name,a.res_number,
-                               a.chain_label, v[0], v[1], v[2]);
+            sasalib_structure_add_atom(p,a.atom_name,a.res_name,a.res_number,
+				       a.chain_label, v[0], v[1], v[2]);
         }
         if (strncmp("ENDMDL",line,4)==0) break;
     }
@@ -101,18 +102,18 @@ structure_t* structure_init_from_pdb(FILE *pdb_file)
     return p;
 }
 
-static void structure_alloc_one(structure_t *p)
+static void sasalib_structure_alloc_one(sasalib_structure_t *p)
 {
     int na = ++p->number_atoms;
     p->a = (atom_t*) realloc(p->a,sizeof(atom_t)*na);
 }
 
-void structure_add_atom(structure_t *p,
-                        const char *atom_name,
-                        const char *residue_name,
-                        const char *residue_number,
-                        char chain_label,
-                        double x, double y, double z)
+void sasalib_structure_add_atom(sasalib_structure_t *p,
+				const char *atom_name,
+				const char *residue_name,
+				const char *residue_number,
+				char chain_label,
+				double x, double y, double z)
 {
     // check input for consistency
     assert(strlen(atom_name) == PDB_ATOM_NAME_STRL);
@@ -120,9 +121,9 @@ void structure_add_atom(structure_t *p,
     assert(strlen(residue_number) == PDB_ATOM_RES_NUMBER_STRL);
 
     // allocate memory, increase number of atoms counter
-    structure_alloc_one(p);
+    sasalib_structure_alloc_one(p);
     int na = p->number_atoms;
-    coord_append_xyz(p->xyz,&x,&y,&z,1);
+    sasalib_coord_append_xyz(p->xyz,&x,&y,&z,1);
     atom_t *a = &p->a[na-1];
     strcpy(a->atom_name,atom_name);
     strcpy(a->res_name,residue_name);
@@ -147,50 +148,54 @@ void structure_add_atom(structure_t *p,
     // deal with alternate location indicators...
 }
 
-void structure_r(double *r,
-		 const structure_t *p, 
-		 double (*atom2radius)(const char *res_name, 
-				       const char *atom_name))
+void sasalib_structure_r(double *r,
+			 const sasalib_structure_t *p, 
+			 double (*atom2radius)(const char *res_name, 
+					       const char *atom_name))
 {
     for (int i = 0; i < p->number_atoms; ++i) {
 	r[i] = atom2radius(p->a[i].res_name, p->a[i].atom_name);
     }
 }
 
-void structure_r_def(double *r, const structure_t *p)
+void sasalib_structure_r_def(double *r, const sasalib_structure_t *p)
 {
-    structure_r(r,p,classify_radius);
+    sasalib_structure_r(r,p,sasalib_classify_radius);
 }
 
-const coord_t* structure_xyz(const structure_t *p)
+const sasalib_coord_t* sasalib_structure_xyz(const sasalib_structure_t *p)
 {
     return p->xyz;
 }
 
-int structure_n(const structure_t *p)
+int sasalib_structure_n(const sasalib_structure_t *p)
 {
     return p->number_atoms;
 }
 
-const char* structure_atom_name(const structure_t *p, int i)
+const char* sasalib_structure_atom_name(const sasalib_structure_t *p, 
+					int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].atom_name;
 }
 
-const char* structure_atom_res_name(const structure_t *p, int i)
+const char* sasalib_structure_atom_res_name(const sasalib_structure_t *p, 
+					    int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].res_name;
 }
 
-const char* structure_atom_res_number(const structure_t *p, int i)
+const char* sasalib_structure_atom_res_number(const sasalib_structure_t *p, 
+					      int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].res_number;
 }
 
-char structure_atom_chain(const structure_t *p, int i)
+char sasalib_structure_atom_chain(const sasalib_structure_t *p, 
+				  int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].chain_label;

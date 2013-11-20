@@ -23,47 +23,47 @@
 #include <math.h>
 #include "coord.h"
 
-struct coord_ {
+struct sasalib_coord_ {
     double *xyz;
     size_t n;
     int is_const;
 };
 
-coord_t* coord_new() 
+sasalib_coord_t* sasalib_coord_new() 
 {
-    coord_t* c = (coord_t*) malloc(sizeof(coord_t));
+    sasalib_coord_t* c = (sasalib_coord_t*) malloc(sizeof(sasalib_coord_t));
     c->xyz = NULL;
     c->n = 0;
     c->is_const = 0;
     return c;
 }
 
-void coord_free(coord_t *c) 
+void sasalib_coord_free(sasalib_coord_t *c) 
 {
-    assert(c != NULL && "NULL-pointer passed to coord_free(1)");
+    assert(c != NULL && "NULL-pointer passed to sasalib_coord_free(1)");
     if (c->xyz && !c->is_const) free(c->xyz);
     free(c);
 }
 
-coord_t* coord_copy(const coord_t *src) 
+sasalib_coord_t* sasalib_coord_copy(const sasalib_coord_t *src) 
 {
     assert(src != NULL);
-    coord_t *c = coord_new();
-    coord_set_all(c,src->xyz,src->n);
+    sasalib_coord_t *c = sasalib_coord_new();
+    sasalib_coord_set_all(c,src->xyz,src->n);
     return c;
 }
 
-coord_t* coord_new_linked(const double *xyz, size_t n)
+sasalib_coord_t* sasalib_coord_new_linked(const double *xyz, size_t n)
 {
     assert(xyz != NULL);
-    coord_t *c = coord_new();
+    sasalib_coord_t *c = sasalib_coord_new();
     c->xyz = (double*)xyz; 
     c->n = n;
     c->is_const = 1;
     return c;
 }
 
-void coord_append(coord_t *c, const double *xyz, size_t n)
+void sasalib_coord_append(sasalib_coord_t *c, const double *xyz, size_t n)
 {
     assert(c   != NULL);
     assert(xyz != NULL);
@@ -78,8 +78,9 @@ void coord_append(coord_t *c, const double *xyz, size_t n)
     assert(dest != NULL);
 }
 
-void coord_append_xyz(coord_t *c, const double *x, const double *y, 
-                      const double *z, size_t n)
+void sasalib_coord_append_xyz(sasalib_coord_t *c, 
+			      const double *x, const double *y, 
+			      const double *z, size_t n)
 {
     assert(c != NULL);
     assert(x != NULL);
@@ -93,11 +94,11 @@ void coord_append_xyz(coord_t *c, const double *x, const double *y,
         xyz[i*3+1] = y[i];
         xyz[i*3+2] = z[i];
     }
-    coord_append(c,xyz,n);
+    sasalib_coord_append(c,xyz,n);
     free(xyz);
 }
 
-void coord_set_i(coord_t *c, int i, const double* xyz) 
+void sasalib_coord_set_i(sasalib_coord_t *c, int i, const double* xyz) 
 {
     assert(c   != NULL);
     assert(xyz != NULL);
@@ -108,7 +109,8 @@ void coord_set_i(coord_t *c, int i, const double* xyz)
     memcpy(&c->xyz[i*3], xyz, 3*sizeof(double));
 }
 
-void coord_set_i_xyz(coord_t *c,int i,double x,double y,double z)
+void sasalib_coord_set_i_xyz(sasalib_coord_t *c,int i,
+			     double x,double y,double z)
 {
     assert(c   != NULL);
     assert(c->n > i);
@@ -121,7 +123,7 @@ void coord_set_i_xyz(coord_t *c,int i,double x,double y,double z)
     *v_i = z;
 }
 
-void coord_set_all(coord_t *c, const double* xyz, size_t n) 
+void sasalib_coord_set_all(sasalib_coord_t *c, const double* xyz, size_t n) 
 {
     assert(c   != NULL);
     assert(xyz != NULL);
@@ -129,20 +131,21 @@ void coord_set_all(coord_t *c, const double* xyz, size_t n)
 
     if (c->xyz) free(c->xyz);
     c->n = 0;
-    coord_append(c,xyz,n);    
+    sasalib_coord_append(c,xyz,n);    
 }
 
-void coord_set_all_xyz(coord_t *c,const double* x, const double *y,
-                       const double *z, size_t n)
+void sasalib_coord_set_all_xyz(sasalib_coord_t *c,
+			       const double* x, const double *y,
+			       const double *z, size_t n)
 {
     assert(c != NULL);
     assert(!c->is_const);
     if (c->xyz) free(c->xyz);
     c->n = 0;
-    coord_append_xyz(c, x, y, z, n);
+    sasalib_coord_append_xyz(c, x, y, z, n);
 }
 
-void coord_set_length_i(coord_t *c, int i, double l)
+void sasalib_coord_set_length_i(sasalib_coord_t *c, int i, double l)
 {
     assert(c != NULL);
     assert(c->xyz != NULL);
@@ -155,14 +158,14 @@ void coord_set_length_i(coord_t *c, int i, double l)
     c->xyz[3*i+2] *= l/r;
 }
 
-void coord_set_length_all(coord_t *c, double l)
+void sasalib_coord_set_length_all(sasalib_coord_t *c, double l)
 {
     assert(c != NULL);
     assert(!c->is_const);
-    for (int i = 0; i < c->n; ++i) coord_set_length_i(c,i,l);
+    for (int i = 0; i < c->n; ++i) sasalib_coord_set_length_i(c,i,l);
 }
 
-const double* coord_i(const coord_t *c, int i)
+const double* sasalib_coord_i(const sasalib_coord_t *c, int i)
 {
     assert(c != NULL);
     assert(i < c->n);
@@ -170,9 +173,9 @@ const double* coord_i(const coord_t *c, int i)
     return &c->xyz[3*i];
 }
 
-double coord_dist(const coord_t *c, int i, int j)
+double sasalib_coord_dist(const sasalib_coord_t *c, int i, int j)
 {
-    return sqrt(coord_dist2(c,i,j));
+    return sqrt(sasalib_coord_dist2(c,i,j));
 }
 
 static inline double dist2(const double *v1, const double *v2)
@@ -181,40 +184,42 @@ static inline double dist2(const double *v1, const double *v2)
     return dx*dx + dy*dy + dz*dz;    
 }
 
-double coord_dist2(const coord_t *c, int i, int j)
+double sasalib_coord_dist2(const sasalib_coord_t *c, int i, int j)
 {
     double *v1 = &c->xyz[3*i];
     double *v2 = &c->xyz[3*j];
     return dist2(v1,v2);
 }
 
-double coord_dist2_12(const coord_t* c1, const coord_t* c2, int i1, int i2)
+double sasalib_coord_dist2_12(const sasalib_coord_t* c1, 
+			      const sasalib_coord_t* c2, int i1, int i2)
 {
     double *v1 = &c1->xyz[3*i1];
     double *v2 = &c2->xyz[3*i2];
     return dist2(v1,v2);
 }
 
-const double* coord_all(const coord_t *c)
+const double* sasalib_coord_all(const sasalib_coord_t *c)
 {
     assert(c != NULL);
     return c->xyz;
 }
 
-size_t coord_n(const coord_t* c)
+size_t sasalib_coord_n(const sasalib_coord_t* c)
 {
     assert(c != NULL);
     return c->n;
 }
 
-void coord_translate(coord_t *c, const double *xyz)
+void sasalib_coord_translate(sasalib_coord_t *c, const double *xyz)
 {
     assert(!c->is_const);
     assert(xyz != NULL);
-    coord_translate_xyz(c,xyz[0],xyz[1],xyz[2]);
+    sasalib_coord_translate_xyz(c,xyz[0],xyz[1],xyz[2]);
 }
 
-void coord_translate_xyz(coord_t *c, double x, double y, double z)
+void sasalib_coord_translate_xyz(sasalib_coord_t *c, 
+				 double x, double y, double z)
 {
     assert(c != NULL);
     assert(!c->is_const);
@@ -226,7 +231,7 @@ void coord_translate_xyz(coord_t *c, double x, double y, double z)
     }
 }
 
-void coord_scale(coord_t *c, double s)
+void sasalib_coord_scale(sasalib_coord_t *c, double s)
 {
     assert(c != NULL);
     assert(!c->is_const);
