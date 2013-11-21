@@ -115,7 +115,9 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file);
     allocated to store them in the array 'r'. The return value is the
     size of the allocated array. Prints error and returns SASALIB_FAIL
     if reading input fails. This can be used if coordinates are linked
-    as below and default radii are to be used. */
+    as below and default radii are to be used. 
+    Not properly tested yet!
+*/
 int sasalib_generate_radii(double **r, FILE *pdb_file);
 
 /** Link a set of coordinates to the sasalib_t object, if these
