@@ -137,10 +137,6 @@ int sasalib_link_coord(sasalib_t*, const double *coord,
     upon successful computation. */
 int sasalib_refresh(sasalib_t *s);
 
-/** Returns the total SASA. Negative return value and warning printed
-    if calculation hasn't been performed yet. */
-double sasalib_area_total(const sasalib_t*);
-
 /** Returns the number of atoms in the latest SASA calculation. */
 size_t sasalib_n_atoms(const sasalib_t*);
 
@@ -195,9 +191,13 @@ void sasalib_set_proteinname(sasalib_t*,const char*);
 /** Returns protein name. */
 const char* sasalib_get_proteinname(const sasalib_t*);
 
-/*********************************************************/
-/** Result analysis for calculations based on PDB input **/
-/*********************************************************/
+/*************/
+/** Results **/
+/*************/
+
+/** Returns the total SASA. Negative return value and warning printed
+    if calculation hasn't been performed yet. */
+double sasalib_area_total(const sasalib_t*);
 
 /** Returns the SASA of class c
     (polar/apolar/nucleic/unknown). Returns negative value if
@@ -226,6 +226,9 @@ const double* sasalib_area_atom_array(const sasalib_t*);
     value if atom index is invalid. */
 double sasalib_radius_atom(const sasalib_t*, int i);
 
+/** Returns array containing all atomic radii. Returns NULL if no results
+    are available. */
+const double* sasalib_radius_atom_array(const sasalib_t *s);
 /****************************/
 /** Other types of results **/
 /****************************/

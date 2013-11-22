@@ -8,6 +8,7 @@
 \usepackage{cite}
 \usepackage[perpage,symbol]{footmisc}
 \usepackage[hang,small]{caption}
+\usepackage{parskip}
 %\usepackage{pslatex}
 
 %\usepackage{fancyvrb}
@@ -286,16 +287,18 @@ cylinder.  Finally, the total SASA is obtained by adding up the
 contribution from all the slices, either for the whole protein, or
 atom by atom.
 
+
 \subsection{S\&R}
 
-For each atom $i$, use a set of test points evenly distributed
-(approximately) over the sphere of radius $R_i$, and count how many of
-the test points are not inside any of the other extended spheres of
-radius $R_j$. The number of exposed test points divided by the total
-number of test points gives the exposed solid angle of that atom. The
-precision of the algorithm is increased by increasing the number of
-test points, and calculation time scales approximately linearly with
-the number of test points.
+Shrake \& Rupley's algorithm uses test points to estimate what parts
+of an atom are exposed. For each atom $i$, use a set of test points
+evenly distributed (approximately) over the sphere of radius $R_i$,
+and count how many of the test points are not inside any of the other
+extended spheres of radius $R_j$. The number of exposed test points
+divided by the total number of test points gives the exposed solid
+angle of that atom. The precision of the algorithm is increased by
+increasing the number of test points, and calculation time scales
+approximately linearly with the number of test points.
 
 
 \section{Implementation}\label{sec:imp}
@@ -311,6 +314,7 @@ calculations using both algorithms for a large number of proteins (see
 section \ref{sec:dataset}) and comparing the results. Also, the
 calculated surface test points and slice contours were verified by
 visual inspection.
+
 
 \subsection{L\&R}
 
@@ -574,8 +578,6 @@ long, assuming the omitted characters specify a file location which is
 less interesting than the end specifying the actual file name. The default 
 protein name is ``undef''.
 
-\subsection{Calculations}
-
 \subsection{Calculations from PDB input}
 
 The function 
@@ -686,6 +688,54 @@ been linked using the function above.
 
 \subsection{Results}
 
+All the functions used to access calculated areas will return negative
+values if no calculation has been performed.
+
+The number of atoms, either supplied by the user or obtained from PDB input
+is accessed by the function
+\begin{verbatim}
+    size_t sasalib_n_atoms(const sasalib_t*)
+\end{verbatim}
+The total SASA is accessed using
+\begin{verbatim}
+    double sasalib_area_total(const sasalib_t*)
+\end{verbatim}
+The integrated SASA for different classes of atoms is accessed by
+\begin{verbatim}
+    double sasalib_area_class(const sasalib_t*, sasalib_class c)
+\end{verbatim}
+where the argument \verb|c| can have the values \verb|SASALIB_POLAR|, 
+\verb|SASALIB_APOLAR|, \verb|SASALIB_NUCLEICACID| or 
+\verb|SASALIB_CLASS_UNKNOWN|.
+
+To access the SASA for the different amino acid types use
+\begin{verbatim}
+    int sasalib_per_residue(FILE *output, const sasalib_t *s)
+\end{verbatim}
+At the moment only writing the results to a file is
+supported. 
+
+SASA of individual atoms are accessed either one by one, or
+as an array of doubles:
+\begin{verbatim}
+    double sasalib_area_atom(const sasalib_t*, int i)
+    const double* sasalib_area_atom_array(const sasalib_t*)
+\end{verbatim}
+and the same goes for atomic radii
+\begin{verbatim}
+    double sasalib_radius_atom(const sasalib_t*, int i);
+    const double* sasalib_radius_atom_array(const sasalib_t *s);
+\end{verbatim}
+In both cases the single-valued functions return negative values if
+either argument is out of bounds or there is no data available. The
+functions returning pointers return NULL pointers when no data is
+available.
+
+Finally the function 
+\begin{verbatim}
+    int sasalib_log(FILE *log, const sasalib_t*);
+\end{verbatim}
+prints parameters to the file \verb|log|.
 \subsection{The other headers}
 
 \section{Known issues}

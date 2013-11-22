@@ -393,14 +393,27 @@ const double* sasalib_area_atom_array(const sasalib_t *s)
 }
 double sasalib_radius_atom(const sasalib_t *s, int i)
 {
-    if (i >= 0 && i < s->n_atoms) {
-        return s->r[i];
+    if (s->r == NULL) {
+	fprintf(stderr,"%s: error: No atomic radii have been assigned.\n",
+		sasalib_name);
+	return -1.0;
     }
-    fprintf(stderr,"%s: error: Atom index %d invalid.\n",
-	    sasalib_name,i);
-    exit(EXIT_FAILURE);
+    if (i < 0 || i > s->n_atoms) {
+	fprintf(stderr,"%s: error: Atom index %d invalid.\n",
+		sasalib_name,i);
+	return -1.0;
+    }
+    return s->r[i];
 }
-
+const double* sasalib_radius_atom_array(const sasalib_t *s)
+{
+    if (s->r == NULL) {
+	fprintf(stderr,"%s: error: No atomic radii have been assigned.\n",
+		sasalib_name);
+	return NULL;
+    }
+    return s->r;
+}
 void sasalib_set_proteinname(sasalib_t *s,const char *name)
 {
     int n;
