@@ -9,6 +9,7 @@
 \usepackage[perpage,symbol]{footmisc}
 \usepackage[hang,small]{caption}
 \usepackage{parskip}
+\usepackage{array}
 %\usepackage{pslatex}
 
 %\usepackage{fancyvrb}
@@ -737,6 +738,27 @@ Finally the function
 \end{verbatim}
 prints parameters to the file \verb|log|.
 \subsection{The other headers}
+
+The following will give a brief description of the other headers in
+Sasalib. These are primarily for internal use within the library, and
+will therefore only be documented through comments in the headers
+themselves. This listing is meant to give a brief introduction for
+users who wish to understand the implementation better.
+
+\begin{tabular}{r>{\raggedright\arraybackslash}p{0.7\textwidth}}
+\texttt{structure.h} & Functions to deal with PDB structures, used 
+                       to organize coordinates and other information
+                       about atoms. Defines the type 
+                       \verb|sasalib_structure_t|.\\
+\texttt{coord.h} & Deals with coordinate storage and transformations. Defines
+                   the type \verb|sasalib_coord_t|.\\
+\texttt{pdb.h} & Functions for parsing inidividual lines in PDB-files \\
+\texttt{classify.h} & Functions for classifying atoms according
+                      to a number of different schemes.\\
+\texttt{sasa.h} & Functions for actual SASA calculations, based on
+                  \verb|sasalib_coord_t| objects.\\
+\texttt{srp.h} & Functions to deal with test points in S\&R. \\
+\end{tabular}
 
 \section{Known issues}
 
