@@ -14,9 +14,10 @@
 
 %\usepackage{fancyvrb}
 
-\author{Simon Mitternacht}
-\date{\today}
-\title{Sasalib Manual}
+\author{Simon Mitternacht} 
+\date{\today} 
+\title{Sasalib: An Open Source C Library for Solvent Accesible Surface
+  Calculations}
 
 \begin{document}
 \maketitle
@@ -27,7 +28,7 @@ GPLv3, and can be downloaded from github at:
 \begin{center}
 \texttt{https://github.com/mittinatten/sasalib/}
 \end{center}
-NB: This document is still a draft and not complete in any way.
+NB: This document a draft and slowly approaching completeness.
 \vspace{0.5cm}
 \hrule
 \section{Introduction}
@@ -36,20 +37,20 @@ measure of the surface of the molecule in contact with solvent. This
 area can for example quantify how folded the conformation of a
 macromolecule is, and can also be used to compare the exposed
 hydrophobic surfaces of different conformations or different
-molecules. To define the SASA, $A$, of given molecule, let a spherical
+molecules. To define the SASA, $A$, of a given molecule, let a spherical
 probe roll over the surface of the molecule, including internal
 cavities. $A$ is then the surface drawn by the center of the
 probe.~\cite{LnR} The probe represents a solvent molecule
-(i.e.\ water), and therefore cavities that are too small for the
-solvent to enter do not contribute to $A$.
+(i.e.\ water), and therefore cavities smaller than the solvent
+molecule do not contribute to $A$.
 
 Calculating Solvent Accessible Surface Areas (SASA) is a
-run-of-the-mill type calculation in protein structure studies. To the
+run-of-the-mill calculation in protein structure studies. To the
 author's knowledge there are no fully open source standalone programs
 for doing this. Neither are there any libraries designed to be easily
 integrated in other programs. The present library is an attempt to
 resolve both these issues, and is released under the GNU General
-Public License 3.0.
+Public License 3\footnote{See http://www.gnu.org/licenses/gpl.html}.
 
 Sasalib is a both a standalone command line program and a C library
 for protein SASA calculations. The library provides a simple interface
@@ -65,12 +66,12 @@ library might include other algorithms as well.
 
 In constructing the library three possible use cases were considered. 
 \begin{enumerate}
-\item The user has a PDB-file and wishes to calculate total SASA of
+\item The user has a PDB-file and wishes to calculate the total SASA of
   the structure, or the SASA for certain groups or types of atoms.
-\item The user has a set of cartesian coordinates for atoms and radii
-  for these atoms and wants to calculate the total SASA for this object. 
-\item The user is simulating a molecule and wants to sample SASA of
-  different configurations during the simulation.
+\item The user has a set of cartesian atom coordinates and radii for
+  these atoms, and wants to calculate the total SASA for this object.
+\item The user is simulating different conformations of a molecule and
+  wants to measure the SASA at certain intervals during the simulation.
 \end{enumerate}
 For case 1 both the command-line interface (CLI) and the application
 programming interface (API) can be used. Using the API gives more
@@ -83,13 +84,13 @@ and categorization of atoms, which is necessary for assigning radii
 and to present SASA values integrated over different atom types, amino
 acid types, etc. If the user wants Sasalib to classify atoms and
 assign radii, data in the PDB-format must be provided. Users can also
-provide their own radii, coordinates and get the SASA for each
-individual atom in order to do their own analysis.
+provide their own radii and coordinates, and get the SASA for each
+individual atom.
 
 This document is organized as follows. Section \ref{sec:howto_short}
 gives a brief introduction to the library, presenting the command line
 interface and a short sample program that gives a general idea of how
-to use the library. This introduction is intended to cover most casual
+to use the library. The introduction is intended to cover most casual
 users' needs. Section \ref{sec:alg} describes the algorithms and
 compares their performance in terms of computational cost and
 precision. In section \ref{sec:imp} the implementations are
@@ -148,8 +149,8 @@ The following options are available
   \item[-d] Grid spacing in Lee \& Richards algorithm.
   Default value is 0.25 Å.
   \item[-t] Number of threads to use in calculation (for multicore
-    CPUs). See section \ref{sec:speed} for an analysis of when this
-    has a significant effect on calculation speed.
+    CPUs). See section \ref{sec:speed} for a discussion of when this
+    has a significant effect on performance.
   \item[-r] Print SASA for each residue.
 \end{itemize}
 As an illustration, the command
@@ -161,19 +162,19 @@ with a slice width of 0.1 Å, using two threads (only makes sense for
 CPUs with two or more cores) and will print the total SASA of each
 residue type in addition to the standard output.
 
-Several pdb-files can be analyzed in one call as well, the results
-will be printed consecutively for each input file:
+Several PDB-files can be analyzed in one call as, the results will be
+printed consecutively for each input file:
 \begin{verbatim}
    $ ./calc_sasa 1abc.pdb 2abc.pdb ...
 \end{verbatim}
-The two calculations will not be run in parallel if the option '-t' is
+The calculations will not be run in parallel if the option '-t [n]' is
 used, instead each calculation is parallelized individually.
 
 \subsubsection{Output}
 Running the program using the default parameters on the PDB structure
 1UBQ gives the following output
 \begin{verbatim}
-    name: [path to pdb-files]/1ubq.pdb
+    name: 1ubq.pdb
     algorithm: Shrake & Rupley
     n_thread: 1
     n_testpoint: 100
@@ -234,9 +235,8 @@ two. Therefore the casual user is recommended to use S\&R. L\&R is
 mainly included for reference, and for the fact that the precision is
 only limited by floating point precision. In the current
 implementation S\&R can only be used with a predefined set of levels
-of precision. However, since SASA is not a fundamental measure or
-concept, it is not obvious what applications would require very high
-precision.
+of precision. However, it is not obvious what applications would
+require very high precision SASA values.
 
 We will use the following notation: An atom $i$ has a van der Waals
 radius $r_i$, the rolling sphere (or \emph{probe}) has radius
@@ -254,11 +254,11 @@ thickness. Precision is increased by making the slices thinner and the
 calculation time scales approximately as the number of slices.
 
 Divide the protein into slices of thickness $\delta$ along an
-arbitrary axis. The position of the slice along that axis is denoted
-$z$. The center of atom $i$, along the same axis, is at $z_i$. In the
-slice, each atom is thus a circle of radius $$R_i^\prime =
-\sqrt{R_i^2-(z-z_i)^2}\,.$$ These circles are either completely
-buried, completely exposed, or partially exposed.
+arbitrary axis. The position of the middle of the slice along that
+axis is denoted $z$. The center of atom $i$, along the same axis, is
+at $z_i$. In the slice, each atom is thus a circle of
+radius $$R_i^\prime = \sqrt{R_i^2-(z-z_i)^2}\,.$$ These circles are
+either completely buried, completely exposed, or partially exposed.
 
 The exposed arc lengths for each atom can be calculated exactly. For
 each pair of atoms $i,j$, the distance between their centers projected
@@ -291,24 +291,24 @@ atom by atom.
 
 \subsection{S\&R}
 
-Shrake \& Rupley's algorithm uses test points to estimate what parts
-of an atom are exposed. For each atom $i$, use a set of test points
-evenly distributed (approximately) over the sphere of radius $R_i$,
-and count how many of the test points are not inside any of the other
-extended spheres of radius $R_j$. The number of exposed test points
-divided by the total number of test points gives the exposed solid
-angle of that atom. The precision of the algorithm is increased by
-increasing the number of test points, and calculation time scales
-approximately linearly with the number of test points.
+Shrake \& Rupley's algorithm uses test points on a sphere to estimate
+what parts of an atom are exposed. For each atom $i$, use a set of
+test points evenly distributed (approximately) over the sphere of
+radius $R_i$, and count how many of the test points are not inside any
+of the other extended spheres of radius $R_j$. The number of exposed
+test points divided by the total number of test points gives the
+exposed solid angle of that atom. The precision of the algorithm is
+increased by increasing the number of test points, and calculation
+time scales approximately linearly with the number of test points.
 
 
 \section{Implementation}\label{sec:imp}
 
 This section describes the implementation of the algorithms in general
 terms. In both cases the implementations are rather straightforward,
-to make them simple and transparent. See sections
-\ref{sec:howto_short} and \ref{sec:using} for instructions for how to
-install and use the library.
+to keep them as simple and transparent as possible without sacrificing
+performance. See sections \ref{sec:howto_short} and \ref{sec:using}
+for instructions for how to install and use the library.
 
 The implementations were tested by performing high precision SASA
 calculations using both algorithms for a large number of proteins (see
@@ -321,18 +321,16 @@ visual inspection.
 
 The L\&R-calculation needs to know which atoms make contacts for each
 slice. Therefore the calculation begins by constructing adjacency
-lists for the protein. An contact matrix was used in early versions of
-the library, but the $O(N^2)$ memory requirements were prohibitive for
-large proteins. For each slice the adjacency lists are condensed to
-separate lists only containing the atoms in that particular
-slice. Each pair of adjacent atoms is then checked for adjacency in
-the particular slice and the overlapping arcs are calculated as
-described in section \ref{sec:alg_LnR}. When all buried arcs are
-counted for a given atom they are reduced to non-overlapping intervals
-recursively. In most cases this is done in one step, sometimes in two
-or three. The arc-lengths are then summed up for all atoms in the
-slice to calculate the total contribution to the area as described in
-\ref{sec:alg_LnR}.
+lists for the protein. For each slice the adjacency lists are
+condensed to separate lists only containing the atoms in that
+particular slice. Each pair of adjacent atoms is then checked for
+adjacency in the particular slice and the overlapping arcs are
+calculated as described in section \ref{sec:alg_LnR}. When all buried
+arcs have been counted for a given atom they are reduced to
+non-overlapping intervals recursively. In most cases this is done in
+only one recursion step, sometimes in two or three. The arc-lengths
+are then summed up for all atoms in the slice to calculate the total
+contribution to the area as described in \ref{sec:alg_LnR}.
 
 As described in section \ref{sec:accuracy}, this algorithm is
 significantly slower than S\&R. Profiling runs give no hints at
@@ -344,20 +342,16 @@ implementation (and is a performance bottleneck in some cases). The
 calculation could be both linearized and parallelized by using cell
 lists, but since the adjacency lists are only calculated once for each
 protein the overhead of setting up the cell lists is likely to be
-prohibitive for all but the largest proteins.\footnote{A preliminary,
-  somewhat buggy implementation of cell lists verified that at least
-  linearization alone was not worth the effort. Might be worth
-  investigating how it performs in parallel.}
-
+prohibitive for all but the largest proteins.
 
 \subsection{S\&R}
 
 In S\&R the list of neighbors for each atom is only used once, hence
 it is not precalculated. Generally the cost of calculating overlap
 between two spheres is much larger than identifying which atoms are
-neighbors, except in the case of very few test points. Calculating
-atom contacts on the fly also allows trivial parallelization of the
-whole calculation.
+neighbors, except in the limits of very few test points or very many
+atoms. Calculating atom contacts on the fly also allows trivial
+parallelization of the whole calculation.
 
 Test points were generated by placing a given number of equally
 charged particles on the surface of a sphere and then minimizing the
@@ -373,15 +367,15 @@ cover most users' need for speed and accuracy.
 \subsubsection{Data set}\label{sec:dataset}
 
 For evaluating and comparing the two algorithms a list of proteins was
-downloaded from the PISCES server (on Aug 12, 2013). The proteins have
-less than 20\,\% sequence identity, and the structures a resolution of
-1.6~Å or less and R-factors less than 0.25\footnote{The resolution of
-  the structures is not relevant for the present study. It was only
-  restricted to get a sufficiently small set of independent
-  structures.}. The list specifies which chain to use in a specific
-PDB-file. For the calculations here, whole PDB-files are used, giving
-a larger variation in protein size, which is useful for our
-purposes. The 2117 chains in the list gave a set of 2056 protein
+downloaded from the PISCES server \cite{PISCES} (on Aug 12, 2013). The
+proteins have less than 20\,\% sequence identity, and the structures a
+resolution of 1.6~Å or less and R-factors less than 0.25\footnote{The
+  resolution of the structures is not relevant for the present
+  study. It was only restricted to get a sufficiently small set of
+  independent structures.}. The list specifies which chain to use in a
+specific PDB-file. For the calculations here, whole PDB-files are
+used, giving a larger variation in protein size, which is useful for
+our purposes. The 2117 chains in the list gave a set of 2056 protein
 structures used for all calculations below.
 
 \subsubsection{Speed}\label{sec:speed}
@@ -425,12 +419,12 @@ parallelized. As mentioned above, in S\&R each atom can be treated
 independently, and in L\&R each slice. The efficiency of the
 parallelization in a two-threaded run can be seen in figure
 \ref{fig:time}. For S\&R the speed increase is close to twofold and
-independent of the accuracy, as expected. For L\&R the efficiency of
-parallelization increases with precision, i.e. the more slices are
-calculated, the more there is to gain from parallelizing the
-calculations. This result was also expected since the time needed to
-compute which atoms are neighbors, which is done in only one thread in
-the current implement, is independent of precision.
+almost independent of the accuracy, as expected. For L\&R the
+efficiency of parallelization increases with precision, i.e. the more
+slices are calculated, the more there is to gain from parallelizing
+the calculations. This result was also expected since the time needed
+to compute which atoms are neighbors, which is done in only one thread
+in the current implement, is independent of precision.
 
 \subsubsection{Accuracy as function of speed}\label{sec:accuracy}
 
@@ -453,8 +447,11 @@ present implementation.
     used. For L\&R slice thicknesses 0.01, 0.1, 0.2, 0.3, 0.5, 1.0,
     2.5 and 5.0 Å. The borders of the boxes indicate the quartiles of
     the distribution of $t$ and $\delta$ (i.e. 50~\% of the data are
-    within the box), and the error bars 5th and 95th percentiles.
-    \emph{Why is S\&R distribution much wider?}
+    within the box), and the error bars 5th and 95th percentiles.  The
+    horizontal bars are wider for S\&R because calculation time is
+    less linear as function of the number of atoms than for L\&R (see
+    figure~\ref{fig:time}). It is not clear why the precision varies
+    more for S\&R than for L\&R.
     \label{fig:precision}}
   \end{center}
 \end{figure}
@@ -502,7 +499,7 @@ in the header-files.
 \subsection{Error-handling}
 
 When an error is detected it will be reported to STDERR as an error
-message prefixed with the string ``sasalib: `` and when possible a
+message prefixed with the string ``sasalib:'' and when possible a
 return value indicating the severity of the error. The error-values
 used are \verb|SASALIB_SUCCESS|, \verb|SASALIB_WARN| and
 \verb|SASALIB_FAIL|. The first means no errors were detected; the
@@ -516,8 +513,8 @@ calculations have not yet been performed.  Internal errors,
 i.e.\ those that are to be considered programmer errors and not user
 or I/O-errors are dealt with through assert-statements. In most cases
 pointers supplied as arguments to different library functions will not
-be tested for validity, but the ensuing system errors should point
-programmers using the library in the right direction.
+be tested for validity.\footnote{The ensuing system errors should point
+programmers using the library in the right direction.}
 
 \subsection{Initialization}
 
@@ -542,7 +539,7 @@ There are a number of setter- and getter-functions for specifying the
 parameters of the calculations. If the specified parameter-value is
 invalid the setters print an error message explaining what is wrong,
 return \verb|SASALIB_WARN|, and proceed with the previously defined
-value (i.e. usually the default value).
+value (usually the default value).
 
 \subsubsection{Algorithms}
 
@@ -556,8 +553,8 @@ the current algorithm.
     sasalib_algorithm sasalib_get_algorithm(const sasalib_t*)
     const char* sasalib_algorithm_name(const sasalib_t*)
 \end{verbatim}
-The second will always return a valid value since all initialized
-\verb|sasalib_t| objects will have an assigned algorithm.
+The second function will always return a valid value since all
+initialized \verb|sasalib_t| objects will have an assigned algorithm.
 
 The following two functions are used to set and get the number of
 points to be used in S\&R calculations. 
@@ -591,10 +588,10 @@ which can be useful for logging purposes.
     const char* sasalib_get_proteinname(const sasalib_t*)
 \end{verbatim}
 Protein names can be no longer than \verb|SASALIB_NAME_LIMIT|
-characters long. Typically this will be a filename, therefore only the
-last characters of the supplied string are used if the string is too
-long, assuming the omitted characters specify a file location which is
-less interesting than the end specifying the actual file name. The default 
+characters long. Long names are typically filenames, therefore only
+the last characters of the supplied string are used if the string is
+too long, assuming the omitted characters specify a path that is less
+interesting than the end specifying the actual file name. The default
 protein name is ``undef''.
 
 \subsection{Calculations from PDB input}
@@ -604,9 +601,9 @@ The function
     int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
 \end{verbatim}
 is used to calculate SASA for a PDB-file. The
-\texttt{sasalib\_t}-object needs to be initialized before this
+\verb|sasalib_t|-object needs to be initialized before this
 function is called. This function returns either
-\texttt{SASALIB\_SUCCESS} or \texttt{SASALIB\_FAIL}. Failure can
+\verb|SASALIB_SUCCESS| or \verb|SASALIB_FAIL|. Failure can
 involve both problems reading the PDB input and problems setting up
 the calculations.
 
@@ -615,10 +612,10 @@ use Sasalib to calculate OONS radii, the function
 \begin{verbatim}
     int sasalib_generate_radii(double **r, FILE *pdb_file)
 \end{verbatim}
-reads the pdb-file and calculates radii based on its contents, and
-allocates memory to store them in \texttt{*r}. It is up to the user to
+reads the PDB-file and calculates radii based on its contents, and
+allocates memory to store them in \texttt{r}. It is up to the user to
 free this memory afterwards. This function returns either
-\texttt{SASALIB\_SUCCESS} or \texttt{SASALIB\_FAIL}. Failure means the
+\verb|SASALIB_SUCCESS| or \verb|SASALIB_FAIL|. Failure means the
 PDB input could not be read.
 
 \subsubsection{Assumptions}
@@ -643,8 +640,8 @@ PDB files (if not all), and if not should not cause any problems,
 since the residue identities are not explicitly used in the
 calculation or presentation of results (only their type). 
 
-Well-orderdness is also assumed when dealing with atoms that have
-several alternate coordinates. These ATOM entries have have non-blank
+Well-orderedness is also assumed when dealing with atoms that have
+several alternate coordinates. These ATOM entries have a non-blank
 value $a$ for the \emph{Alternative location indicator}. The first
 non-blank encountered value of $a$ is called $a^*$, and then all
 coordinates with $a = a^*$ are read. Coordinates with other values of
@@ -660,32 +657,34 @@ for assigning atomic radii, residue type, element, OONS type and if an
 atom is polar, apolar or part of a nucleic acid (the latter class
 might be divided and integrated into the former two eventually).
 
-Sasalib know about the standard 20 amino acids, plus ASX, GLX, XLE,
+Sasalib knows about the standard 20 amino acids, plus ASX, GLX, XLE,
 CSE and UNK. In addition to amino acids, the nucleic acids are
 identified as such, using the labels DA, DC, DG, DT, DU, DI, A, C, G,
 U, I, T and N. The classification scheme was run against the entire
 PDB in October 2013 and no ATOM entries not corresponding to these
 classes were found. The library prints a warning when UNK entries are
-found, to alert the reader that something might undefined. 
+found, to alert the reader that something might not be properly
+defined.
 
 For the standard 20 amino acids plus XLE entries, and most atoms in
 ASX, GLX, the regular OONS radii are used. For the unknown O or N atom
 in ASX and GLX a radius of 1.5 Å is used. For nucleic acids and UNK
 entries the element is deduced from the atom name and VdW radius from
-www.periodictable.com is used.
+www.periodictable.com is used. Atoms in UNK residues are classified as
+\verb|SASALIB_CLASS_UNKNOWN|, instead of polar/apolar.
 
 \subsection{Calculations using arrays of coordinates}
 
 The cartesian atom coordinates are stored internally as an array of
-size $3N$ and ordered as $x_1,y_1,z_1,x_2,y_2,z_2,\ldots,x_N,y_N,z_N$.
+size $3N$ and ordered as $x_1,y_1,z_1,x_2,y_2,z_2, \ldots ,x_N,y_N,z_N$.
 Users that want to calculate the SASA of a set of coordinates in this form,
 with corresponding atomic radii can use the function
 \begin{verbatim}
     int sasalib_calc_coord(sasalib_t*, const double *coord, 
                            const double *r, size_t n)
 \end{verbatim}
-If the user instead wants link coordinates to a
-\texttt{sasalib\_t}-object to allow repeated calculations on different
+If the user instead wants to link coordinates to a
+\verb|sasalib_t|-object to allow repeated calculations on different
 conformations of the same molecule, this is done using
 \begin{verbatim}
     int sasalib_link_coord(sasalib_t*, const double *coord,
@@ -696,13 +695,13 @@ Since the library can only assign radii using PDB input the user has
 to supply these as well in both the above cases. Assuming most
 simulation programs can produce PDB-output, a PDB-file generated by
 the caller can be used to calculate radii (using the function
-\texttt{sasalib\_generate\_radii(2)} described above) and then these
-can be used as input for \texttt{sasalib\_link\_coord(2)}. When a new
+\verb|sasalib_generate_radii(2)| described above) and then these
+can be used as input for \verb|sasalib_link_coord(4)|. When a new
 SASA values are needed these can be recalculated using
 \begin{verbatim} 
     int sasalib_refresh(sasalib_t *s)
 \end{verbatim}
-This function returns \texttt{SASALIB\_FAIL} if no coordinates have
+This function returns \verb|SASALIB_FAIL| if no coordinates have
 been linked using the function above.
 
 \subsection{Results}
@@ -755,12 +754,6 @@ Finally the function
     int sasalib_log(FILE *log, const sasalib_t*);
 \end{verbatim}
 prints parameters to the file \verb|log|.
-
-\section{Known issues}
-
-The atoms of non-standard amino acids will be labeled unknown type,
-and their contribution to for example the polar/apolar area will have
-to be integrated manually by the user.
 
 \section{Ideas for improvement and extension}
 
