@@ -77,8 +77,9 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
     sasalib_t *s = sasalib_init();
     double tmp;
     sasalib_copy_param(s,settings->s);
-    sasalib_set_proteinname(s,name);
-    sasalib_calc_pdb(s,input);
+    sasalib_set_proteinname(s,name); 
+    if (sasalib_calc_pdb(s,input) == SASALIB_FAIL) 
+	exit(EXIT_FAILURE);
     sasalib_log(stdout,s);
     printf("\nTotal: %9.2f Å2\nPolar: %9.2f Å2\nApolar: %9.2f Å2\n",
            sasalib_area_total(s), sasalib_area_class(s,SASALIB_POLAR),
@@ -107,8 +108,9 @@ int main (int argc, char **argv) {
     program_invocation_short_name = argv[0];
 #endif
 
-    while ((opt = getopt(argc, argv, "f:n:d:t:hLSr")) != -1) {
+    while ((opt = getopt(argc, argv, "f:n:d:t:p:hLSr")) != -1) {
 	errno = 0;
+	int result = SASALIB_SUCCESS;
         switch(opt) {
 	case 'h':
 	    help();
@@ -123,25 +125,28 @@ int main (int argc, char **argv) {
 	    }
 	    break;
 	case 'n':
-	    sasalib_set_sr_points(settings.s,atoi(optarg));
+	    result = sasalib_set_sr_points(settings.s,atoi(optarg));
 	    break;
 	case 'S':
-	    sasalib_set_algorithm(settings.s,SASALIB_SHRAKE_RUPLEY);
+	    result = sasalib_set_algorithm(settings.s,SASALIB_SHRAKE_RUPLEY);
 	    ++alg_set;
 	    break;
 	case 'L':
-	    sasalib_set_algorithm(settings.s,SASALIB_LEE_RICHARDS);
+	    result = sasalib_set_algorithm(settings.s,SASALIB_LEE_RICHARDS);
 	    ++alg_set;
 	    break;
 	case 'd':
-	    sasalib_set_lr_delta(settings.s,atof(optarg));
+	    result = sasalib_set_lr_delta(settings.s,atof(optarg));
+	    break;
+	case 'p':
+	    result = sasalib_set_probe_radius(settings.s,atof(optarg));
 	    break;
 	case 'r':
 	    settings.per_residue = 1;
 	    break;
 	case 't':
 #ifdef PTHREADS	    
-	    sasalib_set_nthreads(settings.s,atoi(optarg));
+	    result = sasalib_set_nthreads(settings.s,atoi(optarg));
 #else 
 	    fprintf(stderr, "%s: warning: option 't' only defined if program"
 		    " compiled with thread support.\n",
@@ -153,6 +158,18 @@ int main (int argc, char **argv) {
 		    program_invocation_short_name,opt);
 	    break;
 	}
+	if (result == SASALIB_FAIL) {
+	    fprintf(stderr, "%s: error: failed to start SASA calculation with "
+		    "provided options. Aborting", 
+		    program_invocation_short_name);
+	    if (errno != 0) fprintf(stderr,"; %s\n",strerror(errno));
+	    else fprintf(stderr,".\n");
+	    exit(EXIT_FAILURE);
+	} else if (result == SASALIB_WARN) {
+	    fprintf(stderr, "%s: warning: There were warnings, calculations "
+		    "might not correspond to specification.\n", 
+		    program_invocation_short_name);
+	}
     }
     if (alg_set > 1) {
 	fprintf(stderr, "%s: error: multiple algorithms specified.\n",
@@ -162,7 +179,7 @@ int main (int argc, char **argv) {
 
     printf("\n# SASALIB 2013\n# Run '%s -h' for usage\n",argv[0]);
 
-    if (argc > 0) {
+    if (argc > optind) {
 	for (int i = optind; i < argc; ++i) {
 	    errno = 0;
 	    input = fopen(argv[i],"r");
@@ -176,6 +193,7 @@ int main (int argc, char **argv) {
 	    }	    
 	}
     } else {
+	printf("# Reading PDB from STDIN.\n");
 	run_analysis(stdin,"stdin",&settings);
     }    
 

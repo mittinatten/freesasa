@@ -23,9 +23,6 @@
 #include <stdio.h>
 #include "coord.h"
 
-//this could be made a user option
-#define SASA_PROBE_RADIUS 1.4 
-
 /** Solvent accessible surface area for each atom is written to the
     array 'sasa'. The user is responsible for making sure this has the
     right size.  'n_points' is the number of points (<= MAX_SR_POINTS)
@@ -38,6 +35,7 @@
 int sasalib_shrake_rupley(double *sasa,
 			  const sasalib_coord_t *c,
 			  const double *radii,
+			  double probe_radius,
 			  int n_points,
 			  int n_threads);
 
@@ -50,6 +48,7 @@ int sasalib_shrake_rupley(double *sasa,
 int sasalib_lee_richards(double* sasa,
 			 const sasalib_coord_t *c,
 			 const double *radii,
+			 double probe_radius,
 			 double grid,
 			 int n_threads);
 

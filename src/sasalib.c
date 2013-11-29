@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 
 #include "sasa.h"
 #include "pdb.h"
@@ -50,6 +51,7 @@ struct sasalib_ {
     sasalib_coord_t *coord;
     class_t *class;
     int n_atoms;
+    double probe_radius;
     int n_sr;
     double d_lr;
     int n_threads;
@@ -67,6 +69,7 @@ const sasalib_t sasalib_def_param = {
     .class = NULL,
     .result = NULL,
     .n_atoms = 0,
+    .probe_radius = SASALIB_DEF_PROBE_RADIUS,
     .n_sr = SASALIB_DEF_SR_N,
     .d_lr = SASALIB_DEF_LR_D,
     .n_threads = 1,
@@ -159,10 +162,12 @@ int sasalib_calc(sasalib_t *s, const sasalib_coord_t *c, const double *r)
     switch(s->alg) {
     case SASALIB_SHRAKE_RUPLEY:
         res = sasalib_shrake_rupley(result->sasa, c, r, 
+				    s->probe_radius,
 				    s->n_sr, s->n_threads);
         break;
     case SASALIB_LEE_RICHARDS:
         res = sasalib_lee_richards(result->sasa, c, r, 
+				   s->probe_radius,
 				   s->d_lr, s->n_threads);
 	break;
     default:
@@ -198,6 +203,7 @@ void sasalib_copy_param(sasalib_t *target, const sasalib_t *source)
     target->n_sr = source->n_sr;
     target->d_lr = source->d_lr;
     target->n_threads = source->n_threads;
+    target->probe_radius = source->probe_radius;
 }
 
 void sasalib_free(sasalib_t *s)
@@ -296,6 +302,22 @@ const char* sasalib_algorithm_name(const sasalib_t *s)
     return sasalib_alg_names[s->alg];
 }
 
+int sasalib_set_probe_radius(sasalib_t *s,double r) 
+{
+    if (r < 0 || !isfinite(r)) {
+	fprintf(stderr,"%s: error: Probe radius r = %f not allowed.",
+		sasalib_name, r);
+	return SASALIB_WARN;
+    }
+    s->probe_radius = r;
+    return SASALIB_SUCCESS;
+}
+
+double sasalib_get_probe_radius(const sasalib_t *s)
+{
+    return s->probe_radius;
+}
+
 int sasalib_set_sr_points(sasalib_t *s, int n) {
     if (sasalib_srp_n_is_valid(n)) { 
         s->n_sr = n;
@@ -318,7 +340,7 @@ int sasalib_get_sr_points(const sasalib_t* s)
 
 int sasalib_set_lr_delta(sasalib_t *s, double d)
 {
-    if (d > 0 && d < 5.01) {
+    if (d > 0 && d <= 5) {
         s->d_lr = d;
         return SASALIB_SUCCESS;
     }
@@ -442,7 +464,7 @@ int sasalib_log(FILE *log, const sasalib_t *s)
     }
     fprintf(log,"# Using van der Waals radii and atom classes defined \n"
             "# by Ooi et al (PNAS 1987, 84:3086-3090) and a probe radius\n"
-            "# of %f Å.\n\n", SASA_PROBE_RADIUS);
+            "# of %f Å.\n\n", s->probe_radius);
     fprintf(log,"name: %s\n",s->proteinname);
     fprintf(log,"algorithm: %s\n",sasalib_alg_names[s->alg]);
 #ifdef PTHREADS

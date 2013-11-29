@@ -67,6 +67,7 @@ typedef enum {
 #define SASALIB_NAME_LIMIT 30
 
 // Default parameters
+#define SASALIB_DEF_PROBE_RADIUS 1.4
 #define SASALIB_DEF_SR_N 100
 #define SASALIB_DEF_LR_D 0.25
 
@@ -153,6 +154,14 @@ sasalib_algorithm sasalib_get_algorithm(const sasalib_t*);
 
 /** Returns name of algorithm. */
 const char* sasalib_algorithm_name(const sasalib_t*);
+
+/** Sets probe-radius for SASA calculations (default 1.4 Å). Returns
+    SASALIB_SUCCESS for valid r-values. Prints error message and
+    returns SASALIB_WARN else. */
+int sasalib_set_probe_radius(sasalib_t*,double r);
+
+/** Returns probe radius. */
+double sasalib_get_probe_radius(const sasalib_t*);
 
 /** Sets number of points for S&R algorithm (default 100). Returns
     SASALIB_SUCCESS if n is valid, prints error message and returns

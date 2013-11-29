@@ -46,6 +46,7 @@ typedef struct {
     int i1,i2;
     int n_atoms;
     int n_points;
+    double probe_radius;
     const sasalib_coord_t *xyz;
     const sasalib_coord_t *srp;
     const double *r;
@@ -99,6 +100,7 @@ static void sasa_get_contacts(int **nb, int *nn,
 int sasalib_shrake_rupley(double *sasa,
 			  const sasalib_coord_t *xyz,
 			  const double *r,
+			  double probe_radius,
 			  int n_points,
 			  int n_threads)
 {
@@ -119,6 +121,7 @@ int sasalib_shrake_rupley(double *sasa,
     }
     //store parameters and reference arrays
     sasa_sr_t sr = {.n_atoms = n_atoms, .n_points = n_points, 
+		    .probe_radius = probe_radius,
                     .xyz = xyz, .srp = srp,
                     .r = r, .spcount_0 = spcount_0,
                     .sasa = sasa};
@@ -196,7 +199,7 @@ static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
     /* this array keeps track of which testpoints belonging to
        a certain atom overlap with other atoms */
     char spcount[n_points];
-    const double ri = sr.r[i]+SASA_PROBE_RADIUS;
+    const double ri = sr.r[i]+sr.probe_radius;
     const double *vi = sasalib_coord_i(xyz,i);
     double xi = vi[0], yi = vi[1], zi = vi[2]; 
     const double *v = sasalib_coord_all(xyz);
@@ -211,7 +214,7 @@ static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
     
     for (int j = 0; j < sr.n_atoms; ++j) {
         if (j == i) continue;
-	const double rj = sr.r[j]+SASA_PROBE_RADIUS;
+	const double rj = sr.r[j]+sr.probe_radius;
         const double cut2 = (ri+rj)*(ri+rj);
 
 	/* this turns out to be the fastest way (by far) to access the
@@ -242,6 +245,7 @@ static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
 int sasalib_lee_richards(double *sasa,
 			 const sasalib_coord_t *xyz,
 			 const double *atom_radii,
+			 double probe_radius,
 			 double delta,
 			 int n_threads)
 {
@@ -262,7 +266,7 @@ int sasalib_lee_richards(double *sasa,
     double radii[n_atoms];
     const double *v = sasalib_coord_all(xyz);
     for (size_t i = 0; i < n_atoms; ++i) {
-        radii[i] = atom_radii[i] + SASA_PROBE_RADIUS;
+        radii[i] = atom_radii[i] + probe_radius;
         double z = v[3*i+2], r = radii[i];
         max_z = z > max_z ? z : max_z;
         min_z = z < min_z ? z : min_z;
