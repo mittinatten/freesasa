@@ -29,6 +29,8 @@
 #include "classify.h"
 #include "coord.h"
 
+extern const char *sasalib_name;
+
 typedef struct {
     char res_name[PDB_ATOM_RES_NAME_STRL+1];
     char res_number[PDB_ATOM_RES_NUMBER_STRL+1];
@@ -96,9 +98,24 @@ sasalib_structure_t* sasalib_structure_init_from_pdb(FILE *pdb_file)
             sasalib_structure_add_atom(p,a.atom_name,a.res_name,a.res_number,
 				       a.chain_label, v[0], v[1], v[2]);
         }
-        if (strncmp("ENDMDL",line,4)==0) break;
+        if (strncmp("ENDMDL",line,4)==0) {
+	    if (p->number_atoms == 0) {
+		fprintf(stderr, "%s: error: input had ENDMDL before "
+			"first ATOM entry.\n", sasalib_name);
+		free(line);
+		sasalib_structure_free(p);
+		return NULL;
+	    }
+	    break;
+	}
     }
     free(line);
+    if (p->number_atoms == 0) {
+	fprintf(stderr,"%s: error: input had no ATOM entries.\n",
+		sasalib_name);
+	sasalib_structure_free(p);
+	return NULL;
+    }
     return p;
 }
 

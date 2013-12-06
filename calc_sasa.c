@@ -78,8 +78,11 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
     double tmp;
     sasalib_copy_param(s,settings->s);
     sasalib_set_proteinname(s,name); 
-    if (sasalib_calc_pdb(s,input) == SASALIB_FAIL) 
+    if (sasalib_calc_pdb(s,input) == SASALIB_FAIL) {
+	fprintf(stderr,"%s: error: Invalid input. Aborting.\n",
+		program_invocation_short_name);
 	exit(EXIT_FAILURE);
+    }
     sasalib_log(stdout,s);
     printf("\nTotal: %9.2f Å2\nPolar: %9.2f Å2\nApolar: %9.2f Å2\n",
            sasalib_area_total(s), sasalib_area_class(s,SASALIB_POLAR),

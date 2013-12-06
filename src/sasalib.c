@@ -234,7 +234,6 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
     if (!p) {
 	fprintf(stderr,"%s: error: failed to read pdb-file.\n",
 		sasalib_name);
-	sasalib_structure_free(p);
 	return SASALIB_FAIL;
     }
     if (!(s->n_atoms = sasalib_structure_n(p))) {
@@ -319,6 +318,13 @@ double sasalib_get_probe_radius(const sasalib_t *s)
 }
 
 int sasalib_set_sr_points(sasalib_t *s, int n) {
+    if (s->alg != SASALIB_SHRAKE_RUPLEY) {
+	fprintf(stderr,"%s: warning: Setting test points for '%s', but "
+		"'%s' algorithm selected.\n", sasalib_name,
+		sasalib_alg_names[SASALIB_SHRAKE_RUPLEY],
+		sasalib_alg_names[s->alg]);
+	
+    }
     if (sasalib_srp_n_is_valid(n)) { 
         s->n_sr = n;
         return SASALIB_SUCCESS;
@@ -340,6 +346,12 @@ int sasalib_get_sr_points(const sasalib_t* s)
 
 int sasalib_set_lr_delta(sasalib_t *s, double d)
 {
+    if (s->alg != SASALIB_LEE_RICHARDS) {
+	fprintf(stderr,"%s: warning: Setting slice width for '%s', but "
+		"'%s' algorithm selected.\n", sasalib_name,
+		sasalib_alg_names[SASALIB_LEE_RICHARDS],
+		sasalib_alg_names[s->alg]);
+    }
     if (d > 0 && d <= 5) {
         s->d_lr = d;
         return SASALIB_SUCCESS;

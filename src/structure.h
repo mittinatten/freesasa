@@ -36,7 +36,8 @@ void sasalib_structure_free(sasalib_structure_t*);
     structures) only the first model is used. If non-default behavior
     is wanted the pdb-file needs to be modified before calling this
     function, or atoms can be added manually using
-    sasalib_structure_add_atom(). */
+    sasalib_structure_add_atom(). Returns NULL and prints error if
+    input is invalid. */
 sasalib_structure_t* sasalib_structure_init_from_pdb(FILE *pdb_file);
 
 /** storing residue numbers as strings allows for nonstandard formats,
