@@ -204,6 +204,7 @@ void sasalib_copy_param(sasalib_t *target, const sasalib_t *source)
     target->d_lr = source->d_lr;
     target->n_threads = source->n_threads;
     target->probe_radius = source->probe_radius;
+    target->calculated = 0;
 }
 
 void sasalib_free(sasalib_t *s)
@@ -221,6 +222,7 @@ void sasalib_free(sasalib_t *s)
 int sasalib_calc_coord(sasalib_t *s, const double *coord, 
                        const double *r, size_t n)
 {
+    s->calculated = 0;
     s->n_atoms = n;
     sasalib_coord_t *c = sasalib_coord_new_linked(coord,n);
     int res = sasalib_calc(s,c,r);
@@ -230,6 +232,7 @@ int sasalib_calc_coord(sasalib_t *s, const double *coord,
 
 int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
 {
+    s->calculated = 0;
     sasalib_structure_t *p = sasalib_structure_init_from_pdb(pdb_file);
     if (!p) {
 	fprintf(stderr,"%s: error: failed to read pdb-file.\n",
@@ -259,6 +262,7 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
 int sasalib_link_coord(sasalib_t *s, const double *coord,
                        double *r, size_t n) 
 {
+    s->calculated = 0;
     s->coord = sasalib_coord_new_linked(coord,n);
 
     if (s->r) free(s->r);
@@ -270,9 +274,11 @@ int sasalib_link_coord(sasalib_t *s, const double *coord,
 
 int refresh(sasalib_t *s)
 {
+    s->calculated = 0;
     if (! s->coord || ! s->r ) {
         fprintf(stderr,"%s: error: trying to refresh unitialized "
-                "sasalib_t-object.\n",sasalib_name);
+                "sasalib_t-object. Either coordinates or radii "
+		"missing.\n",sasalib_name);
         return SASALIB_FAIL;
     }
     sasalib_calc(s,s->coord,s->r);
@@ -281,6 +287,7 @@ int refresh(sasalib_t *s)
 
 int sasalib_set_algorithm(sasalib_t *s, sasalib_algorithm alg)
 {
+    s->calculated = 0;
     if (alg == SASALIB_SHRAKE_RUPLEY || alg == SASALIB_LEE_RICHARDS) { 
         s->alg = alg;
         return SASALIB_SUCCESS;
@@ -303,6 +310,7 @@ const char* sasalib_algorithm_name(const sasalib_t *s)
 
 int sasalib_set_probe_radius(sasalib_t *s,double r) 
 {
+    s->calculated = 0;
     if (r < 0 || !isfinite(r)) {
 	fprintf(stderr,"%s: error: Probe radius r = %f not allowed.",
 		sasalib_name, r);
@@ -318,6 +326,7 @@ double sasalib_get_probe_radius(const sasalib_t *s)
 }
 
 int sasalib_set_sr_points(sasalib_t *s, int n) {
+    s->calculated = 0;
     if (s->alg != SASALIB_SHRAKE_RUPLEY) {
 	fprintf(stderr,"%s: warning: Setting test points for '%s', but "
 		"'%s' algorithm selected.\n", sasalib_name,
@@ -329,13 +338,13 @@ int sasalib_set_sr_points(sasalib_t *s, int n) {
         s->n_sr = n;
         return SASALIB_SUCCESS;
     }
-    fprintf(stderr,"%s: error: Number of test-points must be"
+    fprintf(stderr,"%s: warning: Number of test-points must be"
 	    " one of the following:  ", sasalib_name);
     sasalib_srp_print_n_opt(stderr);
-    fprintf(stderr,"%s: error: Proceeding with default value (%d)\n",
+    fprintf(stderr,"%s: warning: Proceeding with default value (%d)\n",
             sasalib_name,SASALIB_DEF_SR_N);
     s->n_sr = SASALIB_DEF_SR_N;
-    return SASALIB_FAIL;
+    return SASALIB_WARN;
 }
 
 int sasalib_get_sr_points(const sasalib_t* s)
@@ -346,18 +355,28 @@ int sasalib_get_sr_points(const sasalib_t* s)
 
 int sasalib_set_lr_delta(sasalib_t *s, double d)
 {
+    s->calculated = 0;
     if (s->alg != SASALIB_LEE_RICHARDS) {
 	fprintf(stderr,"%s: warning: Setting slice width for '%s', but "
 		"'%s' algorithm selected.\n", sasalib_name,
 		sasalib_alg_names[SASALIB_LEE_RICHARDS],
 		sasalib_alg_names[s->alg]);
     }
-    if (d > 0 && d <= 5) {
-        s->d_lr = d;
-        return SASALIB_SUCCESS;
+    if (d > 0 && isfinite(d)) {
+	s->d_lr = d;
+	if (d <= 2) return SASALIB_SUCCESS;
+	if (d > 2 && isfinite(d)) {
+	    fprintf(stderr,"%s: warning: For regular SASA calculations, " 
+		    "slice width should be less than atomic radii "
+		    "(~2 Å) for meaningful results.\n", sasalib_name);
+	    fprintf(stderr,"%s: warning: Will proceed with selected "
+		    "value (%f), but results might be inaccurate.\n", 
+		    sasalib_name,d);
+	    return SASALIB_WARN;
+	}
     }
-    fprintf(stderr,"%s: error: slice width has to lie between 0 and 5 Å\n",
-	    sasalib_name);
+    fprintf(stderr,"%s: error: slice width '%f' invalid.\n",
+	    sasalib_name,d);
     fprintf(stderr,"%s: error: Proceeding with default value (%f)\n",
             sasalib_name, SASALIB_DEF_LR_D);
     s->d_lr = SASALIB_DEF_LR_D;
@@ -502,7 +521,7 @@ int sasalib_per_residue(FILE *output, const sasalib_t *s)
 {
     if (! s->calculated) {
         fprintf(stderr,"%s: warning: sasalib_per_residue(2) called, "
-                "but no calculation has been performed\n",sasalib_name);
+                "but no calculation has been performed.\n",sasalib_name);
         return SASALIB_WARN;
     }
     for (int i = 0; i < sasalib_classify_nresiduetypes(); ++i) {
@@ -516,6 +535,11 @@ int sasalib_per_residue(FILE *output, const sasalib_t *s)
 
 double sasalib_area_residue(const sasalib_t *s, const char *res_name)
 {
+    if (! s->calculated) {
+	fprintf(stderr,"%s: warning: sasalib_area_residue(2) called, "
+		"but no calculation has been performed.\n",sasalib_name);
+	return -1;
+    }
     int res = sasalib_classify_residue(res_name);
     return s->result->residue[res];
 }

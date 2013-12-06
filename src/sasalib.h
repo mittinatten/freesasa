@@ -223,7 +223,8 @@ int sasalib_per_residue(FILE *output, const sasalib_t *s);
     res_name is unknown, a warning is printed and the SASA value for
     residue type UNK returned, because that is where it would be
     stored. I.e. if residues not known by Sasalib are used, the only
-    option currently is to group them under "UNK". */
+    option currently is to group them under "UNK". Returns negative
+    value if called before calculations have been performed.*/
 double sasalib_area_residue(const sasalib_t*, const char *res_name);
 
 /**********************************/

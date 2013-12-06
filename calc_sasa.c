@@ -168,8 +168,9 @@ int main (int argc, char **argv) {
 	    else fprintf(stderr,".\n");
 	    exit(EXIT_FAILURE);
 	} else if (result == SASALIB_WARN) {
-	    fprintf(stderr, "%s: warning: There were warnings, calculations "
-		    "might not correspond to specification.\n", 
+	    fprintf(stderr, "%s: warning: calculations might not "
+		    "correspond to specification or results might "
+		    "be unreliable (see warnings).\n", 
 		    program_invocation_short_name);
 	}
     }
