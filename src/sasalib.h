@@ -219,6 +219,13 @@ double sasalib_area_class(const sasalib_t*, sasalib_class c);
     input. */
 int sasalib_per_residue(FILE *output, const sasalib_t *s);
 
+/** Returns total SASA for residue of specified type. If the value of
+    res_name is unknown, a warning is printed and the SASA value for
+    residue type UNK returned, because that is where it would be
+    stored. I.e. if residues not known by Sasalib are used, the only
+    option currently is to group them under "UNK". */
+double sasalib_area_residue(const sasalib_t*, const char *res_name);
+
 /**********************************/
 /** Results for individual atoms **/
 /**********************************/

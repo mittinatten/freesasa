@@ -502,3 +502,8 @@ int sasalib_per_residue(FILE *output, const sasalib_t *s)
     return SASALIB_SUCCESS;
 }
 
+double sasalib_area_residue(const sasalib_t *s, const char *res_name)
+{
+    int res = sasalib_classify_residue(res_name);
+    return s->result->residue[res];
+}

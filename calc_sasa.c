@@ -91,7 +91,6 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
     if (settings->per_residue) { 
 	printf("\n");
 	sasalib_per_residue(stdout,s);
-	printf("\n");
     }
     sasalib_free(s);
 }

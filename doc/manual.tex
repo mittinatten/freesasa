@@ -726,12 +726,19 @@ where the argument \verb|c| can have the values \verb|SASALIB_POLAR|,
 \verb|SASALIB_APOLAR|, \verb|SASALIB_NUCLEICACID| or 
 \verb|SASALIB_CLASS_UNKNOWN|.
 
-To access the SASA for the different amino acid types use
+To access the SASA for the different amino acid types there are two
+options:
 \begin{verbatim}
     int sasalib_per_residue(FILE *output, const sasalib_t *s)
+    double sasalib_area_residue(const sasalib_t*, const char *res_name)
 \end{verbatim}
-At the moment only writing the results to a file is
-supported. 
+The first prints string-value pairs of all residue types to the
+specified file. All of the standard 20 residues are included, and the
+other types are printed only if the SASA is non-zero.  The second
+function takes the residue name as an argument and prints the SASA for
+the corresponding residue. If the residue name is unknown a warning is
+printed and the value recorded for the residue type ``UNK'' is
+printed.
 
 SASA of individual atoms are accessed either one by one, or
 as an array of doubles:
