@@ -10,7 +10,7 @@
 \usepackage[hang,small]{caption}
 \usepackage{parskip}
 \usepackage{array}
-%\usepackage{pslatex}
+\usepackage{pstricks}
 
 %\usepackage{fancyvrb}
 
@@ -259,6 +259,33 @@ axis is denoted $z$. The center of atom $i$, along the same axis, is
 at $z_i$. In the slice, each atom is thus a circle of
 radius $$R_i^\prime = \sqrt{R_i^2-(z-z_i)^2}\,.$$ These circles are
 either completely buried, completely exposed, or partially exposed.
+
+\begin{pspicture}(0,6)
+  % ellipses
+  \psellipse[linestyle=dashed,linewidth=0.01,linecolor=gray](3,3)(2,0.5)
+  \psellipse[linestyle=dashed,linewidth=0.01,linecolor=gray](3,4)(1.7321,0.4330)
+  \psellipse[linestyle=dashed,linewidth=0.01,linecolor=gray](3,2)(1.7321,0.4330)
+  % other slices
+  %\psline[linecolor=gray,linewidth=0.01](0,5)(6,5)
+  %\psline[linecolor=gray,linewidth=0.01](0,3)(6,3)
+  %\psline[linecolor=gray,linewidth=0.01](0,2)(6,2)
+  %\psline[linecolor=gray,linewidth=0.01](0,1)(6,1)
+  \pscircle(3,3){2}
+  % the slice
+  %\psline(0,4)(6,4)
+  \psline(-1,2.9)(1,5.1)(7,5.1)(5,2.9)(-1,2.9)
+  % triangle
+  \psline[linearc=0.001](3,3)(3,4)(1.2679,4)(3,3)
+  % coordinates and lengths
+  \psdot[dotscale=0.75](3,3)
+  \put(2.8,2.6){$(x_i,y_i,z_i)$}
+  \psdot[dotscale=0.75](3,4)
+  \put(2.8,4.15){$(x_i,y_i,z)$}
+  \put(1.9,3.1){$R_i$}
+  \put(2.1,4.2){$R_i^\prime$}
+  \put(3.1,3.4){$\lvert z-z_i\rvert$}
+
+\end{pspicture}
 
 The exposed arc lengths for each atom can be calculated exactly. For
 each pair of atoms $i,j$, the distance between their centers projected
