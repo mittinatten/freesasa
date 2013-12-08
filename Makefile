@@ -3,6 +3,10 @@ LDFLAGS=-lm -lpthread
 
 all: calc_sasa 
 
+.PHONY: doc
+
+doc:
+	$(MAKE) -C doc/
 calc_sasa: calc_sasa.c src/*.c src/*.h
 	gcc calc_sasa.c -o calc_sasa src/*.c $(CFLAGS) $(LDFLAGS)
 

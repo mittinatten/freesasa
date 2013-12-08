@@ -1,0 +1,30 @@
+\documentclass[10pt]{article}
+\usepackage{pst-all}
+\usepackage{pst-eps}
+\usepackage{amsmath}
+\psset{unit=8mm}
+\begin{document}
+\pagestyle{empty}
+\begin{TeXtoEPS}
+\begin{pspicture}(9,6)
+  %Ri = 2.5
+  %Rj = 2
+  %dij = 3
+  %alpha/2 = 0.722734 rad = 41.41 deg
+  %Ri*cos(alpha/2) = 15/8 = 1.875
+  %Ri*sin(alpha/2) = 1.65359
+  % circles
+  \pscircle(3,3){2.5}
+  \pscircle(6,3){2}
+  \psdot[dotscale=0.75](3,3)
+  \psdot[dotscale=0.75](6,3)
+  % triangles
+  \psline(3,3)(6,3)(4.875,4.65359)(3,3)
+  \psarc[linewidth=0.01](3,3){1.5}{0}{41.41}
+  \put(4.55,3.55){$\alpha/2$}
+  \put(3.5,4.1){$R_i^\prime$}
+  \put(5.5,3.9){$R_j^\prime$}
+  \put(4.5,2.6){$d_{ij}$}
+\end{pspicture}
+\end{TeXtoEPS}
+\end{document}
