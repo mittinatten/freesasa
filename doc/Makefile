@@ -1,10 +1,8 @@
-all: ms fig
+all: fig ms
 
-.PHONY: fig
+.PHONY: fig ms
 
-ms: manual.pdf
-
-manual.pdf: manual.tex
+ms: manual.tex
 	latex manual.tex
 	dvips -Ppdf manual.dvi
 	ps2pdf manual.ps
