@@ -88,7 +88,8 @@ enum {
 
 
 /** helper function, trims whitespace from beginning and end of string */
-static size_t trim_whitespace(char *target, const char *src, size_t length)
+size_t sasalib_trim_whitespace(char *target, const char *src, 
+			       size_t length)
 {
     if (length == 0) { return 0; }
     char *buf = (char*) malloc(length+1);
@@ -156,7 +157,7 @@ int sasalib_classify_residue(const char *res_name)
 {
     assert(strlen(res_name) == PDB_ATOM_RES_NAME_STRL);
     char cpy[PDB_ATOM_RES_NAME_STRL+1];
-    int len = trim_whitespace(cpy,res_name,strlen(res_name));
+    int len = sasalib_trim_whitespace(cpy,res_name,strlen(res_name));
     if (len > PDB_ATOM_RES_NAME_STRL) {
 	fprintf(stderr,"Warning: Illegal residue name '%s'\n",res_name);
 	return sasalib_UNK;
@@ -192,7 +193,7 @@ int sasalib_classify_element(const char *atom_name)
 
     //strip whitespace to simplify switch below
     char a[PDB_ATOM_NAME_STRL+1];
-    int len = trim_whitespace(a,atom_name,strlen(atom_name));
+    int len = sasalib_trim_whitespace(a,atom_name,strlen(atom_name));
 
     if (len > 0) {
 	switch (a[0]) {
