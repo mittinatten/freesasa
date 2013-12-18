@@ -27,12 +27,24 @@
 
 typedef struct sasalib_strset_ sasalib_strset_t;
 
+/** Create new strset_t-object. */
 sasalib_strset_t* sasalib_strset_new();
+
+/** Free strset_t-object. */
 int sasalib_strset_free(sasalib_strset_t*);
 
+/** Add new string to set. If an empty string is added, the function
+    returns SASALIB_WARN and the string is not added to the set. */
 int sasalib_strset_add(sasalib_strset_t*, const char*);
+
+/** Delete a string from set. Returns SASALIB_WARN if the string
+    does not exist in the set. */
 int sasalib_strset_delete(sasalib_strset_t*, const char*);
+
+/** Returns 1 if the string exists in the set, 0 if not. */
 int sasalib_strset_exists(const sasalib_strset_t*, const char*);
+
+/** Returns the number of elements in the set. */
 int sasalib_strset_size(const sasalib_strset_t*);
 
 /** Creates array of all registered strings. Array and each string

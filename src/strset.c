@@ -70,7 +70,7 @@ int sasalib_strset_free(T *h)
     assert(h && "attempting to free null-pointer");
     element_t *e;
     for (int i = 0; i < TABLE_SIZE; ++i) {
-	if (e = h->table[i])
+	if ((e = h->table[i]))
 	    free_element(e);
     }
     free(h);
@@ -83,7 +83,7 @@ int sasalib_strset_add(T *h, const char *key)
 
     char *buf = (char*) malloc(strlen(key) + 1);
     sasalib_trim_whitespace(buf,key,strlen(key));
-    if (strlen(buf) == 0) return SASALIB_FAIL;
+    if (strlen(buf) == 0) return SASALIB_WARN;
 
     //generate new element
     element_t *e = (element_t*) malloc(sizeof(element_t));
@@ -148,6 +148,7 @@ int sasalib_strset_exists(const T *h, const char *key)
 }
 int sasalib_strset_size(const T *h) 
 {
+    assert(h);
     return h->n;
 }
 
