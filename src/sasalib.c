@@ -46,37 +46,46 @@ typedef struct {
 } result_t;
 
 struct sasalib_ {
-    sasalib_algorithm alg;
     double *r;
     sasalib_coord_t *coord;
     class_t *class;
     int n_atoms;
+    
+    //parameters
+    sasalib_algorithm alg;
     double probe_radius;
     int n_sr;
     double d_lr;
     int n_threads;
-    double elapsed_time;
+    char proteinname[SASALIB_NAME_LIMIT];
+    
+    //some internal flags
     int owns_r;
     int calculated;
+    
+    //results
+    double elapsed_time;
     result_t *result;
-    char proteinname[SASALIB_NAME_LIMIT];
 }; 
 
 const sasalib_t sasalib_def_param = {
-    .alg = SASALIB_SHRAKE_RUPLEY,
     .r = NULL,
     .coord = NULL,
     .class = NULL,
-    .result = NULL,
     .n_atoms = 0,
+
+    .alg = SASALIB_SHRAKE_RUPLEY,
     .probe_radius = SASALIB_DEF_PROBE_RADIUS,
     .n_sr = SASALIB_DEF_SR_N,
     .d_lr = SASALIB_DEF_LR_D,
     .n_threads = 1,
-    .elapsed_time = 0,
+    .proteinname = "undef",
+
     .owns_r = 0,
     .calculated = 0,
-    .proteinname = "undef"
+
+    .elapsed_time = 0,
+    .result = NULL
 };
 
 const char *sasalib_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
