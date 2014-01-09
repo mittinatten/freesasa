@@ -1,5 +1,5 @@
 /*
-  Copyright Simon Mitternacht 2013.
+  Copyright Simon Mitternacht 2013-2014.
 
   This file is part of Sasalib.
   
@@ -226,6 +226,13 @@ int sasalib_per_residue(FILE *output, const sasalib_t *s);
     option currently is to group them under "UNK". Returns negative
     value if called before calculations have been performed.*/
 double sasalib_area_residue(const sasalib_t*, const char *res_name);
+
+/** Takes original PDB and replaces B-factors with those from latest
+    calculation. Returns SASALIB_FAIL if there is no previous PDB
+    input to base output on, if there are problems with the output
+    destination, if there are no SASA-values to use, or there are
+    inconsistencies between stored structure and SASA-values. */
+int sasalib_write_pdb(FILE *output, const sasalib_t *s);
 
 /**********************************/
 /** Results for individual atoms **/

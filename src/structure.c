@@ -1,5 +1,5 @@
 /*
-  Copyright Simon Mitternacht 2013.
+  Copyright Simon Mitternacht 2013-2014.
 
   This file is part of Sasalib.
   
@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <errno.h>
 #include "structure.h"
 #include "pdb.h"
 #include "classify.h"
@@ -35,6 +36,7 @@ typedef struct {
     char res_name[PDB_ATOM_RES_NAME_STRL+1];
     char res_number[PDB_ATOM_RES_NUMBER_STRL+1];
     char atom_name[PDB_ATOM_NAME_STRL+1];
+    char line[PDB_LINE_STRL+1];
     char chain_label;
 } atom_t;
 
@@ -80,7 +82,7 @@ sasalib_structure_t* sasalib_structure_init_from_pdb(FILE *pdb_file)
 {
     sasalib_structure_t *p = sasalib_structure_init();
 
-    size_t len = 80;
+    size_t len = PDB_LINE_STRL;
     char *line = (char*) malloc(sizeof(char)*(len+1));
     char the_alt = ' ';
     while (getline(&line, &len, pdb_file) != -1) {
@@ -97,6 +99,7 @@ sasalib_structure_t* sasalib_structure_init_from_pdb(FILE *pdb_file)
             
             sasalib_structure_add_atom(p,a.atom_name,a.res_name,a.res_number,
 				       a.chain_label, v[0], v[1], v[2]);
+	    strncpy(p->a[p->number_atoms-1].line,line,PDB_LINE_STRL);
         }
         if (strncmp("ENDMDL",line,4)==0) {
 	    if (p->number_atoms == 0) {
@@ -216,4 +219,44 @@ char sasalib_structure_atom_chain(const sasalib_structure_t *p,
 {
     assert (i < p->number_atoms);
     return p->a[i].chain_label;
+}
+
+int sasalib_structure_write_pdb_bfactors(FILE *output, 
+					 const sasalib_structure_t *p,
+					 double *values)
+{
+    if (!output) {
+	fprintf(stderr,
+		"%s: error: NULL file pointer provided for PDB output.\n",
+		sasalib_name);
+	return SASALIB_FAIL;
+    }
+    // Write ATOM entries
+    char buf[PDB_LINE_STRL+1];
+    int n = sasalib_structure_n(p);
+    for (int i = 0; i < n; ++i) {
+	strncpy(buf,p->a[i].line,PDB_LINE_STRL);
+	sprintf(&buf[60],"%6.2f",values[i]); 
+	errno = 0;
+
+	if (fprintf(output,"%s\n",buf)<0) {
+	    fprintf(stderr,"%s: error: Problem writing new PDB-file. %s\n",
+		    sasalib_name, strerror(errno));
+	    return SASALIB_FAIL;
+	}
+    }
+    // Write TER line
+    errno = 0;
+    char buf2[6];
+    strncpy(buf2,&buf[6],5);
+    buf2[5]='\0';
+    if (fprintf(output,"TER   %5d     %4s %c%4s\n",
+		atoi(buf2)+1, p->a[n-1].res_name,
+		p->a[n-1].chain_label, p->a[n-1].res_number) < 0) {
+	fprintf(stderr,"%s: error: Problem writing new PDB-file. %s\n",
+		sasalib_name, strerror(errno));
+	return SASALIB_FAIL;
+    }
+
+    return SASALIB_SUCCESS;
 }

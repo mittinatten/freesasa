@@ -1,5 +1,5 @@
 /*
-  Copyright Simon Mitternacht 2013.
+  Copyright Simon Mitternacht 2013-2014.
 
   This file is part of Sasalib.
   
@@ -81,5 +81,12 @@ const char* sasalib_structure_atom_res_number(const sasalib_structure_t *p,
 
 /** get chain atom i belongs to */
 char sasalib_structure_atom_chain(const sasalib_structure_t *p, int i);
+
+/** Writes PDB file based on structure, but with B-factors replaced by
+    new values. Returns SASALIB_FAIL if there are problems with
+    output-file. */
+int sasalib_structure_write_pdb_bfactors(FILE *output, 
+					 const sasalib_structure_t *p,
+					 double *values);
 
 #endif

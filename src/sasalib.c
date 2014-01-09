@@ -1,5 +1,5 @@
 /*
-  Copyright Simon Mitternacht 2013.
+  Copyright Simon Mitternacht 2013-2014.
 
   This file is part of Sasalib.
   
@@ -50,6 +50,7 @@ struct sasalib_ {
     sasalib_coord_t *coord;
     class_t *class;
     int n_atoms;
+    sasalib_structure_t *structure;
     
     //parameters
     sasalib_algorithm alg;
@@ -73,6 +74,7 @@ const sasalib_t sasalib_def_param = {
     .coord = NULL,
     .class = NULL,
     .n_atoms = 0,
+    .structure = NULL,
 
     .alg = SASALIB_SHRAKE_RUPLEY,
     .probe_radius = SASALIB_DEF_PROBE_RADIUS,
@@ -225,6 +227,7 @@ void sasalib_free(sasalib_t *s)
     if (s->class) sasalib_class_free(s->class);
     if (s->result) sasalib_result_free(s->result);
     if (s->coord) sasalib_coord_free(s->coord);
+    if (s->structure) sasalib_structure_free(s->structure);
     free(s);
 }
 
@@ -233,6 +236,7 @@ int sasalib_calc_coord(sasalib_t *s, const double *coord,
 {
     s->calculated = 0;
     s->n_atoms = n;
+
     sasalib_coord_t *c = sasalib_coord_new_linked(coord,n);
     int res = sasalib_calc(s,c,r);
     sasalib_coord_free(c);
@@ -255,6 +259,9 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
 	return SASALIB_FAIL;
     }
     s->n_atoms = sasalib_structure_n(p);
+    
+    if (s->structure) sasalib_structure_free(s->structure);
+    s->structure = p;
 
     //calc OONS radii
     if (s->r) free(s->r);
@@ -264,7 +271,7 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
 
     int res = sasalib_calc(s,sasalib_structure_xyz(p),s->r);
     if (!res) sasalib_get_class_result(s,p);
-    sasalib_structure_free(p);
+
     return res;
 }
 
@@ -551,4 +558,29 @@ double sasalib_area_residue(const sasalib_t *s, const char *res_name)
     }
     int res = sasalib_classify_residue(res_name);
     return s->result->residue[res];
+}
+
+int sasalib_write_pdb(FILE *output, const sasalib_t *s)
+{
+    if (!s->calculated) {
+	fprintf(stderr,"%s: error: Cannot output results before calculation "
+		"has been performed.\n", sasalib_name);
+	return SASALIB_FAIL;
+    }
+    if (!s->structure) {
+	fprintf(stderr,"%s: error: Cannot write B-factors without input "
+		"structure.\n", sasalib_name);
+	return SASALIB_FAIL;
+    }
+    if (sasalib_structure_n(s->structure) != s->n_atoms) {
+	fprintf(stderr,"%s: error: Cannot write B-factors: number of atoms "
+		"in input PDB does not match calculation.\n", sasalib_name);
+	return SASALIB_FAIL;
+    }
+    if (!s->result->sasa) {
+	fprintf(stderr,"%s: error: Cannot write B-factors: no SASA values "
+		"available.\n",sasalib_name);
+    }
+    return sasalib_structure_write_pdb_bfactors(output,	s->structure,
+						s->result->sasa);
 }

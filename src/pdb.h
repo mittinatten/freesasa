@@ -23,6 +23,7 @@
 #define PDB_ATOM_NAME_STRL 4
 #define PDB_ATOM_RES_NAME_STRL 3
 #define PDB_ATOM_RES_NUMBER_STRL 4
+#define PDB_LINE_STRL 80
 
 /** Extracts the whole atom-name field from an ATOM pdb-line,
     including padding, i.e. a string of PDB_ATOM_NAME_STRL

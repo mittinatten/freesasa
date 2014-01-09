@@ -39,16 +39,18 @@ char *program_invocation_short_name;
 
 typedef struct  {
     sasalib_t *s;
+    FILE *B;
     int per_residue;
 } settings_t;
 
 settings_t def_settings = {
     .s = NULL,
+    .B = NULL,
     .per_residue = 0
 };
 
 void help() {
-    fprintf(stderr,"\nUsage: %s [options] pdb-file(s)\n",
+    fprintf(stderr,"\nUsage: %s [-hLSrf:n:d:t:p:B:] pdb-file(s)\n",
 	    program_invocation_short_name);
     fprintf(stderr,"\nOptions are:\n"
 	    "       -h  print this message\n"
@@ -65,11 +67,13 @@ void help() {
     fprintf(stderr,"       -t  number of threads to use in calculation (for multicore CPUs)\n");
 #endif    
     fprintf(stderr,"       -r  print SASA for each residue\n");
+    fprintf(stderr,"       -B  print PDB file with SASA for each atom as B-factors,\n" 
+	    "           in specified output file.");
     fprintf(stderr,"\nIf no pdb-file is specified STDIN is used for input.\n\n");
 }
 
 void short_help() {
-    fprintf(stderr,"Run '%s -h' for help.\n\n",
+    fprintf(stderr,"Run '%s -h' for usage instructions.\n",
 	    program_invocation_short_name);
 }
 
@@ -95,6 +99,8 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
 	printf("\n");
 	sasalib_per_residue(stdout,s);
     }
+    if (settings->B) 
+	sasalib_write_pdb(settings->B,s);
     sasalib_free(s);
 }
 
@@ -110,7 +116,7 @@ int main (int argc, char **argv) {
     program_invocation_short_name = argv[0];
 #endif
 
-    while ((opt = getopt(argc, argv, "f:n:d:t:p:hLSr")) != -1) {
+    while ((opt = getopt(argc, argv, "f:n:d:t:p:B:hLSr")) != -1) {
 	errno = 0;
 	int result = SASALIB_SUCCESS;
         switch(opt) {
@@ -121,6 +127,15 @@ int main (int argc, char **argv) {
 	    input = fopen(optarg, "r");
 	    if (input == NULL) {
 		fprintf(stderr,"%s: error: could not open file '%s'; %s\n", 
+			program_invocation_short_name,optarg,strerror(errno));
+		short_help();
+		exit(EXIT_FAILURE);
+	    }
+	    break;
+	case 'B':
+	    settings.B = fopen(optarg, "w");
+	    if (settings.B == NULL) {
+		fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
 			program_invocation_short_name,optarg,strerror(errno));
 		short_help();
 		exit(EXIT_FAILURE);
