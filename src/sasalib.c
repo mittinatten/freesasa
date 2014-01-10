@@ -509,11 +509,9 @@ int sasalib_log(FILE *log, const sasalib_t *s)
                 "has been performed.\n");
         return SASALIB_WARN;
     }
-    fprintf(log,"# Using van der Waals radii and atom classes defined \n"
-            "# by Ooi et al (PNAS 1987, 84:3086-3090) and a probe radius\n"
-            "# of %f Å.\n\n", s->probe_radius);
     fprintf(log,"name: %s\n",s->proteinname);
     fprintf(log,"algorithm: %s\n",sasalib_alg_names[s->alg]);
+    fprintf(log,"probe-radius: %f A\n",s->probe_radius);
 #ifdef PTHREADS
     fprintf(log,"n_thread: %d\n",s->n_threads);
 #endif
