@@ -20,6 +20,7 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <assert.h>
 #include <math.h>
 
@@ -30,6 +31,7 @@
 #include "classify.h"
 
 #define NBUF 100
+#define DEF_NTHREADS 1
 
 const char *sasalib_name = "sasalib";
 
@@ -80,7 +82,7 @@ const sasalib_t sasalib_def_param = {
     .probe_radius = SASALIB_DEF_PROBE_RADIUS,
     .n_sr = SASALIB_DEF_SR_N,
     .d_lr = SASALIB_DEF_LR_D,
-    .n_threads = 1,
+    .n_threads = DEF_NTHREADS,
     .proteinname = "undef",
 
     .owns_r = 0,
@@ -92,9 +94,24 @@ const sasalib_t sasalib_def_param = {
 
 const char *sasalib_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
+int sasalib_err(int err, const char *format, ...)
+{
+    fprintf(stderr, "%s: ", sasalib_name);
+    switch (err) {
+    case SASALIB_FAIL: fputs("error: ", stderr); break; 
+    case SASALIB_WARN: fputs("warning: ", stderr); break;
+    default: break;
+    }
+    va_list arg;
+    va_start(arg, format);
+    vfprintf(stderr, format, arg);
+    va_end(arg);
+    fputc('\n', stderr);
+    return err;
+}
+
 static class_t* sasalib_classify_structure(const sasalib_structure_t *p)
 {
-    assert(p != NULL);
     assert(sasalib_structure_n(p) >= 0 && 
 	   "Trying to classify atoms of illegal structure.");
     
@@ -159,7 +176,8 @@ static void sasalib_get_class_result(sasalib_t *s, sasalib_structure_t *p)
     }
 }
 
-int sasalib_calc(sasalib_t *s, const sasalib_coord_t *c, const double *r)
+static int sasalib_calc(sasalib_t *s, 
+			const sasalib_coord_t *c, const double *r)
 {
     struct timeval t1, t2;
     int res = 0;
@@ -182,9 +200,7 @@ int sasalib_calc(sasalib_t *s, const sasalib_coord_t *c, const double *r)
 				   s->d_lr, s->n_threads);
 	break;
     default:
-        fprintf(stderr,"%s: error: no SASA algorithm specified.\n",
-		sasalib_name);
-        return SASALIB_FAIL;
+        return sasalib_err(SASALIB_FAIL,"no SASA algorithm specified.");
     }
     result->total = 0;
     for (int i = 0; i < sasalib_coord_n(c); ++i) {
@@ -248,9 +264,7 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
     s->calculated = 0;
     sasalib_structure_t *p = sasalib_structure_init_from_pdb(pdb_file);
     if (!p) {
-	fprintf(stderr,"%s: error: failed to read pdb-file.\n",
-		sasalib_name);
-	return SASALIB_FAIL;
+	return sasalib_err(SASALIB_FAIL,"failed to read PDB-file.");
     }
     if (!(s->n_atoms = sasalib_structure_n(p))) {
 	fprintf(stderr,"%s: error: pdb-file was empty.\n",
@@ -288,14 +302,13 @@ int sasalib_link_coord(sasalib_t *s, const double *coord,
     return SASALIB_SUCCESS;
 }
 
-int refresh(sasalib_t *s)
+int sasalib_refresh(sasalib_t *s)
 {
     s->calculated = 0;
     if (! s->coord || ! s->r ) {
-        fprintf(stderr,"%s: error: trying to refresh unitialized "
-                "sasalib_t-object. Either coordinates or radii "
-		"missing.\n",sasalib_name);
-        return SASALIB_FAIL;
+        return sasalib_err(SASALIB_FAIL, "trying to refresh unitialized "
+			   "sasalib_t-object. Either coordinates or radii "
+			   "missing");
     }
     sasalib_calc(s,s->coord,s->r);
     return SASALIB_SUCCESS;
@@ -308,9 +321,8 @@ int sasalib_set_algorithm(sasalib_t *s, sasalib_algorithm alg)
         s->alg = alg;
         return SASALIB_SUCCESS;
     }
-    fprintf(stderr,"%s: warning: undefined algorithm selected, "
-            "proceeding with default.\n",sasalib_name);
-    return SASALIB_WARN;
+    return sasalib_err(SASALIB_WARN,"undefined algorithm selected, "
+		       "proceeding with default.");
 }
 
 sasalib_algorithm sasalib_get_algorithm(const sasalib_t *s)
@@ -328,9 +340,8 @@ int sasalib_set_probe_radius(sasalib_t *s,double r)
 {
     s->calculated = 0;
     if (r < 0 || !isfinite(r)) {
-	fprintf(stderr,"%s: error: Probe radius r = %f not allowed.",
-		sasalib_name, r);
-	return SASALIB_WARN;
+	return sasalib_err(SASALIB_WARN,
+			   "Probe radius r = %f not allowed,",r);
     }
     s->probe_radius = r;
     return SASALIB_SUCCESS;
@@ -343,22 +354,15 @@ double sasalib_get_probe_radius(const sasalib_t *s)
 
 int sasalib_set_sr_points(sasalib_t *s, int n) {
     s->calculated = 0;
-    if (s->alg != SASALIB_SHRAKE_RUPLEY) {
-	fprintf(stderr,"%s: warning: Setting test points for '%s', but "
-		"'%s' algorithm selected.\n", sasalib_name,
-		sasalib_alg_names[SASALIB_SHRAKE_RUPLEY],
-		sasalib_alg_names[s->alg]);
-	
-    }
     if (sasalib_srp_n_is_valid(n)) { 
         s->n_sr = n;
         return SASALIB_SUCCESS;
     }
-    fprintf(stderr,"%s: warning: Number of test-points must be"
-	    " one of the following:  ", sasalib_name);
+    sasalib_err(SASALIB_WARN,"number of test-points must be"
+		" one of the following:  ");
     sasalib_srp_print_n_opt(stderr);
-    fprintf(stderr,"%s: warning: Proceeding with default value (%d)\n",
-            sasalib_name,SASALIB_DEF_SR_N);
+    sasalib_err(SASALIB_WARN,"proceeding with default number of "
+		"test-points (%d)",SASALIB_DEF_SR_N);
     s->n_sr = SASALIB_DEF_SR_N;
     return SASALIB_WARN;
 }
@@ -372,29 +376,20 @@ int sasalib_get_sr_points(const sasalib_t* s)
 int sasalib_set_lr_delta(sasalib_t *s, double d)
 {
     s->calculated = 0;
-    if (s->alg != SASALIB_LEE_RICHARDS) {
-	fprintf(stderr,"%s: warning: Setting slice width for '%s', but "
-		"'%s' algorithm selected.\n", sasalib_name,
-		sasalib_alg_names[SASALIB_LEE_RICHARDS],
-		sasalib_alg_names[s->alg]);
-    }
     if (d > 0 && isfinite(d)) {
 	s->d_lr = d;
 	if (d <= 2) return SASALIB_SUCCESS;
-	if (d > 2 && isfinite(d)) {
-	    fprintf(stderr,"%s: warning: For regular SASA calculations, " 
-		    "slice width should be less than atomic radii "
-		    "(~2 Å) for meaningful results.\n", sasalib_name);
-	    fprintf(stderr,"%s: warning: Will proceed with selected "
-		    "value (%f), but results might be inaccurate.\n", 
-		    sasalib_name,d);
+	if (d > 2) {
+	    sasalib_err(SASALIB_WARN,"for regular SASA calculations, " 
+			"slice width should be less than 2 A.");
+	    sasalib_err(SASALIB_WARN, "proceeding with selected value "
+			"(%f), but results might be inaccurate.", d);
 	    return SASALIB_WARN;
 	}
     }
-    fprintf(stderr,"%s: error: slice width '%f' invalid.\n",
-	    sasalib_name,d);
-    fprintf(stderr,"%s: error: Proceeding with default value (%f)\n",
-            sasalib_name, SASALIB_DEF_LR_D);
+    sasalib_err(SASALIB_WARN, "slice width %f invalid.",d);
+    sasalib_err(SASALIB_WARN, "proceeding with default value (%f).",
+		SASALIB_DEF_LR_D);
     s->d_lr = SASALIB_DEF_LR_D;
     return SASALIB_WARN;
 }
@@ -409,11 +404,10 @@ double sasalib_get_lr_delta(const sasalib_t *s)
 int sasalib_set_nthreads(sasalib_t *s,int n)
 {
     if ( n <= 0) {
-        fprintf(stderr,"%s: error: Number of threads has to be positive.\n",
-		sasalib_name);
-	fprintf(stderr,"%s: error: proceeding with default value (1).\n",
-		sasalib_name);
-        return SASALIB_WARN;
+	return sasalib_err(SASALIB_WARN,
+			   "Number of threads has to be positive. "
+			   "Proceeding with default number (%d).",
+			   DEF_NTHREADS);
     }
     s->n_threads = n;
     return SASALIB_SUCCESS;
@@ -433,8 +427,8 @@ size_t sasalib_n_atoms(const sasalib_t *s)
 double sasalib_area_total(const sasalib_t *s)
 {
     if (! s->calculated) {
-        fprintf(stderr,"%s: error: SASA calculation has not been performed, "
-                "no total SASA value available.\n",sasalib_name);
+        sasalib_err(SASALIB_FAIL,"SASA calculation has not been performed, "
+		    "no total SASA value available.");
         return -1.0;
     }
     return s->result->total;
@@ -442,8 +436,8 @@ double sasalib_area_total(const sasalib_t *s)
 double sasalib_area_class(const sasalib_t* s, sasalib_class c)
 {    
     if (! s->calculated) {
-        fprintf(stderr,"%s: error: SASA calculation has not been performed, "
-                "no SASA value available.\n",sasalib_name);
+        sasalib_err(SASALIB_FAIL,"SASA calculation has not been performed, "
+		    "no total SASA value available.");
 	return -1.0;
     }
     assert(c >= SASALIB_POLAR && c <= SASALIB_CLASS_UNKNOWN &&
@@ -454,8 +448,8 @@ double sasalib_area_class(const sasalib_t* s, sasalib_class c)
 const double* sasalib_area_atom_array(const sasalib_t *s)
 {
     if (s->result->sasa == NULL) {
-        fprintf(stderr,"%s: error: SASA calculation has not been performed, "
-                "no atomic SASA values are available.\n",sasalib_name);
+        sasalib_err(SASALIB_FAIL,"SASA calculation has not been performed, "
+		    "no total SASA value available.");
         return NULL;
     }
     return s->result->sasa;
@@ -463,13 +457,11 @@ const double* sasalib_area_atom_array(const sasalib_t *s)
 double sasalib_radius_atom(const sasalib_t *s, int i)
 {
     if (s->r == NULL) {
-	fprintf(stderr,"%s: error: No atomic radii have been assigned.\n",
-		sasalib_name);
+	sasalib_err(SASALIB_FAIL,"No atomic radii have been assigned.");
 	return -1.0;
     }
     if (i < 0 || i > s->n_atoms) {
-	fprintf(stderr,"%s: error: Atom index %d invalid.\n",
-		sasalib_name,i);
+	sasalib_err(SASALIB_FAIL,"Atom index %d invalid.",i);
 	return -1.0;
     }
     return s->r[i];
@@ -477,8 +469,7 @@ double sasalib_radius_atom(const sasalib_t *s, int i)
 const double* sasalib_radius_atom_array(const sasalib_t *s)
 {
     if (s->r == NULL) {
-	fprintf(stderr,"%s: error: No atomic radii have been assigned.\n",
-		sasalib_name);
+	sasalib_err(SASALIB_FAIL,"No atomic radii have been assigned.");
 	return NULL;
     }
     return s->r;
@@ -503,8 +494,8 @@ const char* sasalib_get_proteinname(const sasalib_t *s)
 int sasalib_log(FILE *log, const sasalib_t *s)
 {
     if (! s->calculated) {
-        fprintf(stderr, "%s: warning: sasalib_log(2) called, but no calculation"
-                "has been performed.\n", sasalib_name);
+	sasalib_err(SASALIB_WARN,"sasalib_log(2) called, but no calculation"
+		    "has been performed.");
         fprintf(log, "error: sasalib_log(2) called, but no calculation"
                 "has been performed.\n");
         return SASALIB_WARN;
@@ -534,9 +525,8 @@ int sasalib_log(FILE *log, const sasalib_t *s)
 int sasalib_per_residue(FILE *output, const sasalib_t *s)
 {
     if (! s->calculated) {
-        fprintf(stderr,"%s: warning: sasalib_per_residue(2) called, "
-                "but no calculation has been performed.\n",sasalib_name);
-        return SASALIB_WARN;
+	return sasalib_err(SASALIB_WARN,"sasalib_per_residue(2) called, "
+			   "but no calculation has been performed.");
     }
     for (int i = 0; i < sasalib_classify_nresiduetypes(); ++i) {
         double sasa = s->result->residue[i];
@@ -550,8 +540,8 @@ int sasalib_per_residue(FILE *output, const sasalib_t *s)
 double sasalib_area_residue(const sasalib_t *s, const char *res_name)
 {
     if (! s->calculated) {
-	fprintf(stderr,"%s: warning: sasalib_area_residue(2) called, "
-		"but no calculation has been performed.\n",sasalib_name);
+	sasalib_err(SASALIB_WARN, "sasalib_area_residue(2) called, "
+		    "but no calculation has been performed.");
 	return -1;
     }
     int res = sasalib_classify_residue(res_name);
@@ -561,23 +551,20 @@ double sasalib_area_residue(const sasalib_t *s, const char *res_name)
 int sasalib_write_pdb(FILE *output, const sasalib_t *s)
 {
     if (!s->calculated) {
-	fprintf(stderr,"%s: error: Cannot output results before calculation "
-		"has been performed.\n", sasalib_name);
-	return SASALIB_FAIL;
+	return sasalib_err(SASALIB_FAIL,"Cannot output results before "
+			   "calculation has been performed.");
     }
     if (!s->structure) {
-	fprintf(stderr,"%s: error: Cannot write B-factors without input "
-		"structure.\n", sasalib_name);
-	return SASALIB_FAIL;
+	return sasalib_err(SASALIB_FAIL,"Cannot write B-factors without "
+			   "input structure.");
     }
     if (sasalib_structure_n(s->structure) != s->n_atoms) {
-	fprintf(stderr,"%s: error: Cannot write B-factors: number of atoms "
-		"in input PDB does not match calculation.\n", sasalib_name);
-	return SASALIB_FAIL;
+	return sasalib_err(SASALIB_FAIL,"Cannot write B-factors: "
+			   "number of atoms mismatch.");
     }
     if (!s->result->sasa) {
-	fprintf(stderr,"%s: error: Cannot write B-factors: no SASA values "
-		"available.\n",sasalib_name);
+	return sasalib_err(SASALIB_FAIL,"Cannot write B-factors: "
+			   "no SASA values available.");
     }
     return sasalib_structure_write_pdb_bfactors(output,	s->structure,
 						s->result->sasa);
