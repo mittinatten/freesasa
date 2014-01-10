@@ -88,13 +88,13 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
 	exit(EXIT_FAILURE);
     }
     sasalib_log(stdout,s);
-    printf("\nTotal: %9.2f Å2\nPolar: %9.2f Å2\nApolar: %9.2f Å2\n",
+    printf("\nTotal: %9.2f A2\nPolar: %9.2f A2\nApolar: %9.2f A2\n",
            sasalib_area_total(s), sasalib_area_class(s,SASALIB_POLAR),
 	   sasalib_area_class(s, SASALIB_APOLAR));
     if ((tmp = sasalib_area_class(s, SASALIB_NUCLEICACID)) > 0) 
-	printf("Nucleic: %9.2f Å2\n",tmp);
+	printf("Nucleic: %9.2f A2\n",tmp);
     if ((tmp = sasalib_area_class(s, SASALIB_CLASS_UNKNOWN)) > 0) 
-	printf("Unknown: %9.2f Å2\n",tmp);
+	printf("Unknown: %9.2f A2\n",tmp);
     if (settings->per_residue) { 
 	printf("\n");
 	sasalib_per_residue(stdout,s);
@@ -211,8 +211,13 @@ int main (int argc, char **argv) {
 	    }	    
 	}
     } else {
-	printf("# Reading PDB from STDIN.\n");
-	run_analysis(stdin,"stdin",&settings);
+	if (!isatty(STDIN_FILENO)) {
+	    printf("# Reading PDB from STDIN.\n");
+	    run_analysis(stdin,"stdin",&settings);
+	} else {
+	    fprintf(stderr,"%s: no input.\n",
+		    program_invocation_short_name);
+	}
     }    
 
     sasalib_free(settings.s);
