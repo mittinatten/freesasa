@@ -28,7 +28,7 @@ GPLv3, and can be downloaded from github at:
 \begin{center}
 \texttt{https://github.com/mittinatten/sasalib/}
 \end{center}
-NB: This document a draft and slowly approaching completeness.
+NB: This document is a draft slowly approaching completeness.
 \vspace{0.5cm}
 \hrule
 \section{Introduction}
@@ -83,7 +83,7 @@ A lot of the internals of the library are involved with classification
 and categorization of atoms, which is necessary for assigning radii
 and to present SASA values integrated over different atom types, amino
 acid types, etc. If the user wants Sasalib to classify atoms and
-assign radii, data in the PDB-format must be provided. Users can also
+assign radii, data must be provided in the PDB-format. Users can also
 provide their own radii and coordinates, and get the SASA for each
 individual atom.
 
@@ -177,18 +177,19 @@ used, instead each calculation is parallelized individually.
 Running the program using the default parameters on the PDB structure
 1UBQ gives the following output
 \begin{verbatim}
-    name: 1ubq.pdb
-    algorithm: Shrake & Rupley
-    n_thread: 1
-    n_testpoint: 100
-    time_elapsed: 0.019065 s
-    n_atoms: 602
-
-    Total:   4756.12 Å2
-    Polar:   1968.06 Å2
-    Apolar:   2788.07 Å2
+   name: stdin
+   algorithm: Shrake & Rupley
+   probe-radius: 1.400000 A
+   n_thread: 1
+   n_testpoint: 100
+   time_elapsed: 0.013833 s
+   n_atoms: 602
+   
+   Total:    4756.12 A2
+   Polar:    1968.06 A2
+   Apolar:   2788.07 A2
 \end{verbatim}
-The first 4 lines contain info about input and parameters. This is
+The first 5 lines contain info about input and parameters. This is
 followed by data over calculation time and the size of the
 protein. Finally the result of the calculation is printed, with SASA
 values in Å$^2$.
@@ -214,7 +215,7 @@ int main(int argc, char **argv) {
 
     //print results
     sasalib_log(stdout,s);
-    printf("Total area: %f Å2\n", sasalib_area_total(s));
+    printf("Total area: %f A2\n", sasalib_area_total(s));
 
     //clean up
     sasalib_free(s);
