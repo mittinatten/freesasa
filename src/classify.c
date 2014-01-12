@@ -24,6 +24,9 @@
 #include "pdb.h"
 #include "classify.h"
 
+extern int sasalib_fail(const char *format, ...);
+extern int sasalib_warn(const char *format, ...);
+
 /** Residue types */
 static const char *residue_names[] = {
     //amino acids
@@ -86,7 +89,6 @@ enum {
     sasalib_oons_unknown
 };
 
-
 /** helper function, trims whitespace from beginning and end of string */
 size_t sasalib_trim_whitespace(char *target, const char *src, 
 			       size_t length)
@@ -117,9 +119,9 @@ double sasalib_classify_radius(const char *res_name, const char *atom_name)
 	return sasalib_classify_oons_radius(sasalib_classify_oons(res_name,
 								  atom_name));
     } else if (res == sasalib_UNK) {
-	fprintf(stderr,"Warning: residue of type '%s', atom '%s' is unknown."
-                " Atom will be classified only according to element.\n",
-		res_name,atom_name);
+        sasalib_warn("Residue of type '%s', atom '%s' is unknown."
+                     " Atom will be classified only according to element.",
+                     res_name,atom_name);
     }
     return sasalib_classify_element_radius(sasalib_classify_element(atom_name));
 }
@@ -159,8 +161,8 @@ int sasalib_classify_residue(const char *res_name)
     char cpy[PDB_ATOM_RES_NAME_STRL+1];
     int len = sasalib_trim_whitespace(cpy,res_name,strlen(res_name));
     if (len > PDB_ATOM_RES_NAME_STRL) {
-	fprintf(stderr,"Warning: Illegal residue name '%s'\n",res_name);
-	return sasalib_UNK;
+        sasalib_warn("unknown residue name '%s'",res_name);
+        return sasalib_UNK;
     }
     for (int i = sasalib_ALA; i <= sasalib_NN; ++i) {
         if (! strcmp(res_name,residue_names[i])) return i;
@@ -171,7 +173,7 @@ int sasalib_classify_residue(const char *res_name)
 	if (! strcmp(cpy,residue_names[i])) return i;
     }
 
-    fprintf(stderr,"Warning: Residue '%s' unknown.\n",res_name);
+    sasalib_warn("residue '%s' unknown.",res_name);
     return sasalib_UNK;
 }
 
@@ -204,7 +206,7 @@ int sasalib_classify_element(const char *atom_name)
 	case 'P': return sasalib_phosphorus;
     // what about Se?
 	default: 
-	    fprintf(stderr,"Warning: Atom '%s' unknown.\n",atom_name);
+	    sasalib_warn("atom '%s' unknown.\n",atom_name);
 	    return sasalib_element_unknown;
 	}
     }
@@ -346,9 +348,7 @@ int sasalib_classify_oons(const char *res_name, const char *a)
 	// haven't found any PDB files with seleno-cysteine yet,
 	// needs testing
     case sasalib_CSE: 
-	fprintf(stderr,
-		"Warning: residue type '%s' only has limited support.\n",
-		res_name);
+        sasalib_warn("residue type '%s' only has limited support.",	res_name);
 	return classify_oons_cse(a);	
     default:
 	return sasalib_oons_unknown;

@@ -39,6 +39,8 @@
 #endif
 
 extern const char *sasalib_name;
+extern int sasalib_fail(const char *format, ...);
+extern int sasalib_warn(const char *format, ...);
 
 /** internal functions for S&R calculations **/
 // calculation parameters (results stored in *sasa)
@@ -131,11 +133,10 @@ int sasalib_shrake_rupley(double *sasa,
 #ifdef PTHREADS
         sasa_sr_do_threads(n_threads, sr);
 #else 
-        fprintf(stderr,"%s: error: program compiled for single-threaded use, "
-		"but multiple threads were requested. Will proceed in "
-		"single-threaded mode.\n",sasalib_name);
-	n_threads = 1;
-	return_value = SASALIB_WARN;
+        return_value = sasalib_warn("program compiled for single-threaded use, "
+                                    "but multiple threads were requested. Will "
+                                    "proceed in single-threaded mode.\n");
+        n_threads = 1;
 #endif
     }
     if (n_threads == 1) {
@@ -172,7 +173,7 @@ static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
 	errno = 0;
 	int res = pthread_join(thread[t],&thread_result);
 	if (res) {
-	    perror(sasalib_name);
+        perror(sasalib_name);
 	    exit(EXIT_FAILURE);
 	}
     }
@@ -288,11 +289,10 @@ int sasalib_lee_richards(double *sasa,
 #ifdef PTHREADS
         sasa_lr_do_threads(n_threads, lr);
 #else
-        fprintf("%s: error: program compiled for single-threaded use, "
-		"but multiple threads were requested. Will proceed in "
-		"single-threaded mode.",sasalib_name);
+        return_value = sasalib_warn("program compiled for single-threaded use, "
+                                    "but multiple threads were requested. Will "
+                                    "proceed in single-threaded mode.\n");
         n_threads = 1;
-	return_value = SASALIB_WARN;
 #endif
     } 
     if (n_threads == 1) {

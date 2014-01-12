@@ -30,7 +30,8 @@
 #include "classify.h"
 #include "coord.h"
 
-extern const char *sasalib_name;
+extern int sasalib_fail(const char *format, ...);
+extern int sasalib_warn(const char *format, ...);
 
 typedef struct {
     char res_name[PDB_ATOM_RES_NAME_STRL+1];
@@ -98,26 +99,24 @@ sasalib_structure_t* sasalib_structure_init_from_pdb(FILE *pdb_file)
             } 
             
             sasalib_structure_add_atom(p,a.atom_name,a.res_name,a.res_number,
-				       a.chain_label, v[0], v[1], v[2]);
-	    strncpy(p->a[p->number_atoms-1].line,line,PDB_LINE_STRL);
+                                       a.chain_label, v[0], v[1], v[2]);
+            strncpy(p->a[p->number_atoms-1].line,line,PDB_LINE_STRL);
         }
         if (strncmp("ENDMDL",line,4)==0) {
 	    if (p->number_atoms == 0) {
-		fprintf(stderr, "%s: error: input had ENDMDL before "
-			"first ATOM entry.\n", sasalib_name);
-		free(line);
-		sasalib_structure_free(p);
-		return NULL;
+            sasalib_fail("input had ENDMDL before first ATOM entry.");
+            free(line);
+            sasalib_structure_free(p);
+            return NULL;
 	    }
 	    break;
 	}
     }
     free(line);
     if (p->number_atoms == 0) {
-	fprintf(stderr,"%s: error: input had no ATOM entries.\n",
-		sasalib_name);
-	sasalib_structure_free(p);
-	return NULL;
+        sasalib_fail("input had no ATOM entries.");
+        sasalib_structure_free(p);
+        return NULL;
     }
     return p;
 }
@@ -158,14 +157,11 @@ void sasalib_structure_add_atom(sasalib_structure_t *p,
         ++p->number_chains;
     if (na > 1 && chain_label != p->a[na-2].chain_label)
         ++p->number_chains;
-
+    
     if (p->number_residues == 0)
         ++p->number_residues;
     if (na > 1 && strcmp(residue_number,p->a[na-2].res_number))
         ++p->number_residues;
-
-    // what else?
-    // deal with alternate location indicators...
 }
 
 void sasalib_structure_r(double *r,
@@ -174,7 +170,7 @@ void sasalib_structure_r(double *r,
 					       const char *atom_name))
 {
     for (int i = 0; i < p->number_atoms; ++i) {
-	r[i] = atom2radius(p->a[i].res_name, p->a[i].atom_name);
+        r[i] = atom2radius(p->a[i].res_name, p->a[i].atom_name);
     }
 }
 
@@ -225,25 +221,18 @@ int sasalib_structure_write_pdb_bfactors(FILE *output,
 					 const sasalib_structure_t *p,
 					 double *values)
 {
-    if (!output) {
-	fprintf(stderr,
-		"%s: error: NULL file pointer provided for PDB output.\n",
-		sasalib_name);
-	return SASALIB_FAIL;
-    }
+    if (!output) 
+        return sasalib_fail("NULL file pointer provided for PDB output.");
     // Write ATOM entries
     char buf[PDB_LINE_STRL+1];
     int n = sasalib_structure_n(p);
     for (int i = 0; i < n; ++i) {
-	strncpy(buf,p->a[i].line,PDB_LINE_STRL);
-	sprintf(&buf[60],"%6.2f",values[i]); 
-	errno = 0;
-
-	if (fprintf(output,"%s\n",buf)<0) {
-	    fprintf(stderr,"%s: error: Problem writing new PDB-file. %s\n",
-		    sasalib_name, strerror(errno));
-	    return SASALIB_FAIL;
-	}
+        strncpy(buf,p->a[i].line,PDB_LINE_STRL);
+        sprintf(&buf[60],"%6.2f",values[i]); 
+        errno = 0;
+        if (fprintf(output,"%s\n",buf)<0) 
+            return sasalib_fail("Problem writing new PDB-file. %s",
+                                strerror(errno));
     }
     // Write TER line
     errno = 0;
@@ -251,12 +240,11 @@ int sasalib_structure_write_pdb_bfactors(FILE *output,
     strncpy(buf2,&buf[6],5);
     buf2[5]='\0';
     if (fprintf(output,"TER   %5d     %4s %c%4s\n",
-		atoi(buf2)+1, p->a[n-1].res_name,
-		p->a[n-1].chain_label, p->a[n-1].res_number) < 0) {
-	fprintf(stderr,"%s: error: Problem writing new PDB-file. %s\n",
-		sasalib_name, strerror(errno));
-	return SASALIB_FAIL;
+                atoi(buf2)+1, p->a[n-1].res_name,
+                p->a[n-1].chain_label, p->a[n-1].res_number) < 0) {
+        sasalib_fail("Problem writing new PDB-file. %s",
+                     strerror(errno));
+        return SASALIB_FAIL;
     }
-
     return SASALIB_SUCCESS;
 }

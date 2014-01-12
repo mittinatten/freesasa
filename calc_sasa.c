@@ -112,7 +112,7 @@ int main (int argc, char **argv) {
     extern char *optarg;
     char opt;
 
-#ifndef __GNUC__
+#if !defined __GNUC__ || defined __APPLE__
     program_invocation_short_name = argv[0];
 #endif
 
