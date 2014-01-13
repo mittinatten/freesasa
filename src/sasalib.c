@@ -306,11 +306,19 @@ int sasalib_link_coord(sasalib_t *s, const double *coord,
                        double *r, size_t n) 
 {
     s->calculated = 0;
+    if (s->coord) sasalib_coord_free(s->coord);
     s->coord = sasalib_coord_new_linked(coord,n);
 
-    if (s->r) free(s->r);
+    if (s->r && s->owns_r) free(s->r);
     s->r = r;
     s->owns_r = 0;
+
+    if (s->result) {
+	sasalib_result_free(s->result);
+	s->result = NULL;
+    }
+
+    s->n_atoms = n;
 
     return SASALIB_SUCCESS;
 }
