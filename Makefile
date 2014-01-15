@@ -19,6 +19,9 @@ debug: calc_sasa.c src/*.c src/*.h
 prof: calc_sasa.c src/*.c src/*.h
 	gcc calc_sasa.c -o calc_sasa src/*.c $(CFLAGS) -g -p $(LDFLAGS)
 
+test: test.c src/*.c src/*.h
+	gcc test.c -o test src/*.c $(CFLAGS) -g $(LDFLAGS)
+
 clean:
 	@if [ -e calc_sasa ] ; then rm calc_sasa; fi;	
 	@if [ -e example ] ; then rm example; fi;	
