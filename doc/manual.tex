@@ -16,8 +16,8 @@
 
 \author{Simon Mitternacht} 
 \date{\today} 
-\title{Sasalib: An Open Source C Library for Solvent Accesible Surface
-  Calculations}
+\title{Sasalib: an open source C library for solvent accessible surface
+  calculations}
 
 \begin{document}
 \maketitle
@@ -37,12 +37,12 @@ measure of the surface of the molecule in contact with solvent. This
 area can for example quantify how folded the conformation of a
 macromolecule is, and can also be used to compare the exposed
 hydrophobic surfaces of different conformations or different
-molecules. To define the SASA, $A$, of a given molecule, let a spherical
-probe roll over the surface of the molecule, including internal
-cavities. $A$ is then the surface drawn by the center of the
+molecules. To define the SASA, $A$, of a given molecule, let a
+spherical probe roll over the surface of the molecule, including
+internal cavities. $A$ is then the surface drawn by the center of the
 probe.~\cite{LnR} The probe represents a solvent molecule
-(i.e.\ water), and therefore cavities smaller than the solvent
-molecule do not contribute to $A$.
+(i.e.\ water). Cavities smaller than the solvent molecule do not
+contribute to $A$.
 
 Calculating Solvent Accessible Surface Areas (SASA) is a
 run-of-the-mill calculation in protein structure studies. To the
@@ -56,13 +56,13 @@ Sasalib is a both a standalone command line program and a C library
 for protein SASA calculations. The library provides a simple interface
 that takes PDB-files as input. It has default parameters to allow
 straightforward calculations, but also allows the user to change most
-parameters of the calculation. In addition, there is a lower level
-interface where the user can treat the calculation as a purely
-mathematical operation on a set of spheres, specifying only
-coordinates and radii. Both Lee \& Richards' \cite{LnR} and Shrake \&
-Rupley's \cite{SnR} algorithms are available. They will be referred to
-as L\&R and S\&R throughout this document. Future versions of the
-library might include other algorithms as well.
+parameters of the calculation. In addition, the user can treat the
+calculation as a purely mathematical operation on a set of spheres, by
+providing arbitrary coordinates and radii. Both Lee \& Richards'
+\cite{LnR} and Shrake \& Rupley's \cite{SnR} algorithms are
+available. They will be referred to as L\&R and S\&R throughout this
+document. Future versions of the library might include other
+algorithms as well.
 
 In constructing the library three possible use cases were considered. 
 \begin{enumerate}
@@ -165,7 +165,7 @@ with a slice width of 0.1 Å, using two threads (only makes sense for
 CPUs with two or more cores) and will print the total SASA of each
 residue type in addition to the standard output.
 
-Several PDB-files can be analyzed in one call as, the results will be
+Several PDB-files can be analyzed in one call, the results will be
 printed consecutively for each input file:
 \begin{verbatim}
    $ ./calc_sasa 1abc.pdb 2abc.pdb ...
@@ -190,7 +190,7 @@ Running the program using the default parameters on the PDB structure
    Apolar:   2788.07 A2
 \end{verbatim}
 The first 5 lines contain info about input and parameters. This is
-followed by data over calculation time and the size of the
+followed by data for calculation time and the size of the
 protein. Finally the result of the calculation is printed, with SASA
 values in Å$^2$.
 
@@ -223,15 +223,17 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 \end{verbatim}
-This program generates results similar to that in the previous
+This program generates output similar to that of the previous
 section.
 
 \section{Algorithms}\label{sec:alg}
 
 There are two classical approximate algorithms that can be used to
-calculate SASA, by Lee \& Richards \cite{LnR} and Shrake \& Rupley
-\cite{SnR} respectively. Both can be calculated to arbitrary precision
-by refining the resolution. 
+calculate SASA. One by Lee \& Richards \cite{LnR} where the surface is
+calculated for slices of the protein and then added up, one by Shrake
+\& Rupley \cite{SnR} where the surface of each sphere is approximated
+by a set of test points. The SASA can be calculated to arbitrary
+precision by refining the resolution of both.
 
 As will be clear from this section and the analysis in section
 \ref{sec:compare}, S\&R is the simpler and faster of the
@@ -244,10 +246,11 @@ require very high precision SASA values.
 
 We will use the following notation: An atom $i$ has a van der Waals
 radius $r_i$, the rolling sphere (or \emph{probe}) has radius
-$r_\text{P}$ and when these are added we get $R_i = r_i +
-r_\text{P}$. The SASA for a molecule is then obtained by calculating
-the non-buried surface area of all the individual spheres with radius
-$R_i$ atom and adding them up.
+$r_\text{P}$ and when these are added we get an extended radius $R_i =
+r_i + r_\text{P}$. The sphere of radius $R_i$ centered at the position
+of atom $i$ represents the volume not accessible to the center of the
+probe. The SASA for a molecule is then obtained by calculating the
+non-buried surface area of the extended spheres.
 
 \subsection{L\&R} \label{sec:alg_LnR}
 
@@ -259,16 +262,17 @@ calculation time scales approximately as the number of slices.
 
 Divide the protein into slices of thickness $\delta$ along an
 arbitrary axis. The position of the middle of the slice along that
-axis is denoted $z$. The center of atom $i$, along the same axis, is
-at $z_i$. In the slice, each atom is thus a circle of
-radius $$R_i^\prime = \sqrt{R_i^2-(z-z_i)^2}\,.$$ These circles are
-either completely buried, completely exposed, or partially exposed.
+axis is denoted $z$, as in figure~\ref{fig:slice}. The center of atom
+$i$, along the same axis, is at $z_i$. In the slice, each atom is thus
+a circle of radius $$R_i^\prime = \sqrt{R_i^2-(z-z_i)^2}\,.$$ These
+circles are either completely buried, completely exposed, or partially
+exposed.
+
 \begin{figure}
 %\begin{center}
 \includegraphics{fig/lnr_slice.eps}
 \includegraphics{fig/lnr_circles.eps}
 \caption{Geometry of slice in L\&R.\label{fig:slice}}
-
 \end{figure}
 
 The exposed arc lengths for each atom can be calculated exactly. For
@@ -293,11 +297,10 @@ $$
     + \min\biggl(\frac{\delta}{2},R_i -
     \lvert z - z_i \rvert\biggr)\biggr]. 
 $$ 
-The factor $R_i/R_i^\prime$ comes from approximating the area by a
-conical segment tangent to the sphere in the slice, instead of a
-cylinder.  Finally, the total SASA is obtained by adding up the
-contribution from all the slices, either for the whole protein, or
-atom by atom.
+The factor $R_i/R_i^\prime$ comes from approximating the area of the
+slice by a conical segment of the sphere, instead of a cylinder.
+Finally, the total SASA is obtained by adding up the contribution from
+all the slices, either for the whole protein, or atom by atom.
 
 
 \subsection{S\&R}
@@ -306,11 +309,11 @@ Shrake \& Rupley's algorithm uses test points on a sphere to estimate
 what parts of an atom are exposed. For each atom $i$, use a set of
 test points evenly distributed (approximately) over the sphere of
 radius $R_i$, and count how many of the test points are not inside any
-of the other extended spheres of radius $R_j$. The number of exposed
-test points divided by the total number of test points gives the
-exposed solid angle of that atom. The precision of the algorithm is
-increased by increasing the number of test points, and calculation
-time scales approximately linearly with the number of test points.
+other sphere. The number of exposed test points divided by the total
+number of test points gives the exposed solid angle of that atom. The
+precision of the algorithm is increased by increasing the number of
+test points, and calculation time scales approximately linearly with
+the number of test points.
 
 
 \section{Implementation}\label{sec:imp}
@@ -321,27 +324,26 @@ to keep them as simple and transparent as possible without sacrificing
 performance. See sections \ref{sec:howto_short} and \ref{sec:using}
 for instructions for how to install and use the library.
 
-The implementations were tested by performing high precision SASA
-calculations using both algorithms for a large number of proteins (see
-section \ref{sec:dataset}) and comparing the results. Also, the
-calculated surface test points and slice contours were verified by
-visual inspection.
-
+The correctness of the implementations was tested by comparing with
+analytical results for the two atom case, and by performing high
+precision SASA calculations using the two independent algorithms for a
+large number of proteins (see section \ref{sec:dataset}) and comparing
+the results. In addition, the calculated surface test
+points and slice contours were inspected visually.
 
 \subsection{L\&R}
 
-The L\&R-calculation needs to know which atoms make contacts for each
-slice. Therefore the calculation begins by constructing adjacency
-lists for the protein. For each slice the adjacency lists are
-condensed to separate lists only containing the atoms in that
-particular slice. Each pair of adjacent atoms is then checked for
-adjacency in the particular slice and the overlapping arcs are
-calculated as described in section \ref{sec:alg_LnR}. When all buried
-arcs have been counted for a given atom they are reduced to
-non-overlapping intervals recursively. In most cases this is done in
-only one recursion step, sometimes in two or three. The arc-lengths
-are then summed up for all atoms in the slice to calculate the total
-contribution to the area as described in \ref{sec:alg_LnR}.
+The L\&R SASA calculation in Sasalib begins by finding out which of
+the extended atoms are in contact. These contacts are stored in an
+adjacency list. Then, for each slice the adjacency list is condensed
+to a separate list, only containing the atoms in that slice. Each pair
+of atoms in the reduced list is then checked for overlap in the
+particular slice and the overlapping arcs are calculated as described
+in section \ref{sec:alg_LnR}. When all buried arcs have been counted
+for a given atom they are reduced to non-overlapping intervals
+recursively. In most cases only one recursion step is necessary. The
+arc-lengths are then summed up for all atoms in the slice to calculate
+the total contribution to the area as described in \ref{sec:alg_LnR}.
 
 As described in section \ref{sec:accuracy}, this algorithm is
 significantly slower than S\&R. Profiling runs give no hints at
