@@ -3,7 +3,7 @@ sasalib
 
 C-library for calculating Solvent Accessible Surface Areas.
 
-License: GPLv3 (see file COPYING). Copyright: Simon Mitternacht 2013.
+License: GPLv3 (see file COPYING). Copyright: Simon Mitternacht 2013-2014.
 
 This code has been tested for functionality for a set of around 2000 PDBs. 
 A standalone version can be compiled by running 'make'. The command 
@@ -15,8 +15,9 @@ doc/manual.tex.
 So far the algorithms by Lee & Richards and Shrake & Rupley have been
 implemented. Verification has been done by comparing the results of
 the two calculations and by visual inspection of the surfaces found by
-them. For high resolution versions of the algorithms, the calculations
-give identical results.
+them (and comparing with analytic results in the two-atom case). For
+high resolution versions of the algorithms, the calculations give
+identical results.
 
 The OONS atom-classification and radii are used by default (Ooi et al. 
 PNAS 1987). Users can also provide their own atomic radii. 
