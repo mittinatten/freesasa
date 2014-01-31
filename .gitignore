@@ -1,0 +1,16 @@
+others/
+prf/
+surfdist/
+*.o
+*~
+a.out
+*.dvi
+*.aux
+*.log
+analysis/*/
+calc_sasa
+example
+*.gcda
+*.gcno
+*.out
+*.gcov
