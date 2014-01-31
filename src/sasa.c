@@ -85,10 +85,15 @@ static void *sasa_lr_thread(void *arg);
 static void sasa_add_slice_area(double z, sasa_lr_t);
 
 // the z argument is only really necessary for the debugging section
-static void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z, 
+static void sasa_exposed_arcs(int n_slice, 
+			      const double *x, const double *y, double z, 
                               const double *r, double *exposed_arc, 
                               const int **nb, const int *nn);
-//does not necessarily leave a and b in a consistent state
+/** a and b are a set of alpha and betas (in the notation of the
+    manual). This function finds the union of those intervals on the
+    circle, and returns 2*PI minus the length of the joined
+    interval(s) (i.e. the exposed arc length). Does not necessarily
+    leave a and b in a consistent state. */
 static double sasa_sum_angles(int n_buried, double *a, double *b);
 
 /** Calculate contacts, given coordinates and radii. The array nb will
@@ -483,6 +488,9 @@ static void sasa_exposed_arcs(int n_slice, const double *x, const double *y, dou
 
 static double sasa_sum_angles(int n_buried, double *a, double *b)
 {
+    /* Innermost function in L&R, could potentially be sped up, but
+       probably requires rethinking, algorithmically. Perhaps
+       recursion could be rolled out somehow. */
     int excluded[n_buried], n_exc = 0, n_overlap = 0;
     for (int i = 0; i < n_buried; ++i)  {
         excluded[i] = 0;

@@ -1,5 +1,5 @@
-CFLAGS=-O3 -std=c99 -Wall -pedantic -DPTHREADS
-LDFLAGS=-lm -lpthread
+CFLAGS=-O2 -std=c99 -Wall -pedantic #-DPTHREADS
+LDFLAGS=-lm #-lpthread
 
 all: calc_sasa 
 
@@ -17,7 +17,7 @@ debug: calc_sasa.c src/*.c src/*.h
 	gcc calc_sasa.c -o calc_sasa src/*.c $(CFLAGS) -g -p -DDEBUG $(LDFLAGS)
 
 prof: calc_sasa.c src/*.c src/*.h
-	gcc calc_sasa.c -o calc_sasa src/*.c $(CFLAGS) -g -p $(LDFLAGS)
+	gcc calc_sasa.c -o calc_sasa src/*.c $(CFLAGS) -g -p -fprofile-arcs -ftest-coverage $(LDFLAGS)
 
 test: test.c src/*.c src/*.h
 	gcc test.c -o test src/*.c $(CFLAGS) -g $(LDFLAGS)
