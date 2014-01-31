@@ -333,19 +333,19 @@ points and slice contours were inspected visually.
 
 \subsection{L\&R}
 
-The L\&R SASA calculation in Sasalib begins by finding out which of
-the extended atoms are in contact. These contacts are stored in an
-adjacency list. Then, for each slice the adjacency list is condensed
-to a separate list, only containing the atoms in that slice. Each pair
-of atoms in the reduced list is then checked for overlap in the
-particular slice and the overlapping arcs are calculated as described
-in section \ref{sec:alg_LnR}. When all buried arcs have been counted
-for a given atom they are reduced to non-overlapping intervals
-recursively. In most cases only one recursion step is necessary. The
-arc-lengths are then summed up for all atoms in the slice to calculate
-the total contribution to the area as described in \ref{sec:alg_LnR}.
+In Sasalib, the L\&R SASA calculation begins by finding overlapping
+spheres and storing the contacts in an adjacency list. For a given
+slice, one needs then only check the overlap between circles that are
+in the slice, and are known to potentially be in contact. The buried
+arcs due to overlapping circles are calculated as described in section
+\ref{sec:alg_LnR}. When all buried arcs have been counted for a given
+circle they are reduced to non-overlapping intervals recursively. In
+most cases only one recursion step is necessary. The lengths of
+exposed arcs are then summed up for all atoms in the slice to
+calculate the total contribution to the area as described in
+\ref{sec:alg_LnR}.
 
-As described in section \ref{sec:accuracy}, this algorithm is
+As we will see in section \ref{sec:accuracy}, this algorithm is
 significantly slower than S\&R. Profiling runs give no hints at
 obvious improvements. The calculations of each slice are however
 completely independent and the current implementation allows division
