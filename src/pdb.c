@@ -22,52 +22,71 @@
 #include <assert.h>
 #include "pdb.h"
 
-void sasalib_pdb_get_atom_name(char *name, const char *line)
-{
-    assert(strncmp(line,"ATOM",4) == 0);
-    assert(strlen(line) > 12+PDB_ATOM_NAME_STRL);
-    strncpy(name,line+12,PDB_ATOM_NAME_STRL);
-    name[PDB_ATOM_NAME_STRL] = '\0';
+inline int pdb_line_check(const char *line,int len) {
+    if (! strncmp(line,"ATOM",4) && 
+	! strncmp(line,"HETATM",6)) {
+	return SASALIB_FAIL;
+    }
+    if (strlen(line) < len) {
+	return SASALIB_FAIL;
+    }
+    return SASALIB_SUCCESS;
 }
 
-void sasalib_pdb_get_res_name(char *name, const char *line)
+int sasalib_pdb_get_atom_name(char *name, const char *line)
 {
-    assert(strncmp(line,"ATOM",4) == 0);
-    assert(strlen(line) > 17+PDB_ATOM_RES_NAME_STRL);
+    if (pdb_line_check(line,PDB_ATOM_NAME_STRL+12) == SASALIB_FAIL) {
+	name[0] = '\0';
+	return SASALIB_FAIL;
+    }
+    strncpy(name,line+12,PDB_ATOM_NAME_STRL);
+    name[PDB_ATOM_NAME_STRL] = '\0';
+    return SASALIB_SUCCESS;
+}
+
+int sasalib_pdb_get_res_name(char *name, const char *line)
+{
+    if (pdb_line_check(line,PDB_ATOM_RES_NAME_STRL+17) == SASALIB_FAIL) {
+	name[0] = '\0';
+	return SASALIB_FAIL;
+    }
     strncpy(name, line+17, PDB_ATOM_RES_NAME_STRL);
     name[PDB_ATOM_RES_NAME_STRL] = '\0';
+    return SASALIB_SUCCESS;
 }
-void sasalib_pdb_get_coord(double *xyz, const char *line)
+int sasalib_pdb_get_coord(double *xyz, const char *line)
 {
-    assert(strncmp(line,"ATOM",4) == 0);
-    assert(strlen(line) > 79);
+    if (pdb_line_check(line,78) == SASALIB_FAIL) {
+	return SASALIB_FAIL;
+    }
     sscanf(line+30, "%lf%lf%lf", &xyz[0], &xyz[1], &xyz[2]);
+    return SASALIB_SUCCESS;
 }
-void sasalib_pdb_get_res_number(char *number, const char* line)
+int sasalib_pdb_get_res_number(char *number, const char* line)
 {
-    assert(strncmp(line,"ATOM",4) == 0);
-    assert(strlen(line) > 22+PDB_ATOM_RES_NUMBER_STRL);
+    if (pdb_line_check(line,PDB_ATOM_RES_NUMBER_STRL+22) == SASALIB_FAIL) {
+	number[0] = '\0';
+	return SASALIB_FAIL;
+    }
     strncpy(number, line+22, PDB_ATOM_RES_NUMBER_STRL);
     number[PDB_ATOM_RES_NUMBER_STRL] = '\0';
+    return SASALIB_SUCCESS;
 }
 char sasalib_pdb_get_chain_label(const char* line)
 {
-    assert(strncmp(line,"ATOM",4) == 0);
-    assert(strlen(line) > 21);
+    if (pdb_line_check(line,21) == SASALIB_FAIL) return '\0';
     return line[21];
 }
 
 char sasalib_pdb_get_alt_coord_label(const char* line)
 {
-    assert(strncmp(line,"ATOM",4) == 0);
-    assert(strlen(line) > 16);
+    if (pdb_line_check(line,16) == SASALIB_FAIL) return '\0';
     return line[16];
 }
 
 int sasalib_pdb_ishydrogen(const char* line)
 {
-    assert(strlen(line) > 13);
-    assert(strncmp(line,"ATOM",4) == 0);
+    if (pdb_line_check(line,13) == SASALIB_FAIL) return SASALIB_FAIL;
     //hydrogen
     if (line[12] == 'H' || line[13] == 'H') return 1;
     //hydrogen
