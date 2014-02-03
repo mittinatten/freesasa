@@ -1,5 +1,7 @@
-CFLAGS=-O2 -std=c99 -Wall -pedantic #-DPTHREADS
-LDFLAGS=-lm #-lpthread
+CC=gcc
+CFLAGS=-O2 -std=c99 -Wall -pedantic -DPTHREADS
+LDFLAGS=-lm -lpthread
+srcdir=src/
 
 all: calc_sasa 
 
@@ -7,22 +9,25 @@ all: calc_sasa
 
 doc:
 	$(MAKE) -C doc/
+
 calc_sasa: calc_sasa.c src/*.c src/*.h
-	gcc calc_sasa.c -o calc_sasa src/*.c $(CFLAGS) $(LDFLAGS)
+	$(CC) calc_sasa.c -o calc_sasa src/*.c $(CFLAGS) $(LDFLAGS)
 
 example: example.c src/*.c src/*.h
-	gcc example.c -o example src/*.c $(CFLAGS) $(LDFLAGS)
+	$(CC) example.c -o example src/*.c $(CFLAGS) $(LDFLAGS)
 
 debug: calc_sasa.c src/*.c src/*.h
-	gcc calc_sasa.c -o calc_sasa src/*.c $(CFLAGS) -g -p -DDEBUG $(LDFLAGS)
+	$(CC) calc_sasa.c -o calc_sasa src/*.c $(CFLAGS) \
+	-g -p -DDEBUG $(LDFLAGS)
 
 prof: calc_sasa.c src/*.c src/*.h
-	gcc calc_sasa.c -o calc_sasa src/*.c $(CFLAGS) -g -p -fprofile-arcs -ftest-coverage $(LDFLAGS)
+	$(CC) calc_sasa.c -o calc_sasa src/*.c $(CFLAGS) \
+	-g -p -fprofile-arcs -ftest-coverage $(LDFLAGS)
 
 test: test.c src/*.c src/*.h
-	gcc test.c -o test src/*.c $(CFLAGS) -g $(LDFLAGS)
+	$(CC) test.c -o test tests/*.c src/*.c -Isrc/ $(CFLAGS) -g $(LDFLAGS)
+	./test
 
-clean:
-	@if [ -e calc_sasa ] ; then rm calc_sasa; fi;	
-	@if [ -e example ] ; then rm example; fi;	
-
+clean:	
+	rm -f calc_sasa example test
+	rm -f *.gcda *.gcno gmon.out *.gcov *~
