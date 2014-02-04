@@ -23,8 +23,8 @@
 #include <errno.h>
 #include <string.h>
 
-#include "src/sasalib.h"
-#include "src/srp.h"
+#include "sasalib.h"
+#include "srp.h"
 
 #if __STDC__
 extern int getopt(int, char * const *, const char *);

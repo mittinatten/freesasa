@@ -1,5 +1,5 @@
 /*
-  Copyright Simon Mitternacht 2013.
+  Copyright Simon Mitternacht 2013-2014.
 
   This file is part of Sasalib.
   
@@ -17,23 +17,20 @@
   along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdlib.h>
-#include "src/sasalib.h"
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
 
-int main(int argc, char **argv) { 
-    //initialize sasalib-object with default parameters
-    sasalib_t *s = sasalib_init();
+extern int test_sasa_basic();
+extern int test_pdb();
 
-    //do the calculation using default parameters with protein
-    //structure from STDIN
-    sasalib_calc_pdb(s,stdin);
+int main(int argc, char **argv) {
+    int n_err = 0;
+    
+    n_err += test_sasa_basic();
+    n_err += test_pdb();
 
-    //print results
-    sasalib_log(stdout,s);
-    printf("Total area: %f A2\n", sasalib_area_total(s));
+    printf("Total: there were %d errors.\n",n_err);
 
-    //clean up
-    sasalib_free(s);
-
-    return EXIT_SUCCESS;
+    return 0;
 }

@@ -11,3 +11,11 @@ test
 *.gcno
 *.out
 *.gcov
+*.m4
+*Makefile.in
+configure
+configure.h.in
+configure.scan
+tmp*
+*.a
+autom4te.cache

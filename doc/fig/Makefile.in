@@ -3,5 +3,10 @@ eps = ${subst .tex,.eps,${src}}
 
 all: ${eps}
 
+.PHONY:	clean
+
 %.eps : %.tex
 	latex $<; dvips -E ${subst .tex,.dvi,$<} -o $@; 
+
+clean:
+	*.eps *.pdf *.aux *.log
