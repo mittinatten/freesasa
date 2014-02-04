@@ -1,7 +1,0 @@
-# Some bash one-liners used in analysis
-
-# Extract the number of atoms and the calculation time from the output
-# of the above command (assuming data are in sub-directories of LR and SR):
-
-for d in LR*/* SR*/*; do t=`echo $d | perl -pi -e 's/^(LR.|SR.)\/(\S+)$/$1\_$2/'`; f=data/time_$t.dat; for s in $d/*.sasa; do n=`grep n_atoms $s | cut -b10-16`; t=`grep time_elapsed $s | cut -b15-30`; echo "$n $t" >> $f; done; done
-
