@@ -1,15 +1,12 @@
-others/
-prf/
-surfdist/
 *.o
 *~
 a.out
 *.dvi
 *.aux
 *.log
-analysis/*/
 calc_sasa
 example
+test
 *.gcda
 *.gcno
 *.out
