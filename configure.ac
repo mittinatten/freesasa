@@ -5,7 +5,7 @@ AC_PREREQ([2.68])
 AC_INIT([sasalib], [0.5])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([src/sasalib.c])
-#AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
 AC_PROG_CC
@@ -18,7 +18,7 @@ AC_CHECK_LIB([m], [sqrt])
 AC_CHECK_LIB([pthread], [pthread_create])
 
 # Checks for header files.
-AC_CHECK_HEADERS([stdlib.h string.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([stdlib.h string.h sys/time.h unistd.h pthread.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE

@@ -22,20 +22,19 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif
 
 #include "sasalib.h"
 #include "srp.h"
 
-#if __STDC__
+#if STDC_HEADERS
 extern int getopt(int, char * const *, const char *);
 extern int optind;
 #endif
 
-#if defined __GNUC__ && !defined  __APPLE__
-extern char *program_invocation_short_name;
-#else
-char *program_invocation_short_name;
-#endif
+char *program_name;
 
 typedef struct  {
     sasalib_t *s;
@@ -51,7 +50,7 @@ settings_t def_settings = {
 
 void help() {
     fprintf(stderr,"\nUsage: %s [-hLSrf:n:d:t:p:B:] pdb-file(s)\n",
-	    program_invocation_short_name);
+	    program_name);
     fprintf(stderr,"\nOptions are:\n"
 	    "       -h  print this message\n"
 	    "       -S  use Shrake & Rupley algorithm [default]\n"
@@ -74,7 +73,7 @@ void help() {
 
 void short_help() {
     fprintf(stderr,"Run '%s -h' for usage instructions.\n",
-	    program_invocation_short_name);
+	    program_name);
 }
 
 void run_analysis(FILE *input, const char *name, const settings_t *settings) {
@@ -84,7 +83,7 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
     sasalib_set_proteinname(s,name); 
     if (sasalib_calc_pdb(s,input) == SASALIB_FAIL) {
 	fprintf(stderr,"%s: error: Invalid input. Aborting.\n",
-		program_invocation_short_name);
+		program_name);
 	exit(EXIT_FAILURE);
     }
     sasalib_log(stdout,s);
@@ -111,10 +110,11 @@ int main (int argc, char **argv) {
     settings.s = sasalib_init();
     extern char *optarg;
     char opt;
-
-#if !defined __GNUC__ || defined __APPLE__
-    program_invocation_short_name = argv[0];
-#endif
+#ifdef PROGRAM_NAME
+    program_name = PROGRAM_NAME;
+#else
+    program_name = argv[0];
+#endif 
 
     while ((opt = getopt(argc, argv, "f:n:d:t:p:B:hLSr")) != -1) {
 	errno = 0;
@@ -127,7 +127,7 @@ int main (int argc, char **argv) {
 	    input = fopen(optarg, "r");
 	    if (input == NULL) {
 		fprintf(stderr,"%s: error: could not open file '%s'; %s\n", 
-			program_invocation_short_name,optarg,strerror(errno));
+			program_name,optarg,strerror(errno));
 		short_help();
 		exit(EXIT_FAILURE);
 	    }
@@ -136,7 +136,7 @@ int main (int argc, char **argv) {
 	    settings.B = fopen(optarg, "w");
 	    if (settings.B == NULL) {
 		fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
-			program_invocation_short_name,optarg,strerror(errno));
+			program_name,optarg,strerror(errno));
 		short_help();
 		exit(EXIT_FAILURE);
 	    }
@@ -162,23 +162,23 @@ int main (int argc, char **argv) {
 	    settings.per_residue = 1;
 	    break;
 	case 't':
-#ifdef PTHREADS	    
+#if HAVE_LIBPTHREAD	    
 	    result = sasalib_set_nthreads(settings.s,atoi(optarg));
 #else 
 	    fprintf(stderr, "%s: warning: option 't' only defined if program"
 		    " compiled with thread support.\n",
-		    program_invocation_short_name);
+		    program_name);
 #endif
 	    break;
 	default:
 	    fprintf(stderr, "%s: warning: unknown option '%c' (will be ignored)\n", 
-		    program_invocation_short_name,opt);
+		    program_name,opt);
 	    break;
 	}
 	if (result == SASALIB_FAIL) {
 	    fprintf(stderr, "%s: error: failed to start SASA calculation with "
 		    "provided options. Aborting", 
-		    program_invocation_short_name);
+		    program_name);
 	    if (errno != 0) fprintf(stderr,"; %s\n",strerror(errno));
 	    else fprintf(stderr,".\n");
 	    exit(EXIT_FAILURE);
@@ -186,12 +186,12 @@ int main (int argc, char **argv) {
 	    fprintf(stderr, "%s: warning: calculations might not "
 		    "correspond to specification or results might "
 		    "be unreliable (see warnings).\n", 
-		    program_invocation_short_name);
+		    program_name);
 	}
     }
     if (alg_set > 1) {
 	fprintf(stderr, "%s: error: multiple algorithms specified.\n",
-		program_invocation_short_name);
+		program_name);
 	exit(EXIT_FAILURE);
     }
 
@@ -204,7 +204,7 @@ int main (int argc, char **argv) {
 		fclose(input);
 	    } else {
 		fprintf(stderr, "%s: error opening file '%s'; %s\n", 
-			program_invocation_short_name,argv[i],strerror(errno));
+			program_name,argv[i],strerror(errno));
 		exit(EXIT_FAILURE);
 	    }	    
 	}
@@ -213,7 +213,7 @@ int main (int argc, char **argv) {
 	    run_analysis(stdin,"stdin",&settings);
 	} else {
 	    fprintf(stderr,"%s: no input.\n",
-		    program_invocation_short_name);
+		    program_name);
 	}
     }    
 

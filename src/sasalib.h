@@ -51,7 +51,8 @@
 */
 
 #include <stdio.h>
-#include "structure.h"
+
+//#include "structure.h"
 
 typedef struct sasalib_ sasalib_t;
 typedef enum {SASALIB_LEE_RICHARDS, SASALIB_SHRAKE_RUPLEY} 
@@ -181,7 +182,7 @@ int sasalib_set_lr_delta(sasalib_t*, double d);
     value if L&R algorithm not selected. */
 double sasalib_get_lr_delta(const sasalib_t*);
 
-#ifdef PTHREADS
+#if HAVE_LIBPTHREAD
 /** Sets the number of threads for parallel computation, useful for
     large proteins and high resolution. Returns SASALIB_SUCCESS if n
     is valid, SASALIB_WARN else. */

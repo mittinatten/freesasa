@@ -21,9 +21,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <pthread.h>
 #include <errno.h>
 #include <math.h>
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+#if HAVE_PTHREAD_H
+# include <pthread.h>
+#endif
+
 #include "sasalib.h"
 #include "sasa.h"
 #include "srp.h"
@@ -56,7 +62,7 @@ typedef struct {
     char *spcount_0;
 } sasa_sr_t;
 
-#ifdef PTHREADS
+#if HAVE_LIBPTHREAD
 static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr);
 static void *sasa_sr_thread(void *arg);
 #endif 
@@ -77,7 +83,7 @@ typedef struct {
     double *sasa;
 } sasa_lr_t; 
 
-#ifdef PTHREADS
+#if HAVE_LIBPTHREAD
 static void sasa_lr_do_threads(int n_threads, sasa_lr_t);
 static void *sasa_lr_thread(void *arg);
 #endif
@@ -135,7 +141,7 @@ int sasalib_shrake_rupley(double *sasa,
 
     //calculate SASA 
     if (n_threads > 1) {
-#ifdef PTHREADS
+#if HAVE_LIBPTHREAD
         sasa_sr_do_threads(n_threads, sr);
 #else 
         return_value = sasalib_warn("program compiled for single-threaded use, "
@@ -154,7 +160,7 @@ int sasalib_shrake_rupley(double *sasa,
     return return_value;
 }
 
-#ifdef PTHREADS
+#if HAVE_LIBPTHREAD
 static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
 {
     pthread_t thread[n_threads];
@@ -291,7 +297,7 @@ int sasalib_lee_richards(double *sasa,
                     .min_z = min_z, .max_z = max_z, .sasa = sasa};
     
     if (n_threads > 1) {
-#ifdef PTHREADS
+#if HAVE_LIBPTHREAD
         sasa_lr_do_threads(n_threads, lr);
 #else
         return_value = sasalib_warn("program compiled for single-threaded use, "
@@ -310,7 +316,7 @@ int sasalib_lee_richards(double *sasa,
     return return_value;
 }
 
-#ifdef PTHREADS
+#if HAVE_LIBPTHREAD
 static void sasa_lr_do_threads(int n_threads, sasa_lr_t lr) 
 {
     double *t_sasa[n_threads];

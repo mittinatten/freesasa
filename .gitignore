@@ -13,7 +13,6 @@ test
 *.gcov
 *.m4
 *Makefile.in
-configure
 configure.h.in
 configure.scan
 tmp*

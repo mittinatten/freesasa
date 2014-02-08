@@ -20,6 +20,7 @@
 #ifndef SASALIB_STRUCTURE_H
 #define SASALIB_STRUCTURE_H
 
+#include <stdio.h>
 #include "coord.h"
 
 typedef struct sasalib_structure_ sasalib_structure_t;

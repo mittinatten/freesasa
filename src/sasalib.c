@@ -23,7 +23,11 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <math.h>
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 
+#include "structure.h"
 #include "sasa.h"
 #include "pdb.h"
 #include "sasalib.h"
@@ -415,7 +419,7 @@ double sasalib_get_lr_delta(const sasalib_t *s)
     return -1.0;
 }
 
-#ifdef PTHREADS
+#if HAVE_LIBPTHREAD
 int sasalib_set_nthreads(sasalib_t *s,int n)
 {
     if ( n <= 0) {
@@ -516,7 +520,7 @@ int sasalib_log(FILE *log, const sasalib_t *s)
     fprintf(log,"name: %s\n",s->proteinname);
     fprintf(log,"algorithm: %s\n",sasalib_alg_names[s->alg]);
     fprintf(log,"probe-radius: %f A\n",s->probe_radius);
-#ifdef PTHREADS
+#if HAVE_LIBPTHREAD
     fprintf(log,"n_thread: %d\n",s->n_threads);
 #endif
     
