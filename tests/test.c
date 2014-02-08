@@ -17,20 +17,23 @@
   along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
+#include <stdlib.h>
+//#include <stdio.h>
+#include <check.h>
 
 extern int test_sasa_basic();
-extern int test_pdb();
+extern Suite* pdb_suite();
 
 int main(int argc, char **argv) {
     int n_err = 0;
     
     n_err += test_sasa_basic();
-    n_err += test_pdb();
 
-    printf("Total: there were %d errors.\n",n_err);
+    Suite *s = pdb_suite();
+    SRunner *sr = srunner_create(s);
+    srunner_run_all(sr,CK_NORMAL);
+    n_err += srunner_ntests_failed(sr);
+    //printf("Total: there were %d errors.\n",n_err);
 
-    return 0;
+    return (n_err == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -2,56 +2,32 @@
 #include <math.h>
 #include <stdio.h>
 #include <pdb.h>
+#include <check.h>
 
-int test_pdb_empty_lines()
+START_TEST (test_pdb_empty_lines)
 {
     char buf[80];
     double x[3];
-    int n_err = 0;
 
-    printf("Testing error reporting for empty PDB-lines.\n");
-    if (sasalib_pdb_get_atom_name(buf,"") != SASALIB_FAIL) {
-	++n_err;
-	printf("Error: Extracting atom-name from empty string did not generate error.\n");
-    }
-    if (strlen(buf) > 0) {
-	++n_err;
-	printf("Error: Extracted non-empty atom-name from empty string.\n");
-    }
-    if (sasalib_pdb_get_res_name(buf,"") != SASALIB_FAIL) {
-	++n_err;
-	printf("Error: Extracting res-name from empty string did not generate error.\n");
-    }
-    if (strlen(buf) > 0) {
-	++n_err;
-	printf("Error: Extracted non-empty res-name from empty string.\n");
-    }
-    if (sasalib_pdb_get_res_number(buf,"") != SASALIB_FAIL) {
-	++n_err;
-	printf("Error: Extracting res-number from empty string did not generate error.\n");
-    } 
-    if (strlen(buf) > 0) {
-	++n_err;
-	printf("Error: Extracted non-empty res-number from empty string.\n");
-    }
-    if (sasalib_pdb_get_coord(x,"") != SASALIB_FAIL) {
-	++n_err;
-	printf("Error: Extracting coordinates from empty string did not generate error.\n");
-    }
-    if (sasalib_pdb_get_chain_label("") != '\0') {
-	++n_err;
-	printf("Error: Extracting chain label from empty string did not generate error.\n");
-    }
-    if (sasalib_pdb_get_alt_coord_label("") != '\0') {
-	++n_err;
-	printf("Error: Extracting alt coord label from empty string did not generate error.\n");
-    }
-    if (sasalib_pdb_ishydrogen("") != SASALIB_FAIL) {
-	++n_err;
-	printf("Error: Checking for hydrogen in empty string did not generate error.\n");
-    }
-    return n_err;
+    // check string parsing
+    ck_assert_int_eq(sasalib_pdb_get_atom_name(buf,""),SASALIB_FAIL);
+    ck_assert_str_eq(buf,"");
+    ck_assert_int_eq(sasalib_pdb_get_res_name(buf,""),SASALIB_FAIL);
+    ck_assert_str_eq(buf,"");
+    ck_assert_int_eq(sasalib_pdb_get_res_number(buf,""),SASALIB_FAIL);
+    ck_assert_str_eq(buf,"");
+
+    // check coordinate parsing
+    ck_assert_int_eq(sasalib_pdb_get_coord(x,""),SASALIB_FAIL);
+
+    // check label parsing
+    ck_assert_int_eq(sasalib_pdb_get_chain_label(""),'\0');
+    ck_assert_int_eq(sasalib_pdb_get_alt_coord_label(""),'\0');
+
+    // check element parsing
+    ck_assert_int_eq(sasalib_pdb_ishydrogen(""),SASALIB_FAIL);
 }
+END_TEST
 
 int test_pdb_string_err(const char *result, const char* desired, 
 		 const char *input, const char *descriptor)
@@ -141,10 +117,12 @@ int test_pdb_lines()
     
 }
 
-int test_pdb() {
-    int n_err = 0;
-    n_err += test_pdb_empty_lines();
-    n_err += test_pdb_lines();
 
-    return n_err;
+Suite *pdb_suite() {
+    Suite *s = suite_create("PDB-parser");
+    TCase *tc_core = tcase_create("Core");
+    tcase_add_test(tc_core, test_pdb_empty_lines);
+    suite_add_tcase(s, tc_core);
+
+    return s;
 }

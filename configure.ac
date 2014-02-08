@@ -44,4 +44,6 @@ AC_CHECK_PROG(PS2PDF, ps2pdf, ps2pdf)
 
 AM_CONDITIONAL([HAVE_LATEX], test -n "$PDFLATEX" && test -n "$DVIPS" && test -n "$PS2PDF")
 
+PKG_CHECK_MODULES([CHECK],[check >= 0.9.4])
+
 AC_OUTPUT

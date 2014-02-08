@@ -17,7 +17,7 @@ doc/fig/lnr_*.eps
 *.gcno
 *.out
 *.gcov
-*.m4
+*.trs
 *Makefile.in
 *Makefile
 *.deps
@@ -33,4 +33,6 @@ missing
 install-sh
 depcomp
 compile
+test-driver
 autom4te.cache
+aclocal.m4
