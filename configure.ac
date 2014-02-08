@@ -24,6 +24,9 @@ AC_CHECK_HEADERS([stdlib.h string.h sys/time.h unistd.h pthread.h])
 AC_C_INLINE
 AC_TYPE_SIZE_T
 
+# use C99
+AC_PROG_CC_C99
+
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
