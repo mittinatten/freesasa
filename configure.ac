@@ -38,12 +38,18 @@ AC_CONFIG_FILES([Makefile
                  doc/Makefile
                  doc/fig/Makefile])
 
+# Checks for building manual
 AC_CHECK_PROG(LATEX, latex, latex)
 AC_CHECK_PROG(DVIPS, dvips, dvips)
-AC_CHECK_PROG(PS2PDF, ps2pdf, ps2pdf)
+AC_CHECK_PROG(PDFLATEX, pdflatex, pdflatex)
+AC_CHECK_PROG(EPSTOPDF, epstopdf, epstopdf)
 
-AM_CONDITIONAL([HAVE_LATEX], test -n "$PDFLATEX" && test -n "$DVIPS" && test -n "$PS2PDF")
+AM_CONDITIONAL([HAVE_LATEX], [test -n "$LATEX" && test -n "$DVIPS"])
+AM_COND_IF([HAVE_LATEX],[echo "LaTeX available"],[echo "LaTeX not available, .dvi and .ps documentation cannot be built"])
+AM_CONDITIONAL([HAVE_PDF],[test -n "$EPSTOPDF" && test -n "$PDFLATEX"])
+AM_COND_IF([HAVE_PDF],[],[.pdf documentation cannot be built])
 
+# Checks for testing
 PKG_CHECK_MODULES([CHECK],[check >= 0.9.4])
 
 AC_OUTPUT

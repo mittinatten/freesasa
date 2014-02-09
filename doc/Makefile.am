@@ -1,22 +1,38 @@
-docfiles = manual.tex
+SUBDIRS = fig
+manual = manual.tex
+fig_eps = fig/lnr_circles.eps fig/lnr_slice.eps fig/time.eps fig/precision.eps
+fig_pdf = $(subst .eps,.pdf,$(fig_eps))
+
+dist_doc_DATA = manual.pdf manual.ps manual.dvi
 
 if HAVE_LATEX
-doc_DATA = manual.pdf
-MANNAME = manual
-MANTEXSRC = $(MANNAME).tex
-MANAUX = $(MANNAME).aux
-MANPDF = $(MANNAME).pdf
-MANPS = $(MANNAME).ps
-MANDVI = $(MANNAME).dvi
 
-CLEANFILES = $(MANPDF) $(MANPS) $(MANDVI) $(MANNAME).log $(MANNAME).idx \
-	$(MANNAME).toc $(MANAUX)
-
-
-$(MANPDF): $(MANTEXSRC)
-	latex manual.tex
+manual.ps: manual.dvi
 	dvips -Ppdf manual.dvi
-	ps2pdf manual.ps
+manual.dvi: $(manual) $(fig_eps)
+	latex manual.tex
+	latex manual.tex
+
+dvi-local: manual.dvi
+
+ps-local: manual.ps
+
+else
+nolatex:
+	@echo "LaTeX needed to build .dvi and .ps manual"
+dvi-local: nolatex
+ps-local: nolatex
 endif
 
-dist_doc_DATA = $(docfiles)
+if HAVE_PDF
+pdf-local: manual.pdf 
+manual.pdf: $(manual) $(fig_pdf)
+	pdflatex manual.tex
+	pdflatex manual.tex
+else
+pdf-local: 
+	@echo "pdflatec needed to build .pdf-manual"
+endif
+
+clean-local:
+	rm -f *.ps *.dvi *.aux *.log *.pdf *.toc *~
