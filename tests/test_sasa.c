@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <sasalib.h>
+#include <check.h>
 #include <sasa.h>
 
 #ifndef PI
@@ -54,7 +55,6 @@ int test_sasa_alg_basic(sasalib_t *s, double tolerance)
 {
     int err = 0;
     int nt = 0;
-    printf("Basic tests for algorithm '%s':\n",sasalib_algorithm_name(s));
     
     // Two spheres, compare with analytic results
     double coord[6] = {0,0,0,2,0,0};
@@ -105,14 +105,11 @@ int test_sasa_alg_basic(sasalib_t *s, double tolerance)
     ++nt;
     err += test_sasa(s,ref,tolerance,"Four spheres in plane, rotated 90 deg round x-axis.");
 
-    printf("\tPassed %d/%d tests (relative errors < %f)\n",nt-err,nt,tolerance);
-
     return err;
 }
 
-int test_sasa_basic() 
+START_TEST (test_sasa_basic)
 {
-    int n_err = 0;
     sasalib_t *sr = sasalib_init();
     sasalib_t *lr = sasalib_init();
 
@@ -122,7 +119,18 @@ int test_sasa_basic()
     sasalib_set_sr_points(sr,5000);
     sasalib_set_lr_delta(lr,1e-4);
 
-    n_err += test_sasa_alg_basic(sr,1e-3);
-    n_err += test_sasa_alg_basic(lr,1e-5);
-    return n_err;
+    ck_assert(test_sasa_alg_basic(sr,1e-3) == 0);
+    ck_assert(test_sasa_alg_basic(lr,1e-5) == 0);
+}
+END_TEST
+
+Suite *sasa_suite() 
+{
+    Suite *s = suite_create("SASA-basic");
+    TCase *tc_core = tcase_create("Core");
+    tcase_add_test(tc_core, test_sasa_basic);
+    suite_add_tcase(s, tc_core);
+
+    return s;
+
 }

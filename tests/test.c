@@ -21,19 +21,21 @@
 //#include <stdio.h>
 #include <check.h>
 
-extern int test_sasa_basic();
+extern Suite* sasa_suite();
 extern Suite* pdb_suite();
 
 int main(int argc, char **argv) {
     int n_err = 0;
     
-    n_err += test_sasa_basic();
+    Suite *s_pdb = pdb_suite();
+    Suite *s_sasa = sasa_suite();
+    SRunner *sr_pdb = srunner_create(s_pdb);
+    SRunner *sr_sasa = srunner_create(s_sasa);
+    srunner_run_all(sr_pdb,CK_NORMAL);
+    srunner_run_all(sr_sasa,CK_NORMAL);
 
-    Suite *s = pdb_suite();
-    SRunner *sr = srunner_create(s);
-    srunner_run_all(sr,CK_NORMAL);
-    n_err += srunner_ntests_failed(sr);
-    //printf("Total: there were %d errors.\n",n_err);
+    n_err += srunner_ntests_failed(sr_pdb);
+    n_err += srunner_ntests_failed(sr_sasa);
 
     return (n_err == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
