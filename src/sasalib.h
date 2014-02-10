@@ -139,7 +139,9 @@ int sasalib_link_coord(sasalib_t*, const double *coord,
     upon successful computation. */
 int sasalib_refresh(sasalib_t *s);
 
-/** Returns the number of atoms in the latest SASA calculation. */
+/** Returns the number of atoms in the latest SASA
+    calculation. Returns 0 if no coordinates have been linked or no
+    calculation has been performed. */
 size_t sasalib_n_atoms(const sasalib_t*);
 
 /******************************/
@@ -157,16 +159,16 @@ sasalib_algorithm sasalib_get_algorithm(const sasalib_t*);
 const char* sasalib_algorithm_name(const sasalib_t*);
 
 /** Sets probe-radius for SASA calculations (default 1.4 Å). Returns
-    SASALIB_SUCCESS for valid r-values. Prints error message and
-    returns SASALIB_WARN else. */
+    SASALIB_SUCCESS for valid r-values. Prints error message, returns
+    SASALIB_WARN and uses default (SASALIB_DEF_PROBE_RADIUS) else. */
 int sasalib_set_probe_radius(sasalib_t*,double r);
 
 /** Returns probe radius. */
 double sasalib_get_probe_radius(const sasalib_t*);
 
 /** Sets number of points for S&R algorithm (default 100). Returns
-    SASALIB_SUCCESS if n is valid, prints error message and returns
-    SASALIB_WARN else. */
+    SASALIB_SUCCESS if n is valid, prints error message, returns
+    SASALIB_WARN and sets to default value (SASALIB_DEF_SR_N) else. */
 int sasalib_set_sr_points(sasalib_t*, int n);
 
 /** Returns number of points for S&R algorithm. Returns SASALIB_WARN
@@ -174,8 +176,9 @@ int sasalib_set_sr_points(sasalib_t*, int n);
 int sasalib_get_sr_points(const sasalib_t*);
 
 /** Sets slice width d for L&R algorithm in Ångström (default 0.25
-    Å). Returns SASALIB_SUCCESS if d is valid, prints error message
-    and returns SASALIB_WARN else. */
+    Å). Returns SASALIB_SUCCESS if d is valid, prints error message,
+    returns SASALIB_WARN and sets to default value
+    (SASALIB_DEF_LR_D) else. */
 int sasalib_set_lr_delta(sasalib_t*, double d);
 
 /** Returns slice width for L&R algorithm in Ångström. Returns negative

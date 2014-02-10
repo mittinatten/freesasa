@@ -124,13 +124,74 @@ START_TEST (test_sasa_basic)
 }
 END_TEST
 
+START_TEST (test_sasa_1ubq_sr)
+{
+    sasalib_t *sr = sasalib_init();
+    sasalib_set_algorithm(sr,SASALIB_SHRAKE_RUPLEY);
+    sasalib_set_sr_points(sr,100);
+    FILE *pdb = fopen("data/1ubq.pdb","r");
+    ck_assert(sasalib_calc_pdb(sr,pdb) == SASALIB_SUCCESS); 
+    fclose(pdb);
+    // The reference values were the output of Sasalib on 2014-02-10
+    ck_assert(fabs(sasalib_area_total(sr) - 4756.124034) < 1e-5);
+    ck_assert(fabs(sasalib_area_class(sr,SASALIB_POLAR) - 1968.057001) < 1e-5);
+    ck_assert(fabs(sasalib_area_class(sr,SASALIB_APOLAR) - 2788.067033) < 1e-5);
+}
+END_TEST
+
+START_TEST (test_sasa_1ubq_lr)
+{
+    sasalib_t *lr = sasalib_init();
+    sasalib_set_algorithm(lr,SASALIB_LEE_RICHARDS);
+    sasalib_set_lr_delta(lr,0.25);
+    FILE *pdb = fopen("data/1ubq.pdb","r");
+    ck_assert(sasalib_calc_pdb(lr,pdb) == SASALIB_SUCCESS); 
+    fclose(pdb);
+    // The reference values were the output of Sasalib on 2014-02-10
+    ck_assert(fabs(sasalib_area_total(lr) - 4725.173153) < 1e-5);
+    ck_assert(fabs(sasalib_area_class(lr,SASALIB_POLAR) - 1957.575594) < 1e-5);
+    ck_assert(fabs(sasalib_area_class(lr,SASALIB_APOLAR) - 2767.597560) < 1e-5);
+}
+END_TEST
+
+START_TEST (test_sasalib_getset)
+{
+    sasalib_t *s = sasalib_init();
+    ck_assert(s != NULL);
+    ck_assert(sasalib_n_atoms(s) == 0);
+    ck_assert(sasalib_set_algorithm(s,-1) == SASALIB_WARN);
+    ck_assert(sasalib_set_algorithm(s,1000) == SASALIB_WARN);
+    ck_assert(sasalib_set_algorithm(s,SASALIB_LEE_RICHARDS) == SASALIB_SUCCESS);
+    ck_assert(sasalib_get_algorithm(s) == SASALIB_LEE_RICHARDS);
+    
+    ck_assert(sasalib_set_probe_radius(s,-1.) == SASALIB_WARN);
+    ck_assert(sasalib_set_probe_radius(s,1.2) == SASALIB_SUCCESS);
+    ck_assert(fabs(sasalib_get_probe_radius(s)-1.2) < 1e-10);
+    
+    ck_assert(sasalib_set_lr_delta(s,0.25) == SASALIB_SUCCESS);
+    ck_assert(sasalib_set_lr_delta(s,-1.0) == SASALIB_WARN);
+    ck_assert(fabs(sasalib_get_lr_delta(s)-0.25) < 1e-10);
+    ck_assert(sasalib_get_sr_points(s) == SASALIB_WARN);
+    
+    ck_assert(sasalib_set_algorithm(s,SASALIB_SHRAKE_RUPLEY) == SASALIB_SUCCESS);
+    ck_assert(sasalib_set_sr_points(s,100) == SASALIB_SUCCESS);
+    ck_assert(sasalib_get_sr_points(s) == 100);
+    ck_assert(sasalib_set_sr_points(s,1123) == SASALIB_WARN);
+    ck_assert(sasalib_set_sr_points(s,-1123) == SASALIB_WARN);
+    ck_assert(sasalib_get_sr_points(s) == 100);
+    ck_assert(sasalib_get_lr_delta(s) < 0);
+}
+END_TEST
+
+
 Suite *sasa_suite() 
 {
-    Suite *s = suite_create("SASA-basic");
+    Suite *s = suite_create("SASA-calculation");
     TCase *tc_core = tcase_create("Core");
+    tcase_add_test(tc_core, test_sasalib_getset);
     tcase_add_test(tc_core, test_sasa_basic);
+    tcase_add_test(tc_core, test_sasa_1ubq_sr);
+    tcase_add_test(tc_core, test_sasa_1ubq_lr);
     suite_add_tcase(s, tc_core);
-
     return s;
-
 }

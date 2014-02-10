@@ -345,7 +345,7 @@ int sasalib_set_algorithm(sasalib_t *s, sasalib_algorithm alg)
         s->alg = alg;
         return SASALIB_SUCCESS;
     }
-    return sasalib_warn("undefined algorithm selected, proceeding with default.");
+    return sasalib_warn("undefined algorithm selected, proceeding with previously selected algorithm (or default).");
 }
 
 sasalib_algorithm sasalib_get_algorithm(const sasalib_t *s)
