@@ -25,17 +25,9 @@ extern Suite* sasa_suite();
 extern Suite* pdb_suite();
 
 int main(int argc, char **argv) {
-    int n_err = 0;
-    
-    Suite *s_pdb = pdb_suite();
-    Suite *s_sasa = sasa_suite();
-    SRunner *sr_pdb = srunner_create(s_pdb);
-    SRunner *sr_sasa = srunner_create(s_sasa);
-    srunner_run_all(sr_pdb,CK_NORMAL);
-    srunner_run_all(sr_sasa,CK_NORMAL);
+    SRunner *sr = srunner_create(pdb_suite());
+    srunner_add_suite(sr,sasa_suite());
+    srunner_run_all(sr,CK_NORMAL);
 
-    n_err += srunner_ntests_failed(sr_pdb);
-    n_err += srunner_ntests_failed(sr_sasa);
-
-    return (n_err == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+    return (srunner_ntests_failed(sr) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
