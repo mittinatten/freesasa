@@ -154,32 +154,67 @@ START_TEST (test_sasa_1ubq_lr)
 }
 END_TEST
 
-START_TEST (test_sasalib_getset)
+START_TEST (test_sasalib_api_basic)
 {
     sasalib_t *s = sasalib_init();
     ck_assert(s != NULL);
     ck_assert(sasalib_n_atoms(s) == 0);
+
+    // algorithm
     ck_assert(sasalib_set_algorithm(s,-1) == SASALIB_WARN);
     ck_assert(sasalib_set_algorithm(s,1000) == SASALIB_WARN);
     ck_assert(sasalib_set_algorithm(s,SASALIB_LEE_RICHARDS) == SASALIB_SUCCESS);
     ck_assert(sasalib_get_algorithm(s) == SASALIB_LEE_RICHARDS);
     
+    // probe_radius
     ck_assert(sasalib_set_probe_radius(s,-1.) == SASALIB_WARN);
     ck_assert(sasalib_set_probe_radius(s,1.2) == SASALIB_SUCCESS);
     ck_assert(fabs(sasalib_get_probe_radius(s)-1.2) < 1e-10);
     
-    ck_assert(sasalib_set_lr_delta(s,0.25) == SASALIB_SUCCESS);
+    // L&R delta
+    double lrd_def = sasalib_get_lr_delta(s);
+    ck_assert(sasalib_set_lr_delta(s,0.5) == SASALIB_SUCCESS);
+    ck_assert(fabs(sasalib_get_lr_delta(s)-0.5) < 1e-10);
     ck_assert(sasalib_set_lr_delta(s,-1.0) == SASALIB_WARN);
-    ck_assert(fabs(sasalib_get_lr_delta(s)-0.25) < 1e-10);
+    ck_assert(fabs(sasalib_get_lr_delta(s)-lrd_def) < 1e-10);
     ck_assert(sasalib_get_sr_points(s) == SASALIB_WARN);
     
+    // S&R test-points
     ck_assert(sasalib_set_algorithm(s,SASALIB_SHRAKE_RUPLEY) == SASALIB_SUCCESS);
+    int srp_def = sasalib_get_sr_points(s);
     ck_assert(sasalib_set_sr_points(s,100) == SASALIB_SUCCESS);
     ck_assert(sasalib_get_sr_points(s) == 100);
     ck_assert(sasalib_set_sr_points(s,1123) == SASALIB_WARN);
     ck_assert(sasalib_set_sr_points(s,-1123) == SASALIB_WARN);
-    ck_assert(sasalib_get_sr_points(s) == 100);
+    ck_assert(sasalib_get_sr_points(s) == srp_def);
     ck_assert(sasalib_get_lr_delta(s) < 0);
+
+    // names
+    sasalib_set_proteinname(s,"bla");
+    ck_assert_str_eq(sasalib_get_proteinname(s),"bla");
+	     
+#if HAVE_LIBPTHREAD
+    // Threads
+    int nt_def = sasalib_get_nthreads(s);
+    ck_assert(sasalib_set_nthreads(s,2) == SASALIB_SUCCESS);
+    ck_assert(sasalib_get_nthreads(s) == 2);
+    ck_assert(sasalib_set_nthreads(s,-1) == SASALIB_WARN);
+    cK_assert(sasalib_get_nthreads(s) == nt_def);
+#endif    
+    
+    // Check that results cannot be accessed before calculations are
+    // performed
+    ck_assert(sasalib_area_total(s) < 0);
+    ck_assert(sasalib_area_class(s, SASALIB_POLAR) < 0);
+    ck_assert(sasalib_area_class(s, SASALIB_APOLAR) < 0);
+    ck_assert(sasalib_per_residue(stdout,s) == SASALIB_FAIL);
+    ck_assert(sasalib_per_residue(NULL,s) == SASALIB_FAIL);
+    ck_assert(sasalib_area_residue(s,"ALA") < 0);
+    ck_assert(sasalib_write_pdb(stdout,s) == SASALIB_FAIL);
+    ck_assert(sasalib_area_atom(s,0) < 0);
+    ck_assert(sasalib_area_atom_array(s) == NULL);
+
+    ck_assert(sasalib_log(stdout,s) == SASALIB_WARN);
 }
 END_TEST
 
@@ -188,7 +223,7 @@ Suite *sasa_suite()
 {
     Suite *s = suite_create("SASA-calculation");
     TCase *tc_core = tcase_create("Core");
-    tcase_add_test(tc_core, test_sasalib_getset);
+    tcase_add_test(tc_core, test_sasalib_api_basic);
     tcase_add_test(tc_core, test_sasa_basic);
     tcase_add_test(tc_core, test_sasa_1ubq_sr);
     tcase_add_test(tc_core, test_sasa_1ubq_lr);

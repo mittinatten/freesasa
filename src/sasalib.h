@@ -188,7 +188,7 @@ double sasalib_get_lr_delta(const sasalib_t*);
 #if HAVE_LIBPTHREAD
 /** Sets the number of threads for parallel computation, useful for
     large proteins and high resolution. Returns SASALIB_SUCCESS if n
-    is valid, SASALIB_WARN else. */
+    is valid, uses default value and returns SASALIB_WARN else. */
 int sasalib_set_nthreads(sasalib_t*,int n);
 
 /** Returns the number of threads used in the calcultion */
@@ -220,7 +220,8 @@ double sasalib_area_class(const sasalib_t*, sasalib_class c);
 /** Prints name/value-pairs with the total SASA of each residue
     type. The standard 20 amino acids are always included in output,
     non-standard ones and nucleotides only if they were present in
-    input. */
+    input. Return SASALIB_FAIL if file-pointer NULL or if no
+    calculation has been performed yet.*/
 int sasalib_per_residue(FILE *output, const sasalib_t *s);
 
 /** Returns total SASA for residue of specified type. If the value of
@@ -243,7 +244,8 @@ int sasalib_write_pdb(FILE *output, const sasalib_t *s);
 /**********************************/
 
 /** Returns SASA value for atom i. Prints error and returns negative
-    value if atom index is invalid. */
+    value if atom index is invalid or if no calculation has been
+    performed. */
 double sasalib_area_atom(const sasalib_t*, int i);
 
 /** Returns array containg SASA for all atoms. Returns NULL if no

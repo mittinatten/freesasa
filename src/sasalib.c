@@ -423,6 +423,7 @@ double sasalib_get_lr_delta(const sasalib_t *s)
 int sasalib_set_nthreads(sasalib_t *s,int n)
 {
     if ( n <= 0) {
+	s->n_threads = DEF_NTHREADS;
         return sasalib_warn("Number of threads has to be positive. "
 			   "Proceeding with default number (%d).", DEF_NTHREADS);
     }
@@ -461,12 +462,25 @@ double sasalib_area_class(const sasalib_t* s, sasalib_class c)
            "Invalid arguments to sasalib_area_class(2)");
     return s->result->class[c];
 }
+double sasalib_area_atom(const sasalib_t *s, int i) 
+{
+    if ( !s->calculated ) {
+	sasalib_fail("SASA calculation has not been performed, "
+                     "no SASA values available.");
+	return -1.0;
+    }
+    if (i < 0 || i > s->n_atoms-1) {
+        sasalib_fail("Atom index %d invalid.",i);
+        return -1.0;
+    }
+    return s->result->sasa[i];
+}
 
 const double* sasalib_area_atom_array(const sasalib_t *s)
 {
-    if (s->result->sasa == NULL) {
+    if ( !s->calculated ) {
         sasalib_fail("SASA calculation has not been performed, "
-                     "no total SASA value available.");
+                     "no SASA values available.");
         return NULL;
     }
     return s->result->sasa;
@@ -477,7 +491,7 @@ double sasalib_radius_atom(const sasalib_t *s, int i)
         sasalib_fail("No atomic radii have been assigned.");
         return -1.0;
     }
-    if (i < 0 || i > s->n_atoms) {
+    if (i < 0 || i > s->n_atoms-1) {
         sasalib_fail("Atom index %d invalid.",i);
         return -1.0;
     }
@@ -541,8 +555,12 @@ int sasalib_log(FILE *log, const sasalib_t *s)
 
 int sasalib_per_residue(FILE *output, const sasalib_t *s)
 {
+    if (! output) {
+	return sasalib_fail("sasalib_per_residue(2) output file is "
+			    "a NULL pointer.");
+    }
     if (! s->calculated) {
-        return sasalib_warn("sasalib_per_residue(2) called, "
+        return sasalib_fail("sasalib_per_residue(2) called, "
                             "but no cqalculation has been performed.");
     }
     for (int i = 0; i < sasalib_classify_nresiduetypes(); ++i) {
