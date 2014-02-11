@@ -121,6 +121,9 @@ START_TEST (test_sasa_basic)
 
     ck_assert(test_sasa_alg_basic(sr,1e-3) == 0);
     ck_assert(test_sasa_alg_basic(lr,1e-5) == 0);
+
+    sasalib_free(sr);
+    sasalib_free(lr);
 }
 END_TEST
 
@@ -136,6 +139,7 @@ START_TEST (test_sasa_1ubq_sr)
     ck_assert(fabs(sasalib_area_total(sr) - 4756.124034) < 1e-5);
     ck_assert(fabs(sasalib_area_class(sr,SASALIB_POLAR) - 1968.057001) < 1e-5);
     ck_assert(fabs(sasalib_area_class(sr,SASALIB_APOLAR) - 2788.067033) < 1e-5);
+    sasalib_free(sr);
 }
 END_TEST
 
@@ -151,6 +155,7 @@ START_TEST (test_sasa_1ubq_lr)
     ck_assert(fabs(sasalib_area_total(lr) - 4725.173153) < 1e-5);
     ck_assert(fabs(sasalib_area_class(lr,SASALIB_POLAR) - 1957.575594) < 1e-5);
     ck_assert(fabs(sasalib_area_class(lr,SASALIB_APOLAR) - 2767.597560) < 1e-5);
+    sasalib_free(lr);
 }
 END_TEST
 
