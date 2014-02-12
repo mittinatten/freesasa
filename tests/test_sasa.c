@@ -237,15 +237,52 @@ START_TEST (test_sasalib_api_basic)
 }
 END_TEST
 
+START_TEST (test_multi_calc) 
+{
+#if HAVE_LIBPTHREAD
+    errno = 0;
+    sasalib_t *sr = sasalib_init();
+    //S&R
+    sasalib_set_algorithm(sr,SASALIB_SHRAKE_RUPLEY);
+    sasalib_set_sr_points(sr,100);
+    sasalib_set_nthreads(2);
+    FILE *pdb = fopen("data/1ubq.pdb","r");
+    if (pdb == NULL) {
+	fprintf(stderr,"error reading PDB-file for test. "
+		"(Tests must be run from directory test/): %s\n",
+		strerror(errno));
+    }
+    ck_assert(pdb != NULL);
+    ck_assert(sasalib_calc_pdb(sr,pdb) == SASALIB_SUCCESS); 
+    // The reference values were the output of Sasalib on 2014-02-10
+    ck_assert(fabs(sasalib_area_total(sr) - 4756.124034) < 1e-5);
+    // L&R
+    sasalib_set_algorithm(sr,SASALIB_LEE_RICHARDS);
+    sasalib_set_lr_delta(0.25);
+    rewind(pdb);
+    ck_assert(sasalib_calc_pdb(sr,pdb) == SASALIB_SUCCESS); 
+    ck_assert(fabs(sasalib_area_total(lr) - 4725.173153) < 1e-5);
+    fclose(pdb);
+#endif
+}
+END_TEST
+
 
 Suite *sasa_suite() 
 {
     Suite *s = suite_create("SASA-calculation");
-    TCase *tc_core = tcase_create("Core");
-    tcase_add_test(tc_core, test_sasalib_api_basic);
-    tcase_add_test(tc_core, test_sasa_basic);
-    tcase_add_test(tc_core, test_sasa_1ubq_sr);
-    tcase_add_test(tc_core, test_sasa_1ubq_lr);
-    suite_add_tcase(s, tc_core);
+    TCase *tc_basic = tcase_create("Basic");
+    TCase *tc_1ubq = tcase_create("1UBQ");
+    tcase_add_test(tc_basic, test_sasalib_api_basic);
+    tcase_add_test(tc_basic, test_sasa_basic);
+    tcase_add_test(tc_1ubq, test_sasa_1ubq_sr);
+    tcase_add_test(tc_1ubq, test_sasa_1ubq_lr);
+    suite_add_tcase(s, tc_basic);
+    suite_add_tcase(s, tc_1ubq);
+#if HAVE_LIBPTHREAD
+    TCase *tc_pthr = tcase_create("Pthread");
+    
+    suit_add_tcase(s, tc_1ubq);
+#endif
     return s;
 }
