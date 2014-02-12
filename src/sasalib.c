@@ -38,6 +38,7 @@
 #define DEF_NTHREADS 1
 
 const char *sasalib_name = "sasalib";
+static int sasalib_verbosity;
 
 typedef struct {
     int *class;
@@ -98,6 +99,20 @@ const sasalib_t sasalib_def_param = {
 
 const char *sasalib_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
+// The following functions lets test-suite silence error messages
+enum {SASALIB_V_NORMAL = 0, SASALIB_V_SILENT=1};
+
+int sasalib_set_verbosity(int s) {
+    if (s == SASALIB_V_NORMAL || s == SASALIB_V_SILENT) {
+	sasalib_verbosity = s;
+	return SASALIB_SUCCESS;
+    }
+    return SASALIB_WARN;
+}
+int sasalibe_get_verbosity() {
+    return sasalib_verbosity;
+}
+
 static void sasalib_err_impl(int err, const char *format, va_list arg)
 {
     fprintf(stderr, "%s: ", sasalib_name);
@@ -113,20 +128,22 @@ static void sasalib_err_impl(int err, const char *format, va_list arg)
 
 int sasalib_fail(const char *format,...) 
 {
-   va_list arg;
-   va_start(arg, format);
-   sasalib_err_impl(SASALIB_FAIL,format,arg);
-   va_end(arg);
-   return SASALIB_FAIL;
+    if (sasalib_verbosity == SASALIB_V_SILENT) return SASALIB_FAIL;
+    va_list arg;
+    va_start(arg, format);
+    sasalib_err_impl(SASALIB_FAIL,format,arg);
+    va_end(arg);
+    return SASALIB_FAIL;
 }
 
 int sasalib_warn(const char *format,...) 
 {
-   va_list arg;
-   va_start(arg, format);
-   sasalib_err_impl(SASALIB_WARN,format,arg);
-   va_end(arg);
-   return SASALIB_WARN;
+    if (sasalib_verbosity == SASALIB_V_SILENT) return SASALIB_WARN;
+    va_list arg;
+    va_start(arg, format);
+    sasalib_err_impl(SASALIB_WARN,format,arg);
+    va_end(arg);
+    return SASALIB_WARN;
 }
 
 static class_t* sasalib_classify_structure(const sasalib_structure_t *p)
@@ -381,7 +398,9 @@ int sasalib_set_sr_points(sasalib_t *s, int n) {
         return SASALIB_SUCCESS;
     }
     sasalib_warn("number of test-points must be one of the following:  ");
-    sasalib_srp_print_n_opt(stderr);
+    if (sasalib_verbosity == SASALIB_V_NORMAL) {
+	sasalib_srp_print_n_opt(stderr);
+    }
     sasalib_warn("proceeding with default number of test-points (%d)",SASALIB_DEF_SR_N);
     s->n_sr = SASALIB_DEF_SR_N;
     return SASALIB_WARN;
@@ -528,7 +547,9 @@ int sasalib_log(FILE *log, const sasalib_t *s)
         const char *msg = "sasalib_log(2) called, but no calculation "
             "has been performed.";
         sasalib_warn(msg);
-        fprintf(log,"%s\n",msg);
+	if (sasalib_verbosity == SASALIB_V_NORMAL) {
+	    fprintf(log,"%s\n",msg);
+	}
         return SASALIB_WARN;
     }
     fprintf(log,"name: %s\n",s->proteinname);

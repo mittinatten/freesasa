@@ -177,6 +177,8 @@ END_TEST
 
 START_TEST (test_sasalib_api_basic)
 {
+    extern int sasalib_set_verbosity();
+    sasalib_set_verbosity(1);
     sasalib_t *s = sasalib_init();
     ck_assert(s != NULL);
     ck_assert(sasalib_n_atoms(s) == 0);
@@ -236,6 +238,7 @@ START_TEST (test_sasalib_api_basic)
     ck_assert(sasalib_area_atom_array(s) == NULL);
 
     ck_assert(sasalib_log(stdout,s) == SASALIB_WARN);
+    sasalib_set_verbosity(0);
 }
 END_TEST
 
