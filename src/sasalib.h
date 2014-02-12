@@ -185,7 +185,6 @@ int sasalib_set_lr_delta(sasalib_t*, double d);
     value if L&R algorithm not selected. */
 double sasalib_get_lr_delta(const sasalib_t*);
 
-#if HAVE_LIBPTHREAD
 /** Sets the number of threads for parallel computation, useful for
     large proteins and high resolution. Returns SASALIB_SUCCESS if n
     is valid, uses default value and returns SASALIB_WARN else. */
@@ -193,7 +192,6 @@ int sasalib_set_nthreads(sasalib_t*,int n);
 
 /** Returns the number of threads used in the calcultion */
 int sasalib_get_nthreads(const sasalib_t*);
-#endif
 
 /** Sets name of protein, useful for logging. Uses last
     SASALIB_NAME_LIMIT characters if name is too long (since then it

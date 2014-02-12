@@ -4,7 +4,9 @@
 #include <errno.h>
 #include <check.h>
 #include <sasalib.h>
-#include <sasa.h>
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif
 
 #ifndef PI
 #define PI 3.14159265358979323846
@@ -218,7 +220,7 @@ START_TEST (test_sasalib_api_basic)
     ck_assert(sasalib_set_nthreads(s,2) == SASALIB_SUCCESS);
     ck_assert(sasalib_get_nthreads(s) == 2);
     ck_assert(sasalib_set_nthreads(s,-1) == SASALIB_WARN);
-    cK_assert(sasalib_get_nthreads(s) == nt_def);
+    ck_assert(sasalib_get_nthreads(s) == nt_def);
 #endif    
     
     // Check that results cannot be accessed before calculations are
@@ -237,15 +239,53 @@ START_TEST (test_sasalib_api_basic)
 }
 END_TEST
 
+START_TEST (test_multi_calc) 
+{
+#if HAVE_LIBPTHREAD
+    errno = 0;
+    sasalib_t *s = sasalib_init();
+    //S&R
+    sasalib_set_algorithm(s,SASALIB_SHRAKE_RUPLEY);
+    sasalib_set_sr_points(s,100);
+    sasalib_set_nthreads(s,2);
+    FILE *pdb = fopen("data/1ubq.pdb","r");
+    if (pdb == NULL) {
+	fprintf(stderr,"error reading PDB-file for test. "
+		"(Tests must be run from directory test/): %s\n",
+		strerror(errno));
+    }
+    ck_assert(pdb != NULL);
+    ck_assert(sasalib_calc_pdb(s,pdb) == SASALIB_SUCCESS); 
+    // The reference values were the output of Sasalib on 2014-02-10
+    ck_assert(fabs(sasalib_area_total(s) - 4756.124034) < 1e-5);
+    // L&R
+    sasalib_set_algorithm(s,SASALIB_LEE_RICHARDS);
+    sasalib_set_lr_delta(s,0.25);
+    rewind(pdb);
+    ck_assert(sasalib_calc_pdb(s,pdb) == SASALIB_SUCCESS); 
+    ck_assert(fabs(sasalib_area_total(s) - 4725.173153) < 1e-5);
+    fclose(pdb);
+#endif
+}
+END_TEST
+
 
 Suite *sasa_suite() 
 {
     Suite *s = suite_create("SASA-calculation");
-    TCase *tc_core = tcase_create("Core");
-    tcase_add_test(tc_core, test_sasalib_api_basic);
-    tcase_add_test(tc_core, test_sasa_basic);
-    tcase_add_test(tc_core, test_sasa_1ubq_sr);
-    tcase_add_test(tc_core, test_sasa_1ubq_lr);
-    suite_add_tcase(s, tc_core);
+    TCase *tc_basic = tcase_create("Basic");
+    TCase *tc_1ubq = tcase_create("1UBQ");
+    tcase_add_test(tc_basic, test_sasalib_api_basic);
+    tcase_add_test(tc_basic, test_sasa_basic);
+    tcase_add_test(tc_1ubq, test_sasa_1ubq_sr);
+    tcase_add_test(tc_1ubq, test_sasa_1ubq_lr);
+    suite_add_tcase(s, tc_basic);
+    suite_add_tcase(s, tc_1ubq);
+#if HAVE_LIBPTHREAD
+    printf("Using pthread\n");
+    TCase *tc_pthr = tcase_create("Pthread");
+    tcase_add_test(tc_pthr,test_multi_calc);
+    suite_add_tcase(s, tc_pthr);
+#endif
     return s;
 }
