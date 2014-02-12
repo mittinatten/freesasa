@@ -1,8 +1,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
-#include <sasalib.h>
+#include <errno.h>
 #include <check.h>
+#include <sasalib.h>
 #include <sasa.h>
 
 #ifndef PI
@@ -129,10 +130,17 @@ END_TEST
 
 START_TEST (test_sasa_1ubq_sr)
 {
+    errno = 0;
     sasalib_t *sr = sasalib_init();
     sasalib_set_algorithm(sr,SASALIB_SHRAKE_RUPLEY);
     sasalib_set_sr_points(sr,100);
     FILE *pdb = fopen("data/1ubq.pdb","r");
+    if (pdb == NULL) {
+	fprintf(stderr,"error reading PDB-file for test. "
+		"(Tests must be run from directory test/): %s\n",
+		strerror(errno));
+    }
+    ck_assert(pdb != NULL);
     ck_assert(sasalib_calc_pdb(sr,pdb) == SASALIB_SUCCESS); 
     fclose(pdb);
     // The reference values were the output of Sasalib on 2014-02-10
@@ -149,6 +157,12 @@ START_TEST (test_sasa_1ubq_lr)
     sasalib_set_algorithm(lr,SASALIB_LEE_RICHARDS);
     sasalib_set_lr_delta(lr,0.25);
     FILE *pdb = fopen("data/1ubq.pdb","r");
+    if (pdb == NULL) {
+	fprintf(stderr,"error reading PDB-file for test. "
+		"(Tests must be run from directory test/): %s\n",
+		strerror(errno));
+    }
+    ck_assert(pdb != NULL);
     ck_assert(sasalib_calc_pdb(lr,pdb) == SASALIB_SUCCESS); 
     fclose(pdb);
     // The reference values were the output of Sasalib on 2014-02-10
