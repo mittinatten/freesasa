@@ -88,6 +88,6 @@ char sasalib_structure_atom_chain(const sasalib_structure_t *p, int i);
     output-file. */
 int sasalib_structure_write_pdb_bfactors(FILE *output, 
 					 const sasalib_structure_t *p,
-					 double *values);
+					 const double *values);
 
 #endif

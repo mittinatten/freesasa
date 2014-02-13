@@ -18,6 +18,8 @@
 */
 
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
 //#include <stdio.h>
 #include <check.h>
 
@@ -26,6 +28,8 @@ extern Suite* pdb_suite();
 extern Suite* structure_suite();
 
 int main(int argc, char **argv) {
+    mkdir("./tmp/",S_IRWXU);
+
     SRunner *sr = srunner_create(pdb_suite());
     srunner_add_suite(sr,sasa_suite());
     srunner_add_suite(sr,structure_suite());

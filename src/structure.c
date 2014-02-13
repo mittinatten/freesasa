@@ -63,8 +63,9 @@ sasalib_structure_t* sasalib_structure_init()
 
 void sasalib_structure_free(sasalib_structure_t *p)
 {
-    free(p->a);
-    sasalib_coord_free(p->xyz);
+    if (p == NULL) return;
+    if (p->a) free(p->a);
+    if (p->xyz) sasalib_coord_free(p->xyz);
     free(p);
 }
 
@@ -148,6 +149,7 @@ void sasalib_structure_add_atom(sasalib_structure_t *p,
     strcpy(a->res_name,residue_name);
     strcpy(a->res_number,residue_number);
     a->chain_label = chain_label;
+    a->line[0] = '\0';
 
     /* here we assume atoms are ordered sequentially, i.e. chains are
        not mixed in input: if two sequential atoms have different
@@ -219,14 +221,21 @@ char sasalib_structure_atom_chain(const sasalib_structure_t *p,
 
 int sasalib_structure_write_pdb_bfactors(FILE *output, 
 					 const sasalib_structure_t *p,
-					 double *values)
+					 const double *values)
 {
     if (!output) 
         return sasalib_fail("NULL file pointer provided for PDB output.");
+    if (!values)
+	return sasalib_fail("NULL file pointer provided for b-factors.");
     // Write ATOM entries
     char buf[PDB_LINE_STRL+1];
     int n = sasalib_structure_n(p);
     for (int i = 0; i < n; ++i) {
+	if (p->a[i].line[0] == '\0') {
+	    return sasalib_fail("Attempting to write B-factors for "
+				"structure not initialized from PDB-file. "
+				"Aborting.");
+	}
         strncpy(buf,p->a[i].line,PDB_LINE_STRL);
         sprintf(&buf[60],"%6.2f",values[i]); 
         errno = 0;
