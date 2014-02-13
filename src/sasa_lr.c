@@ -48,28 +48,6 @@ extern const char *sasalib_name;
 extern int sasalib_fail(const char *format, ...);
 extern int sasalib_warn(const char *format, ...);
 
-/** internal functions for S&R calculations **/
-// calculation parameters (results stored in *sasa)
-typedef struct {
-    int i1,i2;
-    int n_atoms;
-    int n_points;
-    double probe_radius;
-    const sasalib_coord_t *xyz;
-    const sasalib_coord_t *srp;
-    const double *r;
-    double *sasa;
-    char *spcount_0;
-} sasa_sr_t;
-
-#if HAVE_LIBPTHREAD
-static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr);
-static void *sasa_sr_thread(void *arg);
-#endif 
-
-static double sasa_sr_calc_atom(int i,const sasa_sr_t) __attrib_pure__;
-
-/** internal functions for L&R calculations **/
 //calculation parameters (results stored in *sasa)
 typedef struct {
     int n_atoms;
@@ -95,6 +73,7 @@ static void sasa_exposed_arcs(int n_slice,
 			      const double *x, const double *y, double z, 
                               const double *r, double *exposed_arc, 
                               const int **nb, const int *nn);
+
 /** a and b are a set of alpha and betas (in the notation of the
     manual). This function finds the union of those intervals on the
     circle, and returns 2*PI minus the length of the joined
@@ -110,149 +89,6 @@ static double sasa_sum_angles(int n_buried, double *a, double *b);
 static void sasa_get_contacts(int **nb, int *nn,
                               const sasalib_coord_t *xyz, const double *radii);
 
-int sasalib_shrake_rupley(double *sasa,
-			  const sasalib_coord_t *xyz,
-			  const double *r,
-			  double probe_radius,
-			  int n_points,
-			  int n_threads)
-{
-    size_t n_atoms = sasalib_coord_n(xyz);
-    int return_value = SASALIB_SUCCESS;
-
-    // Initialize test-points
-    const double *srp_p = sasalib_srp_get_points(n_points);
-    if (srp_p == NULL) return 1;
-    sasalib_coord_t *srp = sasalib_coord_new_linked(srp_p,n_points);
-
-    char spcount_0[n_points];
-
-    /* a reference zero array is prepared so that it won't need to be
-       initialized for each atom */
-    for (int k = 0; k < n_points; ++k) {
-        spcount_0[k] = 0;
-    }
-    //store parameters and reference arrays
-    sasa_sr_t sr = {.n_atoms = n_atoms, .n_points = n_points, 
-		    .probe_radius = probe_radius,
-                    .xyz = xyz, .srp = srp,
-                    .r = r, .spcount_0 = spcount_0,
-                    .sasa = sasa};
-
-    //calculate SASA 
-    if (n_threads > 1) {
-#if HAVE_LIBPTHREAD
-        sasa_sr_do_threads(n_threads, sr);
-#else 
-        return_value = sasalib_warn("program compiled for single-threaded use, "
-                                    "but multiple threads were requested. Will "
-                                    "proceed in single-threaded mode.\n");
-        n_threads = 1;
-#endif
-    }
-    if (n_threads == 1) {
-        // don't want the overhead of generating threads if only one is used
-        for (int i = 0; i < n_atoms; ++i) {
-            sasa[i] = sasa_sr_calc_atom(i,sr);
-        }
-    }
-    sasalib_coord_free(srp);
-    return return_value;
-}
-
-#if HAVE_LIBPTHREAD
-static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
-{
-    pthread_t thread[n_threads];
-    sasa_sr_t srt[n_threads];
-    int n_atoms = sr.n_atoms;
-    int thread_block_size = n_atoms/n_threads;
-    for (int t = 0; t < n_threads; ++t) {
-	srt[t] = sr;
-	srt[t].i1 = t*thread_block_size;
-	if (t == n_threads-1) srt[t].i2 = n_atoms;
-	else srt[t].i2 = (t+1)*thread_block_size;
-	errno = 0;
-	int res = pthread_create(&thread[t], NULL, sasa_sr_thread, (void *) &srt[t]);
-	if (res) {
-	    perror(sasalib_name);
-	    exit(EXIT_FAILURE);
-	}
-    }
-    for (int t = 0; t < n_threads; ++t) {
-	void *thread_result;
-	errno = 0;
-	int res = pthread_join(thread[t],&thread_result);
-	if (res) {
-        perror(sasalib_name);
-	    exit(EXIT_FAILURE);
-	}
-    }
-}
-
-static void *sasa_sr_thread(void* arg)
-{
-    sasa_sr_t sr = *((sasa_sr_t*) arg);
-    int n = sr.i2-sr.i1;
-    double *sasa = (double*)malloc(sizeof(double)*n);
-    for (int i = 0; i < n; ++i) {
-        sasa[i] = sasa_sr_calc_atom(i+sr.i1,sr);
-    }
-    // mutex should not be necessary, but might be safer to have one here?
-    memcpy(&sr.sasa[sr.i1],sasa,sizeof(double)*n);
-    free(sasa);
-    pthread_exit(NULL);
-}
-#endif
-
-static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
-    const int n_points = sr.n_points;
-    const sasalib_coord_t *xyz = sr.xyz;
-    /* this array keeps track of which testpoints belonging to
-       a certain atom overlap with other atoms */
-    char spcount[n_points];
-    const double ri = sr.r[i]+sr.probe_radius;
-    const double *vi = sasalib_coord_i(xyz,i);
-    double xi = vi[0], yi = vi[1], zi = vi[2]; 
-    const double *v = sasalib_coord_all(xyz);
-
-    /* testpoints for this atom */
-    sasalib_coord_t* tp_coord_ri = sasalib_coord_copy(sr.srp);
-    sasalib_coord_scale(tp_coord_ri, ri);
-    sasalib_coord_translate(tp_coord_ri, vi);
-    const double *tp = sasalib_coord_all(tp_coord_ri);
-
-    memcpy(spcount,sr.spcount_0,sizeof(char)*n_points);
-    
-    for (int j = 0; j < sr.n_atoms; ++j) {
-        if (j == i) continue;
-	const double rj = sr.r[j]+sr.probe_radius;
-        const double cut2 = (ri+rj)*(ri+rj);
-
-	/* this turns out to be the fastest way (by far) to access the
-	   coordinates, probably because it's easier for the compiler
-	   to optimize */
-	double xj = v[3*j+0], yj = v[3*j+1], zj = v[3*j+2];
-	double dx = xj-xi, dy = yj-yi, dz = zj-zi;
-	if (dx*dx + dy*dy + dz*dz > cut2) continue;
-        
-	for (int k = 0; k < n_points; ++k) {
-            if (spcount[k]) continue;
-	    double dx = tp[3*k]-xj, dy = tp[3*k+1]-yj, dz = tp[3*k+2]-zj;
-	    if (dx*dx + dy*dy + dz*dz < rj*rj) {
-		spcount[k] = 1;
-	    }
-	    /* i.e. if |xyz[i]+ri*srp[k] - xyz[j]| <= rj we have an
-               overlap. */
-        }
-    }
-    sasalib_coord_free(tp_coord_ri);
-    int n_surface = 0;
-    for (int k = 0; k < n_points; ++k) {
-        if (!spcount[k]) ++n_surface;
-    }
-    return (4.0*PI*ri*ri*n_surface)/n_points;
-}
 
 int sasalib_lee_richards(double *sasa,
 			 const sasalib_coord_t *xyz,

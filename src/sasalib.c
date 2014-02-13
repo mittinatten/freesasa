@@ -37,7 +37,13 @@
 #define NBUF 100
 #define DEF_NTHREADS 1
 
+#ifdef PACKAGE_NAME
+const char *sasalib_name = PACKAGE_NAME;
+#else
 const char *sasalib_name = "sasalib";
+#endif
+
+// to control error messages (used for debugging and testing)
 static int sasalib_verbosity;
 
 typedef struct {
