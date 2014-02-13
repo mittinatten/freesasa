@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
     SRunner *sr = srunner_create(pdb_suite());
     srunner_add_suite(sr,sasa_suite());
     srunner_add_suite(sr,structure_suite());
-    srunner_run_all(sr,CK_NORMAL);
+    srunner_run_all(sr,CK_VERBOSE);
 
     return (srunner_ntests_failed(sr) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

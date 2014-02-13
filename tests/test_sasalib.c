@@ -3,22 +3,25 @@
 #include <math.h>
 #include <errno.h>
 #include <check.h>
-#include <sasalib.h>
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif
+
+#include <sasalib.h>
 
 #ifndef PI
 #define PI 3.14159265358979323846
 #endif
 
+#define PASS 1
+#define NOPASS 0
+
+sasalib_t *st = NULL;
+double total_ref, polar_ref, apolar_ref;
+double tolerance;
+
 double rel_err(double v1, double v2) {
     return fabs(v1-v2)/(fabs(v1)+fabs(v2));
-}
-
-void alg_failed(const char *alg,const char *test)
-{
-    printf("%s failed test: %s\n",alg,test);
 }
 
 double surface_hidden_sphere_intersection(double r1, double r2, double d) 
@@ -41,101 +44,124 @@ double surface_two_spheres(const double *x, const double *r, double probe)
     return surface_spheres_intersecting(r[0]+probe,r[1]+probe,sqrt(d2));
 }
 
-int test_sasa(sasalib_t *s, double ref, double tolerance,const char *test)
+int test_sasa(double ref, const char *test)
 {
-    sasalib_refresh(s);
+    sasalib_refresh(st);
     double err;
-    if ((err = rel_err(ref,sasalib_area_total(s)))
+    if ((err = rel_err(ref,sasalib_area_total(st)))
 	> tolerance) {
-	alg_failed(sasalib_algorithm_name(s),test);
-	printf("%f %f\n",ref,sasalib_area_total(s));
-	return 1;
+	return NOPASS;
     }
-    return 0;
+    return PASS;
 }
 
-int test_sasa_alg_basic(sasalib_t *s, double tolerance) 
+void setup_lr_precision(void)
 {
-    int err = 0;
-    int nt = 0;
-    
+    if (st) sasalib_free(st);
+    st = sasalib_init();
+    sasalib_set_algorithm(st,SASALIB_LEE_RICHARDS);
+    sasalib_set_lr_delta(st,1e-4);
+    tolerance = 1e-5;
+}
+void teardown_lr_precision(void)
+{
+    sasalib_free(st);
+}
+void setup_sr_precision(void)
+{
+    if (st) sasalib_free(st);
+    st = sasalib_init();
+    sasalib_set_algorithm(st,SASALIB_SHRAKE_RUPLEY);
+    sasalib_set_sr_points(st,5000);
+    tolerance = 1e-3;
+}
+void teardown_sr_precision(void)
+{
+    sasalib_free(st);
+}
+
+START_TEST (test_sasa_alg_basic)
+{
     // Two spheres, compare with analytic results
     double coord[6] = {0,0,0,2,0,0};
     double r[2] = {1,2};
-    double probe = sasalib_get_probe_radius(s);
-    sasalib_link_coord(s,coord,r,2);
+    double probe = sasalib_get_probe_radius(st);
+    sasalib_link_coord(st,coord,r,2);
     
-    ++nt;
-    err += test_sasa(s,surface_two_spheres(coord,r,probe),tolerance,
-		     "Two intersecting spheres along x-axis.");
+    ck_assert(test_sasa(surface_two_spheres(coord,r,probe),
+			"Two intersecting spheres along x-axis."));
     coord[3] = 0; coord[4] = 2;
-    ++nt;
-    err += test_sasa(s,surface_two_spheres(coord,r,probe),tolerance,
-		     "Two intersecting spheres along y-axis."); 
+    ck_assert(test_sasa(surface_two_spheres(coord,r,probe),
+			"Two intersecting spheres along y-axis.")); 
     coord[4] = 0; coord[5] = 2;
-    ++nt;
-    err += test_sasa(s,surface_two_spheres(coord,r,probe),tolerance,
-		     "Two intersecting spheres along z-axis.");
+    
+    ck_assert(test_sasa(surface_two_spheres(coord,r,probe),
+			"Two intersecting spheres along z-axis."));
 
     // Four spheres in a plane, all calculations should give similar results
     double coord2[12] = {0,0,0, 1,0,0, 0,1,0, 1,1,0};
     double r2[4] = {1,1,2,1};
-    sasalib_link_coord(s,coord2,r2,4);
-    sasalib_refresh(s);
-    double ref = sasalib_area_total(s);
+    sasalib_link_coord(st,coord2,r2,4);
+    sasalib_refresh(st);
+    double ref = sasalib_area_total(st);
 
     //translate
     for (int i = 0; i < 12; ++i) coord2[i] += 1.;
-    ++nt;
-    err += test_sasa(s,ref,tolerance,"Four spheres in plane, translated");
+    ck_assert(test_sasa(ref,"Four spheres in plane, translated"));
 
     //rotate 90 degrees round z-axis
     double coord3[12] = {0,1,0, 0,0,0, 1,1,0, 1,0,0};
     memcpy(coord2,coord3,12*sizeof(double));
-    ++nt;
-    err += test_sasa(s,ref,tolerance,"Four spheres in plane, rotated 90 deg round z-axis.");
+    ck_assert(test_sasa(ref,"Four spheres in plane, rotated 90 deg round z-axis."));
 
     //rotate -45 degrees round z-axis
     double sqr2 = sqrt(2);
     double coord4[12] = {-1./sqr2,1./sqr2,0, 0,0,0, 0,sqr2,0, 1/sqr2,1/sqr2,0};
     memcpy(coord2,coord4,12*sizeof(double));
-    ++nt;
-    err += test_sasa(s,ref,tolerance,"Four spheres in plane, rotated 45 deg round z-axis.");
+    ck_assert(test_sasa(ref,"Four spheres in plane, rotated 45 deg round z-axis."));
 
     //rotate 90 degrees round x-axis
     double coord5[12] = {-1./sqr2,0,1/sqr2, 0,0,0, 0,0,sqr2, 1/sqr2,0,1/sqr2};
     memcpy(coord2,coord5,12*sizeof(double));
-    ++nt;
-    err += test_sasa(s,ref,tolerance,"Four spheres in plane, rotated 90 deg round x-axis.");
+    ck_assert(test_sasa(ref,"Four spheres in plane, rotated 90 deg round x-axis."));
 
-    return err;
 }
 
-START_TEST (test_sasa_basic)
-{
-    sasalib_t *sr = sasalib_init();
-    sasalib_t *lr = sasalib_init();
-
-    sasalib_set_algorithm(sr,SASALIB_SHRAKE_RUPLEY);
-    sasalib_set_algorithm(lr,SASALIB_LEE_RICHARDS);
-
-    sasalib_set_sr_points(sr,5000);
-    sasalib_set_lr_delta(lr,1e-4);
-
-    ck_assert(test_sasa_alg_basic(sr,1e-3) == 0);
-    ck_assert(test_sasa_alg_basic(lr,1e-5) == 0);
-
-    sasalib_free(sr);
-    sasalib_free(lr);
-}
 END_TEST
 
-START_TEST (test_sasa_1ubq_sr)
+void setup_sr (void)
+{
+    if (st) sasalib_free(st);
+    st = sasalib_init();
+    sasalib_set_algorithm(st,SASALIB_SHRAKE_RUPLEY);
+    sasalib_set_sr_points(st,100);
+    total_ref = 4756.124034;
+    polar_ref = 1968.057001;
+    apolar_ref = 2788.067033;
+}
+void teardown_sr(void)
+{
+    sasalib_free(st);
+}
+
+void setup_lr (void)
+{
+    if (st) sasalib_free(st);
+    st = sasalib_init();
+    sasalib_set_algorithm(st,SASALIB_LEE_RICHARDS);
+    sasalib_set_lr_delta(st,0.25);
+    total_ref = 4725.173153;
+    polar_ref = 1957.575594;
+    apolar_ref = 2767.597560;
+}
+void teardown_lr(void)
+{
+    sasalib_free(st);
+}
+
+START_TEST (test_sasa_1ubq)
 {
     errno = 0;
-    sasalib_t *sr = sasalib_init();
-    sasalib_set_algorithm(sr,SASALIB_SHRAKE_RUPLEY);
-    sasalib_set_sr_points(sr,100);
     FILE *pdb = fopen("data/1ubq.pdb","r");
     if (pdb == NULL) {
 	fprintf(stderr,"error reading PDB-file for test. "
@@ -143,35 +169,12 @@ START_TEST (test_sasa_1ubq_sr)
 		strerror(errno));
     }
     ck_assert(pdb != NULL);
-    ck_assert(sasalib_calc_pdb(sr,pdb) == SASALIB_SUCCESS); 
+    ck_assert(sasalib_calc_pdb(st,pdb) == SASALIB_SUCCESS); 
     fclose(pdb);
     // The reference values were the output of Sasalib on 2014-02-10
-    ck_assert(fabs(sasalib_area_total(sr) - 4756.124034) < 1e-5);
-    ck_assert(fabs(sasalib_area_class(sr,SASALIB_POLAR) - 1968.057001) < 1e-5);
-    ck_assert(fabs(sasalib_area_class(sr,SASALIB_APOLAR) - 2788.067033) < 1e-5);
-    sasalib_free(sr);
-}
-END_TEST
-
-START_TEST (test_sasa_1ubq_lr)
-{
-    sasalib_t *lr = sasalib_init();
-    sasalib_set_algorithm(lr,SASALIB_LEE_RICHARDS);
-    sasalib_set_lr_delta(lr,0.25);
-    FILE *pdb = fopen("data/1ubq.pdb","r");
-    if (pdb == NULL) {
-	fprintf(stderr,"error reading PDB-file for test. "
-		"(Tests must be run from directory test/): %s\n",
-		strerror(errno));
-    }
-    ck_assert(pdb != NULL);
-    ck_assert(sasalib_calc_pdb(lr,pdb) == SASALIB_SUCCESS); 
-    fclose(pdb);
-    // The reference values were the output of Sasalib on 2014-02-10
-    ck_assert(fabs(sasalib_area_total(lr) - 4725.173153) < 1e-5);
-    ck_assert(fabs(sasalib_area_class(lr,SASALIB_POLAR) - 1957.575594) < 1e-5);
-    ck_assert(fabs(sasalib_area_class(lr,SASALIB_APOLAR) - 2767.597560) < 1e-5);
-    sasalib_free(lr);
+    ck_assert(fabs(sasalib_area_total(st) - total_ref) < 1e-5);
+    ck_assert(fabs(sasalib_area_class(st,SASALIB_POLAR) - polar_ref) < 1e-5);
+    ck_assert(fabs(sasalib_area_class(st,SASALIB_APOLAR) - apolar_ref) < 1e-5);
 }
 END_TEST
 
@@ -276,14 +279,32 @@ END_TEST
 Suite *sasa_suite() 
 {
     Suite *s = suite_create("SASA-calculation");
-    TCase *tc_basic = tcase_create("Basic");
-    TCase *tc_1ubq = tcase_create("1UBQ");
+
+    TCase *tc_basic = tcase_create("Basic API");
     tcase_add_test(tc_basic, test_sasalib_api_basic);
-    tcase_add_test(tc_basic, test_sasa_basic);
-    tcase_add_test(tc_1ubq, test_sasa_1ubq_sr);
-    tcase_add_test(tc_1ubq, test_sasa_1ubq_lr);
+
+    TCase *tc_lr_basic = tcase_create("Basic L&R");
+    tcase_add_checked_fixture(tc_lr_basic,setup_lr_precision,teardown_lr_precision);
+    tcase_add_test(tc_lr_basic, test_sasa_alg_basic);
+
+    TCase *tc_sr_basic = tcase_create("Basic S&R");
+    tcase_add_checked_fixture(tc_sr_basic,setup_sr_precision,teardown_sr_precision);
+    tcase_add_test(tc_sr_basic, test_sasa_alg_basic);
+
+    TCase *tc_lr = tcase_create("1UBQ-L&R");
+    tcase_add_checked_fixture(tc_lr,setup_lr,teardown_lr);
+    tcase_add_test(tc_lr, test_sasa_1ubq);
+
+    TCase *tc_sr = tcase_create("1UBQ-S&R");
+    tcase_add_checked_fixture(tc_sr,setup_sr,teardown_sr);
+    tcase_add_test(tc_sr, test_sasa_1ubq);
+
     suite_add_tcase(s, tc_basic);
-    suite_add_tcase(s, tc_1ubq);
+    suite_add_tcase(s, tc_lr_basic);
+    suite_add_tcase(s, tc_sr_basic);
+    suite_add_tcase(s, tc_lr);
+    suite_add_tcase(s, tc_sr);
+
 #if HAVE_LIBPTHREAD
     printf("Using pthread\n");
     TCase *tc_pthr = tcase_create("Pthread");
