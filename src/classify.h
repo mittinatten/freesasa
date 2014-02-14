@@ -82,7 +82,8 @@ int sasalib_classify_nclasses();
     value for each of the 20 regular amino acids, plus ASX, GLX, XLE,
     CSE and UNK. In addition nucleic acids are treated as separate
     residue types. Return values span from 0 to
-    sasalib_classify_nresiduetypes()-1.*/
+    sasalib_classify_nresiduetypes()-1. The standard 20 amino acids
+    have indices 0 to 19.*/
 int sasalib_classify_residue(const char *res_name);
 
 /** Returns the name of a residue classified by

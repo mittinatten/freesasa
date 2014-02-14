@@ -157,7 +157,6 @@ int sasalib_classify_nclasses() {
 
 int sasalib_classify_residue(const char *res_name)
 {
-    assert(strlen(res_name) == PDB_ATOM_RES_NAME_STRL);
     char cpy[PDB_ATOM_RES_NAME_STRL+1];
     int len = sasalib_trim_whitespace(cpy,res_name,strlen(res_name));
     if (len > PDB_ATOM_RES_NAME_STRL) {
@@ -191,13 +190,14 @@ int sasalib_classify_nresiduetypes()
 
 int sasalib_classify_element(const char *atom_name)
 {
-    assert(strlen(atom_name) == PDB_ATOM_NAME_STRL);
-
     //strip whitespace to simplify switch below
     char a[PDB_ATOM_NAME_STRL+1];
     int len = sasalib_trim_whitespace(a,atom_name,strlen(atom_name));
-
-    if (len > 0) {
+    if (len > PDB_ATOM_NAME_STRL) {
+	sasalib_warn("atom '%s' unknown.\n",atom_name);
+	return sasalib_element_unknown;
+    }
+    else if (len > 0) {
 	switch (a[0]) {
 	case 'C': return sasalib_carbon;
 	case 'O': return sasalib_oxygen;
