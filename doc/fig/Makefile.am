@@ -7,8 +7,8 @@ fig_pdf = ${subst .eps,.pdf,${fig_eps}}
 if HAVE_LATEX
 dvi-local: $(gen_eps)
 %.eps : %.tex
-	latex $<
-	dvips -E ${subst .tex,.dvi,$<} -o $@;
+	latex -interaction=batchmode $<
+	dvips -E ${subst .tex,.dvi,$<} -o $@ -q
 else
 nolatex:
 	@echo "LaTeX needed to generate figures for manual"
@@ -20,7 +20,7 @@ ps-local: dvi-local
 if HAVE_PDF
 pdf-local: $(fig_pdf) 
 %.pdf : %.eps
-	epstopdf $< -o $@;
+	epstopdf $< -o $@ 
 else
 nopdf:
 	@echo "epstopdf needed to generate pdf-figures"

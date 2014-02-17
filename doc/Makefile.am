@@ -5,13 +5,15 @@ fig_pdf = $(subst .eps,.pdf,$(fig_eps))
 
 dist_doc_DATA = manual.pdf manual.ps manual.dvi
 
+all:
+
 if HAVE_LATEX
 
 manual.ps: manual.dvi
-	dvips -Ppdf manual.dvi
+	dvips -Ppdf manual.dvi -q
 manual.dvi: $(manual) $(fig_eps)
-	latex manual.tex
-	latex manual.tex
+	latex -interaction=batchmode manual.tex
+	latex -interaction=batchmode manual.tex
 
 dvi-local: manual.dvi
 
@@ -27,11 +29,11 @@ endif
 if HAVE_PDF
 pdf-local: manual.pdf 
 manual.pdf: $(manual) $(fig_pdf)
-	pdflatex manual.tex
-	pdflatex manual.tex
+	pdflatex -interaction=batchmode manual.tex 
+	pdflatex -interaction=batchmode manual.tex 
 else
 pdf-local: 
-	@echo "pdflatec needed to build .pdf-manual"
+	@echo "pdflatex needed to build .pdf-manual"
 endif
 
 clean-local:
