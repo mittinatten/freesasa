@@ -245,7 +245,9 @@ double sasalib_classify_element_radius(int element)
     }
 }
 
-/** Functions to deal with the different amino acids in OONS scheme */
+/** Functions to deal with the different amino acids in OONS scheme.
+    The assumption here is that the backbone plus CB has been handled
+    before these functions are called. */
 static int classify_oons_RK(const char* a)
 {
     if (a[1] == 'C') return sasalib_aliphatic_C;
@@ -384,7 +386,7 @@ int sasalib_classify_oons2class(int oons_type)
     switch (oons_type) {
     case sasalib_aliphatic_C: return SASALIB_APOLAR;
     case sasalib_aromatic_C: return SASALIB_APOLAR;
-    case sasalib_carbo_C: return SASALIB_APOLAR;
+    case sasalib_carbo_C: return SASALIB_POLAR;
     case sasalib_amide_N: return SASALIB_POLAR;
     case sasalib_carbo_O: return SASALIB_POLAR;
     case sasalib_hydroxyl_O: return SASALIB_POLAR;
@@ -417,12 +419,12 @@ int sasalib_classify_is_aminoacid(int res)
 {
     if (res >= sasalib_ALA && res <= sasalib_XLE) return 1;
     if (res >= sasalib_UNK && res <= sasalib_NN) return 0;
-    return -1;
+    return SASALIB_FAIL;
 }
 
 int sasalib_classify_is_nucleicacid(int res)
 {
     if (res >= sasalib_ALA && res <= sasalib_UNK) return 0;
     if (res >= sasalib_DA && res <= sasalib_NN) return 1;
-    return -1;
+    return SASALIB_FAIL;
 }

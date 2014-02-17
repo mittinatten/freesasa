@@ -51,5 +51,8 @@ AM_COND_IF([HAVE_PDF],[],[.pdf documentation cannot be built])
 
 # Checks for testing
 PKG_CHECK_MODULES([CHECK],[check >= 0.9.4])
+#AC_CHECK_PROG(GCOV,gcov,gcov)
+#AM_CONDITIONAL([HAVE_GCOV],[test -n "$GCOV" && test "$CC"="gcc"])
+
 
 AC_OUTPUT

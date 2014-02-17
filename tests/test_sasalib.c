@@ -136,8 +136,8 @@ void setup_sr (void)
     sasalib_set_algorithm(st,SASALIB_SHRAKE_RUPLEY);
     sasalib_set_sr_points(st,100);
     total_ref = 4759.86096;
-    polar_ref = 2188.48685;
-    apolar_ref = 2571.37411;
+    polar_ref = 2232.23039;
+    apolar_ref = 2527.63057;
 }
 void teardown_sr(void)
 {
@@ -151,8 +151,8 @@ void setup_lr (void)
     sasalib_set_algorithm(st,SASALIB_LEE_RICHARDS);
     sasalib_set_lr_delta(st,0.25);
     total_ref = 4728.26159;
-    polar_ref = 2171.03485;
-    apolar_ref = 2557.22673;
+    polar_ref = 2211.41649;
+    apolar_ref = 2516.84510;
 }
 void teardown_lr(void)
 {

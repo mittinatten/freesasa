@@ -106,7 +106,7 @@ int sasalib_classify_element(const char *atom_name);
 const char* sasalib_classify_element2str(int element);
 
 /** The vdW-radius of a given element, according to
-    www.periodictable.com. */
+    www.periodictable.com. Unknown elements are assigned radius 0 */
 double sasalib_classify_element_radius(int element);
 
 /** Returns the number of possible element types returned by
@@ -145,12 +145,12 @@ int sasalib_classify_noons();
 
 /** Takes the values produced by sasalib_classify_residue() and
     determines if it's an amino acid or not. Return value 1 means
-    amino acid, 0 not, -1 illegal input. */
+    amino acid, 0 not, SASALIB_FAIL illegal input. */
 int sasalib_classify_is_aminoacid(int res);
 
 /** Takes the values produced by sasalib_classify_residue() and
     determines if it's an nucleic acid or not. Return value 1 is
-    nucleic acid, 0 not, -1 illegal input. */
+    nucleic acid, 0 not, SASALIB_FAIL illegal input. */
 int sasalib_classify_is_nucleicacid(int res);
 
 #endif

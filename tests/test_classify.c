@@ -37,7 +37,7 @@ const struct atom atoms[] = {
     {"ARG"," NH1",ami_N,POL}, {"ARG"," NH2",ami_N,POL}, 
 // 16
     {"ASN"," C  ",car_C,POL}, {"ASN"," O  ",car_O,POL}, {"ASN"," CA ",ali_C,APO},
-    {"ASN"," N  ",ami_N,POL}, {"ASN"," CB ",ali_C,APO}, {"ASN"," CG ",car_C,APO},
+    {"ASN"," N  ",ami_N,POL}, {"ASN"," CB ",ali_C,APO}, {"ASN"," CG ",car_C,POL},
     {"ASN"," OD1",car_O,POL}, {"ASN"," ND2",ami_N,POL}, 
 // 24
     {"ASP"," C  ",car_C,POL}, {"ASP"," O  ",car_O,POL}, {"ASP"," CA ",ali_C,APO},
@@ -49,7 +49,7 @@ const struct atom atoms[] = {
 // 38
     {"GLN"," C  ",car_C,POL}, {"GLN"," O  ",car_O,POL}, {"GLN"," CA ",ali_C,APO},
     {"GLN"," N  ",ami_N,POL}, {"GLN"," CB ",ali_C,APO}, {"GLN"," CG ",ali_C,APO},
-    {"GLN"," CD ",car_C,APO}, {"GLN"," OE1",car_O,POL}, {"GLN"," NE2",ami_N,POL}, 
+    {"GLN"," CD ",car_C,POL}, {"GLN"," OE1",car_O,POL}, {"GLN"," NE2",ami_N,POL}, 
 // 47
     {"GLU"," C  ",car_C,POL}, {"GLU"," O  ",car_O,POL}, {"GLU"," CA ",ali_C,APO},
     {"GLU"," N  ",ami_N,POL}, {"GLU"," CB ",ali_C,APO}, {"GLU"," CG ",ali_C,APO},
@@ -113,12 +113,12 @@ const struct atom atoms[] = {
 // 168
 };
 
+// tests sasalib_classify_radius() and sasalib_classify_oons_radius()
 START_TEST (test_radius)
 {
     char buf[50];
-    struct atom a;
     for (int i = 0; i < n_atom_types; ++i) {
-        a = atoms[i];
+        const struct atom a = atoms[i];
 	int oons_type = sasalib_classify_oons(a.a,a.b);
         double r1 = sasalib_classify_radius(a.a,a.b),
 	    r2 = sasalib_classify_oons_radius(oons_type);
@@ -135,12 +135,32 @@ START_TEST (test_radius)
     ck_assert(fabs(sasalib_classify_radius("XXX"," S  ") - 1.8)  < 1e-10);
     ck_assert(fabs(sasalib_classify_radius("XXX"," O  ") - 1.52)  < 1e-10);
     ck_assert(fabs(sasalib_classify_radius("XXX"," P  ") - 1.8)  < 1e-10);
+    ck_assert(fabs(sasalib_classify_radius("XXX"," X  ") - 0.0)  < 1e-10);
     //ck_assert(fabs(sasalib_classify_radius("XXX"," SE ") - 1.9)  < 1e-10);
     //ck_assert(fabs(sasalib_classify_radius("XXX"," H  ") - 1.2)  < 1e-10);
     sasalib_set_verbosity(0);
 }
 END_TEST
 
+// tests sasalib_classify_class() and sasalib_classify_class2str()
+START_TEST (test_class) 
+{
+    char buf[50];
+    for (int i = 0; i < n_atom_types; ++i) {
+	const struct atom a = atoms[i];
+	int c = sasalib_classify_class(a.a,a.b);
+	sprintf(buf,"%s %s %s",a.a,a.b,sasalib_classify_class2str(c));
+	ck_assert_msg(sasalib_classify_class(a.a,a.b) == a.class, buf);
+    }    
+    ck_assert_str_eq(sasalib_classify_class2str(SASALIB_POLAR),"Polar");
+    ck_assert_str_eq(sasalib_classify_class2str(SASALIB_APOLAR),"Apolar");
+    ck_assert_str_eq(sasalib_classify_class2str(SASALIB_NUCLEICACID),"Nucleic");
+    ck_assert_str_eq(sasalib_classify_class2str(-1),"Unknown");
+}
+END_TEST
+
+// tests sasalib_classify_residue2str(), sasalib_classify_residue(), 
+// sasalib_is_aminoacid() and sasalib_is_nucleicacid()
 START_TEST (test_residue) 
 {
     int nrt = sasalib_classify_nresiduetypes();
@@ -149,26 +169,119 @@ START_TEST (test_residue)
 	res[i] = sasalib_classify_residue2str(i);
 	ck_assert_int_eq(sasalib_classify_residue(res[i]),i);
     }
-    ck_assert(sasalib_classify_residue("ALA") < 20);
-    ck_assert(sasalib_classify_residue("ARG") < 20);
-    ck_assert(sasalib_classify_residue("ASN") < 20);
-    ck_assert(sasalib_classify_residue("ASP") < 20);
-    ck_assert(sasalib_classify_residue("CYS") < 20);
-    ck_assert(sasalib_classify_residue("GLN") < 20);
-    ck_assert(sasalib_classify_residue("GLU") < 20);
-    ck_assert(sasalib_classify_residue("GLY") < 20);
-    ck_assert(sasalib_classify_residue("HIS") < 20);
-    ck_assert(sasalib_classify_residue("ILE") < 20);
-    ck_assert(sasalib_classify_residue("LEU") < 20);
-    ck_assert(sasalib_classify_residue("LYS") < 20);
-    ck_assert(sasalib_classify_residue("MET") < 20);
-    ck_assert(sasalib_classify_residue("PHE") < 20);
-    ck_assert(sasalib_classify_residue("PRO") < 20);
-    ck_assert(sasalib_classify_residue("SER") < 20);
-    ck_assert(sasalib_classify_residue("THR") < 20);
-    ck_assert(sasalib_classify_residue("TRP") < 20);
-    ck_assert(sasalib_classify_residue("TYR") < 20);
-    ck_assert(sasalib_classify_residue("VAL") < 20);
+    int c;
+    ck_assert((c = sasalib_classify_residue("ALA")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("ARG")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("ASN")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("ASP")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("CYS")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("GLN")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("GLU")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("GLY")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("HIS")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("ILE")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("LEU")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("LYS")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("MET")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("PHE")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("PRO")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("SER")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("THR")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("TRP")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("TYR")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("VAL")) < 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    // irregular entries
+    ck_assert((c = sasalib_classify_residue("UNK")) >= 20);
+    ck_assert(!sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("ASX")) >= 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("GLX")) >= 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("XLE")) >= 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    ck_assert((c = sasalib_classify_residue("CSE")) >= 20);
+    ck_assert(sasalib_classify_is_aminoacid(c));
+    // nucleic acids
+    ck_assert((c = sasalib_classify_residue("DA")) >= 20);
+    ck_assert(sasalib_classify_is_nucleicacid(c));
+    ck_assert((c = sasalib_classify_residue("DC")) >= 20);
+    ck_assert(sasalib_classify_is_nucleicacid(c));
+    ck_assert((c = sasalib_classify_residue("DG")) >= 20);
+    ck_assert(sasalib_classify_is_nucleicacid(c));
+    ck_assert((c = sasalib_classify_residue("DT")) >= 20);
+    ck_assert(sasalib_classify_is_nucleicacid(c));
+    ck_assert((c = sasalib_classify_residue("DU")) >= 20);
+    ck_assert(sasalib_classify_is_nucleicacid(c));
+    ck_assert((c = sasalib_classify_residue("DI")) >= 20);
+    ck_assert(sasalib_classify_is_nucleicacid(c));
+    ck_assert((c = sasalib_classify_residue("A")) >= 20);
+    ck_assert(sasalib_classify_is_nucleicacid(c));
+    ck_assert((c = sasalib_classify_residue("C")) >= 20);
+    ck_assert(sasalib_classify_is_nucleicacid(c));
+    ck_assert((c = sasalib_classify_residue("G")) >= 20);
+    ck_assert(sasalib_classify_is_nucleicacid(c));
+    ck_assert((c = sasalib_classify_residue("T")) >= 20);
+    ck_assert(sasalib_classify_is_nucleicacid(c));
+    ck_assert((c = sasalib_classify_residue("U")) >= 20);
+    ck_assert(sasalib_classify_is_nucleicacid(c));
+    ck_assert((c = sasalib_classify_residue("I")) >= 20);
+    ck_assert(sasalib_classify_is_nucleicacid(c));
+    ck_assert((c = sasalib_classify_residue("N")) >= 20);
+    ck_assert(sasalib_classify_is_nucleicacid(c));
+}
+END_TEST
+
+// tests sasalib_classify_element() and sasalib_classify_element2str()
+START_TEST (test_element)
+{
+    int c = sasalib_classify_element(" C ");
+    ck_assert(c >= 0 && c < sasalib_classify_nelements());
+    c = sasalib_classify_element(" N  ");
+    ck_assert(c >= 0 && c < sasalib_classify_nelements());
+    c = sasalib_classify_element(" O  ");
+    ck_assert(c >= 0 && c < sasalib_classify_nelements());
+    c = sasalib_classify_element(" S  ");
+    ck_assert(c >= 0 && c < sasalib_classify_nelements());
+    c = sasalib_classify_element(" P  ");
+    ck_assert(c >= 0 && c < sasalib_classify_nelements());
+
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" C  ")),"C");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" CD ")),"C");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" CE2")),"C");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element("   C    ")),"C");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element("   CE3  ")),"C");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" N  ")),"N");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" ND ")),"N");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" NE2")),"N");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" O  ")),"O");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" OD ")),"O");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" OE2")),"O");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" S  ")),"S");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" SD ")),"S");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" SE2")),"S");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" P  ")),"P");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" PD ")),"P");
+    ck_assert_str_eq(sasalib_classify_element2str(sasalib_classify_element(" PE2")),"P");
 }
 END_TEST
 
@@ -177,9 +290,9 @@ Suite* classify_suite()
     Suite *s = suite_create("Classify");
     TCase *tc_core = tcase_create("Core");
     tcase_add_test(tc_core,test_radius);
+    tcase_add_test(tc_core,test_class);
     tcase_add_test(tc_core,test_residue);
-
-    
+    tcase_add_test(tc_core,test_element);
     suite_add_tcase(s,tc_core);
 
     return s;
