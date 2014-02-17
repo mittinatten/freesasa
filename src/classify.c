@@ -237,8 +237,8 @@ double sasalib_classify_element_radius(int element)
     case sasalib_nitrogen: return 1.55;
     case sasalib_sulfur: return 1.8;
     case sasalib_phosphorus: return 1.8;
-    case sasalib_selenium: return 1.9;
-    case sasalib_hydrogen: return 1.2;
+	//case sasalib_selenium: return 1.9;
+	//case sasalib_hydrogen: return 1.2;
     case sasalib_element_unknown:
     default:
 	return 0.0;
@@ -253,12 +253,23 @@ static int classify_oons_RK(const char* a)
     return sasalib_oons_unknown;
 }
 
-static int classify_oons_NQDE(const char* a)
+static int classify_oons_ND(const char* a)
 {
-    if (a[1] == 'C') return sasalib_aliphatic_C;
+    if (a[1] == 'C') return sasalib_carbo_C;
     if (a[1] == 'N') return sasalib_amide_N;
     if (a[1] == 'O') return sasalib_carbo_O;
     if (a[1] == 'X') return sasalib_oons_unknown_polar;
+    return sasalib_oons_unknown;
+}
+static int classify_oons_QE(const char* a)
+{
+    if (a[1] == 'N') return sasalib_amide_N;
+    if (a[1] == 'O') return sasalib_carbo_O;
+    if (a[1] == 'X') return sasalib_oons_unknown_polar;
+    if (a[1] == 'C') {
+	if (strcmp(a," CD ") == 0) return sasalib_carbo_C;
+	return sasalib_aliphatic_C;
+    }
     return sasalib_oons_unknown;
 }
 
@@ -325,16 +336,16 @@ int sasalib_classify_oons(const char *res_name, const char *a)
     case sasalib_LEU: return classify_oons_VIL(a);
     case sasalib_SER: return classify_oons_CMST(a);
     case sasalib_VAL: return classify_oons_VIL(a);
-    case sasalib_GLU: return classify_oons_NQDE(a);
+    case sasalib_GLU: return classify_oons_QE(a);
     case sasalib_LYS: return classify_oons_RK(a);
     case sasalib_ILE: return classify_oons_VIL(a);
     case sasalib_THR: return classify_oons_CMST(a);
-    case sasalib_ASP: return classify_oons_NQDE(a);
+    case sasalib_ASP: return classify_oons_ND(a);
     case sasalib_ARG: return classify_oons_RK(a);
     case sasalib_PRO: return classify_oons_FHPYW(a);
-    case sasalib_ASN: return classify_oons_NQDE(a);
+    case sasalib_ASN: return classify_oons_ND(a);
     case sasalib_PHE: return classify_oons_FHPYW(a);
-    case sasalib_GLN: return classify_oons_NQDE(a);
+    case sasalib_GLN: return classify_oons_QE(a);
     case sasalib_TYR: return classify_oons_FHPYW(a);
     case sasalib_MET: return classify_oons_CMST(a);
     case sasalib_HIS: return classify_oons_FHPYW(a);
@@ -342,8 +353,8 @@ int sasalib_classify_oons(const char *res_name, const char *a)
     case sasalib_TRP: return classify_oons_FHPYW(a);
 	// all atoms in Gly and Ala  have already been handled
     case sasalib_UNK: return sasalib_oons_unknown;
-    case sasalib_ASX:
-    case sasalib_GLX: return classify_oons_NQDE(a);
+    case sasalib_ASX: return classify_oons_ND(a);
+    case sasalib_GLX: return classify_oons_QE(a);
     case sasalib_XLE: return classify_oons_VIL(a);
 	// haven't found any PDB files with seleno-cysteine yet,
 	// needs testing

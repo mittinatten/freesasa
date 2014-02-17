@@ -135,9 +135,9 @@ void setup_sr (void)
     st = sasalib_init();
     sasalib_set_algorithm(st,SASALIB_SHRAKE_RUPLEY);
     sasalib_set_sr_points(st,100);
-    total_ref = 4756.124034;
-    polar_ref = 1968.057001;
-    apolar_ref = 2788.067033;
+    total_ref = 4759.86096;
+    polar_ref = 2188.48685;
+    apolar_ref = 2571.37411;
 }
 void teardown_sr(void)
 {
@@ -150,9 +150,9 @@ void setup_lr (void)
     st = sasalib_init();
     sasalib_set_algorithm(st,SASALIB_LEE_RICHARDS);
     sasalib_set_lr_delta(st,0.25);
-    total_ref = 4725.173153;
-    polar_ref = 1957.575594;
-    apolar_ref = 2767.597560;
+    total_ref = 4728.26159;
+    polar_ref = 2171.03485;
+    apolar_ref = 2557.22673;
 }
 void teardown_lr(void)
 {
@@ -263,13 +263,13 @@ START_TEST (test_multi_calc)
     ck_assert(pdb != NULL);
     ck_assert(sasalib_calc_pdb(s,pdb) == SASALIB_SUCCESS); 
     // The reference values were the output of Sasalib on 2014-02-10
-    ck_assert(fabs(sasalib_area_total(s) - 4756.124034) < 1e-5);
+    ck_assert(fabs(sasalib_area_total(s) - 4759.86096) < 1e-5);
     // L&R
     sasalib_set_algorithm(s,SASALIB_LEE_RICHARDS);
     sasalib_set_lr_delta(s,0.25);
     rewind(pdb);
     ck_assert(sasalib_calc_pdb(s,pdb) == SASALIB_SUCCESS); 
-    ck_assert(fabs(sasalib_area_total(s) - 4725.173153) < 1e-5);
+    ck_assert(fabs(sasalib_area_total(s) - 4728.26159) < 1e-5);
     fclose(pdb);
 #endif
 }
