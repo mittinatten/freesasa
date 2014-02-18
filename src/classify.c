@@ -85,6 +85,7 @@ enum {
     sasalib_carbo_C, sasalib_amide_N, 
     sasalib_carbo_O, sasalib_hydroxyl_O,
     sasalib_oons_sulfur,
+    sasalib_oons_selenium,
     sasalib_oons_unknown_polar,
     sasalib_oons_unknown
 };
@@ -178,7 +179,9 @@ int sasalib_classify_residue(const char *res_name)
 
 const char* sasalib_classify_residue2str(int res) {
     if (res < 0 || res > sasalib_NN) {
-	return residue_names[sasalib_UNK];
+	sasalib_warn("Illegal residue index '%d' passed to "
+		     "sasalib_classify_residue2str(1)",res);
+	return NULL;
     }
     return residue_names[res];
 }
@@ -237,7 +240,7 @@ double sasalib_classify_element_radius(int element)
     case sasalib_nitrogen: return 1.55;
     case sasalib_sulfur: return 1.8;
     case sasalib_phosphorus: return 1.8;
-	//case sasalib_selenium: return 1.9;
+    case sasalib_selenium: return 1.9;
 	//case sasalib_hydrogen: return 1.2;
     case sasalib_element_unknown:
     default:
@@ -267,11 +270,11 @@ static int classify_oons_QE(const char* a)
 {
     if (a[1] == 'N') return sasalib_amide_N;
     if (a[1] == 'O') return sasalib_carbo_O;
-    if (a[1] == 'X') return sasalib_oons_unknown_polar;
     if (a[1] == 'C') {
 	if (strcmp(a," CD ") == 0) return sasalib_carbo_C;
 	return sasalib_aliphatic_C;
     }
+    if (a[1] == 'X') return sasalib_oons_unknown_polar;
     return sasalib_oons_unknown;
 }
 
@@ -299,7 +302,7 @@ static int classify_oons_CMST(const char* a)
 
 static int classify_oons_cse(const char* a)
 {
-    if (a[1] == 'S' && a[2] == 'E') return sasalib_oons_unknown; //what to do about this
+    if (a[1] == 'S' && a[2] == 'E') return sasalib_oons_selenium;
     return sasalib_oons_unknown;
 }
 
@@ -391,6 +394,7 @@ int sasalib_classify_oons2class(int oons_type)
     case sasalib_carbo_O: return SASALIB_POLAR;
     case sasalib_hydroxyl_O: return SASALIB_POLAR;
     case sasalib_oons_sulfur: return SASALIB_POLAR;
+    case sasalib_oons_selenium: return SASALIB_POLAR;
     case sasalib_oons_unknown_polar: return SASALIB_POLAR;
     default: return SASALIB_CLASS_UNKNOWN;
     }
@@ -408,6 +412,7 @@ double sasalib_classify_oons_radius(int oons_type)
     case sasalib_carbo_O: return 1.40;
     case sasalib_hydroxyl_O: return 1.40;
     case sasalib_oons_sulfur: return 2.00;
+    case sasalib_oons_selenium: return 1.90;
 	//this corresponds to either N or O in ALX and GLX
     case sasalib_oons_unknown_polar: return 1.5;
     case sasalib_oons_unknown:

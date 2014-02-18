@@ -87,7 +87,7 @@ int sasalib_classify_nclasses();
 int sasalib_classify_residue(const char *res_name);
 
 /** Returns the name of a residue classified by
-    sasalib_classify_residue().*/
+    sasalib_classify_residue(). Returns NULL if argument invalid. */
 const char* sasalib_classify_residue2str(int res);
 
 /** Returns the number of possible residue types returned by
