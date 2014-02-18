@@ -39,4 +39,4 @@ endif !HAVE_LATEX
 
 clean-local:
 	rm -f *.dvi *.aux *.log *~ *.pdf
-	rm $(gen_eps)
+	rm -f $(gen_eps)
