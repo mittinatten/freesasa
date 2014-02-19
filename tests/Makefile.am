@@ -9,7 +9,7 @@ endif
 TESTS = test
 check_PROGRAMS = test
 test_SOURCES = test.c test_pdb.c test_sasalib.c test_structure.c \
-	test_classify.c
+	test_classify.c test_coord.c
 
 test_CFLAGS = -I$(top_srcdir)/src $(AM_CFLAGS)
 

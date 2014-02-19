@@ -18,7 +18,7 @@ sasalib_structure_t *s;
 
 extern int sasalib_set_verbosity(int v);
 
-void setup(void)
+static void setup(void)
 {
     s = sasalib_structure_init();
     for (int i = 0; i < N; ++i) {
@@ -26,7 +26,7 @@ void setup(void)
 				   i,i,i);
     }
 }
-void teardown(void)
+static void teardown(void)
 {
     sasalib_structure_free(s);
     s = NULL;
