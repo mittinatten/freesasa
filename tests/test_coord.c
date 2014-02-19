@@ -43,18 +43,15 @@ START_TEST (test_coord)
     ck_assert(fabs(sasalib_coord_dist(coord,1,0)-sqrt(3)) < 1e-10);
     ck_assert(fabs(sasalib_coord_dist2(coord,1,2)-12) < 1e-10);
     ck_assert(fabs(sasalib_coord_dist2(coord,0,2)-3) < 1e-10);
-    
-    /* Corrupts memory...  
-    sasalib_coord_set_all(coord,(double*)xyz,3);
+
+    sasalib_coord_set_all(coord,&xyz[3],2);
     ck_assert(fabs(sasalib_coord_dist(coord,0,0)) < 1e-10);
-    ck_assert(fabs(sasalib_coord_dist(coord,0,1)-1) < 1e-10);
-    sasalib_coord_set_all(coord,&xyz[1],2);
-    ck_assert(fabs(sasalib_coord_dist(coord,1,2)) < 1e-10);
-    ck_assert(fabs(sasalib_coord_dist(coord,0,1)-1) < 1e-10);
-    */
+    ck_assert(fabs(sasalib_coord_dist2(coord,0,1)-2) < 1e-10);
     
     double x[2] = {2,2}, y[2] = {1,2}, z[2] = {0,1};
     sasalib_coord_append_xyz(coord,(double*)x,(double*)y,(double*)z,2);
+    ck_assert(fabs(sasalib_coord_dist2(coord,0,2)-2) < 1e-10);
+    ck_assert(fabs(sasalib_coord_dist2(coord,1,2)-4) < 1e-10);
 }
 
 END_TEST

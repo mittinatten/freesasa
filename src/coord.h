@@ -56,6 +56,7 @@ void sasalib_coord_set_i(sasalib_coord_t*,int i,const double* xyz);
 
 void sasalib_coord_set_i_xyz(sasalib_coord_t*,int i,double x,double y,double z);
 
+/* resets everything */
 void sasalib_coord_set_all(sasalib_coord_t*,const double* xyz,size_t n);
 
 void sasalib_coord_set_all_xyz(sasalib_coord_t*,

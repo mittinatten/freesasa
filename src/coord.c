@@ -21,6 +21,7 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+#include "sasalib.h"
 #include "coord.h"
 
 struct sasalib_coord_ {
@@ -44,6 +45,17 @@ void sasalib_coord_free(sasalib_coord_t *c)
     if (c->xyz && !c->is_const) free(c->xyz);
     free(c);
 }
+static int coord_clear(sasalib_coord_t *c) 
+{
+    if (c->is_const || c == NULL) return SASALIB_FAIL;
+    if (c->xyz != NULL) {
+	free(c->xyz);
+	c->xyz = NULL;
+    }
+    c->n = 0;
+    return SASALIB_SUCCESS;
+}
+
 
 sasalib_coord_t* sasalib_coord_copy(const sasalib_coord_t *src) 
 {
@@ -112,7 +124,7 @@ void sasalib_coord_set_i(sasalib_coord_t *c, int i, const double* xyz)
 void sasalib_coord_set_i_xyz(sasalib_coord_t *c,int i,
 			     double x,double y,double z)
 {
-    assert(c   != NULL);
+    assert(c != NULL);
     assert(c->n > i);
     assert(i >= 0);
     assert(!c->is_const);
@@ -125,12 +137,7 @@ void sasalib_coord_set_i_xyz(sasalib_coord_t *c,int i,
 
 void sasalib_coord_set_all(sasalib_coord_t *c, const double* xyz, size_t n) 
 {
-    assert(c   != NULL);
-    assert(xyz != NULL);
-    assert(!c->is_const);
-
-    if (c->xyz) free(c->xyz);
-    c->n = 0;
+    assert(coord_clear(c) == SASALIB_SUCCESS);
     sasalib_coord_append(c,xyz,n);    
 }
 
@@ -138,10 +145,7 @@ void sasalib_coord_set_all_xyz(sasalib_coord_t *c,
 			       const double* x, const double *y,
 			       const double *z, size_t n)
 {
-    assert(c != NULL);
-    assert(!c->is_const);
-    if (c->xyz) free(c->xyz);
-    c->n = 0;
+    assert(coord_clear(c) == SASALIB_SUCCESS);
     sasalib_coord_append_xyz(c, x, y, z, n);
 }
 
