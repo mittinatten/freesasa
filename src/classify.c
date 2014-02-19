@@ -35,7 +35,7 @@ static const char *residue_names[] = {
     "HIS","ILE","LEU","LYS",
     "MET","PHE","PRO","SER",
     "THR","TRP","TYR","VAL",
-    "CSE","ASX","GLX","XLE",
+    "CSE","ASX","GLX",
     "UNK",
     //DNA
     "DA","DC","DG","DT","DU","DI",
@@ -52,7 +52,7 @@ enum {
     sasalib_MET, sasalib_PHE, sasalib_PRO, sasalib_SER, 
     sasalib_THR, sasalib_TRP, sasalib_TYR, sasalib_VAL,
     //some non-standard ones
-    sasalib_CSE, sasalib_ASX, sasalib_GLX, sasalib_XLE, 
+    sasalib_CSE, sasalib_ASX, sasalib_GLX,
     sasalib_UNK, 
     //DNA
     sasalib_DA, sasalib_DC, sasalib_DG, sasalib_DT, 
@@ -78,7 +78,8 @@ enum {
 static const char *oons_names[] = {
     "aliphatic_C", "aromatic_C",
     "carbo_C", "amide_N", "carbo_O",
-    "hydroxyl_O", "sulfur","unknown_polar","unknown"
+    "hydroxyl_O", "sulfur","selenium",
+    "unknown_polar","unknown"
 };
 enum {
     sasalib_aliphatic_C=0, sasalib_aromatic_C,
@@ -264,6 +265,7 @@ static int classify_oons_ND(const char* a)
     if (a[1] == 'N') return sasalib_amide_N;
     if (a[1] == 'O') return sasalib_carbo_O;
     if (a[1] == 'X') return sasalib_oons_unknown_polar;
+    if (a[1] == 'A') return sasalib_oons_unknown_polar;
     return sasalib_oons_unknown;
 }
 static int classify_oons_QE(const char* a)
@@ -275,6 +277,7 @@ static int classify_oons_QE(const char* a)
 	return sasalib_aliphatic_C;
     }
     if (a[1] == 'X') return sasalib_oons_unknown_polar;
+    if (a[1] == 'A') return sasalib_oons_unknown_polar;
     return sasalib_oons_unknown;
 }
 
@@ -360,12 +363,7 @@ int sasalib_classify_oons(const char *res_name, const char *a)
     case sasalib_UNK: return sasalib_oons_unknown;
     case sasalib_ASX: return classify_oons_ND(a);
     case sasalib_GLX: return classify_oons_QE(a);
-    case sasalib_XLE: return classify_oons_VIL(a);
-	// haven't found any PDB files with seleno-cysteine yet,
-	// needs testing
-    case sasalib_CSE: 
-        sasalib_warn("residue type '%s' only has limited support.",	res_name);
-	return classify_oons_cse(a);	
+    case sasalib_CSE: return classify_oons_cse(a);	
     default:
 	return sasalib_oons_unknown;
     }
@@ -422,7 +420,7 @@ double sasalib_classify_oons_radius(int oons_type)
 
 int sasalib_classify_is_aminoacid(int res)
 {
-    if (res >= sasalib_ALA && res <= sasalib_XLE) return 1;
+    if (res >= sasalib_ALA && res < sasalib_UNK) return 1;
     if (res >= sasalib_UNK && res <= sasalib_NN) return 0;
     return SASALIB_FAIL;
 }

@@ -151,6 +151,26 @@ START_TEST (test_write_1ubq) {
 }
 END_TEST
 
+START_TEST (test_pdb)
+{
+    const char *file_names[] = {"data/alt_model_twochain.pdb",
+				"data/empty.pdb",
+				"data/empty_model.pdb"};
+    const int result_null[] = {0,1,1};
+    sasalib_set_verbosity(1);
+    for (int i = 0; i < 3; ++i) {
+	FILE *pdb = fopen(file_names[i],"r");
+	ck_assert(pdb != NULL);
+	sasalib_structure_t *s = sasalib_structure_init_from_pdb(pdb);
+	if (result_null[i]) ck_assert(s == NULL);
+	else ck_assert(s != NULL);
+	fclose(pdb);
+	sasalib_structure_free(s);
+    }
+    sasalib_set_verbosity(0);
+}
+END_TEST
+
 Suite* structure_suite() {
     Suite *s = suite_create("Structure");
     TCase *tc_core = tcase_create("Core");
@@ -160,11 +180,16 @@ Suite* structure_suite() {
     tcase_add_test(tc_core, test_write_no_pdb);
 
     TCase *tc_pdb = tcase_create("PDB");
-    tcase_add_checked_fixture(tc_pdb,setup_1ubq,teardown_1ubq);
-    tcase_add_test(tc_pdb,test_structure_1ubq);
-    tcase_add_test(tc_pdb,test_write_1ubq);
+    tcase_add_test(tc_pdb,test_pdb);
+
+    TCase *tc_1ubq = tcase_create("1UBQ");
+    tcase_add_checked_fixture(tc_1ubq,setup_1ubq,teardown_1ubq);
+    tcase_add_test(tc_1ubq,test_structure_1ubq);
+    tcase_add_test(tc_1ubq,test_write_1ubq);
+    
     suite_add_tcase(s, tc_core);
     suite_add_tcase(s, tc_pdb);
+    suite_add_tcase(s, tc_1ubq);
 
     return s;
 }
