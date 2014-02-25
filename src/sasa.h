@@ -1,5 +1,5 @@
 /*
-  Copyright Simon Mitternacht 2013.
+  Copyright Simon Mitternacht 2013-2014.
 
   This file is part of Sasalib.
   
