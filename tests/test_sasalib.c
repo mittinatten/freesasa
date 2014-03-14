@@ -39,6 +39,11 @@ sasalib_t *st = NULL;
 double total_ref, polar_ref, apolar_ref;
 double tolerance;
 
+extern int sasalib_fail(const char*);
+extern int sasalib_warn(const char*);
+extern int sasalib_set_verbosity(int);
+extern int sasalib_get_verbosity();
+
 double rel_err(double v1, double v2) {
     return fabs(v1-v2)/(fabs(v1)+fabs(v2));
 }
@@ -194,6 +199,13 @@ START_TEST (test_sasa_1ubq)
     ck_assert(fabs(sasalib_area_total(st) - total_ref) < 1e-5);
     ck_assert(fabs(sasalib_area_class(st,SASALIB_POLAR) - polar_ref) < 1e-5);
     ck_assert(fabs(sasalib_area_class(st,SASALIB_APOLAR) - apolar_ref) < 1e-5);
+    ck_assert(sasalib_area_residue(st,"ALA") > 0);
+
+    FILE *devnull = fopen("/dev/null","w");
+    ck_assert(sasalib_write_pdb(devnull,st) == SASALIB_SUCCESS);
+    ck_assert(sasalib_log(devnull,st) == SASALIB_SUCCESS);
+    ck_assert(sasalib_per_residue(devnull,st) == SASALIB_SUCCESS);
+    fclose(devnull);
 }
 END_TEST
 
@@ -206,10 +218,12 @@ START_TEST (test_sasalib_api_basic)
     ck_assert(sasalib_n_atoms(s) == 0);
 
     // algorithm
+    ck_assert(sasalib_algorithm_name(s) != NULL);
     ck_assert(sasalib_set_algorithm(s,-1) == SASALIB_WARN);
     ck_assert(sasalib_set_algorithm(s,1000) == SASALIB_WARN);
     ck_assert(sasalib_set_algorithm(s,SASALIB_LEE_RICHARDS) == SASALIB_SUCCESS);
     ck_assert(sasalib_get_algorithm(s) == SASALIB_LEE_RICHARDS);
+    ck_assert(sasalib_algorithm_name(s) != NULL);
     
     // probe_radius
     ck_assert(sasalib_set_probe_radius(s,-1.) == SASALIB_WARN);
@@ -220,6 +234,8 @@ START_TEST (test_sasalib_api_basic)
     double lrd_def = sasalib_get_lr_delta(s);
     ck_assert(sasalib_set_lr_delta(s,0.5) == SASALIB_SUCCESS);
     ck_assert(fabs(sasalib_get_lr_delta(s)-0.5) < 1e-10);
+    ck_assert(sasalib_set_lr_delta(s, 10) == SASALIB_WARN);
+    ck_assert(fabs(sasalib_get_lr_delta(s)-10) < 1e-10);
     ck_assert(sasalib_set_lr_delta(s,-1.0) == SASALIB_WARN);
     ck_assert(fabs(sasalib_get_lr_delta(s)-lrd_def) < 1e-10);
     ck_assert(sasalib_get_sr_points(s) == SASALIB_WARN);
@@ -260,7 +276,104 @@ START_TEST (test_sasalib_api_basic)
     ck_assert(sasalib_area_atom_array(s) == NULL);
 
     ck_assert(sasalib_log(stdout,s) == SASALIB_WARN);
+
     sasalib_set_verbosity(0);
+}
+END_TEST
+
+START_TEST (test_copyparam)
+{
+    int alg = SASALIB_LEE_RICHARDS;
+    int n_sr = 500;
+    int n_thread = 3;
+    double d_lr = 0.5;
+    double probe_radius = 2;
+    sasalib_t *s1 = sasalib_init(), *s2 = sasalib_init();
+    ck_assert(s1 != NULL);
+    ck_assert(s2 != NULL);
+    sasalib_set_sr_points(s1,n_sr);
+    sasalib_set_algorithm(s1,alg);
+    sasalib_set_lr_delta(s1,d_lr);
+    sasalib_set_nthreads(s1,n_thread);
+    sasalib_set_probe_radius(s1,probe_radius);
+    sasalib_copy_param(s2,s1);
+    ck_assert(sasalib_get_algorithm(s2) == alg);
+    ck_assert(sasalib_get_sr_points(s2) == SASALIB_WARN);
+    ck_assert(sasalib_get_nthreads(s2) == n_thread);
+    ck_assert(fabs(sasalib_get_lr_delta(s2) - d_lr) < 1e-10);
+    ck_assert(fabs(sasalib_get_probe_radius(s2) - probe_radius) < 1e-10);
+    sasalib_set_algorithm(s2,SASALIB_SHRAKE_RUPLEY);
+    ck_assert(sasalib_get_sr_points(s2) == n_sr);
+    sasalib_free(s1);
+    sasalib_free(s2);
+}
+END_TEST
+
+START_TEST (test_minimal_calc) 
+{
+    sasalib_t *s = sasalib_init();
+
+    double coord[3] = {0,0,0};
+    double r[1] = {1.0};
+
+    sasalib_set_verbosity(1);
+
+    ck_assert(sasalib_calc_coord(s,coord,r,1) == SASALIB_SUCCESS);
+
+    ck_assert(sasalib_area_atom(s,-1) < 0);
+    ck_assert(sasalib_area_atom(s,1) < 0);
+    ck_assert(sasalib_radius_atom(s,1) < 0);
+    ck_assert(sasalib_radius_atom(s,-1) < 0);
+    ck_assert(fabs(sasalib_area_atom(s,0) - sasalib_area_total(s)) < 1e-10);
+    const double *a = sasalib_area_atom_array(s);
+    ck_assert(a != NULL);
+    ck_assert(fabs(a[0] - sasalib_area_total(s)) < 1e-10);
+    ck_assert(fabs(sasalib_radius_atom(s,0) - r[0]) < 1e-10);
+    const double *r2 = sasalib_radius_atom_array(s);
+    ck_assert(a != NULL);
+    ck_assert(fabs(r2[0]-r[0]) < 1e-10);
+    
+    sasalib_free(s);
+    sasalib_set_verbosity(0);
+}
+END_TEST
+
+START_TEST (test_calc_errors) 
+{
+    sasalib_t *s = sasalib_init();
+    double dummy;
+
+    fputs("Testing error messages:\n",stderr);
+    sasalib_fail("Test fail-message.");
+    sasalib_warn("Test warn-message.");
+    ck_assert(sasalib_get_verbosity() == 0);
+    sasalib_set_verbosity(1);
+    
+    //test empty coordinates
+    ck_assert(sasalib_calc_coord(s,&dummy,NULL,0) == SASALIB_WARN);
+    ck_assert(sasalib_radius_atom(s,0) == SASALIB_FAIL);
+    ck_assert(sasalib_radius_atom_array(s) == NULL);
+    ck_assert(sasalib_calc_coord(s,&dummy,&dummy,0) == SASALIB_WARN);
+    sasalib_set_algorithm(s,SASALIB_LEE_RICHARDS);
+    ck_assert(sasalib_calc_coord(s,&dummy,&dummy,0) == SASALIB_WARN);
+    ck_assert(sasalib_radius_atom(s,0) == SASALIB_FAIL);
+    
+    //test empty PDB-file
+    FILE *empty = fopen("data/empty.pdb","r");
+    ck_assert(empty != NULL);
+    ck_assert(sasalib_calc_pdb(s,empty) == SASALIB_FAIL);
+    fclose(empty);
+
+    //test refresh
+    ck_assert(sasalib_refresh(s) == SASALIB_FAIL);
+    ck_assert(sasalib_link_coord(s,&dummy,NULL,0) == SASALIB_SUCCESS);
+    ck_assert(sasalib_refresh(s) == SASALIB_FAIL);
+    sasalib_link_coord(s,&dummy,&dummy,0);
+    ck_assert(sasalib_refresh(s) == SASALIB_WARN);
+
+    sasalib_set_verbosity(0);
+
+    sasalib_free(s);
 }
 END_TEST
 
@@ -301,6 +414,9 @@ Suite *sasa_suite()
 
     TCase *tc_basic = tcase_create("Basic API");
     tcase_add_test(tc_basic, test_sasalib_api_basic);
+    tcase_add_test(tc_basic, test_copyparam);
+    tcase_add_test(tc_basic, test_calc_errors);
+    tcase_add_test(tc_basic, test_minimal_calc);
 
     TCase *tc_lr_basic = tcase_create("Basic L&R");
     tcase_add_checked_fixture(tc_lr_basic,setup_lr_precision,teardown_lr_precision);

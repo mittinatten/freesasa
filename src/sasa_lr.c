@@ -107,7 +107,10 @@ int sasalib_lee_richards(double *sasa,
     */
     size_t n_atoms = sasalib_coord_n(xyz);
     int return_value = SASALIB_SUCCESS;
-
+    if (n_atoms == 0) {
+	return sasalib_warn("Attempting Lee & Richards calculation "
+			    "on empty coordinates");
+    }
     // determine slice range and init radii and sasa arrays
     double max_z=-1e50, min_z=1e50;
     double max_r = 0;

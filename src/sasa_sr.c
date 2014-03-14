@@ -77,6 +77,10 @@ int sasalib_shrake_rupley(double *sasa,
 {
     size_t n_atoms = sasalib_coord_n(xyz);
     int return_value = SASALIB_SUCCESS;
+    if (n_atoms == 0) {
+	return sasalib_warn("Attempting Shrake & Rupley calculation "
+			    "on empty coordinates");
+    }
 
     // Initialize test-points
     const double *srp_p = sasalib_srp_get_points(n_points);

@@ -115,7 +115,7 @@ int sasalib_set_verbosity(int s) {
     }
     return SASALIB_WARN;
 }
-int sasalibe_get_verbosity() {
+int sasalib_get_verbosity() {
     return sasalib_verbosity;
 }
 
@@ -294,6 +294,7 @@ int sasalib_calc_coord(sasalib_t *s, const double *coord,
 {
     s->calculated = 0;
     s->n_atoms = n;
+    s->r = r;
 
     sasalib_coord_t *c = sasalib_coord_new_linked(coord,n);
     int res = sasalib_calc(s,c,r);
@@ -306,11 +307,7 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
     s->calculated = 0;
     sasalib_structure_t *p = sasalib_structure_init_from_pdb(pdb_file);
     if (!p) {
-        return sasalib_fail("failed to read PDB-file.");
-    }
-    if (!(s->n_atoms = sasalib_structure_n(p))) {
-		sasalib_structure_free(p);
-        return sasalib_fail("pdb-file was empty.",sasalib_name);
+        return sasalib_fail("Failure reading PDB-file.");
     }
     s->n_atoms = sasalib_structure_n(p);
     
@@ -357,8 +354,7 @@ int sasalib_refresh(sasalib_t *s)
         return sasalib_fail("sasalib_refresh(1) called, but no coordinates available.");
     if (! s->r )
         return sasalib_fail("sasalib_refresh(1) called, but no atomic radii specified.");
-    sasalib_calc(s,s->coord,s->r);
-    return SASALIB_SUCCESS;
+    return sasalib_calc(s,s->coord,s->r);
 }
 
 int sasalib_set_algorithm(sasalib_t *s, sasalib_algorithm alg)
