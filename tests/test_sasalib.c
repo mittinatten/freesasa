@@ -150,7 +150,6 @@ START_TEST (test_sasa_alg_basic)
     ck_assert(test_sasa(ref,"Four spheres in plane, rotated 90 deg round x-axis."));
 
 }
-
 END_TEST
 
 void setup_sr (void)
@@ -195,11 +194,17 @@ START_TEST (test_sasa_1ubq)
     ck_assert(pdb != NULL);
     ck_assert(sasalib_calc_pdb(st,pdb) == SASALIB_SUCCESS); 
     fclose(pdb);
+
     // The reference values were the output of Sasalib on 2014-02-10
     ck_assert(fabs(sasalib_area_total(st) - total_ref) < 1e-5);
     ck_assert(fabs(sasalib_area_class(st,SASALIB_POLAR) - polar_ref) < 1e-5);
     ck_assert(fabs(sasalib_area_class(st,SASALIB_APOLAR) - apolar_ref) < 1e-5);
     ck_assert(sasalib_area_residue(st,"ALA") > 0);
+
+    const double *r = sasalib_radius_atom_array(st);
+    ck_assert(r != NULL);
+    ck_assert(r[0] > 0);
+    ck_assert(fabs(r[0] - sasalib_radius_atom(st,0)) < 1e-5);
 
     FILE *devnull = fopen("/dev/null","w");
     ck_assert(sasalib_write_pdb(devnull,st) == SASALIB_SUCCESS);
@@ -320,19 +325,20 @@ START_TEST (test_minimal_calc)
 
     ck_assert(sasalib_calc_coord(s,coord,r,1) == SASALIB_SUCCESS);
 
+    // access areas
     ck_assert(sasalib_area_atom(s,-1) < 0);
     ck_assert(sasalib_area_atom(s,1) < 0);
-    ck_assert(sasalib_radius_atom(s,1) < 0);
-    ck_assert(sasalib_radius_atom(s,-1) < 0);
     ck_assert(fabs(sasalib_area_atom(s,0) - sasalib_area_total(s)) < 1e-10);
     const double *a = sasalib_area_atom_array(s);
     ck_assert(a != NULL);
     ck_assert(fabs(a[0] - sasalib_area_total(s)) < 1e-10);
-    ck_assert(fabs(sasalib_radius_atom(s,0) - r[0]) < 1e-10);
-    const double *r2 = sasalib_radius_atom_array(s);
-    ck_assert(a != NULL);
-    ck_assert(fabs(r2[0]-r[0]) < 1e-10);
     
+    // radii should not have been stored, verify
+    ck_assert(sasalib_radius_atom(s,1) < 0);
+    ck_assert(sasalib_radius_atom(s,-1) < 0);
+    ck_assert(sasalib_radius_atom(s,0) < 0);
+    ck_assert(sasalib_radius_atom_array(s) == NULL);
+
     sasalib_free(s);
     sasalib_set_verbosity(0);
 }
@@ -402,7 +408,9 @@ START_TEST (test_multi_calc)
     rewind(pdb);
     ck_assert(sasalib_calc_pdb(s,pdb) == SASALIB_SUCCESS); 
     ck_assert(fabs(sasalib_area_total(s) - 4728.26159) < 1e-5);
+
     fclose(pdb);
+    sasalib_free(s);
 #endif
 }
 END_TEST
