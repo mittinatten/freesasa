@@ -27,16 +27,6 @@ nopdf:
 pdf-local: nopdf
 endif
 
-if HAVE_LATEX 
-if HAVE_PDF
-  dist_doc_DATA = $(fig_eps) $(fig_pdf)
-else 
-  dist_doc_DATA = $(fig_eps)
-endif 
-else !HAVE_LATEX
-dist_doc_DATA = $(other_eps)
-endif !HAVE_LATEX
-
 clean-local:
 	rm -f *.dvi *.aux *.log *~ *.pdf
 	rm -f $(gen_eps)
