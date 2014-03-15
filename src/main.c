@@ -211,6 +211,7 @@ int main (int argc, char **argv) {
         } else {
             fprintf(stderr,"%s: no input.\n",
                     program_name);
+            short_help();
         }
     }    
     
