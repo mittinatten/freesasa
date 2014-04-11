@@ -294,11 +294,19 @@ int sasalib_calc_coord(sasalib_t *s, const double *coord,
 {
     s->calculated = 0;
     s->n_atoms = n;
-    s->r = r;
+
+    // We don't want to store the supplied parameters (to allow const-ness),
+    // and want to make sure user doesn't access outdated parameters
+    if (s->owns_r && s->r) free(s->r);
+    s->owns_r = 0;
+    s->r = NULL;
+    if (s->coord) free(s->coord);
+    s->coord = NULL;
 
     sasalib_coord_t *c = sasalib_coord_new_linked(coord,n);
     int res = sasalib_calc(s,c,r);
     sasalib_coord_free(c);
+    
     return res;
 }
 
@@ -429,7 +437,7 @@ int sasalib_set_lr_delta(sasalib_t *s, double d)
             sasalib_warn("proceeding with selected value (%f), "
                          "but results might be inaccurate.", d);
             return SASALIB_WARN;
-	}
+        }
     }
     sasalib_warn("slice width %f invalid.",d);
     sasalib_warn("proceeding with default value (%f).",SASALIB_DEF_LR_D);

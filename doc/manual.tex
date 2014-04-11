@@ -11,6 +11,7 @@
 \usepackage{parskip}
 \usepackage{array}
 \usepackage{pstricks}
+\usepackage{pslatex}
 
 %\usepackage{fancyvrb}
 
@@ -50,7 +51,8 @@ author's knowledge there are no fully open source standalone programs
 for doing this. Neither are there any libraries designed to be easily
 integrated in other programs. The present library is an attempt to
 resolve both these issues, and is released under the GNU General
-Public License 3\footnote{See http://www.gnu.org/licenses/gpl.html}.
+Public License 3\footnote{See
+  \texttt{http://www.gnu.org/licenses/gpl.html}}.
 
 Sasalib is a both a standalone command line program and a C library
 for protein SASA calculations. The library provides a simple interface
@@ -114,18 +116,18 @@ or by downloading the zipped archive from
 \begin{verbatim}
     https://github.com/mittinatten/sasalib/archive/master.zip
 \end{verbatim}
-Since Sasalib only depends on regular C and GNU libraries most users
-will be able to compile it by simply typing \texttt{make}\footnote{Has
-  been tested in Linux and Mac OS X.}. If any compiler other than the
-Gnu C Compiler is preferred the makefile will need to be changed
-accordingly. The command \texttt{make example} compiles the example
-program described in section \ref{sec:simple_sample}. There is no
-\texttt{make install} at the moment.
+Sasalib itself only depends on regular C and GNU libraries, and should
+therefore be straightforward to compile and install. Installation is
+done by the regular sequence \verb|./configure|, \verb|make| and
+\verb|make install|. Several versions of the GNU C Compiler and
+Clang/LLVM have been tested successfully on both Linux and Mac OS X
+platforms. The test-suite depends on the Check unit testing
+framework\footnote{\texttt{http://check.sourceforge.net/}}.
 
 \subsection{Command-line interface}
 
-Compilation creates the binary \texttt{calc\_sasa} from
-\texttt{calc\_sasa.c}, which can be used to calculate the SASA of a
+Compilation creates the binary \verb|calc_sasa| from
+\verb|main.c|, which can be used to calculate the SASA of a
 PDB-file. The simplest program call, with default parameters would be
 \begin{verbatim}
     $ ./calc_sasa PDB-file
@@ -141,6 +143,7 @@ Rupley algorithm is used, with 100 test points.
 The following options are available
 \begin{itemize}
   \item[-h] Prints help message.
+  \item[-p] Probe radius. Default is 1.4~\AA.
   \item[-S] Use Shrake \& Rupley algorithm (default).
   \item[-L] Use Lee \& Richards algorithm.
   \item[-n] Number of test points in Shrake \& Rupley algorithm.
@@ -160,10 +163,9 @@ As an illustration, the command
 \begin{verbatim}
    $ ./calc_sasa -L -d 0.1 -t 2 -r PDB-file
 \end{verbatim}
-calculates the SASA of the supplied pdb-file using Lee \& Richards,
-with a slice width of 0.1 Å, using two threads (only makes sense for
-CPUs with two or more cores) and will print the total SASA of each
-residue type in addition to the standard output.
+calculates the SASA of the supplied PDB-file using Lee \& Richards (-L),
+with a slice width of 0.1 Å (-d), using two threads (-t) and will print the
+total SASA of each residue type (-r) in addition to the standard output.
 
 Several PDB-files can be analyzed in one call, the results will be
 printed consecutively for each input file:
@@ -477,7 +479,7 @@ points, giving varying degrees of control and ways of supplying atom
 coordinates. Any calculation involves the following four steps.
 \begin{enumerate}
   \item Initialize structure/acquire coordinates.
-  \item Calculate atomic radii.
+  \item Calculate/specify atomic radii.
   \item Calculate SASA.
   \item Output results grouping atoms/residues in different ways.
 \end{enumerate}
@@ -485,7 +487,9 @@ The third step is the core functionality of the library and can be
 used separately by users who wish to handle the other steps
 themselves. In addition to the description below, the source for
 \texttt{calc\_sasa.c} serves as an example of how to use the library,
-using a large portion of the available functionality.
+using a large portion of the available functionality. The tests in the
+directory \verb|tests| document the expected behaviour of all parts of
+the API.
 
 The header \texttt{sasalib.h} contains all functions necessary for
 doing calculations with Sasalib. They wrap lower level functionality,
@@ -518,23 +522,23 @@ used are \verb|SASALIB_SUCCESS|, \verb|SASALIB_WARN| and
 \verb|SASALIB_FAIL|. The first means no errors were detected; the
 second that inconsistencies were detected, but calculations can
 proceed, possibly with differented parameters than intended; the third
-indicates an error so serious that calculations could or cannot
-proceed. The functions reporting calculation results will generally
-return positive real values. If these detect an error a negative value
-is returned, typically this involves requesting results when the
-calculations have not yet been performed.  Internal errors,
-i.e.\ those that are to be considered programmer errors and not user
-or I/O-errors are dealt with through assert-statements. In most cases
-pointers supplied as arguments to different library functions will not
-be tested for validity.\footnote{The ensuing system errors should point
-programmers using the library in the right direction.}
+indicates more serious errors. The functions reporting calculation
+results will generally return positive real values. If these detect an
+error a negative value is returned, typically this involves requesting
+results when the calculations have not yet been performed.  Internal
+errors, i.e.\ those that are to be considered programmer errors and
+not user or I/O-errors are dealt with through assert-statements. In
+most cases pointers supplied as arguments to different library
+functions will not be tested for validity and can thus lead to
+undefined behavior\footnote{The ensuing system errors should point
+  programmers using the library in the right direction.}.
 
 \subsection{Initialization}
 
-The Sasalib API defines one struct, \verb|sasalib_t|, that stores
-both parameters, results and can be used to link coordinates stored
-elsewhere for repeated calculations. A \verb|sasalib_t|-object can be
-initalized using
+The Sasalib API defines one struct, \verb|sasalib_t|, that stores both
+parameters and results. Coordinates stored elsewhere can be linked to
+this struct to allow repeated calculations. A \verb|sasalib_t|-object
+can be initalized using
 \begin{verbatim}
     sasalib_t* sasalib_init()
 \end{verbatim}
@@ -643,7 +647,7 @@ residue-numbers (four-character string), and the atom names
 coordinates. This allows classification (as described below) in order
 to group atoms when calculating for instance polar/apolar SASA, and
 also to assign radii to the individual atoms. In the standard OONS
-scheme for atomic radii hydrogen atoms are not included, and they are
+scheme for atomic radii, hydrogen atoms are not included, and they are
 therefore excluded from SASA calculations. Users who want to include
 these, and use their own set of radii will have to provide coordinates
  and radii themselves.
@@ -668,11 +672,12 @@ reset.
 Several different types of atom classification are used internally in
 the library. All are based solely on the \emph{Atom name} and
 \emph{Residue name} fields in a PDB file ATOM entry. These are used
-for assigning atomic radii, residue type, element, OONS type and if an
-atom is polar, apolar or part of a nucleic acid (the latter class
-might be divided and integrated into the former two eventually).
+for assigning atomic radii, residue type, element, OONS
+type~\cite{OONS} and if an atom is polar, apolar or part of a nucleic
+acid (the latter class might be divided and integrated into the former
+two eventually).
 
-Sasalib knows about the standard 20 amino acids, plus ASX, GLX, XLE,
+Sasalib knows about the standard 20 amino acids, plus ASX, GLX,
 CSE and UNK. In addition to amino acids, the nucleic acids are
 identified as such, using the labels DA, DC, DG, DT, DU, DI, A, C, G,
 U, I, T and N. The classification scheme was run against the entire
@@ -681,9 +686,9 @@ classes were found. The library prints a warning when UNK entries are
 found, to alert the reader that something might not be properly
 defined.
 
-For the standard 20 amino acids plus XLE entries, and most atoms in
-ASX, GLX, the regular OONS radii are used. For the unknown O or N atom
-in ASX and GLX a radius of 1.5 Å is used. For nucleic acids and UNK
+For the standard 20 amino acids, and most atoms in ASX, GLX, the
+regular OONS radii \cite{OONS} are used. For the unknown O or N atom in
+ASX and GLX a radius of 1.5 Å is used. For nucleic acids and UNK
 entries the element is deduced from the atom name and VdW radius from
 www.periodictable.com is used. Atoms in UNK residues are classified as
 \verb|SASALIB_CLASS_UNKNOWN|, instead of polar/apolar.
@@ -691,7 +696,7 @@ www.periodictable.com is used. Atoms in UNK residues are classified as
 \subsection{Calculations using arrays of coordinates}
 
 The cartesian atom coordinates are stored internally as an array of
-size $3N$ and ordered as $x_1,y_1,z_1,x_2,y_2,z_2, \ldots ,x_N,y_N,z_N$.
+size $3N$ and ordered as $$x_1,y_1,z_1, x_2,y_2,z_2, \ldots ,x_N,y_N,z_N\,.$$
 Users that want to calculate the SASA of a set of coordinates in this form,
 with corresponding atomic radii can use the function
 \begin{verbatim}
@@ -750,10 +755,10 @@ options:
 The first prints string-value pairs of all residue types to the
 specified file. All of the standard 20 residues are included, and the
 other types are printed only if the SASA is non-zero.  The second
-function takes the residue name as an argument and prints the SASA for
+function takes the residue name as an argument and returns the SASA for
 the corresponding residue. If the residue name is unknown a warning is
 printed and the value recorded for the residue type ``UNK'' is
-printed.
+returned.
 
 SASA of individual atoms are accessed either one by one, or
 as an array of doubles:
@@ -800,7 +805,7 @@ In no specific order
 \item Molecular surface calculations?
 \item Allow HETATM-entries, if requested by user.
 \item Interface to download PDB-file and calculate SASA given only PDB
-  code.
+  code? Is this useful?
 \end{itemize}
 
 \begin{thebibliography}{50}

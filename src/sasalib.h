@@ -101,14 +101,16 @@ void sasalib_copy_param(sasalib_t *target, const sasalib_t *source);
 /**************************/
 
 /** Calculate SASA from given atom coordinates and radii. Doesn't even
-    have to be a protein. */
+    have to be a protein. Coordinates and radii will not be
+    stored. Return SASALIB_SUCESS upon successful calculation,
+    prints and error and returns SASALIB_FAIL else. */
 int sasalib_calc_coord(sasalib_t*, const double *coord, 
                        const double *r, size_t n);
 
 /** performs calculations on PDB-file. Results stored in parameter
     s. If s is not initialized default values are used, these are
     stored in s. Returns SASALIB_SUCCESS if calculation successful,
-    prints an error and returns SASALIB_FAIL if not. If the object s
+    prints an error and returns SASALIB_FAIL if not. If the object
     has been used in calculations previously, the results from these
     will be over-written. */
 int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file);
@@ -257,7 +259,7 @@ double sasalib_area_atom(const sasalib_t*, int i);
 const double* sasalib_area_atom_array(const sasalib_t*);
 
 /** Returns radius of atom i. Prints error and returns negative
-    value if atom index is invalid. */
+    value if atom index is invalid or no value available. */
 double sasalib_radius_atom(const sasalib_t*, int i);
 
 /** Returns array containing all atomic radii. Returns NULL if no results

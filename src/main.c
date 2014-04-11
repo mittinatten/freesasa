@@ -49,26 +49,33 @@ settings_t def_settings = {
 };
 
 void help() {
-    fprintf(stderr,"\nUsage: %s [-hLSrf:n:d:t:p:B:] pdb-file(s)\n",
+    fprintf(stderr,"\nUsage: %s [-hLSrn:d:t:p:B:] pdb-file(s)\n",
 	    program_name);
-    fprintf(stderr,"\nOptions are:\n"
-	    "       -h  print this message\n"
-	    "       -S  use Shrake & Rupley algorithm [default]\n"
-	    "       -n  number of test points in Shrake & Rupley algorithm\n"
-	    "           Default is %d, allowed values are:\n"
-	    "           ",SASALIB_DEF_SR_N);
+    fprintf(stderr,
+            "\nOptions are:\n"
+            "       -h  print this message\n"
+            "       -p  Probe radius. Default value is %4.2f Å.\n"
+            "       -S  use Shrake & Rupley algorithm [default]\n"
+            "       -L  use Lee & Richards algorithm\n"
+            "       -d  grid spacing in Lee & Richards algorithm\n"
+            "           Default value is %4.2f Å\n"
+            ,SASALIB_DEF_PROBE_RADIUS,SASALIB_DEF_LR_D);
+    fprintf(stderr,
+            "       -n  number of test points in Shrake & Rupley algorithm\n"
+            "           Default is %d, allowed values are:\n"
+            "           ",SASALIB_DEF_SR_N);
     sasalib_srp_print_n_opt(stderr);
-    fprintf(stderr,"       -L  use Lee & Richards algorithm\n"
-	           "       -d  grid spacing in Lee & Richards algorithm\n"
-	           "           Default value is %4.2f Å\n"
-	    ,SASALIB_DEF_LR_D);
-#ifdef PTHREADS
-    fprintf(stderr,"       -t  number of threads to use in calculation (for multicore CPUs)\n");
+#ifdef HAVE_LIBPTHREAD
+    fprintf(stderr,
+            "       -t  number of threads to use in calculation (for multicore CPUs)\n");
 #endif    
-    fprintf(stderr,"       -r  print SASA for each residue\n");
-    fprintf(stderr,"       -B  print PDB file with SASA for each atom as B-factors,\n" 
-	    "           in specified output file.");
-    fprintf(stderr,"\nIf no pdb-file is specified STDIN is used for input.\n\n");
+    fprintf(stderr,
+            "       -r  print SASA for each residue\n");
+    fprintf(stderr,
+            "       -B  print PDB file with SASA for each atom as B-factors,\n" 
+            "           in specified output file.");
+    fprintf(stderr,
+            "\nIf no pdb-file is specified STDIN is used for input.\n\n");
 }
 
 void short_help() {
@@ -82,24 +89,23 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
     sasalib_copy_param(s,settings->s);
     sasalib_set_proteinname(s,name); 
     if (sasalib_calc_pdb(s,input) == SASALIB_FAIL) {
-	fprintf(stderr,"%s: error: Invalid input. Aborting.\n",
-		program_name);
-	exit(EXIT_FAILURE);
+        fprintf(stderr,"%s: error: Invalid input. Aborting.\n",
+                program_name);
+        exit(EXIT_FAILURE);
     }
     sasalib_log(stdout,s);
     printf("\nTotal:  %9.2f A2\nPolar:  %9.2f A2\nApolar: %9.2f A2\n",
            sasalib_area_total(s), sasalib_area_class(s,SASALIB_POLAR),
-	   sasalib_area_class(s, SASALIB_APOLAR));
+           sasalib_area_class(s, SASALIB_APOLAR));
     if ((tmp = sasalib_area_class(s, SASALIB_NUCLEICACID)) > 0) 
-	printf("Nucleic: %9.2f A2\n",tmp);
+        printf("Nucleic: %9.2f A2\n",tmp);
     if ((tmp = sasalib_area_class(s, SASALIB_CLASS_UNKNOWN)) > 0) 
-	printf("Unknown: %9.2f A2\n",tmp);
+        printf("Unknown: %9.2f A2\n",tmp);
     if (settings->per_residue) { 
-	printf("\n");
-	sasalib_per_residue(stdout,s);
+        printf("\n");
+        sasalib_per_residue(stdout,s);
     }
-    if (settings->B) 
-	sasalib_write_pdb(settings->B,s);
+    if (settings->B) sasalib_write_pdb(settings->B,s);
     sasalib_free(s);
 }
 
@@ -116,29 +122,20 @@ int main (int argc, char **argv) {
     program_name = argv[0];
 #endif 
 
-    while ((opt = getopt(argc, argv, "f:n:d:t:p:B:hLSr")) != -1) {
+    while ((opt = getopt(argc, argv, "n:d:t:p:B:hLSr")) != -1) {
 	errno = 0;
 	int result = SASALIB_SUCCESS;
         switch(opt) {
 	case 'h':
 	    help();
 	    exit(EXIT_SUCCESS);
-	case 'f':
-	    input = fopen(optarg, "r");
-	    if (input == NULL) {
-		fprintf(stderr,"%s: error: could not open file '%s'; %s\n", 
-			program_name,optarg,strerror(errno));
-		short_help();
-		exit(EXIT_FAILURE);
-	    }
-	    break;
 	case 'B':
 	    settings.B = fopen(optarg, "w");
 	    if (settings.B == NULL) {
-		fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
-			program_name,optarg,strerror(errno));
-		short_help();
-		exit(EXIT_FAILURE);
+            fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
+                    program_name,optarg,strerror(errno));
+            short_help();
+            exit(EXIT_FAILURE);
 	    }
 	    break;
 	case 'n':
@@ -172,51 +169,52 @@ int main (int argc, char **argv) {
 	    break;
 	default:
 	    fprintf(stderr, "%s: warning: unknown option '%c' (will be ignored)\n", 
-		    program_name,opt);
+                program_name,opt);
 	    break;
-	}
-	if (result == SASALIB_FAIL) {
+        }
+        if (result == SASALIB_FAIL) {
 	    fprintf(stderr, "%s: error: failed to start SASA calculation with "
-		    "provided options. Aborting", 
-		    program_name);
+                "provided options. Aborting", 
+                program_name);
 	    if (errno != 0) fprintf(stderr,"; %s\n",strerror(errno));
 	    else fprintf(stderr,".\n");
 	    exit(EXIT_FAILURE);
 	} else if (result == SASALIB_WARN) {
-	    fprintf(stderr, "%s: warning: calculations might not "
-		    "correspond to specification or results might "
-		    "be unreliable (see warnings).\n", 
-		    program_name);
-	}
+            fprintf(stderr, "%s: warning: calculations might not "
+                    "correspond to specification or results might "
+                    "be unreliable (see warnings).\n", 
+                    program_name);
+        }
     }
     if (alg_set > 1) {
-	fprintf(stderr, "%s: error: multiple algorithms specified.\n",
-		program_name);
-	exit(EXIT_FAILURE);
+        fprintf(stderr, "%s: error: multiple algorithms specified.\n",
+                program_name);
+        exit(EXIT_FAILURE);
     }
-
+    
     if (argc > optind) {
-	for (int i = optind; i < argc; ++i) {
-	    errno = 0;
-	    input = fopen(argv[i],"r");
-	    if (input != NULL) {
-		run_analysis(input,argv[i],&settings);
-		fclose(input);
-	    } else {
-		fprintf(stderr, "%s: error opening file '%s'; %s\n", 
-			program_name,argv[i],strerror(errno));
-		exit(EXIT_FAILURE);
-	    }	    
-	}
+        for (int i = optind; i < argc; ++i) {
+            errno = 0;
+            input = fopen(argv[i],"r");
+            if (input != NULL) {
+                run_analysis(input,argv[i],&settings);
+                fclose(input);
+            } else {
+                fprintf(stderr, "%s: error opening file '%s'; %s\n", 
+                        program_name,argv[i],strerror(errno));
+                exit(EXIT_FAILURE);
+            }	    
+        }
     } else {
-	if (!isatty(STDIN_FILENO)) {
-	    run_analysis(stdin,"stdin",&settings);
-	} else {
-	    fprintf(stderr,"%s: no input.\n",
-		    program_name);
-	}
+        if (!isatty(STDIN_FILENO)) {
+            run_analysis(stdin,"stdin",&settings);
+        } else {
+            fprintf(stderr,"%s: no input.\n",
+                    program_name);
+            short_help();
+        }
     }    
-
+    
     sasalib_free(settings.s);
     if (settings.B) fclose(settings.B);
     return EXIT_SUCCESS;
