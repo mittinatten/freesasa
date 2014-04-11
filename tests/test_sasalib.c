@@ -224,6 +224,9 @@ START_TEST (test_sasalib_api_basic)
     ck_assert(sasalib_set_algorithm(s,SASALIB_LEE_RICHARDS) == SASALIB_SUCCESS);
     ck_assert(sasalib_get_algorithm(s) == SASALIB_LEE_RICHARDS);
     ck_assert(sasalib_algorithm_name(s) != NULL);
+
+    // atom radius calculation (more extensive analysis in test_classify)
+    ck_assert(fabs(sasalib_radius("ALA"," H  ")) < 1e-10);
     
     // probe_radius
     ck_assert(sasalib_set_probe_radius(s,-1.) == SASALIB_WARN);

@@ -325,7 +325,10 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file)
 
     return res;
 }
-
+double sasalib_radius(const char* residue_name, const char* atom_name)
+{
+    return sasalib_classify_radius(residue_name,atom_name);
+}
 int sasalib_link_coord(sasalib_t *s, const double *coord,
                        double *r, size_t n) 
 {

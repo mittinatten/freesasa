@@ -120,7 +120,13 @@ int sasalib_calc_pdb(sasalib_t *s, FILE *pdb_file);
     as below and default radii are to be used. 
     Not properly tested yet!
 */
-int sasalib_generate_radii(double **r, FILE *pdb_file);
+//int sasalib_generate_radii(double **r, FILE *pdb_file);
+
+/** Returns default radius of an atom type. The residue and atom names
+    are the default names used in PDB files. Any whitespace in the
+    standard needs to be included here, i.e. "CA" should be " CA ".
+    Unknown atom types and hydrogens are assigned radius 0.0. */
+double sasalib_radius(const char* residue_name, const char* atom_name);
 
 /** Link a set of coordinates to the sasalib_t object, if these
     coordinates are updated sasalib_refresh(1) can be used to
