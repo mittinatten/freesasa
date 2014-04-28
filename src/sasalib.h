@@ -81,6 +81,10 @@ typedef enum {
 /** Initialization, freeing and copying **/
 /*****************************************/
 
+#ifdef __cplusplus
+extern "C"{
+#endif 
+
 /** Allocates empty sasalib_t object with default parameters. Must be
     called before calculation. */
 sasalib_t* sasalib_init();
@@ -274,5 +278,8 @@ const double* sasalib_radius_atom_array(const sasalib_t *s);
     detected (with explanatory error-message). */
 int sasalib_log(FILE *log, const sasalib_t*);
 
+#ifdef __cplusplus
+}
+#endif 
 
 #endif
