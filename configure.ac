@@ -21,6 +21,7 @@ AC_CHECK_HEADERS([stdlib.h string.h sys/time.h unistd.h pthread.h])
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
 AC_TYPE_SIZE_T
+AC_C_RESTRICT
 
 # use C99
 AC_PROG_CC_C99
@@ -29,6 +30,7 @@ AC_PROG_CC_C99
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([gettimeofday sqrt strerror])
+AC_CHECK_FUNCS([mkdir])
 
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
