@@ -70,9 +70,10 @@ static void sasa_add_slice_area(double z, sasa_lr_t);
 
 // the z argument is only really necessary for the debugging section
 static void sasa_exposed_arcs(int n_slice, 
-			      const double *x, const double *y, double z, 
-                              const double *r, double *exposed_arc, 
-                              const int **nb, const int *nn);
+			      const double *restrict x, 
+			      const double *restrict y, double z, 
+                              const double *restrict r, double *exposed_arc, 
+                              const int **restrict nb, const int *restrict nn);
 
 /** a and b are a set of alpha and betas (in the notation of the
     manual). This function finds the union of those intervals on the
@@ -216,7 +217,7 @@ static void sasa_add_slice_area(double z, sasa_lr_t lr)
     int n_slice = 0;
     double exposed_arc[n_atoms];
     int idx[n_atoms], xdi[n_atoms], in_slice[n_atoms], nn_slice[n_atoms], *nb_slice[n_atoms];
-    const double* v = sasalib_coord_all(lr.xyz);
+    const double *restrict v = sasalib_coord_all(lr.xyz);
 
     // locate atoms in each slice and do some initialization
     for (size_t i = 0; i < n_atoms; ++i) {
@@ -266,8 +267,11 @@ static void sasa_add_slice_area(double z, sasa_lr_t lr)
     }
 }
 
-static void sasa_exposed_arcs(int n_slice, const double *x, const double *y, double z, const double *r,
-                              double *exposed_arc, const int **nb, const int *nn)
+static void sasa_exposed_arcs(int n_slice, const double *restrict x, 
+			      const double *restrict y, double z, 
+			      const double *restrict r,
+                              double *exposed_arc, const int **restrict nb, 
+			      const int *restrict nn)
 {
     int is_completely_buried[n_slice]; // keep track of completely buried circles
     for (int i = 0; i < n_slice; ++i) is_completely_buried[i] = 0;
@@ -409,7 +413,7 @@ static void sasa_get_contacts(int **nb, int *nn,
         nn[i] = 0;
         nb[i] = NULL;
     }
-    const double *v = sasalib_coord_all(xyz);
+    const double *restrict v = sasalib_coord_all(xyz);
 
     for (int i = 0; i < n_atoms; ++i) {
         double ri = radii[i];
