@@ -1,7 +1,7 @@
 *.o
 *.a
-calc_sasa
-example
+src/freesasa
+src/example
 test
 .DS_Store
 *~
