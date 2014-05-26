@@ -1,6 +1,6 @@
 *.o
 *.a
-calc_sasa
+freesasa
 example
 test
 .DS_Store
