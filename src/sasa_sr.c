@@ -174,15 +174,15 @@ static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
        a certain atom overlap with other atoms */
     char spcount[n_points];
     const double ri = sr.r[i]+sr.probe_radius;
-    const double *vi = sasalib_coord_i(xyz,i);
+    const double *restrict vi = sasalib_coord_i(xyz,i);
     double xi = vi[0], yi = vi[1], zi = vi[2]; 
-    const double *v = sasalib_coord_all(xyz);
+    const double *restrict v = sasalib_coord_all(xyz);
 
     /* testpoints for this atom */
     sasalib_coord_t* tp_coord_ri = sasalib_coord_copy(sr.srp);
     sasalib_coord_scale(tp_coord_ri, ri);
     sasalib_coord_translate(tp_coord_ri, vi);
-    const double *tp = sasalib_coord_all(tp_coord_ri);
+    const double *restrict tp = sasalib_coord_all(tp_coord_ri);
 
     memcpy(spcount,sr.spcount_0,sizeof(char)*n_points);
     
