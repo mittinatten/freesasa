@@ -15,7 +15,7 @@ identical results.
 The OONS atom-classification and radii are used by default (Ooi et al.
 PNAS 1987). Users can also provide their own atomic radii.
 
-Has been tested successfully with several versions of   GNU C Compiler
+Has been tested successfully with several versions of GNU C Compiler
 and Clang/LLVM. Building the library only requires standard C and GNU libraries. 
 Developers who want to do testing need to install the Check unit testing framework.
 
@@ -24,6 +24,13 @@ Can be compiled and installed using the following
     ./configure
     make && make install
 
-
 The program calc_sasa provides a command-line interface, the command
 `calc_sasa -h` gives an overview of options.
+
+Profiling has shown that configuring with 
+
+	  ./configure CFLAGS='-ffast-math -funroll-loops -O3' 
+
+increases the speed of the Shrake & Rupley algorithm significantly (10
+% or so), as compared to the standard "-O2". There seems to be no
+measurable effect on Lee & Richards.
