@@ -1,20 +1,20 @@
 /*
   Copyright Simon Mitternacht 2013.
 
-  This file is part of Sasalib.
+  This file is part of FreeSASA.
   
-  Sasalib is free software: you can redistribute it and/or modify
+  FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
   
-  Sasalib is distributed in the hope that it will be useful,
+  FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
   
   You should have received a copy of the GNU General Public License
-  along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
+  along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdio.h>
@@ -34,29 +34,29 @@ static const double srp_5000[3*5000];
 static const int srp_N[SRP_N_SIZES] = { 20, 50, 100, 200, 500, 1000, 2000, 5000 };
 static const double* srp_p[SRP_N_SIZES] = { srp_20, srp_50, srp_100, srp_200,
                                             srp_500, srp_1000, srp_2000, srp_5000 };
-extern int sasalib_warn(const char *format, ...);
+extern int freesasa_warn(const char *format, ...);
 
-void sasalib_srp_print_n_opt(FILE* f) {
+void freesasa_srp_print_n_opt(FILE* f) {
     for (int i = 0; i < SRP_N_SIZES-1; ++i) {
         fprintf(f,"%d, ",srp_N[i]);
     }
     fprintf(f,"%d\n",srp_N[SRP_N_SIZES-1]);
 }
 
-int sasalib_srp_n_is_valid(int n) {
+int freesasa_srp_n_is_valid(int n) {
     for (int i = 0; i < SRP_N_SIZES; ++i) {
         if (n == srp_N[i]) return 1;
     }
     return 0;
 }
 
-const double* sasalib_srp_get_points(int n) {
+const double* freesasa_srp_get_points(int n) {
     for (int i = 0; i < SRP_N_SIZES; ++i) {
 	if (n == srp_N[i]) return srp_p[i];
     }
-    sasalib_warn("number of test-points has to be"
+    freesasa_warn("number of test-points has to be"
                  " one of the following values: ");
-    sasalib_srp_print_n_opt(stderr);
+    freesasa_srp_print_n_opt(stderr);
     return NULL;
 }
 

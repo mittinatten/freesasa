@@ -1,20 +1,20 @@
 /*
   Copyright Simon Mitternacht 2013-2014.
 
-  This file is part of Sasalib.
+  This file is part of FreeSASA.
   
-  Sasalib is free software: you can redistribute it and/or modify
+  FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
   
-  Sasalib is distributed in the hope that it will be useful,
+  FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
   
   You should have received a copy of the GNU General Public License
-  along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
+  along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <assert.h>
@@ -30,7 +30,7 @@
 # include <pthread.h>
 #endif
 
-#include "sasalib.h"
+#include "freesasa.h"
 #include "sasa.h"
 #include "srp.h"
 
@@ -44,9 +44,9 @@
 #define __attrib_pure__
 #endif
 
-extern const char *sasalib_name;
-extern int sasalib_fail(const char *format, ...);
-extern int sasalib_warn(const char *format, ...);
+extern const char *freesasa_name;
+extern int freesasa_fail(const char *format, ...);
+extern int freesasa_warn(const char *format, ...);
 
 // calculation parameters (results stored in *sasa)
 typedef struct {
@@ -54,8 +54,8 @@ typedef struct {
     int n_atoms;
     int n_points;
     double probe_radius;
-    const sasalib_coord_t *xyz;
-    const sasalib_coord_t *srp;
+    const freesasa_coord_t *xyz;
+    const freesasa_coord_t *srp;
     const double *r;
     double *sasa;
     char *spcount_0;
@@ -68,24 +68,24 @@ static void *sasa_sr_thread(void *arg);
 
 static double sasa_sr_calc_atom(int i,const sasa_sr_t) __attrib_pure__;
 
-int sasalib_shrake_rupley(double *sasa,
-			  const sasalib_coord_t *xyz,
+int freesasa_shrake_rupley(double *sasa,
+			  const freesasa_coord_t *xyz,
 			  const double *r,
 			  double probe_radius,
 			  int n_points,
 			  int n_threads)
 {
-    size_t n_atoms = sasalib_coord_n(xyz);
-    int return_value = SASALIB_SUCCESS;
+    size_t n_atoms = freesasa_coord_n(xyz);
+    int return_value = FREESASA_SUCCESS;
     if (n_atoms == 0) {
-	return sasalib_warn("Attempting Shrake & Rupley calculation "
+	return freesasa_warn("Attempting Shrake & Rupley calculation "
 			    "on empty coordinates");
     }
 
     // Initialize test-points
-    const double *srp_p = sasalib_srp_get_points(n_points);
+    const double *srp_p = freesasa_srp_get_points(n_points);
     if (srp_p == NULL) return 1;
-    sasalib_coord_t *srp = sasalib_coord_new_linked(srp_p,n_points);
+    freesasa_coord_t *srp = freesasa_coord_new_linked(srp_p,n_points);
 
     char spcount_0[n_points];
 
@@ -106,7 +106,7 @@ int sasalib_shrake_rupley(double *sasa,
 #if HAVE_LIBPTHREAD
         sasa_sr_do_threads(n_threads, sr);
 #else 
-        return_value = sasalib_warn("program compiled for single-threaded use, "
+        return_value = freesasa_warn("program compiled for single-threaded use, "
                                     "but multiple threads were requested. Will "
                                     "proceed in single-threaded mode.\n");
         n_threads = 1;
@@ -118,7 +118,7 @@ int sasalib_shrake_rupley(double *sasa,
             sasa[i] = sasa_sr_calc_atom(i,sr);
         }
     }
-    sasalib_coord_free(srp);
+    freesasa_coord_free(srp);
     return return_value;
 }
 
@@ -137,7 +137,7 @@ static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
 	errno = 0;
 	int res = pthread_create(&thread[t], NULL, sasa_sr_thread, (void *) &srt[t]);
 	if (res) {
-	    perror(sasalib_name);
+	    perror(freesasa_name);
 	    exit(EXIT_FAILURE);
 	}
     }
@@ -146,7 +146,7 @@ static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
 	errno = 0;
 	int res = pthread_join(thread[t],&thread_result);
 	if (res) {
-        perror(sasalib_name);
+        perror(freesasa_name);
 	    exit(EXIT_FAILURE);
 	}
     }
@@ -169,20 +169,20 @@ static void *sasa_sr_thread(void* arg)
 
 static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
     const int n_points = sr.n_points;
-    const sasalib_coord_t *xyz = sr.xyz;
+    const freesasa_coord_t *xyz = sr.xyz;
     /* this array keeps track of which testpoints belonging to
        a certain atom overlap with other atoms */
     char spcount[n_points];
     const double ri = sr.r[i]+sr.probe_radius;
-    const double *restrict vi = sasalib_coord_i(xyz,i);
+    const double *restrict vi = freesasa_coord_i(xyz,i);
     double xi = vi[0], yi = vi[1], zi = vi[2]; 
-    const double *restrict v = sasalib_coord_all(xyz);
+    const double *restrict v = freesasa_coord_all(xyz);
 
     /* testpoints for this atom */
-    sasalib_coord_t* tp_coord_ri = sasalib_coord_copy(sr.srp);
-    sasalib_coord_scale(tp_coord_ri, ri);
-    sasalib_coord_translate(tp_coord_ri, vi);
-    const double *restrict tp = sasalib_coord_all(tp_coord_ri);
+    freesasa_coord_t* tp_coord_ri = freesasa_coord_copy(sr.srp);
+    freesasa_coord_scale(tp_coord_ri, ri);
+    freesasa_coord_translate(tp_coord_ri, vi);
+    const double *restrict tp = freesasa_coord_all(tp_coord_ri);
 
     memcpy(spcount,sr.spcount_0,sizeof(char)*n_points);
     
@@ -208,7 +208,7 @@ static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
                overlap. */
         }
     }
-    sasalib_coord_free(tp_coord_ri);
+    freesasa_coord_free(tp_coord_ri);
     int n_surface = 0;
     for (int k = 0; k < n_points; ++k) {
         if (!spcount[k]) ++n_surface;

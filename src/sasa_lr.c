@@ -1,20 +1,20 @@
 /*
   Copyright Simon Mitternacht 2013-2014.
 
-  This file is part of Sasalib.
+  This file is part of FreeSASA.
   
-  Sasalib is free software: you can redistribute it and/or modify
+  FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
   
-  Sasalib is distributed in the hope that it will be useful,
+  FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
   
   You should have received a copy of the GNU General Public License
-  along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
+  along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <assert.h>
@@ -30,7 +30,7 @@
 # include <pthread.h>
 #endif
 
-#include "sasalib.h"
+#include "freesasa.h"
 #include "sasa.h"
 #include "srp.h"
 
@@ -44,15 +44,15 @@
 #define __attrib_pure__
 #endif
 
-extern const char *sasalib_name;
-extern int sasalib_fail(const char *format, ...);
-extern int sasalib_warn(const char *format, ...);
+extern const char *freesasa_name;
+extern int freesasa_fail(const char *format, ...);
+extern int freesasa_warn(const char *format, ...);
 
 //calculation parameters (results stored in *sasa)
 typedef struct {
     int n_atoms;
     const double *radii;
-    const sasalib_coord_t *xyz;
+    const freesasa_coord_t *xyz;
     const int **nb;
     const int *nn;
     double delta;
@@ -88,11 +88,11 @@ static double sasa_sum_angles(int n_buried, double *a, double *b);
     n_atoms. The elements of n_atoms are dynamically allocated to be
     of size nn[i]. **/
 static void sasa_get_contacts(int **nb, int *nn,
-                              const sasalib_coord_t *xyz, const double *radii);
+                              const freesasa_coord_t *xyz, const double *radii);
 
 
-int sasalib_lee_richards(double *sasa,
-			 const sasalib_coord_t *xyz,
+int freesasa_lee_richards(double *sasa,
+			 const freesasa_coord_t *xyz,
 			 const double *atom_radii,
 			 double probe_radius,
 			 double delta,
@@ -106,17 +106,17 @@ int sasalib_lee_richards(double *sasa,
        3. Calculate exposed arc-lengths for each atom
        Sum up arc-length*delta for each atom
     */
-    size_t n_atoms = sasalib_coord_n(xyz);
-    int return_value = SASALIB_SUCCESS;
+    size_t n_atoms = freesasa_coord_n(xyz);
+    int return_value = FREESASA_SUCCESS;
     if (n_atoms == 0) {
-	return sasalib_warn("Attempting Lee & Richards calculation "
+	return freesasa_warn("Attempting Lee & Richards calculation "
 			    "on empty coordinates");
     }
     // determine slice range and init radii and sasa arrays
     double max_z=-1e50, min_z=1e50;
     double max_r = 0;
     double radii[n_atoms];
-    const double *v = sasalib_coord_all(xyz);
+    const double *v = freesasa_coord_all(xyz);
     for (size_t i = 0; i < n_atoms; ++i) {
         radii[i] = atom_radii[i] + probe_radius;
         double z = v[3*i+2], r = radii[i];
@@ -140,7 +140,7 @@ int sasalib_lee_richards(double *sasa,
 #if HAVE_LIBPTHREAD
         sasa_lr_do_threads(n_threads, lr);
 #else
-        return_value = sasalib_warn("program compiled for single-threaded use, "
+        return_value = freesasa_warn("program compiled for single-threaded use, "
                                     "but multiple threads were requested. Will "
                                     "proceed in single-threaded mode.\n");
         n_threads = 1;
@@ -178,7 +178,7 @@ static void sasa_lr_do_threads(int n_threads, sasa_lr_t lr)
         }
         int res = pthread_create(&thread[t], NULL, sasa_lr_thread, (void *) &lrt[t]);
         if (res) {
-            perror(sasalib_name);
+            perror(freesasa_name);
             exit(EXIT_FAILURE);
         }
     }
@@ -186,7 +186,7 @@ static void sasa_lr_do_threads(int n_threads, sasa_lr_t lr)
         void *thread_result;
         int res = pthread_join(thread[t],&thread_result);
         if (res) {
-            perror(sasalib_name);
+            perror(freesasa_name);
             exit(EXIT_FAILURE);
         }
     }
@@ -217,7 +217,7 @@ static void sasa_add_slice_area(double z, sasa_lr_t lr)
     int n_slice = 0;
     double exposed_arc[n_atoms];
     int idx[n_atoms], xdi[n_atoms], in_slice[n_atoms], nn_slice[n_atoms], *nb_slice[n_atoms];
-    const double *restrict v = sasalib_coord_all(lr.xyz);
+    const double *restrict v = freesasa_coord_all(lr.xyz);
 
     // locate atoms in each slice and do some initialization
     for (size_t i = 0; i < n_atoms; ++i) {
@@ -404,16 +404,16 @@ static double sasa_sum_angles(int n_buried, double *a, double *b)
 }
 
 static void sasa_get_contacts(int **nb, int *nn, 
-                              const sasalib_coord_t *xyz, const double *radii)
+                              const freesasa_coord_t *xyz, const double *radii)
 {
     /* For low resolution L&R this function is the bottleneck in
        speed. Will also depend on number of atoms. */
-    size_t n_atoms = sasalib_coord_n(xyz);
+    size_t n_atoms = freesasa_coord_n(xyz);
     for (int i = 0; i < n_atoms; ++i) {
         nn[i] = 0;
         nb[i] = NULL;
     }
-    const double *restrict v = sasalib_coord_all(xyz);
+    const double *restrict v = freesasa_coord_all(xyz);
 
     for (int i = 0; i < n_atoms; ++i) {
         double ri = radii[i];

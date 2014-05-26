@@ -1,20 +1,20 @@
 /*
   Copyright Simon Mitternacht 2013-2014.
 
-  This file is part of Sasalib.
+  This file is part of FreeSASA.
   
-  Sasalib is free software: you can redistribute it and/or modify
+  FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
   
-  Sasalib is distributed in the hope that it will be useful,
+  FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
   
   You should have received a copy of the GNU General Public License
-  along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
+  along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdio.h>
@@ -26,7 +26,7 @@
 #  include <config.h>
 #endif
 
-#include "sasalib.h"
+#include "freesasa.h"
 #include "srp.h"
 
 #if STDC_HEADERS
@@ -37,7 +37,7 @@ extern int optind;
 char *program_name;
 
 typedef struct  {
-    sasalib_t *s;
+    freesasa_t *s;
     FILE *B;
     int per_residue;
 } settings_t;
@@ -59,12 +59,12 @@ void help() {
             "       -L  use Lee & Richards algorithm\n"
             "       -d  grid spacing in Lee & Richards algorithm\n"
             "           Default value is %4.2f Å\n"
-            ,SASALIB_DEF_PROBE_RADIUS,SASALIB_DEF_LR_D);
+            ,FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_LR_D);
     fprintf(stderr,
             "       -n  number of test points in Shrake & Rupley algorithm\n"
             "           Default is %d, allowed values are:\n"
-            "           ",SASALIB_DEF_SR_N);
-    sasalib_srp_print_n_opt(stderr);
+            "           ",FREESASA_DEF_SR_N);
+    freesasa_srp_print_n_opt(stderr);
 #ifdef HAVE_LIBPTHREAD
     fprintf(stderr,
             "       -t  number of threads to use in calculation (for multicore CPUs)\n");
@@ -84,36 +84,36 @@ void short_help() {
 }
 
 void run_analysis(FILE *input, const char *name, const settings_t *settings) {
-    sasalib_t *s = sasalib_init();
+    freesasa_t *s = freesasa_init();
     double tmp;
-    sasalib_copy_param(s,settings->s);
-    sasalib_set_proteinname(s,name); 
-    if (sasalib_calc_pdb(s,input) == SASALIB_FAIL) {
+    freesasa_copy_param(s,settings->s);
+    freesasa_set_proteinname(s,name); 
+    if (freesasa_calc_pdb(s,input) == FREESASA_FAIL) {
         fprintf(stderr,"%s: error: Invalid input. Aborting.\n",
                 program_name);
         exit(EXIT_FAILURE);
     }
-    sasalib_log(stdout,s);
+    freesasa_log(stdout,s);
     printf("\nTotal:  %9.2f A2\nPolar:  %9.2f A2\nApolar: %9.2f A2\n",
-           sasalib_area_total(s), sasalib_area_class(s,SASALIB_POLAR),
-           sasalib_area_class(s, SASALIB_APOLAR));
-    if ((tmp = sasalib_area_class(s, SASALIB_NUCLEICACID)) > 0) 
+           freesasa_area_total(s), freesasa_area_class(s,FREESASA_POLAR),
+           freesasa_area_class(s, FREESASA_APOLAR));
+    if ((tmp = freesasa_area_class(s, FREESASA_NUCLEICACID)) > 0) 
         printf("Nucleic: %9.2f A2\n",tmp);
-    if ((tmp = sasalib_area_class(s, SASALIB_CLASS_UNKNOWN)) > 0) 
+    if ((tmp = freesasa_area_class(s, FREESASA_CLASS_UNKNOWN)) > 0) 
         printf("Unknown: %9.2f A2\n",tmp);
     if (settings->per_residue) { 
         printf("\n");
-        sasalib_per_residue(stdout,s);
+        freesasa_per_residue(stdout,s);
     }
-    if (settings->B) sasalib_write_pdb(settings->B,s);
-    sasalib_free(s);
+    if (settings->B) freesasa_write_pdb(settings->B,s);
+    freesasa_free(s);
 }
 
 int main (int argc, char **argv) {
     int alg_set = 0;
     FILE *input = NULL;
     settings_t settings = def_settings;
-    settings.s = sasalib_init();
+    settings.s = freesasa_init();
     extern char *optarg;
     char opt;
 #ifdef PROGRAM_NAME
@@ -124,7 +124,7 @@ int main (int argc, char **argv) {
 
     while ((opt = getopt(argc, argv, "n:d:t:p:B:hLSr")) != -1) {
 	errno = 0;
-	int result = SASALIB_SUCCESS;
+	int result = FREESASA_SUCCESS;
         switch(opt) {
 	case 'h':
 	    help();
@@ -139,28 +139,28 @@ int main (int argc, char **argv) {
 	    }
 	    break;
 	case 'n':
-	    result = sasalib_set_sr_points(settings.s,atoi(optarg));
+	    result = freesasa_set_sr_points(settings.s,atoi(optarg));
 	    break;
 	case 'S':
-	    result = sasalib_set_algorithm(settings.s,SASALIB_SHRAKE_RUPLEY);
+	    result = freesasa_set_algorithm(settings.s,FREESASA_SHRAKE_RUPLEY);
 	    ++alg_set;
 	    break;
 	case 'L':
-	    result = sasalib_set_algorithm(settings.s,SASALIB_LEE_RICHARDS);
+	    result = freesasa_set_algorithm(settings.s,FREESASA_LEE_RICHARDS);
 	    ++alg_set;
 	    break;
 	case 'd':
-	    result = sasalib_set_lr_delta(settings.s,atof(optarg));
+	    result = freesasa_set_lr_delta(settings.s,atof(optarg));
 	    break;
 	case 'p':
-	    result = sasalib_set_probe_radius(settings.s,atof(optarg));
+	    result = freesasa_set_probe_radius(settings.s,atof(optarg));
 	    break;
 	case 'r':
 	    settings.per_residue = 1;
 	    break;
 	case 't':
 #if HAVE_LIBPTHREAD	    
-	    result = sasalib_set_nthreads(settings.s,atoi(optarg));
+	    result = freesasa_set_nthreads(settings.s,atoi(optarg));
 #else 
 	    fprintf(stderr, "%s: warning: option 't' only defined if program"
 		    " compiled with thread support.\n",
@@ -172,14 +172,14 @@ int main (int argc, char **argv) {
                 program_name,opt);
 	    break;
         }
-        if (result == SASALIB_FAIL) {
+        if (result == FREESASA_FAIL) {
 	    fprintf(stderr, "%s: error: failed to start SASA calculation with "
                 "provided options. Aborting", 
                 program_name);
 	    if (errno != 0) fprintf(stderr,"; %s\n",strerror(errno));
 	    else fprintf(stderr,".\n");
 	    exit(EXIT_FAILURE);
-	} else if (result == SASALIB_WARN) {
+	} else if (result == FREESASA_WARN) {
             fprintf(stderr, "%s: warning: calculations might not "
                     "correspond to specification or results might "
                     "be unreliable (see warnings).\n", 
@@ -215,7 +215,7 @@ int main (int argc, char **argv) {
         }
     }    
     
-    sasalib_free(settings.s);
+    freesasa_free(settings.s);
     if (settings.B) fclose(settings.B);
     return EXIT_SUCCESS;
 }

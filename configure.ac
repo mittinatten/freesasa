@@ -2,9 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([sasalib], [0.5])
+AC_INIT([freesasa], [0.5])
 AM_INIT_AUTOMAKE([foreign])
-AC_CONFIG_SRCDIR([src/sasalib.c])
+AC_CONFIG_SRCDIR([src/freesasa.c])
 AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
@@ -12,9 +12,7 @@ AC_PROG_CC
 AC_PROG_RANLIB
 
 # Checks for libraries.
-# FIXME: Replace `main' with a function in `-lm':
 AC_CHECK_LIB([m], [sqrt])
-# FIXME: Replace `main' with a function in `-lpthread':
 AC_CHECK_LIB([pthread], [pthread_create])
 
 # Checks for header files.

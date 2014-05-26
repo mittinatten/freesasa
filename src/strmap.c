@@ -1,32 +1,32 @@
 /*
   Copyright Simon Mitternacht 2013.
 
-  This file is part of Sasalib.
+  This file is part of FreeSASA.
   
-  Sasalib is free software: you can redistribute it and/or modify
+  FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
   
-  Sasalib is distributed in the hope that it will be useful,
+  FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
   
   You should have received a copy of the GNU General Public License
-  along with Sasalib.  If not, see <http://www.gnu.org/licenses/>.
+  along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "sasalib.h"
+#include "freesasa.h"
 #include "pdb.h"
 #include "strmap.h"
 
 #define TABLE_SIZE 27
 
-#define T sasalib_strmap_t
+#define T freesasa_strmap_t
 
 typedef struct element_ {
     char *key;
@@ -37,12 +37,12 @@ typedef struct element_ {
     struct element_ *next;
 } element_t;
 
-struct sasalib_strmap_ {
+struct freesasa_strmap_ {
     element_t *table[TABLE_SIZE];
     size_t n;
 };
 
-extern size_t sasalib_trim_whitespace(char *target, const char *src, 
+extern size_t freesasa_trim_whitespace(char *target, const char *src, 
 				      size_t length);
 
 static int hash(const char* s) 
@@ -53,7 +53,7 @@ static int hash(const char* s)
     return ret;
 }
 
-T* sasalib_strmap_new() 
+T* freesasa_strmap_new() 
 {
     T *h = (T*) malloc(sizeof(T));
     h->n = 0;
@@ -70,7 +70,7 @@ static void free_element(element_t *e)
     free(e);
 }
 
-int sasalib_strmap_free(T *map) 
+int freesasa_strmap_free(T *map) 
 {
     assert(map && "attempting to free null-pointer");
     element_t *e;
@@ -79,7 +79,7 @@ int sasalib_strmap_free(T *map)
 	    free_element(e);
     }
     free(map);
-    return SASALIB_SUCCESS;
+    return FREESASA_SUCCESS;
 }
 
 // the_e will point to NULL if key does not exist
@@ -88,7 +88,7 @@ static void strmap_find(const T *map, const char *key,
 {
     assert(map);
     char *buf = (char*) malloc(strlen(key) + 1);
-    sasalib_trim_whitespace(buf,key,strlen(key));
+    freesasa_trim_whitespace(buf,key,strlen(key));
     
     int i = hash(buf);
     element_t *e1 = map->table[i], *e2 = NULL;
@@ -111,12 +111,12 @@ static int strmap_internal_set(T *map, const char *key, void *value,
     if (e1) {
 	e1->value = value;
 	e1->owned = owned;
-	return SASALIB_SUCCESS;
+	return FREESASA_SUCCESS;
     }
 
     char *buf = (char*) malloc(strlen(key) + 1);
-    sasalib_trim_whitespace(buf,key,strlen(key));
-    if (strlen(buf) == 0) return SASALIB_WARN;
+    freesasa_trim_whitespace(buf,key,strlen(key));
+    if (strlen(buf) == 0) return FREESASA_WARN;
 
     //generate new element
     element_t *e = (element_t*) malloc(sizeof(element_t)), *e_prev;
@@ -136,20 +136,20 @@ static int strmap_internal_set(T *map, const char *key, void *value,
 	map->table[i] = e;
     }
     ++map->n;
-    return SASALIB_SUCCESS;
+    return FREESASA_SUCCESS;
 }
 
-int sasalib_strmap_set(T *map, const char *key, void *value)
+int freesasa_strmap_set(T *map, const char *key, void *value)
 {
     return strmap_internal_set(map,key,value,0);
 }
 
-int sasalib_strmap_delete(T *map, const char *key)
+int freesasa_strmap_delete(T *map, const char *key)
 {
     //find element
     element_t *e1, *e2;
     strmap_find(map,key,&e1,&e2);
-    if (e1 == NULL) return SASALIB_WARN;
+    if (e1 == NULL) return FREESASA_WARN;
 
     //delete element and relink list
     free(e1->key);
@@ -158,10 +158,10 @@ int sasalib_strmap_delete(T *map, const char *key)
     if (e1->owned) free(e1->value);
     free(e1);
     --map->n;
-    return SASALIB_SUCCESS;
+    return FREESASA_SUCCESS;
 }
 
-void* sasalib_strmap_value(const T *map, const char *key)
+void* freesasa_strmap_value(const T *map, const char *key)
 {
     assert(map);
     element_t *e1, *e2;
@@ -171,7 +171,7 @@ void* sasalib_strmap_value(const T *map, const char *key)
 }
 
 
-int sasalib_strmap_exists(const T *map, const char *key)
+int freesasa_strmap_exists(const T *map, const char *key)
 {
     assert(map);
     element_t *e1, *e2;
@@ -179,13 +179,13 @@ int sasalib_strmap_exists(const T *map, const char *key)
     if (e1 == NULL) return 0;
     return 1;
 }
-int sasalib_strmap_size(const T *map) 
+int freesasa_strmap_size(const T *map) 
 {
     assert(map);
     return map->n;
 }
 
-char** sasalib_strmap_keys(const T *map)
+char** freesasa_strmap_keys(const T *map)
 {
     element_t *e;
     int pos = 0;
@@ -204,7 +204,7 @@ char** sasalib_strmap_keys(const T *map)
     }
     return a;
 }
-int sasalib_strmap_real_set(sasalib_strmap_t *map,
+int freesasa_strmap_real_set(freesasa_strmap_t *map,
 			    const char* key, double value)
 {
     element_t *e1, *e2;
@@ -215,10 +215,10 @@ int sasalib_strmap_real_set(sasalib_strmap_t *map,
 	return strmap_internal_set(map,key,v,1);
     }
     *((double*)e1->value) = value;
-    return SASALIB_SUCCESS;
+    return FREESASA_SUCCESS;
 }
 
-int sasalib_strmap_real_add(T *map, const char* key, double value)
+int freesasa_strmap_real_add(T *map, const char* key, double value)
 {
     element_t *e1, *e2;
     strmap_find(map,key,&e1,&e2);
@@ -227,12 +227,12 @@ int sasalib_strmap_real_add(T *map, const char* key, double value)
 	*v = value;
 	return strmap_internal_set(map,key,v,1);
     }
-    // the only difference from sasalib_strmap_real_set(3)
+    // the only difference from freesasa_strmap_real_set(3)
     *((double*)e1->value) += value;
-    return SASALIB_SUCCESS;
+    return FREESASA_SUCCESS;
 }
-double sasalib_strmap_real_value(const T *map, const char* key)
+double freesasa_strmap_real_value(const T *map, const char* key)
 {
-    return *(double*)sasalib_strmap_value(map,key);
+    return *(double*)freesasa_strmap_value(map,key);
 }
 
