@@ -3,17 +3,23 @@ manual = manual.tex
 fig_eps = fig/lnr_circles.eps fig/lnr_slice.eps fig/time.eps fig/precision.eps
 fig_pdf = $(subst .eps,.pdf,$(fig_eps))
 
-dist_doc_DATA = manual.pdf manual.ps manual.dvi
-
-all:
+dist_doc_DATA =
 
 if HAVE_LATEX
+
+dist_doc_DATA += manual.dvi manual.ps
+
+$(fig_eps): 
+	@cd fig
+	@make ps
+	@cd ..
 
 manual.ps: manual.dvi
 	dvips -Ppdf manual.dvi -q
 manual.dvi: $(manual) $(fig_eps)
 	latex -interaction=batchmode manual.tex
 	latex -interaction=batchmode manual.tex
+
 
 dvi-local: manual.dvi
 
@@ -27,6 +33,14 @@ ps-local: nolatex
 endif
 
 if HAVE_PDF
+
+dist_doc_DATA += manual.pdf
+
+$(fig_pdf):
+	@cd fig
+	@make pdf
+	@cd ..
+
 pdf-local: manual.pdf 
 manual.pdf: $(manual) $(fig_pdf)
 	pdflatex -interaction=batchmode manual.tex 
