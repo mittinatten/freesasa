@@ -103,7 +103,7 @@ description of the API.
 
 \section{Getting started}\label{sec:howto_short}
 
-The source files \texttt{calc\_sasa.c} and \texttt{example.c} contain
+The source files \verb|main.c| and \verb|example.c| contain
 a complete command-line interface and a minimal program to illustrate
 how to use the library interface, respectively. 
 
@@ -201,14 +201,16 @@ values in Å$^2$.
 
 \subsection{Simple example (\texttt{example.c})}\label{sec:simple_sample}
 
-The following shows the minimal program \texttt{example.c} that
-performs a SASA-calculation using a PDB-file as input. This program is
-basically a stripped down version of \texttt{calc\_sasa.c} without
-error handling, and without any commandline options. This code is
-meant to illustrate the most basic parts of the library interface.
+The following shows the minimal program \verb|example.c| that performs
+a SASA-calculation using a PDB-file as input. This program is
+basically a stripped down version of \verb|main.c| without error
+handling, and without any commandline options. This code is meant to
+illustrate the most basic parts of the library interface and is by
+default compiled to a binary called \verb|example| using \verb|make|.
+
 \begin{verbatim}
 #include <stdlib.h>
-#include "src/freesasa.h"
+#include "freesasa.h"
 
 int main(int argc, char **argv) { 
     //initialize freesasa-object with default parameters
@@ -489,7 +491,7 @@ coordinates. Any calculation involves the following four steps.
 The third step is the core functionality of the library and can be
 used separately by users who wish to handle the other steps
 themselves. In addition to the description below, the source for
-\texttt{calc\_sasa.c} serves as an example of how to use the library,
+\texttt{main.c} serves as an example of how to use the library,
 using a large portion of the available functionality. The tests in the
 directory \verb|tests| document the expected behaviour of all parts of
 the API.

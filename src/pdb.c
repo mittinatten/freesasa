@@ -22,7 +22,7 @@
 #include <assert.h>
 #include "pdb.h"
 
-inline int pdb_line_check(const char *line,int len) {
+static inline int pdb_line_check(const char *line,int len) {
     if (! strncmp(line,"ATOM",4) && 
 	! strncmp(line,"HETATM",6)) {
 	return FREESASA_FAIL;
