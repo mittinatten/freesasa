@@ -129,15 +129,15 @@ necessary to build the program itself).
 
 \subsection{Command-line interface}
 
-Compilation creates the binary \verb|calc_sasa| from
+Compilation creates the binary \verb|freesasa| from
 \verb|main.c|, which can be used to calculate the SASA of a
 PDB-file. The simplest program call, with default parameters would be
 \begin{verbatim}
-    $ ./calc_sasa PDB-file
+    $ ./freesasa PDB-file
 \end{verbatim}
 Or, from STDIN:
 \begin{verbatim} 
-    $ ./calc_sasa < PDB-file    
+    $ ./freesasa < PDB-file    
 \end{verbatim}
 STDIN is only read if no file is specified.  By default the Shrake \&
 Rupley algorithm is used, with 100 test points. 
@@ -164,7 +164,7 @@ The following options are available
 \end{itemize}
 As an illustration, the command
 \begin{verbatim}
-   $ ./calc_sasa -L -d 0.1 -t 2 -r PDB-file
+   $ ./freesasa -L -d 0.1 -t 2 -r PDB-file
 \end{verbatim}
 calculates the SASA of the supplied PDB-file using Lee \& Richards (-L),
 with a slice width of 0.1 Å (-d), using two threads (-t) and will print the
@@ -173,7 +173,7 @@ total SASA of each residue type (-r) in addition to the standard output.
 Several PDB-files can be analyzed in one call, the results will be
 printed consecutively for each input file:
 \begin{verbatim}
-   $ ./calc_sasa 1abc.pdb 2abc.pdb ...
+   $ ./freesasa 1abc.pdb 2abc.pdb ...
 \end{verbatim}
 The calculations will not be run in parallel if the option '-t [n]' is
 used, instead each calculation is parallelized individually.
