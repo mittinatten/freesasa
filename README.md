@@ -25,7 +25,9 @@ Can be compiled and installed using the following
     make && make install
 
 The program calc_sasa provides a command-line interface, the command
-`calc_sasa -h` gives an overview of options.
+`calc_sasa -h` gives an overview of options. If downloaded from the
+git repository the configure-script needs to be set up first using 
+'autoreconf -i'.
 
 Profiling has shown that configuring with 
 
@@ -34,3 +36,4 @@ Profiling has shown that configuring with
 increases the speed of the Shrake & Rupley algorithm significantly (10
 % or so), as compared to the standard "-O2". There seems to be no
 measurable effect on Lee & Richards.
+
