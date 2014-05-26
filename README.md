@@ -27,11 +27,11 @@ Can be compiled and installed using the following
 The program freesasa provides a command-line interface, the command
 `freesasa -h` gives an overview of options. If downloaded from the
 git repository the configure-script needs to be set up first using 
-'autoreconf -i'.
+`autoreconf -i`.
 
 Profiling has shown that configuring with 
 
-	  ./configure CFLAGS='-ffast-math -funroll-loops -O3' 
+    ./configure CFLAGS='-ffast-math -funroll-loops -O3' 
 
 increases the speed of the Shrake & Rupley algorithm significantly (10
 % or so), as compared to the standard "-O2". There seems to be no
