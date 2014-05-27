@@ -13,6 +13,6 @@ test_SOURCES = test.c test_pdb.c test_freesasa.c test_structure.c \
 
 test_CFLAGS = -I$(top_srcdir)/src $(AM_CFLAGS)
 
-test_LDADD = ../src/libsasa.a @CHECK_LIBS@
+test_LDADD = ../src/libfreesasa.a @CHECK_LIBS@
 
 CLEANFILES = tmp/*  $(GCOV_FILES)
