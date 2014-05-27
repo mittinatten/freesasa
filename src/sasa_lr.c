@@ -53,12 +53,12 @@ typedef struct {
     int n_atoms;
     const double *radii;
     const freesasa_coord_t *xyz;
-    const int **nb;
-    const int *nn;
-    double delta;
-    double min_z;
+    const int **nb; // neighbors
+    const int *nn; // number of neighbors
+    double delta; // slice width
+    double min_z; // bounds of the molecule
     double max_z;
-    double *sasa;
+    double *sasa; // results
 } sasa_lr_t; 
 
 #if HAVE_LIBPTHREAD
@@ -226,7 +226,7 @@ static void sasa_add_slice_area(double z, sasa_lr_t lr)
         if (d < ri) {
             x[n_slice] = v[i*3]; y[n_slice] = v[i*3+1];
             r[n_slice] = sqrt(ri*ri-d*d);
-            //multiplicative factor when arcs are summed up later (according to L&R paper)
+            //multiplicative correction when arcs are summed up later (according to L&R paper)
             DR[n_slice] = ri/r[n_slice]*(delta/2. +
                                          (delta/2. < ri-d ? delta/2. : ri-d));
             idx[n_slice] = i;
