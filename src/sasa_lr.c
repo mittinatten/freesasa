@@ -100,7 +100,7 @@ static sasa_lr_t* freesasa_init_lr(double *sasa,
 				   double probe_radius,
 				   double delta) {
     sasa_lr_t* lr = (sasa_lr_t*) malloc(sizeof(sasa_lr_t));
-    int n_atoms = freesasa_coord_n(xyz);
+    const int n_atoms = freesasa_coord_n(xyz);
     double max_z=-1e50, min_z=1e50;
     double max_r = 0;
     double *radii = (double*) malloc(sizeof(double)*n_atoms);
@@ -111,7 +111,7 @@ static sasa_lr_t* freesasa_init_lr(double *sasa,
         double z = v[3*i+2], r = radii[i];
         max_z = z > max_z ? z : max_z;
         min_z = z < min_z ? z : min_z;
-        sasa[i] = 0;
+        sasa[i] = 0.;
         max_r = r > max_r ? r : max_r;
     }
     min_z -= max_r;
@@ -327,14 +327,14 @@ static void sasa_exposed_arcs(sasa_lr_slice_t *slice,
     //lower-case i,j is atoms in the slice, upper-case I,J are their
     //corresponding global indexes
     for (int i = 0; i < n_slice; ++i) {
+	exposed_arc[i] = 0;
         if (is_completely_buried[i]) {
             continue;
         }
         int I = slice->idx[i];
-        double ri = slice->r[i], a[n_slice], b[n_slice];
+        double ri = slice->r[i], a[nn[I]], b[nn[I]];
         int n_buried = 0;
-	double xi = v[3*I], yi = v[3*I+1];
-	exposed_arc[i] = 0;
+	//double xi = v[3*I], yi = v[3*I+1];
         // loop over neighbors 
         for (int ni = 0; ni < nn[I]; ++ni) {
             int J = nb[I][ni];
