@@ -1,7 +1,7 @@
 *.o
 *.a
-src/freesasa
-src/example
+freesasa
+example
 test
 .DS_Store
 *~

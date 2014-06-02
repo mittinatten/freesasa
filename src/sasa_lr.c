@@ -242,7 +242,8 @@ static void sasa_add_slice_area(double z, sasa_lr_t lr)
         nb_slice[i] = NULL;
         exposed_arc[i] = 0;
     }
-    
+
+    //check which atoms are neighbors in the slice
     for (int i = 0; i < n_slice; ++i) {
         int i2 = idx[i];
         int j2;
