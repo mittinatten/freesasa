@@ -38,12 +38,6 @@
 #define PI 3.14159265358979323846
 #endif
 
-#ifdef __GNUC__
-#define __attrib_pure__ __attribute__((pure))
-#else
-#define __attrib_pure__
-#endif
-
 extern const char *freesasa_name;
 extern int freesasa_fail(const char *format, ...);
 extern int freesasa_warn(const char *format, ...);
@@ -51,91 +45,130 @@ extern int freesasa_warn(const char *format, ...);
 //calculation parameters (results stored in *sasa)
 typedef struct {
     int n_atoms;
-    const double *radii;
+    double *radii; //including probe
     const freesasa_coord_t *xyz;
-    const int **nb; // neighbors
-    const int *nn; // number of neighbors
+    int **nb; // neighbors
+    int *nn; // number of neighbors
+    double **nb_xyd; // neighbours, xy-distance
+    double **nb_xd; // neighbours, x-distance
+    double **nb_yd; // neighbours, y-distance
     double delta; // slice width
     double min_z; // bounds of the molecule
     double max_z;
     double *sasa; // results
 } sasa_lr_t; 
 
+typedef struct {
+    int n_slice; //number of atoms in slice
+    double z; //the mid-point of the slice
+    char *in_slice;
+    int *idx; //index in slice to global numbering
+    int *xdi; //global numbering to index in slice
+    double *DR; //corrective multiplicative factor (D in L&R paper)
+    double *r; //radius in slice;
+} sasa_lr_slice_t;
+
 #if HAVE_LIBPTHREAD
-static void sasa_lr_do_threads(int n_threads, sasa_lr_t);
+static void sasa_lr_do_threads(int n_threads, sasa_lr_t*);
 static void *sasa_lr_thread(void *arg);
 #endif
 
-static void sasa_add_slice_area(double z, sasa_lr_t);
+/** Init slice and sum up arc-length */
+static void sasa_add_slice_area(double z, sasa_lr_t*);
 
-// the z argument is only really necessary for the debugging section
-static void sasa_exposed_arcs(int n_slice, 
-			      const double *restrict x, 
-			      const double *restrict y, double z, 
-                              const double *restrict r, double *exposed_arc, 
-                              const int **restrict nb, const int *restrict nn);
+/** Find which arcs are exposed in a slice */
+static void sasa_exposed_arcs(sasa_lr_slice_t *,
+			      double *exposed_arc,
+			      const sasa_lr_t *);
 
 /** a and b are a set of alpha and betas (in the notation of the
     manual). This function finds the union of those intervals on the
     circle, and returns 2*PI minus the length of the joined
     interval(s) (i.e. the exposed arc length). Does not necessarily
     leave a and b in a consistent state. */
-static double sasa_sum_angles(int n_buried, double *a, double *b);
+static double sasa_sum_angles(int n_buried, double * restrict a, 
+			      double * restrict b);
 
-/** Calculate contacts, given coordinates and radii. The array nb will
-    have a list of neighbors to each atom, nn will say how many
-    neighbors each atom has. The arrays nn and nb should be of size
-    n_atoms. The elements of n_atoms are dynamically allocated to be
-    of size nn[i]. **/
-static void sasa_get_contacts(int **nb, int *nn,
-                              const freesasa_coord_t *xyz, const double *radii);
+/** Calculate adjacency lists, given coordinates and radii. Also
+    stores some distances to be used later. */
+static void sasa_get_contacts(sasa_lr_t *lr);
 
-
-int freesasa_lee_richards(double *sasa,
-			 const freesasa_coord_t *xyz,
-			 const double *atom_radii,
-			 double probe_radius,
-			 double delta,
-			 int n_threads)
-{
-    /* Steps:
-       Define slice range
-       For each slice:
-       1. Identify member atoms
-       2. Calculate their radii in slice
-       3. Calculate exposed arc-lengths for each atom
-       Sum up arc-length*delta for each atom
-    */
-    size_t n_atoms = freesasa_coord_n(xyz);
-    int return_value = FREESASA_SUCCESS;
-    if (n_atoms == 0) {
-	return freesasa_warn("Attempting Lee & Richards calculation "
-			    "on empty coordinates");
-    }
-    // determine slice range and init radii and sasa arrays
+/** Initialize object to be used for L&R calculation */
+static sasa_lr_t* freesasa_init_lr(double *sasa, 
+				   const freesasa_coord_t *xyz,
+				   const double *atom_radii,
+				   double probe_radius,
+				   double delta) {
+    sasa_lr_t* lr = (sasa_lr_t*) malloc(sizeof(sasa_lr_t));
+    const int n_atoms = freesasa_coord_n(xyz);
     double max_z=-1e50, min_z=1e50;
     double max_r = 0;
-    double radii[n_atoms];
+    double *radii = (double*) malloc(sizeof(double)*n_atoms);
     const double *v = freesasa_coord_all(xyz);
+    //find bounds of protein along z-axis and init radii
     for (size_t i = 0; i < n_atoms; ++i) {
         radii[i] = atom_radii[i] + probe_radius;
         double z = v[3*i+2], r = radii[i];
         max_z = z > max_z ? z : max_z;
         min_z = z < min_z ? z : min_z;
-        sasa[i] = 0;
+        sasa[i] = 0.;
         max_r = r > max_r ? r : max_r;
     }
     min_z -= max_r;
     max_z += max_r;
     min_z += 0.5*delta;
- 
-    // determine which atoms are neighbours
-    int *nb[n_atoms], nn[n_atoms];
-    sasa_get_contacts((int**)nb, (int*)nn, xyz, radii);
-    sasa_lr_t lr = {.n_atoms = n_atoms, .radii = radii, .xyz = xyz,
-                    .nb = (const int**)nb, .nn = nn, .delta = delta, 
-                    .min_z = min_z, .max_z = max_z, .sasa = sasa};
+
+    //copy parameters
+    lr->n_atoms = n_atoms; lr->radii = radii; lr->xyz = xyz;
+    lr->delta = delta;
+    lr->min_z = min_z; lr->max_z = max_z; 
+    lr->sasa = sasa;
+
+    //these will be malloc'd by get_contacts
+    lr->nn = NULL;
+    lr->nb = NULL;
+    lr->nb_xyd = lr->nb_xd = lr->nb_yd = NULL;
+
+    return lr;
+}
+
+static void freesasa_free_lr(sasa_lr_t *lr)
+{
+    for (int i = 0; i < lr->n_atoms; ++i) {
+	free(lr->nb[i]);
+	free(lr->nb_xyd[i]);
+	free(lr->nb_xd[i]);
+	free(lr->nb_yd[i]);
+    }
+    free(lr->radii);
+    free(lr->nn);
+    free(lr->nb);
+    free(lr->nb_xyd);
+    free(lr->nb_xd);
+    free(lr->nb_yd);
+    free(lr);
+}
+
+int freesasa_lee_richards(double *sasa,
+			  const freesasa_coord_t *xyz,
+			  const double *atom_radii,
+			  double probe_radius,
+			  double delta,
+			  int n_threads)
+{
+    int return_value = FREESASA_SUCCESS;
+    if (freesasa_coord_n(xyz) == 0) {
+	return freesasa_warn("Attempting Lee & Richards calculation "
+			     "on empty coordinates");
+    }
+
+    // determine slice range and init radii and sasa arrays
+    sasa_lr_t *lr = freesasa_init_lr(sasa, xyz, atom_radii,
+				     probe_radius, delta);
     
+    // determine which atoms are neighbours
+    sasa_get_contacts(lr);
+
     if (n_threads > 1) {
 #if HAVE_LIBPTHREAD
         sasa_lr_do_threads(n_threads, lr);
@@ -148,27 +181,28 @@ int freesasa_lee_richards(double *sasa,
     } 
     if (n_threads == 1) {
         // loop over slices
-        for (double z = min_z; z < max_z; z += delta) {
+        for (double z = lr->min_z; z < lr->max_z; z += lr->delta) {
             sasa_add_slice_area(z,lr);
         }
     }    
-    for (int i = 0; i < n_atoms; ++i) free(nb[i]);
+    freesasa_free_lr(lr);
+
     return return_value;
 }
 
 #if HAVE_LIBPTHREAD
-static void sasa_lr_do_threads(int n_threads, sasa_lr_t lr) 
+static void sasa_lr_do_threads(int n_threads, sasa_lr_t *lr) 
 {
     double *t_sasa[n_threads];
     pthread_t thread[n_threads];
     sasa_lr_t lrt[n_threads];
-    const double max_z = lr.max_z, min_z = lr.min_z, delta = lr.delta;
+    const double max_z = lr->max_z, min_z = lr->min_z, delta = lr->delta;
     int n_slices = (int)ceil((max_z-min_z)/delta);
     int n_perthread = n_slices/n_threads;
     for (int t = 0; t < n_threads; ++t) {
-        t_sasa[t] = (double*)malloc(sizeof(double)*lr.n_atoms);
-        for (int i = 0; i < lr.n_atoms; ++i) t_sasa[t][i] = 0;
-        lrt[t] = lr;
+        t_sasa[t] = (double*)malloc(sizeof(double)*lr->n_atoms);
+        for (int i = 0; i < lr->n_atoms; ++i) t_sasa[t][i] = 0;
+        lrt[t] = *lr;
         lrt[t].sasa = t_sasa[t];
         lrt[t].min_z = min_z + t*n_perthread*delta;
         if (t < n_threads - 1) {
@@ -192,8 +226,8 @@ static void sasa_lr_do_threads(int n_threads, sasa_lr_t lr)
     }
     
     for (int t = 0; t < n_threads; ++t) {
-        for (int i = 0; i < lr.n_atoms; ++i) {
-            lr.sasa[i] += t_sasa[t][i];
+        for (int i = 0; i < lr->n_atoms; ++i) {
+            lr->sasa[i] += t_sasa[t][i];
         }
         free(t_sasa[t]);
     }
@@ -201,96 +235,114 @@ static void sasa_lr_do_threads(int n_threads, sasa_lr_t lr)
 
 static void *sasa_lr_thread(void *arg)
 {
-    sasa_lr_t lr = *((sasa_lr_t*) arg);
-    for (double z = lr.min_z; z < lr.max_z; z += lr.delta) {
+    sasa_lr_t *lr = ((sasa_lr_t*) arg);
+    for (double z = lr->min_z; z < lr->max_z; z += lr->delta) {
         sasa_add_slice_area(z, lr);
     }
     pthread_exit(NULL);
 }
 #endif
 
-static void sasa_add_slice_area(double z, sasa_lr_t lr)
+// find which atoms are in slice
+static sasa_lr_slice_t* sasa_init_slice(double z, const sasa_lr_t *lr)
 {
-    int n_atoms = lr.n_atoms;
-    double x[n_atoms], y[n_atoms], r[n_atoms], DR[n_atoms];
-    double delta = lr.delta;
-    int n_slice = 0;
-    double exposed_arc[n_atoms];
-    int idx[n_atoms], xdi[n_atoms], in_slice[n_atoms], nn_slice[n_atoms], *nb_slice[n_atoms];
-    const double *restrict v = freesasa_coord_all(lr.xyz);
+    sasa_lr_slice_t *slice = (sasa_lr_slice_t*) malloc(sizeof(sasa_lr_slice_t));
+    int n_atoms = lr->n_atoms;
+    int n_slice = slice->n_slice = 0;
+    slice->xdi = (int*) malloc(n_atoms*sizeof(int));
+    slice->in_slice = (char*) malloc(n_atoms*sizeof(int));
+    double delta = lr->delta;
+    const double *v = freesasa_coord_all(lr->xyz);
+    slice->idx = NULL;
+    slice->r = slice->DR = NULL;
+    slice->z = z;
 
     // locate atoms in each slice and do some initialization
     for (size_t i = 0; i < n_atoms; ++i) {
-        double ri = lr.radii[i];
+        double ri = lr->radii[i];
         double d = fabs(v[3*i+2]-z);
+	double r;
         if (d < ri) {
-            x[n_slice] = v[i*3]; y[n_slice] = v[i*3+1];
-            r[n_slice] = sqrt(ri*ri-d*d);
-            //multiplicative correction when arcs are summed up later (according to L&R paper)
-            DR[n_slice] = ri/r[n_slice]*(delta/2. +
-                                         (delta/2. < ri-d ? delta/2. : ri-d));
-            idx[n_slice] = i;
-            xdi[i] = n_slice;
-            ++n_slice;
-            in_slice[i] = 1;
-        } else {
-            in_slice[i] = 0;
+	    slice->idx = (int*) realloc(slice->idx,(n_slice+1)*sizeof(int));
+	    slice->r = (double*) realloc(slice->r,(n_slice+1)*sizeof(double));
+	    slice->DR = (double*) realloc(slice->DR,(n_slice+1)*sizeof(double));
+	    
+	    slice->idx[n_slice] = i;
+            slice->xdi[i] = n_slice;
+            slice->in_slice[i] = 1;
+	    slice->r[n_slice] = r = sqrt(ri*ri-d*d);
+	    slice->DR[n_slice] = ri/r*(delta/2. +
+		    (delta/2. < ri-d ? delta/2. : ri-d));
+	    ++n_slice;
+	} else {
+            slice->in_slice[i] = 0;
+	    slice->xdi[i] = -1;
         }
     }
-    for (int i = 0; i < n_slice; ++i) { 
-        nn_slice[i] = 0;
-        nb_slice[i] = NULL;
-        exposed_arc[i] = 0;
-    }
-
-    //check which atoms are neighbors in the slice
-    for (int i = 0; i < n_slice; ++i) {
-        int i2 = idx[i];
-        int j2;
-        for (int j = 0; j < lr.nn[i2]; ++j) {
-            if (in_slice[j2 = lr.nb[i2][j]]) {
-                ++nn_slice[i];
-                nb_slice[i] = realloc(nb_slice[i],sizeof(int)*nn_slice[i]);
-                nb_slice[i][nn_slice[i]-1] = xdi[j2];
-            }
-        }
-    }
-    
-    //find exposed arcs
-    sasa_exposed_arcs(n_slice, x, y, z, r, exposed_arc, (const int**)nb_slice, nn_slice);
-    
-    // calculate contribution to each atom's SASA from the present slice
-    for (int i = 0; i < n_slice; ++i) {
-        lr.sasa[idx[i]] += exposed_arc[i]*r[i]*DR[i];
-    }
-    for (int i = 0; i < n_slice; ++i) {
-        free(nb_slice[i]);
-    }
+    slice->n_slice = n_slice;
+    return slice;
 }
 
-static void sasa_exposed_arcs(int n_slice, const double *restrict x, 
-			      const double *restrict y, double z, 
-			      const double *restrict r,
-                              double *exposed_arc, const int **restrict nb, 
-			      const int *restrict nn)
+static void sasa_free_slice(sasa_lr_slice_t* slice)
 {
-    int is_completely_buried[n_slice]; // keep track of completely buried circles
+    free(slice->idx);
+    free(slice->xdi);
+    free(slice->in_slice);
+    free(slice->r);
+    free(slice->DR);
+    free(slice);
+}
+
+static void sasa_add_slice_area(double z, sasa_lr_t *lr)
+{
+    sasa_lr_slice_t *slice = sasa_init_slice(z,lr);
+    double *exposed_arc = (double* )malloc(slice->n_slice*(sizeof(double)));
+    
+    //find exposed arcs
+    sasa_exposed_arcs(slice, exposed_arc, lr);
+    
+    // calculate contribution to each atom's SASA from the present slice
+    for (int i = 0; i < slice->n_slice; ++i) {
+        lr->sasa[slice->idx[i]] += exposed_arc[i]*slice->r[i]*slice->DR[i];
+    }
+
+    sasa_free_slice(slice);
+}
+
+static void sasa_exposed_arcs(sasa_lr_slice_t *slice, 
+			      double *exposed_arc, 
+			      const sasa_lr_t *lr)
+{
+    const int n_slice = slice->n_slice;
+    const int *nn = lr->nn;
+    int **nb = lr->nb;
+    double **nb_xyd = lr->nb_xyd;
+    const double *r = slice->r;
+    const double *v = freesasa_coord_all(lr->xyz);
+    
+    char is_completely_buried[n_slice]; // keep track of completely buried circles
     for (int i = 0; i < n_slice; ++i) is_completely_buried[i] = 0;
+
     //loop over atoms in slice
+    //lower-case i,j is atoms in the slice, upper-case I,J are their
+    //corresponding global indexes
     for (int i = 0; i < n_slice; ++i) {
-        double ri = r[i], a[n_slice], b[n_slice];
-        int n_buried = 0;
-        exposed_arc[i] = 0;
+	exposed_arc[i] = 0;
         if (is_completely_buried[i]) {
             continue;
         }
-        // loop over neighbors in slice
-        for (int ni = 0; ni < nn[i]; ++ni) {
-            int j = nb[i][ni];
-            assert (i != j);
-            double rj = r[j], xij = x[j]-x[i], yij = y[j]-y[i];
-            double d = sqrt(xij*xij+yij*yij);
-            // reasons to skip calculation
+        int I = slice->idx[i];
+        double ri = slice->r[i], a[nn[I]], b[nn[I]];
+        int n_buried = 0;
+	//double xi = v[3*I], yi = v[3*I+1];
+        // loop over neighbors 
+        for (int ni = 0; ni < nn[I]; ++ni) {
+            int J = nb[I][ni];
+	    if (slice->in_slice[J] == 0) continue;
+	    int j = slice->xdi[J];
+            double rj = r[j];//, xij = v[3*J]-xi, yij = v[3*J+1]-yi;
+            double d = nb_xyd[I][ni]; //sqrt(xij*xij+yij*yij);
+	    // reasons to skip calculation
             if (d >= ri + rj) continue;     // atoms aren't in contact
             if (d + ri < rj) { // circle i is completely inside j
                 is_completely_buried[i] = 1; 
@@ -300,13 +352,11 @@ static void sasa_exposed_arcs(int n_slice, const double *restrict x,
                 is_completely_buried[j] = 1;
                 continue;
             } 
-            
             // half the arclength occluded from circle i due to verlap with circle j
             double alpha = acos ((ri*ri + d*d - rj*rj)/(2.0*ri*d));
             // the polar coordinates angle of the vector connecting i and j
-            double beta = atan2 (yij,xij);
-            
-            a[n_buried] = alpha;
+            double beta = atan2 (lr->nb_yd[I][ni],lr->nb_xd[I][ni]);
+	    a[n_buried] = alpha;
             b[n_buried] = beta;
             
             ++n_buried;
@@ -317,6 +367,8 @@ static void sasa_exposed_arcs(int n_slice, const double *restrict x,
 #ifdef DEBUG
         if (is_completely_buried[i] == 0) {
             //exposed_arc[i] = 0;
+	    const double *v = freesasa_coord_all(lr->xyz);
+	    double xi = v[3*I], yi = v[3*I+1];
             for (double c = 0; c < 2*PI; c += PI/45.0) {
                 int is_exp = 1;
                 for (int i = 0; i < n_buried; ++i) {
@@ -328,7 +380,7 @@ static void sasa_exposed_arcs(int n_slice, const double *restrict x,
                 }
                 // print the arcs used in calculation
                 if (is_exp) printf("%6.2f %6.2f %6.2f %7.5f\n",
-                                   x[i]+ri*cos(c),y[i]+ri*sin(c),z,c);
+                                   xi+ri*cos(c),yi+ri*sin(c),slice->z,c);
             }
             printf("\n");
         }
@@ -336,7 +388,7 @@ static void sasa_exposed_arcs(int n_slice, const double *restrict x,
     }
 }
 
-static double sasa_sum_angles(int n_buried, double *a, double *b)
+static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict b)
 {
     /* Innermost function in L&R, could potentially be sped up, but
        probably requires rethinking, algorithmically. Perhaps
@@ -403,19 +455,26 @@ static double sasa_sum_angles(int n_buried, double *a, double *b)
     }
     return 2*PI - buried_angle;
 }
-
-static void sasa_get_contacts(int **nb, int *nn, 
-                              const freesasa_coord_t *xyz, const double *radii)
+static void sasa_get_contacts(sasa_lr_t *lr)
 {
     /* For low resolution L&R this function is the bottleneck in
        speed. Will also depend on number of atoms. */
-    size_t n_atoms = freesasa_coord_n(xyz);
-    for (int i = 0; i < n_atoms; ++i) {
-        nn[i] = 0;
-        nb[i] = NULL;
-    }
-    const double *restrict v = freesasa_coord_all(xyz);
+    size_t n_atoms = lr->n_atoms;
+    const double *v = freesasa_coord_all(lr->xyz);
+    const double *radii = lr->radii;
 
+    // init adjacency lists
+    int *nn = (int*)malloc(sizeof(int)*n_atoms);
+    int **nb = (int**)malloc(sizeof(int*)*n_atoms);
+    double **nb_xyd = (double**) malloc(sizeof(double*)*n_atoms);
+    double **nb_xd = (double**) malloc(sizeof(double*)*n_atoms);
+    double **nb_yd = (double**) malloc(sizeof(double*)*n_atoms);
+    for (int i = 0; i < n_atoms; ++i) {
+        nn[i] = 0; nb[i] = NULL;
+	nb_xyd[i] = NULL; nb_xd[i] = NULL; nb_yd[i] = NULL;
+    }
+
+    //calculate lists
     for (int i = 0; i < n_atoms; ++i) {
         double ri = radii[i];
         double xi = v[i*3], yi = v[i*3+1], zi = v[i*3+2];
@@ -427,7 +486,7 @@ static void sasa_get_contacts(int **nb, int *nn,
                at least one axis, the following improves speed
                significantly for large proteins */	    
             double xj = v[j*3], yj = v[j*3+1], zj = v[j*3+2];
-            if ((xj-xi)*(xj-xi) > cut2 ||
+            if ((xj-xi)*(xj-xi) > cut2 || 
                 (yj-yi)*(yj-yi) > cut2 ||
                 (zj-zi)*(zj-zi) > cut2) {
                 continue;
@@ -435,12 +494,37 @@ static void sasa_get_contacts(int **nb, int *nn,
 	    double dx = xj-xi, dy = yj-yi, dz = zj-zi;
             if (dx*dx + dy*dy + dz*dz < cut2) {
                 ++nn[i]; ++nn[j];
-                nb[i] = realloc(nb[i],sizeof(int)*nn[i]);
-                nb[j] = realloc(nb[j],sizeof(int)*nn[j]);
+		//record neighbors
+                nb[i] = (int*) realloc(nb[i],sizeof(int)*nn[i]);
+                nb[j] = (int*) realloc(nb[j],sizeof(int)*nn[j]);
                 nb[i][nn[i]-1] = j;
                 nb[j][nn[j]-1] = i;
+
+		//record neighbor distances
+		nb_xyd[i] = (double*) realloc(nb_xyd[i],sizeof(double)*nn[i]);
+		nb_xyd[j] = (double*) realloc(nb_xyd[j],sizeof(double)*nn[j]);
+		nb_xd[i] = (double*) realloc(nb_xd[i],sizeof(double)*nn[i]);
+		nb_xd[j] = (double*) realloc(nb_xd[j],sizeof(double)*nn[j]);
+		nb_yd[i] = (double*) realloc(nb_yd[i],sizeof(double)*nn[i]);
+		nb_yd[j] = (double*) realloc(nb_yd[j],sizeof(double)*nn[j]);
+		
+		double d = sqrt(dx*dx+dy*dy);
+		nb_xyd[i][nn[i]-1] = d; 
+		nb_xyd[j][nn[j]-1] = d;
+		    
+		nb_xd[i][nn[i]-1] = dx;
+		nb_xd[j][nn[j]-1] = -dx;
+		nb_yd[i][nn[i]-1] = dy;
+		nb_yd[j][nn[j]-1] = -dy;
             }
         }
     }
+    
+    //copy results
+    lr->nn = nn;
+    lr->nb = nb;
+    lr->nb_xyd = nb_xyd;
+    lr->nb_xd = nb_xd;
+    lr->nb_yd = nb_yd;
 }
 
