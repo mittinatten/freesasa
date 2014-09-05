@@ -2,17 +2,17 @@
   Copyright Simon Mitternacht 2013-2014.
 
   This file is part of FreeSASA.
-  
+
   FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-  
+
   FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -23,12 +23,12 @@
 #include "pdb.h"
 
 static inline int pdb_line_check(const char *line,int len) {
-    if (! strncmp(line,"ATOM",4) && 
-	! strncmp(line,"HETATM",6)) {
-	return FREESASA_FAIL;
+    if (! strncmp(line,"ATOM",4) &&
+        ! strncmp(line,"HETATM",6)) {
+        return FREESASA_FAIL;
     }
     if (strlen(line) < len) {
-	return FREESASA_FAIL;
+        return FREESASA_FAIL;
     }
     return FREESASA_SUCCESS;
 }
@@ -36,8 +36,8 @@ static inline int pdb_line_check(const char *line,int len) {
 int freesasa_pdb_get_atom_name(char *name, const char *line)
 {
     if (pdb_line_check(line,PDB_ATOM_NAME_STRL+12) == FREESASA_FAIL) {
-	name[0] = '\0';
-	return FREESASA_FAIL;
+        name[0] = '\0';
+        return FREESASA_FAIL;
     }
     strncpy(name,line+12,PDB_ATOM_NAME_STRL);
     name[PDB_ATOM_NAME_STRL] = '\0';
@@ -47,8 +47,8 @@ int freesasa_pdb_get_atom_name(char *name, const char *line)
 int freesasa_pdb_get_res_name(char *name, const char *line)
 {
     if (pdb_line_check(line,PDB_ATOM_RES_NAME_STRL+17) == FREESASA_FAIL) {
-	name[0] = '\0';
-	return FREESASA_FAIL;
+        name[0] = '\0';
+        return FREESASA_FAIL;
     }
     strncpy(name, line+17, PDB_ATOM_RES_NAME_STRL);
     name[PDB_ATOM_RES_NAME_STRL] = '\0';
@@ -57,7 +57,7 @@ int freesasa_pdb_get_res_name(char *name, const char *line)
 int freesasa_pdb_get_coord(double *xyz, const char *line)
 {
     if (pdb_line_check(line,78) == FREESASA_FAIL) {
-	return FREESASA_FAIL;
+        return FREESASA_FAIL;
     }
     sscanf(line+30, "%lf%lf%lf", &xyz[0], &xyz[1], &xyz[2]);
     return FREESASA_SUCCESS;
@@ -65,8 +65,8 @@ int freesasa_pdb_get_coord(double *xyz, const char *line)
 int freesasa_pdb_get_res_number(char *number, const char* line)
 {
     if (pdb_line_check(line,PDB_ATOM_RES_NUMBER_STRL+22) == FREESASA_FAIL) {
-	number[0] = '\0';
-	return FREESASA_FAIL;
+        number[0] = '\0';
+        return FREESASA_FAIL;
     }
     strncpy(number, line+22, PDB_ATOM_RES_NUMBER_STRL);
     number[PDB_ATOM_RES_NUMBER_STRL] = '\0';

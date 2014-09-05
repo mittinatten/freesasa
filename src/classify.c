@@ -2,17 +2,17 @@
   Copyright Simon Mitternacht 2013-2014.
 
   This file is part of FreeSASA.
-  
+
   FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-  
+
   FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -46,19 +46,19 @@ static const char *residue_names[] = {
 };
 enum {
     //Regular amino acids
-    freesasa_ALA=0, freesasa_ARG, freesasa_ASN, freesasa_ASP, 
-    freesasa_CYS, freesasa_GLN, freesasa_GLU, freesasa_GLY, 
-    freesasa_HIS, freesasa_ILE, freesasa_LEU, freesasa_LYS, 
-    freesasa_MET, freesasa_PHE, freesasa_PRO, freesasa_SER, 
+    freesasa_ALA=0, freesasa_ARG, freesasa_ASN, freesasa_ASP,
+    freesasa_CYS, freesasa_GLN, freesasa_GLU, freesasa_GLY,
+    freesasa_HIS, freesasa_ILE, freesasa_LEU, freesasa_LYS,
+    freesasa_MET, freesasa_PHE, freesasa_PRO, freesasa_SER,
     freesasa_THR, freesasa_TRP, freesasa_TYR, freesasa_VAL,
     //some non-standard ones
     freesasa_CSE, freesasa_ASX, freesasa_GLX,
-    freesasa_UNK, 
+    freesasa_UNK,
     //DNA
-    freesasa_DA, freesasa_DC, freesasa_DG, freesasa_DT, 
-    freesasa_DU, freesasa_DI,  
+    freesasa_DA, freesasa_DC, freesasa_DG, freesasa_DT,
+    freesasa_DU, freesasa_DI,
     //RNA
-    freesasa_A, freesasa_C, freesasa_G, freesasa_U, freesasa_I, freesasa_T, 
+    freesasa_A, freesasa_C, freesasa_G, freesasa_U, freesasa_I, freesasa_T,
     //generic nucleotide
     freesasa_NN
 };
@@ -83,7 +83,7 @@ static const char *oons_names[] = {
 };
 enum {
     freesasa_aliphatic_C=0, freesasa_aromatic_C,
-    freesasa_carbo_C, freesasa_amide_N, 
+    freesasa_carbo_C, freesasa_amide_N,
     freesasa_carbo_O, freesasa_hydroxyl_O,
     freesasa_oons_sulfur,
     freesasa_oons_selenium,
@@ -92,8 +92,8 @@ enum {
 };
 
 /** helper function, trims whitespace from beginning and end of string */
-size_t freesasa_trim_whitespace(char *target, const char *src, 
-			       size_t length)
+size_t freesasa_trim_whitespace(char *target, const char *src,
+                                size_t length)
 {
     if (length == 0) { return 0; }
     char *buf = (char*) malloc(length+1);
@@ -118,12 +118,12 @@ double freesasa_classify_radius(const char *res_name, const char *atom_name)
 {
     int res = freesasa_classify_residue(res_name);
     if (freesasa_classify_is_aminoacid(res)) {
-	return freesasa_classify_oons_radius(freesasa_classify_oons(res_name,
-								  atom_name));
+        return freesasa_classify_oons_radius(freesasa_classify_oons(res_name,
+                                                                    atom_name));
     } else if (res == freesasa_UNK) {
         freesasa_warn("Residue of type '%s', atom '%s' is unknown."
-                     " Atom will be classified only according to element.",
-                     res_name,atom_name);
+                      " Atom will be classified only according to element.",
+                      res_name,atom_name);
     }
     return freesasa_classify_element_radius(freesasa_classify_element(atom_name));
 }
@@ -131,14 +131,14 @@ double freesasa_classify_radius(const char *res_name, const char *atom_name)
 int freesasa_classify_class(const char *res_name, const char *atom_name)
 {
     int res = freesasa_classify_residue(res_name);
-    int class;   
+    int class;
     if ((class = freesasa_classify_oons2class(freesasa_classify_oons(res_name,
-								   atom_name)))
-	!= FREESASA_CLASS_UNKNOWN) {
-	return class;
+                                                                     atom_name)))
+        != FREESASA_CLASS_UNKNOWN) {
+        return class;
     }
-    else if (freesasa_classify_is_nucleicacid(res)) { 
-	return FREESASA_NUCLEICACID;
+    else if (freesasa_classify_is_nucleicacid(res)) {
+        return FREESASA_NUCLEICACID;
     }
     return FREESASA_CLASS_UNKNOWN;
 }
@@ -171,7 +171,7 @@ int freesasa_classify_residue(const char *res_name)
 
     //for nucleotides we need to deal with whitespace..
     for (int i = freesasa_DA; i <= freesasa_NN; ++i) {
-	if (! strcmp(cpy,residue_names[i])) return i;
+        if (! strcmp(cpy,residue_names[i])) return i;
     }
 
     freesasa_warn("residue '%s' unknown.",res_name);
@@ -180,9 +180,9 @@ int freesasa_classify_residue(const char *res_name)
 
 const char* freesasa_classify_residue2str(int res) {
     if (res < 0 || res > freesasa_NN) {
-	freesasa_warn("Illegal residue index '%d' passed to "
-		     "freesasa_classify_residue2str(1)",res);
-	return NULL;
+        freesasa_warn("Illegal residue index '%d' passed to "
+                      "freesasa_classify_residue2str(1)",res);
+        return NULL;
     }
     return residue_names[res];
 }
@@ -198,21 +198,21 @@ int freesasa_classify_element(const char *atom_name)
     char a[PDB_ATOM_NAME_STRL+1];
     int len = freesasa_trim_whitespace(a,atom_name,strlen(atom_name));
     if (len > PDB_ATOM_NAME_STRL) {
-	freesasa_warn("atom '%s' unknown.\n",atom_name);
-	return freesasa_element_unknown;
+        freesasa_warn("atom '%s' unknown.\n",atom_name);
+        return freesasa_element_unknown;
     }
     else if (len > 0) {
-	switch (a[0]) {
-	case 'C': return freesasa_carbon;
-	case 'O': return freesasa_oxygen;
-	case 'N': return freesasa_nitrogen;
-	case 'S': return freesasa_sulfur;
-	case 'P': return freesasa_phosphorus;
-    // what about Se?
-	default: 
-	    freesasa_warn("atom '%s' unknown.\n",atom_name);
-	    return freesasa_element_unknown;
-	}
+        switch (a[0]) {
+        case 'C': return freesasa_carbon;
+        case 'O': return freesasa_oxygen;
+        case 'N': return freesasa_nitrogen;
+        case 'S': return freesasa_sulfur;
+        case 'P': return freesasa_phosphorus;
+            // what about Se?
+        default:
+            freesasa_warn("atom '%s' unknown.\n",atom_name);
+            return freesasa_element_unknown;
+        }
     }
 
     return freesasa_element_unknown;
@@ -221,7 +221,7 @@ int freesasa_classify_element(const char *atom_name)
 const char* freesasa_classify_element2str(int element)
 {
     if (element < 0 || element > freesasa_element_unknown) {
-	return element_names[freesasa_element_unknown];
+        return element_names[freesasa_element_unknown];
     }
     return element_names[element];
 }
@@ -242,10 +242,10 @@ double freesasa_classify_element_radius(int element)
     case freesasa_sulfur: return 1.8;
     case freesasa_phosphorus: return 1.8;
     case freesasa_selenium: return 1.9;
-	//case freesasa_hydrogen: return 1.2;
+        //case freesasa_hydrogen: return 1.2;
     case freesasa_element_unknown:
     default:
-	return 0.0;
+        return 0.0;
     }
 }
 
@@ -273,8 +273,8 @@ static int classify_oons_QE(const char* a)
     if (a[1] == 'N') return freesasa_amide_N;
     if (a[1] == 'O') return freesasa_carbo_O;
     if (a[1] == 'C') {
-	if (strcmp(a," CD ") == 0) return freesasa_carbo_C;
-	return freesasa_aliphatic_C;
+        if (strcmp(a," CD ") == 0) return freesasa_carbo_C;
+        return freesasa_aliphatic_C;
     }
     if (a[1] == 'X') return freesasa_oons_unknown_polar;
     if (a[1] == 'A') return freesasa_oons_unknown_polar;
@@ -295,7 +295,7 @@ static int classify_oons_FHPYW(const char* a)
     return freesasa_oons_unknown;
 }
 
-static int classify_oons_CMST(const char* a) 
+static int classify_oons_CMST(const char* a)
 {
     if (a[1] == 'C') return freesasa_aliphatic_C;
     if (a[1] == 'O') return freesasa_hydroxyl_O;
@@ -314,27 +314,27 @@ int freesasa_classify_oons(const char *res_name, const char *a)
 {
     assert(strlen(a) == PDB_ATOM_NAME_STRL);
     assert(strlen(res_name) == PDB_ATOM_RES_NAME_STRL);
-    
+
     /* Hydrogens and deuteriums (important to do them here, so they
        can be skipped below */
     if (a[1] == 'H' || a[0] == 'H' ||
-	a[1] == 'D' || a[0] == 'D') return freesasa_oons_unknown;
+        a[1] == 'D' || a[0] == 'D') return freesasa_oons_unknown;
 
     int res = freesasa_classify_residue(res_name);
 
     if (freesasa_classify_is_aminoacid(res)) {
-	// backbone
-	if (! strcmp(a, " C  ")) return freesasa_carbo_C;
-	if (! strcmp(a, " N  ")) return freesasa_amide_N;
-	if (! strcmp(a, " CA ")) return freesasa_aliphatic_C;
-	if (! strcmp(a, " O  ") ||
-	    ! strcmp(a, " OXT")) return freesasa_carbo_O;
-	
-	// CB is almost always the same
-	if (! strcmp(a, " CB ")) {
-	    if (res == freesasa_PRO) return freesasa_aromatic_C;
-	    else return freesasa_aliphatic_C;
-	}
+        // backbone
+        if (! strcmp(a, " C  ")) return freesasa_carbo_C;
+        if (! strcmp(a, " N  ")) return freesasa_amide_N;
+        if (! strcmp(a, " CA ")) return freesasa_aliphatic_C;
+        if (! strcmp(a, " O  ") ||
+            ! strcmp(a, " OXT")) return freesasa_carbo_O;
+
+        // CB is almost always the same
+        if (! strcmp(a, " CB ")) {
+            if (res == freesasa_PRO) return freesasa_aromatic_C;
+            else return freesasa_aliphatic_C;
+        }
     }
 
 
@@ -359,21 +359,21 @@ int freesasa_classify_oons(const char *res_name, const char *a)
     case freesasa_HIS: return classify_oons_FHPYW(a);
     case freesasa_CYS: return classify_oons_CMST(a);
     case freesasa_TRP: return classify_oons_FHPYW(a);
-	// all atoms in Gly and Ala  have already been handled
+        // all atoms in Gly and Ala  have already been handled
     case freesasa_UNK: return freesasa_oons_unknown;
     case freesasa_ASX: return classify_oons_ND(a);
     case freesasa_GLX: return classify_oons_QE(a);
-    case freesasa_CSE: return classify_oons_cse(a);	
+    case freesasa_CSE: return classify_oons_cse(a);
     default:
-	return freesasa_oons_unknown;
+        return freesasa_oons_unknown;
     }
 }
 
 const char* freesasa_classify_oons2str(int oons_type)
 {
     if (oons_type < 0 || oons_type > freesasa_oons_unknown) {
-	return oons_names[freesasa_oons_unknown];
-    }    
+        return oons_names[freesasa_oons_unknown];
+    }
     return oons_names[oons_type];
 }
 
@@ -411,7 +411,7 @@ double freesasa_classify_oons_radius(int oons_type)
     case freesasa_hydroxyl_O: return 1.40;
     case freesasa_oons_sulfur: return 2.00;
     case freesasa_oons_selenium: return 1.90;
-	//this corresponds to either N or O in ALX and GLX
+        //this corresponds to either N or O in ALX and GLX
     case freesasa_oons_unknown_polar: return 1.5;
     case freesasa_oons_unknown:
     default: return 0.0;

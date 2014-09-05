@@ -2,17 +2,17 @@
   Copyright Simon Mitternacht 2013-2014.
 
   This file is part of FreeSASA.
-  
+
   FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-  
+
   FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -33,11 +33,11 @@
     multiple threads are requested when compiled in single-threaded
     mode (with error message). */
 int freesasa_shrake_rupley(double *sasa,
-			  const freesasa_coord_t *c,
-			  const double *radii,
-			  double probe_radius,
-			  int n_points,
-			  int n_threads);
+                           const freesasa_coord_t *c,
+                           const double *radii,
+                           double probe_radius,
+                           int n_points,
+                           int n_threads);
 
 /** Solvent accessible surface area for each atom is written to the
     array 'sasa'. The user is responsible for making sure this has the
@@ -46,11 +46,11 @@ int freesasa_shrake_rupley(double *sasa,
     multiple threads are requested when compiled in single-threaded
     mode (with error message). */
 int freesasa_lee_richards(double* sasa,
-			 const freesasa_coord_t *c,
-			 const double *radii,
-			 double probe_radius,
-			 double grid,
-			 int n_threads);
+                          const freesasa_coord_t *c,
+                          const double *radii,
+                          double probe_radius,
+                          double grid,
+                          int n_threads);
 
 // other algorithms?
 

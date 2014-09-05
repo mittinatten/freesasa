@@ -2,17 +2,17 @@
   Copyright Simon Mitternacht 2013-2014.
 
   This file is part of FreeSASA.
-  
+
   FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-  
+
   FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -51,8 +51,8 @@ struct freesasa_structure_ {
 
 freesasa_structure_t* freesasa_structure_init()
 {
-    freesasa_structure_t *p 
-	= (freesasa_structure_t*) malloc(sizeof(freesasa_structure_t));
+    freesasa_structure_t *p
+        = (freesasa_structure_t*) malloc(sizeof(freesasa_structure_t));
     p->number_atoms = 0;
     p->number_residues = 0;
     p->number_chains = 0;
@@ -93,25 +93,25 @@ freesasa_structure_t* freesasa_structure_init_from_pdb(FILE *pdb_file)
             double v[3];
             atom_t a;
             char alt = freesasa_structure_get_pdb_atom(&a,v,line);
-            if ((alt != ' ' && the_alt == ' ') || (alt == ' ')) { 
+            if ((alt != ' ' && the_alt == ' ') || (alt == ' ')) {
                 the_alt = alt;
             } else if (alt != ' ' && alt != the_alt) {
                 continue;
-            } 
-            
+            }
+
             freesasa_structure_add_atom(p,a.atom_name,a.res_name,a.res_number,
-                                       a.chain_label, v[0], v[1], v[2]);
+                                        a.chain_label, v[0], v[1], v[2]);
             strncpy(p->a[p->number_atoms-1].line,line,PDB_LINE_STRL);
         }
         if (strncmp("ENDMDL",line,4)==0) {
-	    if (p->number_atoms == 0) {
-            freesasa_fail("input had ENDMDL before first ATOM entry.");
-            free(line);
-            freesasa_structure_free(p);
-            return NULL;
-	    }
-	    break;
-	}
+            if (p->number_atoms == 0) {
+                freesasa_fail("input had ENDMDL before first ATOM entry.");
+                free(line);
+                freesasa_structure_free(p);
+                return NULL;
+            }
+            break;
+        }
     }
     free(line);
     if (p->number_atoms == 0) {
@@ -129,11 +129,11 @@ static void freesasa_structure_alloc_one(freesasa_structure_t *p)
 }
 
 void freesasa_structure_add_atom(freesasa_structure_t *p,
-				const char *atom_name,
-				const char *residue_name,
-				const char *residue_number,
-				char chain_label,
-				double x, double y, double z)
+                                 const char *atom_name,
+                                 const char *residue_name,
+                                 const char *residue_number,
+                                 char chain_label,
+                                 double x, double y, double z)
 {
     // check input for consistency
     assert(strlen(atom_name) == PDB_ATOM_NAME_STRL);
@@ -159,7 +159,7 @@ void freesasa_structure_add_atom(freesasa_structure_t *p,
         ++p->number_chains;
     if (na > 1 && chain_label != p->a[na-2].chain_label)
         ++p->number_chains;
-    
+
     if (p->number_residues == 0)
         ++p->number_residues;
     if (na > 1 && strcmp(residue_number,p->a[na-2].res_number))
@@ -167,9 +167,9 @@ void freesasa_structure_add_atom(freesasa_structure_t *p,
 }
 
 void freesasa_structure_r(double *r,
-			 const freesasa_structure_t *p, 
-			 double (*atom2radius)(const char *res_name, 
-					       const char *atom_name))
+                          const freesasa_structure_t *p,
+                          double (*atom2radius)(const char *res_name,
+                                                const char *atom_name))
 {
     for (int i = 0; i < p->number_atoms; ++i) {
         r[i] = atom2radius(p->a[i].res_name, p->a[i].atom_name);
@@ -191,57 +191,57 @@ int freesasa_structure_n(const freesasa_structure_t *p)
     return p->number_atoms;
 }
 
-const char* freesasa_structure_atom_name(const freesasa_structure_t *p, 
-					int i)
+const char* freesasa_structure_atom_name(const freesasa_structure_t *p,
+                                         int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].atom_name;
 }
 
-const char* freesasa_structure_atom_res_name(const freesasa_structure_t *p, 
-					    int i)
+const char* freesasa_structure_atom_res_name(const freesasa_structure_t *p,
+                                             int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].res_name;
 }
 
-const char* freesasa_structure_atom_res_number(const freesasa_structure_t *p, 
-					      int i)
+const char* freesasa_structure_atom_res_number(const freesasa_structure_t *p,
+                                               int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].res_number;
 }
 
-char freesasa_structure_atom_chain(const freesasa_structure_t *p, 
-				  int i)
+char freesasa_structure_atom_chain(const freesasa_structure_t *p,
+                                   int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].chain_label;
 }
 
-int freesasa_structure_write_pdb_bfactors(FILE *output, 
-					 const freesasa_structure_t *p,
-					 const double *values)
+int freesasa_structure_write_pdb_bfactors(FILE *output,
+                                          const freesasa_structure_t *p,
+                                          const double *values)
 {
-    if (!output) 
+    if (!output)
         return freesasa_fail("NULL file pointer provided for PDB output.");
     if (!values)
-	return freesasa_fail("NULL file pointer provided for b-factors.");
+        return freesasa_fail("NULL file pointer provided for b-factors.");
     // Write ATOM entries
     char buf[PDB_LINE_STRL+1];
     int n = freesasa_structure_n(p);
     for (int i = 0; i < n; ++i) {
-	if (p->a[i].line[0] == '\0') {
-	    return freesasa_fail("Attempting to write B-factors for "
-				"structure not initialized from PDB-file. "
-				"Aborting.");
-	}
+        if (p->a[i].line[0] == '\0') {
+            return freesasa_fail("Attempting to write B-factors for "
+                                 "structure not initialized from PDB-file. "
+                                 "Aborting.");
+        }
         strncpy(buf,p->a[i].line,PDB_LINE_STRL);
-        sprintf(&buf[60],"%6.2f",values[i]); 
+        sprintf(&buf[60],"%6.2f",values[i]);
         errno = 0;
-        if (fprintf(output,"%s\n",buf)<0) 
+        if (fprintf(output,"%s\n",buf)<0)
             return freesasa_fail("Problem writing new PDB-file. %s",
-                                strerror(errno));
+                                 strerror(errno));
     }
     // Write TER line
     errno = 0;
@@ -252,7 +252,7 @@ int freesasa_structure_write_pdb_bfactors(FILE *output,
                 atoi(buf2)+1, p->a[n-1].res_name,
                 p->a[n-1].chain_label, p->a[n-1].res_number) < 0) {
         freesasa_fail("Problem writing new PDB-file. %s",
-                     strerror(errno));
+                      strerror(errno));
         return FREESASA_FAIL;
     }
     return FREESASA_SUCCESS;

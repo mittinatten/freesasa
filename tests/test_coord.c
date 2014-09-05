@@ -2,17 +2,17 @@
   Copyright Simon Mitternacht 2013-2014.
 
   This file is part of FreeSASA.
-  
+
   FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-  
+
   FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -66,13 +66,13 @@ START_TEST (test_coord)
     freesasa_coord_set_all(coord,&xyz[3],2);
     ck_assert(fabs(freesasa_coord_dist(coord,0,0)) < 1e-10);
     ck_assert(fabs(freesasa_coord_dist2(coord,0,1)-2) < 1e-10);
-    
+
     double x[2] = {2,2}, y[2] = {1,2}, z[2] = {0,1};
     freesasa_coord_append_xyz(coord,(double*)x,(double*)y,(double*)z,2);
     ck_assert(fabs(freesasa_coord_dist2(coord,0,2)-2) < 1e-10);
     ck_assert(fabs(freesasa_coord_dist2(coord,1,2)-4) < 1e-10);
     ck_assert(fabs(freesasa_coord_dist2(coord,0,3)-6) < 1e-10);
-    
+
     freesasa_coord_set_all_xyz(coord,x,y,z,2);
     ck_assert(freesasa_coord_n(coord) == 2);
     ck_assert(fabs(freesasa_coord_dist2(coord,0,1)-2) < 1e-10);
@@ -80,7 +80,7 @@ START_TEST (test_coord)
     freesasa_coord_set_length_i(coord,1,6);
     const double *ci = freesasa_coord_i(coord,1);
     ck_assert(ci != NULL);
-    ck_assert(ci[0] == 4 && ci[1] == 4 && ci[2] == 2); 
+    ck_assert(ci[0] == 4 && ci[1] == 4 && ci[2] == 2);
 
     freesasa_coord_set_length_all(coord,3);
     ck_assert(ci[0] == 2 && ci[1] == 2 && ci[2] == 1);

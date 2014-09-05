@@ -2,17 +2,17 @@
   Copyright Simon Mitternacht 2013-2014.
 
   This file is part of FreeSASA.
-  
+
   FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-  
+
   FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -36,17 +36,17 @@
     e.g. freesasa_classify_class2str(1).
 
     The available classes are
-       class: polar/apolar/nucleic acid/unknown 
-       residue: ALA/ARG/.../ASX/GLX/UNK/A/C/.../DA/DC/.../NN
-       element: C/O/N/.../unknown
-       oons_type: carbo_C/carbo_O/.../unknown
-    
+    class: polar/apolar/nucleic acid/unknown
+    residue: ALA/ARG/.../ASX/GLX/UNK/A/C/.../DA/DC/.../NN
+    element: C/O/N/.../unknown
+    oons_type: carbo_C/carbo_O/.../unknown
+
     The enum for the first class, freesasa_class, is visible for the
     user since the list is short and unlikely to change. Also it is
     the one classification where the user is most likely to wish treat
     the different classes individually. The user should not expect the
     numbering, ordering or names of members in the other classes to
-    stay constant.  
+    stay constant.
 */
 
 /** Given an atom this function returns an atomic radius. Regular

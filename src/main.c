@@ -2,17 +2,17 @@
   Copyright Simon Mitternacht 2013-2014.
 
   This file is part of FreeSASA.
-  
+
   FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-  
+
   FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -50,7 +50,7 @@ settings_t def_settings = {
 
 void help() {
     fprintf(stderr,"\nUsage: %s [-hLSrn:d:t:p:B:] pdb-file(s)\n",
-	    program_name);
+            program_name);
     fprintf(stderr,
             "\nOptions are:\n"
             "       -h  print this message\n"
@@ -68,11 +68,11 @@ void help() {
 #ifdef HAVE_LIBPTHREAD
     fprintf(stderr,
             "       -t  number of threads to use in calculation (for multicore CPUs)\n");
-#endif    
+#endif
     fprintf(stderr,
             "       -r  print SASA for each residue\n");
     fprintf(stderr,
-            "       -B  print PDB file with SASA for each atom as B-factors,\n" 
+            "       -B  print PDB file with SASA for each atom as B-factors,\n"
             "           in specified output file.");
     fprintf(stderr,
             "\nIf no pdb-file is specified STDIN is used for input.\n\n");
@@ -80,14 +80,14 @@ void help() {
 
 void short_help() {
     fprintf(stderr,"Run '%s -h' for usage instructions.\n",
-	    program_name);
+            program_name);
 }
 
 void run_analysis(FILE *input, const char *name, const settings_t *settings) {
     freesasa_t *s = freesasa_init();
     double tmp;
     freesasa_copy_param(s,settings->s);
-    freesasa_set_proteinname(s,name); 
+    freesasa_set_proteinname(s,name);
     if (freesasa_calc_pdb(s,input) == FREESASA_FAIL) {
         fprintf(stderr,"%s: error: Invalid input. Aborting.\n",
                 program_name);
@@ -97,11 +97,11 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
     printf("\nTotal:  %9.2f A2\nPolar:  %9.2f A2\nApolar: %9.2f A2\n",
            freesasa_area_total(s), freesasa_area_class(s,FREESASA_POLAR),
            freesasa_area_class(s, FREESASA_APOLAR));
-    if ((tmp = freesasa_area_class(s, FREESASA_NUCLEICACID)) > 0) 
+    if ((tmp = freesasa_area_class(s, FREESASA_NUCLEICACID)) > 0)
         printf("Nucleic: %9.2f A2\n",tmp);
-    if ((tmp = freesasa_area_class(s, FREESASA_CLASS_UNKNOWN)) > 0) 
+    if ((tmp = freesasa_area_class(s, FREESASA_CLASS_UNKNOWN)) > 0)
         printf("Unknown: %9.2f A2\n",tmp);
-    if (settings->per_residue) { 
+    if (settings->per_residue) {
         printf("\n");
         freesasa_per_residue(stdout,s);
     }
@@ -120,69 +120,69 @@ int main (int argc, char **argv) {
     program_name = PROGRAM_NAME;
 #else
     program_name = argv[0];
-#endif 
+#endif
 
     while ((opt = getopt(argc, argv, "n:d:t:p:B:hLSr")) != -1) {
-	errno = 0;
-	int result = FREESASA_SUCCESS;
+        errno = 0;
+        int result = FREESASA_SUCCESS;
         switch(opt) {
-	case 'h':
-	    help();
-	    exit(EXIT_SUCCESS);
-	case 'B':
-	    settings.B = fopen(optarg, "w");
-	    if (settings.B == NULL) {
-            fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
-                    program_name,optarg,strerror(errno));
-            short_help();
-            exit(EXIT_FAILURE);
-	    }
-	    break;
-	case 'n':
-	    result = freesasa_set_sr_points(settings.s,atoi(optarg));
-	    break;
-	case 'S':
-	    result = freesasa_set_algorithm(settings.s,FREESASA_SHRAKE_RUPLEY);
-	    ++alg_set;
-	    break;
-	case 'L':
-	    result = freesasa_set_algorithm(settings.s,FREESASA_LEE_RICHARDS);
-	    ++alg_set;
-	    break;
-	case 'd':
-	    result = freesasa_set_lr_delta(settings.s,atof(optarg));
-	    break;
-	case 'p':
-	    result = freesasa_set_probe_radius(settings.s,atof(optarg));
-	    break;
-	case 'r':
-	    settings.per_residue = 1;
-	    break;
-	case 't':
-#if HAVE_LIBPTHREAD	    
-	    result = freesasa_set_nthreads(settings.s,atoi(optarg));
-#else 
-	    fprintf(stderr, "%s: warning: option 't' only defined if program"
-		    " compiled with thread support.\n",
-		    program_name);
+        case 'h':
+            help();
+            exit(EXIT_SUCCESS);
+        case 'B':
+            settings.B = fopen(optarg, "w");
+            if (settings.B == NULL) {
+                fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
+                        program_name,optarg,strerror(errno));
+                short_help();
+                exit(EXIT_FAILURE);
+            }
+            break;
+        case 'n':
+            result = freesasa_set_sr_points(settings.s,atoi(optarg));
+            break;
+        case 'S':
+            result = freesasa_set_algorithm(settings.s,FREESASA_SHRAKE_RUPLEY);
+            ++alg_set;
+            break;
+        case 'L':
+            result = freesasa_set_algorithm(settings.s,FREESASA_LEE_RICHARDS);
+            ++alg_set;
+            break;
+        case 'd':
+            result = freesasa_set_lr_delta(settings.s,atof(optarg));
+            break;
+        case 'p':
+            result = freesasa_set_probe_radius(settings.s,atof(optarg));
+            break;
+        case 'r':
+            settings.per_residue = 1;
+            break;
+        case 't':
+#if HAVE_LIBPTHREAD
+            result = freesasa_set_nthreads(settings.s,atoi(optarg));
+#else
+            fprintf(stderr, "%s: warning: option 't' only defined if program"
+                    " compiled with thread support.\n",
+                    program_name);
 #endif
-	    break;
-	default:
-	    fprintf(stderr, "%s: warning: unknown option '%c' (will be ignored)\n", 
-                program_name,opt);
-	    break;
+            break;
+        default:
+            fprintf(stderr, "%s: warning: unknown option '%c' (will be ignored)\n",
+                    program_name,opt);
+            break;
         }
         if (result == FREESASA_FAIL) {
-	    fprintf(stderr, "%s: error: failed to start SASA calculation with "
-                "provided options. Aborting", 
-                program_name);
-	    if (errno != 0) fprintf(stderr,"; %s\n",strerror(errno));
-	    else fprintf(stderr,".\n");
-	    exit(EXIT_FAILURE);
-	} else if (result == FREESASA_WARN) {
+            fprintf(stderr, "%s: error: failed to start SASA calculation with "
+                    "provided options. Aborting",
+                    program_name);
+            if (errno != 0) fprintf(stderr,"; %s\n",strerror(errno));
+            else fprintf(stderr,".\n");
+            exit(EXIT_FAILURE);
+        } else if (result == FREESASA_WARN) {
             fprintf(stderr, "%s: warning: calculations might not "
                     "correspond to specification or results might "
-                    "be unreliable (see warnings).\n", 
+                    "be unreliable (see warnings).\n",
                     program_name);
         }
     }
@@ -191,7 +191,7 @@ int main (int argc, char **argv) {
                 program_name);
         exit(EXIT_FAILURE);
     }
-    
+
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {
             errno = 0;
@@ -200,10 +200,10 @@ int main (int argc, char **argv) {
                 run_analysis(input,argv[i],&settings);
                 fclose(input);
             } else {
-                fprintf(stderr, "%s: error opening file '%s'; %s\n", 
+                fprintf(stderr, "%s: error opening file '%s'; %s\n",
                         program_name,argv[i],strerror(errno));
                 exit(EXIT_FAILURE);
-            }	    
+            }
         }
     } else {
         if (!isatty(STDIN_FILENO)) {
@@ -213,8 +213,8 @@ int main (int argc, char **argv) {
                     program_name);
             short_help();
         }
-    }    
-    
+    }
+
     freesasa_free(settings.s);
     if (settings.B) fclose(settings.B);
     return EXIT_SUCCESS;

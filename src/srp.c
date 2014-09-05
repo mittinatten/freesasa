@@ -2,17 +2,17 @@
   Copyright Simon Mitternacht 2013.
 
   This file is part of FreeSASA.
-  
+
   FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-  
+
   FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -52,10 +52,10 @@ int freesasa_srp_n_is_valid(int n) {
 
 const double* freesasa_srp_get_points(int n) {
     for (int i = 0; i < SRP_N_SIZES; ++i) {
-	if (n == srp_N[i]) return srp_p[i];
+        if (n == srp_N[i]) return srp_p[i];
     }
     freesasa_warn("number of test-points has to be"
-                 " one of the following values: ");
+                  " one of the following values: ");
     freesasa_srp_print_n_opt(stderr);
     return NULL;
 }

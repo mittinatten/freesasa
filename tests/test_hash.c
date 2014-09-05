@@ -32,8 +32,8 @@ int main(int argc, char **argv) {
 
     char **a = freesasa_strmap_keys(rh);
     for (int i = 0; i < freesasa_strmap_size(rh); ++i) {
-	printf("%d %s\n",i,a[i]);
-	free(a[i]);
+        printf("%d %s\n",i,a[i]);
+        free(a[i]);
     }
     free(a);
     printf("%f\n",freesasa_strmap_real_value(rh,"ALA"));

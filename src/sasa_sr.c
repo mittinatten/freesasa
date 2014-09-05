@@ -2,17 +2,17 @@
   Copyright Simon Mitternacht 2013-2014.
 
   This file is part of FreeSASA.
-  
+
   FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-  
+
   FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -64,22 +64,22 @@ typedef struct {
 #if HAVE_LIBPTHREAD
 static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr);
 static void *sasa_sr_thread(void *arg);
-#endif 
+#endif
 
 static double sasa_sr_calc_atom(int i,const sasa_sr_t) __attrib_pure__;
 
 int freesasa_shrake_rupley(double *sasa,
-			  const freesasa_coord_t *xyz,
-			  const double *r,
-			  double probe_radius,
-			  int n_points,
-			  int n_threads)
+                           const freesasa_coord_t *xyz,
+                           const double *r,
+                           double probe_radius,
+                           int n_points,
+                           int n_threads)
 {
     size_t n_atoms = freesasa_coord_n(xyz);
     int return_value = FREESASA_SUCCESS;
     if (n_atoms == 0) {
-	return freesasa_warn("Attempting Shrake & Rupley calculation "
-			    "on empty coordinates");
+        return freesasa_warn("Attempting Shrake & Rupley calculation "
+                             "on empty coordinates");
     }
 
     // Initialize test-points
@@ -95,20 +95,20 @@ int freesasa_shrake_rupley(double *sasa,
         spcount_0[k] = 0;
     }
     //store parameters and reference arrays
-    sasa_sr_t sr = {.n_atoms = n_atoms, .n_points = n_points, 
-		    .probe_radius = probe_radius,
+    sasa_sr_t sr = {.n_atoms = n_atoms, .n_points = n_points,
+                    .probe_radius = probe_radius,
                     .xyz = xyz, .srp = srp,
                     .r = r, .spcount_0 = spcount_0,
                     .sasa = sasa};
 
-    //calculate SASA 
+    //calculate SASA
     if (n_threads > 1) {
 #if HAVE_LIBPTHREAD
         sasa_sr_do_threads(n_threads, sr);
-#else 
+#else
         return_value = freesasa_warn("program compiled for single-threaded use, "
-                                    "but multiple threads were requested. Will "
-                                    "proceed in single-threaded mode.\n");
+                                     "but multiple threads were requested. Will "
+                                     "proceed in single-threaded mode.\n");
         n_threads = 1;
 #endif
     }
@@ -130,25 +130,25 @@ static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
     int n_atoms = sr.n_atoms;
     int thread_block_size = n_atoms/n_threads;
     for (int t = 0; t < n_threads; ++t) {
-	srt[t] = sr;
-	srt[t].i1 = t*thread_block_size;
-	if (t == n_threads-1) srt[t].i2 = n_atoms;
-	else srt[t].i2 = (t+1)*thread_block_size;
-	errno = 0;
-	int res = pthread_create(&thread[t], NULL, sasa_sr_thread, (void *) &srt[t]);
-	if (res) {
-	    perror(freesasa_name);
-	    exit(EXIT_FAILURE);
-	}
+        srt[t] = sr;
+        srt[t].i1 = t*thread_block_size;
+        if (t == n_threads-1) srt[t].i2 = n_atoms;
+        else srt[t].i2 = (t+1)*thread_block_size;
+        errno = 0;
+        int res = pthread_create(&thread[t], NULL, sasa_sr_thread, (void *) &srt[t]);
+        if (res) {
+            perror(freesasa_name);
+            exit(EXIT_FAILURE);
+        }
     }
     for (int t = 0; t < n_threads; ++t) {
-	void *thread_result;
-	errno = 0;
-	int res = pthread_join(thread[t],&thread_result);
-	if (res) {
-        perror(freesasa_name);
-	    exit(EXIT_FAILURE);
-	}
+        void *thread_result;
+        errno = 0;
+        int res = pthread_join(thread[t],&thread_result);
+        if (res) {
+            perror(freesasa_name);
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -175,7 +175,7 @@ static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
     char spcount[n_points];
     const double ri = sr.r[i]+sr.probe_radius;
     const double *restrict vi = freesasa_coord_i(xyz,i);
-    double xi = vi[0], yi = vi[1], zi = vi[2]; 
+    double xi = vi[0], yi = vi[1], zi = vi[2];
     const double *restrict v = freesasa_coord_all(xyz);
 
     /* testpoints for this atom */
@@ -185,26 +185,26 @@ static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
     const double *restrict tp = freesasa_coord_all(tp_coord_ri);
 
     memcpy(spcount,sr.spcount_0,sizeof(char)*n_points);
-    
+
     for (int j = 0; j < sr.n_atoms; ++j) {
         if (j == i) continue;
-	const double rj = sr.r[j]+sr.probe_radius;
+        const double rj = sr.r[j]+sr.probe_radius;
         const double cut2 = (ri+rj)*(ri+rj);
 
-	/* this turns out to be the fastest way (by far) to access the
-	   coordinates, probably because it's easier for the compiler
-	   to optimize */
-	double xj = v[3*j+0], yj = v[3*j+1], zj = v[3*j+2];
-	double dx = xj-xi, dy = yj-yi, dz = zj-zi;
-	if (dx*dx + dy*dy + dz*dz > cut2) continue;
-        
-	for (int k = 0; k < n_points; ++k) {
+        /* this turns out to be the fastest way (by far) to access the
+           coordinates, probably because it's easier for the compiler
+           to optimize */
+        double xj = v[3*j+0], yj = v[3*j+1], zj = v[3*j+2];
+        double dx = xj-xi, dy = yj-yi, dz = zj-zi;
+        if (dx*dx + dy*dy + dz*dz > cut2) continue;
+
+        for (int k = 0; k < n_points; ++k) {
             if (spcount[k]) continue;
-	    double dx = tp[3*k]-xj, dy = tp[3*k+1]-yj, dz = tp[3*k+2]-zj;
-	    if (dx*dx + dy*dy + dz*dz < rj*rj) {
-		spcount[k] = 1;
-	    }
-	    /* i.e. if |xyz[i]+ri*srp[k] - xyz[j]| <= rj we have an
+            double dx = tp[3*k]-xj, dy = tp[3*k+1]-yj, dz = tp[3*k+2]-zj;
+            if (dx*dx + dy*dy + dz*dz < rj*rj) {
+                spcount[k] = 1;
+            }
+            /* i.e. if |xyz[i]+ri*srp[k] - xyz[j]| <= rj we have an
                overlap. */
         }
     }

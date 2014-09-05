@@ -2,17 +2,17 @@
   Copyright Simon Mitternacht 2013-2014.
 
   This file is part of FreeSASA.
-  
+
   FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-  
+
   FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -48,9 +48,9 @@ freesasa_coord_t* freesasa_coord_new_linked(const double *xyz, size_t n);
 
 void freesasa_coord_append(freesasa_coord_t*,const double *xyz,size_t n);
 
-void freesasa_coord_append_xyz(freesasa_coord_t*, 
-			      const double *x, const double *y, 
-			      const double *z, size_t n);
+void freesasa_coord_append_xyz(freesasa_coord_t*,
+                               const double *x, const double *y,
+                               const double *z, size_t n);
 
 void freesasa_coord_set_i(freesasa_coord_t*,int i,const double* xyz);
 
@@ -60,8 +60,8 @@ void freesasa_coord_set_i_xyz(freesasa_coord_t*,int i,double x,double y,double z
 void freesasa_coord_set_all(freesasa_coord_t*,const double* xyz,size_t n);
 
 void freesasa_coord_set_all_xyz(freesasa_coord_t*,
-			       const double* x, const double *y,
-			       const double *z, size_t n);
+                                const double* x, const double *y,
+                                const double *z, size_t n);
 
 void freesasa_coord_set_length_i(freesasa_coord_t*, int i, double l);
 
@@ -70,16 +70,16 @@ void freesasa_coord_set_length_all(freesasa_coord_t *c, double l);
 const double* freesasa_coord_i(const freesasa_coord_t*, int i);
 
 /** No index bounds checking (for speed) */
-double freesasa_coord_dist(const freesasa_coord_t*, int i, int j) 
+double freesasa_coord_dist(const freesasa_coord_t*, int i, int j)
     __attrib_pure__;
 
 /** No index bounds checking (for speed) */
-double freesasa_coord_dist2(const freesasa_coord_t*, int i, int j) 
+double freesasa_coord_dist2(const freesasa_coord_t*, int i, int j)
     __attrib_pure__;
 
 /** */
-double freesasa_coord_dist2_12(const freesasa_coord_t* c1, 
-			      const freesasa_coord_t* c2, int i1, int i2)
+double freesasa_coord_dist2_12(const freesasa_coord_t* c1,
+                               const freesasa_coord_t* c2, int i1, int i2)
     __attrib_pure__;
 
 const double* freesasa_coord_all(const freesasa_coord_t*) __attrib_pure__;
@@ -88,8 +88,8 @@ size_t freesasa_coord_n(const freesasa_coord_t*) __attrib_pure__;
 
 void freesasa_coord_translate(freesasa_coord_t*, const double *xyz);
 
-void freesasa_coord_translate_xyz(freesasa_coord_t*, 
-				 double x, double y, double z);
+void freesasa_coord_translate_xyz(freesasa_coord_t*,
+                                  double x, double y, double z);
 
 void freesasa_coord_scale(freesasa_coord_t*, double s);
 
