@@ -257,6 +257,8 @@ static sasa_lr_slice_t* sasa_init_slice(double z, const sasa_lr_t *lr)
     slice->r = slice->DR = NULL;
     slice->z = z;
 
+    memset(slice->in_slice,0,sizeof(int)*n_atoms);
+
     // locate atoms in each slice and do some initialization
     for (size_t i = 0; i < n_atoms; ++i) {
         double ri = lr->radii[i];
@@ -274,10 +276,9 @@ static sasa_lr_slice_t* sasa_init_slice(double z, const sasa_lr_t *lr)
             slice->DR[n_slice] = ri/r*(delta/2. +
                                        (delta/2. < ri-d ? delta/2. : ri-d));
             ++n_slice;
-        } else {
-            slice->in_slice[i] = 0;
+        }  else {
             slice->xdi[i] = -1;
-        }
+        } 
     }
     slice->n_slice = n_slice;
     slice->exposed_arc = (double* )malloc(n_slice*(sizeof(double)));
@@ -392,8 +393,8 @@ static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict
     /* Innermost function in L&R, could potentially be sped up, but
        probably requires rethinking, algorithmically. Perhaps
        recursion could be rolled out somehow. */
-    int excluded[n_buried], n_exc = 0, n_overlap = 0;
-    memset(excluded,0,sizeof excluded);
+    char excluded[n_buried], n_exc = 0, n_overlap = 0;
+    memset(excluded,0,n_buried);
 
     for (int i = 0; i < n_buried; ++i) {
         if (excluded[i]) continue;
