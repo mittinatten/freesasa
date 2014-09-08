@@ -66,6 +66,7 @@ typedef struct {
     int *xdi; //global numbering to index in slice
     double *DR; //corrective multiplicative factor (D in L&R paper)
     double *r; //radius in slice;
+    double *exposed_arc; //exposed arc length (in Å) for each atom
 } sasa_lr_slice_t;
 
 #if HAVE_LIBPTHREAD
@@ -77,8 +78,7 @@ static void *sasa_lr_thread(void *arg);
 static void sasa_add_slice_area(double z, sasa_lr_t*);
 
 /** Find which arcs are exposed in a slice */
-static void sasa_exposed_arcs(sasa_lr_slice_t *,
-                              double *exposed_arc,
+static void sasa_exposed_arcs(const sasa_lr_slice_t *,
                               const sasa_lr_t *);
 
 /** a and b are a set of alpha and betas (in the notation of the
@@ -280,6 +280,7 @@ static sasa_lr_slice_t* sasa_init_slice(double z, const sasa_lr_t *lr)
         }
     }
     slice->n_slice = n_slice;
+    slice->exposed_arc = (double* )malloc(n_slice*(sizeof(double)));
     return slice;
 }
 
@@ -290,58 +291,55 @@ static void sasa_free_slice(sasa_lr_slice_t* slice)
     free(slice->in_slice);
     free(slice->r);
     free(slice->DR);
+    free(slice->exposed_arc);
     free(slice);
 }
 
 static void sasa_add_slice_area(double z, sasa_lr_t *lr)
 {
     sasa_lr_slice_t *slice = sasa_init_slice(z,lr);
-    double *exposed_arc = (double* )malloc(slice->n_slice*(sizeof(double)));
 
     //find exposed arcs
-    sasa_exposed_arcs(slice, exposed_arc, lr);
+    sasa_exposed_arcs(slice, lr);
 
     // calculate contribution to each atom's SASA from the present slice
     for (int i = 0; i < slice->n_slice; ++i) {
-        lr->sasa[slice->idx[i]] += exposed_arc[i]*slice->r[i]*slice->DR[i];
+        lr->sasa[slice->idx[i]] += slice->exposed_arc[i];
     }
-
     sasa_free_slice(slice);
 }
 
-static void sasa_exposed_arcs(sasa_lr_slice_t *slice,
-                              double *exposed_arc,
+static void sasa_exposed_arcs(const sasa_lr_slice_t *slice,
                               const sasa_lr_t *lr)
 {
     const int n_slice = slice->n_slice;
     const int *nn = lr->nn;
-    int **nb = lr->nb;
-    double **nb_xyd = lr->nb_xyd;
+    int * const *nb = lr->nb;
+    double * const *nb_xyd = lr->nb_xyd;
     const double *r = slice->r;
     const double *v = freesasa_coord_all(lr->xyz);
 
     char is_completely_buried[n_slice]; // keep track of completely buried circles
-    for (int i = 0; i < n_slice; ++i) is_completely_buried[i] = 0;
-
+    memset(is_completely_buried,0,sizeof is_completely_buried);
+    
     //loop over atoms in slice
     //lower-case i,j is atoms in the slice, upper-case I,J are their
     //corresponding global indexes
     for (int i = 0; i < n_slice; ++i) {
-        exposed_arc[i] = 0;
+        slice->exposed_arc[i] = 0;
         if (is_completely_buried[i]) {
             continue;
         }
         int I = slice->idx[i];
         double ri = slice->r[i], a[nn[I]], b[nn[I]];
         int n_buried = 0;
-        //double xi = v[3*I], yi = v[3*I+1];
         // loop over neighbors
         for (int ni = 0; ni < nn[I]; ++ni) {
             int J = nb[I][ni];
             if (slice->in_slice[J] == 0) continue;
             int j = slice->xdi[J];
-            double rj = r[j];//, xij = v[3*J]-xi, yij = v[3*J+1]-yi;
-            double d = nb_xyd[I][ni]; //sqrt(xij*xij+yij*yij);
+            double rj = r[j];
+            double d = nb_xyd[I][ni];
             // reasons to skip calculation
             if (d >= ri + rj) continue;     // atoms aren't in contact
             if (d + ri < rj) { // circle i is completely inside j
@@ -361,9 +359,10 @@ static void sasa_exposed_arcs(sasa_lr_slice_t *slice,
 
             ++n_buried;
         }
-        if (is_completely_buried[i] == 0)
-            exposed_arc[i] = sasa_sum_angles(n_buried,a,b);
-
+        if (is_completely_buried[i] == 0) {
+            slice->exposed_arc[i] = 
+                ri*slice->DR[i]*sasa_sum_angles(n_buried,a,b);
+        }
 #ifdef DEBUG
         if (is_completely_buried[i] == 0) {
             //exposed_arc[i] = 0;
@@ -394,10 +393,8 @@ static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict
        probably requires rethinking, algorithmically. Perhaps
        recursion could be rolled out somehow. */
     int excluded[n_buried], n_exc = 0, n_overlap = 0;
-    for (int i = 0; i < n_buried; ++i)  {
-        excluded[i] = 0;
-        assert(a[i] > 0);
-    }
+    memset(excluded,0,sizeof excluded);
+
     for (int i = 0; i < n_buried; ++i) {
         if (excluded[i]) continue;
         for (int j = 0; j < n_buried; ++j) {
