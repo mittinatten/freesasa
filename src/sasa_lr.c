@@ -453,6 +453,38 @@ static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict
     }
     return 2*PI - buried_angle;
 }
+
+//discretizes circle, but for now it's not faster than other algorithm..
+static double sasa_sum_angles_int(int n_buried, double *restrict a, double *restrict b)
+{
+    const int res = 360; // "degrees per circle", can be increased to improve accuracy
+    char buried[res];
+    memset(buried,0,res);
+
+    const double rad2uni = 1./(2*PI);
+
+    for (int i = 0; i < n_buried; ++i) {
+        const double bi = b[i] + 2*PI; //makes sure there are no negative values
+        const double ai = a[i];
+
+        int inf = ((int) ((bi - ai) * rad2uni*res)) % res;
+        int sup = ((int) ((bi + ai) * rad2uni*res)) % res;
+        
+        if (inf < sup) {
+            memset(buried+inf,1,sup-inf);
+        } else {
+            memset(buried,1,sup);
+            memset(buried+inf,1,res-inf);
+        }
+    }
+    int count = 0;
+    for (int i = 0; i < res; ++i) {
+        if (buried[i]) ++count;
+    }
+    //printf("%d\n",res-count);
+    return 2*PI*((res - count)/(double)(res));
+}
+
 static void sasa_get_contacts(sasa_lr_t *lr)
 {
     /* For low resolution L&R this function is the bottleneck in
