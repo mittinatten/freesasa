@@ -18,6 +18,7 @@
 */
 
 #include <sys/time.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -333,6 +334,23 @@ int freesasa_calc_pdb(freesasa_t *s, FILE *pdb_file)
 
     return res;
 }
+
+/* not portable (also not tested)
+int freesasa_calc_pdb_str(freesasa_t *s, const char* pdb_str)
+{
+    s->calculated = 0;
+    if (!pdb_str) {
+        return freesasa_fail("NULL PDB-string");
+    }
+    if (strlen(pdb_str) == 0) {
+        return freesasa_fail("Empty PDB-string");
+    }
+    FILE *stream = fmemopen(pdb_str, strlen(pdb_str), "r");
+    int res = freesasa_calc_pdb(s,stream);
+    fclose(stream);
+    return res;
+}
+*/
 double freesasa_radius(const char* residue_name, const char* atom_name)
 {
     return freesasa_classify_radius(residue_name,atom_name);

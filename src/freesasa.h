@@ -111,13 +111,18 @@ extern "C"{
     int freesasa_calc_coord(freesasa_t*, const double *coord,
                             const double *r, size_t n);
 
-/** performs calculations on PDB-file. Results stored in parameter
+/** Performs calculations on PDB-file. Results stored in parameter
     s. If s is not initialized default values are used, these are
     stored in s. Returns FREESASA_SUCCESS if calculation successful,
     prints an error and returns FREESASA_FAIL if not. If the object
     has been used in calculations previously, the results from these
     will be over-written. */
     int freesasa_calc_pdb(freesasa_t *s, FILE *pdb_file);
+
+/** Same as freesasa_calc_pdb but takes PDB file as a string, to
+    provide API access without using disk. Commented out for now, not
+    portable. */    
+//int freesasa_calc_pdb_str(freesasa_t *s, const char* pdb_as_string);
 
 /** Reads pdb-file and calculates radii for each atom. Memory is
     allocated to store them in the array 'r'. The return value is the
