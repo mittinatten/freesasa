@@ -386,6 +386,25 @@ START_TEST (test_calc_errors)
 }
 END_TEST
 
+START_TEST (test_calc_atoms)
+{
+    freesasa_t *s = freesasa_init();
+    double d = 0;
+    //test freesasa_calc_atoms
+    const char *da[1] = {""};
+    const char *ala[1] = {"ALA"};
+    const char *calpha[1] = {" CA "};
+    const double coord[3] = {0,0,0};
+    ck_assert(freesasa_calc_atoms(s,coord,da,da,1) == FREESASA_FAIL);
+    ck_assert(freesasa_calc_atoms(s,coord,ala,da,1) == FREESASA_FAIL);
+    ck_assert(freesasa_calc_atoms(s,coord,da,calpha,1) == FREESASA_FAIL);
+    ck_assert(freesasa_calc_atoms(s,&d,da,da,1) == FREESASA_FAIL);
+    ck_assert(freesasa_calc_atoms(s,coord,ala,calpha,0) == FREESASA_WARN);
+    ck_assert(freesasa_calc_atoms(s,coord,ala,calpha,1) == FREESASA_SUCCESS);
+    ck_assert(freesasa_area_total(s) > 0);
+}
+END_TEST
+
 START_TEST (test_multi_calc)
 {
 #if HAVE_LIBPTHREAD
@@ -428,6 +447,7 @@ Suite *sasa_suite()
     tcase_add_test(tc_basic, test_copyparam);
     tcase_add_test(tc_basic, test_calc_errors);
     tcase_add_test(tc_basic, test_minimal_calc);
+    tcase_add_test(tc_basic, test_calc_atoms);
 
     TCase *tc_lr_basic = tcase_create("Basic L&R");
     tcase_add_checked_fixture(tc_lr_basic,setup_lr_precision,teardown_lr_precision);
