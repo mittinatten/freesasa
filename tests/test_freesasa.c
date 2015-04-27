@@ -385,12 +385,15 @@ START_TEST (test_calc_errors)
     const char *ala[1] = {"ALA"};
     const char *calpha[1] = {" CA "};
     const char *unk[1] = {" XY "};
+    const char *ill[1] = {"  XY  "};
     const double coord[3] = {0,0,0};
 
     ck_assert(freesasa_calc_atoms(s,coord,da,da,1) == FREESASA_WARN);
     ck_assert(freesasa_calc_atoms(s,coord,ala,da,1) == FREESASA_WARN);
     ck_assert(freesasa_calc_atoms(s,coord,da,calpha,1) == FREESASA_WARN);
     ck_assert(freesasa_calc_atoms(s,coord,ala,unk,1) == FREESASA_WARN);
+    ck_assert(freesasa_calc_atoms(s,coord,ala,ill,1) == FREESASA_WARN);
+    ck_assert(freesasa_calc_atoms(s,coord,ill,calpha,1) == FREESASA_WARN);
     ck_assert(freesasa_calc_atoms(s,coord,ala,calpha,1) == FREESASA_SUCCESS);
     ck_assert((dummy=freesasa_area_total(s)) > 0);
     ck_assert(fabs(freesasa_area_class(s,FREESASA_APOLAR)- dummy) < 1e-10);
