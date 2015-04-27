@@ -44,7 +44,8 @@ freesasa_structure_t* freesasa_structure_init_from_pdb(FILE *pdb_file);
 /** storing residue numbers as strings allows for nonstandard formats,
     will include hydrogens if added (i.e. up to caller to make sure
     these are excluded if necessesary). Returns FREESASA_FAIL if any
-    of the strings are malformatted. */
+    of the strings are malformatted. Returns FREESASA_WARN if the atom
+    type is unknown. */
 int freesasa_structure_add_atom(freesasa_structure_t *p,
                                 const char* atom_name,
                                 const char* residue_name,

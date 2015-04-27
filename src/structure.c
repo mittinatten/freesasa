@@ -136,17 +136,10 @@ int freesasa_structure_add_atom(freesasa_structure_t *p,
                                 double x, double y, double z)
 {
     // check input for consistency
-    if (strlen(atom_name) != PDB_ATOM_NAME_STRL) {
-        return freesasa_fail("Atom name '%s' not valid. Skipping atom '%s %s %s'.",
-                             atom_name,residue_name,residue_number,atom_name);
-    }
-    if (strlen(residue_name) != PDB_ATOM_RES_NAME_STRL) {
-        return freesasa_fail("Residue name '%s' not valid. Skipping atom '%s %s %s'.",
-                             residue_name,residue_name,residue_number,atom_name);
-    }
-    if (strlen(residue_number) != PDB_ATOM_RES_NUMBER_STRL) {
-        return freesasa_fail("Residue number '%s' not valid. Skipping atom '%s %s %s'.",
-                             residue_number,residue_name,residue_number,atom_name);
+    int validity = freesasa_classify_validate_atom(residue_name,atom_name);
+    if (validity != FREESASA_SUCCESS) {
+        return freesasa_warn("Skipping atom '%s' in residue '%s'",
+                             atom_name,residue_name);
     }
 
     // allocate memory, increase number of atoms counter

@@ -127,8 +127,12 @@ extern "C"{
     and residue and atom names separately. The format for resnames and
     atomnames is the same as used in freesasa_radius(). These are
     necessary to determine radii and classify atoms
-    (polar/apolar/etc). Return FREESASA_SUCCESS if calculation
-    successful*/
+    (polar/apolar/etc). The same object can be reused for repeated
+    calculations on different structures (i.e. the necessary variables
+    are reset when it is called). FREESASA_SUCCESS if calculation
+    successful. Returns FREESASA_WARN if atoms or coordinates have
+    invalid formats or if any atoms can't be classified. FREESASA_FAIL
+    if calculations failed. */
     int freesasa_calc_atoms(freesasa_t *s, const double *coord,
                             const char **resnames, 
                             const char **atomnames, size_t n);

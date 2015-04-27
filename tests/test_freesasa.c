@@ -380,28 +380,25 @@ START_TEST (test_calc_errors)
     freesasa_link_coord(s,&dummy,&dummy,0);
     ck_assert(freesasa_refresh(s) == FREESASA_WARN);
 
-    freesasa_set_verbosity(0);
-
-    freesasa_free(s);
-}
-END_TEST
-
-START_TEST (test_calc_atoms)
-{
-    freesasa_t *s = freesasa_init();
-    double d = 0;
     //test freesasa_calc_atoms
     const char *da[1] = {""};
     const char *ala[1] = {"ALA"};
     const char *calpha[1] = {" CA "};
+    const char *unk[1] = {" XY "};
     const double coord[3] = {0,0,0};
-    ck_assert(freesasa_calc_atoms(s,coord,da,da,1) == FREESASA_FAIL);
-    ck_assert(freesasa_calc_atoms(s,coord,ala,da,1) == FREESASA_FAIL);
-    ck_assert(freesasa_calc_atoms(s,coord,da,calpha,1) == FREESASA_FAIL);
-    ck_assert(freesasa_calc_atoms(s,&d,da,da,1) == FREESASA_FAIL);
-    ck_assert(freesasa_calc_atoms(s,coord,ala,calpha,0) == FREESASA_WARN);
+
+    ck_assert(freesasa_calc_atoms(s,coord,da,da,1) == FREESASA_WARN);
+    ck_assert(freesasa_calc_atoms(s,coord,ala,da,1) == FREESASA_WARN);
+    ck_assert(freesasa_calc_atoms(s,coord,da,calpha,1) == FREESASA_WARN);
+    ck_assert(freesasa_calc_atoms(s,coord,ala,unk,1) == FREESASA_WARN);
     ck_assert(freesasa_calc_atoms(s,coord,ala,calpha,1) == FREESASA_SUCCESS);
-    ck_assert(freesasa_area_total(s) > 0);
+    ck_assert((dummy=freesasa_area_total(s)) > 0);
+    ck_assert(fabs(freesasa_area_class(s,FREESASA_APOLAR)- dummy) < 1e-10);
+    ck_assert(fabs(freesasa_area_class(s,FREESASA_POLAR)) < 1e-10 );
+
+    freesasa_set_verbosity(0);
+
+    freesasa_free(s);
 }
 END_TEST
 
@@ -447,7 +444,6 @@ Suite *sasa_suite()
     tcase_add_test(tc_basic, test_copyparam);
     tcase_add_test(tc_basic, test_calc_errors);
     tcase_add_test(tc_basic, test_minimal_calc);
-    tcase_add_test(tc_basic, test_calc_atoms);
 
     TCase *tc_lr_basic = tcase_create("Basic L&R");
     tcase_add_checked_fixture(tc_lr_basic,setup_lr_precision,teardown_lr_precision);
