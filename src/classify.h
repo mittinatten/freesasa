@@ -153,4 +153,14 @@ int freesasa_classify_is_aminoacid(int res);
     nucleic acid, 0 not, FREESASA_FAIL illegal input. */
 int freesasa_classify_is_nucleicacid(int res);
 
+/**************/
+/** Validity **/
+/**************/
+
+/** Checks if an atom is recognized and can be classified. Return
+    value FREESASA_SUCCESS means fully recognized, FREESASA_WARN
+    not, and FREESASA_FAIL illegal input. */
+int freesasa_classify_validate_atom(const char *residue_name, 
+                                    const char *atom_name);
+
 #endif

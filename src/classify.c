@@ -431,3 +431,21 @@ int freesasa_classify_is_nucleicacid(int res)
     if (res >= freesasa_DA && res <= freesasa_NN) return 1;
     return FREESASA_FAIL;
 }
+
+int freesasa_classify_validate_atom(const char *residue_name,
+                                    const char *atom_name)
+{
+    if (strlen(atom_name) != PDB_ATOM_NAME_STRL) {
+        return freesasa_fail("Atom name '%s' not valid string.",atom_name);
+    }
+    if (strlen(residue_name) != PDB_ATOM_RES_NAME_STRL) {
+        return freesasa_fail("Residue name '%s' not valid string.",residue_name);
+    }
+    if (freesasa_classify_class(residue_name,atom_name) != FREESASA_CLASS_UNKNOWN) 
+        return FREESASA_SUCCESS;
+    if (freesasa_classify_element(atom_name) != freesasa_element_unknown) {
+        return FREESASA_SUCCESS;
+    } 
+    return freesasa_warn("Atom '%s' in '%s' unknown.",
+                         atom_name,residue_name);
+}
