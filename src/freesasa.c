@@ -18,6 +18,7 @@
 */
 
 #include <sys/time.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -58,7 +59,7 @@ typedef struct {
     double *residue;
 } result_t;
 
-struct freesasa_ {
+struct freesasa_t {
     double *r;
     freesasa_coord_t *coord;
     class_t *class;
@@ -288,7 +289,6 @@ void freesasa_free(freesasa_t *s)
     if (s->structure) freesasa_structure_free(s->structure);
     free(s);
 }
-
 int freesasa_calc_coord(freesasa_t *s, const double *coord,
                         const double *r, size_t n)
 {
@@ -309,7 +309,21 @@ int freesasa_calc_coord(freesasa_t *s, const double *coord,
 
     return res;
 }
+// assumes s has a structure
+static int freesasa_calc_structure(freesasa_t *s)
+{
+    assert(s->structure);
 
+    //calc OONS radii
+    if (s->r) free(s->r);
+    s->r = (double*) malloc(sizeof(double)*freesasa_structure_n(s->structure));
+    s->owns_r = 1;
+    freesasa_structure_r_def(s->r,s->structure);
+
+    int res = freesasa_calc(s,freesasa_structure_xyz(s->structure),s->r);
+    if (!res) freesasa_get_class_result(s,s->structure);
+    return res;
+}
 int freesasa_calc_pdb(freesasa_t *s, FILE *pdb_file)
 {
     s->calculated = 0;
@@ -322,17 +336,29 @@ int freesasa_calc_pdb(freesasa_t *s, FILE *pdb_file)
     if (s->structure) freesasa_structure_free(s->structure);
     s->structure = p;
 
-    //calc OONS radii
-    if (s->r) free(s->r);
-    s->r = (double*) malloc(sizeof(double)*freesasa_structure_n(p));
-    s->owns_r = 1;
-    freesasa_structure_r_def(s->r,p);
-
-    int res = freesasa_calc(s,freesasa_structure_xyz(p),s->r);
-    if (!res) freesasa_get_class_result(s,p);
-
-    return res;
+    return freesasa_calc_structure(s);
 }
+
+int freesasa_calc_atoms(freesasa_t *s, const double *coord, 
+                         const char **resnames, 
+                         const char **atomnames, size_t n)
+{
+    freesasa_structure_t *p = freesasa_structure_init();
+    int res;
+    for (size_t i = 0; i < n; ++i) {
+        res = freesasa_structure_add_atom(p,atomnames[i],resnames[i],"   1",'A',
+                                          coord[i*3],coord[i*3+1],coord[i*3+2]);
+        if (res == FREESASA_FAIL) {
+            freesasa_structure_free(p);
+            return res;
+        }
+    } 
+    if (s->structure) freesasa_structure_free(s->structure);
+    s->structure = p;
+    return freesasa_calc_structure(s);
+    
+}
+
 double freesasa_radius(const char* residue_name, const char* atom_name)
 {
     return freesasa_classify_radius(residue_name,atom_name);

@@ -128,17 +128,26 @@ static void freesasa_structure_alloc_one(freesasa_structure_t *p)
     p->a = (atom_t*) realloc(p->a,sizeof(atom_t)*na);
 }
 
-void freesasa_structure_add_atom(freesasa_structure_t *p,
-                                 const char *atom_name,
-                                 const char *residue_name,
-                                 const char *residue_number,
-                                 char chain_label,
-                                 double x, double y, double z)
+int freesasa_structure_add_atom(freesasa_structure_t *p,
+                                const char *atom_name,
+                                const char *residue_name,
+                                const char *residue_number,
+                                char chain_label,
+                                double x, double y, double z)
 {
     // check input for consistency
-    assert(strlen(atom_name) == PDB_ATOM_NAME_STRL);
-    assert(strlen(residue_name) == PDB_ATOM_RES_NAME_STRL);
-    assert(strlen(residue_number) == PDB_ATOM_RES_NUMBER_STRL);
+    if (strlen(atom_name) != PDB_ATOM_NAME_STRL) {
+        return freesasa_fail("Atom name '%s' not valid. Skipping atom '%s %s %s'.",
+                             atom_name,residue_name,residue_number,atom_name);
+    }
+    if (strlen(residue_name) != PDB_ATOM_RES_NAME_STRL) {
+        return freesasa_fail("Residue name '%s' not valid. Skipping atom '%s %s %s'.",
+                             residue_name,residue_name,residue_number,atom_name);
+    }
+    if (strlen(residue_number) != PDB_ATOM_RES_NUMBER_STRL) {
+        return freesasa_fail("Residue number '%s' not valid. Skipping atom '%s %s %s'.",
+                             residue_number,residue_name,residue_number,atom_name);
+    }
 
     // allocate memory, increase number of atoms counter
     freesasa_structure_alloc_one(p);

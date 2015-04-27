@@ -34,22 +34,23 @@ void freesasa_structure_free(freesasa_structure_t*);
 /** Init protein with coordinates from pdb-file.  Automatically skips
     hydrogens. If an atom has alternative coordinates, only the first
     alternative is used. If a file has more than one MODEL (as in NMR
-    structures) only the first model is used. If non-default behavior
-    is wanted the pdb-file needs to be modified before calling this
-    function, or atoms can be added manually using
-    freesasa_structure_add_atom(). Returns NULL and prints error if
-    input is invalid. */
+    structures) only the first model is used. HETATM records are
+    ignored. If non-default behavior is wanted the pdb-file needs to
+    be modified before calling this function, or atoms can be added
+    manually using freesasa_structure_add_atom(). Returns NULL and
+    prints error if input is invalid. */
 freesasa_structure_t* freesasa_structure_init_from_pdb(FILE *pdb_file);
 
 /** storing residue numbers as strings allows for nonstandard formats,
     will include hydrogens if added (i.e. up to caller to make sure
-    these are excluded if necessesary) */
-void freesasa_structure_add_atom(freesasa_structure_t *p,
-                                 const char* atom_name,
-                                 const char* residue_name,
-                                 const char* residue_number,
-                                 char chain_label,
-                                 double x, double y, double z);
+    these are excluded if necessesary). Returns FREESASA_FAIL if any
+    of the strings are malformatted. */
+int freesasa_structure_add_atom(freesasa_structure_t *p,
+                                const char* atom_name,
+                                const char* residue_name,
+                                const char* residue_number,
+                                char chain_label,
+                                double x, double y, double z);
 
 /** get array of coordinates */
 const freesasa_coord_t* freesasa_structure_xyz(const freesasa_structure_t *p);

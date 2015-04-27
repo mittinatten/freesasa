@@ -54,7 +54,7 @@
 
 //#include "structure.h"
 
-typedef struct freesasa_ freesasa_t;
+typedef struct freesasa_t freesasa_t;
 typedef enum {FREESASA_LEE_RICHARDS, FREESASA_SHRAKE_RUPLEY}
     freesasa_algorithm;
 
@@ -100,24 +100,38 @@ extern "C"{
     proteins. */
     void freesasa_copy_param(freesasa_t *target, const freesasa_t *source);
 
+
 /**************************/
 /** Perform calculations **/
 /**************************/
 
 /** Calculate SASA from given atom coordinates and radii. Doesn't even
     have to be a protein. Coordinates and radii will not be
-    stored. Return FREESASA_SUCESS upon successful calculation,
-    prints and error and returns FREESASA_FAIL else. */
+    stored. Return FREESASA_SUCESS upon successful calculation, prints
+    and error and returns FREESASA_FAIL else. This will only generate
+    a total SASA, not polar or apolar, since only radii are provided,
+    not atom types. */
     int freesasa_calc_coord(freesasa_t*, const double *coord,
                             const double *r, size_t n);
 
-/** performs calculations on PDB-file. Results stored in parameter
-    s. If s is not initialized default values are used, these are
-    stored in s. Returns FREESASA_SUCCESS if calculation successful,
-    prints an error and returns FREESASA_FAIL if not. If the object
-    has been used in calculations previously, the results from these
-    will be over-written. */
+/** Performs calculations on PDB-file, HETATM records are
+    ignored. Results stored in parameter s. If s is not initialized
+    default values are used, these are stored in s. Returns
+    FREESASA_SUCCESS if calculation successful, prints an error and
+    returns FREESASA_FAIL if not. If the object has been used in
+    calculations previously, the results from these will be
+    over-written. */
     int freesasa_calc_pdb(freesasa_t *s, FILE *pdb_file);
+
+/** Similar to freesasa_calc_pdb(), but takes array of coordinates,
+    and residue and atom names separately. The format for resnames and
+    atomnames is the same as used in freesasa_radius(). These are
+    necessary to determine radii and classify atoms
+    (polar/apolar/etc). Return FREESASA_SUCCESS if calculation
+    successful*/
+    int freesasa_calc_atoms(freesasa_t *s, const double *coord,
+                            const char **resnames, 
+                            const char **atomnames, size_t n);
 
 /** Reads pdb-file and calculates radii for each atom. Memory is
     allocated to store them in the array 'r'. The return value is the
