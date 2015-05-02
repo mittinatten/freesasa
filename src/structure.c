@@ -166,6 +166,7 @@ int freesasa_structure_add_atom(freesasa_structure_t *p,
         ++p->number_residues;
     if (na > 1 && strcmp(residue_number,p->a[na-2].res_number))
         ++p->number_residues;
+    return FREESASA_SUCCESS;
 }
 
 void freesasa_structure_r(double *r,
