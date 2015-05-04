@@ -51,27 +51,37 @@
 
 #include <stdio.h>
 
+/**
+   Type used to store parameters and results of FreeSASA
+   calculations. 
+ */
 typedef struct freesasa_t freesasa_t;
+
+/** 
+    The FreeSASA algorithms.
+*/
 typedef enum {FREESASA_LEE_RICHARDS, FREESASA_SHRAKE_RUPLEY}
     freesasa_algorithm;
 
-/** 4 classes of atoms/chemical groups used */
+/** 
+    4 classes of atoms/chemical groups used 
+*/
 typedef enum {
     FREESASA_POLAR=0, FREESASA_APOLAR,
     FREESASA_NUCLEICACID, FREESASA_CLASS_UNKNOWN
 } freesasa_class;
 
-// Limit for protein name lengths
+/// Limit for protein name lengths
 #define FREESASA_NAME_LIMIT 30
 
 // Default parameters
-#define FREESASA_DEF_PROBE_RADIUS 1.4
-#define FREESASA_DEF_SR_N 100
-#define FREESASA_DEF_LR_D 0.25
+#define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångtström)
+#define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R
+#define FREESASA_DEF_LR_D 0.25 //!< Default slice width in L&R (in Ångström)
 
-#define FREESASA_SUCCESS 0
-#define FREESASA_FAIL -1 
-#define FREESASA_WARN -2 
+#define FREESASA_SUCCESS 0 //!< All is ok
+#define FREESASA_FAIL -1 //!< Something went seriously wrong.
+#define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful
                          
 
 /*****************************************/
@@ -95,7 +105,7 @@ extern "C"{
 /** 
     Frees resources allocated to a freesasa_t object. 
 
-    @param s The object to be freed
+    @param s Self.
 */
     void freesasa_free(freesasa_t *s);
 
@@ -125,7 +135,7 @@ extern "C"{
 
     @see freesasa_calc_pdb()
     @see freesasa_calc_atoms()
-    @param s A freesasa_t object. Used for parameters and to store results.
+    @param s Self.
     @param coord An array of coordinates for sphere centers (x1,y1,z1,x2,y2,z2,...)
     @param r An array of radii for the spheres
     @param n number of spheres
@@ -147,7 +157,7 @@ extern "C"{
 
     @see freesasa_calc_atoms()
     @see freesasa_calc_coord()
-    @param s A freesasa_t object. Used for parameters and to store results.
+    @param s Self.
     @param pdb_file PDB-file for input
     @return FREESASA_SUCCESS if calculation successful, prints an
     error and returns FREESASA_FAIL if not.
@@ -167,14 +177,14 @@ extern "C"{
 
     @see freesasa_calc_pdb()
     @see freesasa_calc_coord()
-    @param s A freesasa_t object. Used for parameters and to store results.
+    @param s Self.
     @param coord Array of atom coordinates (x1,y1,z1,x2,y2,z2,...). Should
       have 3*n elements.
     @param resnames Array of strings of the format "ALA", "PHE", etc. 
       Should have n elements.
     @param atomnames Array of strings of the format " CA ", " OXT", etc. 
       Should have n elements.
-    @param number of atoms
+    @param n number of atoms
     @return FREESASA_SUCCESS if calculation successful.  FREESASA_WARN
       if atoms or coordinates have invalid formats or if any atoms can't
       be classified. FREESASA_FAIL if calculations failed.
@@ -218,7 +228,7 @@ extern "C"{
     erased.
     
     @see freesasa_refresh()
-    @param s A freesasa_t object. Used for parameters and to store results.
+    @param s Self.
     @param coord An array of coordinates for sphere centers (x1,y1,z1,x2,y2,z2,...)
     @param r An array of radii for the spheres
     @param n number of spheres
@@ -409,7 +419,7 @@ extern "C"{
 /** 
     SASA of a certain class of atoms
 
-    @param s The freesasa_t object
+    @param s Self.
     @param c Class of atoms (polar/apolar/nucleic/unknown). 
     @return SASA of class c. Negative value if calculation has not
     been performed yet. 
@@ -516,6 +526,7 @@ extern "C"{
 
     Prints log of calculation results to specified file. 
 
+    @param log Output-file.
     @param s Self.
     @return FREESASA_SUCCESS on success, FREESASA_WARN if
     inconsistencies are detected (with explanatory error-message). 

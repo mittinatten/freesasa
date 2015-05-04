@@ -50,5 +50,21 @@ pdf-local:
 	@echo "pdflatex needed to build .pdf-manual"
 endif
 
+
+if HAVE_DOXYGEN
+
+doxyfile.stamp:
+	$(DOXYGEN) Doxyfile
+	echo Timestamp > doxyfile.stamp
+
+CLEANFILES = doxyfile.stamp 
+
+all-local: doxyfile.stamp
+else
+all-local:	
+	@echo "Doxygen needed to build full reference manual."
+endif
+
 clean-local:
-	rm -f *.ps *.dvi *.aux *.log *.pdf *.toc *~
+	rm -f *.ps *.dvi *.aux *.log *.pdf *.toc *~ 
+	rm -rf doxygen/
