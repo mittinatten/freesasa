@@ -35,3 +35,4 @@ test-driver
 autom4te.cache
 aclocal.m4
 tmp*
+doc/doxygen
