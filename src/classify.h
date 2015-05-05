@@ -22,7 +22,10 @@
 
 #include "freesasa.h"
 
-/** This set of functions maps between different classes of atoms and
+/** 
+    @file
+
+    This set of functions maps between different classes of atoms and
     residues. In addition, the function freesasa_classify_radius(2)
     maps atom type to radius, using the definitions by Ooi et
     al. (1987) for regular protein atoms and by element for other
@@ -36,10 +39,13 @@
     e.g. freesasa_classify_class2str(1).
 
     The available classes are
-    class: polar/apolar/nucleic acid/unknown
-    residue: ALA/ARG/.../ASX/GLX/UNK/A/C/.../DA/DC/.../NN
-    element: C/O/N/.../unknown
-    oons_type: carbo_C/carbo_O/.../unknown
+    - class: polar, apolar, nucleic acid and unknown
+    - residue (amino acid or nucleic acid): ALA, ARG, ..., ASX, GLX, UNK, 
+        A, C, ..., DA, DC, ..., NN
+    - element: C, O, N, S, P, Se, H, unknown
+    - oons_type (plus some specific to FreeSASA): 
+    aliphatic C, aromatic C, carbo C, amide N, 
+        carbo O, hydroxyl O, sulfur, selenium, unknown polar, unknown
 
     The enum for the first class, freesasa_class, is visible for the
     user since the list is short and unlikely to change. Also it is

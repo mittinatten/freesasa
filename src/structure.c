@@ -41,7 +41,7 @@ typedef struct {
     char chain_label;
 } atom_t;
 
-struct freesasa_structure_ {
+struct freesasa_structure_t {
     atom_t *a;
     freesasa_coord_t *xyz;
     int number_atoms;

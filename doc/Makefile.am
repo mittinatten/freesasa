@@ -53,9 +53,13 @@ endif
 
 if HAVE_DOXYGEN
 
-doxyfile.stamp:
+doxyfile.stamp: $(top_srcdir)/src/*.h
 	$(DOXYGEN) Doxyfile
 	echo Timestamp > doxyfile.stamp
+
+if HAVE_PDF
+SUBDIRS += doxygen/latex
+endif 
 
 CLEANFILES = doxyfile.stamp 
 
