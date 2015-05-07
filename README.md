@@ -3,7 +3,7 @@ FreeSASA
 
 C-library for calculating Solvent Accessible Surface Areas.
 
-License: GPLv3 (see file COPYING). Copyright: Simon Mitternacht 2013-2014.
+License: GPLv3 (see file COPYING). Copyright: Simon Mitternacht 2013-2015.
 
 So far the algorithms by Lee & Richards and Shrake & Rupley have been
 implemented. Verification has been done by comparing the results of
