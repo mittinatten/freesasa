@@ -15,9 +15,21 @@ identical results.
 The OONS atom-classification and radii are used by default (Ooi et al.
 PNAS 1987). Users can also provide their own atomic radii.
 
+A manual with examples and explanation of how to use the API will be
+generated in `doc/manual.pdf`, and a full reference manual of the 
+whole library in `doc/doxygen/html`
+
+Compatibility
+-------------
+
 Has been tested successfully with several versions of GNU C Compiler
-and Clang/LLVM. Building the library only requires standard C and GNU libraries. 
-Developers who want to do testing need to install the Check unit testing framework.
+and Clang/LLVM. Building the library only requires standard C and GNU
+libraries.  Developers who want to do testing need to install the
+Check unit testing framework.  Building the full reference manual
+requires Doxygen (version > 1.8.8), and the 'regular' manual, LaTeX.
+
+Compiling and installing
+------------------------
 
 Can be compiled and installed using the following
 
