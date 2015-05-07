@@ -57,9 +57,9 @@ doxyfile.stamp: $(top_srcdir)/src/*.h
 	$(DOXYGEN) Doxyfile
 	echo Timestamp > doxyfile.stamp
 
-if HAVE_PDF
-SUBDIRS += doxygen/latex
-endif 
+#if HAVE_PDF
+#SUBDIRS += doxygen/latex
+#endif 
 
 CLEANFILES = doxyfile.stamp 
 
