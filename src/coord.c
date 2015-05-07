@@ -24,7 +24,7 @@
 #include "freesasa.h"
 #include "coord.h"
 
-struct freesasa_coord_ {
+struct freesasa_coord_t {
     double *xyz;
     size_t n;
     int is_const;

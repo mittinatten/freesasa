@@ -23,15 +23,31 @@
 #include <stdio.h>
 #include "coord.h"
 
-/** Solvent accessible surface area for each atom is written to the
-    array 'sasa'. The user is responsible for making sure this has the
-    right size.  'n_points' is the number of points (<= MAX_SR_POINTS)
-    to use. Fewer points lead to faster but less accurate
-    calculations. Last argument sets the number of threads in parallel
-    computation, only used if the program was compiled with
-    -DPTHREADS. Returns FREESASA_SUCCESS on success, FREESASA_WARN if
+/**
+    @file
+    @author Simon Mitternacht
+
+    Functions to perform actual calculations.
+ */
+
+/**
+    Calculate SASA using S&R algorithm.
+    
+    @param sasa The results are written to this array, the user has to
+    make sure it has the correct size.
+    @param c Coordinates of the object to calculate SASA for.
+    @param radii Array of radii for each sphere.
+    @param probe_radius Probe radius to be used.
+    @param n_points Number of points to be used, must be accepted by 
+    freesasa_srp_n_is_valid(). 
+    @param n_threads Number of threads to use for parallel computations 
+    (only leads to performance improvement for largish objects, see 
+    manual). Program has to be compiled with `-DPTHREADS` for this option
+    to have any effect.
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_WARN if
     multiple threads are requested when compiled in single-threaded
-    mode (with error message). */
+    mode (with error message). 
+*/
 int freesasa_shrake_rupley(double *sasa,
                            const freesasa_coord_t *c,
                            const double *radii,
@@ -39,12 +55,29 @@ int freesasa_shrake_rupley(double *sasa,
                            int n_points,
                            int n_threads);
 
-/** Solvent accessible surface area for each atom is written to the
+/**
+    Calculate SASA using L&R algorithm.
+
+    Solvent accessible surface area for each atom is written to the
     array 'sasa'. The user is responsible for making sure this has the
     right size. The argument grid sets the distance between grid
     points in Å. Returns FREESASA_SUCCESS on success, FREESASA_WARN if
     multiple threads are requested when compiled in single-threaded
-    mode (with error message). */
+    mode (with error message). 
+    @param sasa The results are written to this array, the user has to
+    make sure it has the correct size.
+    @param c Coordinates of the object to calculate SASA for.
+    @param radii Array of radii for each sphere.
+    @param probe_radius Probe radius to be used.
+    @param grid Slice thickness in Ångström.
+    @param n_threads Number of threads to use for parallel computations 
+    (only leads to performance improvement for largish objects, see 
+    manual). Program has to be compiled with `-DPTHREADS` for this option
+    to have any effect.
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_WARN if
+    multiple threads are requested when compiled in single-threaded
+    mode (with error message). 
+*/
 int freesasa_lee_richards(double* sasa,
                           const freesasa_coord_t *c,
                           const double *radii,

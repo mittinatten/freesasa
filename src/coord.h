@@ -26,72 +26,224 @@
 #define __attrib_pure__
 #endif
 
-/** This is only for internal use, hence all errors are handled with
-    asserts */
+/**
+    @file
+    @author Simon Mitternacht
 
-typedef struct freesasa_coord_ freesasa_coord_t;
+    This is only for interal use, error handling is done by asserts.
+    The header provides functions to store, copy and modify
+    coordinates through the type ::freesasa_coord_t.
+ */
 
+//! Struct to store coordinates
+typedef struct freesasa_coord_t freesasa_coord_t;
+
+//! Initialize new ::freesasa_coord_t object
 freesasa_coord_t* freesasa_coord_new();
 
+//! Free resources allocated by ::freesasa_coord_t object
 void freesasa_coord_free(freesasa_coord_t*);
 
-/** creates a new copy of src */
+/**
+   Copy coordinates.
+
+   Creates a new ::freesasa_coord_t object that is a copy of the
+   argument `src`.
+
+   @param src Coordinates to be copied.
+   @return Copy of coordinates
+*/
 freesasa_coord_t* freesasa_coord_copy(const freesasa_coord_t *src);
 
-/** Creates a const freesasa_coord_t-object that is linked to an array of
-    coordinates owned by callee. This allows repeated calculations on
-    a changing object without reinitialization. The returned
-    freesasa_coord_t-pointer is not explicitly const, to allow it to be freed
-    later, but objects initiated through this interface will not
-    change their coordinates. */
+/**
+    Creates a `const` ::freesasa_coord_t-object that is linked to an array of
+    coordinates owned by callee. 
+
+    This allows repeated calculations on a changing object without
+    reinitialization. The returned ::freesasa_coord_t-pointer is not
+    explicitly const, to allow it to be freed later, but objects
+    initiated through this interface will not change their
+    coordinates.
+
+    @param xyz Array of coordinates x1,y1,z1,x2,y2,z2,...
+    @param n Number of coordinates (array has size 3*n).
+    @return New linked ::freesasa_coord_t object
+*/
 freesasa_coord_t* freesasa_coord_new_linked(const double *xyz, size_t n);
 
-void freesasa_coord_append(freesasa_coord_t*,const double *xyz,size_t n);
+/**
+    Append coordinates to ::freesasa_coord_t object from one array.
 
-void freesasa_coord_append_xyz(freesasa_coord_t*,
+    @param s Self.
+    @param xyz Array of coordinates x1,y1,z1,x2,y2,z2,...
+    @param n Number of coordinates (array has size 3*n).
+ */
+void freesasa_coord_append(freesasa_coord_t *s,const double *xyz,size_t n);
+
+/**
+    Append coordinates to ::freesasa_coord_t object from three
+    separate arrays.
+
+    @param s Self.
+    @param x Array of x-coordinates
+    @param y Array of x-coordinates
+    @param z Array of x-coordinates
+    @param n Size of arrays x, y and z.
+ */
+void freesasa_coord_append_xyz(freesasa_coord_t *s,
                                const double *x, const double *y,
                                const double *z, size_t n);
 
-void freesasa_coord_set_i(freesasa_coord_t*,int i,const double* xyz);
+/**
+    Set given coordinate.
 
-void freesasa_coord_set_i_xyz(freesasa_coord_t*,int i,double x,double y,double z);
+    @param s Self.
+    @param i Coordinate to update.
+    @param xyz Array with coordinates x,y,z.
+ */
+void freesasa_coord_set_i(freesasa_coord_t *s,int i,const double* xyz);
 
-/* resets everything */
-void freesasa_coord_set_all(freesasa_coord_t*,const double* xyz,size_t n);
+/**
+    Set given coordinate.
 
-void freesasa_coord_set_all_xyz(freesasa_coord_t*,
+    @param s Self.
+    @param i Coordinate to update.
+    @param x x-coordinate.
+    @param y y-coordinate.
+    @param z z-coordinate
+ */
+void freesasa_coord_set_i_xyz(freesasa_coord_t *s,int i,double x,double y,double z);
+
+/**
+    Reset everything.
+    
+    @param s Self.
+    @param xyz Array of coordinates x1,y1,z1,x2,y2,z2,...
+    @param n Number of coordinates (array has size 3*n).
+ */
+void freesasa_coord_set_all(freesasa_coord_t *s,const double* xyz,size_t n);
+
+/**
+    Reset everything.
+    
+    @param s Self.
+    @param x Array of x-coordinates
+    @param y Array of x-coordinates
+    @param z Array of x-coordinates
+    @param n Size of arrays x, y and z.
+ */
+void freesasa_coord_set_all_xyz(freesasa_coord_t *s,
                                 const double* x, const double *y,
                                 const double *z, size_t n);
 
-void freesasa_coord_set_length_i(freesasa_coord_t*, int i, double l);
+/**
+    Set length of a given coordinate vector. Useful for test-points in
+    S&R.
 
-void freesasa_coord_set_length_all(freesasa_coord_t *c, double l);
+    @param s Self.
+    @param i The coordinate.
+    @param l Desirde length.
+ */
+void freesasa_coord_set_length_i(freesasa_coord_t *s, int i, double l);
 
-const double* freesasa_coord_i(const freesasa_coord_t*, int i);
+/**
+    Set length of all coordinate vectors to the same length. Useful for test-points in
+    S&R.
 
-/** No index bounds checking (for speed) */
-double freesasa_coord_dist(const freesasa_coord_t*, int i, int j)
+    @param s Self.
+    @param l Desired length.
+ */
+void freesasa_coord_set_length_all(freesasa_coord_t *s, double l);
+
+/**
+    Coordinates of a given atom.
+
+    @param s Self.
+    @param i The coordinate.
+    @return Array with coordinates x,y,z.
+ */
+const double* freesasa_coord_i(const freesasa_coord_t *s, int i);
+
+/**
+    Calculate distance between two coordinate vectors. For speed, the indices i and
+    j will not be checked.
+    
+    @param s Self.
+    @param i The first coordinate.
+    @param j The second coordinate.
+    @return Distance between coorsinate i and j.
+*/
+double freesasa_coord_dist(const freesasa_coord_t *s, int i, int j)
     __attrib_pure__;
 
-/** No index bounds checking (for speed) */
-double freesasa_coord_dist2(const freesasa_coord_t*, int i, int j)
+/**
+    Calculate square distance between two coordinate vectors. For
+    speed, the indices i and j will not be checked.
+    
+    @param s Self.
+    @param i The first coordinate.
+    @param j The second coordinate.
+    @return Square distance between coordinate i and j.
+*/
+double freesasa_coord_dist2(const freesasa_coord_t *s, int i, int j)
     __attrib_pure__;
 
-/** */
+/**
+    Calculate square distance between two coordinate vectors in
+    separate coordinate sets. For speed, the indices i and j will not
+    be checked.
+    
+    @param c1 First set of coordinates..
+    @param c2 Second set of coordinates.
+    @param i1 First coordinate.
+    @param i2 Second coordinate.
+    @return Square distance between coordinates i1 and i2.
+*/
 double freesasa_coord_dist2_12(const freesasa_coord_t* c1,
                                const freesasa_coord_t* c2, int i1, int i2)
     __attrib_pure__;
 
-const double* freesasa_coord_all(const freesasa_coord_t*) __attrib_pure__;
+/**
+    All coordinates as an array.
 
-size_t freesasa_coord_n(const freesasa_coord_t*) __attrib_pure__;
+    @param s Self.
+    @return Array of coordinates x1,y1,z1,x2,y2,z2,...
+ */
+const double* freesasa_coord_all(const freesasa_coord_t *s) __attrib_pure__;
 
-void freesasa_coord_translate(freesasa_coord_t*, const double *xyz);
+/**
+    Number of coordinates.
+    
+    @param s Self.
+    @return Number of coordinates.
+ */
+size_t freesasa_coord_n(const freesasa_coord_t *s) __attrib_pure__;
 
-void freesasa_coord_translate_xyz(freesasa_coord_t*,
+/**
+    Translate all coordinates by same vector.
+
+    @param s Self.
+    @param xyz Array describing translation vector x,y,z.
+ */
+void freesasa_coord_translate(freesasa_coord_t *s, const double *xyz);
+/**
+    Translate all coordinates by same vector.
+
+    @param s Self.
+    @param x x-coordinate of translation vector
+    @param y y-coordinate of translation vector
+    @param z z-coordinate of translation vector
+ */
+void freesasa_coord_translate_xyz(freesasa_coord_t *s,
                                   double x, double y, double z);
 
-void freesasa_coord_scale(freesasa_coord_t*, double s);
+/**
+    Scale all coordinates by given factor.
+    
+    @param s Self.
+    @param a Factor to scale by.
+ */
+void freesasa_coord_scale(freesasa_coord_t *s, double a);
 
 #undef __attrib_pure__
 

@@ -25,7 +25,10 @@
     atoms, i.e. there will be 20-30 different values, has not been
     tested or optimized for large maps. Leading and trailing
     whitespace is ignored in keys. Wrappers are provided for the case
-    when values are real numbers. */
+    when values are real numbers. 
+
+    This is not used anywhere in FreeSASA (yet?).
+*/
 
 typedef struct freesasa_strmap_ freesasa_strmap_t;
 

@@ -20,16 +20,46 @@
 #ifndef FREESASA_SRP_H
 #define FREESASA_SRP_H
 
-/** Prints the legal values for the number of points as a
-    comma-separated list, ending with newline. */
-void freesasa_srp_print_n_opt(FILE*);
+/**
+   @file
+   @author Simon Mitternacht
+   
+   This header provides arrays of test-points for the S&R
+   algorithm. The arrays themselves are stored as hard-coded arrays
+   and are referenced as const pointers. They were generated as
+   described in the manual and are close to evenly distributed on the
+   unit sphere. Sets of 20, 50, 100, 200, 500, 1000, 2000, and 5000
+   points are availabe.
+ */
 
-/** Returns 1 if n-value is allowed, 0 if not. */
+/**
+    Prints the legal values for the number of points as a
+    comma-separated list, ending with newline. 
+
+    This function is used to find out what are the available arrays of
+    test points. Mainly intended for use by help functions writing to
+    stdout. 
+
+    @param output File to write the list to.
+ */
+void freesasa_srp_print_n_opt(FILE *output);
+
+/**
+   Test if a given number of test-points is available.
+   
+   @param n Number of test points.
+   @return 1 if n is allowed, 0 if not. 
+
+ */
 int freesasa_srp_n_is_valid(int n);
 
-/** Returns an array of n test points (array has size 3*n). If n is
-    not one of the legal values, an error message is printed and
-    exit(1) is called. */
+/**
+    Returns an array of n test points. 
+
+    @param n Number of points.
+    @return Array of coordinates of size 3*n, coordinates are stored as
+    x1,y1,z1,x2,y2,z2,... Returns NULL if the argument n is invalid.
+*/
 const double* freesasa_srp_get_points(int n);
 
 #endif

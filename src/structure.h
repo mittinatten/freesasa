@@ -22,15 +22,16 @@
 
 /**
    @file 
+   @author Simon Mitternacht
 
-   This header defines the structure object, and functions to deal
-   with it.
+   This header defines the type ::freesasa_structure_t, which
+   represents a protein structure, and functions to deal with it.
  */
 
 #include <stdio.h>
 #include "coord.h"
 
-/** 
+/**
     Struct for structure object.
 
     The struct includes coordinates, and atom names, etc. If it was
@@ -39,38 +40,39 @@
 */
 typedef struct freesasa_structure_t freesasa_structure_t;
 
-/** 
+/**
     Allocate and initialize empty structure.
 
     @return The generated struct.
  */
 freesasa_structure_t* freesasa_structure_init();
 
-/** 
+/**
     Free structure.
     
     @param s Self.
  */
 void freesasa_structure_free(freesasa_structure_t *s);
 
-/** Init protein with coordinates from pdb-file.  
+/**
+    Init protein with coordinates from pdb-file.  
 
     Reads in a PDB-file and generates a structure
     object. Automatically skips hydrogens. If an atom has alternative
     coordinates, only the first alternative is used. If a file has
-    more than one MODEL (as in NMR structures) only the first model is
-    used. HETATM records are ignored. If non-default behavior is
+    more than one `MODEL` (as in NMR structures) only the first model is
+    used. `HETATM` records are ignored. If non-default behavior is
     wanted, the PDB-file needs to be modified before calling this
     function, or atoms can be added manually using
     freesasa_structure_add_atom().
 
     @param pdb_file Input PDB-file.
-    @return The generated struct. Returns NULL and prints error if
+    @return The generated struct. Returns `NULL` and prints error if
     input is invalid.
 */
 freesasa_structure_t* freesasa_structure_init_from_pdb(FILE *pdb_file);
 
-/** 
+/**
     Add individual atom to structure.
     
     A structures can be built by adding atoms one by one. Storing
@@ -79,15 +81,15 @@ freesasa_structure_t* freesasa_structure_init_from_pdb(FILE *pdb_file);
     are excluded if necessesary).
 
     @param s Self.
-    @param atom_name String of the format " CA ", " OXT", etc.
-    @param residue_name String of the format "ALA","PHE", etc.
-    @param residue_number String of the format "   1", " 123", etc.
-    @param chain_label Any character to label chain, typically 'A', 'B', etc.
+    @param atom_name String of the format `" CA "`, `" OXT"`, etc.
+    @param residue_name String of the format `"ALA"`, `"PHE"`, etc.
+    @param residue_number String of the format `"   1"`, `" 123"`, etc.
+    @param chain_label Any character to label chain, typically `'A'`, `'B'`, etc.
     @param x x-coordinate of atom.
     @param y y-coordinate of atom.
     @param z z-coordinate of atom.
-    @return FREESASA_SUCCESS if input valid. FREESASA_FAIL if any of
-    the strings are malformatted. FREESASA_WARN if the atom type is
+    @return ::FREESASA_SUCCESS if input valid. ::FREESASA_FAIL if any of
+    the strings are malformatted. ::FREESASA_WARN if the atom type is
     unknown. */
 int freesasa_structure_add_atom(freesasa_structure_t *s,
                                 const char* atom_name,
@@ -96,15 +98,16 @@ int freesasa_structure_add_atom(freesasa_structure_t *s,
                                 char chain_label,
                                 double x, double y, double z);
 
-/** 
+/**
     Get coordinates.
     
     @param s Self.
-    @return The coordinates of the structure as a freesasa_coord_t struct.
+    @return The coordinates of the structure as a ::freesasa_coord_t struct.
  */
 const freesasa_coord_t* freesasa_structure_xyz(const freesasa_structure_t *s);
 
-/** Get array of radii using custom conversion function.     
+/**
+    Get array of radii using custom conversion function.     
     
     @param r The array were the results will be stored. 
     @param s Self.
@@ -117,18 +120,20 @@ void freesasa_structure_r(double *r,
                           double (*atom2radius)(const char *res_name,
                                                 const char *atom_name));
 
-/** 
+/**
     Get array of default atomic radii. 
 
-    Calls freesasa_structure_r using freesasa_classify_radius().
+    Calls freesasa_structure_r() using freesasa_classify_radius() for
+    radius calculations..
     
     @param r The array were the results will be stored.
     @param s Self.
     @see freesasa_classify_radius()
 */
+
 void freesasa_structure_r_def(double *r, const freesasa_structure_t *s);
 
-/** 
+/**
     Get number of atoms.
     
     @param s Self.
@@ -136,32 +141,32 @@ void freesasa_structure_r_def(double *r, const freesasa_structure_t *s);
 */
 int freesasa_structure_n(const freesasa_structure_t *s);
 
-/** 
+/**
     Get atom name
     
     @param s Self.
     @param i Atom index.
-    @return Atom name in the form " CA ", " OXT", etc.
+    @return Atom name in the form `" CA "`, `" OXT"`, etc.
  */
 const char* freesasa_structure_atom_name(const freesasa_structure_t *s,
                                          int i);
 
-/** 
+/**
     Get residue name.
     
     @param s Self.
     @param i Atom index.
-    @return Residue name in the form "ALA", "PHE", etc.
+    @return Residue name in the form `"ALA"`, `"PHE"`, etc.
 */
 const char* freesasa_structure_atom_res_name(const freesasa_structure_t *s,
                                              int i);
 
-/** 
+/**
     Get residue number.
 
     @param s Self.
     @param i Atom index.
-    @return Residue name in the form "   1", " 123", etc.
+    @return Residue name in the form `"   1"`, `" 123"`, etc.
 */
 const char* freesasa_structure_atom_res_number(const freesasa_structure_t *s,
                                                int i);
@@ -171,18 +176,18 @@ const char* freesasa_structure_atom_res_number(const freesasa_structure_t *s,
    
    @param s Self.
    @param i Atom index.
-   @return Chain lable ('A', 'B', etc.)
+   @return Chain label (`'A'`, `'B'`, etc.)
  */
 char freesasa_structure_atom_chain(const freesasa_structure_t *s, int i);
 
-/** 
+/**
     Writes PDB file, but with B-factors replaced by new values. Can be
     used to visualize SASA.
 
     @param output Output file.
     @param s Self.
     @param values Array of values to use as "B-factors" in the output.
-    @return FREESASA_SUCCESS. FREESASA_FAIL if there are problems with
+    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if there are problems with
     output-file.
  */
 int freesasa_structure_write_pdb_bfactors(FILE *output,

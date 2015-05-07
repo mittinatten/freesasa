@@ -20,15 +20,18 @@
 #ifndef FREESASA_H
 #define FREESASA_H
 
-/** 
+/**
     @file
     @author Simon Mitternacht
     
-    @section Description
+    @section The FreeSASA API
 
-    freesasa.h provides functions to init and perform a SASA
-    calculation using FreeSASA with standard atom classifications. The
-    user may optionally select algorithm and provide parameters.
+    The header freesasa.h contains the API of FreeSASA and is the only
+    header installed by the `make install` target. It provides
+    functions to init and perform a SASA calculation. The user xan
+    select algorithm and provide parameters. The type ::freesasa_t is
+    used to store parameters and access results. The manual in
+    `doc/manual.pdf` gives some examples of how to use this API.
 
     @subsection Coordinates
 
@@ -39,15 +42,15 @@
     @subsection Error-reporting 
 
     All errors are written to stderr and are prefixed with the string
-    'freesasa'. There are two error return values FREESASA_WARN and
-    FREESASA_FAIL (see documentation of each function to see when
-    these are used). The return value FREESASA_SUCCESS means no errors
+    'freesasa'. There are two error return values ::FREESASA_WARN and
+    ::FREESASA_FAIL (see documentation of each function to see when
+    these are used). The return value ::FREESASA_SUCCESS means no errors
     have been spotted.
 
     Functions that have real-valued return values return negative
     numbers if calculation failed for some reason. The documentation
     for each function explains when this can happen.
-*/
+ */
 
 #include <stdio.h>
 
@@ -57,15 +60,15 @@
  */
 typedef struct freesasa_t freesasa_t;
 
-/** 
+/**
     The FreeSASA algorithms.
-*/
+ */
 typedef enum {FREESASA_LEE_RICHARDS, FREESASA_SHRAKE_RUPLEY}
     freesasa_algorithm;
 
-/** 
+/**
     4 classes of atoms/chemical groups used 
-*/
+ */
 typedef enum {
     FREESASA_POLAR=0, FREESASA_APOLAR,
     FREESASA_NUCLEICACID, FREESASA_CLASS_UNKNOWN
@@ -83,33 +86,32 @@ typedef enum {
 #define FREESASA_FAIL -1 //!< Something went seriously wrong.
 #define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful
                          
-
-/*****************************************/
-/** Initialization, freeing and copying **/
-/*****************************************/
+/////////////////////////////////////////
+// Initialization, freeing and copying //
+/////////////////////////////////////////
 
 #ifdef __cplusplus
 extern "C"{
 #endif
 
-/** 
+/**
     Initiate freesasa_t-object
 
     Allocates empty freesasa_t object with default parameters. Must be
     called before calculation. 
 
     @return The created object
-*/
+ */
     freesasa_t* freesasa_init();
 
-/** 
+/**
     Frees resources allocated to a freesasa_t object. 
 
     @param s Self.
-*/
+ */
     void freesasa_free(freesasa_t *s);
 
-/** 
+/**
     Copy parameters
     
     Copies all algorithm parameters. Data from calculations are not
@@ -118,15 +120,15 @@ extern "C"{
     
     @param target The target configuration
     @param source The source configuration
-*/
+ */
     void freesasa_copy_param(freesasa_t *target, const freesasa_t *source);
 
 
-/**************************/
-/** Perform calculations **/
-/**************************/
+//////////////////////////
+// Perform calculations //
+//////////////////////////
 
-/** 
+/**
     Calculate SASA from coordinates and radii. 
 
     Can be run on any set of spheres. Coordinates and radii will not
@@ -140,13 +142,13 @@ extern "C"{
     @param r An array of radii for the spheres
     @param n number of spheres
     
-    @return FREESASA_SUCESS upon successful calculation, prints and
-    error and returns FREESASA_FAIL else. 
-*/
+    @return ::FREESASA_SUCCESS upon successful calculation, prints and
+    error and returns ::FREESASA_FAIL else. 
+ */
     int freesasa_calc_coord(freesasa_t  *s, const double *coord,
                             const double *r, size_t n);
 
-/** 
+/**
     Calculate SASA from PDB-file.
     
     Reads PDB-file and calculates SASA. HETATM records are
@@ -159,12 +161,12 @@ extern "C"{
     @see freesasa_calc_coord()
     @param s Self.
     @param pdb_file PDB-file for input
-    @return FREESASA_SUCCESS if calculation successful, prints an
-    error and returns FREESASA_FAIL if not.
-*/
+    @return ::FREESASA_SUCCESS if calculation successful, prints an
+    error and returns ::FREESASA_FAIL if not.
+ */
     int freesasa_calc_pdb(freesasa_t *s, FILE *pdb_file);
 
-/** 
+/**
     Calculate SASA from a set of atoms.
     
     Similar to freesasa_calc_pdb(), but takes array of coordinates,
@@ -185,24 +187,24 @@ extern "C"{
     @param atomnames Array of strings of the format " CA ", " OXT", etc. 
       Should have n elements.
     @param n number of atoms
-    @return FREESASA_SUCCESS if calculation successful.  FREESASA_WARN
+    @return ::FREESASA_SUCCESS if calculation successful.  ::FREESASA_WARN
       if atoms or coordinates have invalid formats or if any atoms can't
-      be classified. FREESASA_FAIL if calculations failed.
+      be classified. ::FREESASA_FAIL if calculations failed.
 */
     int freesasa_calc_atoms(freesasa_t *s, const double *coord,
                             const char **resnames, 
                             const char **atomnames, size_t n);
 
-/** Reads pdb-file and calculates radii for each atom. Memory is
-    allocated to store them in the array 'r'. The return value is the
-    size of the allocated array. Prints error and returns FREESASA_FAIL
-    if reading input fails. This can be used if coordinates are linked
-    as below and default radii are to be used.
-    Not properly tested yet!
+/* Reads pdb-file and calculates radii for each atom. Memory is
+   allocated to store them in the array 'r'. The return value is the
+   size of the allocated array. Prints error and returns FREESASA_FAIL
+   if reading input fails. This can be used if coordinates are linked
+   as below and default radii are to be used.  Not properly tested
+   yet!
 */
 //int freesasa_generate_radii(double **r, FILE *pdb_file);
 
-/** 
+/**
     Default radius of an atom type. 
 
     Returns the radius of an atom based on it's type, either according
@@ -218,7 +220,7 @@ extern "C"{
 */
     double freesasa_radius(const char *residue_name, const char *atom_name);
 
-/**     
+/**
     Link a set of coordinates to the freesasa_t object.
 
     If the linked coordinates are updated freesasa_refresh() can be
@@ -232,12 +234,12 @@ extern "C"{
     @param coord An array of coordinates for sphere centers (x1,y1,z1,x2,y2,z2,...)
     @param r An array of radii for the spheres
     @param n number of spheres
-    @return At the moment always returns FREESASA_SUCCESS
+    @return At the moment always returns ::FREESASA_SUCCESS
 */
     int freesasa_link_coord(freesasa_t *s, const double *coord,
                             double *r, size_t n);
 
-/** 
+/**
     Recalculate SASA based on linked coordinates.
 
     Recalculates SASA, based on the assumption that a set of external
@@ -246,12 +248,12 @@ extern "C"{
     @see freesasa_link_coord()
     @param s A freesasa_t object. Used for parameters, coordinate-link
     and to store results.  
-    @return FREESASA_FAIL if no coordinates or radii are found in
-    s. FREESASA_SUCCESS upon successful computation.
+    @return ::FREESASA_FAIL if no coordinates or radii are found in
+    s. ::FREESASA_SUCCESS upon successful computation.
 */
     int freesasa_refresh(freesasa_t *s);
 
-/** 
+/**
     The number of atoms in the latest SASA calculation.  
     
     Returns 0 if no coordinates have been linked or no calculation
@@ -262,20 +264,20 @@ extern "C"{
 */
     size_t freesasa_n_atoms(const freesasa_t *s);
 
-/******************************/
-/** Settings for calculation **/
-/******************************/
+//////////////////////////////
+// Settings for calculation //
+//////////////////////////////
 
-/** 
+/**
     Set algorithm. 
 
     @param s Self.
     @param alg The algorithm to be set.
-    @return FREESASA_SUCCESS if alg is valid, FREESASA_WARN else. 
+    @return ::FREESASA_SUCCESS if alg is valid, ::FREESASA_WARN else. 
 */
     int freesasa_set_algorithm(freesasa_t *s, freesasa_algorithm alg);
 
-/** 
+/**
     Get algorithm. 
 
     @param s Self.
@@ -283,7 +285,7 @@ extern "C"{
 */
     freesasa_algorithm freesasa_get_algorithm(const freesasa_t *s);
 
-/** 
+/**
     Get algorithm as string.
  
     @param s Self.
@@ -291,19 +293,19 @@ extern "C"{
 */
     const char* freesasa_algorithm_name(const freesasa_t *s);
 
-/** 
+/**
     Set probe radius.
 
-    Sets probe radius for SASA calculations (default FREESASA_DEF_PROBE_RADIUS = 1.4 Å). If submitted radius
+    Sets probe radius for SASA calculations (default ::FREESASA_DEF_PROBE_RADIUS = 1.4 Å). If submitted radius
     is invalid, default is used and an error message printed.
 
     @param s Self.
     @param r Value for probe radius in Ångström.
-    @return FREESASA_SUCCESS for valid r-values. FREESASA_WARN else. 
+    @return ::FREESASA_SUCCESS for valid r-values. ::FREESASA_WARN else. 
 */
     int freesasa_set_probe_radius(freesasa_t *s,double r);
 
-/** 
+/**
     Get probe radius.
 
     @param s Self.
@@ -315,25 +317,25 @@ extern "C"{
     Set number of test points for S&R algorithm.
 
     Sets number of test points for S&R algorithm (default
-    FREESASA_DEF_SR_N = 100).
+    ::FREESASA_DEF_SR_N = 100).
     
     @param s Self.
     @param n Number of points.
-    @return FREESASA_SUCCESS if n is valid. Else: prints error
-    message, returns FREESASA_WARN and sets to default value.
+    @return ::FREESASA_SUCCESS if n is valid. Else: prints error
+    message, returns ::FREESASA_WARN and sets to default value.
 */
     int freesasa_set_sr_points(freesasa_t *s, int n);
 
-/** 
+/**
     Get number of test points for S&R algorithm. 
 
     @param s Self.
-    @return Number of points. FREESASA_WARN if S&R algorithm not
+    @return Number of points. ::FREESASA_WARN if S&R algorithm not
     selected.
 */
     int freesasa_get_sr_points(const freesasa_t *s);
 
-/** 
+/**
     Set L&R slice width.
 
     Sets slice width d for L&R algorithm in Ångström (default
@@ -341,13 +343,13 @@ extern "C"{
 
     @param s Self.
     @param d Slice width.
-    @return FREESASA_SUCCESS if d is valid. Else: prints error
-    message, returns FREESASA_WARN and sets to default value
+    @return ::FREESASA_SUCCESS if d is valid. Else: prints error
+    message, returns ::FREESASA_WARN and sets to default value
     
 */
     int freesasa_set_lr_delta(freesasa_t *s, double d);
 
-/** 
+/**
     Get L&R slice width.
     
     Get slice width for L&R algorithm in Ångström. 
@@ -358,7 +360,7 @@ extern "C"{
 */
     double freesasa_get_lr_delta(const freesasa_t *s);
 
-/** 
+/**
     Set number of threads.
 
     Sets the number of threads to use for parallel computations,
@@ -367,12 +369,12 @@ extern "C"{
 
     @param s Self.
     @param n Number of threads.
-    @return FREESASA_SUCCESS if n is valid, uses default value and
-    returns FREESASA_WARN else.
+    @return ::FREESASA_SUCCESS if n is valid, uses default value and
+    returns ::FREESASA_WARN else.
 */
     int freesasa_set_nthreads(freesasa_t *s,int n);
 
-/** 
+/**
     Get number of threads.
 
     Gets the number of threads used in the calcultion.
@@ -382,11 +384,11 @@ extern "C"{
 */
     int freesasa_get_nthreads(const freesasa_t *s);
 
-/** 
+/**
     Set protein name
     
     Sets name of protein, useful for logging. Uses last
-    FREESASA_NAME_LIMIT characters if name is too long (since then it
+    ::FREESASA_NAME_LIMIT characters if name is too long (since then it
     is probably a file name and the last characters are the most
     interesting). 
 
@@ -395,7 +397,7 @@ extern "C"{
 */
     void freesasa_set_proteinname(freesasa_t *s,const char *name);
 
-/** 
+/**
     Get protein name. 
 
     @param s Self.
@@ -403,11 +405,11 @@ extern "C"{
 */
     const char* freesasa_get_proteinname(const freesasa_t *s);
 
-/*************/
-/** Results **/
-/*************/
+/////////////
+// Results //
+/////////////
 
-/** 
+/**
     Total SASA
     
     @param s Self.
@@ -416,7 +418,7 @@ extern "C"{
 */
     double freesasa_area_total(const freesasa_t *s);
 
-/** 
+/**
     SASA of a certain class of atoms
 
     @param s Self.
@@ -426,7 +428,7 @@ extern "C"{
 */
     double freesasa_area_class(const freesasa_t *s, freesasa_class c);
 
-/** 
+/**
     Print SASA for all residue types to file.
 
     Prints name/value-pairs with the total SASA of each residue
@@ -436,13 +438,12 @@ extern "C"{
     
     @param output Output file.
     @param s Self.
-
-    @return FREESASA_FAIL if file-pointer NULL or if no calculation
+    @return ::FREESASA_FAIL if file-pointer is NULL or if no calculation
     has been performed yet.  
 */
     int freesasa_per_residue(FILE *output, const freesasa_t *s);
 
-/** 
+/**
     Total SASA for specific residue type.
 
     Returns total SASA for residue of specified type. If the value of
@@ -459,7 +460,7 @@ extern "C"{
 */
     double freesasa_area_residue(const freesasa_t *s, const char *res_name);
 
-/** 
+/**
     Write SASA values to PDB-file.
     
     Takes original PDB and replaces B-factors with those from latest
@@ -467,18 +468,19 @@ extern "C"{
 
     @param output File to write to.
     @param s Self.
-    @return FREESASA_FAIL if there is no previous PDB input to base
+    @return ::FREESASA_FAIL if there is no previous PDB input to base
     output on, if there are problems with the output destination, if
     there are no SASA-values to use, or there are inconsistencies
-    between stored structure and SASA-values. FREESASA_SUCCESS else.
+    between stored structure and SASA-values. ::FREESASA_SUCCESS else.
  */
     int freesasa_write_pdb(FILE *output, const freesasa_t *s);
 
-/**********************************/
-/** Results for individual atoms **/
-/**********************************/
 
-/** 
+//////////////////////////////////
+// Results for individual atoms //
+//////////////////////////////////
+
+/**
     SASA value for given atom.
 
     @param s Self.
@@ -489,7 +491,7 @@ extern "C"{
 */
     double freesasa_area_atom(const freesasa_t *s, int i);
 
-/** 
+/**
     SASA for all atoms individually.
     
     @param s Self.
@@ -498,7 +500,7 @@ extern "C"{
 */
     const double* freesasa_area_atom_array(const freesasa_t *s);
 
-/** 
+/**
     Radius of given atom.
     
     @param s Self.
@@ -508,7 +510,7 @@ extern "C"{
 */
     double freesasa_radius_atom(const freesasa_t *s, int i);
 
-/** 
+/**
     Get atomic radii.
     
     @param s Self.
@@ -517,18 +519,18 @@ extern "C"{
 */
     const double* freesasa_radius_atom_array(const freesasa_t *s);
 
-/****************************/
-/** Other types of results **/
-/****************************/
+////////////////////////////
+// Other types of results //
+////////////////////////////
 
-/** 
+/**
     Log calculation results.
 
     Prints log of calculation results to specified file. 
 
     @param log Output-file.
     @param s Self.
-    @return FREESASA_SUCCESS on success, FREESASA_WARN if
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_WARN if
     inconsistencies are detected (with explanatory error-message). 
 */
     int freesasa_log(FILE *log, const freesasa_t *s);
