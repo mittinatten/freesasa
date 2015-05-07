@@ -27,7 +27,7 @@
 extern int freesasa_fail(const char *format, ...);
 extern int freesasa_warn(const char *format, ...);
 
-/** Residue types */
+// Residue types, make sure this always matches the corresponding enum.
 static const char *residue_names[] = {
     //amino acids
     "ALA","ARG","ASN","ASP",
@@ -44,51 +44,19 @@ static const char *residue_names[] = {
     //General nuceleotide
     "N"
 };
-enum {
-    //Regular amino acids
-    freesasa_ALA=0, freesasa_ARG, freesasa_ASN, freesasa_ASP,
-    freesasa_CYS, freesasa_GLN, freesasa_GLU, freesasa_GLY,
-    freesasa_HIS, freesasa_ILE, freesasa_LEU, freesasa_LYS,
-    freesasa_MET, freesasa_PHE, freesasa_PRO, freesasa_SER,
-    freesasa_THR, freesasa_TRP, freesasa_TYR, freesasa_VAL,
-    //some non-standard ones
-    freesasa_CSE, freesasa_ASX, freesasa_GLX,
-    freesasa_UNK,
-    //DNA
-    freesasa_DA, freesasa_DC, freesasa_DG, freesasa_DT,
-    freesasa_DU, freesasa_DI,
-    //RNA
-    freesasa_A, freesasa_C, freesasa_G, freesasa_U, freesasa_I, freesasa_T,
-    //generic nucleotide
-    freesasa_NN
-};
 
-/** Element types (in ATOM entries, HETATM atom types could be
-    anything) */
-// the elements seen in PDB Atom entries
+
+// the elements seen in PDB Atom entries, make sure this always matches the corresponding enum.
 static const char *element_names[] = {
     "C","O","N","S","P","Se","H","unknown"
 };
-enum {
-    freesasa_carbon=0, freesasa_oxygen, freesasa_nitrogen,
-    freesasa_sulfur, freesasa_phosphorus, freesasa_selenium,
-    freesasa_hydrogen, freesasa_element_unknown
-};
 
+// OONS classes, make sure this always matches the corresponding enum.
 static const char *oons_names[] = {
     "aliphatic_C", "aromatic_C",
     "carbo_C", "amide_N", "carbo_O",
     "hydroxyl_O", "sulfur","selenium",
     "unknown_polar","unknown"
-};
-enum {
-    freesasa_aliphatic_C=0, freesasa_aromatic_C,
-    freesasa_carbo_C, freesasa_amide_N,
-    freesasa_carbo_O, freesasa_hydroxyl_O,
-    freesasa_oons_sulfur,
-    freesasa_oons_selenium,
-    freesasa_oons_unknown_polar,
-    freesasa_oons_unknown
 };
 
 /** helper function, trims whitespace from beginning and end of string */
@@ -149,8 +117,15 @@ const char* freesasa_classify_class2str(int class)
     case FREESASA_POLAR: return "Polar";
     case FREESASA_APOLAR: return "Apolar";
     case FREESASA_NUCLEICACID: return "Nucleic";
-    default: return "Unknown";
+    case FREESASA_CLASS_UNKNOWN: return "Unknown";
+    default:
+        freesasa_warn("Illegal class index '%d' in"
+                      "freesasa_classify_class2str(). "
+                      "Range is [0,%d].",
+                      class,freesasa_classify_nclasses()-1);
+        return NULL;
     }
+    
 }
 
 int freesasa_classify_nclasses() {
@@ -181,7 +156,9 @@ int freesasa_classify_residue(const char *res_name)
 const char* freesasa_classify_residue2str(int res) {
     if (res < 0 || res > freesasa_NN) {
         freesasa_warn("Illegal residue index '%d' passed to "
-                      "freesasa_classify_residue2str(1)",res);
+                      "freesasa_classify_residue2str(1). "
+                      "Range is [0,%d]",res,
+                      freesasa_classify_nresiduetypes()-1);
         return NULL;
     }
     return residue_names[res];
@@ -221,7 +198,11 @@ int freesasa_classify_element(const char *atom_name)
 const char* freesasa_classify_element2str(int element)
 {
     if (element < 0 || element > freesasa_element_unknown) {
-        return element_names[freesasa_element_unknown];
+        freesasa_warn("Illegal element index '%d' passed to "
+                      "freesasa_classify_element2str(). "
+                      "Range is [0,%d]",element,
+                      freesasa_classify_nelements()-1);
+        return NULL;
     }
     return element_names[element];
 }
@@ -372,7 +353,11 @@ int freesasa_classify_oons(const char *res_name, const char *a)
 const char* freesasa_classify_oons2str(int oons_type)
 {
     if (oons_type < 0 || oons_type > freesasa_oons_unknown) {
-        return oons_names[freesasa_oons_unknown];
+        freesasa_warn("Illegal OONS type index '%d' passed to "
+                      "freesasa_classify_oons2str(1). "
+                      "Range is [0,%d]",oons_type,
+                      freesasa_classify_noons()-1);        
+        return NULL;
     }
     return oons_names[oons_type];
 }

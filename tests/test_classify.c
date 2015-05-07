@@ -215,7 +215,13 @@ START_TEST (test_class)
     ck_assert_str_eq(freesasa_classify_class2str(FREESASA_POLAR),"Polar");
     ck_assert_str_eq(freesasa_classify_class2str(FREESASA_APOLAR),"Apolar");
     ck_assert_str_eq(freesasa_classify_class2str(FREESASA_NUCLEICACID),"Nucleic");
-    ck_assert_str_eq(freesasa_classify_class2str(-1),"Unknown");
+    ck_assert_str_eq(freesasa_classify_class2str(FREESASA_CLASS_UNKNOWN),"Unknown");
+
+    freesasa_set_verbosity(1);
+    ck_assert(freesasa_classify_class2str(100) == NULL);
+    ck_assert(freesasa_classify_class2str(-1) == NULL);
+    freesasa_set_verbosity(0);
+
     for (int i = 0; i < freesasa_classify_noons(); ++i) {
         ck_assert(freesasa_classify_oons2class(i) < freesasa_classify_nclasses());
     }
@@ -246,9 +252,10 @@ START_TEST (test_oons2str)
     freesasa_set_verbosity(1);
     ck_assert_str_eq(freesasa_classify_oons2str(
                          freesasa_classify_oons("ABC"," X  ")),"unknown");
+    ck_assert(freesasa_classify_oons2str(freesasa_classify_noons())==NULL);
+    ck_assert(freesasa_classify_oons2str(-1)==NULL);
     freesasa_set_verbosity(0);
-    ck_assert_str_eq(freesasa_classify_oons2str(freesasa_classify_noons()),"unknown");
-    ck_assert_str_eq(freesasa_classify_oons2str(-1),"unknown");
+
 }
 END_TEST
 
@@ -338,7 +345,7 @@ START_TEST (test_element)
     freesasa_set_verbosity(1);
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("XXXX")),"unknown");
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("XXXXX")),"unknown");
-    ck_assert_str_eq(freesasa_classify_element2str(-1),"unknown");
+    ck_assert(freesasa_classify_element2str(-1)==NULL);
     freesasa_set_verbosity(0);
 }
 END_TEST

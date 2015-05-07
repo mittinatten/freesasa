@@ -36,136 +36,292 @@
     value of n for that class, e.g. freesasa_classify_nclasses() or
     freesasa_classify_nelements(). Each class also has a function that
     converts the integer to a descriptive string,
-    e.g. freesasa_classify_class2str(1).
+    e.g. freesasa_classify_class2str().
 
-    The available classes are
-    - class: polar, apolar, nucleic acid and unknown
-    - residue (amino acid or nucleic acid): ALA, ARG, ..., ASX, GLX, UNK, 
-        A, C, ..., DA, DC, ..., NN
-    - element: C, O, N, S, P, Se, H, unknown
-    - oons_type (plus some specific to FreeSASA): 
-    aliphatic C, aromatic C, carbo C, amide N, 
-        carbo O, hydroxyl O, sulfur, selenium, unknown polar, unknown
+    The available classes are (listed as enums)
+    - ::freesasa_class (class polar/apolar/...)
+    - ::freesasa_residue (residue ALA/CYS/...)
+    - ::freesasa_element (element C/N/...)
+    - ::freesasa_oons_class (OONS class, plus some specific to FreeSASA):
 
-    The enum for the first class, freesasa_class, is visible for the
-    user since the list is short and unlikely to change. Also it is
-    the one classification where the user is most likely to wish treat
-    the different classes individually. The user should not expect the
-    numbering, ordering or names of members in the other classes to
-    stay constant.
-*/
+    The enum for the first class, freesasa_class, is in the header
+    freesasa.h, because it is used in the main API. The enums for the
+    other classes are made pubic in this header, but are only used
+    internally for now, and might be expanded as more functionality is
+    required.
+ */
 
-/** Given an atom this function returns an atomic radius. Regular
+//! The residue types that are returned by freesasa_classify_residue()
+enum freesasa_residue {
+    //Regular amino acids
+    freesasa_ALA=0, freesasa_ARG, freesasa_ASN, freesasa_ASP,
+    freesasa_CYS, freesasa_GLN, freesasa_GLU, freesasa_GLY,
+    freesasa_HIS, freesasa_ILE, freesasa_LEU, freesasa_LYS,
+    freesasa_MET, freesasa_PHE, freesasa_PRO, freesasa_SER,
+    freesasa_THR, freesasa_TRP, freesasa_TYR, freesasa_VAL,
+    //some non-standard ones
+    freesasa_CSE, freesasa_ASX, freesasa_GLX,
+    freesasa_UNK,
+    //DNA
+    freesasa_DA, freesasa_DC, freesasa_DG, freesasa_DT,
+    freesasa_DU, freesasa_DI,
+    //RNA
+    freesasa_A, freesasa_C, freesasa_G, freesasa_U, freesasa_I, freesasa_T,
+    //generic nucleotide
+    freesasa_NN
+};
+
+//! The element types that are returned by freesasa_classify_element()
+enum freesasa_element {
+    freesasa_carbon=0, freesasa_oxygen, freesasa_nitrogen,
+    freesasa_sulfur, freesasa_phosphorus, freesasa_selenium,
+    freesasa_hydrogen, freesasa_element_unknown
+};
+
+//! The OONS classes that are returned by freesasa_classify_oons()
+enum freesasa_oons_class {
+    freesasa_aliphatic_C=0, freesasa_aromatic_C,
+    freesasa_carbo_C, freesasa_amide_N,
+    freesasa_carbo_O, freesasa_hydroxyl_O,
+    freesasa_oons_sulfur,
+    freesasa_oons_selenium,
+    freesasa_oons_unknown_polar,
+    freesasa_oons_unknown
+};
+
+/** 
+    The radius of a given atom type.
+
+    Given an atom this function returns an atomic radius. Regular
     protein atoms are given radii according to OONS (see documentation
     for reference). Atoms in unknown amino acid residues or in nucleic
     acids are given radii based on element (see function
     freesasa_classify_element_radius()). Unknown atom types and
-    hydrogens are assigned radius 0.0. */
+    hydrogens are assigned radius 0.0. 
+   
+    @param res_name The residue name in the format "ALA", "PHE", etc.
+    @param atom_name The atom name in the format " CA ", " OXT", etc.
+    @return Atom radius in Ångström.
+*/
 double freesasa_classify_radius(const char *res_name, const char *atom_name);
 
-/*********************/
-/** Polar/Apolar/etc */
-/*********************/
 
-/** Returns the class of a given atom. The return value is one of
-    FREESASA_POLAR, FREESASA_APOLAR, FREESASA_NUCLEICACID and
-    FREESASA_CLASS_UNKNOWN. */
+//////////////////////
+// Polar/Apolar/etc //
+//////////////////////
+
+/** 
+    The class of a given atom. 
+
+    @param res_name The residue name in the format "ALA", "PHE", etc.
+    @param atom_name The atom name in the format " CA ", " OXT", etc.
+    @return Atom class (::freesasa_class).
+*/
 int freesasa_classify_class(const char *res_name, const char *atom_name);
 
-/** Takes a class as argument and returns a string that describes that
-    class. */
+/** Class name. 
+    
+    @param class Class as returned by freesasa_classify_class().
+    @return Class name, NULL if argument invalid.
+ */
 const char* freesasa_classify_class2str(int class);
 
-/** Returns number of different classes in use. (To facilitate array
-    allocation, etc). */
+/** 
+    The number of different classes. 
+    
+    The total number of available classes, n. The range of
+    freesasa_classify_class() is thus [0,n-1]. To facilitate array
+    allocation, etc.
+
+    @return Number of classes.
+*/
 int freesasa_classify_nclasses();
 
-/****************************/
-/** Amino and Nucleic acids */
-/****************************/
 
-/** Returns an integer signifying the type of a residue. There is one
+/////////////////////////////
+// Amino and Nucleic acids //
+/////////////////////////////
+
+/** 
+    Type of residue.
+
+    Returns an integer signifying the type of a residue. There is one
     value for each of the 20 regular amino acids, plus ASX, GLX, XLE,
     CSE and UNK. In addition nucleic acids are treated as separate
     residue types. Return values span from 0 to
     freesasa_classify_nresiduetypes()-1. The standard 20 amino acids
-    have indices 0 to 19.*/
+    have indices 0 to 19.
+    
+    @param res_name The residue name in the format "ALA", "PHE", etc.
+    @return Residue type (::freesasa_residue).
+*/
 int freesasa_classify_residue(const char *res_name);
 
-/** Returns the name of a residue classified by
-    freesasa_classify_residue(). Returns NULL if argument invalid. */
+/** 
+    Residue name.
+
+    Returns the name of a residue classified by
+    freesasa_classify_residue(). 
+    
+    @param res Residue type.
+    @return Residue name, NULL if argument invalid. */
 const char* freesasa_classify_residue2str(int res);
 
-/** Returns the number of possible residue types returned by
-    freesasa_classify_residue(). */
+/** 
+    The number of different residue types.
+
+    The total number of available residue types, n. The range of
+    freesasa_classify_residue() is thus [0,n-1]. 
+    
+    @return Number of residue types.
+*/
 int freesasa_classify_nresiduetypes();
 
-/**************/
-/** Elements **/
-/**************/
 
-/** Returns an integer signifying the element of an atom. Return
-    values span from 0 to freesasa_classify_nelements()-1. */
+//////////////
+// Elements //
+//////////////
+
+/** 
+    Element of a given atom.
+    
+    Returns an integer signifying the element of an atom. Return
+    values span from 0 to freesasa_classify_nelements()-1. 
+    
+    @param atom_name The atom name in the format " CA ", " OXT", etc.
+    @return The element (::freesasa_element).
+*/
 int freesasa_classify_element(const char *atom_name);
 
-/** Returns a string that describes an element. */
+/** 
+    Element name.
+    
+    Returns the name of an element classified by
+    freesasa_classify_element(). 
+    
+    @param element The element.
+    @return Element name, NULL if argument invalid.
+*/
 const char* freesasa_classify_element2str(int element);
 
-/** The vdW-radius of a given element, according to
-    www.periodictable.com. Unknown elements are assigned radius 0 */
+/** 
+    The vdW-radius of a given element, according to
+    www.periodictable.com. 
+
+    @param element The element.  
+    @return Radius in Ångström. Unknown
+    elements are assigned radius 0.
+ */
 double freesasa_classify_element_radius(int element);
 
-/** Returns the number of possible element types returned by
-    freesasa_classify_element(). */
+/** 
+    The number of element types.
+
+    The total number of available element types, n. The range of
+    freesasa_classify_element() is thus [0,n-1].     
+
+    @return Number of element types.
+*/
 int freesasa_classify_nelements();
 
-/******************/
-/** OONS classes **/
-/******************/
 
-/** Returns an integer signifying the type of an atom according to
-    OONS (carboxy O, aliphatic C, etc). Return values span from 0 to
-    freesasa_classify_noons(). Hydrogen and Selenium atoms give return
-    value freesasa_oons_unknown */
+//////////////////
+// OONS classes //
+//////////////////
+
+/** 
+    OONS type of a given atom.
+
+    Returns an integer signifying the type of an atom according to
+    OONS (carboxy O, aliphatic C, etc (see preamble to
+    classify.h). Return values span from 0 to
+    freesasa_classify_noons().  
+
+    @param res_name The residue name in the format "ALA", "PHE", etc.
+    @param atom_name The atom name in the format " CA ", " OXT", etc.
+    @return OONS type (::freesasa_oons_type).
+*/
 int freesasa_classify_oons(const char *res_name, const char *atom_name);
 
-/** Returns the name of an OONS-type. */
+/** 
+    OONS type name. 
+
+    @param oons_type The OONS type.
+    @return Name of the OONS type, NULL if argument invalid.
+*/
 const char* freesasa_classify_oons2str(int oons_type);
 
-/** Returns a class (polar/apolar/etc) for an OONS type. Will not
-    return the freesasa_classify_nucleic, since this in not part of the
-    OONS scheme. */
+/** 
+    Class (polar/apolar/etc) for an OONS type. 
+
+    Will not return the class FREESASA_NUCLEIC_ACID, since this is not
+    part of the OONS scheme.
+
+    @param oons_type The OONS type.
+    @return The class (::freesasa_class).
+*/
 int freesasa_classify_oons2class(int oons_type);
 
-/** Returns the radius of an OONS atom type. Returns 0.0 for hydrogens
-    and unknown atoms. */
+/** Radius of an OONS atom type. 
+
+    @param oons_type The OONS type.
+    @return Radius in Ångström. 0.0 Å for hydrogens and unknown
+    atoms. */
 double freesasa_classify_oons_radius(int oons_type);
 
-/** Returns the number of available OONS types returned by
-    freesasa_classify_oons(). */
+/**
+   The number of OONS types
+
+   The total number of available OONS types, n. The range of
+   freesasa_classify_oobns() is thus [0,n-1].     
+  
+   @return The number of OONS types.
+*/
 int freesasa_classify_noons();
 
-/*******************/
-/** Other classes **/
-/*******************/
 
-/** Takes the values produced by freesasa_classify_residue() and
-    determines if it's an amino acid or not. Return value 1 means
-    amino acid, 0 not, FREESASA_FAIL illegal input. */
+///////////////////
+// Other classes //
+///////////////////
+
+/** 
+    Is residue an amino acid?
+    
+    Takes the values produced by freesasa_classify_residue() and
+    determines if it's an amino acid or not. 
+
+    @param res The residue type.
+    @return 1 means amino acid, 0 not, FREESASA_FAIL illegal input. 
+*/
 int freesasa_classify_is_aminoacid(int res);
 
-/** Takes the values produced by freesasa_classify_residue() and
-    determines if it's an nucleic acid or not. Return value 1 is
-    nucleic acid, 0 not, FREESASA_FAIL illegal input. */
+/** 
+    Is residue a nucleic acid?
+    
+    Takes the values produced by freesasa_classify_residue() and
+    determines if it's an nucleic acid or not. 
+
+    @param res The residue type.
+    @return 1 means nucleic acid, 0 not, FREESASA_FAIL illegal input. 
+*/
 int freesasa_classify_is_nucleicacid(int res);
 
-/**************/
-/** Validity **/
-/**************/
 
-/** Checks if an atom is recognized and can be classified. Return
-    value FREESASA_SUCCESS means fully recognized, FREESASA_WARN
-    not, and FREESASA_FAIL illegal input. */
+//////////////
+// Validity //
+//////////////
+
+/** 
+    Validate atom description.
+    
+    Checks if an atom is recognized and can be classified. Prints
+    explanatory errors when not recognized.
+
+    @param res_name The residue name in the format "ALA", "PHE", etc.
+    @param atom_name The atom name in the format " CA ", " OXT", etc.
+    @return FREESASA_SUCCESS if fully recognized, FREESASA_WARN
+    if not, and FREESASA_FAIL if illegal input. 
+*/
 int freesasa_classify_validate_atom(const char *residue_name, 
                                     const char *atom_name);
 
