@@ -6,6 +6,7 @@ AC_INIT([FreeSASA], [0.5])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([src/freesasa.c])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for programs.
 AC_PROG_CC
@@ -33,8 +34,8 @@ AC_CHECK_FUNCS([gettimeofday sqrt strerror])
 AC_CHECK_FUNCS([mkdir])
 
 AC_CONFIG_FILES([Makefile
-		 src/Makefile
-	         tests/Makefile
+        		 src/Makefile
+	             tests/Makefile
                  doc/Makefile
                  doc/fig/Makefile])
 
@@ -44,6 +45,8 @@ AC_CHECK_PROG(DVIPS, dvips, dvips)
 AC_CHECK_PROG(PDFLATEX, pdflatex, pdflatex)
 AC_CHECK_PROG(EPSTOPDF, epstopdf, epstopdf)
 AC_CHECK_PROG(DOXYGEN, doxygen, doxygen)
+AX_COMPARE_VERSION([esyscmd(doxygen -v)],[lt],[1.8.8],
+                   [echo 'Warning: Doxygen should preferrably be of version 1.8.8 or higher'])
 
 AM_CONDITIONAL([HAVE_LATEX], [test -n "$LATEX" && test -n "$DVIPS"])
 AM_COND_IF([HAVE_LATEX],[echo "LaTeX available"],[echo "LaTeX not available, .dvi and .ps documentation cannot be built"])
