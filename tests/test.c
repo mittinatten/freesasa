@@ -33,9 +33,9 @@ int main(int argc, char **argv) {
 
     // Suites added in order of complexity
     SRunner *sr = srunner_create(pdb_suite());
-    //srunner_add_suite(sr,classify_suite());
-    //srunner_add_suite(sr,coord_suite());
-    //srunner_add_suite(sr,structure_suite());
+    srunner_add_suite(sr,classify_suite());
+    srunner_add_suite(sr,coord_suite());
+    srunner_add_suite(sr,structure_suite());
     srunner_add_suite(sr,sasa_suite());
 
     srunner_run_all(sr,CK_VERBOSE);
