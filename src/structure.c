@@ -47,6 +47,7 @@ struct freesasa_structure_t {
     int number_atoms;
     int number_residues;
     int number_chains;
+    int *res_first_atom;
 };
 
 freesasa_structure_t* freesasa_structure_init()
@@ -58,6 +59,7 @@ freesasa_structure_t* freesasa_structure_init()
     p->number_chains = 0;
     p->a = (atom_t*) malloc(sizeof(atom_t));
     p->xyz = freesasa_coord_new();
+    p->res_first_atom = (int*) malloc(sizeof(int));
     return p;
 }
 
@@ -66,6 +68,7 @@ void freesasa_structure_free(freesasa_structure_t *p)
     if (p == NULL) return;
     if (p->a) free(p->a);
     if (p->xyz) freesasa_coord_free(p->xyz);
+    if (p->res_first_atom) free(p->res_first_atom);
     free(p);
 }
 
@@ -162,10 +165,15 @@ int freesasa_structure_add_atom(freesasa_structure_t *p,
     if (na > 1 && chain_label != p->a[na-2].chain_label)
         ++p->number_chains;
 
-    if (p->number_residues == 0)
+    if (p->number_residues == 0) {
         ++p->number_residues;
-    if (na > 1 && strcmp(residue_number,p->a[na-2].res_number))
-        ++p->number_residues;
+        p->res_first_atom[0] = 0;
+    }
+    if (na > 1 && strcmp(residue_number,p->a[na-2].res_number)) {
+        int naa = ++p->number_residues;
+        p->res_first_atom = (int*) realloc(p->res_first_atom, sizeof(int)*naa);
+        p->res_first_atom[naa-1] = na-1;
+    }
     return FREESASA_SUCCESS;
 }
 
@@ -194,6 +202,11 @@ int freesasa_structure_n(const freesasa_structure_t *p)
     return p->number_atoms;
 }
 
+int freesasa_structure_n_residues(const freesasa_structure_t *p)
+{
+    return p->number_residues;
+}
+
 const char* freesasa_structure_atom_name(const freesasa_structure_t *p,
                                          int i)
 {
@@ -220,6 +233,19 @@ char freesasa_structure_atom_chain(const freesasa_structure_t *p,
 {
     assert (i < p->number_atoms);
     return p->a[i].chain_label;
+}
+
+int freesasa_structure_residue_atoms(const freesasa_structure_t *s, int r_i, int *first, int *last)
+{
+    const int naa = s->number_residues;
+    if (r_i >= naa) {
+        return freesasa_fail("Error: In freesasa_structure_residue_atoms():\n"
+                             "Illegal residue index '%d'",r_i);
+    }
+    *first = s->res_first_atom[r_i];
+    if (r_i == naa-1) *last = s->number_atoms-1;
+    else *last = s->res_first_atom[r_i+1]-1;
+    return FREESASA_SUCCESS;
 }
 
 int freesasa_structure_write_pdb_bfactors(FILE *output,

@@ -37,7 +37,7 @@ thoroughly yet.
 \vspace{0.5cm} \hrule
 \section{Introduction}
 The Solvent Accessible Surface Area (SASA) of a molecule gives a
-measure of the surface of the molecule in contact with solvent. This
+measure of the contact area between molecule and solvent. This
 area can for example quantify how folded the conformation of a
 macromolecule is, and can also be used to compare the exposed
 hydrophobic surfaces of different conformations or different
@@ -73,8 +73,8 @@ In constructing the library three possible use cases were considered.
 \begin{enumerate}
 \item The user has a PDB-file and wishes to calculate the total SASA of
   the structure, or the SASA for certain groups or types of atoms.
-\item The user has a set of cartesian atom coordinates and radii for
-  these atoms, and wants to calculate the total SASA for this object.
+\item The user has a set of spheres (typically a molecule), and wants
+  to calculate the total SASA for this object.
 \item The user is simulating different conformations of a molecule and
   wants to measure the SASA at certain intervals during the simulation.
 \end{enumerate}
@@ -126,7 +126,9 @@ done by the regular sequence \verb|./configure|, \verb|make| and
 Clang/LLVM have been tested successfully on both Linux and Mac OS X
 platforms. The test-suite depends on the Check unit testing
 framework\footnote{\texttt{http://check.sourceforge.net/}} (not
-necessary to build the program itself).
+necessary to build the program itself). To build the full rhtml eference 
+manual of the whole library can Doxygen needs to be installed (preferrably
+v 1.8.8 or newer).
 
 \subsection{Command-line interface}
 
@@ -154,11 +156,12 @@ The following options are available
     Default is 100, allowed values are: 20, 50, 100, 200, 500, 1000,
     2000, 5000.
   \item[-d] Grid spacing in Lee \& Richards algorithm.
-  Default value is 0.25 Å.
+    Default value is 0.25 Å.
   \item[-t] Number of threads to use in calculation (for multicore
     CPUs). See section \ref{sec:speed} for a discussion of when this
     has a significant effect on performance.
-  \item[-r] Print SASA for each residue.
+  \item[-r] Print SASA for each residue type.
+  \item[-R] Print SASA for each residue, sequentially.
   \item[-B] Print PDB file where the SASA value of each atom is
     written as its B factor (the output file is provided as an
     argument to the flag).
@@ -167,9 +170,10 @@ As an illustration, the command
 \begin{verbatim}
    $ ./freesasa -L -d 0.1 -t 2 -r PDB-file
 \end{verbatim}
-calculates the SASA of the supplied PDB-file using Lee \& Richards (-L),
-with a slice width of 0.1 Å (-d), using two threads (-t) and will print the
-total SASA of each residue type (-r) in addition to the standard output.
+calculates the SASA of the supplied PDB-file using Lee \& Richards
+(-L), with a slice width of 0.1 Å (-d), using two
+threads (-t) and will print the total SASA of each residue type
+(-r) in addition to the standard output.
 
 Several PDB-files can be analyzed in one call, the results will be
 printed consecutively for each input file:
@@ -492,17 +496,19 @@ coordinates. Any calculation involves the following four steps.
 The third step is the core functionality of the library and can be
 used separately by users who wish to handle the other steps
 themselves. In addition to the description below, the source for
-\texttt{main.c} serves as an example of how to use the library,
-using a large portion of the available functionality. The tests in the
+\texttt{main.c} serves as an example of how to use the library, using
+a large portion of the available functionality. The tests in the
 directory \verb|tests| document the expected behaviour of all parts of
-the API.
+the API and reference manual can be built using Doxygen (to be found
+in \verb|doc/doxygen|).
 
 The header \texttt{freesasa.h} contains all functions necessary for
 doing calculations with FreeSASA. They wrap lower level functionality,
 simplifying I/O, housekeeping, and do sanity checks on parameters,
 etc. Users with specific needs can also use the functions in the
 headers listed below, but these are at the present not documented
-beyond comments in the header-files and through the test-suite.
+beyond comments in the header-files/doxygen manual and through the
+test-suite.
 
 \begin{tabular}{r>{\raggedright\arraybackslash}p{0.7\textwidth}}
 \texttt{structure.h} & Functions to deal with PDB structures,  
@@ -757,19 +763,26 @@ where the argument \verb|c| can have the values \verb|FREESASA_POLAR|,
 \verb|FREESASA_APOLAR|, \verb|FREESASA_NUCLEICACID| or 
 \verb|FREESASA_CLASS_UNKNOWN|.
 
+The SASA of each residue in the sequence can be accessed through
+\begin{verbatim}
+    int freesasa_per_residue(FILE *output, const freesasa_t *s)
+\end{verbatim}
+This prints the SASA of each residue to the specified file, each
+line prefixed with the string 'SEQ:'.
+
 To access the SASA for the different amino acid types there are two
 options:
 \begin{verbatim}
-    int freesasa_per_residue(FILE *output, const freesasa_t *s)
+    int freesasa_per_residue_type(FILE *output, const freesasa_t *s)
     double freesasa_area_residue(const freesasa_t*, const char *res_name)
 \end{verbatim}
 The first prints string-value pairs of all residue types to the
-specified file. All of the standard 20 residues are included, and the
-other types are printed only if the SASA is non-zero.  The second
-function takes the residue name as an argument and returns the SASA for
-the corresponding residue. If the residue name is unknown a warning is
-printed and the value recorded for the residue type ``UNK'' is
-returned.
+specified file, each line prefixed with the string 'RES:'. All of the
+standard 20 residues are included, and the other types are printed
+only if the SASA is non-zero.  The second function takes the residue
+name as an argument and returns the SASA for the corresponding
+residue. If the residue name is unknown a warning is printed and the
+value recorded for the residue type ``UNK'' is returned.
 
 SASA of individual atoms are accessed either one by one, or
 as an array of doubles:

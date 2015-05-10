@@ -209,7 +209,7 @@ START_TEST (test_sasa_1ubq)
     FILE *devnull = fopen("/dev/null","w");
     ck_assert(freesasa_write_pdb(devnull,st) == FREESASA_SUCCESS);
     ck_assert(freesasa_log(devnull,st) == FREESASA_SUCCESS);
-    ck_assert(freesasa_per_residue(devnull,st) == FREESASA_SUCCESS);
+    ck_assert(freesasa_per_residue_type(devnull,st) == FREESASA_SUCCESS);
     fclose(devnull);
 }
 END_TEST
@@ -278,6 +278,8 @@ START_TEST (test_freesasa_api_basic)
     ck_assert(freesasa_area_class(s, FREESASA_APOLAR) < 0);
     ck_assert(freesasa_per_residue(stdout,s) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue(NULL,s) == FREESASA_FAIL);
+    ck_assert(freesasa_per_residue_type(stdout,s) == FREESASA_FAIL);
+    ck_assert(freesasa_per_residue_type(NULL,s) == FREESASA_FAIL);
     ck_assert(freesasa_area_residue(s,"ALA") < 0);
     ck_assert(freesasa_write_pdb(stdout,s) == FREESASA_FAIL);
     ck_assert(freesasa_area_atom(s,0) < 0);

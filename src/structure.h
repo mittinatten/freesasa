@@ -142,6 +142,16 @@ void freesasa_structure_r_def(double *r, const freesasa_structure_t *s);
 int freesasa_structure_n(const freesasa_structure_t *s);
 
 /**
+    Get number of residues.
+
+    Number of unique combinations of residue name and chain label
+    contained in the structure.
+
+    @param s Self.
+    @return Number of residues.
+ */
+int freesasa_structure_n_residues(const freesasa_structure_t *s);
+/**
     Get atom name
     
     @param s Self.
@@ -172,13 +182,25 @@ const char* freesasa_structure_atom_res_number(const freesasa_structure_t *s,
                                                int i);
 
 /**
-   Get chain label.
+    Get chain label.
    
-   @param s Self.
-   @param i Atom index.
-   @return Chain label (`'A'`, `'B'`, etc.)
+    @param s Self.
+    @param i Atom index.
+    @return Chain label (`'A'`, `'B'`, etc.)
  */
 char freesasa_structure_atom_chain(const freesasa_structure_t *s, int i);
+
+/**
+    Get indices of first and last atoms of a residue
+ 
+    @param s Self.
+    @param r_i Residue index.
+    @param first First atom of residue `r_i` will be stored here.
+    @param last Last atom of residue `r_i` will be stored here.
+    @return ::FREESASA_SUCCESS. ::FRESSASA_FAIL if index `r_i` is invalid.
+ */
+int freesasa_structure_residue_atoms(const freesasa_structure_t *s, int r_i, 
+                                     int *first, int *last);
 
 /**
     Writes PDB file, but with B-factors replaced by new values. Can be

@@ -49,14 +49,14 @@ static int freesasa_verbosity;
 
 typedef struct {
     int *class;
-    int *residue;
+    int *residue_type;
 } class_t;
 
 typedef struct {
     double *sasa;
     double total;
     double *class;
-    double *residue;
+    double *residue_type;
 } result_t;
 
 struct freesasa_t {
@@ -162,13 +162,13 @@ static class_t* freesasa_classify_structure(const freesasa_structure_t *p)
 
     class_t* c = (class_t*)malloc(sizeof(class_t));
     c->class = (int*)malloc(sizeof(int)*n);
-    c->residue = (int*)malloc(sizeof(int)*n);
+    c->residue_type = (int*)malloc(sizeof(int)*n);
 
     for (int i = 0; i < n; ++i) {
         const char *res_name = freesasa_structure_atom_res_name(p,i);
         const char *atom_name = freesasa_structure_atom_name(p,i);
         c->class[i] = freesasa_classify_class(res_name,atom_name);
-        c->residue[i] = freesasa_classify_residue(res_name);
+        c->residue_type[i] = freesasa_classify_residue(res_name);
     }
 
     return c;
@@ -178,7 +178,7 @@ static void freesasa_class_free(class_t *c)
 {
     if (! c) return;
     free(c->class);
-    free(c->residue);
+    free(c->residue_type);
     free(c);
 }
 
@@ -191,10 +191,10 @@ static result_t* freesasa_result_new(size_t n_atoms)
 
     r->sasa = (double*)malloc(sizeof(double)*n_atoms);
     r->class = (double*)malloc(sizeof(double)*nc);
-    r->residue = (double*)malloc(sizeof(double)*nr);
+    r->residue_type = (double*)malloc(sizeof(double)*nr);
 
     for (int i = 0; i < nc; ++i) r->class[i] = 0;
-    for (int i = 0; i < nr; ++i) r->residue[i] = 0;
+    for (int i = 0; i < nr; ++i) r->residue_type[i] = 0;
 
     return r;
 }
@@ -204,7 +204,7 @@ static void freesasa_result_free(result_t *r)
     if (! r) return;
     free(r->sasa);
     free(r->class);
-    free(r->residue);
+    free(r->residue_type);
     free(r);
 }
 
@@ -215,7 +215,7 @@ static void freesasa_get_class_result(freesasa_t *s, freesasa_structure_t *p)
 
     for (size_t i = 0; i < freesasa_structure_n(p); ++i) {
         s->result->class[s->class->class[i]] += s->result->sasa[i];
-        s->result->residue[s->class->residue[i]] += s->result->sasa[i];
+        s->result->residue_type[s->class->residue_type[i]] += s->result->sasa[i];
     }
 }
 
@@ -620,21 +620,51 @@ int freesasa_log(FILE *log, const freesasa_t *s)
     return FREESASA_SUCCESS;
 }
 
-int freesasa_per_residue(FILE *output, const freesasa_t *s)
+int freesasa_per_residue_type(FILE *output, const freesasa_t *s)
 {
     if (! output) {
-        return freesasa_fail("freesasa_per_residue(2) output file is "
+        return freesasa_fail("freesasa_per_residue_type() output file is "
                              "a NULL pointer.");
     }
     if (! s->calculated) {
-        return freesasa_fail("freesasa_per_residue(2) called, "
-                             "but no cqalculation has been performed.");
+        return freesasa_fail("freesasa_per_residue_type() called, "
+                             "but no calculation has been performed.");
     }
     for (int i = 0; i < freesasa_classify_nresiduetypes(); ++i) {
-        double sasa = s->result->residue[i];
+        double sasa = s->result->residue_type[i];
         if (i < 20 || sasa > 0) {
-            fprintf(output,"%s %8.2f\n",freesasa_classify_residue2str(i),sasa);
+            fprintf(output,"RES: %s %9.2f\n",freesasa_classify_residue2str(i),sasa);
         }
+    }
+    return FREESASA_SUCCESS;
+}
+
+int freesasa_per_residue(FILE *output, const freesasa_t *s)
+{
+    if (! output) {
+        return freesasa_fail("freesasa_per_residue() output file is "
+                             "a NULL pointer.");
+    }
+    if (! s->calculated) {
+        return freesasa_fail("freesasa_per_residue() called, "
+                             "but no calculation has been performed.");
+    }
+
+    int first, last;
+    const freesasa_structure_t *p = s->structure;
+    const double *sasa = s->result->sasa;
+    const int naa = freesasa_structure_n_residues(p);
+
+    for (int i = 0; i < naa; ++i) {
+        freesasa_structure_residue_atoms(p,i,&first,&last);
+        double a = 0;
+        for (int j = first; j <= last; ++j) {
+            a += sasa[i];
+        }
+        fprintf(output,"SEQ: %c %s %s %7.2f\n",
+                freesasa_structure_atom_chain(p,first),
+                freesasa_structure_atom_res_number(p,first),
+                freesasa_structure_atom_res_name(p,first),a);
     }
     return FREESASA_SUCCESS;
 }
@@ -647,7 +677,7 @@ double freesasa_area_residue(const freesasa_t *s, const char *res_name)
         return -1.0;
     }
     int res = freesasa_classify_residue(res_name);
-    return s->result->residue[res];
+    return s->result->residue_type[res];
 }
 
 int freesasa_write_pdb(FILE *output, const freesasa_t *s)

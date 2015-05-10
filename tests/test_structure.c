@@ -65,6 +65,13 @@ START_TEST (test_structure_api)
         ck_assert(fabs(xyz[0]+xyz[1]+xyz[2]-3*i) < 1e-10);
     }
     ck_assert(freesasa_structure_n(s) == N);
+    ck_assert(freesasa_structure_n_residues(s) == 1);
+    
+    int first, last;
+    ck_assert(freesasa_structure_residue_atoms(s,0,&first,&last) == FREESASA_SUCCESS);
+    ck_assert(first == 0 && last == N-1);
+    ck_assert(freesasa_structure_residue_atoms(s,1,&first,&last) == FREESASA_FAIL);
+    
 }
 END_TEST
 
@@ -127,7 +134,7 @@ void teardown_1ubq(void)
 START_TEST (test_structure_1ubq)
 {
     ck_assert(freesasa_structure_n(s) == 602);
-
+    ck_assert(freesasa_structure_n_residues(s) == 76);
     // check at random atom to see that parsing was correct
     ck_assert_str_eq(freesasa_structure_atom_res_name(s,8),"GLN");
     ck_assert_str_eq(freesasa_structure_atom_name(s,8)," N  ");

@@ -434,16 +434,28 @@ extern "C"{
     Prints name/value-pairs with the total SASA of each residue
     type. The standard 20 amino acids are always included in output,
     non-standard ones and nucleotides only if they were present in
-    input. 
+    input. Each line in the output is prefixed by the string 'RES:'.
     
     @param output Output file.
     @param s Self.
     @return ::FREESASA_FAIL if file-pointer is NULL or if no calculation
-    has been performed yet.  
+    has been performed yet.
 */
-    int freesasa_per_residue(FILE *output, const freesasa_t *s);
+    int freesasa_per_residue_type(FILE *output, const freesasa_t *s);
 
 /**
+    Print SASA for each residue individually to file. 
+
+    Each line in the output is prefixed by the string 'SEQ:'.
+
+    @param output Output file.
+    @param s Self.
+    @return ::FREESASA_FAIL if file-pointer is NULL or if no calculation
+    has been performed yet.
+ */
+    int freesasa_per_residue(FILE *output, const freesasa_t *s);
+/**
+
     Total SASA for specific residue type.
 
     Returns total SASA for residue of specified type. If the value of
@@ -506,7 +518,7 @@ extern "C"{
     @param s Self.
     @param i Atom index.
     @return Radius of atom in Ångström. Prints error and returns negative
-    value if atom index is invalid or no value available. 
+    value if atom index is invalid or no value available.
 */
     double freesasa_radius_atom(const freesasa_t *s, int i);
 

@@ -39,13 +39,15 @@ char *program_name;
 typedef struct  {
     freesasa_t *s;
     FILE *B;
+    int per_residue_type;
     int per_residue;
 } settings_t;
 
 settings_t def_settings = {
     .s = NULL,
     .B = NULL,
-    .per_residue = 0
+    .per_residue_type = 0,
+    .per_residue = 0,
 };
 
 void help() {
@@ -70,7 +72,8 @@ void help() {
             "       -t  number of threads to use in calculation (for multicore CPUs)\n");
 #endif
     fprintf(stderr,
-            "       -r  print SASA for each residue\n");
+            "       -r  print SASA for each residue type\n"
+            "       -R  print SASA for ecah residue, sequentially\n");
     fprintf(stderr,
             "       -B  print PDB file with SASA for each atom as B-factors,\n"
             "           in specified output file.");
@@ -101,6 +104,10 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
         printf("Nucleic: %9.2f A2\n",tmp);
     if ((tmp = freesasa_area_class(s, FREESASA_CLASS_UNKNOWN)) > 0)
         printf("Unknown: %9.2f A2\n",tmp);
+    if (settings->per_residue_type) {
+        printf("\n");
+        freesasa_per_residue_type(stdout,s);
+    }
     if (settings->per_residue) {
         printf("\n");
         freesasa_per_residue(stdout,s);
@@ -122,7 +129,7 @@ int main (int argc, char **argv) {
     program_name = argv[0];
 #endif
 
-    while ((opt = getopt(argc, argv, "n:d:t:p:B:hLSr")) != -1) {
+    while ((opt = getopt(argc, argv, "n:d:t:p:B:hLSrR")) != -1) {
         errno = 0;
         int result = FREESASA_SUCCESS;
         switch(opt) {
@@ -156,6 +163,9 @@ int main (int argc, char **argv) {
             result = freesasa_set_probe_radius(settings.s,atof(optarg));
             break;
         case 'r':
+            settings.per_residue_type = 1;
+            break;
+        case 'R':
             settings.per_residue = 1;
             break;
         case 't':
