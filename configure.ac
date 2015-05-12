@@ -45,16 +45,20 @@ AC_CHECK_PROG(DVIPS, dvips, dvips)
 AC_CHECK_PROG(PDFLATEX, pdflatex, pdflatex)
 AC_CHECK_PROG(EPSTOPDF, epstopdf, epstopdf)
 AC_CHECK_PROG(DOXYGEN, doxygen, doxygen)
-DOXYGEN_V=`doxygen --version` 
-AX_COMPARE_VERSION([$DOXYGEN_V],[lt],[1.8.8],
-                   [echo 'Warning: Doxygen should preferrably be of version 1.8.8 or higher'])
+
 #esyscmd(doxygen --version)]
 AM_CONDITIONAL([HAVE_LATEX], [test -n "$LATEX" && test -n "$DVIPS"])
-AM_COND_IF([HAVE_LATEX],[echo "LaTeX available"],[echo "LaTeX not available, .dvi and .ps documentation cannot be built"])
+AM_COND_IF([HAVE_LATEX],[],[echo "LaTeX not available, .dvi and .ps documentation cannot be built"])
 AM_CONDITIONAL([HAVE_PDF],[test -n "$EPSTOPDF" && test -n "$PDFLATEX"])
 AM_COND_IF([HAVE_PDF],[],[.pdf documentation cannot be built])
 AM_CONDITIONAL([HAVE_DOXYGEN],[test -n "$DOXYGEN"])
-AM_COND_IF([HAVE_DOXYGEN],[AC_CONFIG_FILES([doc/Doxyfile])])
+AM_COND_IF([HAVE_DOXYGEN],[AC_CONFIG_FILES([doc/Doxyfile])],[echo "Doxygen not available, html documentation cannot be built"])
+if test -n "$DOXYGEN"; then
+   DOXYGEN_V=`doxygen --version`
+   DOXYGEN_REQ=1.8.8
+   AX_COMPARE_VERSION([$DOXYGEN_V],[lt],[$DOXYGEN_REQ],
+                      [echo "Warning: Doxygen should preferrably be of version $DOXYGEN_REQ or higher (found $DOXYGEN_V)"])
+fi
 
 # Checks for testing
 PKG_CHECK_MODULES([CHECK],[check >= 0.9.4])
@@ -64,5 +68,6 @@ AC_ARG_ENABLE([gcov],
     [],
     [enable_gcov=no])
 AM_CONDITIONAL([COND_GCOV],[test '!' "$enable_gcov" = no])
+AM_CONDITIONAL([HAVE_CHECK],[test -n $CHECK])
 
 AC_OUTPUT

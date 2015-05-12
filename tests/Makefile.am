@@ -1,3 +1,5 @@
+if HAVE_CHECK
+
 if COND_GCOV
 AM_CFLAGS = --coverage
 AM_LDFLAGS = -lgcov
@@ -16,3 +18,5 @@ test_CFLAGS = -I$(top_srcdir)/src $(AM_CFLAGS)
 test_LDADD = ../src/libfreesasa.a @CHECK_LIBS@
 
 CLEANFILES = tmp/*  $(GCOV_FILES)
+
+endif
