@@ -102,7 +102,7 @@ extern "C"{
 
     @return The created object
  */
-    freesasa_t* freesasa_init();
+    freesasa_t* freesasa_init(void);
 
 /**
     Frees resources allocated to a freesasa_t object. 

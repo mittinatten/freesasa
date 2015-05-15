@@ -39,7 +39,7 @@
 typedef struct freesasa_coord_t freesasa_coord_t;
 
 //! Initialize new ::freesasa_coord_t object
-freesasa_coord_t* freesasa_coord_new();
+freesasa_coord_t* freesasa_coord_new(void);
 
 //! Free resources allocated by ::freesasa_coord_t object
 void freesasa_coord_free(freesasa_coord_t*);

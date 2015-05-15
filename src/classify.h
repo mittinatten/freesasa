@@ -137,7 +137,7 @@ const char* freesasa_classify_class2str(int class);
 
     @return Number of classes.
 */
-int freesasa_classify_nclasses();
+int freesasa_classify_nclasses(void);
 
 
 /////////////////////////////
@@ -224,7 +224,7 @@ double freesasa_classify_element_radius(int element);
 
     @return Number of element types.
 */
-int freesasa_classify_nelements();
+int freesasa_classify_nelements(void);
 
 
 //////////////////
@@ -280,7 +280,7 @@ double freesasa_classify_oons_radius(int oons_type);
   
    @return The number of OONS types.
 */
-int freesasa_classify_noons();
+int freesasa_classify_noons(void);
 
 
 ///////////////////

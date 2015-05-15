@@ -33,7 +33,7 @@
 typedef struct freesasa_strmap_ freesasa_strmap_t;
 
 /** Create new strmap_t-object. */
-freesasa_strmap_t* freesasa_strmap_new();
+freesasa_strmap_t* freesasa_strmap_new(void);
 
 /** Free strmap_t-object. */
 int freesasa_strmap_free(freesasa_strmap_t *map);

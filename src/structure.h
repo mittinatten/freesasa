@@ -45,7 +45,7 @@ typedef struct freesasa_structure_t freesasa_structure_t;
 
     @return The generated struct.
  */
-freesasa_structure_t* freesasa_structure_init();
+freesasa_structure_t* freesasa_structure_init(void);
 
 /**
     Free structure.
