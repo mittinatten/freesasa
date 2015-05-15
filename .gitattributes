@@ -1,1 +1,3 @@
 *.eps binary
+*.h linguist-language=C
+*.c linguist-language=C
