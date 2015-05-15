@@ -106,16 +106,6 @@ const freesasa_t freesasa_def_param = {
 
 const char *freesasa_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
-int freesasa_set_verbosity(freesasa_verbosity s) {
-    if (s == FREESASA_V_NORMAL || s == FREESASA_V_SILENT) {
-        verbosity = s;
-        return FREESASA_SUCCESS;
-    }
-    return FREESASA_WARN;
-}
-freesasa_verbosity freesasa_get_verbosity(void) {
-    return verbosity;
-}
 
 static void freesasa_err_impl(int err, const char *format, va_list arg)
 {
@@ -697,4 +687,70 @@ int freesasa_write_pdb(FILE *output, const freesasa_t *s)
     }
     return freesasa_structure_write_pdb_bfactors(output,    s->structure,
                                                  s->result->sasa);
+}
+
+
+static void freesasa_alloc_strvp(double **value, char ***desc, size_t n)
+{
+    const int STRL=30;
+    *value = (double*) malloc(sizeof(double)*n);
+    *desc = (char**) malloc(sizeof(char*)*n);
+    for (size_t i = 0; i < n; ++i) {
+        (*desc)[i] = (char*) malloc(sizeof(char)*STRL);
+    }
+}
+
+void freesasa_free_strvp(double *value, char **desc, size_t n)
+{
+    if (value != NULL) free(value);
+    if (desc != NULL) {
+        for (size_t i = 0; i < n; ++i) {
+            if (desc[i] != NULL) free(desc[i]);
+        }
+        free(desc);
+    }
+}
+    
+int freesasa_string_value_pairs(const freesasa_t *s,freesasa_result_type type,
+                                double **value, char ***desc, size_t *n)
+{
+    *n = 0;
+    const freesasa_structure_t *p = s->structure;
+    switch (type) {
+    case FREESASA_ATOMS:
+        *n = freesasa_n_atoms(s);
+        freesasa_alloc_strvp(value,desc,*n);
+        for (size_t i = 0; i < *n; ++i) {
+            (*value)[i] = freesasa_area_atom(s,i);
+            sprintf((*desc)[i],"%c %s %s %s",
+                    freesasa_structure_atom_chain(p,i),
+                    freesasa_structure_atom_res_name(p,i),
+                    freesasa_structure_atom_res_number(p,i),
+                    freesasa_structure_atom_name(p,i));
+        }
+        break;
+    case FREESASA_RESIDUES:
+        *n = freesasa_structure_n_residues(p);
+        freesasa_alloc_strvp(value,desc,*n);
+        break;
+    case FREESASA_RESIDUE_TYPES:
+        *n = 20;
+        freesasa_alloc_strvp(value,desc,*n);
+        break;
+    default:
+        return freesasa_fail("Error: Illegal result type in freesasa_string_value_pairs().\n");
+    }
+    return FREESASA_SUCCESS;
+}
+
+
+int freesasa_set_verbosity(freesasa_verbosity s) {
+    if (s == FREESASA_V_NORMAL || s == FREESASA_V_SILENT) {
+        verbosity = s;
+        return FREESASA_SUCCESS;
+    }
+    return FREESASA_WARN;
+}
+freesasa_verbosity freesasa_get_verbosity(void) {
+    return verbosity;
 }

@@ -75,6 +75,12 @@ typedef enum {
 } freesasa_class;
 
 /**
+   Granularity levels for arrays of results in freesasa_string_value_pairs().
+ */
+typedef enum  {FREESASA_ATOMS, FREESASA_RESIDUES, FREESASA_RESIDUE_TYPES}
+    freesasa_result_type;
+
+/**
     Verbosity levels. 
     - ::FREESASA_V_NORMAL: print all errors and warnings.
     - ::FREESASA_V_SILENT: print no errors and warnings.
@@ -478,6 +484,17 @@ extern "C"{
     before calculations have been performed.
 */
     double freesasa_area_residue(const freesasa_t *s, const char *res_name);
+
+/**
+    Don't use yet!
+ */
+    int freesasa_string_value_pairs(const freesasa_t *s,freesasa_result_type type,
+                                    double **value, char ***desc, size_t *n);
+
+/**
+    Don't use yet!
+ */
+    void freesasa_free_strvp(double *value, char **desc, size_t n);
 
 /**
     Write SASA values to PDB-file.
