@@ -214,7 +214,6 @@ END_TEST
 
 START_TEST (test_freesasa_api_basic)
 {
-    extern int freesasa_set_verbosity();
     freesasa_set_verbosity(FREESASA_V_SILENT);
     freesasa_t *s = freesasa_init();
     ck_assert(s != NULL);
