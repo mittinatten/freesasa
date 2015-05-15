@@ -45,7 +45,7 @@ const char *freesasa_name = "freesasa";
 #endif
 
 // to control error messages (used for debugging and testing)
-static int freesasa_verbosity;
+static freesasa_verbosity verbosity;
 
 typedef struct {
     int *class;
@@ -106,18 +106,15 @@ const freesasa_t freesasa_def_param = {
 
 const char *freesasa_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
-// The following functions lets test-suite silence error messages
-enum {FREESASA_V_NORMAL = 0, FREESASA_V_SILENT=1};
-
-int freesasa_set_verbosity(int s) {
+int freesasa_set_verbosity(freesasa_verbosity s) {
     if (s == FREESASA_V_NORMAL || s == FREESASA_V_SILENT) {
-        freesasa_verbosity = s;
+        verbosity = s;
         return FREESASA_SUCCESS;
     }
     return FREESASA_WARN;
 }
-int freesasa_get_verbosity() {
-    return freesasa_verbosity;
+freesasa_verbosity freesasa_get_verbosity(void) {
+    return verbosity;
 }
 
 static void freesasa_err_impl(int err, const char *format, va_list arg)
@@ -135,7 +132,7 @@ static void freesasa_err_impl(int err, const char *format, va_list arg)
 
 int freesasa_fail(const char *format,...)
 {
-    if (freesasa_verbosity == FREESASA_V_SILENT) return FREESASA_FAIL;
+    if (verbosity == FREESASA_V_SILENT) return FREESASA_FAIL;
     va_list arg;
     va_start(arg, format);
     freesasa_err_impl(FREESASA_FAIL,format,arg);
@@ -145,7 +142,7 @@ int freesasa_fail(const char *format,...)
 
 int freesasa_warn(const char *format,...)
 {
-    if (freesasa_verbosity == FREESASA_V_SILENT) return FREESASA_WARN;
+    if (verbosity == FREESASA_V_SILENT) return FREESASA_WARN;
     va_list arg;
     va_start(arg, format);
     freesasa_err_impl(FREESASA_WARN,format,arg);
@@ -444,7 +441,7 @@ int freesasa_set_sr_points(freesasa_t *s, int n) {
         return FREESASA_SUCCESS;
     }
     freesasa_warn("number of test-points must be one of the following:  ");
-    if (freesasa_verbosity == FREESASA_V_NORMAL) {
+    if (verbosity == FREESASA_V_NORMAL) {
         freesasa_srp_print_n_opt(stderr);
     }
     freesasa_warn("proceeding with default number of test-points (%d)",FREESASA_DEF_SR_N);
@@ -520,7 +517,7 @@ double freesasa_area_class(const freesasa_t* s, freesasa_class c)
 {
     if (! s->calculated) {
         freesasa_fail("SASA calculation has not been performed, "
-                      "no total SASA value available.");
+                      "no SASA values available for classes.");
         return -1.0;
     }
     assert(c >= FREESASA_POLAR && c <= FREESASA_CLASS_UNKNOWN &&
@@ -531,7 +528,7 @@ double freesasa_area_atom(const freesasa_t *s, int i)
 {
     if ( !s->calculated ) {
         freesasa_fail("SASA calculation has not been performed, "
-                      "no SASA values available.");
+                      "no SASA values available for atoms.");
         return -1.0;
     }
     if (i < 0 || i > s->n_atoms-1) {
@@ -593,7 +590,7 @@ int freesasa_log(FILE *log, const freesasa_t *s)
         const char *msg = "freesasa_log(2) called, but no calculation "
             "has been performed.";
         freesasa_warn(msg);
-        if (freesasa_verbosity == FREESASA_V_NORMAL) {
+        if (verbosity == FREESASA_V_NORMAL) {
             fprintf(log,"%s\n",msg);
         }
         return FREESASA_WARN;

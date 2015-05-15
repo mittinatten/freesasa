@@ -34,8 +34,6 @@ const double bfactors[N] = {1., 1., 1., 1., 1.};
 
 freesasa_structure_t *s;
 
-extern int freesasa_set_verbosity(int v);
-
 static void setup(void)
 {
     s = freesasa_structure_init();
@@ -79,7 +77,7 @@ START_TEST (test_write_no_pdb)
 {
     FILE *null = fopen("/dev/null","w"); // won't work on all platforms
 
-    freesasa_set_verbosity(1);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert(freesasa_structure_write_pdb_bfactors(NULL,s,bfactors) == FREESASA_FAIL);
     ck_assert(freesasa_structure_write_pdb_bfactors(null,s,NULL) == FREESASA_FAIL);
     ck_assert(freesasa_structure_write_pdb_bfactors(NULL,s,NULL) == FREESASA_FAIL);
@@ -182,7 +180,7 @@ START_TEST (test_pdb)
                                 "data/empty.pdb",
                                 "data/empty_model.pdb"};
     const int result_null[] = {0,1,1};
-    freesasa_set_verbosity(1);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 0; i < 3; ++i) {
         FILE *pdb = fopen(file_names[i],"r");
         ck_assert(pdb != NULL);

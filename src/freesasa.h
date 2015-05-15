@@ -74,6 +74,13 @@ typedef enum {
     FREESASA_NUCLEICACID, FREESASA_CLASS_UNKNOWN
 } freesasa_class;
 
+/**
+    Verbosity levels. 
+    - ::FREESASA_V_NORMAL: print all errors and warnings.
+    - ::FREESASA_V_SILENT: print no errors and warnings.
+ */
+typedef enum {FREESASA_V_NORMAL, FREESASA_V_SILENT} freesasa_verbosity;
+
 /// Limit for protein name lengths
 #define FREESASA_NAME_LIMIT 30
 
@@ -546,6 +553,21 @@ extern "C"{
     inconsistencies are detected (with explanatory error-message). 
 */
     int freesasa_log(FILE *log, const freesasa_t *s);
+
+/**
+    Set the global verbosity level.
+
+    @arg v the verbosity level
+    @return ::FREESASA_SUCCESS. If v is invalid ::FREESASA_FAIL.
+    @see freesasa_verbosity
+ */    
+    int freesasa_set_verbosity(freesasa_verbosity v);
+/**
+    Get the current verbosity level
+
+    @return the verbosity level. 
+ */
+    freesasa_verbosity freesasa_get_verbosity(void);
 
 #ifdef __cplusplus
 }

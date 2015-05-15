@@ -41,8 +41,6 @@ double tolerance;
 
 extern int freesasa_fail(const char*);
 extern int freesasa_warn(const char*);
-extern int freesasa_set_verbosity(int);
-extern int freesasa_get_verbosity();
 
 double rel_err(double v1, double v2) {
     return fabs(v1-v2)/(fabs(v1)+fabs(v2));
@@ -217,7 +215,7 @@ END_TEST
 START_TEST (test_freesasa_api_basic)
 {
     extern int freesasa_set_verbosity();
-    freesasa_set_verbosity(1);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
     freesasa_t *s = freesasa_init();
     ck_assert(s != NULL);
     ck_assert(freesasa_n_atoms(s) == 0);
@@ -326,7 +324,7 @@ START_TEST (test_minimal_calc)
     double coord[3] = {0,0,0};
     double r[1] = {1.0};
 
-    freesasa_set_verbosity(1);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
 
     ck_assert(freesasa_calc_coord(s,coord,r,1) == FREESASA_SUCCESS);
 
@@ -358,7 +356,7 @@ START_TEST (test_calc_errors)
     freesasa_fail("Test fail-message.");
     freesasa_warn("Test warn-message.");
     ck_assert(freesasa_get_verbosity() == 0);
-    freesasa_set_verbosity(1);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
 
     //test empty coordinates
     ck_assert(freesasa_calc_coord(s,&dummy,NULL,0) == FREESASA_WARN);
