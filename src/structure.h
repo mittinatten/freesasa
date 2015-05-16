@@ -31,6 +31,9 @@
 #include <stdio.h>
 #include "coord.h"
 
+//! The maximum string length of returned by freesasa_structure_descriptor() 
+#define FREESASA_STRUCTURE_DESCRIPTOR_STRL 20
+
 /**
     Struct for structure object.
 
@@ -191,6 +194,17 @@ const char* freesasa_structure_atom_res_number(const freesasa_structure_t *s,
 char freesasa_structure_atom_chain(const freesasa_structure_t *s, int i);
 
 /**
+    Get a string describing an atom. 
+    Format: "A    1 ALA  CA " 
+    (chain label, residue number, residue type, atom name)
+
+    @param s Self.
+    @param i Atom index
+    @return Descriptor string. 
+ */
+const char* freesasa_structure_atom_descriptor(const freesasa_structure_t *s, int i);
+
+/**
     Get indices of first and last atoms of a residue
  
     @param s Self.
@@ -201,6 +215,8 @@ char freesasa_structure_atom_chain(const freesasa_structure_t *s, int i);
  */
 int freesasa_structure_residue_atoms(const freesasa_structure_t *s, int r_i, 
                                      int *first, int *last);
+
+const char* freesasa_structure_residue_descriptor(const freesasa_structure_t *s, int r_i);
 
 /**
     Writes PDB file, but with B-factors replaced by new values. Can be

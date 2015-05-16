@@ -419,7 +419,6 @@ START_TEST (test_multi_calc)
                 "(Tests must be run from directory test/): %s\n",
                 strerror(errno));
     }
-    ck_assert(pdb != NULL);
     ck_assert(freesasa_calc_pdb(s,pdb) == FREESASA_SUCCESS);
     // The reference values were the output of FreeSASA on 2014-02-10
     ck_assert(fabs(freesasa_area_total(s) - 4759.86096) < 1e-5);
@@ -436,6 +435,32 @@ START_TEST (test_multi_calc)
 }
 END_TEST
 
+START_TEST (test_strvp)
+{
+    freesasa_t *s = freesasa_init();
+    double *value;
+    char **desc;
+    size_t n;
+
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    ck_assert(freesasa_string_value_pairs(s,FREESASA_ATOMS, &value, &desc, &n) == FREESASA_FAIL);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+    FILE *pdb = fopen("data/1ubq.pdb","r");
+    if (pdb == NULL) {
+        fprintf(stderr,"error reading PDB-file for test. "
+                "(Tests must be run from directory test/): %s\n",
+                strerror(errno));
+    }
+    freesasa_calc_pdb(s,pdb);
+
+    ck_assert(freesasa_string_value_pairs(s,FREESASA_ATOMS, &value, &desc, &n) == FREESASA_SUCCESS);
+    ck_assert(value != NULL);
+    ck_assert(desc != NULL);
+    ck_assert(n == freesasa_n_atoms(s));
+    ck_assert(value[0] = freesasa_area_atom(s,0));
+    fclose(pdb);
+}
+END_TEST
 
 Suite *sasa_suite()
 {
@@ -463,11 +488,14 @@ Suite *sasa_suite()
     tcase_add_checked_fixture(tc_sr,setup_sr,teardown_sr);
     tcase_add_test(tc_sr, test_sasa_1ubq);
 
+    TCase *tc_strvp = tcase_create("string-value pairs");
+
     suite_add_tcase(s, tc_basic);
     suite_add_tcase(s, tc_lr_basic);
     suite_add_tcase(s, tc_sr_basic);
     suite_add_tcase(s, tc_lr);
     suite_add_tcase(s, tc_sr);
+    suite_add_tcase(s, tc_strvp);
 
 #if HAVE_LIBPTHREAD
     printf("Using pthread\n");

@@ -37,6 +37,7 @@ typedef struct {
     char res_name[PDB_ATOM_RES_NAME_STRL+1];
     char res_number[PDB_ATOM_RES_NUMBER_STRL+1];
     char atom_name[PDB_ATOM_NAME_STRL+1];
+    char descriptor[FREESASA_STRUCTURE_DESCRIPTOR_STRL];
     char line[PDB_LINE_STRL+1];
     char chain_label;
 } atom_t;
@@ -48,6 +49,7 @@ struct freesasa_structure_t {
     int number_residues;
     int number_chains;
     int *res_first_atom;
+    char **res_desc;
 };
 
 freesasa_structure_t* freesasa_structure_init()
@@ -60,6 +62,7 @@ freesasa_structure_t* freesasa_structure_init()
     p->a = (atom_t*) malloc(sizeof(atom_t));
     p->xyz = freesasa_coord_new();
     p->res_first_atom = (int*) malloc(sizeof(int));
+    p->res_desc = (char**) malloc(sizeof(char*));
     return p;
 }
 
@@ -69,6 +72,12 @@ void freesasa_structure_free(freesasa_structure_t *p)
     if (p->a) free(p->a);
     if (p->xyz) freesasa_coord_free(p->xyz);
     if (p->res_first_atom) free(p->res_first_atom);
+    if (p->res_desc) {
+        for (int i = 0; i < p->number_residues; ++i) {
+            if (p->res_desc[i]) free(p->res_desc[i]);
+        }
+        free(p->res_desc);
+    }
     free(p);
 }
 
@@ -153,6 +162,7 @@ int freesasa_structure_add_atom(freesasa_structure_t *p,
     strcpy(a->atom_name,atom_name);
     strcpy(a->res_name,residue_name);
     strcpy(a->res_number,residue_number);
+    sprintf(a->descriptor,"%c %s %s %s",chain_label,residue_number,residue_name,atom_name);
     a->chain_label = chain_label;
     a->line[0] = '\0';
 
@@ -168,11 +178,18 @@ int freesasa_structure_add_atom(freesasa_structure_t *p,
     if (p->number_residues == 0) {
         ++p->number_residues;
         p->res_first_atom[0] = 0;
+        p->res_desc[0] = (char*) malloc(FREESASA_STRUCTURE_DESCRIPTOR_STRL);
+        sprintf(p->res_desc[0],"%c %s %s",
+                chain_label,residue_number,residue_name);
     }
     if (na > 1 && strcmp(residue_number,p->a[na-2].res_number)) {
         int naa = ++p->number_residues;
         p->res_first_atom = (int*) realloc(p->res_first_atom, sizeof(int)*naa);
         p->res_first_atom[naa-1] = na-1;
+        p->res_desc = (char**) realloc(p->res_desc, sizeof(char*)*naa);
+        p->res_desc[naa-1] = (char*) malloc(FREESASA_STRUCTURE_DESCRIPTOR_STRL);
+        sprintf(p->res_desc[naa-1],"%c %s %s",
+                chain_label,residue_number,residue_name);
     }
     return FREESASA_SUCCESS;
 }
@@ -235,6 +252,12 @@ char freesasa_structure_atom_chain(const freesasa_structure_t *p,
     return p->a[i].chain_label;
 }
 
+const char* freesasa_structure_atom_descriptor(const freesasa_structure_t *p, int i)
+{
+    assert (i < p->number_atoms);
+    return p->a[i].descriptor;
+}
+
 int freesasa_structure_residue_atoms(const freesasa_structure_t *s, int r_i, int *first, int *last)
 {
     const int naa = s->number_residues;
@@ -246,6 +269,12 @@ int freesasa_structure_residue_atoms(const freesasa_structure_t *s, int r_i, int
     if (r_i == naa-1) *last = s->number_atoms-1;
     else *last = s->res_first_atom[r_i+1]-1;
     return FREESASA_SUCCESS;
+}
+
+const char* freesasa_structure_residue_descriptor(const freesasa_structure_t *s, int r_i)
+{
+    assert(r_i < s->number_residues);
+    return s->res_desc[r_i];
 }
 
 int freesasa_structure_write_pdb_bfactors(FILE *output,

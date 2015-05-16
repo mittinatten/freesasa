@@ -382,9 +382,9 @@ int freesasa_refresh(freesasa_t *s)
 {
     s->calculated = 0;
     if (! s->coord )
-        return freesasa_fail("freesasa_refresh(1) called, but no coordinates available.");
+        return freesasa_fail("freesasa_refresh() called, but no coordinates available.");
     if (! s->r )
-        return freesasa_fail("freesasa_refresh(1) called, but no atomic radii specified.");
+        return freesasa_fail("freesasa_refresh() called, but no atomic radii specified.");
     return freesasa_calc(s,s->coord,s->r);
 }
 
@@ -577,7 +577,7 @@ const char* freesasa_get_proteinname(const freesasa_t *s)
 int freesasa_log(FILE *log, const freesasa_t *s)
 {
     if (! s->calculated) {
-        const char *msg = "freesasa_log(2) called, but no calculation "
+        const char *msg = "freesasa_log() called, but no calculation "
             "has been performed.";
         freesasa_warn(msg);
         if (verbosity == FREESASA_V_NORMAL) {
@@ -626,6 +626,20 @@ int freesasa_per_residue_type(FILE *output, const freesasa_t *s)
     return FREESASA_SUCCESS;
 }
 
+static double freesasa_single_residue_sasa(const freesasa_t *s, int r_i)
+{
+    assert (s->calculated);
+    int first, last;
+    const freesasa_structure_t *p = s->structure;
+    const double *sasa = s->result->sasa;            
+    freesasa_structure_residue_atoms(p,r_i,&first,&last);
+    double a = 0;
+    for (int j = first; j <= last; ++j) {
+        a += sasa[r_i];
+    }        
+    return a;
+}
+
 int freesasa_per_residue(FILE *output, const freesasa_t *s)
 {
     if (! output) {
@@ -636,22 +650,12 @@ int freesasa_per_residue(FILE *output, const freesasa_t *s)
         return freesasa_fail("freesasa_per_residue() called, "
                              "but no calculation has been performed.");
     }
-
-    int first, last;
     const freesasa_structure_t *p = s->structure;
-    const double *sasa = s->result->sasa;
     const int naa = freesasa_structure_n_residues(p);
-
     for (int i = 0; i < naa; ++i) {
-        freesasa_structure_residue_atoms(p,i,&first,&last);
-        double a = 0;
-        for (int j = first; j <= last; ++j) {
-            a += sasa[i];
-        }
-        fprintf(output,"SEQ: %c %s %s %7.2f\n",
-                freesasa_structure_atom_chain(p,first),
-                freesasa_structure_atom_res_number(p,first),
-                freesasa_structure_atom_res_name(p,first),a);
+        fprintf(output,"SEQ: %s %7.2f\n",
+                freesasa_structure_residue_descriptor(p,i),
+                freesasa_single_residue_sasa(s,i));
     }
     return FREESASA_SUCCESS;
 }
@@ -659,7 +663,7 @@ int freesasa_per_residue(FILE *output, const freesasa_t *s)
 double freesasa_area_residue(const freesasa_t *s, const char *res_name)
 {
     if (! s->calculated) {
-        freesasa_warn("freesasa_area_residue(2) called, "
+        freesasa_warn("freesasa_area_residue() called, "
                       "but no calculation has been performed.");
         return -1.0;
     }
@@ -692,7 +696,7 @@ int freesasa_write_pdb(FILE *output, const freesasa_t *s)
 
 static void freesasa_alloc_strvp(double **value, char ***desc, size_t n)
 {
-    const int STRL=30;
+    const int STRL=FREESASA_STRUCTURE_DESCRIPTOR_STRL;
     *value = (double*) malloc(sizeof(double)*n);
     *desc = (char**) malloc(sizeof(char*)*n);
     for (size_t i = 0; i < n; ++i) {
@@ -714,24 +718,30 @@ void freesasa_free_strvp(double *value, char **desc, size_t n)
 int freesasa_string_value_pairs(const freesasa_t *s,freesasa_result_type type,
                                 double **value, char ***desc, size_t *n)
 {
+    if (!s->calculated) {
+        return freesasa_fail("Cannot access results before "
+                             "calculation has been performed.");
+    }
+
     *n = 0;
     const freesasa_structure_t *p = s->structure;
+
     switch (type) {
     case FREESASA_ATOMS:
         *n = freesasa_n_atoms(s);
         freesasa_alloc_strvp(value,desc,*n);
         for (size_t i = 0; i < *n; ++i) {
             (*value)[i] = freesasa_area_atom(s,i);
-            sprintf((*desc)[i],"%c %s %s %s",
-                    freesasa_structure_atom_chain(p,i),
-                    freesasa_structure_atom_res_name(p,i),
-                    freesasa_structure_atom_res_number(p,i),
-                    freesasa_structure_atom_name(p,i));
+            strcpy((*desc)[i],freesasa_structure_atom_descriptor(p,i));
         }
         break;
     case FREESASA_RESIDUES:
         *n = freesasa_structure_n_residues(p);
         freesasa_alloc_strvp(value,desc,*n);
+        for (size_t i = 0; i < *n; ++i) {
+            (*value)[i] = freesasa_single_residue_sasa(s,i);
+            strcpy((*desc)[i],freesasa_structure_residue_descriptor(p,i));
+        }
         break;
     case FREESASA_RESIDUE_TYPES:
         *n = 20;

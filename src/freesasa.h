@@ -487,12 +487,28 @@ extern "C"{
 
 /**
     Don't use yet!
+
+    Writes strings and value pairs to provided arrays for a given type
+    of result. The available types are ... Arrays are allocated
+    dynamically and should be freed using freesasa_free_strvp().
+
+    @see freesasa_free_strvp()
+
+    @param s Self.
+    @param type The type of result
+    @param value Where the values will be stored
+    @param desc Where descriptors for each entity is stored
+    @param n The number of elements in the allocated arrays
+    @return ::FREESASA_SUCCS. ::FREESASA_FAIL if called before
+    calculations have been performed.
  */
     int freesasa_string_value_pairs(const freesasa_t *s,freesasa_result_type type,
                                     double **value, char ***desc, size_t *n);
 
 /**
     Don't use yet!
+    
+    @see freesasa_string_value_pairs()
  */
     void freesasa_free_strvp(double *value, char **desc, size_t n);
 
