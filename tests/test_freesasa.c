@@ -438,12 +438,11 @@ END_TEST
 START_TEST (test_strvp)
 {
     freesasa_t *s = freesasa_init();
-    double *value;
-    char **desc;
-    size_t n;
-
+    freesasa_strvp_t *svp; 
+    
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert(freesasa_string_value_pairs(s,FREESASA_ATOMS, &value, &desc, &n) == FREESASA_FAIL);
+    ck_assert(freesasa_string_value_pairs(s,FREESASA_ATOMS) == NULL);
+    ck_assert(freesasa_string_value_pairs(s,-1) == NULL);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     FILE *pdb = fopen("data/1ubq.pdb","r");
     if (pdb == NULL) {
@@ -452,13 +451,12 @@ START_TEST (test_strvp)
                 strerror(errno));
     }
     freesasa_calc_pdb(s,pdb);
-
-    ck_assert(freesasa_string_value_pairs(s,FREESASA_ATOMS, &value, &desc, &n) == FREESASA_SUCCESS);
-    ck_assert(value != NULL);
-    ck_assert(desc != NULL);
-    ck_assert(n == freesasa_n_atoms(s));
-    ck_assert(value[0] = freesasa_area_atom(s,0));
+    svp = freesasa_string_value_pairs(s,FREESASA_ATOMS);
+    ck_assert(svp != NULL);
+    ck_assert(svp->n == freesasa_n_atoms(s));
+    ck_assert(svp->value[0] = freesasa_area_atom(s,0));
     fclose(pdb);
+    freesasa_strvp_free(svp);
 }
 END_TEST
 

@@ -694,65 +694,67 @@ int freesasa_write_pdb(FILE *output, const freesasa_t *s)
 }
 
 
-static void freesasa_alloc_strvp(double **value, char ***desc, size_t n)
+static freesasa_strvp_t* freesasa_alloc_strvp(size_t n)
 {
     const int STRL=FREESASA_STRUCTURE_DESCRIPTOR_STRL;
-    *value = (double*) malloc(sizeof(double)*n);
-    *desc = (char**) malloc(sizeof(char*)*n);
+    freesasa_strvp_t* svp = (freesasa_strvp_t*) malloc(sizeof(freesasa_strvp_t));
+    svp->value = (double*) malloc(sizeof(double)*n);
+    svp->string = (char**) malloc(sizeof(char*)*n);
     for (size_t i = 0; i < n; ++i) {
-        (*desc)[i] = (char*) malloc(sizeof(char)*STRL);
+        svp->string[i] = (char*) malloc(sizeof(char)*STRL);
     }
+    return svp;
 }
 
-void freesasa_free_strvp(double *value, char **desc, size_t n)
+void freesasa_strvp_free(freesasa_strvp_t *svp)
 {
-    if (value != NULL) free(value);
-    if (desc != NULL) {
-        for (size_t i = 0; i < n; ++i) {
-            if (desc[i] != NULL) free(desc[i]);
+    if (svp->value) free(svp->value);
+    if (svp->string) {
+        for (size_t i = 0; i < svp->n; ++i) {
+            if (svp->string[i]) free(svp->string[i]);
         }
-        free(desc);
+        free(svp->string);
     }
+    free(svp);
 }
     
-int freesasa_string_value_pairs(const freesasa_t *s,freesasa_result_type type,
-                                double **value, char ***desc, size_t *n)
+freesasa_strvp_t* freesasa_string_value_pairs(const freesasa_t *s,freesasa_result_type type)
 {
     if (!s->calculated) {
-        return freesasa_fail("Cannot access results before "
-                             "calculation has been performed.");
+        freesasa_fail("Cannot access results before "
+                      "calculation has been performed.");
+        return NULL;
     }
 
-    *n = 0;
     const freesasa_structure_t *p = s->structure;
-
+    freesasa_strvp_t *svp = NULL;
+    size_t n;
     switch (type) {
     case FREESASA_ATOMS:
-        *n = freesasa_n_atoms(s);
-        freesasa_alloc_strvp(value,desc,*n);
-        for (size_t i = 0; i < *n; ++i) {
-            (*value)[i] = freesasa_area_atom(s,i);
-            strcpy((*desc)[i],freesasa_structure_atom_descriptor(p,i));
+        n = freesasa_n_atoms(s);
+        svp = freesasa_alloc_strvp(n);
+        for (size_t i = 0; i < n; ++i) {
+            svp->value[i] = freesasa_area_atom(s,i);
+            strcpy(svp->string[i],freesasa_structure_atom_descriptor(p,i));
         }
         break;
     case FREESASA_RESIDUES:
-        *n = freesasa_structure_n_residues(p);
-        freesasa_alloc_strvp(value,desc,*n);
-        for (size_t i = 0; i < *n; ++i) {
-            (*value)[i] = freesasa_single_residue_sasa(s,i);
-            strcpy((*desc)[i],freesasa_structure_residue_descriptor(p,i));
+        n = freesasa_structure_n_residues(p);
+        svp = freesasa_alloc_strvp(n);
+        for (size_t i = 0; i < n; ++i) {
+            svp->value[i] = freesasa_single_residue_sasa(s,i);
+            strcpy(svp->string[i],freesasa_structure_residue_descriptor(p,i));
         }
         break;
     case FREESASA_RESIDUE_TYPES:
-        *n = 20;
-        freesasa_alloc_strvp(value,desc,*n);
+        n = 20;
+        svp = freesasa_alloc_strvp(n);
         break;
     default:
-        return freesasa_fail("Error: Illegal result type in freesasa_string_value_pairs().\n");
+        freesasa_fail("Error: Illegal result type in freesasa_string_value_pairs().\n");
     }
-    return FREESASA_SUCCESS;
+    return svp;
 }
-
 
 int freesasa_set_verbosity(freesasa_verbosity s) {
     if (s == FREESASA_V_NORMAL || s == FREESASA_V_SILENT) {
