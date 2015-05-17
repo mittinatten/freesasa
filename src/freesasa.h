@@ -88,7 +88,7 @@ typedef enum {
 /**
    Granularity levels for arrays of results in freesasa_string_value_pairs().
  */
-typedef enum  {FREESASA_ATOMS, FREESASA_RESIDUES, FREESASA_RESIDUE_TYPES}
+typedef enum  {FREESASA_ATOMS, FREESASA_RESIDUES}
     freesasa_result_type;
 
 /**

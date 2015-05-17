@@ -746,10 +746,6 @@ freesasa_strvp_t* freesasa_string_value_pairs(const freesasa_t *s,freesasa_resul
             strcpy(svp->string[i],freesasa_structure_residue_descriptor(p,i));
         }
         break;
-    case FREESASA_RESIDUE_TYPES:
-        n = 20;
-        svp = freesasa_alloc_strvp(n);
-        break;
     default:
         freesasa_fail("Error: Illegal result type in freesasa_string_value_pairs().\n");
     }
