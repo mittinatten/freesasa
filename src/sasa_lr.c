@@ -34,10 +34,6 @@
 #include "sasa.h"
 #include "srp.h"
 
-#ifndef PI
-#define PI 3.14159265358979323846
-#endif
-
 extern const char *freesasa_name;
 extern int freesasa_fail(const char *format, ...);
 extern int freesasa_warn(const char *format, ...);
@@ -369,12 +365,12 @@ static void sasa_exposed_arcs(const sasa_lr_slice_t *slice,
             //exposed_arc[i] = 0;
             const double *v = freesasa_coord_all(lr->xyz);
             double xi = v[3*I], yi = v[3*I+1];
-            for (double c = 0; c < 2*PI; c += PI/45.0) {
+            for (double c = 0; c < 2*M_PI; c += M_PI/45.0) {
                 int is_exp = 1;
                 for (int i = 0; i < n_buried; ++i) {
                     if ((c > b[i]-a[i] && c < b[i]+a[i]) ||
-                        (c - 2*PI > b[i]-a[i] && c - 2*PI < b[i]+a[i]) ||
-                        (c + 2*PI > b[i]-a[i] && c + 2*PI < b[i]+a[i])) {
+                        (c - 2*M_PI > b[i]-a[i] && c - 2*M_PI < b[i]+a[i]) ||
+                        (c + 2*M_PI > b[i]-a[i] && c + 2*M_PI < b[i]+a[i])) {
                         is_exp = 0; break;
                     }
                 }
@@ -408,8 +404,8 @@ static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict
             double d;
             for (;;) {
                 d = bj - bi;
-                if (d > PI) bj -= 2*PI;
-                else if (d < -PI) bj += 2*PI;
+                if (d > M_PI) bj -= 2*M_PI;
+                else if (d < -M_PI) bj += 2*M_PI;
                 else break;
             }
             if (fabs(d) > ai+aj) continue;
@@ -422,9 +418,9 @@ static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict
             double sup = sup_i > sup_j ? sup_i : sup_j;
             b[i] = (inf + sup)/2.0;
             a[i] = (sup - inf)/2.0;
-            if (a[i] > PI) return 0;
-            if (b[i] > PI) b[i] -= 2*PI;
-            if (b[i] < -PI) b[i] += 2*PI;
+            if (a[i] > M_PI) return 0;
+            if (b[i] > M_PI) b[i] -= 2*M_PI;
+            if (b[i] < -M_PI) b[i] += 2*M_PI;
 
             a[j] = 0; // the j:th interval should be ignored
             excluded[j] = 1;
@@ -451,7 +447,7 @@ static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict
     for (int i = 0; i < n_buried; ++i) {
         buried_angle += 2.0*a[i];
     }
-    return 2*PI - buried_angle;
+    return 2*M_PI - buried_angle;
 }
 
 //discretizes circle, but for now it's not faster than other algorithm..
@@ -461,10 +457,10 @@ static double sasa_sum_angles_int(int n_buried, double *restrict a, double *rest
     char buried[res];
     memset(buried,0,res);
 
-    const double rad2uni = 1./(2*PI);
+    const double rad2uni = 1./(2*M_PI);
 
     for (int i = 0; i < n_buried; ++i) {
-        const double bi = b[i] + 2*PI; //makes sure there are no negative values
+        const double bi = b[i] + 2*M_PI; //makes sure there are no negative values
         const double ai = a[i];
 
         int inf = ((int) ((bi - ai) * rad2uni*res)) % res;
@@ -482,7 +478,7 @@ static double sasa_sum_angles_int(int n_buried, double *restrict a, double *rest
         if (buried[i]) ++count;
     }
     //printf("%d\n",res-count);
-    return 2*PI*((res - count)/(double)(res));
+    return 2*M_PI*((res - count)/(double)(res));
 }
 
 static void sasa_get_contacts(sasa_lr_t *lr)

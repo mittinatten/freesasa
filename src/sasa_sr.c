@@ -34,10 +34,6 @@
 #include "sasa.h"
 #include "srp.h"
 
-#ifndef PI
-#define PI 3.14159265358979323846
-#endif
-
 #ifdef __GNUC__
 #define __attrib_pure__ __attribute__((pure))
 #else
@@ -213,5 +209,5 @@ static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
     for (int k = 0; k < n_points; ++k) {
         if (!spcount[k]) ++n_surface;
     }
-    return (4.0*PI*ri*ri*n_surface)/n_points;
+    return (4.0*M_PI*ri*ri*n_surface)/n_points;
 }
