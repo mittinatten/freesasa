@@ -50,21 +50,21 @@ static freesasa_verbosity verbosity;
 typedef struct {
     int *class;
     int *residue_type;
-} class_t;
+} freesasa_class_data;
 
 typedef struct {
     double *sasa;
     double total;
     double *class;
     double *residue_type;
-} result_t;
+} freesasa_result;
 
-struct freesasa_t {
+struct freesasa {
     double *r;
-    freesasa_coord_t *coord;
-    class_t *class;
+    freesasa_coord *coord;
+    freesasa_class_data *class;
     int n_atoms;
-    freesasa_structure_t *structure;
+    freesasa_structure *structure;
 
     //parameters
     freesasa_algorithm alg;
@@ -80,10 +80,10 @@ struct freesasa_t {
 
     //results
     double elapsed_time;
-    result_t *result;
+    freesasa_result *result;
 };
 
-const freesasa_t freesasa_def_param = {
+const freesasa freesasa_def_param = {
     .r = NULL,
     .coord = NULL,
     .class = NULL,
@@ -140,14 +140,14 @@ int freesasa_warn(const char *format,...)
     return FREESASA_WARN;
 }
 
-static class_t* freesasa_classify_structure(const freesasa_structure_t *p)
+static freesasa_class_data* freesasa_classify_structure(const freesasa_structure *p)
 {
     assert(freesasa_structure_n(p) >= 0 &&
            "Trying to classify atoms of illegal structure.");
 
     size_t n = freesasa_structure_n(p);
 
-    class_t* c = (class_t*)malloc(sizeof(class_t));
+    freesasa_class_data* c = (freesasa_class_data*)malloc(sizeof(freesasa_class_data));
     c->class = (int*)malloc(sizeof(int)*n);
     c->residue_type = (int*)malloc(sizeof(int)*n);
 
@@ -161,7 +161,7 @@ static class_t* freesasa_classify_structure(const freesasa_structure_t *p)
     return c;
 }
 
-static void freesasa_class_free(class_t *c)
+static void freesasa_class_free(freesasa_class_data *c)
 {
     if (! c) return;
     free(c->class);
@@ -169,9 +169,9 @@ static void freesasa_class_free(class_t *c)
     free(c);
 }
 
-static result_t* freesasa_result_new(size_t n_atoms)
+static freesasa_result* freesasa_result_new(size_t n_atoms)
 {
-    result_t *r = (result_t*)malloc(sizeof(result_t));
+    freesasa_result *r = (freesasa_result*)malloc(sizeof(freesasa_result));
 
     int nc = freesasa_classify_nclasses();
     int nr = freesasa_classify_nresiduetypes();
@@ -186,7 +186,7 @@ static result_t* freesasa_result_new(size_t n_atoms)
     return r;
 }
 
-static void freesasa_result_free(result_t *r)
+static void freesasa_result_free(freesasa_result *r)
 {
     if (! r) return;
     free(r->sasa);
@@ -195,7 +195,7 @@ static void freesasa_result_free(result_t *r)
     free(r);
 }
 
-static void freesasa_get_class_result(freesasa_t *s, freesasa_structure_t *p)
+static void freesasa_get_class_result(freesasa *s, freesasa_structure *p)
 {
     if (s->class) freesasa_class_free(s->class);
     s->class = freesasa_classify_structure(p);
@@ -206,8 +206,8 @@ static void freesasa_get_class_result(freesasa_t *s, freesasa_structure_t *p)
     }
 }
 
-static int freesasa_calc(freesasa_t *s,
-                         const freesasa_coord_t *c, const double *r)
+static int freesasa_calc(freesasa *s,
+                         const freesasa_coord *c, const double *r)
 {
     struct timeval t1, t2;
     int res = 0;
@@ -215,7 +215,7 @@ static int freesasa_calc(freesasa_t *s,
     gettimeofday(&t1,NULL);
 
     if (s->result) freesasa_result_free(s->result);
-    result_t *result;
+    freesasa_result *result;
     s->result = result = freesasa_result_new(s->n_atoms);
 
     switch(s->alg) {
@@ -247,14 +247,14 @@ static int freesasa_calc(freesasa_t *s,
     return res;
 }
 
-freesasa_t* freesasa_init()
+freesasa* freesasa_init()
 {
-    freesasa_t *s = (freesasa_t*) malloc(sizeof(freesasa_t));
+    freesasa *s = (freesasa*) malloc(sizeof(freesasa));
     *s = freesasa_def_param;
     return s;
 }
 
-void freesasa_copy_param(freesasa_t *target, const freesasa_t *source)
+void freesasa_copy_param(freesasa *target, const freesasa *source)
 {
     target->alg = source->alg;
     target->n_sr = source->n_sr;
@@ -264,7 +264,7 @@ void freesasa_copy_param(freesasa_t *target, const freesasa_t *source)
     target->calculated = 0;
 }
 
-void freesasa_free(freesasa_t *s)
+void freesasa_free(freesasa *s)
 {
     if (! s) return;
     if (s->owns_r) {
@@ -276,7 +276,7 @@ void freesasa_free(freesasa_t *s)
     if (s->structure) freesasa_structure_free(s->structure);
     free(s);
 }
-int freesasa_calc_coord(freesasa_t *s, const double *coord,
+int freesasa_calc_coord(freesasa *s, const double *coord,
                         const double *r, size_t n)
 {
     s->calculated = 0;
@@ -290,14 +290,14 @@ int freesasa_calc_coord(freesasa_t *s, const double *coord,
     if (s->coord) free(s->coord);
     s->coord = NULL;
 
-    freesasa_coord_t *c = freesasa_coord_new_linked(coord,n);
+    freesasa_coord *c = freesasa_coord_new_linked(coord,n);
     int res = freesasa_calc(s,c,r);
     freesasa_coord_free(c);
 
     return res;
 }
 // assumes s has a structure
-static int freesasa_calc_structure(freesasa_t *s)
+static int freesasa_calc_structure(freesasa *s)
 {
     assert(s->structure);
 
@@ -312,10 +312,10 @@ static int freesasa_calc_structure(freesasa_t *s)
     if (res == FREESASA_SUCCESS) freesasa_get_class_result(s,s->structure);
     return res;
 }
-int freesasa_calc_pdb(freesasa_t *s, FILE *pdb_file)
+int freesasa_calc_pdb(freesasa *s, FILE *pdb_file)
 {
     s->calculated = 0;
-    freesasa_structure_t *p = freesasa_structure_init_from_pdb(pdb_file);
+    freesasa_structure *p = freesasa_structure_init_from_pdb(pdb_file);
     if (!p) {
         return freesasa_fail("Failure reading PDB-file.");
     }
@@ -326,7 +326,7 @@ int freesasa_calc_pdb(freesasa_t *s, FILE *pdb_file)
     return freesasa_calc_structure(s);
 }
 
-int freesasa_calc_atoms(freesasa_t *s, const double *coord, 
+int freesasa_calc_atoms(freesasa *s, const double *coord, 
                          const char **resnames, 
                          const char **atomnames, size_t n)
 {
@@ -335,7 +335,7 @@ int freesasa_calc_atoms(freesasa_t *s, const double *coord,
 
     if (s->structure) freesasa_structure_free(s->structure);
     
-    freesasa_structure_t *p = freesasa_structure_init();
+    freesasa_structure *p = freesasa_structure_init();
     for (size_t i = 0; i < n; ++i) {
         status = freesasa_structure_add_atom(p,atomnames[i],resnames[i],"   1",'A',
                                               coord[i*3],coord[i*3+1],coord[i*3+2]);
@@ -357,7 +357,7 @@ double freesasa_radius(const char* residue_name, const char* atom_name)
 {
     return freesasa_classify_radius(residue_name,atom_name);
 }
-int freesasa_link_coord(freesasa_t *s, const double *coord,
+int freesasa_link_coord(freesasa *s, const double *coord,
                         double *r, size_t n)
 {
     s->calculated = 0;
@@ -378,7 +378,7 @@ int freesasa_link_coord(freesasa_t *s, const double *coord,
     return FREESASA_SUCCESS;
 }
 
-int freesasa_refresh(freesasa_t *s)
+int freesasa_refresh(freesasa *s)
 {
     s->calculated = 0;
     if (! s->coord )
@@ -388,7 +388,7 @@ int freesasa_refresh(freesasa_t *s)
     return freesasa_calc(s,s->coord,s->r);
 }
 
-int freesasa_set_algorithm(freesasa_t *s, freesasa_algorithm alg)
+int freesasa_set_algorithm(freesasa *s, freesasa_algorithm alg)
 {
     s->calculated = 0;
     if (alg == FREESASA_SHRAKE_RUPLEY || alg == FREESASA_LEE_RICHARDS) {
@@ -398,18 +398,18 @@ int freesasa_set_algorithm(freesasa_t *s, freesasa_algorithm alg)
     return freesasa_warn("undefined algorithm selected, proceeding with previously selected algorithm (or default).");
 }
 
-freesasa_algorithm freesasa_get_algorithm(const freesasa_t *s)
+freesasa_algorithm freesasa_get_algorithm(const freesasa *s)
 {
     return s->alg;
 }
 
-const char* freesasa_algorithm_name(const freesasa_t *s)
+const char* freesasa_algorithm_name(const freesasa *s)
 {
     assert(s->alg == FREESASA_SHRAKE_RUPLEY || s->alg == FREESASA_LEE_RICHARDS);
     return freesasa_alg_names[s->alg];
 }
 
-int freesasa_set_probe_radius(freesasa_t *s,double r)
+int freesasa_set_probe_radius(freesasa *s,double r)
 {
     s->calculated = 0;
     if (r < 0 || !isfinite(r)) {
@@ -419,12 +419,12 @@ int freesasa_set_probe_radius(freesasa_t *s,double r)
     return FREESASA_SUCCESS;
 }
 
-double freesasa_get_probe_radius(const freesasa_t *s)
+double freesasa_get_probe_radius(const freesasa *s)
 {
     return s->probe_radius;
 }
 
-int freesasa_set_sr_points(freesasa_t *s, int n) {
+int freesasa_set_sr_points(freesasa *s, int n) {
     s->calculated = 0;
     if (freesasa_srp_n_is_valid(n)) {
         s->n_sr = n;
@@ -439,13 +439,13 @@ int freesasa_set_sr_points(freesasa_t *s, int n) {
     return FREESASA_WARN;
 }
 
-int freesasa_get_sr_points(const freesasa_t* s)
+int freesasa_get_sr_points(const freesasa* s)
 {
     if (s->alg == FREESASA_SHRAKE_RUPLEY) return s->n_sr;
     return FREESASA_WARN;
 }
 
-int freesasa_set_lr_delta(freesasa_t *s, double d)
+int freesasa_set_lr_delta(freesasa *s, double d)
 {
     s->calculated = 0;
     if (d > 0 && isfinite(d)) {
@@ -465,14 +465,14 @@ int freesasa_set_lr_delta(freesasa_t *s, double d)
     return FREESASA_WARN;
 }
 
-double freesasa_get_lr_delta(const freesasa_t *s)
+double freesasa_get_lr_delta(const freesasa *s)
 {
     if (s->alg == FREESASA_LEE_RICHARDS) return s->d_lr;
     return -1.0;
 }
 
 #if HAVE_LIBPTHREAD
-int freesasa_set_nthreads(freesasa_t *s,int n)
+int freesasa_set_nthreads(freesasa *s,int n)
 {
     if ( n <= 0) {
         s->n_threads = DEF_NTHREADS;
@@ -483,18 +483,18 @@ int freesasa_set_nthreads(freesasa_t *s,int n)
     return FREESASA_SUCCESS;
 }
 
-int freesasa_get_nthreads(const freesasa_t *s)
+int freesasa_get_nthreads(const freesasa *s)
 {
     return s->n_threads;
 }
 #endif
 
-size_t freesasa_n_atoms(const freesasa_t *s)
+size_t freesasa_n_atoms(const freesasa *s)
 {
     return s->n_atoms;
 }
 
-double freesasa_area_total(const freesasa_t *s)
+double freesasa_area_total(const freesasa *s)
 {
     if (! s->calculated) {
         freesasa_fail("SASA calculation has not been performed, "
@@ -503,7 +503,7 @@ double freesasa_area_total(const freesasa_t *s)
     }
     return s->result->total;
 }
-double freesasa_area_class(const freesasa_t* s, freesasa_class c)
+double freesasa_area_class(const freesasa* s, freesasa_class c)
 {
     if (! s->calculated) {
         freesasa_fail("SASA calculation has not been performed, "
@@ -514,7 +514,7 @@ double freesasa_area_class(const freesasa_t* s, freesasa_class c)
            "Invalid arguments to freesasa_area_class(2)");
     return s->result->class[c];
 }
-double freesasa_area_atom(const freesasa_t *s, int i)
+double freesasa_area_atom(const freesasa *s, int i)
 {
     if ( !s->calculated ) {
         freesasa_fail("SASA calculation has not been performed, "
@@ -528,7 +528,7 @@ double freesasa_area_atom(const freesasa_t *s, int i)
     return s->result->sasa[i];
 }
 
-const double* freesasa_area_atom_array(const freesasa_t *s)
+const double* freesasa_area_atom_array(const freesasa *s)
 {
     if ( !s->calculated ) {
         freesasa_fail("SASA calculation has not been performed, "
@@ -537,7 +537,7 @@ const double* freesasa_area_atom_array(const freesasa_t *s)
     }
     return s->result->sasa;
 }
-double freesasa_radius_atom(const freesasa_t *s, int i)
+double freesasa_radius_atom(const freesasa *s, int i)
 {
     if (s->r == NULL) {
         freesasa_fail("No atomic radii have been assigned.");
@@ -549,7 +549,7 @@ double freesasa_radius_atom(const freesasa_t *s, int i)
     }
     return s->r[i];
 }
-const double* freesasa_radius_atom_array(const freesasa_t *s)
+const double* freesasa_radius_atom_array(const freesasa *s)
 {
     if (s->r == NULL) {
         freesasa_fail("No atomic radii have been assigned.");
@@ -557,7 +557,7 @@ const double* freesasa_radius_atom_array(const freesasa_t *s)
     }
     return s->r;
 }
-void freesasa_set_proteinname(freesasa_t *s,const char *name)
+void freesasa_set_proteinname(freesasa *s,const char *name)
 {
     int n;
     if ((n = strlen(name)) > FREESASA_NAME_LIMIT) {
@@ -569,12 +569,12 @@ void freesasa_set_proteinname(freesasa_t *s,const char *name)
     }
 }
 
-const char* freesasa_get_proteinname(const freesasa_t *s)
+const char* freesasa_get_proteinname(const freesasa *s)
 {
     return s->proteinname;
 }
 
-int freesasa_log(FILE *log, const freesasa_t *s)
+int freesasa_log(FILE *log, const freesasa *s)
 {
     if (! s->calculated) {
         const char *msg = "freesasa_log() called, but no calculation "
@@ -607,7 +607,7 @@ int freesasa_log(FILE *log, const freesasa_t *s)
     return FREESASA_SUCCESS;
 }
 
-int freesasa_per_residue_type(FILE *output, const freesasa_t *s)
+int freesasa_per_residue_type(FILE *output, const freesasa *s)
 {
     if (! output) {
         return freesasa_fail("freesasa_per_residue_type() output file is "
@@ -626,11 +626,11 @@ int freesasa_per_residue_type(FILE *output, const freesasa_t *s)
     return FREESASA_SUCCESS;
 }
 
-static double freesasa_single_residue_sasa(const freesasa_t *s, int r_i)
+static double freesasa_single_residue_sasa(const freesasa *s, int r_i)
 {
     assert (s->calculated);
     int first, last;
-    const freesasa_structure_t *p = s->structure;
+    const freesasa_structure *p = s->structure;
     const double *sasa = s->result->sasa;            
     freesasa_structure_residue_atoms(p,r_i,&first,&last);
     double a = 0;
@@ -640,7 +640,7 @@ static double freesasa_single_residue_sasa(const freesasa_t *s, int r_i)
     return a;
 }
 
-int freesasa_per_residue(FILE *output, const freesasa_t *s)
+int freesasa_per_residue(FILE *output, const freesasa *s)
 {
     if (! output) {
         return freesasa_fail("freesasa_per_residue() output file is "
@@ -650,7 +650,7 @@ int freesasa_per_residue(FILE *output, const freesasa_t *s)
         return freesasa_fail("freesasa_per_residue() called, "
                              "but no calculation has been performed.");
     }
-    const freesasa_structure_t *p = s->structure;
+    const freesasa_structure *p = s->structure;
     const int naa = freesasa_structure_n_residues(p);
     for (int i = 0; i < naa; ++i) {
         fprintf(output,"SEQ: %s %7.2f\n",
@@ -660,7 +660,7 @@ int freesasa_per_residue(FILE *output, const freesasa_t *s)
     return FREESASA_SUCCESS;
 }
 
-double freesasa_area_residue(const freesasa_t *s, const char *res_name)
+double freesasa_area_residue(const freesasa *s, const char *res_name)
 {
     if (! s->calculated) {
         freesasa_warn("freesasa_area_residue() called, "
@@ -671,7 +671,7 @@ double freesasa_area_residue(const freesasa_t *s, const char *res_name)
     return s->result->residue_type[res];
 }
 
-int freesasa_write_pdb(FILE *output, const freesasa_t *s)
+int freesasa_write_pdb(FILE *output, const freesasa *s)
 {
     if (!s->calculated) {
         return freesasa_fail("Cannot output results before "
@@ -694,10 +694,10 @@ int freesasa_write_pdb(FILE *output, const freesasa_t *s)
 }
 
 
-static freesasa_strvp_t* freesasa_alloc_strvp(size_t n)
+static freesasa_strvp* freesasa_alloc_strvp(size_t n)
 {
     const int STRL=FREESASA_STRUCTURE_DESCRIPTOR_STRL;
-    freesasa_strvp_t* svp = (freesasa_strvp_t*) malloc(sizeof(freesasa_strvp_t));
+    freesasa_strvp* svp = (freesasa_strvp*) malloc(sizeof(freesasa_strvp));
     svp->value = (double*) malloc(sizeof(double)*n);
     svp->string = (char**) malloc(sizeof(char*)*n);
     for (size_t i = 0; i < n; ++i) {
@@ -706,7 +706,7 @@ static freesasa_strvp_t* freesasa_alloc_strvp(size_t n)
     return svp;
 }
 
-void freesasa_strvp_free(freesasa_strvp_t *svp)
+void freesasa_strvp_free(freesasa_strvp *svp)
 {
     if (svp->value) free(svp->value);
     if (svp->string) {
@@ -718,7 +718,7 @@ void freesasa_strvp_free(freesasa_strvp_t *svp)
     free(svp);
 }
     
-freesasa_strvp_t* freesasa_string_value_pairs(const freesasa_t *s,freesasa_result_type type)
+freesasa_strvp* freesasa_string_value_pairs(const freesasa *s,freesasa_result_type type)
 {
     if (!s->calculated) {
         freesasa_fail("Cannot access results before "
@@ -726,8 +726,8 @@ freesasa_strvp_t* freesasa_string_value_pairs(const freesasa_t *s,freesasa_resul
         return NULL;
     }
 
-    const freesasa_structure_t *p = s->structure;
-    freesasa_strvp_t *svp = NULL;
+    const freesasa_structure *p = s->structure;
+    freesasa_strvp *svp = NULL;
     size_t n;
     switch (type) {
     case FREESASA_ATOMS:

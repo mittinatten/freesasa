@@ -41,21 +41,21 @@
     initiated from a PDB file enough info will be stored so that
     a new PDB-file can be printed.
 */
-typedef struct freesasa_structure_t freesasa_structure_t;
+typedef struct freesasa_structure freesasa_structure;
 
 /**
     Allocate and initialize empty structure.
 
     @return The generated struct.
  */
-freesasa_structure_t* freesasa_structure_init(void);
+freesasa_structure* freesasa_structure_init(void);
 
 /**
     Free structure.
     
     @param s Self.
  */
-void freesasa_structure_free(freesasa_structure_t *s);
+void freesasa_structure_free(freesasa_structure *s);
 
 /**
     Init protein with coordinates from pdb-file.  
@@ -73,7 +73,7 @@ void freesasa_structure_free(freesasa_structure_t *s);
     @return The generated struct. Returns `NULL` and prints error if
     input is invalid.
 */
-freesasa_structure_t* freesasa_structure_init_from_pdb(FILE *pdb_file);
+freesasa_structure* freesasa_structure_init_from_pdb(FILE *pdb_file);
 
 /**
     Add individual atom to structure.
@@ -94,7 +94,7 @@ freesasa_structure_t* freesasa_structure_init_from_pdb(FILE *pdb_file);
     @return ::FREESASA_SUCCESS if input valid. ::FREESASA_FAIL if any of
     the strings are malformatted. ::FREESASA_WARN if the atom type is
     unknown. */
-int freesasa_structure_add_atom(freesasa_structure_t *s,
+int freesasa_structure_add_atom(freesasa_structure *s,
                                 const char* atom_name,
                                 const char* residue_name,
                                 const char* residue_number,
@@ -105,9 +105,9 @@ int freesasa_structure_add_atom(freesasa_structure_t *s,
     Get coordinates.
     
     @param s Self.
-    @return The coordinates of the structure as a ::freesasa_coord_t struct.
+    @return The coordinates of the structure as a ::freesasa_coord struct.
  */
-const freesasa_coord_t* freesasa_structure_xyz(const freesasa_structure_t *s);
+const freesasa_coord* freesasa_structure_xyz(const freesasa_structure *s);
 
 /**
     Get array of radii using custom conversion function.     
@@ -119,7 +119,7 @@ const freesasa_coord_t* freesasa_structure_xyz(const freesasa_structure_t *s);
     @see freesasa_structure_r_def()
 */
 void freesasa_structure_r(double *r,
-                          const freesasa_structure_t *s,
+                          const freesasa_structure *s,
                           double (*atom2radius)(const char *res_name,
                                                 const char *atom_name));
 
@@ -134,7 +134,7 @@ void freesasa_structure_r(double *r,
     @see freesasa_classify_radius()
 */
 
-void freesasa_structure_r_def(double *r, const freesasa_structure_t *s);
+void freesasa_structure_r_def(double *r, const freesasa_structure *s);
 
 /**
     Get number of atoms.
@@ -142,7 +142,7 @@ void freesasa_structure_r_def(double *r, const freesasa_structure_t *s);
     @param s Self.
     @return Number of atoms.
 */
-int freesasa_structure_n(const freesasa_structure_t *s);
+int freesasa_structure_n(const freesasa_structure *s);
 
 /**
     Get number of residues.
@@ -153,7 +153,7 @@ int freesasa_structure_n(const freesasa_structure_t *s);
     @param s Self.
     @return Number of residues.
  */
-int freesasa_structure_n_residues(const freesasa_structure_t *s);
+int freesasa_structure_n_residues(const freesasa_structure *s);
 /**
     Get atom name
     
@@ -161,7 +161,7 @@ int freesasa_structure_n_residues(const freesasa_structure_t *s);
     @param i Atom index.
     @return Atom name in the form `" CA "`, `" OXT"`, etc.
  */
-const char* freesasa_structure_atom_name(const freesasa_structure_t *s,
+const char* freesasa_structure_atom_name(const freesasa_structure *s,
                                          int i);
 
 /**
@@ -171,7 +171,7 @@ const char* freesasa_structure_atom_name(const freesasa_structure_t *s,
     @param i Atom index.
     @return Residue name in the form `"ALA"`, `"PHE"`, etc.
 */
-const char* freesasa_structure_atom_res_name(const freesasa_structure_t *s,
+const char* freesasa_structure_atom_res_name(const freesasa_structure *s,
                                              int i);
 
 /**
@@ -181,7 +181,7 @@ const char* freesasa_structure_atom_res_name(const freesasa_structure_t *s,
     @param i Atom index.
     @return Residue name in the form `"   1"`, `" 123"`, etc.
 */
-const char* freesasa_structure_atom_res_number(const freesasa_structure_t *s,
+const char* freesasa_structure_atom_res_number(const freesasa_structure *s,
                                                int i);
 
 /**
@@ -191,7 +191,7 @@ const char* freesasa_structure_atom_res_number(const freesasa_structure_t *s,
     @param i Atom index.
     @return Chain label (`'A'`, `'B'`, etc.)
  */
-char freesasa_structure_atom_chain(const freesasa_structure_t *s, int i);
+char freesasa_structure_atom_chain(const freesasa_structure *s, int i);
 
 /**
     Get a string describing an atom. 
@@ -202,7 +202,7 @@ char freesasa_structure_atom_chain(const freesasa_structure_t *s, int i);
     @param i Atom index
     @return Descriptor string. 
  */
-const char* freesasa_structure_atom_descriptor(const freesasa_structure_t *s, int i);
+const char* freesasa_structure_atom_descriptor(const freesasa_structure *s, int i);
 
 /**
     Get indices of first and last atoms of a residue
@@ -213,10 +213,10 @@ const char* freesasa_structure_atom_descriptor(const freesasa_structure_t *s, in
     @param last Last atom of residue `r_i` will be stored here.
     @return ::FREESASA_SUCCESS. ::FRESSASA_FAIL if index `r_i` is invalid.
  */
-int freesasa_structure_residue_atoms(const freesasa_structure_t *s, int r_i, 
+int freesasa_structure_residue_atoms(const freesasa_structure *s, int r_i, 
                                      int *first, int *last);
 
-const char* freesasa_structure_residue_descriptor(const freesasa_structure_t *s, int r_i);
+const char* freesasa_structure_residue_descriptor(const freesasa_structure *s, int r_i);
 
 /**
     Writes PDB file, but with B-factors replaced by new values. Can be
@@ -229,7 +229,7 @@ const char* freesasa_structure_residue_descriptor(const freesasa_structure_t *s,
     output-file.
  */
 int freesasa_structure_write_pdb_bfactors(FILE *output,
-                                          const freesasa_structure_t *s,
+                                          const freesasa_structure *s,
                                           const double *values);
 
 #endif

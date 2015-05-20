@@ -42,7 +42,7 @@ extern int freesasa_warn(const char *format, ...);
 typedef struct {
     int n_atoms;
     double *radii; //including probe
-    const freesasa_coord_t *xyz;
+    const freesasa_coord *xyz;
     int **nb; // neighbors
     int *nn; // number of neighbors
     double **nb_xyd; // neighbours, xy-distance
@@ -52,7 +52,7 @@ typedef struct {
     double min_z; // bounds of the molecule
     double max_z;
     double *sasa; // results
-} sasa_lr_t;
+} sasa_lr;
 
 typedef struct {
     int n_slice; //number of atoms in slice
@@ -63,19 +63,19 @@ typedef struct {
     double *DR; //corrective multiplicative factor (D in L&R paper)
     double *r; //radius in slice;
     double *exposed_arc; //exposed arc length (in Å) for each atom
-} sasa_lr_slice_t;
+} sasa_lr_slice;
 
 #if HAVE_LIBPTHREAD
-static void sasa_lr_do_threads(int n_threads, sasa_lr_t*);
+static void sasa_lr_do_threads(int n_threads, sasa_lr*);
 static void *sasa_lr_thread(void *arg);
 #endif
 
 /** Init slice and sum up arc-length */
-static void sasa_add_slice_area(double z, sasa_lr_t*);
+static void sasa_add_slice_area(double z, sasa_lr*);
 
 /** Find which arcs are exposed in a slice */
-static void sasa_exposed_arcs(const sasa_lr_slice_t *,
-                              const sasa_lr_t *);
+static void sasa_exposed_arcs(const sasa_lr_slice *,
+                              const sasa_lr *);
 
 /** a and b are a set of alpha and betas (in the notation of the
     manual). This function finds the union of those intervals on the
@@ -87,15 +87,15 @@ static double sasa_sum_angles(int n_buried, double * restrict a,
 
 /** Calculate adjacency lists, given coordinates and radii. Also
     stores some distances to be used later. */
-static void sasa_get_contacts(sasa_lr_t *lr);
+static void sasa_get_contacts(sasa_lr *lr);
 
 /** Initialize object to be used for L&R calculation */
-static sasa_lr_t* freesasa_init_lr(double *sasa,
-                                   const freesasa_coord_t *xyz,
+static sasa_lr* freesasa_init_lr(double *sasa,
+                                   const freesasa_coord *xyz,
                                    const double *atom_radii,
                                    double probe_radius,
                                    double delta) {
-    sasa_lr_t* lr = (sasa_lr_t*) malloc(sizeof(sasa_lr_t));
+    sasa_lr* lr = (sasa_lr*) malloc(sizeof(sasa_lr));
     const int n_atoms = freesasa_coord_n(xyz);
     double max_z=-1e50, min_z=1e50;
     double max_r = 0;
@@ -128,7 +128,7 @@ static sasa_lr_t* freesasa_init_lr(double *sasa,
     return lr;
 }
 
-static void freesasa_free_lr(sasa_lr_t *lr)
+static void freesasa_free_lr(sasa_lr *lr)
 {
     for (int i = 0; i < lr->n_atoms; ++i) {
         free(lr->nb[i]);
@@ -146,7 +146,7 @@ static void freesasa_free_lr(sasa_lr_t *lr)
 }
 
 int freesasa_lee_richards(double *sasa,
-                          const freesasa_coord_t *xyz,
+                          const freesasa_coord *xyz,
                           const double *atom_radii,
                           double probe_radius,
                           double delta,
@@ -159,7 +159,7 @@ int freesasa_lee_richards(double *sasa,
     }
 
     // determine slice range and init radii and sasa arrays
-    sasa_lr_t *lr = freesasa_init_lr(sasa, xyz, atom_radii,
+    sasa_lr *lr = freesasa_init_lr(sasa, xyz, atom_radii,
                                      probe_radius, delta);
 
     // determine which atoms are neighbours
@@ -187,11 +187,11 @@ int freesasa_lee_richards(double *sasa,
 }
 
 #if HAVE_LIBPTHREAD
-static void sasa_lr_do_threads(int n_threads, sasa_lr_t *lr)
+static void sasa_lr_do_threads(int n_threads, sasa_lr *lr)
 {
     double *t_sasa[n_threads];
     pthread_t thread[n_threads];
-    sasa_lr_t lrt[n_threads];
+    sasa_lr lrt[n_threads];
     const double max_z = lr->max_z, min_z = lr->min_z, delta = lr->delta;
     int n_slices = (int)ceil((max_z-min_z)/delta);
     int n_perthread = n_slices/n_threads;
@@ -231,7 +231,7 @@ static void sasa_lr_do_threads(int n_threads, sasa_lr_t *lr)
 
 static void *sasa_lr_thread(void *arg)
 {
-    sasa_lr_t *lr = ((sasa_lr_t*) arg);
+    sasa_lr *lr = ((sasa_lr*) arg);
     for (double z = lr->min_z; z < lr->max_z; z += lr->delta) {
         sasa_add_slice_area(z, lr);
     }
@@ -240,9 +240,9 @@ static void *sasa_lr_thread(void *arg)
 #endif
 
 // find which atoms are in slice
-static sasa_lr_slice_t* sasa_init_slice(double z, const sasa_lr_t *lr)
+static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
 {
-    sasa_lr_slice_t *slice = (sasa_lr_slice_t*) malloc(sizeof(sasa_lr_slice_t));
+    sasa_lr_slice *slice = (sasa_lr_slice*) malloc(sizeof(sasa_lr_slice));
     int n_atoms = lr->n_atoms;
     int n_slice = slice->n_slice = 0;
     slice->xdi = (int*) malloc(n_atoms*sizeof(int));
@@ -281,7 +281,7 @@ static sasa_lr_slice_t* sasa_init_slice(double z, const sasa_lr_t *lr)
     return slice;
 }
 
-static void sasa_free_slice(sasa_lr_slice_t* slice)
+static void sasa_free_slice(sasa_lr_slice* slice)
 {
     free(slice->idx);
     free(slice->xdi);
@@ -292,9 +292,9 @@ static void sasa_free_slice(sasa_lr_slice_t* slice)
     free(slice);
 }
 
-static void sasa_add_slice_area(double z, sasa_lr_t *lr)
+static void sasa_add_slice_area(double z, sasa_lr *lr)
 {
-    sasa_lr_slice_t *slice = sasa_init_slice(z,lr);
+    sasa_lr_slice *slice = sasa_init_slice(z,lr);
 
     //find exposed arcs
     sasa_exposed_arcs(slice, lr);
@@ -306,8 +306,8 @@ static void sasa_add_slice_area(double z, sasa_lr_t *lr)
     sasa_free_slice(slice);
 }
 
-static void sasa_exposed_arcs(const sasa_lr_slice_t *slice,
-                              const sasa_lr_t *lr)
+static void sasa_exposed_arcs(const sasa_lr_slice *slice,
+                              const sasa_lr *lr)
 {
     const int n_slice = slice->n_slice;
     const int *nn = lr->nn;
@@ -481,7 +481,7 @@ static double sasa_sum_angles_int(int n_buried, double *restrict a, double *rest
     return 2*M_PI*((res - count)/(double)(res));
 }
 
-static void sasa_get_contacts(sasa_lr_t *lr)
+static void sasa_get_contacts(sasa_lr *lr)
 {
     /* For low resolution L&R this function is the bottleneck in
        speed. Will also depend on number of atoms. */

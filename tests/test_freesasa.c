@@ -35,7 +35,7 @@
 #define PASS 1
 #define NOPASS 0
 
-freesasa_t *st = NULL;
+freesasa *st = NULL;
 double total_ref, polar_ref, apolar_ref;
 double tolerance;
 
@@ -215,7 +215,7 @@ END_TEST
 START_TEST (test_freesasa_api_basic)
 {
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    freesasa_t *s = freesasa_init();
+    freesasa *s = freesasa_init();
     ck_assert(s != NULL);
     ck_assert(freesasa_n_atoms(s) == 0);
 
@@ -295,7 +295,7 @@ START_TEST (test_copyparam)
     int n_thread = 3;
     double d_lr = 0.5;
     double probe_radius = 2;
-    freesasa_t *s1 = freesasa_init(), *s2 = freesasa_init();
+    freesasa *s1 = freesasa_init(), *s2 = freesasa_init();
     ck_assert(s1 != NULL);
     ck_assert(s2 != NULL);
     freesasa_set_sr_points(s1,n_sr);
@@ -318,7 +318,7 @@ END_TEST
 
 START_TEST (test_minimal_calc)
 {
-    freesasa_t *s = freesasa_init();
+    freesasa *s = freesasa_init();
 
     double coord[3] = {0,0,0};
     double r[1] = {1.0};
@@ -348,7 +348,7 @@ END_TEST
 
 START_TEST (test_calc_errors)
 {
-    freesasa_t *s = freesasa_init();
+    freesasa *s = freesasa_init();
     double dummy;
 
     fputs("Testing error messages:\n",stderr);
@@ -408,7 +408,7 @@ START_TEST (test_multi_calc)
 {
 #if HAVE_LIBPTHREAD
     errno = 0;
-    freesasa_t *s = freesasa_init();
+    freesasa *s = freesasa_init();
     //S&R
     freesasa_set_algorithm(s,FREESASA_SHRAKE_RUPLEY);
     freesasa_set_sr_points(s,100);
@@ -437,8 +437,8 @@ END_TEST
 
 START_TEST (test_strvp)
 {
-    freesasa_t *s = freesasa_init();
-    freesasa_strvp_t *svp; 
+    freesasa *s = freesasa_init();
+    freesasa_strvp *svp; 
     
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert(freesasa_string_value_pairs(s,FREESASA_ATOMS) == NULL);

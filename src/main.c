@@ -37,7 +37,7 @@ extern int optind;
 char *program_name;
 
 typedef struct  {
-    freesasa_t *s;
+    freesasa *s;
     FILE *B;
     int per_residue_type;
     int per_residue;
@@ -87,7 +87,7 @@ void short_help() {
 }
 
 void run_analysis(FILE *input, const char *name, const settings_t *settings) {
-    freesasa_t *s = freesasa_init();
+    freesasa *s = freesasa_init();
     double tmp;
     freesasa_copy_param(s,settings->s);
     freesasa_set_proteinname(s,name);

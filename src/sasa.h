@@ -49,7 +49,7 @@
     mode (with error message). 
 */
 int freesasa_shrake_rupley(double *sasa,
-                           const freesasa_coord_t *c,
+                           const freesasa_coord *c,
                            const double *radii,
                            double probe_radius,
                            int n_points,
@@ -79,7 +79,7 @@ int freesasa_shrake_rupley(double *sasa,
     mode (with error message). 
 */
 int freesasa_lee_richards(double* sasa,
-                          const freesasa_coord_t *c,
+                          const freesasa_coord *c,
                           const double *radii,
                           double probe_radius,
                           double grid,

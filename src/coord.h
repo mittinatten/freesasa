@@ -36,52 +36,52 @@
  */
 
 //! Struct to store coordinates
-typedef struct freesasa_coord_t freesasa_coord_t;
+typedef struct freesasa_coord freesasa_coord;
 
-//! Initialize new ::freesasa_coord_t object
-freesasa_coord_t* freesasa_coord_new(void);
+//! Initialize new ::freesasa_coord object
+freesasa_coord* freesasa_coord_new(void);
 
-//! Free resources allocated by ::freesasa_coord_t object
-void freesasa_coord_free(freesasa_coord_t*);
+//! Free resources allocated by ::freesasa_coord object
+void freesasa_coord_free(freesasa_coord*);
 
 /**
    Copy coordinates.
 
-   Creates a new ::freesasa_coord_t object that is a copy of the
+   Creates a new ::freesasa_coord object that is a copy of the
    argument `src`.
 
    @param src Coordinates to be copied.
    @return Copy of coordinates
 */
-freesasa_coord_t* freesasa_coord_copy(const freesasa_coord_t *src);
+freesasa_coord* freesasa_coord_copy(const freesasa_coord *src);
 
 /**
-    Creates a `const` ::freesasa_coord_t-object that is linked to an array of
+    Creates a `const` ::freesasa_coord-object that is linked to an array of
     coordinates owned by callee. 
 
     This allows repeated calculations on a changing object without
-    reinitialization. The returned ::freesasa_coord_t-pointer is not
+    reinitialization. The returned ::freesasa_coord-pointer is not
     explicitly const, to allow it to be freed later, but objects
     initiated through this interface will not change their
     coordinates.
 
     @param xyz Array of coordinates x1,y1,z1,x2,y2,z2,...
     @param n Number of coordinates (array has size 3*n).
-    @return New linked ::freesasa_coord_t object
+    @return New linked ::freesasa_coord object
 */
-freesasa_coord_t* freesasa_coord_new_linked(const double *xyz, size_t n);
+freesasa_coord* freesasa_coord_new_linked(const double *xyz, size_t n);
 
 /**
-    Append coordinates to ::freesasa_coord_t object from one array.
+    Append coordinates to ::freesasa_coord object from one array.
 
     @param s Self.
     @param xyz Array of coordinates x1,y1,z1,x2,y2,z2,...
     @param n Number of coordinates (array has size 3*n).
  */
-void freesasa_coord_append(freesasa_coord_t *s,const double *xyz,size_t n);
+void freesasa_coord_append(freesasa_coord *s,const double *xyz,size_t n);
 
 /**
-    Append coordinates to ::freesasa_coord_t object from three
+    Append coordinates to ::freesasa_coord object from three
     separate arrays.
 
     @param s Self.
@@ -90,7 +90,7 @@ void freesasa_coord_append(freesasa_coord_t *s,const double *xyz,size_t n);
     @param z Array of x-coordinates
     @param n Size of arrays x, y and z.
  */
-void freesasa_coord_append_xyz(freesasa_coord_t *s,
+void freesasa_coord_append_xyz(freesasa_coord *s,
                                const double *x, const double *y,
                                const double *z, size_t n);
 
@@ -101,7 +101,7 @@ void freesasa_coord_append_xyz(freesasa_coord_t *s,
     @param i Coordinate to update.
     @param xyz Array with coordinates x,y,z.
  */
-void freesasa_coord_set_i(freesasa_coord_t *s,int i,const double* xyz);
+void freesasa_coord_set_i(freesasa_coord *s,int i,const double* xyz);
 
 /**
     Set given coordinate.
@@ -112,7 +112,7 @@ void freesasa_coord_set_i(freesasa_coord_t *s,int i,const double* xyz);
     @param y y-coordinate.
     @param z z-coordinate
  */
-void freesasa_coord_set_i_xyz(freesasa_coord_t *s,int i,double x,double y,double z);
+void freesasa_coord_set_i_xyz(freesasa_coord *s,int i,double x,double y,double z);
 
 /**
     Reset everything.
@@ -121,7 +121,7 @@ void freesasa_coord_set_i_xyz(freesasa_coord_t *s,int i,double x,double y,double
     @param xyz Array of coordinates x1,y1,z1,x2,y2,z2,...
     @param n Number of coordinates (array has size 3*n).
  */
-void freesasa_coord_set_all(freesasa_coord_t *s,const double* xyz,size_t n);
+void freesasa_coord_set_all(freesasa_coord *s,const double* xyz,size_t n);
 
 /**
     Reset everything.
@@ -132,7 +132,7 @@ void freesasa_coord_set_all(freesasa_coord_t *s,const double* xyz,size_t n);
     @param z Array of x-coordinates
     @param n Size of arrays x, y and z.
  */
-void freesasa_coord_set_all_xyz(freesasa_coord_t *s,
+void freesasa_coord_set_all_xyz(freesasa_coord *s,
                                 const double* x, const double *y,
                                 const double *z, size_t n);
 
@@ -144,7 +144,7 @@ void freesasa_coord_set_all_xyz(freesasa_coord_t *s,
     @param i The coordinate.
     @param l Desirde length.
  */
-void freesasa_coord_set_length_i(freesasa_coord_t *s, int i, double l);
+void freesasa_coord_set_length_i(freesasa_coord *s, int i, double l);
 
 /**
     Set length of all coordinate vectors to the same length. Useful for test-points in
@@ -153,7 +153,7 @@ void freesasa_coord_set_length_i(freesasa_coord_t *s, int i, double l);
     @param s Self.
     @param l Desired length.
  */
-void freesasa_coord_set_length_all(freesasa_coord_t *s, double l);
+void freesasa_coord_set_length_all(freesasa_coord *s, double l);
 
 /**
     Coordinates of a given atom.
@@ -162,7 +162,7 @@ void freesasa_coord_set_length_all(freesasa_coord_t *s, double l);
     @param i The coordinate.
     @return Array with coordinates x,y,z.
  */
-const double* freesasa_coord_i(const freesasa_coord_t *s, int i);
+const double* freesasa_coord_i(const freesasa_coord *s, int i);
 
 /**
     Calculate distance between two coordinate vectors. For speed, the indices i and
@@ -173,7 +173,7 @@ const double* freesasa_coord_i(const freesasa_coord_t *s, int i);
     @param j The second coordinate.
     @return Distance between coorsinate i and j.
 */
-double freesasa_coord_dist(const freesasa_coord_t *s, int i, int j)
+double freesasa_coord_dist(const freesasa_coord *s, int i, int j)
     __attrib_pure__;
 
 /**
@@ -185,7 +185,7 @@ double freesasa_coord_dist(const freesasa_coord_t *s, int i, int j)
     @param j The second coordinate.
     @return Square distance between coordinate i and j.
 */
-double freesasa_coord_dist2(const freesasa_coord_t *s, int i, int j)
+double freesasa_coord_dist2(const freesasa_coord *s, int i, int j)
     __attrib_pure__;
 
 /**
@@ -199,8 +199,8 @@ double freesasa_coord_dist2(const freesasa_coord_t *s, int i, int j)
     @param i2 Second coordinate.
     @return Square distance between coordinates i1 and i2.
 */
-double freesasa_coord_dist2_12(const freesasa_coord_t* c1,
-                               const freesasa_coord_t* c2, int i1, int i2)
+double freesasa_coord_dist2_12(const freesasa_coord* c1,
+                               const freesasa_coord* c2, int i1, int i2)
     __attrib_pure__;
 
 /**
@@ -209,7 +209,7 @@ double freesasa_coord_dist2_12(const freesasa_coord_t* c1,
     @param s Self.
     @return Array of coordinates x1,y1,z1,x2,y2,z2,...
  */
-const double* freesasa_coord_all(const freesasa_coord_t *s) __attrib_pure__;
+const double* freesasa_coord_all(const freesasa_coord *s) __attrib_pure__;
 
 /**
     Number of coordinates.
@@ -217,7 +217,7 @@ const double* freesasa_coord_all(const freesasa_coord_t *s) __attrib_pure__;
     @param s Self.
     @return Number of coordinates.
  */
-size_t freesasa_coord_n(const freesasa_coord_t *s) __attrib_pure__;
+size_t freesasa_coord_n(const freesasa_coord *s) __attrib_pure__;
 
 /**
     Translate all coordinates by same vector.
@@ -225,7 +225,7 @@ size_t freesasa_coord_n(const freesasa_coord_t *s) __attrib_pure__;
     @param s Self.
     @param xyz Array describing translation vector x,y,z.
  */
-void freesasa_coord_translate(freesasa_coord_t *s, const double *xyz);
+void freesasa_coord_translate(freesasa_coord *s, const double *xyz);
 /**
     Translate all coordinates by same vector.
 
@@ -234,7 +234,7 @@ void freesasa_coord_translate(freesasa_coord_t *s, const double *xyz);
     @param y y-coordinate of translation vector
     @param z z-coordinate of translation vector
  */
-void freesasa_coord_translate_xyz(freesasa_coord_t *s,
+void freesasa_coord_translate_xyz(freesasa_coord *s,
                                   double x, double y, double z);
 
 /**
@@ -243,7 +243,7 @@ void freesasa_coord_translate_xyz(freesasa_coord_t *s,
     @param s Self.
     @param a Factor to scale by.
  */
-void freesasa_coord_scale(freesasa_coord_t *s, double a);
+void freesasa_coord_scale(freesasa_coord *s, double a);
 
 #undef __attrib_pure__
 

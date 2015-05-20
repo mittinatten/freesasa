@@ -32,7 +32,7 @@ const char rnu[N][PDB_ATOM_RES_NUMBER_STRL+1] = {"   1","   1","   1","   1","  
 const char cl[N] = {'A','A','A','A','A'};
 const double bfactors[N] = {1., 1., 1., 1., 1.};
 
-freesasa_structure_t *s;
+freesasa_structure *s;
 
 static void setup(void)
 {
@@ -61,7 +61,7 @@ START_TEST (test_structure_api)
         sprintf(buf,"%c %s %s %s",cl[i],rnu[i],rna[i],an[i]);
         ck_assert_str_eq(freesasa_structure_atom_descriptor(s,i),buf);
     }
-    const freesasa_coord_t *c = freesasa_structure_xyz(s);
+    const freesasa_coord *c = freesasa_structure_xyz(s);
     for (int i = 0; i < N; ++i) {
         const double *xyz = freesasa_coord_i(c, i);
         ck_assert(fabs(xyz[0]+xyz[1]+xyz[2]-3*i) < 1e-10);
@@ -144,7 +144,7 @@ START_TEST (test_structure_1ubq)
     ck_assert_int_eq(freesasa_structure_atom_chain(s,8),'A');
 
     // check coordinates of that random atom
-    const freesasa_coord_t *c = freesasa_structure_xyz(s);
+    const freesasa_coord *c = freesasa_structure_xyz(s);
     ck_assert(c != NULL);
     const double *x = freesasa_coord_i(c,8);
     ck_assert(x != NULL);
@@ -188,7 +188,7 @@ START_TEST (test_pdb)
     for (int i = 0; i < 3; ++i) {
         FILE *pdb = fopen(file_names[i],"r");
         ck_assert(pdb != NULL);
-        freesasa_structure_t *s = freesasa_structure_init_from_pdb(pdb);
+        freesasa_structure *s = freesasa_structure_init_from_pdb(pdb);
         if (result_null[i]) ck_assert(s == NULL);
         else ck_assert(s != NULL);
         fclose(pdb);

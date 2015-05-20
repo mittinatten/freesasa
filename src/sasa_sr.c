@@ -50,22 +50,22 @@ typedef struct {
     int n_atoms;
     int n_points;
     double probe_radius;
-    const freesasa_coord_t *xyz;
-    const freesasa_coord_t *srp;
+    const freesasa_coord *xyz;
+    const freesasa_coord *srp;
     const double *r;
     double *sasa;
     char *spcount_0;
-} sasa_sr_t;
+} sasa_sr;
 
 #if HAVE_LIBPTHREAD
-static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr);
+static void sasa_sr_do_threads(int n_threads, sasa_sr sr);
 static void *sasa_sr_thread(void *arg);
 #endif
 
-static double sasa_sr_calc_atom(int i,const sasa_sr_t) __attrib_pure__;
+static double sasa_sr_calc_atom(int i,const sasa_sr) __attrib_pure__;
 
 int freesasa_shrake_rupley(double *sasa,
-                           const freesasa_coord_t *xyz,
+                           const freesasa_coord *xyz,
                            const double *r,
                            double probe_radius,
                            int n_points,
@@ -81,7 +81,7 @@ int freesasa_shrake_rupley(double *sasa,
     // Initialize test-points
     const double *srp_p = freesasa_srp_get_points(n_points);
     if (srp_p == NULL) return 1;
-    freesasa_coord_t *srp = freesasa_coord_new_linked(srp_p,n_points);
+    freesasa_coord *srp = freesasa_coord_new_linked(srp_p,n_points);
 
     char spcount_0[n_points];
 
@@ -91,7 +91,7 @@ int freesasa_shrake_rupley(double *sasa,
         spcount_0[k] = 0;
     }
     //store parameters and reference arrays
-    sasa_sr_t sr = {.n_atoms = n_atoms, .n_points = n_points,
+    sasa_sr sr = {.n_atoms = n_atoms, .n_points = n_points,
                     .probe_radius = probe_radius,
                     .xyz = xyz, .srp = srp,
                     .r = r, .spcount_0 = spcount_0,
@@ -119,10 +119,10 @@ int freesasa_shrake_rupley(double *sasa,
 }
 
 #if HAVE_LIBPTHREAD
-static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
+static void sasa_sr_do_threads(int n_threads, sasa_sr sr)
 {
     pthread_t thread[n_threads];
-    sasa_sr_t srt[n_threads];
+    sasa_sr srt[n_threads];
     int n_atoms = sr.n_atoms;
     int thread_block_size = n_atoms/n_threads;
     for (int t = 0; t < n_threads; ++t) {
@@ -150,7 +150,7 @@ static void sasa_sr_do_threads(int n_threads, sasa_sr_t sr)
 
 static void *sasa_sr_thread(void* arg)
 {
-    sasa_sr_t sr = *((sasa_sr_t*) arg);
+    sasa_sr sr = *((sasa_sr*) arg);
     int n = sr.i2-sr.i1;
     double *sasa = (double*)malloc(sizeof(double)*n);
     for (int i = 0; i < n; ++i) {
@@ -163,9 +163,9 @@ static void *sasa_sr_thread(void* arg)
 }
 #endif
 
-static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
+static double sasa_sr_calc_atom(int i, const sasa_sr sr) {
     const int n_points = sr.n_points;
-    const freesasa_coord_t *xyz = sr.xyz;
+    const freesasa_coord *xyz = sr.xyz;
     /* this array keeps track of which testpoints belonging to
        a certain atom overlap with other atoms */
     char spcount[n_points];
@@ -175,7 +175,7 @@ static double sasa_sr_calc_atom(int i, const sasa_sr_t sr) {
     const double *restrict v = freesasa_coord_all(xyz);
 
     /* testpoints for this atom */
-    freesasa_coord_t* tp_coord_ri = freesasa_coord_copy(sr.srp);
+    freesasa_coord* tp_coord_ri = freesasa_coord_copy(sr.srp);
     freesasa_coord_scale(tp_coord_ri, ri);
     freesasa_coord_translate(tp_coord_ri, vi);
     const double *restrict tp = freesasa_coord_all(tp_coord_ri);

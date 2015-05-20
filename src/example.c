@@ -22,7 +22,7 @@
 
 int main(int argc, char **argv) {
     //initialize freesasa-object with default parameters
-    freesasa_t *s = freesasa_init();
+    freesasa *s = freesasa_init();
 
     //do the calculation using default parameters with protein
     //structure from STDIN

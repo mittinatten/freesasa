@@ -42,9 +42,9 @@ typedef struct {
     char chain_label;
 } atom_t;
 
-struct freesasa_structure_t {
+struct freesasa_structure {
     atom_t *a;
-    freesasa_coord_t *xyz;
+    freesasa_coord *xyz;
     int number_atoms;
     int number_residues;
     int number_chains;
@@ -52,10 +52,10 @@ struct freesasa_structure_t {
     char **res_desc;
 };
 
-freesasa_structure_t* freesasa_structure_init()
+freesasa_structure* freesasa_structure_init()
 {
-    freesasa_structure_t *p
-        = (freesasa_structure_t*) malloc(sizeof(freesasa_structure_t));
+    freesasa_structure *p
+        = (freesasa_structure*) malloc(sizeof(freesasa_structure));
     p->number_atoms = 0;
     p->number_residues = 0;
     p->number_chains = 0;
@@ -66,7 +66,7 @@ freesasa_structure_t* freesasa_structure_init()
     return p;
 }
 
-void freesasa_structure_free(freesasa_structure_t *p)
+void freesasa_structure_free(freesasa_structure *p)
 {
     if (p == NULL) return;
     if (p->a) free(p->a);
@@ -92,9 +92,9 @@ char freesasa_structure_get_pdb_atom(atom_t *a, double *xyz, const char *line)
     return freesasa_pdb_get_alt_coord_label(line);
 }
 
-freesasa_structure_t* freesasa_structure_init_from_pdb(FILE *pdb_file)
+freesasa_structure* freesasa_structure_init_from_pdb(FILE *pdb_file)
 {
-    freesasa_structure_t *p = freesasa_structure_init();
+    freesasa_structure *p = freesasa_structure_init();
 
     size_t len = PDB_LINE_STRL;
     char *line = (char*) malloc(sizeof(char)*(len+1));
@@ -134,13 +134,13 @@ freesasa_structure_t* freesasa_structure_init_from_pdb(FILE *pdb_file)
     return p;
 }
 
-static void freesasa_structure_alloc_one(freesasa_structure_t *p)
+static void freesasa_structure_alloc_one(freesasa_structure *p)
 {
     int na = ++p->number_atoms;
     p->a = (atom_t*) realloc(p->a,sizeof(atom_t)*na);
 }
 
-int freesasa_structure_add_atom(freesasa_structure_t *p,
+int freesasa_structure_add_atom(freesasa_structure *p,
                                 const char *atom_name,
                                 const char *residue_name,
                                 const char *residue_number,
@@ -195,7 +195,7 @@ int freesasa_structure_add_atom(freesasa_structure_t *p,
 }
 
 void freesasa_structure_r(double *r,
-                          const freesasa_structure_t *p,
+                          const freesasa_structure *p,
                           double (*atom2radius)(const char *res_name,
                                                 const char *atom_name))
 {
@@ -204,61 +204,61 @@ void freesasa_structure_r(double *r,
     }
 }
 
-void freesasa_structure_r_def(double *r, const freesasa_structure_t *p)
+void freesasa_structure_r_def(double *r, const freesasa_structure *p)
 {
     freesasa_structure_r(r,p,freesasa_classify_radius);
 }
 
-const freesasa_coord_t* freesasa_structure_xyz(const freesasa_structure_t *p)
+const freesasa_coord* freesasa_structure_xyz(const freesasa_structure *p)
 {
     return p->xyz;
 }
 
-int freesasa_structure_n(const freesasa_structure_t *p)
+int freesasa_structure_n(const freesasa_structure *p)
 {
     return p->number_atoms;
 }
 
-int freesasa_structure_n_residues(const freesasa_structure_t *p)
+int freesasa_structure_n_residues(const freesasa_structure *p)
 {
     return p->number_residues;
 }
 
-const char* freesasa_structure_atom_name(const freesasa_structure_t *p,
+const char* freesasa_structure_atom_name(const freesasa_structure *p,
                                          int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].atom_name;
 }
 
-const char* freesasa_structure_atom_res_name(const freesasa_structure_t *p,
+const char* freesasa_structure_atom_res_name(const freesasa_structure *p,
                                              int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].res_name;
 }
 
-const char* freesasa_structure_atom_res_number(const freesasa_structure_t *p,
+const char* freesasa_structure_atom_res_number(const freesasa_structure *p,
                                                int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].res_number;
 }
 
-char freesasa_structure_atom_chain(const freesasa_structure_t *p,
+char freesasa_structure_atom_chain(const freesasa_structure *p,
                                    int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].chain_label;
 }
 
-const char* freesasa_structure_atom_descriptor(const freesasa_structure_t *p, int i)
+const char* freesasa_structure_atom_descriptor(const freesasa_structure *p, int i)
 {
     assert (i < p->number_atoms);
     return p->a[i].descriptor;
 }
 
-int freesasa_structure_residue_atoms(const freesasa_structure_t *s, int r_i, int *first, int *last)
+int freesasa_structure_residue_atoms(const freesasa_structure *s, int r_i, int *first, int *last)
 {
     const int naa = s->number_residues;
     if (r_i >= naa) {
@@ -271,14 +271,14 @@ int freesasa_structure_residue_atoms(const freesasa_structure_t *s, int r_i, int
     return FREESASA_SUCCESS;
 }
 
-const char* freesasa_structure_residue_descriptor(const freesasa_structure_t *s, int r_i)
+const char* freesasa_structure_residue_descriptor(const freesasa_structure *s, int r_i)
 {
     assert(r_i < s->number_residues);
     return s->res_desc[r_i];
 }
 
 int freesasa_structure_write_pdb_bfactors(FILE *output,
-                                          const freesasa_structure_t *p,
+                                          const freesasa_structure *p,
                                           const double *values)
 {
     if (!output)
