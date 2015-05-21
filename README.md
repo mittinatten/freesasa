@@ -15,9 +15,23 @@ identical results.
 The OONS atom-classification and radii are used by default (Ooi et al.
 PNAS 1987). Users can also provide their own atomic radii.
 
-A manual with examples and explanation of how to use the API will be
-generated in `doc/manual.pdf`, and a full reference manual of the 
-whole library in `doc/doxygen/html`
+The library is still a work in progress, but, the calculations have been 
+verified to give correct results for a large number of proteins. Therefore, 
+the commandline tool can be considered reliable and stable. Planned changes 
+will mainly include refining the API, adding more options to the commandline
+tool and adding Python bindings (and possibly also to other languages).
+
+Documentation
+-------------
+
+A manual with examples and explanation of how to use the commandline tool 
+and how to use the API will be generated in `doc/manual.pdf`, and a full 
+reference manual can be built using Doxygen. After building the package, 
+calling
+
+    freesasa -h
+    
+explains how the commandline tool can be used.
 
 Compatibility
 -------------
