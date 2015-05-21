@@ -137,7 +137,8 @@ void freesasa_coord_set_i_xyz(freesasa_coord *c,int i,
 
 void freesasa_coord_set_all(freesasa_coord *c, const double* xyz, size_t n)
 {
-    assert(coord_clear(c) == FREESASA_SUCCESS);
+    int res = coord_clear(c);
+    assert(res == FREESASA_SUCCESS);
     freesasa_coord_append(c,xyz,n);
 }
 
@@ -145,7 +146,8 @@ void freesasa_coord_set_all_xyz(freesasa_coord *c,
                                 const double* x, const double *y,
                                 const double *z, size_t n)
 {
-    assert(coord_clear(c) == FREESASA_SUCCESS);
+    int res = coord_clear(c);
+    assert(res == FREESASA_SUCCESS);
     freesasa_coord_append_xyz(c, x, y, z, n);
 }
 

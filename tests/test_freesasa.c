@@ -229,7 +229,8 @@ START_TEST (test_freesasa_api_basic)
 
     // atom radius calculation (more extensive analysis in test_classify)
     ck_assert(fabs(freesasa_radius("ALA"," H  ")) < 1e-10);
-
+    ck_assert(freesasa_radius_atom(s,0) == FREESASA_FAIL);
+    
     // probe_radius
     ck_assert(freesasa_set_probe_radius(s,-1.) == FREESASA_WARN);
     ck_assert(freesasa_set_probe_radius(s,1.2) == FREESASA_SUCCESS);
@@ -258,6 +259,10 @@ START_TEST (test_freesasa_api_basic)
     // names
     freesasa_set_proteinname(s,"bla");
     ck_assert_str_eq(freesasa_get_proteinname(s),"bla");
+    const char* longstring = "XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX ";
+    ck_assert(strlen(longstring) > FREESASA_NAME_LIMIT); //necessary for the following test to make sense
+    freesasa_set_proteinname(s,longstring);
+    ck_assert(strlen(freesasa_get_proteinname(s))==FREESASA_NAME_LIMIT);
 
 #if HAVE_LIBPTHREAD
     // Threads
@@ -397,7 +402,10 @@ START_TEST (test_calc_errors)
     ck_assert((dummy=freesasa_area_total(s)) > 0);
     ck_assert(fabs(freesasa_area_class(s,FREESASA_APOLAR)- dummy) < 1e-10);
     ck_assert(fabs(freesasa_area_class(s,FREESASA_POLAR)) < 1e-10 );
-
+    ck_assert(freesasa_radius_atom(s,0) > 0);
+    ck_assert(freesasa_radius_atom(s,-1) < 0);
+    ck_assert(freesasa_radius_atom(s,1) < 0);
+    
     freesasa_set_verbosity(0);
 
     freesasa_free(s);
@@ -469,7 +477,7 @@ Suite *sasa_suite()
     tcase_add_test(tc_basic, test_copyparam);
     tcase_add_test(tc_basic, test_calc_errors);
     tcase_add_test(tc_basic, test_minimal_calc);
-
+    
     TCase *tc_lr_basic = tcase_create("Basic L&R");
     tcase_add_checked_fixture(tc_lr_basic,setup_lr_precision,teardown_lr_precision);
     tcase_add_test(tc_lr_basic, test_sasa_alg_basic);
@@ -487,7 +495,8 @@ Suite *sasa_suite()
     tcase_add_test(tc_sr, test_sasa_1ubq);
 
     TCase *tc_strvp = tcase_create("string-value pairs");
-
+    tcase_add_test(tc_strvp,test_strvp);
+    
     suite_add_tcase(s, tc_basic);
     suite_add_tcase(s, tc_lr_basic);
     suite_add_tcase(s, tc_sr_basic);

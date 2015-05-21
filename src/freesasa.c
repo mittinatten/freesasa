@@ -700,6 +700,7 @@ static freesasa_strvp* freesasa_alloc_strvp(size_t n)
     freesasa_strvp* svp = (freesasa_strvp*) malloc(sizeof(freesasa_strvp));
     svp->value = (double*) malloc(sizeof(double)*n);
     svp->string = (char**) malloc(sizeof(char*)*n);
+    svp->n = n;
     for (size_t i = 0; i < n; ++i) {
         svp->string[i] = (char*) malloc(sizeof(char)*STRL);
     }
