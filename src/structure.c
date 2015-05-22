@@ -56,13 +56,17 @@ freesasa_structure* freesasa_structure_new()
 {
     freesasa_structure *p
         = (freesasa_structure*) malloc(sizeof(freesasa_structure));
+    assert(p);
     p->number_atoms = 0;
     p->number_residues = 0;
     p->number_chains = 0;
     p->a = (atom_t*) malloc(sizeof(atom_t));
+    assert(p->a);
     p->xyz = freesasa_coord_new();
     p->res_first_atom = (int*) malloc(sizeof(int));
+    assert(p->res_first_atom);
     p->res_desc = (char**) malloc(sizeof(char*));
+    assert(p->res_desc);
     return p;
 }
 
@@ -98,6 +102,7 @@ freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file)
 
     size_t len = PDB_LINE_STRL;
     char *line = (char*) malloc(sizeof(char)*(len+1));
+    assert(line);
     char the_alt = ' ';
     while (getline(&line, &len, pdb_file) != -1) {
         if (strncmp("ATOM",line,4)==0) {
@@ -138,6 +143,7 @@ static void freesasa_structure_alloc_one(freesasa_structure *p)
 {
     int na = ++p->number_atoms;
     p->a = (atom_t*) realloc(p->a,sizeof(atom_t)*na);
+    assert(p->a);
 }
 
 int freesasa_structure_add_atom(freesasa_structure *p,
@@ -179,15 +185,19 @@ int freesasa_structure_add_atom(freesasa_structure *p,
         ++p->number_residues;
         p->res_first_atom[0] = 0;
         p->res_desc[0] = (char*) malloc(FREESASA_STRUCTURE_DESCRIPTOR_STRL);
+        assert(p->res_desc[0]);
         sprintf(p->res_desc[0],"%c %s %s",
                 chain_label,residue_number,residue_name);
     }
     if (na > 1 && strcmp(residue_number,p->a[na-2].res_number)) {
         int naa = ++p->number_residues;
         p->res_first_atom = (int*) realloc(p->res_first_atom, sizeof(int)*naa);
+        assert(p->res_first_atom);
         p->res_first_atom[naa-1] = na-1;
         p->res_desc = (char**) realloc(p->res_desc, sizeof(char*)*naa);
+        assert(p->res_desc);
         p->res_desc[naa-1] = (char*) malloc(FREESASA_STRUCTURE_DESCRIPTOR_STRL);
+        assert(p->res_desc[naa-1]);
         sprintf(p->res_desc[naa-1],"%c %s %s",
                 chain_label,residue_number,residue_name);
     }

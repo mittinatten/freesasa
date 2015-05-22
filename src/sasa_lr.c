@@ -96,10 +96,12 @@ static sasa_lr* freesasa_init_lr(double *sasa,
                                    double probe_radius,
                                    double delta) {
     sasa_lr* lr = (sasa_lr*) malloc(sizeof(sasa_lr));
+    assert(lr);
     const int n_atoms = freesasa_coord_n(xyz);
     double max_z=-1e50, min_z=1e50;
     double max_r = 0;
     double *radii = (double*) malloc(sizeof(double)*n_atoms);
+    assert(radii);
     const double *v = freesasa_coord_all(xyz);
     //find bounds of protein along z-axis and init radii
     for (size_t i = 0; i < n_atoms; ++i) {
@@ -197,6 +199,7 @@ static void sasa_lr_do_threads(int n_threads, sasa_lr *lr)
     int n_perthread = n_slices/n_threads;
     for (int t = 0; t < n_threads; ++t) {
         t_sasa[t] = (double*)malloc(sizeof(double)*lr->n_atoms);
+        assert(t_sasa[t]);
         for (int i = 0; i < lr->n_atoms; ++i) t_sasa[t][i] = 0;
         lrt[t] = *lr;
         lrt[t].sasa = t_sasa[t];
@@ -243,10 +246,13 @@ static void *sasa_lr_thread(void *arg)
 static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
 {
     sasa_lr_slice *slice = (sasa_lr_slice*) malloc(sizeof(sasa_lr_slice));
+    assert(slice);
     int n_atoms = lr->n_atoms;
     int n_slice = slice->n_slice = 0;
     slice->xdi = (int*) malloc(n_atoms*sizeof(int));
+    assert(slice->xdi);
     slice->in_slice = (char*) malloc(n_atoms*sizeof(int));
+    assert(slice->in_slice);
     double delta = lr->delta;
     const double *v = freesasa_coord_all(lr->xyz);
     slice->idx = NULL;
@@ -264,7 +270,8 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
             slice->idx = (int*) realloc(slice->idx,(n_slice+1)*sizeof(int));
             slice->r = (double*) realloc(slice->r,(n_slice+1)*sizeof(double));
             slice->DR = (double*) realloc(slice->DR,(n_slice+1)*sizeof(double));
-
+            assert(slice->idx && slice->r && slice->DR);
+            
             slice->idx[n_slice] = i;
             slice->xdi[i] = n_slice;
             slice->in_slice[i] = 1;
@@ -278,6 +285,7 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
     }
     slice->n_slice = n_slice;
     slice->exposed_arc = (double* )malloc(n_slice*(sizeof(double)));
+    assert(slice->exposed_arc);
     return slice;
 }
 
@@ -495,6 +503,7 @@ static void sasa_get_contacts(sasa_lr *lr)
     double **nb_xyd = (double**) malloc(sizeof(double*)*n_atoms);
     double **nb_xd = (double**) malloc(sizeof(double*)*n_atoms);
     double **nb_yd = (double**) malloc(sizeof(double*)*n_atoms);
+    assert(nn && nb && nb_xyd && nb_xd && nb_yd);
     for (int i = 0; i < n_atoms; ++i) {
         nn[i] = 0; nb[i] = NULL;
         nb_xyd[i] = NULL; nb_xd[i] = NULL; nb_yd[i] = NULL;
@@ -523,6 +532,7 @@ static void sasa_get_contacts(sasa_lr *lr)
                 //record neighbors
                 nb[i] = (int*) realloc(nb[i],sizeof(int)*nn[i]);
                 nb[j] = (int*) realloc(nb[j],sizeof(int)*nn[j]);
+                assert(nb[i] && nb[j]);
                 nb[i][nn[i]-1] = j;
                 nb[j][nn[j]-1] = i;
 
@@ -533,6 +543,8 @@ static void sasa_get_contacts(sasa_lr *lr)
                 nb_xd[j] = (double*) realloc(nb_xd[j],sizeof(double)*nn[j]);
                 nb_yd[i] = (double*) realloc(nb_yd[i],sizeof(double)*nn[i]);
                 nb_yd[j] = (double*) realloc(nb_yd[j],sizeof(double)*nn[j]);
+                assert(nb_xyd[i] && nb_xyd[j]);
+                assert(nb_xd[i] && nb_xd[i] && nb_yd[i] && nb_yd[j]);
 
                 double d = sqrt(dx*dx+dy*dy);
                 nb_xyd[i][nn[i]-1] = d;

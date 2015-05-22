@@ -32,7 +32,7 @@
 
     This is only for interal use, error handling is done by asserts.
     The header provides functions to store, copy and modify
-    coordinates through the type ::freesasa_coord_t.
+    coordinates through the type ::freesasa_coord.
  */
 
 //! Struct to store coordinates

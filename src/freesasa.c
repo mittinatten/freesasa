@@ -148,9 +148,11 @@ static freesasa_class_data* freesasa_classify_structure(const freesasa_structure
     size_t n = freesasa_structure_n(p);
 
     freesasa_class_data* c = (freesasa_class_data*)malloc(sizeof(freesasa_class_data));
+    assert(c);
     c->class = (int*)malloc(sizeof(int)*n);
     c->residue_type = (int*)malloc(sizeof(int)*n);
-
+    assert(c->class && c->residue_type);
+    
     for (int i = 0; i < n; ++i) {
         const char *res_name = freesasa_structure_atom_res_name(p,i);
         const char *atom_name = freesasa_structure_atom_name(p,i);
@@ -172,14 +174,15 @@ static void freesasa_class_free(freesasa_class_data *c)
 static freesasa_result* freesasa_result_new(size_t n_atoms)
 {
     freesasa_result *r = (freesasa_result*)malloc(sizeof(freesasa_result));
-
+    assert(r);
     int nc = freesasa_classify_nclasses();
     int nr = freesasa_classify_nresiduetypes();
 
     r->sasa = (double*)malloc(sizeof(double)*n_atoms);
     r->class = (double*)malloc(sizeof(double)*nc);
     r->residue_type = (double*)malloc(sizeof(double)*nr);
-
+    assert(r->sasa && r->class && r->residue_type);
+    
     for (int i = 0; i < nc; ++i) r->class[i] = 0;
     for (int i = 0; i < nr; ++i) r->residue_type[i] = 0;
 
@@ -250,6 +253,7 @@ static int freesasa_calc(freesasa *s,
 freesasa* freesasa_new()
 {
     freesasa *s = (freesasa*) malloc(sizeof(freesasa));
+    assert(s);
     *s = freesasa_def_param;
     return s;
 }
@@ -305,6 +309,7 @@ static int freesasa_calc_structure(freesasa *s)
     if (s->owns_r && s->r) free(s->r);
     s->n_atoms = freesasa_structure_n(s->structure);
     s->r = (double*) malloc(sizeof(double)*s->n_atoms);
+    assert(s->r);
     s->owns_r = 1;
     freesasa_structure_r_def(s->r,s->structure);
     
@@ -698,11 +703,15 @@ static freesasa_strvp* freesasa_alloc_strvp(size_t n)
 {
     const int STRL=FREESASA_STRUCTURE_DESCRIPTOR_STRL;
     freesasa_strvp* svp = (freesasa_strvp*) malloc(sizeof(freesasa_strvp));
+    assert(svp);
     svp->value = (double*) malloc(sizeof(double)*n);
     svp->string = (char**) malloc(sizeof(char*)*n);
+    assert(svp->value && svp->string);
+
     svp->n = n;
     for (size_t i = 0; i < n; ++i) {
         svp->string[i] = (char*) malloc(sizeof(char)*STRL);
+        assert(svp->string[i]);
     }
     return svp;
 }

@@ -33,6 +33,7 @@ struct freesasa_coord {
 freesasa_coord* freesasa_coord_new()
 {
     freesasa_coord* c = (freesasa_coord*) malloc(sizeof(freesasa_coord));
+    assert(c);
     c->xyz = NULL;
     c->n = 0;
     c->is_const = 0;
@@ -84,6 +85,7 @@ void freesasa_coord_append(freesasa_coord *c, const double *xyz, size_t n)
     size_t n_old = c->n;
     c->n += n;
     c->xyz = (double*) realloc(c->xyz, sizeof(double)*3*c->n);
+    assert(c->xyz);
 
     double *dest = memcpy(&(c->xyz[3*n_old]), xyz, sizeof(double)*n*3);
 
@@ -101,6 +103,7 @@ void freesasa_coord_append_xyz(freesasa_coord *c,
     assert(!c->is_const);
 
     double *xyz = (double*)malloc(sizeof(double)*n*3);
+    assert(xyz);
     for (int i = 0; i < n; ++i) {
         xyz[i*3] = x[i];
         xyz[i*3+1] = y[i];

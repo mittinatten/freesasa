@@ -24,7 +24,7 @@
    @file 
    @author Simon Mitternacht
 
-   This header defines the type ::freesasa_structure_t, which
+   This header defines the type ::freesasa_structure, which
    represents a protein structure, and functions to deal with it.
  */
 
@@ -211,7 +211,7 @@ const char* freesasa_structure_atom_descriptor(const freesasa_structure *s, int 
     @param r_i Residue index.
     @param first First atom of residue `r_i` will be stored here.
     @param last Last atom of residue `r_i` will be stored here.
-    @return ::FREESASA_SUCCESS. ::FRESSASA_FAIL if index `r_i` is invalid.
+    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if index `r_i` is invalid.
  */
 int freesasa_structure_residue_atoms(const freesasa_structure *s, int r_i, 
                                      int *first, int *last);

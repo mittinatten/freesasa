@@ -29,7 +29,7 @@
     The header freesasa.h contains the API of FreeSASA and is the only
     header installed by the `make install` target. It provides
     functions to init and perform a SASA calculation. The user xan
-    select algorithm and provide parameters. The type ::freesasa_t is
+    select algorithm and provide parameters. The type ::freesasa is
     used to store parameters and access results. The manual in
     `doc/manual.pdf` gives some examples of how to use this API.
 
@@ -44,12 +44,27 @@
     All errors are written to stderr and are prefixed with the string
     'freesasa'. There are two error return values ::FREESASA_WARN and
     ::FREESASA_FAIL (see documentation of each function to see when
-    these are used). The return value ::FREESASA_SUCCESS means no errors
-    have been spotted.
+    these are used). The return value ::FREESASA_SUCCESS means no
+    errors have been spotted. 
+
+    Memory allocation errors are only checked with asserts. These
+    should be rare in a library of this type, the asserts are there to
+    allow debugging should they occur.
 
     Functions that have real-valued return values return negative
     numbers if calculation failed for some reason. The documentation
     for each function explains when this can happen.
+
+    @subsection Thread-safety 
+    
+    The only state the library stores is the verbosity level (set by
+    freesasa_set_verbosity()). It should be clear from the
+    documentation when the other functions have side effects such as
+    memory allocation and I/O, and thread-safety should generally not
+    be an issue (to the extent that your c library has a threadsafe
+    fprintf). The SASA calculation itself can be parallelized by
+    increasing the number of threads through freesasa_set_nthreads()
+    before calling any of the calculation-functions.
  */
 
 #include <stdio.h>
@@ -93,8 +108,8 @@ typedef enum  {FREESASA_ATOMS, FREESASA_RESIDUES}
 
 /**
     Verbosity levels. 
-    - ::FREESASA_V_NORMAL: print all errors and warnings.
-    - ::FREESASA_V_SILENT: print no errors and warnings.
+    - FREESASA_V_NORMAL: print all errors and warnings.
+    - FREESASA_V_SILENT: print no errors and warnings.
  */
 typedef enum {FREESASA_V_NORMAL, FREESASA_V_SILENT} freesasa_verbosity;
 
@@ -162,10 +177,10 @@ extern "C"{
     @see freesasa_calc_pdb()
     @see freesasa_calc_atoms()
     @param s a ::freesasa-object
-    @param coord An array of coordinates for sphere centers (x1,y1,z1,x2,y2,z2,...)
+    @param coord An array of coordinates for sphere centers
+      (x1,y1,z1,x2,y2,z2,...)
     @param r An array of radii for the spheres
     @param n number of spheres
-    
     @return ::FREESASA_SUCCESS upon successful calculation, prints and
     error and returns ::FREESASA_FAIL else. 
  */
