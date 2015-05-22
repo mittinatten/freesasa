@@ -24,10 +24,10 @@ def getVerbosity():
     return cfreesasa.freesasa_get_verbosity()
 
 cdef class FreeSASA:
-     cdef cfreesasa.freesasa_t* _c_freesasa
+     cdef cfreesasa.freesasa* _c_freesasa
 
      def __cinit__(self):
-         self._c_freesasa = cfreesasa.freesasa_init()
+         self._c_freesasa = cfreesasa.freesasa_new()
          if self._c_freesasa is NULL:
              raise MemoryError()
 
