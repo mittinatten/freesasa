@@ -36,7 +36,7 @@ freesasa_structure *s;
 
 static void setup(void)
 {
-    s = freesasa_structure_init();
+    s = freesasa_structure_new();
     for (int i = 0; i < N; ++i) {
         freesasa_structure_add_atom(s,an[i],rna[i],rnu[i],cl[i],
                                     i,i,i);
@@ -82,10 +82,10 @@ START_TEST (test_write_no_pdb)
     FILE *null = fopen("/dev/null","w"); // won't work on all platforms
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert(freesasa_structure_write_pdb_bfactors(NULL,s,bfactors) == FREESASA_FAIL);
-    ck_assert(freesasa_structure_write_pdb_bfactors(null,s,NULL) == FREESASA_FAIL);
-    ck_assert(freesasa_structure_write_pdb_bfactors(NULL,s,NULL) == FREESASA_FAIL);
-    ck_assert(freesasa_structure_write_pdb_bfactors(null,s,bfactors) == FREESASA_FAIL);
+    ck_assert(freesasa_structure_write_pdb_bfactors(s,NULL,bfactors) == FREESASA_FAIL);
+    ck_assert(freesasa_structure_write_pdb_bfactors(s,null,NULL) == FREESASA_FAIL);
+    ck_assert(freesasa_structure_write_pdb_bfactors(s,NULL,NULL) == FREESASA_FAIL);
+    ck_assert(freesasa_structure_write_pdb_bfactors(s,null,bfactors) == FREESASA_FAIL);
     freesasa_set_verbosity(0);
 
     fclose(null);
@@ -123,7 +123,7 @@ void setup_1ubq(void)
                 strerror(errno));
     }
     if (s) freesasa_structure_free(s);
-    s = freesasa_structure_init_from_pdb(pdb);
+    s = freesasa_structure_from_pdb(pdb);
     fclose(pdb);
 }
 
@@ -161,11 +161,11 @@ START_TEST (test_write_1ubq) {
     double *b = (double*)malloc(sizeof(double)*n);
     for (int i = 0; i < n; ++i) b[i] = 1.23;
 
-    ck_assert(freesasa_structure_write_pdb_bfactors(tf,s,b) == FREESASA_SUCCESS);
+    ck_assert(freesasa_structure_write_pdb_bfactors(s,tf,b) == FREESASA_SUCCESS);
 
     rewind(tf);
 
-    //check that output matches refernce file
+    //check that output matches reference file
     size_t bufsize = 100;
     char *buf_tf = malloc(bufsize), *buf_ref = malloc(bufsize);
     while(getline(&buf_tf,&bufsize,tf) > 0 && getline(&buf_ref,&bufsize,ref) > 0) {
@@ -188,7 +188,7 @@ START_TEST (test_pdb)
     for (int i = 0; i < 3; ++i) {
         FILE *pdb = fopen(file_names[i],"r");
         ck_assert(pdb != NULL);
-        freesasa_structure *s = freesasa_structure_init_from_pdb(pdb);
+        freesasa_structure *s = freesasa_structure_from_pdb(pdb);
         if (result_null[i]) ck_assert(s == NULL);
         else ck_assert(s != NULL);
         fclose(pdb);

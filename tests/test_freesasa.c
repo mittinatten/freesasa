@@ -80,7 +80,7 @@ int test_sasa(double ref, const char *test)
 void setup_lr_precision(void)
 {
     if (st) freesasa_free(st);
-    st = freesasa_init();
+    st = freesasa_new();
     freesasa_set_algorithm(st,FREESASA_LEE_RICHARDS);
     freesasa_set_lr_delta(st,1e-4);
     tolerance = 1e-5;
@@ -92,7 +92,7 @@ void teardown_lr_precision(void)
 void setup_sr_precision(void)
 {
     if (st) freesasa_free(st);
-    st = freesasa_init();
+    st = freesasa_new();
     freesasa_set_algorithm(st,FREESASA_SHRAKE_RUPLEY);
     freesasa_set_sr_points(st,5000);
     tolerance = 1e-3;
@@ -153,7 +153,7 @@ END_TEST
 void setup_sr (void)
 {
     if (st) freesasa_free(st);
-    st = freesasa_init();
+    st = freesasa_new();
     freesasa_set_algorithm(st,FREESASA_SHRAKE_RUPLEY);
     freesasa_set_sr_points(st,100);
     total_ref = 4759.86096;
@@ -168,7 +168,7 @@ void teardown_sr(void)
 void setup_lr (void)
 {
     if (st) freesasa_free(st);
-    st = freesasa_init();
+    st = freesasa_new();
     freesasa_set_algorithm(st,FREESASA_LEE_RICHARDS);
     freesasa_set_lr_delta(st,0.25);
     total_ref = 4728.26159;
@@ -205,9 +205,9 @@ START_TEST (test_sasa_1ubq)
     ck_assert(fabs(r[0] - freesasa_radius_atom(st,0)) < 1e-5);
 
     FILE *devnull = fopen("/dev/null","w");
-    ck_assert(freesasa_write_pdb(devnull,st) == FREESASA_SUCCESS);
-    ck_assert(freesasa_log(devnull,st) == FREESASA_SUCCESS);
-    ck_assert(freesasa_per_residue_type(devnull,st) == FREESASA_SUCCESS);
+    ck_assert(freesasa_write_pdb(st,devnull) == FREESASA_SUCCESS);
+    ck_assert(freesasa_log(st,devnull) == FREESASA_SUCCESS);
+    ck_assert(freesasa_per_residue_type(st,devnull) == FREESASA_SUCCESS);
     fclose(devnull);
 }
 END_TEST
@@ -215,7 +215,7 @@ END_TEST
 START_TEST (test_freesasa_api_basic)
 {
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    freesasa *s = freesasa_init();
+    freesasa *s = freesasa_new();
     ck_assert(s != NULL);
     ck_assert(freesasa_n_atoms(s) == 0);
 
@@ -278,16 +278,16 @@ START_TEST (test_freesasa_api_basic)
     ck_assert(freesasa_area_total(s) < 0);
     ck_assert(freesasa_area_class(s, FREESASA_POLAR) < 0);
     ck_assert(freesasa_area_class(s, FREESASA_APOLAR) < 0);
-    ck_assert(freesasa_per_residue(stdout,s) == FREESASA_FAIL);
-    ck_assert(freesasa_per_residue(NULL,s) == FREESASA_FAIL);
-    ck_assert(freesasa_per_residue_type(stdout,s) == FREESASA_FAIL);
-    ck_assert(freesasa_per_residue_type(NULL,s) == FREESASA_FAIL);
+    ck_assert(freesasa_per_residue(s,stdout) == FREESASA_FAIL);
+    ck_assert(freesasa_per_residue(s,NULL) == FREESASA_FAIL);
+    ck_assert(freesasa_per_residue_type(s,stdout) == FREESASA_FAIL);
+    ck_assert(freesasa_per_residue_type(s,NULL) == FREESASA_FAIL);
     ck_assert(freesasa_area_residue(s,"ALA") < 0);
-    ck_assert(freesasa_write_pdb(stdout,s) == FREESASA_FAIL);
+    ck_assert(freesasa_write_pdb(s,stdout) == FREESASA_FAIL);
     ck_assert(freesasa_area_atom(s,0) < 0);
     ck_assert(freesasa_area_atom_array(s) == NULL);
 
-    ck_assert(freesasa_log(stdout,s) == FREESASA_WARN);
+    ck_assert(freesasa_log(s,stdout) == FREESASA_WARN);
 
     freesasa_set_verbosity(0);
 }
@@ -300,7 +300,7 @@ START_TEST (test_copyparam)
     int n_thread = 3;
     double d_lr = 0.5;
     double probe_radius = 2;
-    freesasa *s1 = freesasa_init(), *s2 = freesasa_init();
+    freesasa *s1 = freesasa_new(), *s2 = freesasa_new();
     ck_assert(s1 != NULL);
     ck_assert(s2 != NULL);
     freesasa_set_sr_points(s1,n_sr);
@@ -323,7 +323,7 @@ END_TEST
 
 START_TEST (test_minimal_calc)
 {
-    freesasa *s = freesasa_init();
+    freesasa *s = freesasa_new();
 
     double coord[3] = {0,0,0};
     double r[1] = {1.0};
@@ -353,7 +353,7 @@ END_TEST
 
 START_TEST (test_calc_errors)
 {
-    freesasa *s = freesasa_init();
+    freesasa *s = freesasa_new();
     double dummy;
 
     fputs("Testing error messages:\n",stderr);
@@ -416,7 +416,7 @@ START_TEST (test_multi_calc)
 {
 #if HAVE_LIBPTHREAD
     errno = 0;
-    freesasa *s = freesasa_init();
+    freesasa *s = freesasa_new();
     //S&R
     freesasa_set_algorithm(s,FREESASA_SHRAKE_RUPLEY);
     freesasa_set_sr_points(s,100);
@@ -445,7 +445,7 @@ END_TEST
 
 START_TEST (test_strvp)
 {
-    freesasa *s = freesasa_init();
+    freesasa *s = freesasa_new();
     freesasa_strvp *svp; 
     
     freesasa_set_verbosity(FREESASA_V_SILENT);

@@ -87,7 +87,7 @@ void short_help() {
 }
 
 void run_analysis(FILE *input, const char *name, const settings_t *settings) {
-    freesasa *s = freesasa_init();
+    freesasa *s = freesasa_new();
     double tmp;
     freesasa_copy_param(s,settings->s);
     freesasa_set_proteinname(s,name);
@@ -96,7 +96,7 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
                 program_name);
         exit(EXIT_FAILURE);
     }
-    freesasa_log(stdout,s);
+    freesasa_log(s,stdout);
     printf("\nTotal:  %9.2f A2\nPolar:  %9.2f A2\nApolar: %9.2f A2\n",
            freesasa_area_total(s), freesasa_area_class(s,FREESASA_POLAR),
            freesasa_area_class(s, FREESASA_APOLAR));
@@ -106,13 +106,13 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
         printf("Unknown: %9.2f A2\n",tmp);
     if (settings->per_residue_type) {
         printf("\n");
-        freesasa_per_residue_type(stdout,s);
+        freesasa_per_residue_type(s,stdout);
     }
     if (settings->per_residue) {
         printf("\n");
-        freesasa_per_residue(stdout,s);
+        freesasa_per_residue(s,stdout);
     }
-    if (settings->B) freesasa_write_pdb(settings->B,s);
+    if (settings->B) freesasa_write_pdb(s,settings->B);
     freesasa_free(s);
 }
 
@@ -120,7 +120,7 @@ int main (int argc, char **argv) {
     int alg_set = 0;
     FILE *input = NULL;
     settings_t settings = def_settings;
-    settings.s = freesasa_init();
+    settings.s = freesasa_new();
     extern char *optarg;
     char opt;
 #ifdef PROGRAM_NAME

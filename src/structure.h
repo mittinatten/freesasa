@@ -48,7 +48,7 @@ typedef struct freesasa_structure freesasa_structure;
 
     @return The generated struct.
  */
-freesasa_structure* freesasa_structure_init(void);
+freesasa_structure* freesasa_structure_new(void);
 
 /**
     Free structure.
@@ -73,7 +73,7 @@ void freesasa_structure_free(freesasa_structure *s);
     @return The generated struct. Returns `NULL` and prints error if
     input is invalid.
 */
-freesasa_structure* freesasa_structure_init_from_pdb(FILE *pdb_file);
+freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file);
 
 /**
     Add individual atom to structure.
@@ -222,14 +222,14 @@ const char* freesasa_structure_residue_descriptor(const freesasa_structure *s, i
     Writes PDB file, but with B-factors replaced by new values. Can be
     used to visualize SASA.
 
-    @param output Output file.
     @param s Self.
+    @param output Output file.
     @param values Array of values to use as "B-factors" in the output.
     @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if there are problems with
     output-file.
  */
-int freesasa_structure_write_pdb_bfactors(FILE *output,
-                                          const freesasa_structure *s,
+int freesasa_structure_write_pdb_bfactors(const freesasa_structure *s,
+                                          FILE *output,
                                           const double *values);
 
 #endif

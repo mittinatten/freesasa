@@ -52,7 +52,7 @@ struct freesasa_structure {
     char **res_desc;
 };
 
-freesasa_structure* freesasa_structure_init()
+freesasa_structure* freesasa_structure_new()
 {
     freesasa_structure *p
         = (freesasa_structure*) malloc(sizeof(freesasa_structure));
@@ -92,9 +92,9 @@ char freesasa_structure_get_pdb_atom(atom_t *a, double *xyz, const char *line)
     return freesasa_pdb_get_alt_coord_label(line);
 }
 
-freesasa_structure* freesasa_structure_init_from_pdb(FILE *pdb_file)
+freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file)
 {
-    freesasa_structure *p = freesasa_structure_init();
+    freesasa_structure *p = freesasa_structure_new();
 
     size_t len = PDB_LINE_STRL;
     char *line = (char*) malloc(sizeof(char)*(len+1));
@@ -277,8 +277,8 @@ const char* freesasa_structure_residue_descriptor(const freesasa_structure *s, i
     return s->res_desc[r_i];
 }
 
-int freesasa_structure_write_pdb_bfactors(FILE *output,
-                                          const freesasa_structure *p,
+int freesasa_structure_write_pdb_bfactors(const freesasa_structure *p,
+                                          FILE *output,
                                           const double *values)
 {
     if (!output)

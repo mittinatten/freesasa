@@ -247,7 +247,7 @@ static int freesasa_calc(freesasa *s,
     return res;
 }
 
-freesasa* freesasa_init()
+freesasa* freesasa_new()
 {
     freesasa *s = (freesasa*) malloc(sizeof(freesasa));
     *s = freesasa_def_param;
@@ -315,7 +315,7 @@ static int freesasa_calc_structure(freesasa *s)
 int freesasa_calc_pdb(freesasa *s, FILE *pdb_file)
 {
     s->calculated = 0;
-    freesasa_structure *p = freesasa_structure_init_from_pdb(pdb_file);
+    freesasa_structure *p = freesasa_structure_from_pdb(pdb_file);
     if (!p) {
         return freesasa_fail("Failure reading PDB-file.");
     }
@@ -335,7 +335,7 @@ int freesasa_calc_atoms(freesasa *s, const double *coord,
 
     if (s->structure) freesasa_structure_free(s->structure);
     
-    freesasa_structure *p = freesasa_structure_init();
+    freesasa_structure *p = freesasa_structure_new();
     for (size_t i = 0; i < n; ++i) {
         status = freesasa_structure_add_atom(p,atomnames[i],resnames[i],"   1",'A',
                                               coord[i*3],coord[i*3+1],coord[i*3+2]);
@@ -574,7 +574,7 @@ const char* freesasa_get_proteinname(const freesasa *s)
     return s->proteinname;
 }
 
-int freesasa_log(FILE *log, const freesasa *s)
+int freesasa_log(const freesasa *s, FILE *log)
 {
     if (! s->calculated) {
         const char *msg = "freesasa_log() called, but no calculation "
@@ -607,7 +607,7 @@ int freesasa_log(FILE *log, const freesasa *s)
     return FREESASA_SUCCESS;
 }
 
-int freesasa_per_residue_type(FILE *output, const freesasa *s)
+int freesasa_per_residue_type(const freesasa *s, FILE *output)
 {
     if (! output) {
         return freesasa_fail("freesasa_per_residue_type() output file is "
@@ -640,7 +640,7 @@ static double freesasa_single_residue_sasa(const freesasa *s, int r_i)
     return a;
 }
 
-int freesasa_per_residue(FILE *output, const freesasa *s)
+int freesasa_per_residue(const freesasa *s, FILE *output)
 {
     if (! output) {
         return freesasa_fail("freesasa_per_residue() output file is "
@@ -671,7 +671,7 @@ double freesasa_area_residue(const freesasa *s, const char *res_name)
     return s->result->residue_type[res];
 }
 
-int freesasa_write_pdb(FILE *output, const freesasa *s)
+int freesasa_write_pdb(const freesasa *s, FILE *output)
 {
     if (!s->calculated) {
         return freesasa_fail("Cannot output results before "
@@ -689,7 +689,7 @@ int freesasa_write_pdb(FILE *output, const freesasa *s)
         return freesasa_fail("Cannot write B-factors: "
                              "no SASA values available.");
     }
-    return freesasa_structure_write_pdb_bfactors(output,    s->structure,
+    return freesasa_structure_write_pdb_bfactors(s->structure,output,
                                                  s->result->sasa);
 }
 

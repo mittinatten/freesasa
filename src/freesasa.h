@@ -126,12 +126,12 @@ extern "C"{
 
     @return The created object
  */
-    freesasa* freesasa_init(void);
+    freesasa* freesasa_new(void);
 
 /**
     Frees resources allocated to a freesasa object. 
 
-    @param s Self.
+    @param s a ::freesasa-object
  */
     void freesasa_free(freesasa *s);
 
@@ -161,7 +161,7 @@ extern "C"{
 
     @see freesasa_calc_pdb()
     @see freesasa_calc_atoms()
-    @param s Self.
+    @param s a ::freesasa-object
     @param coord An array of coordinates for sphere centers (x1,y1,z1,x2,y2,z2,...)
     @param r An array of radii for the spheres
     @param n number of spheres
@@ -183,7 +183,7 @@ extern "C"{
 
     @see freesasa_calc_atoms()
     @see freesasa_calc_coord()
-    @param s Self.
+    @param s a ::freesasa-object
     @param pdb_file PDB-file for input
     @return ::FREESASA_SUCCESS if calculation successful, prints an
     error and returns ::FREESASA_FAIL if not.
@@ -203,7 +203,7 @@ extern "C"{
 
     @see freesasa_calc_pdb()
     @see freesasa_calc_coord()
-    @param s Self.
+    @param s a ::freesasa-object
     @param coord Array of atom coordinates (x1,y1,z1,x2,y2,z2,...). Should
       have 3*n elements.
     @param resnames Array of strings of the format "ALA", "PHE", etc. 
@@ -254,7 +254,7 @@ extern "C"{
     erased.
     
     @see freesasa_refresh()
-    @param s Self.
+    @param s a ::freesasa-object
     @param coord An array of coordinates for sphere centers (x1,y1,z1,x2,y2,z2,...)
     @param r An array of radii for the spheres
     @param n number of spheres
@@ -283,7 +283,7 @@ extern "C"{
     Returns 0 if no coordinates have been linked or no calculation
     has been performed.
 
-    @param s Self.
+    @param s a ::freesasa-object
     @return The number of atoms.
 */
     size_t freesasa_n_atoms(const freesasa *s);
@@ -295,7 +295,7 @@ extern "C"{
 /**
     Set algorithm. 
 
-    @param s Self.
+    @param s a ::freesasa-object
     @param alg The algorithm to be set.
     @return ::FREESASA_SUCCESS if alg is valid, ::FREESASA_WARN else. 
 */
@@ -304,7 +304,7 @@ extern "C"{
 /**
     Get algorithm. 
 
-    @param s Self.
+    @param s a ::freesasa-object
     @return The algorithm.
 */
     freesasa_algorithm freesasa_get_algorithm(const freesasa *s);
@@ -312,7 +312,7 @@ extern "C"{
 /**
     Get algorithm as string.
  
-    @param s Self.
+    @param s a ::freesasa-object
     @return The algorithm as a string.
 */
     const char* freesasa_algorithm_name(const freesasa *s);
@@ -323,7 +323,7 @@ extern "C"{
     Sets probe radius for SASA calculations (default ::FREESASA_DEF_PROBE_RADIUS = 1.4 Å). If submitted radius
     is invalid, default is used and an error message printed.
 
-    @param s Self.
+    @param s a ::freesasa-object
     @param r Value for probe radius in Ångström.
     @return ::FREESASA_SUCCESS for valid r-values. ::FREESASA_WARN else. 
 */
@@ -332,7 +332,7 @@ extern "C"{
 /**
     Get probe radius.
 
-    @param s Self.
+    @param s a ::freesasa-object
     @return Probe radius in Ångström. 
 */
     double freesasa_get_probe_radius(const freesasa *s);
@@ -343,7 +343,7 @@ extern "C"{
     Sets number of test points for S&R algorithm (default
     ::FREESASA_DEF_SR_N = 100).
     
-    @param s Self.
+    @param s a ::freesasa-object
     @param n Number of points.
     @return ::FREESASA_SUCCESS if n is valid. Else: prints error
     message, returns ::FREESASA_WARN and sets to default value.
@@ -353,7 +353,7 @@ extern "C"{
 /**
     Get number of test points for S&R algorithm. 
 
-    @param s Self.
+    @param s a ::freesasa-object
     @return Number of points. ::FREESASA_WARN if S&R algorithm not
     selected.
 */
@@ -365,7 +365,7 @@ extern "C"{
     Sets slice width d for L&R algorithm in Ångström (default
     FREESASA_DEF_LR_D = 0.25 Å). 
 
-    @param s Self.
+    @param s a ::freesasa-object
     @param d Slice width.
     @return ::FREESASA_SUCCESS if d is valid. Else: prints error
     message, returns ::FREESASA_WARN and sets to default value
@@ -378,7 +378,7 @@ extern "C"{
     
     Get slice width for L&R algorithm in Ångström. 
 
-    @param s Self.
+    @param s a ::freesasa-object
     @return Slice width. Negative value if L&R algorithm not
     selected. 
 */
@@ -391,7 +391,7 @@ extern "C"{
     useful for large proteins and high resolution. Minimal gain for
     smaller systems.
 
-    @param s Self.
+    @param s a ::freesasa-object
     @param n Number of threads.
     @return ::FREESASA_SUCCESS if n is valid, uses default value and
     returns ::FREESASA_WARN else.
@@ -403,7 +403,7 @@ extern "C"{
 
     Gets the number of threads used in the calcultion.
 
-    @param s Self.
+    @param s a ::freesasa-object
     @return Number of threads.
 */
     int freesasa_get_nthreads(const freesasa *s);
@@ -416,7 +416,7 @@ extern "C"{
     is probably a file name and the last characters are the most
     interesting). 
 
-    @param s Self.
+    @param s a ::freesasa-object
     @param name Protein name.
 */
     void freesasa_set_proteinname(freesasa *s,const char *name);
@@ -424,7 +424,7 @@ extern "C"{
 /**
     Get protein name. 
 
-    @param s Self.
+    @param s a ::freesasa-object
     @return Protein name.
 */
     const char* freesasa_get_proteinname(const freesasa *s);
@@ -436,7 +436,7 @@ extern "C"{
 /**
     Total SASA
     
-    @param s Self.
+    @param s a ::freesasa-object
     @return Total SASA in Å^2. Negative return value and warning printed
     if calculation hasn't been performed yet. 
 */
@@ -445,7 +445,7 @@ extern "C"{
 /**
     SASA of a certain class of atoms
 
-    @param s Self.
+    @param s a ::freesasa-object
     @param c Class of atoms (polar/apolar/nucleic/unknown). 
     @return SASA of class c. Negative value if calculation has not
     been performed yet. 
@@ -459,25 +459,25 @@ extern "C"{
     type. The standard 20 amino acids are always included in output,
     non-standard ones and nucleotides only if they were present in
     input. Each line in the output is prefixed by the string 'RES:'.
-    
+
+    @param s a ::freesasa-object
     @param output Output file.
-    @param s Self.
     @return ::FREESASA_FAIL if file-pointer is NULL or if no calculation
     has been performed yet.
 */
-    int freesasa_per_residue_type(FILE *output, const freesasa *s);
+    int freesasa_per_residue_type(const freesasa *s, FILE *output);
 
 /**
     Print SASA for each residue individually to file. 
 
     Each line in the output is prefixed by the string 'SEQ:'.
 
+    @param s a ::freesasa-object
     @param output Output file.
-    @param s Self.
     @return ::FREESASA_FAIL if file-pointer is NULL or if no calculation
     has been performed yet.
  */
-    int freesasa_per_residue(FILE *output, const freesasa *s);
+    int freesasa_per_residue(const freesasa *s, FILE *output);
 /**
 
     Total SASA for specific residue type.
@@ -488,7 +488,7 @@ extern "C"{
     stored. I.e. if residues not known by FreeSASA are used, the only
     option currently is to group them under "UNK". 
 
-    @param s Self.
+    @param s a ::freesasa-object
     @param res_name The residue (string of format "ALA", "PHE", etc).
 
     @return SASA of residue type res_name. Negative value if called
@@ -505,7 +505,7 @@ extern "C"{
 
     @see freesasa_free_strvp()
 
-    @param s Self.
+    @param s a ::freesasa-object
     @param type The type of result
     @return the string-value pairs. Returns NULL if calculation has
     not been performed yet or if type is illegal
@@ -528,14 +528,14 @@ extern "C"{
     Takes original PDB and replaces B-factors with those from latest
     calculation. 
 
+    @param s a ::freesasa-object
     @param output File to write to.
-    @param s Self.
     @return ::FREESASA_FAIL if there is no previous PDB input to base
     output on, if there are problems with the output destination, if
     there are no SASA-values to use, or there are inconsistencies
     between stored structure and SASA-values. ::FREESASA_SUCCESS else.
  */
-    int freesasa_write_pdb(FILE *output, const freesasa *s);
+    int freesasa_write_pdb(const freesasa *s, FILE *output);
 
 
 //////////////////////////////////
@@ -545,7 +545,7 @@ extern "C"{
 /**
     SASA value for given atom.
 
-    @param s Self.
+    @param s a ::freesasa-object
     @param i Atom index
     @return SASA value for atom i. Prints error and returns negative
     value if atom index is invalid or if no calculation has been
@@ -556,7 +556,7 @@ extern "C"{
 /**
     SASA for all atoms individually.
     
-    @param s Self.
+    @param s a ::freesasa-object
     @return Array of SASA for all atoms. Returns NULL if no results
     available.
 */
@@ -565,7 +565,7 @@ extern "C"{
 /**
     Radius of given atom.
     
-    @param s Self.
+    @param s a ::freesasa-object
     @param i Atom index.
     @return Radius of atom in Ångström. Prints error and returns negative
     value if atom index is invalid or no value available.
@@ -575,7 +575,7 @@ extern "C"{
 /**
     Get atomic radii.
     
-    @param s Self.
+    @param s a ::freesasa-object
     @return Array of all atomic radii. Returns NULL if no radii are
     available.
 */
@@ -590,12 +590,12 @@ extern "C"{
 
     Prints log of calculation results to specified file. 
 
+    @param s a ::freesasa-object
     @param log Output-file.
-    @param s Self.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_WARN if
     inconsistencies are detected (with explanatory error-message). 
 */
-    int freesasa_log(FILE *log, const freesasa *s);
+    int freesasa_log(const freesasa *s, FILE *log);
 
 /**
     Set the global verbosity level.

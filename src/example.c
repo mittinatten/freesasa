@@ -22,14 +22,14 @@
 
 int main(int argc, char **argv) {
     //initialize freesasa-object with default parameters
-    freesasa *s = freesasa_init();
+    freesasa *s = freesasa_new();
 
     //do the calculation using default parameters with protein
     //structure from STDIN
     freesasa_calc_pdb(s,stdin);
 
     //print results
-    freesasa_log(stdout,s);
+    freesasa_log(s,stdout);
     printf("Total area: %f A2\n", freesasa_area_total(s));
 
     //clean up
