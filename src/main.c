@@ -123,8 +123,8 @@ int main (int argc, char **argv) {
     settings.s = freesasa_new();
     extern char *optarg;
     char opt;
-#ifdef PROGRAM_NAME
-    program_name = PROGRAM_NAME;
+#ifdef PACKAGE_NAME
+    program_name = PACKAGE_NAME;
 #else
     program_name = argv[0];
 #endif
