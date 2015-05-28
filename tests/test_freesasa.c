@@ -279,9 +279,7 @@ START_TEST (test_freesasa_api_basic)
     ck_assert(freesasa_area_class(s, FREESASA_POLAR) < 0);
     ck_assert(freesasa_area_class(s, FREESASA_APOLAR) < 0);
     ck_assert(freesasa_per_residue(s,stdout) == FREESASA_FAIL);
-    ck_assert(freesasa_per_residue(s,NULL) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue_type(s,stdout) == FREESASA_FAIL);
-    ck_assert(freesasa_per_residue_type(s,NULL) == FREESASA_FAIL);
     ck_assert(freesasa_area_residue(s,"ALA") < 0);
     ck_assert(freesasa_write_pdb(s,stdout) == FREESASA_FAIL);
     ck_assert(freesasa_area_atom(s,0) < 0);

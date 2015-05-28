@@ -72,8 +72,9 @@ START_TEST (test_structure_api)
     int first, last;
     ck_assert(freesasa_structure_residue_atoms(s,0,&first,&last) == FREESASA_SUCCESS);
     ck_assert(first == 0 && last == N-1);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert(freesasa_structure_residue_atoms(s,1,&first,&last) == FREESASA_FAIL);
-    
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 

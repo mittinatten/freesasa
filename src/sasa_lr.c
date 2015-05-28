@@ -85,6 +85,10 @@ static void sasa_exposed_arcs(const sasa_lr_slice *,
 static double sasa_sum_angles(int n_buried, double * restrict a,
                               double * restrict b);
 
+/** Same as the above but discretizes circle */
+static double sasa_sum_angles_int(int n_buried, double *restrict a,
+                                  double *restrict b);
+
 /** Calculate adjacency lists, given coordinates and radii. Also
     stores some distances to be used later. */
 static void sasa_get_contacts(sasa_lr *lr);
@@ -175,7 +179,7 @@ int freesasa_lee_richards(double *sasa,
                                      "but multiple threads were requested. Will "
                                      "proceed in single-threaded mode.\n");
         n_threads = 1;
-#endif
+#endif /* pthread */
     }
     if (n_threads == 1) {
         // loop over slices
@@ -240,7 +244,7 @@ static void *sasa_lr_thread(void *arg)
     }
     pthread_exit(NULL);
 }
-#endif
+#endif /* pthread */
 
 // find which atoms are in slice
 static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
@@ -388,7 +392,7 @@ static void sasa_exposed_arcs(const sasa_lr_slice *slice,
             }
             printf("\n");
         }
-#endif
+#endif /* Debug */
     }
 }
 

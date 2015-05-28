@@ -83,6 +83,8 @@ struct freesasa {
     freesasa_result *result;
 };
 
+enum error_type {NO_RESULT};
+
 const freesasa freesasa_def_param = {
     .r = NULL,
     .coord = NULL,
@@ -118,6 +120,7 @@ static void freesasa_err_impl(int err, const char *format, va_list arg)
     vfprintf(stderr, format, arg);
     va_end(arg);
     fputc('\n', stderr);
+    fflush(stderr);
 }
 
 int freesasa_fail(const char *format,...)
@@ -142,6 +145,7 @@ int freesasa_warn(const char *format,...)
 
 static freesasa_class_data* freesasa_classify_structure(const freesasa_structure *p)
 {
+    assert(p);
     assert(freesasa_structure_n(p) >= 0 &&
            "Trying to classify atoms of illegal structure.");
 
@@ -200,6 +204,9 @@ static void freesasa_result_free(freesasa_result *r)
 
 static void freesasa_get_class_result(freesasa *s, freesasa_structure *p)
 {
+    assert(s);
+    assert(p);
+    
     if (s->class) freesasa_class_free(s->class);
     s->class = freesasa_classify_structure(p);
 
@@ -212,6 +219,10 @@ static void freesasa_get_class_result(freesasa *s, freesasa_structure *p)
 static int freesasa_calc(freesasa *s,
                          const freesasa_coord *c, const double *r)
 {
+    assert(s);
+    assert(c);
+    assert(r);
+    
     struct timeval t1, t2;
     int res = 0;
 
@@ -233,7 +244,7 @@ static int freesasa_calc(freesasa *s,
                                     s->d_lr, s->n_threads);
         break;
     default:
-        return freesasa_fail("no SASA algorithm specified.");
+        return freesasa_fail("%s: no SASA algorithm specified.", __func__);
     }
     result->total = 0;
     for (int i = 0; i < freesasa_coord_n(c); ++i) {
@@ -260,6 +271,8 @@ freesasa* freesasa_new()
 
 void freesasa_copy_param(freesasa *target, const freesasa *source)
 {
+    assert(target);
+    assert(source);
     target->alg = source->alg;
     target->n_sr = source->n_sr;
     target->d_lr = source->d_lr;
@@ -303,6 +316,7 @@ int freesasa_calc_coord(freesasa *s, const double *coord,
 // assumes s has a structure
 static int freesasa_calc_structure(freesasa *s)
 {
+    assert(s);
     assert(s->structure);
 
     //calc OONS radii
@@ -319,10 +333,12 @@ static int freesasa_calc_structure(freesasa *s)
 }
 int freesasa_calc_pdb(freesasa *s, FILE *pdb_file)
 {
+    assert(s);
+    assert(pdb_file);
     s->calculated = 0;
     freesasa_structure *p = freesasa_structure_from_pdb(pdb_file);
     if (!p) {
-        return freesasa_fail("Failure reading PDB-file.");
+        return freesasa_fail("%s: Failure reading PDB-file.", __func__);
     }
     
     if (s->structure) freesasa_structure_free(s->structure);
@@ -335,6 +351,11 @@ int freesasa_calc_atoms(freesasa *s, const double *coord,
                          const char **resnames, 
                          const char **atomnames, size_t n)
 {
+    assert(s);
+    assert(coord);
+    assert(resnames);
+    assert(atomnames);
+    assert(n > 0);
     int status;
     int warn = 0, fail = 0;
 
@@ -365,6 +386,10 @@ double freesasa_radius(const char* residue_name, const char* atom_name)
 int freesasa_link_coord(freesasa *s, const double *coord,
                         double *r, size_t n)
 {
+    assert(s);
+    assert(coord);
+    assert(n > 0);
+    
     s->calculated = 0;
     if (s->coord) freesasa_coord_free(s->coord);
     s->coord = freesasa_coord_new_linked(coord,n);
@@ -385,40 +410,41 @@ int freesasa_link_coord(freesasa *s, const double *coord,
 
 int freesasa_refresh(freesasa *s)
 {
+    assert(s);
+    assert(s->coord);
+    assert(s->r);
     s->calculated = 0;
-    if (! s->coord )
-        return freesasa_fail("freesasa_refresh() called, but no coordinates available.");
-    if (! s->r )
-        return freesasa_fail("freesasa_refresh() called, but no atomic radii specified.");
     return freesasa_calc(s,s->coord,s->r);
 }
 
 int freesasa_set_algorithm(freesasa *s, freesasa_algorithm alg)
 {
+    assert(s);
+    assert(alg == FREESASA_SHRAKE_RUPLEY || alg == FREESASA_LEE_RICHARDS);
     s->calculated = 0;
-    if (alg == FREESASA_SHRAKE_RUPLEY || alg == FREESASA_LEE_RICHARDS) {
-        s->alg = alg;
-        return FREESASA_SUCCESS;
-    }
-    return freesasa_warn("undefined algorithm selected, proceeding with previously selected algorithm (or default).");
+    s->alg = alg;
+    return FREESASA_SUCCESS;
 }
 
 freesasa_algorithm freesasa_get_algorithm(const freesasa *s)
 {
+    assert(s);
     return s->alg;
 }
 
 const char* freesasa_algorithm_name(const freesasa *s)
 {
+    assert(s);
     assert(s->alg == FREESASA_SHRAKE_RUPLEY || s->alg == FREESASA_LEE_RICHARDS);
     return freesasa_alg_names[s->alg];
 }
 
 int freesasa_set_probe_radius(freesasa *s,double r)
 {
+    assert(s);
     s->calculated = 0;
     if (r < 0 || !isfinite(r)) {
-        return freesasa_warn("Probe radius r = %f not allowed.",r);
+        return freesasa_warn("%s: Probe radius r = %f not allowed.",r,__func__);
     }
     s->probe_radius = r;
     return FREESASA_SUCCESS;
@@ -426,32 +452,38 @@ int freesasa_set_probe_radius(freesasa *s,double r)
 
 double freesasa_get_probe_radius(const freesasa *s)
 {
+    assert(s);
     return s->probe_radius;
 }
 
 int freesasa_set_sr_points(freesasa *s, int n) {
+    assert(s);
     s->calculated = 0;
     if (freesasa_srp_n_is_valid(n)) {
         s->n_sr = n;
         return FREESASA_SUCCESS;
     }
-    freesasa_warn("number of test-points must be one of the following:  ");
+    freesasa_warn("%s: number of test-points must be one of the following:  ",
+                  __func__);
     if (verbosity == FREESASA_V_NORMAL) {
         freesasa_srp_print_n_opt(stderr);
     }
-    freesasa_warn("proceeding with default number of test-points (%d)",FREESASA_DEF_SR_N);
+    freesasa_warn("%s: proceeding with default number of test-points (%d)",
+                  __func__, FREESASA_DEF_SR_N);
     s->n_sr = FREESASA_DEF_SR_N;
     return FREESASA_WARN;
 }
 
 int freesasa_get_sr_points(const freesasa* s)
 {
+    assert(s);
     if (s->alg == FREESASA_SHRAKE_RUPLEY) return s->n_sr;
     return FREESASA_WARN;
 }
 
 int freesasa_set_lr_delta(freesasa *s, double d)
 {
+    assert(s);
     s->calculated = 0;
     if (d > 0 && isfinite(d)) {
         s->d_lr = d;
@@ -501,65 +533,39 @@ size_t freesasa_n_atoms(const freesasa *s)
 
 double freesasa_area_total(const freesasa *s)
 {
-    if (! s->calculated) {
-        freesasa_fail("SASA calculation has not been performed, "
-                      "no total SASA value available.");
-        return -1.0;
-    }
+    assert(s->calculated);
+    assert(s->result);
     return s->result->total;
 }
 double freesasa_area_class(const freesasa* s, freesasa_class c)
 {
-    if (! s->calculated) {
-        freesasa_fail("SASA calculation has not been performed, "
-                      "no SASA values available for classes.");
-        return -1.0;
-    }
+    assert(s->calculated);
     assert(c >= FREESASA_POLAR && c <= FREESASA_CLASS_UNKNOWN &&
            "Invalid arguments to freesasa_area_class(2)");
     return s->result->class[c];
 }
 double freesasa_area_atom(const freesasa *s, int i)
 {
-    if ( !s->calculated ) {
-        freesasa_fail("SASA calculation has not been performed, "
-                      "no SASA values available for atoms.");
-        return -1.0;
-    }
-    if (i < 0 || i > s->n_atoms-1) {
-        freesasa_fail("Atom index %d invalid.",i);
-        return -1.0;
-    }
+    assert(s->calculated);
+    assert(i >= 0 || i < s->n_atoms);
+    assert(s->result);
     return s->result->sasa[i];
 }
 
 const double* freesasa_area_atom_array(const freesasa *s)
 {
-    if ( !s->calculated ) {
-        freesasa_fail("SASA calculation has not been performed, "
-                      "no SASA values available.");
-        return NULL;
-    }
+    assert(s->calculated);
     return s->result->sasa;
 }
 double freesasa_radius_atom(const freesasa *s, int i)
 {
-    if (s->r == NULL) {
-        freesasa_fail("No atomic radii have been assigned.");
-        return -1.0;
-    }
-    if (i < 0 || i > s->n_atoms-1) {
-        freesasa_fail("Atom index %d invalid.",i);
-        return -1.0;
-    }
+    assert(s->r && "no radii available");
+    assert(i >= 0 || i < s->n_atoms);
     return s->r[i];
 }
 const double* freesasa_radius_atom_array(const freesasa *s)
 {
-    if (s->r == NULL) {
-        freesasa_fail("No atomic radii have been assigned.");
-        return NULL;
-    }
+    assert(s->r && "no radii available");
     return s->r;
 }
 void freesasa_set_proteinname(freesasa *s,const char *name)
@@ -581,22 +587,14 @@ const char* freesasa_get_proteinname(const freesasa *s)
 
 int freesasa_log(const freesasa *s, FILE *log)
 {
-    if (! s->calculated) {
-        const char *msg = "freesasa_log() called, but no calculation "
-            "has been performed.";
-        freesasa_warn(msg);
-        if (verbosity == FREESASA_V_NORMAL) {
-            fprintf(log,"%s\n",msg);
-        }
-        return FREESASA_WARN;
-    }
+    assert(s->calculated);
+    assert(log);
     fprintf(log,"name: %s\n",s->proteinname);
     fprintf(log,"algorithm: %s\n",freesasa_alg_names[s->alg]);
     fprintf(log,"probe-radius: %f A\n",s->probe_radius);
-#if HAVE_LIBPTHREAD
-    fprintf(log,"n_thread: %d\n",s->n_threads);
-#endif
-
+    if(HAVE_LIBPTHREAD)
+        fprintf(log,"n_thread: %d\n",s->n_threads);
+    
     switch(s->alg) {
     case FREESASA_SHRAKE_RUPLEY:
         fprintf(log,"n_testpoint: %d\n",s->n_sr);
@@ -614,18 +612,12 @@ int freesasa_log(const freesasa *s, FILE *log)
 
 int freesasa_per_residue_type(const freesasa *s, FILE *output)
 {
-    if (! output) {
-        return freesasa_fail("freesasa_per_residue_type() output file is "
-                             "a NULL pointer.");
-    }
-    if (! s->calculated) {
-        return freesasa_fail("freesasa_per_residue_type() called, "
-                             "but no calculation has been performed.");
-    }
+    assert(s->calculated);
     for (int i = 0; i < freesasa_classify_nresiduetypes(); ++i) {
         double sasa = s->result->residue_type[i];
         if (i < 20 || sasa > 0) {
-            fprintf(output,"RES: %s %9.2f\n",freesasa_classify_residue2str(i),sasa);
+            fprintf(output,"RES: %s %9.2f\n",
+                    freesasa_classify_residue2str(i),sasa);
         }
     }
     return FREESASA_SUCCESS;
@@ -633,7 +625,9 @@ int freesasa_per_residue_type(const freesasa *s, FILE *output)
 
 static double freesasa_single_residue_sasa(const freesasa *s, int r_i)
 {
-    assert (s->calculated);
+    assert(s);
+    assert(s->calculated);
+    assert(s->structure);
     int first, last;
     const freesasa_structure *p = s->structure;
     const double *sasa = s->result->sasa;            
@@ -647,14 +641,10 @@ static double freesasa_single_residue_sasa(const freesasa *s, int r_i)
 
 int freesasa_per_residue(const freesasa *s, FILE *output)
 {
-    if (! output) {
-        return freesasa_fail("freesasa_per_residue() output file is "
-                             "a NULL pointer.");
-    }
-    if (! s->calculated) {
-        return freesasa_fail("freesasa_per_residue() called, "
-                             "but no calculation has been performed.");
-    }
+    assert(s);
+    assert(s->structure);
+    assert(s->calculated);
+    
     const freesasa_structure *p = s->structure;
     const int naa = freesasa_structure_n_residues(p);
     for (int i = 0; i < naa; ++i) {
@@ -667,33 +657,17 @@ int freesasa_per_residue(const freesasa *s, FILE *output)
 
 double freesasa_area_residue(const freesasa *s, const char *res_name)
 {
-    if (! s->calculated) {
-        freesasa_warn("freesasa_area_residue() called, "
-                      "but no calculation has been performed.");
-        return -1.0;
-    }
+    assert(s->calculated);
     int res = freesasa_classify_residue(res_name);
     return s->result->residue_type[res];
 }
 
 int freesasa_write_pdb(const freesasa *s, FILE *output)
 {
-    if (!s->calculated) {
-        return freesasa_fail("Cannot output results before "
-                             "calculation has been performed.");
-    }
-    if (!s->structure) {
-        return freesasa_fail("Cannot write B-factors: "
-                             "no input structure.");
-    }
-    if (freesasa_structure_n(s->structure) != s->n_atoms) {
-        return freesasa_fail("Cannot write B-factors: "
-                             "number of atoms mismatch.");
-    }
-    if (!s->result->sasa) {
-        return freesasa_fail("Cannot write B-factors: "
-                             "no SASA values available.");
-    }
+    assert(freesasa_structure_n(s->structure) == s->n_atoms);
+    assert(s->calculated);
+    assert(s->structure);
+    assert(s->result->sasa);
     return freesasa_structure_write_pdb_bfactors(s->structure,output,
                                                  s->result->sasa);
 }
@@ -730,11 +704,8 @@ void freesasa_strvp_free(freesasa_strvp *svp)
     
 freesasa_strvp* freesasa_string_value_pairs(const freesasa *s,freesasa_result_type type)
 {
-    if (!s->calculated) {
-        freesasa_fail("Cannot access results before "
-                      "calculation has been performed.");
-        return NULL;
-    }
+    assert(s);
+    assert(s->calculated);
 
     const freesasa_structure *p = s->structure;
     freesasa_strvp *svp = NULL;
