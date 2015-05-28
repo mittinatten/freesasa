@@ -72,7 +72,7 @@ struct freesasa {
     int n_sr;
     double d_lr;
     int n_threads;
-    char proteinname[FREESASA_NAME_LIMIT];
+    char proteinname[FREESASA_NAME_LIMIT+1];
 
     //some internal flags
     int owns_r;
@@ -504,6 +504,7 @@ int freesasa_set_lr_delta(freesasa *s, double d)
 
 double freesasa_get_lr_delta(const freesasa *s)
 {
+    assert(s);
     if (s->alg == FREESASA_LEE_RICHARDS) return s->d_lr;
     return -1.0;
 }
@@ -511,6 +512,7 @@ double freesasa_get_lr_delta(const freesasa *s)
 #if HAVE_LIBPTHREAD
 int freesasa_set_nthreads(freesasa *s,int n)
 {
+    assert(s);
     if ( n <= 0) {
         s->n_threads = DEF_NTHREADS;
         return freesasa_warn("Number of threads has to be positive. "
@@ -522,12 +524,14 @@ int freesasa_set_nthreads(freesasa *s,int n)
 
 int freesasa_get_nthreads(const freesasa *s)
 {
+    assert(s);
     return s->n_threads;
 }
 #endif
 
 size_t freesasa_n_atoms(const freesasa *s)
 {
+    assert(s);
     return s->n_atoms;
 }
 
@@ -570,8 +574,9 @@ const double* freesasa_radius_atom_array(const freesasa *s)
 }
 void freesasa_set_proteinname(freesasa *s,const char *name)
 {
-    int n;
-    if ((n = strlen(name)) > FREESASA_NAME_LIMIT) {
+    assert(s);
+    int n = strlen(name);
+    if (n > FREESASA_NAME_LIMIT) {
         strcpy(s->proteinname,"...");
         sprintf(s->proteinname+3,"%.*s",FREESASA_NAME_LIMIT-3,
                 name+n+3-FREESASA_NAME_LIMIT);
@@ -582,11 +587,13 @@ void freesasa_set_proteinname(freesasa *s,const char *name)
 
 const char* freesasa_get_proteinname(const freesasa *s)
 {
+    assert(s);
     return s->proteinname;
 }
 
 int freesasa_log(const freesasa *s, FILE *log)
 {
+    assert(s);
     assert(s->calculated);
     assert(log);
     fprintf(log,"name: %s\n",s->proteinname);
@@ -657,6 +664,7 @@ int freesasa_per_residue(const freesasa *s, FILE *output)
 
 double freesasa_area_residue(const freesasa *s, const char *res_name)
 {
+    assert(s);
     assert(s->calculated);
     int res = freesasa_classify_residue(res_name);
     return s->result->residue_type[res];

@@ -28,10 +28,6 @@
 
 #include <freesasa.h>
 
-#ifndef PI
-#define PI 3.14159265358979323846
-#endif
-
 #define PASS 1
 #define NOPASS 0
 
@@ -49,14 +45,14 @@ double rel_err(double v1, double v2) {
 double surface_hidden_sphere_intersection(double r1, double r2, double d)
 {
     if (d > r1 + r2) return 0;
-    if (r1+d < r2) return 4*PI*r1*r1;
-    if (r2+d < r1) return 4*PI*r2*r2;
-    return PI/d * ( r1*(r2*r2 - (d-r1)*(d-r1))
+    if (r1+d < r2) return 4*M_PI*r1*r1;
+    if (r2+d < r1) return 4*M_PI*r2*r2;
+    return M_PI/d * ( r1*(r2*r2 - (d-r1)*(d-r1))
                     +r2*(r1*r1 - (d-r2)*(d-r2)) ) ;
 }
 double surface_spheres_intersecting(double r1, double r2, double d)
 {
-    return 4*PI*(r1*r1+r2*r2) - surface_hidden_sphere_intersection(r1,r2,d);
+    return 4*M_PI*(r1*r1+r2*r2) - surface_hidden_sphere_intersection(r1,r2,d);
 }
 
 double surface_two_spheres(const double *x, const double *r, double probe)
@@ -221,16 +217,13 @@ START_TEST (test_freesasa_api_basic)
 
     // algorithm
     ck_assert(freesasa_algorithm_name(s) != NULL);
-    ck_assert(freesasa_set_algorithm(s,-1) == FREESASA_WARN);
-    ck_assert(freesasa_set_algorithm(s,1000) == FREESASA_WARN);
     ck_assert(freesasa_set_algorithm(s,FREESASA_LEE_RICHARDS) == FREESASA_SUCCESS);
     ck_assert(freesasa_get_algorithm(s) == FREESASA_LEE_RICHARDS);
     ck_assert(freesasa_algorithm_name(s) != NULL);
 
     // atom radius calculation (more extensive analysis in test_classify)
     ck_assert(fabs(freesasa_radius("ALA"," H  ")) < 1e-10);
-    ck_assert(freesasa_radius_atom(s,0) == FREESASA_FAIL);
-    
+        
     // probe_radius
     ck_assert(freesasa_set_probe_radius(s,-1.) == FREESASA_WARN);
     ck_assert(freesasa_set_probe_radius(s,1.2) == FREESASA_SUCCESS);
@@ -272,20 +265,6 @@ START_TEST (test_freesasa_api_basic)
     ck_assert(freesasa_set_nthreads(s,-1) == FREESASA_WARN);
     ck_assert(freesasa_get_nthreads(s) == nt_def);
 #endif
-
-    // Check that results cannot be accessed before calculations are
-    // performed
-    ck_assert(freesasa_area_total(s) < 0);
-    ck_assert(freesasa_area_class(s, FREESASA_POLAR) < 0);
-    ck_assert(freesasa_area_class(s, FREESASA_APOLAR) < 0);
-    ck_assert(freesasa_per_residue(s,stdout) == FREESASA_FAIL);
-    ck_assert(freesasa_per_residue_type(s,stdout) == FREESASA_FAIL);
-    ck_assert(freesasa_area_residue(s,"ALA") < 0);
-    ck_assert(freesasa_write_pdb(s,stdout) == FREESASA_FAIL);
-    ck_assert(freesasa_area_atom(s,0) < 0);
-    ck_assert(freesasa_area_atom_array(s) == NULL);
-
-    ck_assert(freesasa_log(s,stdout) == FREESASA_WARN);
 
     freesasa_set_verbosity(0);
 }
@@ -331,20 +310,12 @@ START_TEST (test_minimal_calc)
     ck_assert(freesasa_calc_coord(s,coord,r,1) == FREESASA_SUCCESS);
 
     // access areas
-    ck_assert(freesasa_area_atom(s,-1) < 0);
-    ck_assert(freesasa_area_atom(s,1) < 0);
     ck_assert(fabs(freesasa_area_atom(s,0) - freesasa_area_total(s)) < 1e-10);
     const double *a = freesasa_area_atom_array(s);
     ck_assert(a != NULL);
     ck_assert(fabs(a[0] - freesasa_area_total(s)) < 1e-10);
 
-    // radii should not have been stored, verify
-    ck_assert(freesasa_radius_atom(s,1) < 0);
-    ck_assert(freesasa_radius_atom(s,-1) < 0);
-    ck_assert(freesasa_radius_atom(s,0) < 0);
-    ck_assert(freesasa_radius_atom_array(s) == NULL);
-
-    freesasa_free(s);
+        freesasa_free(s);
     freesasa_set_verbosity(0);
 }
 END_TEST
@@ -360,27 +331,11 @@ START_TEST (test_calc_errors)
     ck_assert(freesasa_get_verbosity() == 0);
     freesasa_set_verbosity(FREESASA_V_SILENT);
 
-    //test empty coordinates
-    ck_assert(freesasa_calc_coord(s,&dummy,NULL,0) == FREESASA_WARN);
-    ck_assert(freesasa_radius_atom(s,0) == FREESASA_FAIL);
-    ck_assert(freesasa_radius_atom_array(s) == NULL);
-    ck_assert(freesasa_calc_coord(s,&dummy,&dummy,0) == FREESASA_WARN);
-    freesasa_set_algorithm(s,FREESASA_LEE_RICHARDS);
-    ck_assert(freesasa_calc_coord(s,&dummy,&dummy,0) == FREESASA_WARN);
-    ck_assert(freesasa_radius_atom(s,0) == FREESASA_FAIL);
-
     //test empty PDB-file
     FILE *empty = fopen("data/empty.pdb","r");
     ck_assert(empty != NULL);
     ck_assert(freesasa_calc_pdb(s,empty) == FREESASA_FAIL);
     fclose(empty);
-
-    //test refresh
-    ck_assert(freesasa_refresh(s) == FREESASA_FAIL);
-    ck_assert(freesasa_link_coord(s,&dummy,NULL,0) == FREESASA_SUCCESS);
-    ck_assert(freesasa_refresh(s) == FREESASA_FAIL);
-    freesasa_link_coord(s,&dummy,&dummy,0);
-    ck_assert(freesasa_refresh(s) == FREESASA_WARN);
 
     //test freesasa_calc_atoms
     const char *da[1] = {""};
@@ -401,8 +356,6 @@ START_TEST (test_calc_errors)
     ck_assert(fabs(freesasa_area_class(s,FREESASA_APOLAR)- dummy) < 1e-10);
     ck_assert(fabs(freesasa_area_class(s,FREESASA_POLAR)) < 1e-10 );
     ck_assert(freesasa_radius_atom(s,0) > 0);
-    ck_assert(freesasa_radius_atom(s,-1) < 0);
-    ck_assert(freesasa_radius_atom(s,1) < 0);
     
     freesasa_set_verbosity(0);
 
@@ -447,8 +400,6 @@ START_TEST (test_strvp)
     freesasa_strvp *svp; 
     
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert(freesasa_string_value_pairs(s,FREESASA_ATOMS) == NULL);
-    ck_assert(freesasa_string_value_pairs(s,-1) == NULL);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     FILE *pdb = fopen("data/1ubq.pdb","r");
     if (pdb == NULL) {
