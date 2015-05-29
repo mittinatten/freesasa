@@ -47,13 +47,13 @@
     these are used). The return value ::FREESASA_SUCCESS means no
     errors have been spotted. 
 
+    Errors that are attributable to programmers using the library,
+    such as passing null pointers, or calling functions in the wrong
+    order, are checked by asserts.
+
     Memory allocation errors are only checked with asserts. These
     should be rare in a library of this type, the asserts are there to
     allow debugging should they occur.
-
-    Functions that have real-valued return values return negative
-    numbers if calculation failed for some reason. The documentation
-    for each function explains when this can happen.
 
     @subsection Thread-safety 
     
@@ -225,10 +225,11 @@ extern "C"{
       Should have n elements.
     @param atomnames Array of strings of the format " CA ", " OXT", etc. 
       Should have n elements.
-    @param n number of atoms
-    @return ::FREESASA_SUCCESS if calculation successful.  ::FREESASA_WARN
-      if atoms or coordinates have invalid formats or if any atoms can't
-      be classified. ::FREESASA_FAIL if calculations failed.
+    @param n number of atoms (>0)
+
+    @return ::FREESASA_SUCCESS if calculation successful.
+      ::FREESASA_WARN if atoms can't be classified. ::FREESASA_FAIL if
+      if calculations failed.
 */
     int freesasa_calc_atoms(freesasa *s, const double *coord,
                             const char **resnames, 
@@ -272,7 +273,7 @@ extern "C"{
     @param s a ::freesasa-object
     @param coord An array of coordinates for sphere centers (x1,y1,z1,x2,y2,z2,...)
     @param r An array of radii for the spheres
-    @param n number of spheres
+    @param n number of spheres (>0)
     @return At the moment always returns ::FREESASA_SUCCESS
 */
     int freesasa_link_coord(freesasa *s, const double *coord,
@@ -285,10 +286,9 @@ extern "C"{
     coordinates have been updated elsewhere. 
 
     @see freesasa_link_coord()
-    @param s A freesasa object. Used for parameters, coordinate-link
+    @param s a ::freesasa-object. Used for parameters, coordinate-link
     and to store results.  
-    @return ::FREESASA_FAIL if no coordinates or radii are found in
-    s. ::FREESASA_SUCCESS upon successful computation.
+    @return ::FREESASA_SUCCESS upon successful computation. ::FREESASA_FAIL else.
 */
     int freesasa_refresh(freesasa *s);
 
@@ -299,7 +299,7 @@ extern "C"{
     has been performed.
 
     @param s a ::freesasa-object
-    @return The number of atoms.
+    @return The number of atoms
 */
     size_t freesasa_n_atoms(const freesasa *s);
 
@@ -312,9 +312,8 @@ extern "C"{
 
     @param s a ::freesasa-object
     @param alg The algorithm to be set.
-    @return ::FREESASA_SUCCESS if alg is valid, ::FREESASA_WARN else. 
 */
-    int freesasa_set_algorithm(freesasa *s, freesasa_algorithm alg);
+    void freesasa_set_algorithm(freesasa *s, freesasa_algorithm alg);
 
 /**
     Get algorithm. 
@@ -335,8 +334,9 @@ extern "C"{
 /**
     Set probe radius.
 
-    Sets probe radius for SASA calculations (default ::FREESASA_DEF_PROBE_RADIUS = 1.4 Å). If submitted radius
-    is invalid, default is used and an error message printed.
+    Sets probe radius for SASA calculations (default
+    ::FREESASA_DEF_PROBE_RADIUS = 1.4 Å). If submitted radius is
+    invalid, previous value is kept and an error message printed.
 
     @param s a ::freesasa-object
     @param r Value for probe radius in Ångström.
@@ -382,8 +382,11 @@ extern "C"{
 
     @param s a ::freesasa-object
     @param d Slice width.
-    @return ::FREESASA_SUCCESS if d is valid. Else: prints error
-    message, returns ::FREESASA_WARN and sets to default value
+
+    @return ::FREESASA_SUCCESS if 0 < d <= 2.0. Larger d are accepted
+    but the functions returns ::FREESASA_WARN and prints
+    warning. Returns ::FREESASA_WARN and sets to default value for d
+    <= 0 or when d is not finite.
     
 */
     int freesasa_set_lr_delta(freesasa *s, double d);
@@ -449,21 +452,25 @@ extern "C"{
 /////////////
 
 /**
-    Total SASA
+    Total SASA. 
+
+    Asserts that calculations have been performed.
     
     @param s a ::freesasa-object
-    @return Total SASA in Å^2. Negative return value and warning printed
-    if calculation hasn't been performed yet. 
+    @return Total SASA in Å^2. x
 */
     double freesasa_area_total(const freesasa *s);
 
 /**
     SASA of a certain class of atoms
 
+    Asserts that calculations have been performed and that there is
+    information about the atoms (i.e. calculations were not done
+    on "abstract" coordinates).
+
     @param s a ::freesasa-object
     @param c Class of atoms (polar/apolar/nucleic/unknown). 
-    @return SASA of class c. Negative value if calculation has not
-    been performed yet. 
+    @return SASA of class c. 
 */
     double freesasa_area_class(const freesasa *s, freesasa_class c);
 
@@ -475,10 +482,14 @@ extern "C"{
     non-standard ones and nucleotides only if they were present in
     input. Each line in the output is prefixed by the string 'RES:'.
 
+    Asserts that calculations have been performed and that there is
+    information about the atoms (i.e. calculations were not done
+    on "abstract" coordinates).
+
     @param s a ::freesasa-object
     @param output Output file.
-    @return ::FREESASA_FAIL if file-pointer is NULL or if no calculation
-    has been performed yet.
+    @return ::FREESASA_FAIL if problems writing to
+    output. ::FREESASA_SUCCESS else.
 */
     int freesasa_per_residue_type(const freesasa *s, FILE *output);
 
@@ -487,10 +498,11 @@ extern "C"{
 
     Each line in the output is prefixed by the string 'SEQ:'.
 
+
     @param s a ::freesasa-object
     @param output Output file.
-    @return ::FREESASA_FAIL if file-pointer is NULL or if no calculation
-    has been performed yet.
+    @return ::FREESASA_FAIL if problems writing to
+    output. ::FREESASA_SUCCESS else.
  */
     int freesasa_per_residue(const freesasa *s, FILE *output);
 /**
@@ -503,11 +515,13 @@ extern "C"{
     stored. I.e. if residues not known by FreeSASA are used, the only
     option currently is to group them under "UNK". 
 
+    Asserts that calculations have been performed and that there is
+    information about the atoms (i.e. calculations were not done
+    on "abstract" coordinates).
+
     @param s a ::freesasa-object
     @param res_name The residue (string of format "ALA", "PHE", etc).
-
-    @return SASA of residue type res_name. Negative value if called
-    before calculations have been performed.
+    @return SASA of residue type res_name. 
 */
     double freesasa_area_residue(const freesasa *s, const char *res_name);
 
@@ -543,12 +557,12 @@ extern "C"{
     Takes original PDB and replaces B-factors with those from latest
     calculation. 
 
+    Asserts that calculations have been performed.
+
     @param s a ::freesasa-object
     @param output File to write to.
     @return ::FREESASA_FAIL if there is no previous PDB input to base
-    output on, if there are problems with the output destination, if
-    there are no SASA-values to use, or there are inconsistencies
-    between stored structure and SASA-values. ::FREESASA_SUCCESS else.
+    output on. ::FREESASA_SUCCESS else.
  */
     int freesasa_write_pdb(const freesasa *s, FILE *output);
 
@@ -560,20 +574,22 @@ extern "C"{
 /**
     SASA value for given atom.
 
+    Asserts that calculations have been performed and that index is
+    valid.
+
     @param s a ::freesasa-object
     @param i Atom index
-    @return SASA value for atom i. Prints error and returns negative
-    value if atom index is invalid or if no calculation has been
-    performed. 
+    @return SASA value for atom i. 
 */
     double freesasa_area_atom(const freesasa *s, int i);
 
 /**
     SASA for all atoms individually.
-    
+
+    Asserts that calculations have been performed.
+
     @param s a ::freesasa-object
-    @return Array of SASA for all atoms. Returns NULL if no results
-    available.
+    @return Array of SASA for all atoms. 
 */
     const double* freesasa_area_atom_array(const freesasa *s);
 

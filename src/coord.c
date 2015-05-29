@@ -32,7 +32,7 @@ struct freesasa_coord {
 
 freesasa_coord* freesasa_coord_new()
 {
-    freesasa_coord* c = (freesasa_coord*) malloc(sizeof(freesasa_coord));
+    freesasa_coord* c = malloc(sizeof(freesasa_coord));
     assert(c);
     c->xyz = NULL;
     c->n = 0;
@@ -42,19 +42,19 @@ freesasa_coord* freesasa_coord_new()
 
 void freesasa_coord_free(freesasa_coord *c)
 {
-    assert(c != NULL && "NULL-pointer passed to freesasa_coord_free(1)");
+    assert(c);
     if (c->xyz && !c->is_const) free(c->xyz);
     free(c);
 }
-static int coord_clear(freesasa_coord *c)
+static void coord_clear(freesasa_coord *c)
 {
-    if (c->is_const || c == NULL) return FREESASA_FAIL;
+    assert(c);
+    assert(!c->is_const);
     if (c->xyz != NULL) {
         free(c->xyz);
         c->xyz = NULL;
     }
     c->n = 0;
-    return FREESASA_SUCCESS;
 }
 
 
@@ -69,6 +69,7 @@ freesasa_coord* freesasa_coord_copy(const freesasa_coord *src)
 freesasa_coord* freesasa_coord_new_linked(const double *xyz, size_t n)
 {
     assert(xyz != NULL);
+    assert(n > 0);
     freesasa_coord *c = freesasa_coord_new();
     c->xyz = (double*)xyz;
     c->n = n;
@@ -78,31 +79,27 @@ freesasa_coord* freesasa_coord_new_linked(const double *xyz, size_t n)
 
 void freesasa_coord_append(freesasa_coord *c, const double *xyz, size_t n)
 {
-    assert(c   != NULL);
-    assert(xyz != NULL);
-    assert(!c->is_const);
-
+    assert(c); assert(xyz); assert(!c->is_const);
+    if (n == 0) return;
+    
     size_t n_old = c->n;
     c->n += n;
     c->xyz = (double*) realloc(c->xyz, sizeof(double)*3*c->n);
     assert(c->xyz);
 
     double *dest = memcpy(&(c->xyz[3*n_old]), xyz, sizeof(double)*n*3);
-
-    assert(dest != NULL);
+    assert(dest);
 }
 
 void freesasa_coord_append_xyz(freesasa_coord *c,
                                const double *x, const double *y,
                                const double *z, size_t n)
 {
-    assert(c != NULL);
-    assert(x != NULL);
-    assert(y != NULL);
-    assert(z != NULL);
+    assert(c); assert(x); assert(y); assert(z);
     assert(!c->is_const);
-
-    double *xyz = (double*)malloc(sizeof(double)*n*3);
+    if (n == 0) return;
+    
+    double *xyz = malloc(sizeof(double)*n*3);
     assert(xyz);
     for (int i = 0; i < n; ++i) {
         xyz[i*3] = x[i];
@@ -115,10 +112,8 @@ void freesasa_coord_append_xyz(freesasa_coord *c,
 
 void freesasa_coord_set_i(freesasa_coord *c, int i, const double* xyz)
 {
-    assert(c   != NULL);
-    assert(xyz != NULL);
-    assert(c->n > i);
-    assert(i >= 0);
+    assert(c); assert(xyz);
+    assert(i < c->n && i >= 0);
     assert(!c->is_const);
 
     memcpy(&c->xyz[i*3], xyz, 3*sizeof(double));
@@ -127,9 +122,7 @@ void freesasa_coord_set_i(freesasa_coord *c, int i, const double* xyz)
 void freesasa_coord_set_i_xyz(freesasa_coord *c,int i,
                               double x,double y,double z)
 {
-    assert(c != NULL);
-    assert(c->n > i);
-    assert(i >= 0);
+    assert(c); assert(c->n > i); assert(i >= 0);
     assert(!c->is_const);
 
     double *v_i = &c->xyz[i*3];
@@ -140,8 +133,8 @@ void freesasa_coord_set_i_xyz(freesasa_coord *c,int i,
 
 void freesasa_coord_set_all(freesasa_coord *c, const double* xyz, size_t n)
 {
-    int res = coord_clear(c);
-    assert(res == FREESASA_SUCCESS);
+    assert(c); assert(xyz);
+    coord_clear(c);
     freesasa_coord_append(c,xyz,n);
 }
 
@@ -149,16 +142,17 @@ void freesasa_coord_set_all_xyz(freesasa_coord *c,
                                 const double* x, const double *y,
                                 const double *z, size_t n)
 {
-    int res = coord_clear(c);
-    assert(res == FREESASA_SUCCESS);
+    assert(c); assert(x); assert(y); assert(z);
+    coord_clear(c);
     freesasa_coord_append_xyz(c, x, y, z, n);
 }
 
 void freesasa_coord_set_length_i(freesasa_coord *c, int i, double l)
 {
-    assert(c != NULL);
-    assert(c->xyz != NULL);
+    assert(c); assert(c->xyz);
     assert(!c->is_const);
+    assert(i >= 0 && i < c->n);
+    assert(l >= 0);
 
     double x = c->xyz[3*i], y = c->xyz[3*i+1], z = c->xyz[3*i+2];
     double r = sqrt(x*x + y*y + z*z);
@@ -169,7 +163,7 @@ void freesasa_coord_set_length_i(freesasa_coord *c, int i, double l)
 
 void freesasa_coord_set_length_all(freesasa_coord *c, double l)
 {
-    assert(c != NULL);
+    assert(c);
     assert(!c->is_const);
     for (int i = 0; i < c->n; ++i) freesasa_coord_set_length_i(c,i,l);
 }
@@ -210,27 +204,27 @@ double freesasa_coord_dist2_12(const freesasa_coord* c1,
 
 const double* freesasa_coord_all(const freesasa_coord *c)
 {
-    assert(c != NULL);
+    assert(c);
     return c->xyz;
 }
 
 size_t freesasa_coord_n(const freesasa_coord* c)
 {
-    assert(c != NULL);
+    assert(c);
     return c->n;
 }
 
 void freesasa_coord_translate(freesasa_coord *c, const double *xyz)
 {
     assert(!c->is_const);
-    assert(xyz != NULL);
+    assert(xyz);
     freesasa_coord_translate_xyz(c,xyz[0],xyz[1],xyz[2]);
 }
 
 void freesasa_coord_translate_xyz(freesasa_coord *c,
                                   double x, double y, double z)
 {
-    assert(c != NULL);
+    assert(c);
     assert(!c->is_const);
 
     for (int i = 0; i < c->n; ++i) {
@@ -242,10 +236,9 @@ void freesasa_coord_translate_xyz(freesasa_coord *c,
 
 void freesasa_coord_scale(freesasa_coord *c, double s)
 {
-    assert(c != NULL);
+    assert(c);
     assert(!c->is_const);
     for (int i = 0; i < c->n*3; ++i) {
         c->xyz[i] *= s;
     }
 }
-

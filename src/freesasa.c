@@ -83,8 +83,6 @@ struct freesasa {
     freesasa_result *result;
 };
 
-enum error_type {NO_RESULT};
-
 const freesasa freesasa_def_param = {
     .r = NULL,
     .coord = NULL,
@@ -151,10 +149,10 @@ static freesasa_class_data* freesasa_classify_structure(const freesasa_structure
 
     size_t n = freesasa_structure_n(p);
 
-    freesasa_class_data* c = (freesasa_class_data*)malloc(sizeof(freesasa_class_data));
+    freesasa_class_data* c = malloc(sizeof(freesasa_class_data));
     assert(c);
-    c->class = (int*)malloc(sizeof(int)*n);
-    c->residue_type = (int*)malloc(sizeof(int)*n);
+    c->class = malloc(sizeof(int)*n);
+    c->residue_type = malloc(sizeof(int)*n);
     assert(c->class && c->residue_type);
     
     for (int i = 0; i < n; ++i) {
@@ -177,14 +175,14 @@ static void freesasa_class_free(freesasa_class_data *c)
 
 static freesasa_result* freesasa_result_new(size_t n_atoms)
 {
-    freesasa_result *r = (freesasa_result*)malloc(sizeof(freesasa_result));
+    freesasa_result *r = malloc(sizeof(freesasa_result));
     assert(r);
     int nc = freesasa_classify_nclasses();
     int nr = freesasa_classify_nresiduetypes();
 
-    r->sasa = (double*)malloc(sizeof(double)*n_atoms);
-    r->class = (double*)malloc(sizeof(double)*nc);
-    r->residue_type = (double*)malloc(sizeof(double)*nr);
+    r->sasa = malloc(sizeof(double)*n_atoms);
+    r->class = malloc(sizeof(double)*nc);
+    r->residue_type = malloc(sizeof(double)*nr);
     assert(r->sasa && r->class && r->residue_type);
     
     for (int i = 0; i < nc; ++i) r->class[i] = 0;
@@ -244,7 +242,8 @@ static int freesasa_calc(freesasa *s,
                                     s->d_lr, s->n_threads);
         break;
     default:
-        return freesasa_fail("%s: no SASA algorithm specified.", __func__);
+        assert(0); //should never get here
+        break;
     }
     result->total = 0;
     for (int i = 0; i < freesasa_coord_n(c); ++i) {
@@ -263,7 +262,7 @@ static int freesasa_calc(freesasa *s,
 
 freesasa* freesasa_new()
 {
-    freesasa *s = (freesasa*) malloc(sizeof(freesasa));
+    freesasa *s = malloc(sizeof(freesasa));
     assert(s);
     *s = freesasa_def_param;
     return s;
@@ -322,7 +321,7 @@ static int freesasa_calc_structure(freesasa *s)
     //calc OONS radii
     if (s->owns_r && s->r) free(s->r);
     s->n_atoms = freesasa_structure_n(s->structure);
-    s->r = (double*) malloc(sizeof(double)*s->n_atoms);
+    s->r = malloc(sizeof(double)*s->n_atoms);
     assert(s->r);
     s->owns_r = 1;
     freesasa_structure_r_def(s->r,s->structure);
@@ -356,27 +355,22 @@ int freesasa_calc_atoms(freesasa *s, const double *coord,
     assert(resnames);
     assert(atomnames);
     assert(n > 0);
-    int status;
-    int warn = 0, fail = 0;
+    int warn = 0;
 
     if (s->structure) freesasa_structure_free(s->structure);
     
     freesasa_structure *p = freesasa_structure_new();
     for (size_t i = 0; i < n; ++i) {
-        status = freesasa_structure_add_atom(p,atomnames[i],resnames[i],"   1",'A',
-                                              coord[i*3],coord[i*3+1],coord[i*3+2]);
-        if (status == FREESASA_WARN) ++warn;
-        if (status == FREESASA_FAIL) ++fail;
+        if (freesasa_structure_add_atom(p,atomnames[i],resnames[i],"   1",'A',
+                                        coord[i*3],coord[i*3+1],coord[i*3+2])
+            == FREESASA_WARN)
+            ++ warn;
     } 
     s->structure = p;
 
-    status = freesasa_calc_structure(s);
-
-    if (status == FREESASA_FAIL) ++fail;
-    if (fail == 0 && warn == 0) return FREESASA_SUCCESS;
-    if (fail == 0) return FREESASA_WARN;
-
-    return FREESASA_FAIL;
+    if (freesasa_calc_structure(s) == FREESASA_FAIL) return FREESASA_FAIL;
+    if (warn) return FREESASA_WARN;
+    return FREESASA_SUCCESS;
 }
 
 double freesasa_radius(const char* residue_name, const char* atom_name)
@@ -417,13 +411,12 @@ int freesasa_refresh(freesasa *s)
     return freesasa_calc(s,s->coord,s->r);
 }
 
-int freesasa_set_algorithm(freesasa *s, freesasa_algorithm alg)
+void freesasa_set_algorithm(freesasa *s, freesasa_algorithm alg)
 {
     assert(s);
     assert(alg == FREESASA_SHRAKE_RUPLEY || alg == FREESASA_LEE_RICHARDS);
     s->calculated = 0;
     s->alg = alg;
-    return FREESASA_SUCCESS;
 }
 
 freesasa_algorithm freesasa_get_algorithm(const freesasa *s)
@@ -489,15 +482,18 @@ int freesasa_set_lr_delta(freesasa *s, double d)
         s->d_lr = d;
         if (d <= 2) return FREESASA_SUCCESS;
         if (d > 2) {
-            freesasa_warn("for regular SASA calculations, "
-                          "slice width should be less than 2 A.");
-            freesasa_warn("proceeding with selected value (%f), "
-                          "but results might be inaccurate.", d);
+            freesasa_warn("%s: for regular SASA calculations, "
+                          "slice width should be less than 2 A.",
+                          __func__);
+            freesasa_warn("%s: proceeding with selected value (%f), "
+                          "but results might be inaccurate.",
+                          __func__, d);
             return FREESASA_WARN;
         }
     }
-    freesasa_warn("slice width %f invalid.",d);
-    freesasa_warn("proceeding with default value (%f).",FREESASA_DEF_LR_D);
+    freesasa_warn("%s: slice width %f invalid.",__func__,d);
+    freesasa_warn("%s: proceeding with default value (%f).",
+                  __func__,FREESASA_DEF_LR_D);
     s->d_lr = FREESASA_DEF_LR_D;
     return FREESASA_WARN;
 }
@@ -509,14 +505,19 @@ double freesasa_get_lr_delta(const freesasa *s)
     return -1.0;
 }
 
-#if HAVE_LIBPTHREAD
 int freesasa_set_nthreads(freesasa *s,int n)
 {
     assert(s);
+    if (!HAVE_LIBPTHREAD) {
+        s->n_threads = 1;
+        return freesasa_warn("%s: Program not compiled for more than one thread.",
+                             __func__);
+    }
     if ( n <= 0) {
         s->n_threads = DEF_NTHREADS;
-        return freesasa_warn("Number of threads has to be positive. "
-                             "Proceeding with default number (%d).", DEF_NTHREADS);
+        return freesasa_warn("%s: Number of threads has to be positive. "
+                             "Proceeding with default number (%d).",
+                             __func__,DEF_NTHREADS);
     }
     s->n_threads = n;
     return FREESASA_SUCCESS;
@@ -527,7 +528,6 @@ int freesasa_get_nthreads(const freesasa *s)
     assert(s);
     return s->n_threads;
 }
-#endif
 
 size_t freesasa_n_atoms(const freesasa *s)
 {
@@ -537,44 +537,52 @@ size_t freesasa_n_atoms(const freesasa *s)
 
 double freesasa_area_total(const freesasa *s)
 {
+    assert(s);
     assert(s->calculated);
     assert(s->result);
     return s->result->total;
 }
 double freesasa_area_class(const freesasa* s, freesasa_class c)
 {
+    assert(s);
     assert(s->calculated);
+    assert(s->result->class);
     assert(c >= FREESASA_POLAR && c <= FREESASA_CLASS_UNKNOWN &&
            "Invalid arguments to freesasa_area_class(2)");
     return s->result->class[c];
 }
 double freesasa_area_atom(const freesasa *s, int i)
 {
+    assert(s);
     assert(s->calculated);
     assert(i >= 0 || i < s->n_atoms);
-    assert(s->result);
-    return s->result->sasa[i];
+        return s->result->sasa[i];
 }
 
 const double* freesasa_area_atom_array(const freesasa *s)
 {
+    assert(s);
     assert(s->calculated);
+    assert(s->result);
     return s->result->sasa;
 }
 double freesasa_radius_atom(const freesasa *s, int i)
 {
+    assert(s);
     assert(s->r && "no radii available");
     assert(i >= 0 || i < s->n_atoms);
     return s->r[i];
 }
 const double* freesasa_radius_atom_array(const freesasa *s)
 {
+    assert(s);
     assert(s->r && "no radii available");
     return s->r;
 }
 void freesasa_set_proteinname(freesasa *s,const char *name)
 {
     assert(s);
+    assert(name);
     int n = strlen(name);
     if (n > FREESASA_NAME_LIMIT) {
         strcpy(s->proteinname,"...");
@@ -622,10 +630,14 @@ int freesasa_per_residue_type(const freesasa *s, FILE *output)
     assert(s->calculated);
     for (int i = 0; i < freesasa_classify_nresiduetypes(); ++i) {
         double sasa = s->result->residue_type[i];
+        int result = 0;
+        errno = 0;
         if (i < 20 || sasa > 0) {
-            fprintf(output,"RES: %s %9.2f\n",
-                    freesasa_classify_residue2str(i),sasa);
+            result = fprintf(output,"RES: %s %9.2f\n",
+                             freesasa_classify_residue2str(i),sasa);
         }
+        if (result < 0)
+            return freesasa_fail("%s: %s", __func__,strerror(errno));
     }
     return FREESASA_SUCCESS;
 }
@@ -655,23 +667,29 @@ int freesasa_per_residue(const freesasa *s, FILE *output)
     const freesasa_structure *p = s->structure;
     const int naa = freesasa_structure_n_residues(p);
     for (int i = 0; i < naa; ++i) {
-        fprintf(output,"SEQ: %s %7.2f\n",
-                freesasa_structure_residue_descriptor(p,i),
-                freesasa_single_residue_sasa(s,i));
+        errno = 0;
+        int result =
+            fprintf(output,"SEQ: %s %7.2f\n",
+                    freesasa_structure_residue_descriptor(p,i),
+                    freesasa_single_residue_sasa(s,i));
+        if (result < 0)
+            return freesasa_fail("%s: %s", __func__,strerror(errno));
     }
     return FREESASA_SUCCESS;
 }
 
 double freesasa_area_residue(const freesasa *s, const char *res_name)
 {
-    assert(s);
+    assert(s); assert(res_name);
     assert(s->calculated);
+    assert(s->result->residue_type);
     int res = freesasa_classify_residue(res_name);
     return s->result->residue_type[res];
 }
 
 int freesasa_write_pdb(const freesasa *s, FILE *output)
 {
+    assert(s); assert(output);
     assert(freesasa_structure_n(s->structure) == s->n_atoms);
     assert(s->calculated);
     assert(s->structure);
@@ -684,15 +702,15 @@ int freesasa_write_pdb(const freesasa *s, FILE *output)
 static freesasa_strvp* freesasa_alloc_strvp(size_t n)
 {
     const int STRL=FREESASA_STRUCTURE_DESCRIPTOR_STRL;
-    freesasa_strvp* svp = (freesasa_strvp*) malloc(sizeof(freesasa_strvp));
+    freesasa_strvp* svp = malloc(sizeof(freesasa_strvp));
     assert(svp);
-    svp->value = (double*) malloc(sizeof(double)*n);
-    svp->string = (char**) malloc(sizeof(char*)*n);
+    svp->value = malloc(sizeof(double)*n);
+    svp->string = malloc(sizeof(char*)*n);
     assert(svp->value && svp->string);
 
     svp->n = n;
     for (size_t i = 0; i < n; ++i) {
-        svp->string[i] = (char*) malloc(sizeof(char)*STRL);
+        svp->string[i] = malloc(sizeof(char)*STRL);
         assert(svp->string[i]);
     }
     return svp;

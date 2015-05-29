@@ -64,7 +64,7 @@ size_t freesasa_trim_whitespace(char *target, const char *src,
                                 size_t length)
 {
     if (length == 0) { return 0; }
-    char *buf = (char*) malloc(length+1);
+    char *buf = malloc(length+1);
     char *last = buf+length-1;
     char *first = buf;
 

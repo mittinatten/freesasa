@@ -99,12 +99,12 @@ static sasa_lr* freesasa_init_lr(double *sasa,
                                    const double *atom_radii,
                                    double probe_radius,
                                    double delta) {
-    sasa_lr* lr = (sasa_lr*) malloc(sizeof(sasa_lr));
+    sasa_lr* lr = malloc(sizeof(sasa_lr));
     assert(lr);
     const int n_atoms = freesasa_coord_n(xyz);
     double max_z=-1e50, min_z=1e50;
     double max_r = 0;
-    double *radii = (double*) malloc(sizeof(double)*n_atoms);
+    double *radii = malloc(sizeof(double)*n_atoms);
     assert(radii);
     const double *v = freesasa_coord_all(xyz);
     //find bounds of protein along z-axis and init radii
@@ -202,7 +202,7 @@ static void sasa_lr_do_threads(int n_threads, sasa_lr *lr)
     int n_slices = (int)ceil((max_z-min_z)/delta);
     int n_perthread = n_slices/n_threads;
     for (int t = 0; t < n_threads; ++t) {
-        t_sasa[t] = (double*)malloc(sizeof(double)*lr->n_atoms);
+        t_sasa[t] = malloc(sizeof(double)*lr->n_atoms);
         assert(t_sasa[t]);
         for (int i = 0; i < lr->n_atoms; ++i) t_sasa[t][i] = 0;
         lrt[t] = *lr;
@@ -249,13 +249,13 @@ static void *sasa_lr_thread(void *arg)
 // find which atoms are in slice
 static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
 {
-    sasa_lr_slice *slice = (sasa_lr_slice*) malloc(sizeof(sasa_lr_slice));
+    sasa_lr_slice *slice = malloc(sizeof(sasa_lr_slice));
     assert(slice);
     int n_atoms = lr->n_atoms;
     int n_slice = slice->n_slice = 0;
-    slice->xdi = (int*) malloc(n_atoms*sizeof(int));
+    slice->xdi = malloc(n_atoms*sizeof(int));
     assert(slice->xdi);
-    slice->in_slice = (char*) malloc(n_atoms*sizeof(int));
+    slice->in_slice = malloc(n_atoms*sizeof(int));
     assert(slice->in_slice);
     double delta = lr->delta;
     const double *v = freesasa_coord_all(lr->xyz);
@@ -288,7 +288,7 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
         } 
     }
     slice->n_slice = n_slice;
-    slice->exposed_arc = (double* )malloc(n_slice*(sizeof(double)));
+    slice->exposed_arc = malloc(n_slice*(sizeof(double)));
     assert(slice->exposed_arc);
     return slice;
 }
@@ -502,11 +502,11 @@ static void sasa_get_contacts(sasa_lr *lr)
     const double *radii = lr->radii;
 
     // init adjacency lists
-    int *nn = (int*)malloc(sizeof(int)*n_atoms);
-    int **nb = (int**)malloc(sizeof(int*)*n_atoms);
-    double **nb_xyd = (double**) malloc(sizeof(double*)*n_atoms);
-    double **nb_xd = (double**) malloc(sizeof(double*)*n_atoms);
-    double **nb_yd = (double**) malloc(sizeof(double*)*n_atoms);
+    int *nn = malloc(sizeof(int)*n_atoms);
+    int **nb = malloc(sizeof(int*)*n_atoms);
+    double **nb_xyd = malloc(sizeof(double*)*n_atoms);
+    double **nb_xd = malloc(sizeof(double*)*n_atoms);
+    double **nb_yd = malloc(sizeof(double*)*n_atoms);
     assert(nn && nb && nb_xyd && nb_xd && nb_yd);
     for (int i = 0; i < n_atoms; ++i) {
         nn[i] = 0; nb[i] = NULL;

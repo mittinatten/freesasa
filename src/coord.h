@@ -74,7 +74,7 @@ freesasa_coord* freesasa_coord_new_linked(const double *xyz, size_t n);
 /**
     Append coordinates to ::freesasa_coord object from one array.
 
-    @param s Self.
+    @param s a ::freesasa_coord object
     @param xyz Array of coordinates x1,y1,z1,x2,y2,z2,...
     @param n Number of coordinates (array has size 3*n).
  */
@@ -84,7 +84,7 @@ void freesasa_coord_append(freesasa_coord *s,const double *xyz,size_t n);
     Append coordinates to ::freesasa_coord object from three
     separate arrays.
 
-    @param s Self.
+    @param s a ::freesasa_coord object
     @param x Array of x-coordinates
     @param y Array of x-coordinates
     @param z Array of x-coordinates
@@ -97,8 +97,8 @@ void freesasa_coord_append_xyz(freesasa_coord *s,
 /**
     Set given coordinate.
 
-    @param s Self.
-    @param i Coordinate to update.
+    @param s a ::freesasa_coord object
+    @param i index
     @param xyz Array with coordinates x,y,z.
  */
 void freesasa_coord_set_i(freesasa_coord *s,int i,const double* xyz);
@@ -106,8 +106,8 @@ void freesasa_coord_set_i(freesasa_coord *s,int i,const double* xyz);
 /**
     Set given coordinate.
 
-    @param s Self.
-    @param i Coordinate to update.
+    @param s a ::freesasa_coord object
+    @param i index
     @param x x-coordinate.
     @param y y-coordinate.
     @param z z-coordinate
@@ -117,7 +117,7 @@ void freesasa_coord_set_i_xyz(freesasa_coord *s,int i,double x,double y,double z
 /**
     Reset everything.
     
-    @param s Self.
+    @param s a ::freesasa_coord object
     @param xyz Array of coordinates x1,y1,z1,x2,y2,z2,...
     @param n Number of coordinates (array has size 3*n).
  */
@@ -126,7 +126,7 @@ void freesasa_coord_set_all(freesasa_coord *s,const double* xyz,size_t n);
 /**
     Reset everything.
     
-    @param s Self.
+    @param s a ::freesasa_coord object
     @param x Array of x-coordinates
     @param y Array of x-coordinates
     @param z Array of x-coordinates
@@ -140,9 +140,9 @@ void freesasa_coord_set_all_xyz(freesasa_coord *s,
     Set length of a given coordinate vector. Useful for test-points in
     S&R.
 
-    @param s Self.
-    @param i The coordinate.
-    @param l Desirde length.
+    @param s a ::freesasa_coord object
+    @param i index
+    @param l Desired length (>= 0)
  */
 void freesasa_coord_set_length_i(freesasa_coord *s, int i, double l);
 
@@ -150,27 +150,27 @@ void freesasa_coord_set_length_i(freesasa_coord *s, int i, double l);
     Set length of all coordinate vectors to the same length. Useful for test-points in
     S&R.
 
-    @param s Self.
-    @param l Desired length.
+    @param s a ::freesasa_coord object
+    @param l Desired length (>= 0)
  */
 void freesasa_coord_set_length_all(freesasa_coord *s, double l);
 
 /**
-    Coordinates of a given atom.
+    Coordinates for a given index.
 
-    @param s Self.
-    @param i The coordinate.
-    @return Array with coordinates x,y,z.
+    @param s a ::freesasa_coord object
+    @param i index
+    @return Array with coordinates x,y,z
  */
 const double* freesasa_coord_i(const freesasa_coord *s, int i);
 
 /**
-    Calculate distance between two coordinate vectors. For speed, the indices i and
-    j will not be checked.
+    Calculate distance between two coordinate vectors. For speed,
+    arguments aren't checked.
     
-    @param s Self.
-    @param i The first coordinate.
-    @param j The second coordinate.
+    @param s a ::freesasa_coord object
+    @param i first index
+    @param j second index
     @return Distance between coorsinate i and j.
 */
 double freesasa_coord_dist(const freesasa_coord *s, int i, int j)
@@ -178,26 +178,25 @@ double freesasa_coord_dist(const freesasa_coord *s, int i, int j)
 
 /**
     Calculate square distance between two coordinate vectors. For
-    speed, the indices i and j will not be checked.
+    speed, arguments aren't checked.
     
-    @param s Self.
-    @param i The first coordinate.
-    @param j The second coordinate.
-    @return Square distance between coordinate i and j.
+    @param s a ::freesasa_coord object
+    @param i first index
+    @param j second index
+    @return Square distance between coordinate i and j
 */
 double freesasa_coord_dist2(const freesasa_coord *s, int i, int j)
     __attrib_pure__;
 
 /**
     Calculate square distance between two coordinate vectors in
-    separate coordinate sets. For speed, the indices i and j will not
-    be checked.
+    separate coordinate sets. For speed, arguments aren't checked.
     
-    @param c1 First set of coordinates..
-    @param c2 Second set of coordinates.
-    @param i1 First coordinate.
-    @param i2 Second coordinate.
-    @return Square distance between coordinates i1 and i2.
+    @param c1 First set of coordinates
+    @param c2 Second set of coordinates
+    @param i1 index in first set
+    @param i2 index in second set
+    @return Square distance between coordinates i1 and i2
 */
 double freesasa_coord_dist2_12(const freesasa_coord* c1,
                                const freesasa_coord* c2, int i1, int i2)
@@ -206,7 +205,7 @@ double freesasa_coord_dist2_12(const freesasa_coord* c1,
 /**
     All coordinates as an array.
 
-    @param s Self.
+    @param s a ::freesasa_coord object
     @return Array of coordinates x1,y1,z1,x2,y2,z2,...
  */
 const double* freesasa_coord_all(const freesasa_coord *s) __attrib_pure__;
@@ -214,22 +213,22 @@ const double* freesasa_coord_all(const freesasa_coord *s) __attrib_pure__;
 /**
     Number of coordinates.
     
-    @param s Self.
-    @return Number of coordinates.
+    @param s a ::freesasa_coord object
+    @return Number of coordinates
  */
 size_t freesasa_coord_n(const freesasa_coord *s) __attrib_pure__;
 
 /**
     Translate all coordinates by same vector.
 
-    @param s Self.
+    @param s a ::freesasa_coord object
     @param xyz Array describing translation vector x,y,z.
  */
 void freesasa_coord_translate(freesasa_coord *s, const double *xyz);
 /**
     Translate all coordinates by same vector.
 
-    @param s Self.
+    @param s a ::freesasa_coord object
     @param x x-coordinate of translation vector
     @param y y-coordinate of translation vector
     @param z z-coordinate of translation vector
@@ -240,8 +239,8 @@ void freesasa_coord_translate_xyz(freesasa_coord *s,
 /**
     Scale all coordinates by given factor.
     
-    @param s Self.
-    @param a Factor to scale by.
+    @param s a ::freesasa_coord object
+    @param a Factor to scale by
  */
 void freesasa_coord_scale(freesasa_coord *s, double a);
 

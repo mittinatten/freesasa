@@ -217,7 +217,7 @@ START_TEST (test_freesasa_api_basic)
 
     // algorithm
     ck_assert(freesasa_algorithm_name(s) != NULL);
-    ck_assert(freesasa_set_algorithm(s,FREESASA_LEE_RICHARDS) == FREESASA_SUCCESS);
+    freesasa_set_algorithm(s,FREESASA_LEE_RICHARDS);
     ck_assert(freesasa_get_algorithm(s) == FREESASA_LEE_RICHARDS);
     ck_assert(freesasa_algorithm_name(s) != NULL);
 
@@ -240,7 +240,7 @@ START_TEST (test_freesasa_api_basic)
     ck_assert(freesasa_get_sr_points(s) == FREESASA_WARN);
 
     // S&R test-points
-    ck_assert(freesasa_set_algorithm(s,FREESASA_SHRAKE_RUPLEY) == FREESASA_SUCCESS);
+    freesasa_set_algorithm(s,FREESASA_SHRAKE_RUPLEY);
     int srp_def = freesasa_get_sr_points(s);
     ck_assert(freesasa_set_sr_points(s,100) == FREESASA_SUCCESS);
     ck_assert(freesasa_get_sr_points(s) == 100);

@@ -149,11 +149,11 @@ int main (int argc, char **argv) {
             result = freesasa_set_sr_points(settings.s,atoi(optarg));
             break;
         case 'S':
-            result = freesasa_set_algorithm(settings.s,FREESASA_SHRAKE_RUPLEY);
+            freesasa_set_algorithm(settings.s,FREESASA_SHRAKE_RUPLEY);
             ++alg_set;
             break;
         case 'L':
-            result = freesasa_set_algorithm(settings.s,FREESASA_LEE_RICHARDS);
+            freesasa_set_algorithm(settings.s,FREESASA_LEE_RICHARDS);
             ++alg_set;
             break;
         case 'd':

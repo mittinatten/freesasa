@@ -152,7 +152,7 @@ static void *sasa_sr_thread(void* arg)
 {
     sasa_sr sr = *((sasa_sr*) arg);
     int n = sr.i2-sr.i1;
-    double *sasa = (double*)malloc(sizeof(double)*n);
+    double *sasa = malloc(sizeof(double)*n);
     assert(sasa);
     for (int i = 0; i < n; ++i) {
         sasa[i] = sasa_sr_calc_atom(i+sr.i1,sr);
