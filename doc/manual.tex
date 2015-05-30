@@ -145,27 +145,6 @@ Or, from STDIN:
 STDIN is only read if no file is specified.  By default the Shrake \&
 Rupley algorithm is used, with 100 test points. 
 
-%% The following options are available
-%% \begin{itemize}
-%%   \item[-h] Prints help message.
-%%   \item[-p] Probe radius. Default is 1.4~\AA.
-%%   \item[-S] Use Shrake \& Rupley algorithm (default).
-%%   \item[-L] Use Lee \& Richards algorithm.
-%%   \item[-n] Number of test points in Shrake \& Rupley algorithm.
-%%     Default is 100, allowed values are: 20, 50, 100, 200, 500, 1000,
-%%     2000, 5000.
-%%   \item[-d] Grid spacing in Lee \& Richards algorithm.
-%%     Default value is 0.25 Å.
-%%   \item[-t] Number of threads to use in calculation (for multicore
-%%     CPUs). See section \ref{sec:speed} for a discussion of when this
-%%     has a significant effect on performance.
-%%   \item[-r] Print SASA for each residue type.
-%%   \item[-R] Print SASA for each residue, sequentially.
-%%   \item[-B] Print PDB file where the SASA value of each atom is
-%%     written as its B factor (the output file is provided as an
-%%     argument to the flag).
-%% \end{itemize}
-
 As an illustration of configuration options, the command
 \begin{verbatim}
    freesasa -L -d 0.1 -t 2 -r PDB-file
@@ -207,8 +186,8 @@ values in Å$^2$.
 
 \subsection{Simple example (\texttt{example.c})}\label{sec:simple_sample}
 
-The following shows the minimal program \verb|example.c| that performs
-a SASA-calculation using a PDB-file as input. This program is
+The following shows the minimal program \verb|example.c|, which
+performs a SASA-calculation using a PDB-file as input. This program is
 basically a stripped down version of \verb|main.c| without error
 handling, and without any commandline options. This code is meant to
 illustrate the most basic parts of the library interface and is by
@@ -258,32 +237,21 @@ themselves.
 The header \texttt{freesasa.h} contains all functions necessary for
 doing calculations with FreeSASA. They wrap lower level functionality,
 simplifying I/O, housekeeping, and do sanity checks on parameters,
-etc. It is the main interface to library, and is the only
-header installed by \verb|make install|. The following will outline
-some of the most important functions in this header, a full
-documentation can be built from source using Doxygen. In addition, the
-source for \texttt{main.c} serves as an illustration of how to use the
-library, using a large portion of the available functionality. 
+etc. It is the main interface to library, and is the only header
+installed by \verb|make install|. The following will outline some of
+the most important functions in this header, a full reference manual
+can be built from source using Doxygen. In addition, the source for
+\texttt{main.c} serves as an illustration of how to use the library,
+using a large portion of the available functionality.
 
-%% \subsection{Error-handling}
+\subsection{Error handling}
 
-%% When an error is detected it will be reported to \verb|STDERR| as an error
-%% message prefixed with the string ``freesasa:'' and when possible a
-%% return value indicating the severity of the error. The error-values
-%% used are \verb|FREESASA_SUCCESS|, \verb|FREESASA_WARN| and
-%% \verb|FREESASA_FAIL|. The first means no errors were detected; the
-%% second that inconsistencies were detected, but calculations can
-%% proceed, possibly with differented parameters than intended; the third
-%% indicates more serious errors. The functions reporting calculation
-%% results will generally return positive real values. If these detect an
-%% error a negative value is returned, typically this involves requesting
-%% results when the calculations have not yet been performed.  Internal
-%% errors, i.e.\ those that are to be considered programmer errors and
-%% not user or I/O-errors are dealt with through assert-statements. In
-%% most cases pointers supplied as arguments to different library
-%% functions will not be tested for validity and can thus lead to
-%% undefined behavior\footnote{The ensuing system errors should point
-%%   programmers using the library in the right direction.}.
+FreeSASA follows the convention that I/O errors, inconstistencies in
+input and parameters, and other errors attributable to user input are
+handled through return codes. Programming errors such as passing null
+pointers or requesting results before calculations have been performed
+are checked by asserts. The specific error behavior of the different
+API functions can be found in the reference manual.
 
 \subsection{Initialization}
 
@@ -310,8 +278,8 @@ of the same protein.
 There are a number of setter- and getter-functions for specifying the
 parameters of the calculations. If the specified parameter-value is
 invalid the setters print an error message explaining what is wrong,
-return \verb|FREESASA_WARN|, and proceed with the previously defined
-value (usually the default value).
+return \verb|FREESASA_WARN|, and proceed with the previously set value
+(usually the default value).
 
 \subsubsection{Algorithms}
 
@@ -341,39 +309,17 @@ using
     void freesasa_copy_param(freesasa *target, const freesasa *source)
 \end{verbatim}
 
-%% \subsubsection{Other parameters}
-%% If the program is compiled in multithreaded mode the following two
-%% functions are used to set and get the number of threads to be used in
-%% a calculation.
-%% \begin{verbatim}
-%%     int freesasa_set_nthreads(freesasa*,int n)
-%%     int freesasa_get_nthreads(const freesasa*)
-%% \end{verbatim}
-%% The following two set and get the name of the protein under study,
-%% which can be useful for logging purposes.
-%% \begin{verbatim}
-%%     void freesasa_set_proteinname(freesasa*,const char*)
-%%     const char* freesasa_get_proteinname(const freesasa*)
-%% \end{verbatim}
-%% Protein names can be no longer than \verb|FREESASA_NAME_LIMIT|
-%% characters long. Long names are typically filenames, therefore only
-%% the last characters of the supplied string are used if the string is
-%% too long, assuming the omitted characters specify a path that is less
-%% interesting than the end specifying the actual file name. The default
-%% protein name is ``undef''.
-
 \subsection{Calculations from PDB input}
 
 The function 
 \begin{verbatim}
     int freesasa_calc_pdb(freesasa *s, FILE *pdb_file)
 \end{verbatim}
-is used to calculate SASA for a PDB-file. The
-\verb|freesasa|-object needs to be initialized before this
-function is called. This function returns either
-\verb|FREESASA_SUCCESS| or \verb|FREESASA_FAIL|. Failure can
-involve both problems reading the PDB input and problems setting up
-the calculations.
+is used to calculate SASA for a PDB-file. The \verb|freesasa|-object
+needs to be initialized before this function is called. This function
+returns either \verb|FREESASA_SUCCESS| or \verb|FREESASA_FAIL|.
+Failure can involve both problems reading the PDB input and problems
+setting up the calculations.
 
 The PDB input module in FreeSASA is minimalistic. Only ATOM entries
 are read, and if a PDB file has many MODEL entries, reading is stopped
@@ -383,33 +329,10 @@ excluded from SASA calculations. Users who want to include these, and
 use their own set of radii will have to provide coordinates and radii
 themselves. If atoms have several alternate coordinates, only the
 first one is used. The files are assumed to be well-ordered, such that
-each time the residue number changes, it is assumed to correspond to a
-new residue. Users who need more advanced and/or robust handling of
-PDB files are recommended to use external libraries for this.
-
-%% The PDB input module in FreeSASA is minimalistic. Only ATOM entries are
-%% read. If a PDB file has many MODEL entries, reading is stopped at the
-%% first ENDMDL statement. The residue names (three-character string),
-%% residue-numbers (four-character string), and the atom names
-%% (four-character string) are extracted in addition to the
-%% coordinates. This allows classification (as described below) in order
-%% to group atoms when calculating for instance polar/apolar SASA, and
-%% also to assign radii to the individual atoms. 
-
-%% For simplicity, the PDB-file is assumed to be well-ordered, i.e. each
-%% time a new residue is encountered in the file, the old one is
-%% considered finished. This should be the case for the vast majority of
-%% PDB files (if not all), and if not should not cause any problems,
-%% since the residue identities are not explicitly used in the
-%% calculation or presentation of results (only their type). 
-
-%% Well-orderedness is also assumed when dealing with atoms that have
-%% several alternate coordinates. These ATOM entries have a non-blank
-%% value $a$ for the \emph{Alternative location indicator}. The first
-%% non-blank encountered value of $a$ is called $a^*$, and then all
-%% coordinates with $a = a^*$ are read. Coordinates with other values of
-%% $a$ are ignored. When a blank value of $a$ is encountered $a^*$ is
-%% reset.
+each time the residue number changes in a file, it is assumed to
+correspond to a new residue. Users who need more advanced and/or
+robust handling of PDB files are recommended to use external libraries
+for this.
 
 \subsection{Atom classification and atomic radii}
 
@@ -460,16 +383,14 @@ conformations of the same molecule, this can be done using
 \end{verbatim}
 
 Since the library can only assign radii using PDB input the user has
-to supply these as well in both the above cases.  When new SASA values
-are needed these can be recalculated using
+to supply the radii separately in both the above cases. When new SASA
+values are needed these can be recalculated from the linked
+coordinates using
 \begin{verbatim} 
     int freesasa_refresh(freesasa *s)
 \end{verbatim}
 
 \subsection{Results}
-
-All the functions used to access calculated areas will return negative
-values if no calculation has been performed.
 
 The total SASA is accessed using
 \begin{verbatim}
@@ -516,23 +437,17 @@ and the same goes for atomic radii
     const double* freesasa_radius_atom_array(const freesasa *s);
 \end{verbatim}
 In both cases the single-valued functions return negative values if
-either argument is out of bounds or there is no data available. The
-functions returning pointers return NULL pointers when no data is
-available.
+either argument is out of bounds or there is no data available. 
 
-In addition, the SASA values for individual atoms can be written as
-B-factors in a PDB file:
+In addition, if the calculation was done directly on a PDB file, the
+SASA values for individual atoms can be written as B-factors in a new
+PDB file, replacing the original ones:
 \begin{verbatim}
     int freesasa_write_pdb(FILE *output, const freesasa *s);
 \end{verbatim}
-This function takes the PDB-file used for the calculation and replaces
-the experimental B-factors with SASA-values. If coordinates are
-provided by other means than PDB input the function returns
-\verb|FREESASA_FAIL|. If the supplied \verb|freesasa|-object was first
-initialized with a PDB file, and then other coordinates were supplied
-through other functions, the results will however be written using the
-original file if the latest coordinates have the same number of atoms
-as the original file.
+This can be useful for visualization or as a shortcut in an analysis
+workflow where there are already tools available to extract values
+from PDB-files.
 
 Finally the function
 \begin{verbatim}

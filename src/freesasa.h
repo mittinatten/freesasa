@@ -41,11 +41,12 @@
 
     @subsection Error-reporting 
 
-    All errors are written to stderr and are prefixed with the string
-    'freesasa'. There are two error return values ::FREESASA_WARN and
-    ::FREESASA_FAIL (see documentation of each function to see when
-    these are used). The return value ::FREESASA_SUCCESS means no
-    errors have been spotted. 
+    Input and user parameters are checked for errors and
+    inconsistencies. All errors are written to stderr and are prefixed
+    with the string 'freesasa'. There are two error codes
+    ::FREESASA_WARN and ::FREESASA_FAIL (see documentation of each
+    function to see when these are used). ::FREESASA_SUCCESS is used
+    for success.
 
     Errors that are attributable to programmers using the library,
     such as passing null pointers, or calling functions in the wrong
