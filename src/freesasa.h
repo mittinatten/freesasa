@@ -304,6 +304,19 @@ extern "C"{
 */
     size_t freesasa_n_atoms(const freesasa *s);
 
+/**
+    The number of residues in the protein.
+
+    Requires that a protein, not only raw coordinates, has been
+    associated with the provided ::freesasa-object. That is,
+    freesasa_calc_pdb() or freesasa_calc_atoms() have been called
+    successfully beforehand.
+
+    @param s a ::freesasa-object
+    @return The number of residues.
+ */
+    size_t freesasa_n_residues(const freesasa *s);
+
 //////////////////////////////
 // Settings for calculation //
 //////////////////////////////

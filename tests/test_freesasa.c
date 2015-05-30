@@ -194,6 +194,8 @@ START_TEST (test_sasa_1ubq)
     ck_assert(fabs(freesasa_area_class(st,FREESASA_POLAR) - polar_ref) < 1e-5);
     ck_assert(fabs(freesasa_area_class(st,FREESASA_APOLAR) - apolar_ref) < 1e-5);
     ck_assert(freesasa_area_residue(st,"ALA") > 0);
+    ck_assert(freesasa_n_atoms(st) == 602);
+    ck_assert(freesasa_n_residues(st) == 76);
 
     const double *r = freesasa_radius_atom_array(st);
     ck_assert(r != NULL);
@@ -204,6 +206,7 @@ START_TEST (test_sasa_1ubq)
     ck_assert(freesasa_write_pdb(st,devnull) == FREESASA_SUCCESS);
     ck_assert(freesasa_log(st,devnull) == FREESASA_SUCCESS);
     ck_assert(freesasa_per_residue_type(st,devnull) == FREESASA_SUCCESS);
+    ck_assert(freesasa_per_residue(st,devnull) == FREESASA_SUCCESS);
     fclose(devnull);
 }
 END_TEST
@@ -408,11 +411,16 @@ START_TEST (test_strvp)
                 strerror(errno));
     }
     freesasa_calc_pdb(s,pdb);
+    fclose(pdb);
     svp = freesasa_string_value_pairs(s,FREESASA_ATOMS);
     ck_assert(svp != NULL);
     ck_assert(svp->n == freesasa_n_atoms(s));
     ck_assert(svp->value[0] = freesasa_area_atom(s,0));
-    fclose(pdb);
+    freesasa_strvp_free(svp);
+    svp = freesasa_string_value_pairs(s,FREESASA_RESIDUES);
+    ck_assert(svp != NULL);
+    ck_assert(svp->n == freesasa_n_residues(s));
+    ck_assert(svp->value[0] > 0);
     freesasa_strvp_free(svp);
 }
 END_TEST

@@ -536,6 +536,13 @@ size_t freesasa_n_atoms(const freesasa *s)
     return s->n_atoms;
 }
 
+size_t freesasa_n_residues(const freesasa *s)
+{
+    assert(s);
+    assert(s->structure);
+    return freesasa_structure_n_residues(s->structure);
+}
+
 double freesasa_area_total(const freesasa *s)
 {
     assert(s);
