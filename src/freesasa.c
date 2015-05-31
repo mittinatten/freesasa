@@ -607,34 +607,50 @@ const char* freesasa_get_proteinname(const freesasa *s)
     return s->proteinname;
 }
 
+static int freesasa_log_impl(const freesasa *s, FILE *log) {
+    int res;
+    res = fprintf(log,
+                  "name: %s\nalgorithm: %s\nprobe-radius: %f A\n",
+                  s->proteinname,freesasa_alg_names[s->alg],
+                  s->probe_radius);
+    if (res < 0) return res;
+    if(HAVE_LIBPTHREAD) {
+        res = fprintf(log,"n_thread: %d\n",s->n_threads);
+        if (res < 0) return res;
+    }
+    switch(s->alg) {
+    case FREESASA_SHRAKE_RUPLEY:
+        res = fprintf(log,"n_testpoint: %d\n",s->n_sr);
+        break;
+    case FREESASA_LEE_RICHARDS:
+        res = fprintf(log,"d_slice: %f Å\n",s->d_lr);
+        break;
+    default:
+        assert(0);
+        break;
+    }
+    if (res < 0) return res;
+    res = fprintf(log,"time_elapsed: %f s\nn_atoms: %d\n",
+                  s->elapsed_time,s->n_atoms);
+    return res;
+}
+
 int freesasa_log(const freesasa *s, FILE *log)
 {
     assert(s);
     assert(s->calculated);
     assert(log);
-    fprintf(log,"name: %s\n",s->proteinname);
-    fprintf(log,"algorithm: %s\n",freesasa_alg_names[s->alg]);
-    fprintf(log,"probe-radius: %f A\n",s->probe_radius);
-    if(HAVE_LIBPTHREAD)
-        fprintf(log,"n_thread: %d\n",s->n_threads);
-    
-    switch(s->alg) {
-    case FREESASA_SHRAKE_RUPLEY:
-        fprintf(log,"n_testpoint: %d\n",s->n_sr);
-        break;
-    case FREESASA_LEE_RICHARDS:
-        fprintf(log,"d_slice: %f Å\n",s->d_lr);
-        break;
-    default:
-        break;
-    }
-    fprintf(log,"time_elapsed: %f s\n",s->elapsed_time);
-    fprintf(log,"n_atoms: %d\n", s->n_atoms);
-    return FREESASA_SUCCESS;
+    errno = 0;
+    // the actual printing is done in a separate function
+    // to facilitate error handling
+    int res = freesasa_log_impl(s,log);
+    if (res >= 0) return FREESASA_SUCCESS;
+    return freesasa_fail("%s: %s",__func__,strerror(errno));
 }
 
 int freesasa_per_residue_type(const freesasa *s, FILE *output)
 {
+    assert(s);
     assert(s->calculated);
     for (int i = 0; i < freesasa_classify_nresiduetypes(); ++i) {
         double sasa = s->result->residue_type[i];
