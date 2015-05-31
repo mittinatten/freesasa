@@ -71,11 +71,13 @@ int freesasa_shrake_rupley(double *sasa,
                            int n_points,
                            int n_threads)
 {
+    assert(sasa);
+    assert(xyz);
+    assert(r);
     size_t n_atoms = freesasa_coord_n(xyz);
     int return_value = FREESASA_SUCCESS;
     if (n_atoms == 0) {
-        return freesasa_warn("Attempting Shrake & Rupley calculation "
-                             "on empty coordinates");
+        return freesasa_warn("%s: empty coordinates", __func__);
     }
 
     // Initialize test-points
@@ -92,19 +94,20 @@ int freesasa_shrake_rupley(double *sasa,
     }
     //store parameters and reference arrays
     sasa_sr sr = {.n_atoms = n_atoms, .n_points = n_points,
-                    .probe_radius = probe_radius,
-                    .xyz = xyz, .srp = srp,
-                    .r = r, .spcount_0 = spcount_0,
-                    .sasa = sasa};
+                  .probe_radius = probe_radius,
+                  .xyz = xyz, .srp = srp,
+                  .r = r, .spcount_0 = spcount_0,
+                  .sasa = sasa};
 
     //calculate SASA
     if (n_threads > 1) {
 #if HAVE_LIBPTHREAD
         sasa_sr_do_threads(n_threads, sr);
 #else
-        return_value = freesasa_warn("program compiled for single-threaded use, "
+        return_value = freesasa_warn("%s: program compiled for single-threaded use, "
                                      "but multiple threads were requested. Will "
-                                     "proceed in single-threaded mode.\n");
+                                     "proceed in single-threaded mode.\n",
+                                     __func__);
         n_threads = 1;
 #endif
     }

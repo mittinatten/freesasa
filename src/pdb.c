@@ -23,6 +23,7 @@
 #include "pdb.h"
 
 static inline int pdb_line_check(const char *line,int len) {
+    assert(line);
     if (! strncmp(line,"ATOM",4) &&
         ! strncmp(line,"HETATM",6)) {
         return FREESASA_FAIL;
@@ -35,6 +36,8 @@ static inline int pdb_line_check(const char *line,int len) {
 
 int freesasa_pdb_get_atom_name(char *name, const char *line)
 {
+    assert(name);
+    assert(line);
     if (pdb_line_check(line,PDB_ATOM_NAME_STRL+12) == FREESASA_FAIL) {
         name[0] = '\0';
         return FREESASA_FAIL;
@@ -46,6 +49,8 @@ int freesasa_pdb_get_atom_name(char *name, const char *line)
 
 int freesasa_pdb_get_res_name(char *name, const char *line)
 {
+    assert(name);
+    assert(line);
     if (pdb_line_check(line,PDB_ATOM_RES_NAME_STRL+17) == FREESASA_FAIL) {
         name[0] = '\0';
         return FREESASA_FAIL;
@@ -56,6 +61,8 @@ int freesasa_pdb_get_res_name(char *name, const char *line)
 }
 int freesasa_pdb_get_coord(double *xyz, const char *line)
 {
+    assert(xyz);
+    assert(line);
     if (pdb_line_check(line,78) == FREESASA_FAIL) {
         return FREESASA_FAIL;
     }
@@ -64,6 +71,8 @@ int freesasa_pdb_get_coord(double *xyz, const char *line)
 }
 int freesasa_pdb_get_res_number(char *number, const char* line)
 {
+    assert(number);
+    assert(line);
     if (pdb_line_check(line,PDB_ATOM_RES_NUMBER_STRL+22) == FREESASA_FAIL) {
         number[0] = '\0';
         return FREESASA_FAIL;
@@ -74,18 +83,21 @@ int freesasa_pdb_get_res_number(char *number, const char* line)
 }
 char freesasa_pdb_get_chain_label(const char* line)
 {
+    assert(line);
     if (pdb_line_check(line,21) == FREESASA_FAIL) return '\0';
     return line[21];
 }
 
 char freesasa_pdb_get_alt_coord_label(const char* line)
 {
+    assert(line);
     if (pdb_line_check(line,16) == FREESASA_FAIL) return '\0';
     return line[16];
 }
 
 int freesasa_pdb_ishydrogen(const char* line)
 {
+    assert(line);
     if (pdb_line_check(line,13) == FREESASA_FAIL) return FREESASA_FAIL;
     //hydrogen
     if (line[12] == 'H' || line[13] == 'H') return 1;

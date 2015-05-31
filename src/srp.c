@@ -19,7 +19,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <assert.h>
 #include "srp.h"
+
 
 static const double srp_20[3*20];
 static const double srp_50[3*50];
@@ -37,8 +41,12 @@ static const double* srp_p[SRP_N_SIZES] = { srp_20, srp_50, srp_100, srp_200,
 extern int freesasa_warn(const char *format, ...);
 
 void freesasa_srp_print_n_opt(FILE* f) {
+    assert(f);
+    int res;
     for (int i = 0; i < SRP_N_SIZES-1; ++i) {
-        fprintf(f,"%d, ",srp_N[i]);
+        res = fprintf(f,"%d, ",srp_N[i]);
+        if (res < 0)
+            freesasa_warn("%s: %s", __func__, strerror(errno));
     }
     fprintf(f,"%d\n",srp_N[SRP_N_SIZES-1]);
 }
@@ -54,8 +62,8 @@ const double* freesasa_srp_get_points(int n) {
     for (int i = 0; i < SRP_N_SIZES; ++i) {
         if (n == srp_N[i]) return srp_p[i];
     }
-    freesasa_warn("number of test-points has to be"
-                  " one of the following values: ");
+    freesasa_warn("%s: number of test-points has to be"
+                  " one of the following values: ", __func__);
     freesasa_srp_print_n_opt(stderr);
     return NULL;
 }

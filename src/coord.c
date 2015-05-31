@@ -50,7 +50,7 @@ static void coord_clear(freesasa_coord *c)
 {
     assert(c);
     assert(!c->is_const);
-    if (c->xyz != NULL) {
+    if (c->xyz) {
         free(c->xyz);
         c->xyz = NULL;
     }
@@ -60,7 +60,7 @@ static void coord_clear(freesasa_coord *c)
 
 freesasa_coord* freesasa_coord_copy(const freesasa_coord *src)
 {
-    assert(src != NULL);
+    assert(src);
     freesasa_coord *c = freesasa_coord_new();
     freesasa_coord_set_all(c,src->xyz,src->n);
     return c;
@@ -68,7 +68,7 @@ freesasa_coord* freesasa_coord_copy(const freesasa_coord *src)
 
 freesasa_coord* freesasa_coord_new_linked(const double *xyz, size_t n)
 {
-    assert(xyz != NULL);
+    assert(xyz);
     assert(n > 0);
     freesasa_coord *c = freesasa_coord_new();
     c->xyz = (double*)xyz;
@@ -170,7 +170,7 @@ void freesasa_coord_set_length_all(freesasa_coord *c, double l)
 
 const double* freesasa_coord_i(const freesasa_coord *c, int i)
 {
-    assert(c != NULL);
+    assert(c);
     assert(i < c->n);
     assert(i >= 0);
     return &c->xyz[3*i];

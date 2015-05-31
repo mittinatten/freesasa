@@ -158,15 +158,19 @@ int freesasa_lee_richards(double *sasa,
                           double delta,
                           int n_threads)
 {
+    assert(sasa);
+    assert(xyz);
+    assert(atom_radii);
+
     int return_value = FREESASA_SUCCESS;
+
     if (freesasa_coord_n(xyz) == 0) {
-        return freesasa_warn("Attempting Lee & Richards calculation "
-                             "on empty coordinates");
+        return freesasa_warn("%s: empty coordinates",__func__);
     }
 
     // determine slice range and init radii and sasa arrays
     sasa_lr *lr = freesasa_init_lr(sasa, xyz, atom_radii,
-                                     probe_radius, delta);
+                                   probe_radius, delta);
 
     // determine which atoms are neighbours
     sasa_get_contacts(lr);
@@ -175,9 +179,10 @@ int freesasa_lee_richards(double *sasa,
 #if HAVE_LIBPTHREAD
         sasa_lr_do_threads(n_threads, lr);
 #else
-        return_value = freesasa_warn("program compiled for single-threaded use, "
+        return_value = freesasa_warn("%s: program compiled for single-threaded use, "
                                      "but multiple threads were requested. Will "
-                                     "proceed in single-threaded mode.\n");
+                                     "proceed in single-threaded mode.\n",
+                                     __func__);
         n_threads = 1;
 #endif /* pthread */
     }
