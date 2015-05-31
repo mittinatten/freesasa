@@ -638,7 +638,7 @@ extern "C"{
     @param s a ::freesasa-object
     @param log Output-file.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_WARN if
-    inconsistencies are detected (with explanatory error-message). 
+    problems writing to file.
 */
     int freesasa_log(const freesasa *s, FILE *log);
 

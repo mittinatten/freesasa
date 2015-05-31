@@ -615,6 +615,10 @@ int freesasa_log(const freesasa *s, FILE *log)
     assert(s);
     assert(s->calculated);
     assert(log);
+    /* Using errno to check for fprintf-errors. Perhaps not completely
+       portable, but makes function a lot simpler than checking every
+       return value. */
+    errno = 0;
     fprintf(log,
             "name: %s\nalgorithm: %s\nprobe-radius: %f A\n",
             s->proteinname,freesasa_alg_names[s->alg],
@@ -635,6 +639,9 @@ int freesasa_log(const freesasa *s, FILE *log)
     }
     fprintf(log,"time_elapsed: %f s\nn_atoms: %d\n",
             s->elapsed_time,s->n_atoms);
+    if (errno != 0) { 
+        return freesasa_warn("%s: %s",__func__,strerror(errno));
+    }
     return FREESASA_SUCCESS;
 }
 
