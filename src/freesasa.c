@@ -107,7 +107,6 @@ const freesasa freesasa_def_param = {
 
 const char *freesasa_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
-
 static void freesasa_err_impl(int err, const char *format, va_list arg)
 {
     fprintf(stderr, "%s: ", freesasa_name);
@@ -168,10 +167,11 @@ static freesasa_class_data* freesasa_classify_structure(const freesasa_structure
 
 static void freesasa_class_free(freesasa_class_data *c)
 {
-    if (! c) return;
-    free(c->class);
-    free(c->residue_type);
-    free(c);
+    if (c) {
+        free(c->class);
+        free(c->residue_type);
+        free(c);
+    }
 }
 
 static freesasa_result* freesasa_result_new(size_t n_atoms)
@@ -194,11 +194,12 @@ static freesasa_result* freesasa_result_new(size_t n_atoms)
 
 static void freesasa_result_free(freesasa_result *r)
 {
-    if (! r) return;
-    free(r->sasa);
-    free(r->class);
-    free(r->residue_type);
-    free(r);
+    if (r) {
+        free(r->sasa);
+        free(r->class);
+        free(r->residue_type);
+        free(r);
+    }
 }
 
 static void freesasa_get_class_result(freesasa *s, freesasa_structure *p)
@@ -283,15 +284,16 @@ void freesasa_copy_param(freesasa *target, const freesasa *source)
 
 void freesasa_free(freesasa *s)
 {
-    if (! s) return;
-    if (s->owns_r) {
-        free(s->r);
+    if (s) {
+        if (s->owns_r) {
+            free(s->r);
+        }
+        if (s->class) freesasa_class_free(s->class);
+        if (s->result) freesasa_result_free(s->result);
+        if (s->coord) freesasa_coord_free(s->coord);
+        if (s->structure) freesasa_structure_free(s->structure);
+        free(s);
     }
-    if (s->class) freesasa_class_free(s->class);
-    if (s->result) freesasa_result_free(s->result);
-    if (s->coord) freesasa_coord_free(s->coord);
-    if (s->structure) freesasa_structure_free(s->structure);
-    free(s);
 }
 int freesasa_calc_coord(freesasa *s, const double *coord,
                         const double *r, size_t n)
@@ -337,14 +339,12 @@ int freesasa_calc_pdb(freesasa *s, FILE *pdb_file)
     assert(pdb_file);
     s->calculated = 0;
     freesasa_structure *p = freesasa_structure_from_pdb(pdb_file);
-    if (!p) {
-        return freesasa_fail("%s: Failure reading PDB-file.", __func__);
+    if (p) {
+        if (s->structure) freesasa_structure_free(s->structure);
+        s->structure = p;
+        return freesasa_calc_structure(s);
     }
-    
-    if (s->structure) freesasa_structure_free(s->structure);
-    s->structure = p;
-
-    return freesasa_calc_structure(s);
+    return freesasa_fail("%s: Failure reading PDB-file.", __func__);
 }
 
 int freesasa_calc_atoms(freesasa *s, const double *coord, 
@@ -479,9 +479,9 @@ int freesasa_set_lr_delta(freesasa *s, double d)
 {
     assert(s);
     s->calculated = 0;
+    int result = FREESASA_SUCCESS;
     if (d > 0 && isfinite(d)) {
         s->d_lr = d;
-        if (d <= 2) return FREESASA_SUCCESS;
         if (d > 2) {
             freesasa_warn("%s: for regular SASA calculations, "
                           "slice width should be less than 2 A.",
@@ -489,14 +489,16 @@ int freesasa_set_lr_delta(freesasa *s, double d)
             freesasa_warn("%s: proceeding with selected value (%f), "
                           "but results might be inaccurate.",
                           __func__, d);
-            return FREESASA_WARN;
+            result = FREESASA_WARN;
         }
+    } else {
+        freesasa_warn("%s: slice width %f invalid.",__func__,d);
+        freesasa_warn("%s: proceeding with default value (%f).",
+                      __func__,FREESASA_DEF_LR_D);
+        s->d_lr = FREESASA_DEF_LR_D;
+        result = FREESASA_WARN;
     }
-    freesasa_warn("%s: slice width %f invalid.",__func__,d);
-    freesasa_warn("%s: proceeding with default value (%f).",
-                  __func__,FREESASA_DEF_LR_D);
-    s->d_lr = FREESASA_DEF_LR_D;
-    return FREESASA_WARN;
+    return result;
 }
 
 double freesasa_get_lr_delta(const freesasa *s)
@@ -509,19 +511,20 @@ double freesasa_get_lr_delta(const freesasa *s)
 int freesasa_set_nthreads(freesasa *s,int n)
 {
     assert(s);
+    int result = FREESASA_SUCCESS;
     if (!HAVE_LIBPTHREAD) {
         s->n_threads = 1;
-        return freesasa_warn("%s: Program not compiled for more than one thread.",
-                             __func__);
-    }
-    if ( n <= 0) {
+        result = freesasa_warn("%s: Program not compiled for more than one thread.",
+                               __func__);
+    } else if ( n <= 0) {
         s->n_threads = DEF_NTHREADS;
-        return freesasa_warn("%s: Number of threads has to be positive. "
-                             "Proceeding with default number (%d).",
-                             __func__,DEF_NTHREADS);
+        result = freesasa_warn("%s: Number of threads has to be positive. "
+                               "Proceeding with default number (%d).",
+                               __func__,DEF_NTHREADS);
+    } else {
+        s->n_threads = n;
     }
-    s->n_threads = n;
-    return FREESASA_SUCCESS;
+    return result;
 }
 
 int freesasa_get_nthreads(const freesasa *s)
@@ -564,7 +567,7 @@ double freesasa_area_atom(const freesasa *s, int i)
     assert(s);
     assert(s->calculated);
     assert(i >= 0 || i < s->n_atoms);
-        return s->result->sasa[i];
+    return s->result->sasa[i];
 }
 
 const double* freesasa_area_atom_array(const freesasa *s)
@@ -607,45 +610,32 @@ const char* freesasa_get_proteinname(const freesasa *s)
     return s->proteinname;
 }
 
-static int freesasa_log_impl(const freesasa *s, FILE *log) {
-    int res;
-    res = fprintf(log,
-                  "name: %s\nalgorithm: %s\nprobe-radius: %f A\n",
-                  s->proteinname,freesasa_alg_names[s->alg],
-                  s->probe_radius);
-    if (res < 0) return res;
-    if(HAVE_LIBPTHREAD) {
-        res = fprintf(log,"n_thread: %d\n",s->n_threads);
-        if (res < 0) return res;
-    }
-    switch(s->alg) {
-    case FREESASA_SHRAKE_RUPLEY:
-        res = fprintf(log,"n_testpoint: %d\n",s->n_sr);
-        break;
-    case FREESASA_LEE_RICHARDS:
-        res = fprintf(log,"d_slice: %f Å\n",s->d_lr);
-        break;
-    default:
-        assert(0);
-        break;
-    }
-    if (res < 0) return res;
-    res = fprintf(log,"time_elapsed: %f s\nn_atoms: %d\n",
-                  s->elapsed_time,s->n_atoms);
-    return res;
-}
-
 int freesasa_log(const freesasa *s, FILE *log)
 {
     assert(s);
     assert(s->calculated);
     assert(log);
-    errno = 0;
-    // the actual printing is done in a separate function
-    // to facilitate error handling
-    int res = freesasa_log_impl(s,log);
-    if (res >= 0) return FREESASA_SUCCESS;
-    return freesasa_fail("%s: %s",__func__,strerror(errno));
+    fprintf(log,
+            "name: %s\nalgorithm: %s\nprobe-radius: %f A\n",
+            s->proteinname,freesasa_alg_names[s->alg],
+            s->probe_radius);
+    if(HAVE_LIBPTHREAD) {
+        fprintf(log,"n_thread: %d\n",s->n_threads);
+    }
+    switch(s->alg) {
+    case FREESASA_SHRAKE_RUPLEY:
+        fprintf(log,"n_testpoint: %d\n",s->n_sr);
+        break;
+    case FREESASA_LEE_RICHARDS:
+        fprintf(log,"d_slice: %f Å\n",s->d_lr);
+        break;
+    default:
+        assert(0);
+        break;
+    }
+    fprintf(log,"time_elapsed: %f s\nn_atoms: %d\n",
+            s->elapsed_time,s->n_atoms);
+    return FREESASA_SUCCESS;
 }
 
 int freesasa_per_residue_type(const freesasa *s, FILE *output)
