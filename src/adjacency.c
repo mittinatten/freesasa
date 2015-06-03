@@ -1,0 +1,332 @@
+/*
+  Copyright Simon Mitternacht 2013-2015.
+
+  This file is part of FreeSASA.
+
+  FreeSASA is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  FreeSASA is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License forr more details.
+
+  You should have received a copy of the GNU General Public License
+  along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include <stdlib.h>
+#include <math.h>
+#include <assert.h>
+#include "freesasa.h"
+#include "adjacency.h"
+
+typedef struct freesasa_cell {
+    int nb[8]; //! includes self, only neighbors in "forward" direction
+    int atom[FREESASA_ATOMS_PER_CELL];
+    int n_nb; //! number of neighbors to cell
+    int n_atoms; //! number of atoms in cell
+    double x,y,z; //! center of each cell
+} freesasa_cell;
+
+struct freesasa_cell_list {
+    freesasa_cell *cell; //! indexed geometrically
+    freesasa_cell **atom_cell; //! indexed by atom numbers
+    size_t n; //! number of cells
+    size_t nx, ny, nz; //! number of cells along each axis
+    double d; //! cell size
+    double x_max, x_min;
+    double y_max, y_min;
+    double z_max, z_min;
+};
+
+extern int freesasa_fail(const char *format, ...);
+extern int freesasa_warn(const char *format, ...);
+
+void get_bounds(freesasa_cell_list *c, const freesasa_coord *coord)
+{
+    const size_t n = freesasa_coord_n(coord);
+    double d = c->d;
+    const double *v = freesasa_coord_i(coord,0);
+    double x=v[0],X=v[0],y=v[1],Y=v[1],z=v[2],Z=v[2];
+    for (size_t i = 1; i < n; ++i) {
+        v = freesasa_coord_i(coord,i);
+        x = fmin(v[0],x);
+        X = fmax(v[0],X);
+        y = fmin(v[1],y);
+        Y = fmax(v[1],Y);
+        z = fmin(v[2],z);
+        Z = fmax(v[2],Z);
+    }
+    c->x_min = x - d/2.;
+    c->x_max = X + d/2.;
+    c->y_min = y - d/2.;
+    c->y_max = Y + d/2.;
+    c->z_min = z - d/2.;
+    c->z_max = Z + d/2.;
+    c->nx = ceil((c->x_max - c->x_min)/d);
+    c->ny = ceil((c->y_max - c->y_min)/d);
+    c->nz = ceil((c->z_max - c->z_min)/d);
+    c->n = c->nx*c->ny*c->nz;
+}
+
+static inline int flat_idx(const freesasa_cell_list *c,
+                           int ix, int iy, int iz)
+{
+    assert(ix >= 0 && ix < c->nx);
+    assert(iy >= 0 && iy < c->ny);
+    return ix + c->nx*(iy + c->ny*iz);
+}
+
+// Fill the neighbor list for a given cell
+static void fill_nb(freesasa_cell_list *c,
+                    int ix, int iy, int iz)
+{
+    freesasa_cell *cell = &c->cell[flat_idx(c,ix,iy,iz)];
+    int n = 0;
+    int xmin = ix;//ix > 0 ? ix - 1 : 0;
+    int xmax = ix < c->nx - 1 ? ix + 1 : c->nx - 1;
+    int ymin = iy;//iy > 0 ? iy - 1 : 0;
+    int ymax = iy < c->ny - 1 ? iy + 1 : c->ny - 1;
+    int zmin = iz;//iz > 0 ? iz - 1 : 0;
+    int zmax = iz < c->nz - 1 ? iz + 1 : c->nz - 1;
+    for (int i = xmin; i <= xmax; ++i) {
+        for (int j = ymin; j <= ymax; ++j) {
+            for (int k = zmin; k <= zmax; ++k) {
+                cell->nb[n] = flat_idx(c,i,j,k);
+                ++n;
+            }
+        }
+    }
+    assert(n<=8);
+    cell->n_nb = n;
+}
+
+static void get_nb(freesasa_cell_list *c)
+{
+    for (size_t ix = 0; ix < c->nx; ++ix) {
+        for (size_t iy = 0; iy < c->ny; ++iy) {
+            for (size_t iz = 0; iz < c->nz; ++iz) {
+                fill_nb(c,ix,iy,iz);
+            }
+        }
+    }
+}
+
+static int fill_cells(freesasa_cell_list *c, const freesasa_coord *coord)
+{
+    const double d = c->d;
+    const int nx = c->nx, ny = c->ny, nz = c->nz;
+    for (size_t i = 0; i < c->n; ++i) {
+        c->cell[i].n_atoms = 0;
+    }
+    for (size_t i = 0; i < freesasa_coord_n(coord); ++i) {
+        const double *v = freesasa_coord_i(coord,i);
+        freesasa_cell *cell;
+        int ix = (int)((v[0] - c->x_min)/d);
+        int iy = (int)((v[1] - c->y_min)/d);
+        int iz = (int)((v[2] - c->z_min)/d);
+        assert(ix >= 0 && ix < nx);
+        assert(iy >= 0 && iy < ny);
+        assert(iz >= 0 && iz < nz);
+        int idx = flat_idx(c,ix,iy,iz);
+        cell = &c->cell[idx];
+        c->atom_cell[i] = cell;
+        cell->atom[cell->n_atoms] = i;
+        ++cell->n_atoms;
+        if (cell->n_atoms > FREESASA_ATOMS_PER_CELL) {
+            return FREESASA_FAIL;
+        }
+    }
+    return FREESASA_SUCCESS;
+}
+
+freesasa_cell_list* freesasa_cell_list_new(double cell_size,
+                                           const freesasa_coord *coord)
+{
+    assert(cell_size > 0);
+    assert(coord);
+    freesasa_cell_list *c = malloc(sizeof(freesasa_cell_list));
+    assert(c);
+    c->d = cell_size;
+    get_bounds(c,coord);
+    c->cell = malloc(sizeof(freesasa_cell)*c->n);
+    c->atom_cell = malloc(sizeof(freesasa_cell*)*freesasa_coord_n(coord));
+    assert(c->cell); assert(c->atom_cell);
+    if (fill_cells(c,coord) == FREESASA_SUCCESS) {
+        get_nb(c);
+    } else {
+        freesasa_cell_list_free(c);
+        c = NULL;
+        freesasa_fail("%s: Too many atoms per cell, "
+                      "try smaller cell size\n",
+                      __func__);
+    }
+    return c;
+}
+void freesasa_cell_list_free(freesasa_cell_list *c)
+{
+    if (c) {
+        free(c->cell);
+        free(c->atom_cell);
+        free(c);
+    }
+}
+
+int freesasa_cell_find(const freesasa_cell_list *c, const double* a)
+{
+    return 0;
+}
+
+//assumes max value in a is positive
+static double max_array(const double *a,size_t n)
+{
+    double max = 0;
+    for (size_t i = 0; i < n; ++i) {
+        max = fmax(a[i],max);
+    }
+    return max;
+}
+
+static freesasa_adjacency *freesasa_adjacency_alloc(size_t n)
+{
+    freesasa_adjacency *adj = malloc(sizeof(freesasa_adjacency));
+    assert(adj);
+    adj->n = n;
+    adj->nb = malloc(sizeof(int *)*n);
+    adj->nn = malloc(sizeof(size_t)*n);
+    adj->nb_xyd = malloc(sizeof(double *)*n);
+    adj->nb_xd = malloc(sizeof(double *)*n);
+    adj->nb_yd = malloc(sizeof(double *)*n);
+    
+    assert(adj->nb); assert(adj->nn);
+    assert(adj->nb_xyd); assert(adj->nb_xd); assert(adj->nb_yd);
+
+    for (size_t i=0; i < n; ++i) {
+        adj->nn[i] = 0;
+        adj->nb[i] = NULL;
+        adj->nb_xyd[i] = NULL;
+        adj->nb_xd[i] = NULL;
+        adj->nb_yd[i] = NULL;
+    }
+
+    return adj;
+}
+void freesasa_adjacency_free(freesasa_adjacency *adj)
+{
+    if (adj) {
+        for (size_t i = 0; i < adj->n; ++i) {
+            free(adj->nb[i]);
+        }
+        free(adj->nb);
+        free(adj->nn);
+        free(adj->nb_xyd);
+        free(adj->nb_xd);
+        free(adj->nb_yd);
+        free(adj);
+    }
+}
+
+
+static void add_pair(freesasa_adjacency *adj,int i, int j, double dx, double dy)
+{
+    int **nb = adj->nb;
+    size_t *nn = adj->nn;
+    double **nb_xyd = adj->nb_xyd;
+    double **nb_xd = adj->nb_xd;
+    double **nb_yd = adj->nb_yd;
+    ++nn[i]; ++nn[j];
+    nb[i] = realloc(nb[i],sizeof(int)*nn[i]); 
+    nb[j] = realloc(nb[j],sizeof(int)*nn[j]);
+    assert(nb[i] && nb[j]);
+    nb[i][nn[i]-1] = j;
+    nb[j][nn[j]-1] = i;
+    nb_xyd[i] = realloc(nb_xyd[i],sizeof(double)*nn[i]);
+    nb_xyd[j] = realloc(nb_xyd[j],sizeof(double)*nn[j]);
+    nb_xd[i] = realloc(nb_xd[i],sizeof(double)*nn[i]);
+    nb_xd[j] = realloc(nb_xd[j],sizeof(double)*nn[j]);
+    nb_yd[i] = realloc(nb_yd[i],sizeof(double)*nn[i]);
+    nb_yd[j] = realloc(nb_yd[j],sizeof(double)*nn[j]);
+    assert(nb_xyd[i] && nb_xyd[j]);
+    assert(nb_xd[i] && nb_xd[i] && nb_yd[i] && nb_yd[j]);
+    
+    double d = sqrt(dx*dx+dy*dy);
+    nb_xyd[i][nn[i]-1] = d;
+    nb_xyd[j][nn[j]-1] = d;
+    
+    nb_xd[i][nn[i]-1] = dx;
+    nb_xd[j][nn[j]-1] = -dx;
+    nb_yd[i][nn[i]-1] = dy;
+    nb_yd[j][nn[j]-1] = -dy;
+}
+
+static void compare_cells(freesasa_adjacency *adj, const freesasa_coord* coord,
+                          const double *radii,
+                          const freesasa_cell *ci, const freesasa_cell *cj)
+{
+    const double *v = freesasa_coord_all(coord);
+    for (int i = 0; i < ci->n_atoms; ++i) {
+        double ri = radii[i];
+        double xi = v[i*3], yi = v[i*3+1], zi = v[i*3+2];
+        for (int j = 0; j < cj->n_atoms; ++j) {
+            if (j == i) continue;
+            double rj = radii[j];
+            double xj = v[j*3], yj = v[j*3+1], zj = v[j*3+2];
+            double cut2 = (ri+rj)*(ri+rj);
+            if ((xj-xi)*(xj-xi) > cut2 ||
+                (yj-yi)*(yj-yi) > cut2 ||
+                (zj-zi)*(zj-zi) > cut2) {
+                continue;
+            }
+            double dx = xj-xi, dy = yj-yi, dz = zj-zi;
+            if (dx*dx + dy*dy + dz*dz < cut2) {
+                add_pair(adj,i,j,dx,dy);
+            }
+        }
+    }
+}
+                             
+
+static void freesasa_adjacency_calc(freesasa_adjacency *adj,
+                                    freesasa_cell_list *cl,
+                                    const freesasa_coord *coord,
+                               const double *radii)
+{
+    size_t nc = cl->n;
+    for (size_t ic = 0; ic < nc; ++ic) {
+        const freesasa_cell *ci = &cl->cell[ic];
+        for (int jc = 0; jc < ci->n_nb; ++jc) {
+            freesasa_cell *cj = &cl->cell[ci->nb[jc]];
+            compare_cells(adj,coord,radii,ci,cj);
+        }
+    }
+}
+
+freesasa_adjacency *freesasa_adjacency_new(const freesasa_coord* coord,
+                                           const double *radii)
+{
+    assert(coord);
+    assert(radii);
+    size_t n = freesasa_coord_n(coord);
+    freesasa_adjacency *adj = freesasa_adjacency_alloc(n);
+    double cell_size = 2*max_array(radii,n);
+    freesasa_cell_list *c = freesasa_cell_list_new(cell_size,coord);
+    assert(c);
+    freesasa_adjacency_calc(adj,c,coord,radii);
+    freesasa_cell_list_free(c);
+    return adj;
+}
+
+int freesasa_adjacency_contact(const freesasa_adjacency *adj,
+                               int i, int j)
+{
+    assert(adj);
+    assert(i < adj->n && i >= 0);
+    assert(j < adj->n && j >= 0);
+    for (size_t k = 0; k < adj->nn[i]; ++k) {
+        if (adj->nb[i][k] == j) return 1;
+    }
+    return 0;
+}

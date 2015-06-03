@@ -33,6 +33,7 @@
 #include "freesasa.h"
 #include "sasa.h"
 #include "srp.h"
+#include "adjacency.h"
 
 extern const char *freesasa_name;
 extern int freesasa_fail(const char *format, ...);
@@ -43,11 +44,7 @@ typedef struct {
     int n_atoms;
     double *radii; //including probe
     const freesasa_coord *xyz;
-    int **nb; // neighbors
-    int *nn; // number of neighbors
-    double **nb_xyd; // neighbours, xy-distance
-    double **nb_xd; // neighbours, x-distance
-    double **nb_yd; // neighbours, y-distance
+    freesasa_adjacency *adj;
     double delta; // slice width
     double min_z; // bounds of the molecule
     double max_z;
@@ -120,34 +117,22 @@ static sasa_lr* freesasa_init_lr(double *sasa,
     max_z += max_r;
     min_z += 0.5*delta;
 
+    //calculate adjacency lists
+    lr->adj = freesasa_adjacency_new(xyz,radii);
+
     //copy parameters
     lr->n_atoms = n_atoms; lr->radii = radii; lr->xyz = xyz;
     lr->delta = delta;
     lr->min_z = min_z; lr->max_z = max_z;
     lr->sasa = sasa;
 
-    //these will be malloc'd by get_contacts
-    lr->nn = NULL;
-    lr->nb = NULL;
-    lr->nb_xyd = lr->nb_xd = lr->nb_yd = NULL;
-
     return lr;
 }
 
 static void freesasa_free_lr(sasa_lr *lr)
 {
-    for (int i = 0; i < lr->n_atoms; ++i) {
-        free(lr->nb[i]);
-        free(lr->nb_xyd[i]);
-        free(lr->nb_xd[i]);
-        free(lr->nb_yd[i]);
-    }
     free(lr->radii);
-    free(lr->nn);
-    free(lr->nb);
-    free(lr->nb_xyd);
-    free(lr->nb_xd);
-    free(lr->nb_yd);
+    freesasa_adjacency_free(lr->adj);
     free(lr);
 }
 
@@ -168,12 +153,13 @@ int freesasa_lee_richards(double *sasa,
         return freesasa_warn("%s: empty coordinates",__func__);
     }
 
-    // determine slice range and init radii and sasa arrays
+    // determine slice range and init radii and sasa arrays,
+    // and find which atoms are neighbors
     sasa_lr *lr = freesasa_init_lr(sasa, xyz, atom_radii,
                                    probe_radius, delta);
 
     // determine which atoms are neighbours
-    sasa_get_contacts(lr);
+    //sasa_get_contacts(lr);
 
     if (n_threads > 1) {
 #if HAVE_LIBPTHREAD
@@ -327,11 +313,11 @@ static void sasa_exposed_arcs(const sasa_lr_slice *slice,
                               const sasa_lr *lr)
 {
     const int n_slice = slice->n_slice;
-    const int *nn = lr->nn;
-    int * const *nb = lr->nb;
-    double * const *nb_xyd = lr->nb_xyd;
+    const freesasa_adjacency *adj = lr->adj;
+    const size_t *nn = adj->nn;
+    int * const *nb = adj->nb;
+    double * const *nb_xyd = adj->nb_xyd;
     const double *r = slice->r;
-    const double *v = freesasa_coord_all(lr->xyz);
 
     char is_completely_buried[n_slice]; // keep track of completely buried circles
     memset(is_completely_buried,0,sizeof is_completely_buried);
@@ -367,7 +353,7 @@ static void sasa_exposed_arcs(const sasa_lr_slice *slice,
             // half the arclength occluded from circle i due to verlap with circle j
             double alpha = acos ((ri*ri + d*d - rj*rj)/(2.0*ri*d));
             // the polar coordinates angle of the vector connecting i and j
-            double beta = atan2 (lr->nb_yd[I][ni],lr->nb_xd[I][ni]);
+            double beta = atan2 (adj->nb_yd[I][ni],adj->nb_xd[I][ni]);
             a[n_buried] = alpha;
             b[n_buried] = beta;
 
@@ -378,6 +364,7 @@ static void sasa_exposed_arcs(const sasa_lr_slice *slice,
                 ri*slice->DR[i]*sasa_sum_angles(n_buried,a,b);
         }
 #ifdef DEBUG
+        const double *v = freesasa_coord_all(lr->xyz);
         if (is_completely_buried[i] == 0) {
             //exposed_arc[i] = 0;
             const double *v = freesasa_coord_all(lr->xyz);
@@ -412,9 +399,9 @@ static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict
     for (int i = 0; i < n_buried; ++i) {
         if (excluded[i]) continue;
         for (int j = 0; j < n_buried; ++j) {
-            if (excluded[j]) continue;
             if (i == j) continue;
-
+            if (excluded[j]) continue;
+            
             //check for overlap
             double bi = b[i], ai = a[i]; //will be updating throughout the loop
             double bj = b[j], aj = a[j];
@@ -429,10 +416,8 @@ static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict
             ++n_overlap;
 
             //calculate new joint interval
-            double inf_i = bi-ai, inf_j = bj-aj;
-            double sup_i = bi+ai, sup_j = bj+aj;
-            double inf = inf_i < inf_j ? inf_i : inf_j;
-            double sup = sup_i > sup_j ? sup_i : sup_j;
+            double inf = fmin(bi-ai,bj-aj);
+            double sup = fmax(bi+ai,bj+aj);
             b[i] = (inf + sup)/2.0;
             a[i] = (sup - inf)/2.0;
             if (a[i] > M_PI) return 0;
@@ -498,80 +483,80 @@ static double sasa_sum_angles_int(int n_buried, double *restrict a, double *rest
     return 2*M_PI*((res - count)/(double)(res));
 }
 
-static void sasa_get_contacts(sasa_lr *lr)
-{
-    /* For low resolution L&R this function is the bottleneck in
-       speed. Will also depend on number of atoms. */
-    size_t n_atoms = lr->n_atoms;
-    const double *v = freesasa_coord_all(lr->xyz);
-    const double *radii = lr->radii;
+/* static void sasa_get_contacts(sasa_lr *lr) */
+/* { */
+/*     /\* For low resolution L&R this function is the bottleneck in */
+/*        speed. Will also depend on number of atoms. *\/ */
+/*     size_t n_atoms = lr->n_atoms; */
+/*     const double *v = freesasa_coord_all(lr->xyz); */
+/*     const double *radii = lr->radii; */
 
-    // init adjacency lists
-    int *nn = malloc(sizeof(int)*n_atoms);
-    int **nb = malloc(sizeof(int*)*n_atoms);
-    double **nb_xyd = malloc(sizeof(double*)*n_atoms);
-    double **nb_xd = malloc(sizeof(double*)*n_atoms);
-    double **nb_yd = malloc(sizeof(double*)*n_atoms);
-    assert(nn && nb && nb_xyd && nb_xd && nb_yd);
-    for (int i = 0; i < n_atoms; ++i) {
-        nn[i] = 0; nb[i] = NULL;
-        nb_xyd[i] = NULL; nb_xd[i] = NULL; nb_yd[i] = NULL;
-    }
+/*     // init adjacency lists */
+/*     int *nn = malloc(sizeof(int)*n_atoms); */
+/*     int **nb = malloc(sizeof(int*)*n_atoms); */
+/*     double **nb_xyd = malloc(sizeof(double*)*n_atoms); */
+/*     double **nb_xd = malloc(sizeof(double*)*n_atoms); */
+/*     double **nb_yd = malloc(sizeof(double*)*n_atoms); */
+/*     assert(nn && nb && nb_xyd && nb_xd && nb_yd); */
+/*     for (int i = 0; i < n_atoms; ++i) { */
+/*         nn[i] = 0; nb[i] = NULL; */
+/*         nb_xyd[i] = NULL; nb_xd[i] = NULL; nb_yd[i] = NULL; */
+/*     } */
 
-    //calculate lists
-    for (int i = 0; i < n_atoms; ++i) {
-        double ri = radii[i];
-        double xi = v[i*3], yi = v[i*3+1], zi = v[i*3+2];
-        for (int j = i+1; j < n_atoms; ++j) {
-            double rj = radii[j];
-            double cut2 = (ri+rj)*(ri+rj);
+/*     //calculate lists */
+/*     for (int i = 0; i < n_atoms; ++i) { */
+/*         double ri = radii[i]; */
+/*         double xi = v[i*3], yi = v[i*3+1], zi = v[i*3+2]; */
+/*         for (int j = i+1; j < n_atoms; ++j) { */
+/*             double rj = radii[j]; */
+/*             double cut2 = (ri+rj)*(ri+rj); */
 
-            /* most pairs of atoms will be far away from each other on
-               at least one axis, the following improves speed
-               significantly for large proteins */
-            double xj = v[j*3], yj = v[j*3+1], zj = v[j*3+2];
-            if ((xj-xi)*(xj-xi) > cut2 ||
-                (yj-yi)*(yj-yi) > cut2 ||
-                (zj-zi)*(zj-zi) > cut2) {
-                continue;
-            }
-            double dx = xj-xi, dy = yj-yi, dz = zj-zi;
-            if (dx*dx + dy*dy + dz*dz < cut2) {
-                ++nn[i]; ++nn[j];
-                //record neighbors
-                nb[i] = (int*) realloc(nb[i],sizeof(int)*nn[i]);
-                nb[j] = (int*) realloc(nb[j],sizeof(int)*nn[j]);
-                assert(nb[i] && nb[j]);
-                nb[i][nn[i]-1] = j;
-                nb[j][nn[j]-1] = i;
+/*             /\* most pairs of atoms will be far away from each other on */
+/*                at least one axis, the following improves speed */
+/*                significantly for large proteins *\/ */
+/*             double xj = v[j*3], yj = v[j*3+1], zj = v[j*3+2]; */
+/*             if ((xj-xi)*(xj-xi) > cut2 || */
+/*                 (yj-yi)*(yj-yi) > cut2 || */
+/*                 (zj-zi)*(zj-zi) > cut2) { */
+/*                 continue; */
+/*             } */
+/*             double dx = xj-xi, dy = yj-yi, dz = zj-zi; */
+/*             if (dx*dx + dy*dy + dz*dz < cut2) { */
+/*                 ++nn[i]; ++nn[j]; */
+/*                 //record neighbors */
+/*                 nb[i] = (int*) realloc(nb[i],sizeof(int)*nn[i]); */
+/*                 nb[j] = (int*) realloc(nb[j],sizeof(int)*nn[j]); */
+/*                 assert(nb[i] && nb[j]); */
+/*                 nb[i][nn[i]-1] = j; */
+/*                 nb[j][nn[j]-1] = i; */
 
-                //record neighbor distances
-                nb_xyd[i] = (double*) realloc(nb_xyd[i],sizeof(double)*nn[i]);
-                nb_xyd[j] = (double*) realloc(nb_xyd[j],sizeof(double)*nn[j]);
-                nb_xd[i] = (double*) realloc(nb_xd[i],sizeof(double)*nn[i]);
-                nb_xd[j] = (double*) realloc(nb_xd[j],sizeof(double)*nn[j]);
-                nb_yd[i] = (double*) realloc(nb_yd[i],sizeof(double)*nn[i]);
-                nb_yd[j] = (double*) realloc(nb_yd[j],sizeof(double)*nn[j]);
-                assert(nb_xyd[i] && nb_xyd[j]);
-                assert(nb_xd[i] && nb_xd[i] && nb_yd[i] && nb_yd[j]);
+/*                 //record neighbor distances */
+/*                 nb_xyd[i] = (double*) realloc(nb_xyd[i],sizeof(double)*nn[i]); */
+/*                 nb_xyd[j] = (double*) realloc(nb_xyd[j],sizeof(double)*nn[j]); */
+/*                 nb_xd[i] = (double*) realloc(nb_xd[i],sizeof(double)*nn[i]); */
+/*                 nb_xd[j] = (double*) realloc(nb_xd[j],sizeof(double)*nn[j]); */
+/*                 nb_yd[i] = (double*) realloc(nb_yd[i],sizeof(double)*nn[i]); */
+/*                 nb_yd[j] = (double*) realloc(nb_yd[j],sizeof(double)*nn[j]); */
+/*                 assert(nb_xyd[i] && nb_xyd[j]); */
+/*                 assert(nb_xd[i] && nb_xd[i] && nb_yd[i] && nb_yd[j]); */
 
-                double d = sqrt(dx*dx+dy*dy);
-                nb_xyd[i][nn[i]-1] = d;
-                nb_xyd[j][nn[j]-1] = d;
+/*                 double d = sqrt(dx*dx+dy*dy); */
+/*                 nb_xyd[i][nn[i]-1] = d; */
+/*                 nb_xyd[j][nn[j]-1] = d; */
 
-                nb_xd[i][nn[i]-1] = dx;
-                nb_xd[j][nn[j]-1] = -dx;
-                nb_yd[i][nn[i]-1] = dy;
-                nb_yd[j][nn[j]-1] = -dy;
-            }
-        }
-    }
+/*                 nb_xd[i][nn[i]-1] = dx; */
+/*                 nb_xd[j][nn[j]-1] = -dx; */
+/*                 nb_yd[i][nn[i]-1] = dy; */
+/*                 nb_yd[j][nn[j]-1] = -dy; */
+/*             } */
+/*         } */
+/*     } */
 
-    //copy results
-    lr->nn = nn;
-    lr->nb = nb;
-    lr->nb_xyd = nb_xyd;
-    lr->nb_xd = nb_xd;
-    lr->nb_yd = nb_yd;
-}
+/*     //copy results */
+/*     lr->nn = nn; */
+/*     lr->nb = nb; */
+/*     lr->nb_xyd = nb_xyd; */
+/*     lr->nb_xd = nb_xd; */
+/*     lr->nb_yd = nb_yd; */
+/* } */
 

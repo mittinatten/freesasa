@@ -27,6 +27,7 @@ extern Suite* classify_suite();
 extern Suite* coord_suite();
 extern Suite* structure_suite();
 extern Suite* sasa_suite();
+extern Suite* adjacency_suite();
 
 int main(int argc, char **argv) {
     mkdir("./tmp/",S_IRWXU);
@@ -37,6 +38,7 @@ int main(int argc, char **argv) {
     srunner_add_suite(sr,coord_suite());
     srunner_add_suite(sr,structure_suite());
     srunner_add_suite(sr,sasa_suite());
+    srunner_add_suite(sr,adjacency_suite());
 
     srunner_run_all(sr,CK_VERBOSE);
 
