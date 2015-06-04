@@ -117,15 +117,13 @@ static sasa_lr* freesasa_init_lr(double *sasa,
     max_z += max_r;
     min_z += 0.5*delta;
 
-    //calculate adjacency lists
-    lr->adj = freesasa_adjacency_new(xyz,radii);
-
     //copy parameters
     lr->n_atoms = n_atoms; lr->radii = radii; lr->xyz = xyz;
     lr->delta = delta;
     lr->min_z = min_z; lr->max_z = max_z;
     lr->sasa = sasa;
-
+    lr->adj = NULL;
+    
     return lr;
 }
 
@@ -159,6 +157,8 @@ int freesasa_lee_richards(double *sasa,
                                    probe_radius, delta);
 
     // determine which atoms are neighbours
+    lr->adj = freesasa_adjacency_new(xyz,lr->radii);
+
     //sasa_get_contacts(lr);
 
     if (n_threads > 1) {
