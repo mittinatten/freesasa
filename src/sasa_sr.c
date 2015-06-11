@@ -74,7 +74,7 @@ int freesasa_shrake_rupley(double *sasa,
     assert(sasa);
     assert(xyz);
     assert(r);
-    size_t n_atoms = freesasa_coord_n(xyz);
+    int n_atoms = freesasa_coord_n(xyz);
     int return_value = FREESASA_SUCCESS;
     if (n_atoms == 0) {
         return freesasa_warn("%s: empty coordinates", __func__);

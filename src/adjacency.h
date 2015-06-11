@@ -17,38 +17,54 @@
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FREESASA_CELL_H
-#define FREESASA_CELL_H
+#ifndef FREESASA_ADJACENCY_H
+#define FREESASA_ADJACENCY_H
 
 #include <stdlib.h>
 #include "coord.h"
 
-#ifndef FREESASA_ATOMS_PER_CELL
-#define FREESASA_ATOMS_PER_CELL 60
-#endif
 
 //! Adjacency list
 typedef struct {
     int **nb; //! neighbors to each element
-    size_t *nn; //! number of neighbors
-    size_t n; //! number of elements
+    int *nn; //! number of neighbors
+    int n; //! number of elements
     double **nb_xyd; //! distance between neighbors in xy-plane
     double **nb_xd; //! signed distance between neighbors along x-axis
     double **nb_yd; //! signed distance between neighbors along y-axis
 } freesasa_adjacency;
 
-typedef struct freesasa_cell_list freesasa_cell_list;
+/**
+    Creates an adjacency list based on a set of coordinates with
+    corresponding sphere radii. 
 
-freesasa_cell_list* freesasa_cell_list_new(double cell_size,
-                                           const freesasa_coord *coord);
+    Implemented using Verlet lists, giving O(N) performance. Should be
+    freed with freesasa_adjacency_free(). For efficient calculations
+    using this list the members of the returned struct should be used
+    directly and not freesasa_adjacency_contact().
 
-void freesasa_cell_list_free(freesasa_cell_list *c);
-
+    @param coord a set of coordinates
+    @param radii radii for the coordinates
+    @return an adjacency list.
+ */
 freesasa_adjacency *freesasa_adjacency_new(const freesasa_coord *coord,
                                            const double *radii);
 
+/**
+    Frees an adjacency list created by freesasa_adjacency_new().
+
+    @param adj the adjacency list to free
+ */
 void freesasa_adjacency_free(freesasa_adjacency *adj);
 
+/**
+    Checks if two atoms are in contact. Only included for reference.
+
+    @param adj the adjacency list
+    @param i index of first coordinate
+    @param j index of second coordinate
+    @return 1 if contact, 0 else.
+ */
 int freesasa_adjacency_contact(const freesasa_adjacency *adj,
                                int i, int j);
 

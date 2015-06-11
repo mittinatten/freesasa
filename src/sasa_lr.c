@@ -105,7 +105,7 @@ static sasa_lr* freesasa_init_lr(double *sasa,
     assert(radii);
     const double *v = freesasa_coord_all(xyz);
     //find bounds of protein along z-axis and init radii
-    for (size_t i = 0; i < n_atoms; ++i) {
+    for (int i = 0; i < n_atoms; ++i) {
         radii[i] = atom_radii[i] + probe_radius;
         double z = v[3*i+2], r = radii[i];
         max_z = z > max_z ? z : max_z;
@@ -257,7 +257,7 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
     memset(slice->in_slice,0,sizeof(int)*n_atoms);
 
     // locate atoms in each slice and do some initialization
-    for (size_t i = 0; i < n_atoms; ++i) {
+    for (int i = 0; i < n_atoms; ++i) {
         double ri = lr->radii[i];
         double d = fabs(v[3*i+2]-z);
         double r;
@@ -314,7 +314,7 @@ static void sasa_exposed_arcs(const sasa_lr_slice *slice,
 {
     const int n_slice = slice->n_slice;
     const freesasa_adjacency *adj = lr->adj;
-    const size_t *nn = adj->nn;
+    const int *nn = adj->nn;
     int * const *nb = adj->nb;
     double * const *nb_xyd = adj->nb_xyd;
     const double *r = slice->r;
@@ -487,7 +487,7 @@ static double sasa_sum_angles_int(int n_buried, double *restrict a, double *rest
 /* { */
 /*     /\* For low resolution L&R this function is the bottleneck in */
 /*        speed. Will also depend on number of atoms. *\/ */
-/*     size_t n_atoms = lr->n_atoms; */
+/*     int n_atoms = lr->n_atoms; */
 /*     const double *v = freesasa_coord_all(lr->xyz); */
 /*     const double *radii = lr->radii; */
 

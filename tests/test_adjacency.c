@@ -22,16 +22,6 @@
 const double v[18] = {0,0,0, 1,1,1, -1,1,-1, 2,0,-2, 2,2,0, -5,5,5};
 const double r[6]  = {4,2,2,2,2,2};
 
-START_TEST (test_cell) {
-    freesasa_coord *coord = freesasa_coord_new();
-    freesasa_coord_append(coord,v,6);
-    freesasa_cell_list *c = freesasa_cell_list_new(2,coord);
-    ck_assert(c != NULL);
-    freesasa_cell_list_free(c);
-    freesasa_coord_free(coord);
-}
-END_TEST
-
 START_TEST (test_adjacency) {
     freesasa_coord *coord = freesasa_coord_new();
     freesasa_coord_append(coord,v,6);
@@ -48,13 +38,9 @@ END_TEST
 Suite* adjacency_suite() {
     Suite *s = suite_create("Adjacency");
 
-    TCase *tc_cell = tcase_create("Cell");
-    tcase_add_test(tc_cell,test_cell);
-
     TCase *tc_adjacency = tcase_create("Basic");
     tcase_add_test(tc_adjacency,test_adjacency);
     
-    suite_add_tcase(s, tc_cell);
     suite_add_tcase(s, tc_adjacency);
     
     return s;

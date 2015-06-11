@@ -69,7 +69,7 @@ freesasa_coord* freesasa_coord_copy(const freesasa_coord *src);
     @param n Number of coordinates (array has size 3*n).
     @return New linked ::freesasa_coord object
 */
-freesasa_coord* freesasa_coord_new_linked(const double *xyz, size_t n);
+freesasa_coord* freesasa_coord_new_linked(const double *xyz, int n);
 
 /**
     Append coordinates to ::freesasa_coord object from one array.
@@ -78,7 +78,7 @@ freesasa_coord* freesasa_coord_new_linked(const double *xyz, size_t n);
     @param xyz Array of coordinates x1,y1,z1,x2,y2,z2,...
     @param n Number of coordinates (array has size 3*n).
  */
-void freesasa_coord_append(freesasa_coord *s,const double *xyz,size_t n);
+void freesasa_coord_append(freesasa_coord *s,const double *xyz,int n);
 
 /**
     Append coordinates to ::freesasa_coord object from three
@@ -92,7 +92,7 @@ void freesasa_coord_append(freesasa_coord *s,const double *xyz,size_t n);
  */
 void freesasa_coord_append_xyz(freesasa_coord *s,
                                const double *x, const double *y,
-                               const double *z, size_t n);
+                               const double *z, int n);
 
 /**
     Set given coordinate.
@@ -121,7 +121,7 @@ void freesasa_coord_set_i_xyz(freesasa_coord *s,int i,double x,double y,double z
     @param xyz Array of coordinates x1,y1,z1,x2,y2,z2,...
     @param n Number of coordinates (array has size 3*n).
  */
-void freesasa_coord_set_all(freesasa_coord *s,const double* xyz,size_t n);
+void freesasa_coord_set_all(freesasa_coord *s,const double* xyz,int n);
 
 /**
     Reset everything.
@@ -134,7 +134,7 @@ void freesasa_coord_set_all(freesasa_coord *s,const double* xyz,size_t n);
  */
 void freesasa_coord_set_all_xyz(freesasa_coord *s,
                                 const double* x, const double *y,
-                                const double *z, size_t n);
+                                const double *z, int n);
 
 /**
     Set length of a given coordinate vector. Useful for test-points in
@@ -216,7 +216,7 @@ const double* freesasa_coord_all(const freesasa_coord *s) __attrib_pure__;
     @param s a ::freesasa_coord object
     @return Number of coordinates
  */
-size_t freesasa_coord_n(const freesasa_coord *s) __attrib_pure__;
+int freesasa_coord_n(const freesasa_coord *s) __attrib_pure__;
 
 /**
     Translate all coordinates by same vector.
