@@ -24,7 +24,7 @@
 #include "coord.h"
 
 #ifndef FREESASA_ATOMS_PER_CELL
-#define FREESASA_ATOMS_PER_CELL 50
+#define FREESASA_ATOMS_PER_CELL 60
 #endif
 
 //! Adjacency list
