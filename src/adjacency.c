@@ -136,6 +136,14 @@ static void get_nb(freesasa_cell_list *c)
     }
 }
 
+static int get_cell_idx(const freesasa_cell_list *c, const double *v)
+{
+    double d = c->d;
+    int ix = (int)((v[0] - c->x_min)/d);
+    int iy = (int)((v[1] - c->y_min)/d);
+    int iz = (int)((v[2] - c->z_min)/d);
+    return flat_idx(c,ix,iy,iz);
+}
 static int fill_cells(freesasa_cell_list *c, const freesasa_coord *coord)
 {
     const double d = c->d;
@@ -146,11 +154,7 @@ static int fill_cells(freesasa_cell_list *c, const freesasa_coord *coord)
     for (size_t i = 0; i < freesasa_coord_n(coord); ++i) {
         const double *v = freesasa_coord_i(coord,i);
         freesasa_cell *cell;
-        int ix = (int)((v[0] - c->x_min)/d);
-        int iy = (int)((v[1] - c->y_min)/d);
-        int iz = (int)((v[2] - c->z_min)/d);
-        int idx = flat_idx(c,ix,iy,iz);
-        cell = &c->cell[idx];
+        cell = &c->cell[get_cell_idx(c,v)];
         cell->atom[cell->n_atoms] = i;
         ++cell->n_atoms;
         if (cell->n_atoms > FREESASA_ATOMS_PER_CELL) {
@@ -322,54 +326,10 @@ static void freesasa_adjacency_calc(freesasa_adjacency *adj,
     for (size_t ic = 0; ic < nc; ++ic) {
         const freesasa_cell *ci = &cl->cell[ic];
         for (int jc = 0; jc < ci->n_nb; ++jc) {
-            if (ic == jc) continue;
             const freesasa_cell *cj = ci->nb[jc];
             calc_cell_adjacency(adj,coord,radii,ci,cj);
         }
     }
-}
-
-static int check_consistency(const freesasa_coord* coord,
-                             const freesasa_cell_list *celllist,
-                             const freesasa_adjacency *adj,
-                             const double* radii)
-{
-    size_t na = freesasa_coord_n(coord);
-    assert(adj->n == na);
-    size_t n_in_cells = 0;
-    for (int i = 0; i < celllist->n; ++i) {
-        freesasa_cell *ci = &celllist->cell[i];
-        n_in_cells += ci->n_atoms;
-        for (int j = 0; j < ci->n_nb; ++j) {
-            freesasa_cell *cj = ci->nb[j];
-            for (int k = 0; k < ci->n_atoms; ++k) {
-                int ka = ci->atom[k];
-                for (int l = 0; l < cj->n_atoms; ++l) {
-                    int la = cj->atom[l];
-                    assert(freesasa_coord_dist(coord,ka,la) <= 2*sqrt(3)*celllist->d);
-                }
-            }
-        }
-    }
-    assert(n_in_cells == na);
-    int c1 = 0, c2 = 0, c3 = 0, c4 = 0;
-    for (size_t i = 0; i < na; ++i) {
-        for (size_t j = 0; j < na; ++j) {
-            if (i == j) continue;
-            double d = freesasa_coord_dist(coord,i,j);
-            if (d < radii[i] + radii[j]) {
-                if(freesasa_adjacency_contact(adj,i,j)==0) {
-                    ++c2;
-                    printf("contact mismatch %d %d %f %f\n",
-                           i, j, d, radii[i] + radii[j]);
-                } else { ++c4; }
-                ++c1;
-            }
-            if (freesasa_adjacency_contact(adj,i,j) == 1) ++c3;
-        }
-    }
-    printf("actual: %d, c2: %d, c3: %d, c4: %d, c2+c3: %d\n",c1,c2,c3,c4,c2+c3);
-    
 }
 
 freesasa_adjacency *freesasa_adjacency_new(const freesasa_coord* coord,
@@ -383,7 +343,6 @@ freesasa_adjacency *freesasa_adjacency_new(const freesasa_coord* coord,
     freesasa_cell_list *c = freesasa_cell_list_new(cell_size,coord);
     assert(c);
     freesasa_adjacency_calc(adj,c,coord,radii);
-    check_consistency(coord,c,adj,radii);
     freesasa_cell_list_free(c);
     
     return adj;
