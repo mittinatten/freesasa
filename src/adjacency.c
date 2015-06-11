@@ -25,7 +25,7 @@
 
 typedef struct freesasa_cell freesasa_cell;
 struct freesasa_cell {
-    freesasa_cell *nb[27]; //! includes self, only forward neighbors
+    freesasa_cell *nb[17]; //! includes self, only forward neighbors
     int atom[FREESASA_ATOMS_PER_CELL];
     int n_nb; //! number of neighbors to cell
     int n_atoms; //! number of atoms in cell
@@ -111,8 +111,10 @@ static void fill_nb(freesasa_cell_list *c,
     for (int i = xmin; i <= xmax; ++i) {
         for (int j = ymin; j <= ymax; ++j) {
             for (int k = zmin; k <= zmax; ++k) {
-                //scalar product between (i,j,k) and (1,1,1) should be non-negative
-                if (i+j+k >= 0) { 
+                /* Scalar product between (i-ix,j-iy,k-iz) and (1,1,1) should
+                   be non-negative. Using only forward neighbors means
+                   there's no double counting when comparing cells */
+                if (i-ix+j-iy+k-iz >= 0) { 
                     cell->nb[n] = &c->cell[flat_idx(c,i,j,k)];
                     ++n;
                 }
@@ -291,16 +293,16 @@ static void calc_cell_adjacency(freesasa_adjacency *adj,
         if (ci == cj) j = i+1;
         else j = 0;
         // the following loop is performance critical
-        for (j = 0; j < cj->n_atoms; ++j) {
+        for (; j < cj->n_atoms; ++j) {
             ja = cj->atom[j];
-            if (ia == ja) continue;
+            assert (ia != ja);
             rj = radii[ja];
             xj = v[ja*3]; yj = v[ja*3+1]; zj = v[ja*3+2];
             cut2 = (ri+rj)*(ri+rj);
             if ((xj-xi)*(xj-xi) > cut2 ||
                 (yj-yi)*(yj-yi) > cut2 ||
                 (zj-zi)*(zj-zi) > cut2) {
-                return;
+                continue;
             }
             dx = xj-xi; dy = yj-yi; dz = zj-zi;
             if (dx*dx + dy*dy + dz*dz < cut2) {
@@ -350,18 +352,24 @@ static int check_consistency(const freesasa_coord* coord,
         }
     }
     assert(n_in_cells == na);
+    int c1 = 0, c2 = 0, c3 = 0, c4 = 0;
     for (size_t i = 0; i < na; ++i) {
-        printf("nn %d %d\n",i,adj->nn[i]);
-        for (size_t j = i + 1; j < na; ++j) {
+        for (size_t j = 0; j < na; ++j) {
+            if (i == j) continue;
             double d = freesasa_coord_dist(coord,i,j);
             if (d < radii[i] + radii[j]) {
                 if(freesasa_adjacency_contact(adj,i,j)==0) {
+                    ++c2;
                     printf("contact mismatch %d %d %f %f\n",
                            i, j, d, radii[i] + radii[j]);
-                }
+                } else { ++c4; }
+                ++c1;
             }
+            if (freesasa_adjacency_contact(adj,i,j) == 1) ++c3;
         }
     }
+    printf("actual: %d, c2: %d, c3: %d, c4: %d, c2+c3: %d\n",c1,c2,c3,c4,c2+c3);
+    
 }
 
 freesasa_adjacency *freesasa_adjacency_new(const freesasa_coord* coord,
