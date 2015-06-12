@@ -84,7 +84,7 @@ typedef struct freesasa freesasa;
 typedef struct {
     double *value;
     char **string;
-    size_t n;
+    int n;
 } freesasa_strvp;
 
 /**
@@ -186,7 +186,7 @@ extern "C"{
     error and returns ::FREESASA_FAIL else. 
  */
     int freesasa_calc_coord(freesasa  *s, const double *coord,
-                            const double *r, size_t n);
+                            const double *r, int n);
 
 /**
     Calculate SASA from PDB-file.
@@ -234,7 +234,7 @@ extern "C"{
 */
     int freesasa_calc_atoms(freesasa *s, const double *coord,
                             const char **resnames, 
-                            const char **atomnames, size_t n);
+                            const char **atomnames, int n);
 
 /* Reads pdb-file and calculates radii for each atom. Memory is
    allocated to store them in the array 'r'. The return value is the
@@ -278,7 +278,7 @@ extern "C"{
     @return At the moment always returns ::FREESASA_SUCCESS
 */
     int freesasa_link_coord(freesasa *s, const double *coord,
-                            double *r, size_t n);
+                            double *r, int n);
 
 /**
     Recalculate SASA based on linked coordinates.
@@ -302,7 +302,7 @@ extern "C"{
     @param s a ::freesasa-object
     @return The number of atoms
 */
-    size_t freesasa_n_atoms(const freesasa *s);
+    int freesasa_n_atoms(const freesasa *s);
 
 /**
     The number of residues in the protein.
@@ -315,7 +315,7 @@ extern "C"{
     @param s a ::freesasa-object
     @return The number of residues.
  */
-    size_t freesasa_n_residues(const freesasa *s);
+    int freesasa_n_residues(const freesasa *s);
 
 //////////////////////////////
 // Settings for calculation //

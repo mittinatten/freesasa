@@ -26,7 +26,7 @@
 
 struct freesasa_coord {
     double *xyz;
-    size_t n;
+    int n;
     int is_const;
 };
 
@@ -66,7 +66,7 @@ freesasa_coord* freesasa_coord_copy(const freesasa_coord *src)
     return c;
 }
 
-freesasa_coord* freesasa_coord_new_linked(const double *xyz, size_t n)
+freesasa_coord* freesasa_coord_new_linked(const double *xyz, int n)
 {
     assert(xyz);
     assert(n > 0);
@@ -77,12 +77,12 @@ freesasa_coord* freesasa_coord_new_linked(const double *xyz, size_t n)
     return c;
 }
 
-void freesasa_coord_append(freesasa_coord *c, const double *xyz, size_t n)
+void freesasa_coord_append(freesasa_coord *c, const double *xyz, int n)
 {
     assert(c); assert(xyz); assert(!c->is_const);
     if (n == 0) return;
     
-    size_t n_old = c->n;
+    int n_old = c->n;
     c->n += n;
     c->xyz = (double*) realloc(c->xyz, sizeof(double)*3*c->n);
     assert(c->xyz);
@@ -93,7 +93,7 @@ void freesasa_coord_append(freesasa_coord *c, const double *xyz, size_t n)
 
 void freesasa_coord_append_xyz(freesasa_coord *c,
                                const double *x, const double *y,
-                               const double *z, size_t n)
+                               const double *z, int n)
 {
     assert(c); assert(x); assert(y); assert(z);
     assert(!c->is_const);
@@ -131,7 +131,7 @@ void freesasa_coord_set_i_xyz(freesasa_coord *c,int i,
     *v_i = z;
 }
 
-void freesasa_coord_set_all(freesasa_coord *c, const double* xyz, size_t n)
+void freesasa_coord_set_all(freesasa_coord *c, const double* xyz, int n)
 {
     assert(c); assert(xyz);
     coord_clear(c);
@@ -140,7 +140,7 @@ void freesasa_coord_set_all(freesasa_coord *c, const double* xyz, size_t n)
 
 void freesasa_coord_set_all_xyz(freesasa_coord *c,
                                 const double* x, const double *y,
-                                const double *z, size_t n)
+                                const double *z, int n)
 {
     assert(c); assert(x); assert(y); assert(z);
     coord_clear(c);
@@ -208,7 +208,7 @@ const double* freesasa_coord_all(const freesasa_coord *c)
     return c->xyz;
 }
 
-size_t freesasa_coord_n(const freesasa_coord* c)
+int freesasa_coord_n(const freesasa_coord* c)
 {
     assert(c);
     return c->n;

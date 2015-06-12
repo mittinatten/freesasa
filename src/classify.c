@@ -60,8 +60,8 @@ static const char *oons_names[] = {
 };
 
 /** helper function, trims whitespace from beginning and end of string */
-size_t freesasa_trim_whitespace(char *target, const char *src,
-                                size_t length)
+int freesasa_trim_whitespace(char *target, const char *src,
+                                int length)
 {
     if (length == 0) { return 0; }
     char *buf = malloc(length+1);

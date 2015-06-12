@@ -209,9 +209,11 @@ START_TEST (test_sasa_1ubq)
     ck_assert(freesasa_per_residue(st,devnull) == FREESASA_SUCCESS);
     fclose(devnull);
 
+    freesasa_set_verbosity(FREESASA_V_SILENT);
     FILE *nowrite = fopen("/dev/null","r");
     ck_assert(freesasa_log(st,nowrite) == FREESASA_WARN);
     fclose(nowrite);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 

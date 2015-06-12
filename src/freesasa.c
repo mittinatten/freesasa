@@ -147,7 +147,7 @@ static freesasa_class_data* freesasa_classify_structure(const freesasa_structure
     assert(freesasa_structure_n(p) >= 0 &&
            "Trying to classify atoms of illegal structure.");
 
-    size_t n = freesasa_structure_n(p);
+    int n = freesasa_structure_n(p);
 
     freesasa_class_data* c = malloc(sizeof(freesasa_class_data));
     assert(c);
@@ -174,7 +174,7 @@ static void freesasa_class_free(freesasa_class_data *c)
     }
 }
 
-static freesasa_result* freesasa_result_new(size_t n_atoms)
+static freesasa_result* freesasa_result_new(int n_atoms)
 {
     freesasa_result *r = malloc(sizeof(freesasa_result));
     assert(r);
@@ -210,7 +210,7 @@ static void freesasa_get_class_result(freesasa *s, freesasa_structure *p)
     if (s->class) freesasa_class_free(s->class);
     s->class = freesasa_classify_structure(p);
 
-    for (size_t i = 0; i < freesasa_structure_n(p); ++i) {
+    for (int i = 0; i < freesasa_structure_n(p); ++i) {
         s->result->class[s->class->class[i]] += s->result->sasa[i];
         s->result->residue_type[s->class->residue_type[i]] += s->result->sasa[i];
     }
@@ -296,7 +296,7 @@ void freesasa_free(freesasa *s)
     }
 }
 int freesasa_calc_coord(freesasa *s, const double *coord,
-                        const double *r, size_t n)
+                        const double *r, int n)
 {
     s->calculated = 0;
     s->n_atoms = n;
@@ -349,7 +349,7 @@ int freesasa_calc_pdb(freesasa *s, FILE *pdb_file)
 
 int freesasa_calc_atoms(freesasa *s, const double *coord, 
                          const char **resnames, 
-                         const char **atomnames, size_t n)
+                         const char **atomnames, int n)
 {
     assert(s);
     assert(coord);
@@ -361,7 +361,7 @@ int freesasa_calc_atoms(freesasa *s, const double *coord,
     if (s->structure) freesasa_structure_free(s->structure);
     
     freesasa_structure *p = freesasa_structure_new();
-    for (size_t i = 0; i < n; ++i) {
+    for (int i = 0; i < n; ++i) {
         if (freesasa_structure_add_atom(p,atomnames[i],resnames[i],"   1",'A',
                                         coord[i*3],coord[i*3+1],coord[i*3+2])
             == FREESASA_WARN)
@@ -379,7 +379,7 @@ double freesasa_radius(const char* residue_name, const char* atom_name)
     return freesasa_classify_radius(residue_name,atom_name);
 }
 int freesasa_link_coord(freesasa *s, const double *coord,
-                        double *r, size_t n)
+                        double *r, int n)
 {
     assert(s);
     assert(coord);
@@ -533,13 +533,13 @@ int freesasa_get_nthreads(const freesasa *s)
     return s->n_threads;
 }
 
-size_t freesasa_n_atoms(const freesasa *s)
+int freesasa_n_atoms(const freesasa *s)
 {
     assert(s);
     return s->n_atoms;
 }
 
-size_t freesasa_n_residues(const freesasa *s)
+int freesasa_n_residues(const freesasa *s)
 {
     assert(s);
     assert(s->structure);
@@ -720,7 +720,7 @@ int freesasa_write_pdb(const freesasa *s, FILE *output)
 }
 
 
-static freesasa_strvp* freesasa_alloc_strvp(size_t n)
+static freesasa_strvp* freesasa_alloc_strvp(int n)
 {
     const int STRL=FREESASA_STRUCTURE_DESCRIPTOR_STRL;
     freesasa_strvp* svp = malloc(sizeof(freesasa_strvp));
@@ -730,7 +730,7 @@ static freesasa_strvp* freesasa_alloc_strvp(size_t n)
     assert(svp->value && svp->string);
 
     svp->n = n;
-    for (size_t i = 0; i < n; ++i) {
+    for (int i = 0; i < n; ++i) {
         svp->string[i] = malloc(sizeof(char)*STRL);
         assert(svp->string[i]);
     }
@@ -741,7 +741,7 @@ void freesasa_strvp_free(freesasa_strvp *svp)
 {
     if (svp->value) free(svp->value);
     if (svp->string) {
-        for (size_t i = 0; i < svp->n; ++i) {
+        for (int i = 0; i < svp->n; ++i) {
             if (svp->string[i]) free(svp->string[i]);
         }
         free(svp->string);
@@ -756,12 +756,12 @@ freesasa_strvp* freesasa_string_value_pairs(const freesasa *s,freesasa_result_ty
 
     const freesasa_structure *p = s->structure;
     freesasa_strvp *svp = NULL;
-    size_t n;
+    int n;
     switch (type) {
     case FREESASA_ATOMS:
         n = freesasa_n_atoms(s);
         svp = freesasa_alloc_strvp(n);
-        for (size_t i = 0; i < n; ++i) {
+        for (int i = 0; i < n; ++i) {
             svp->value[i] = freesasa_area_atom(s,i);
             strcpy(svp->string[i],freesasa_structure_atom_descriptor(p,i));
         }
@@ -769,7 +769,7 @@ freesasa_strvp* freesasa_string_value_pairs(const freesasa *s,freesasa_result_ty
     case FREESASA_RESIDUES:
         n = freesasa_structure_n_residues(p);
         svp = freesasa_alloc_strvp(n);
-        for (size_t i = 0; i < n; ++i) {
+        for (int i = 0; i < n; ++i) {
             svp->value[i] = freesasa_single_residue_sasa(s,i);
             strcpy(svp->string[i],freesasa_structure_residue_descriptor(p,i));
         }

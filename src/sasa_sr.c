@@ -33,6 +33,7 @@
 #include "freesasa.h"
 #include "sasa.h"
 #include "srp.h"
+#include "adjacency.h"
 
 #ifdef __GNUC__
 #define __attrib_pure__ __attribute__((pure))
@@ -52,7 +53,8 @@ typedef struct {
     double probe_radius;
     const freesasa_coord *xyz;
     const freesasa_coord *srp;
-    const double *r;
+    double *r;
+    freesasa_adjacency *adj;
     double *sasa;
     char *spcount_0;
 } sasa_sr;
@@ -74,7 +76,7 @@ int freesasa_shrake_rupley(double *sasa,
     assert(sasa);
     assert(xyz);
     assert(r);
-    size_t n_atoms = freesasa_coord_n(xyz);
+    int n_atoms = freesasa_coord_n(xyz);
     int return_value = FREESASA_SUCCESS;
     if (n_atoms == 0) {
         return freesasa_warn("%s: empty coordinates", __func__);
@@ -82,22 +84,29 @@ int freesasa_shrake_rupley(double *sasa,
 
     // Initialize test-points
     const double *srp_p = freesasa_srp_get_points(n_points);
-    if (srp_p == NULL) return 1;
+    if (srp_p == NULL) return FREESASA_FAIL;
     freesasa_coord *srp = freesasa_coord_new_linked(srp_p,n_points);
 
     char spcount_0[n_points];
 
     /* a reference zero array is prepared so that it won't need to be
        initialized for each atom */
-    for (int k = 0; k < n_points; ++k) {
-        spcount_0[k] = 0;
-    }
+    memset(spcount_0,0,n_points);
+
     //store parameters and reference arrays
     sasa_sr sr = {.n_atoms = n_atoms, .n_points = n_points,
                   .probe_radius = probe_radius,
                   .xyz = xyz, .srp = srp,
-                  .r = r, .spcount_0 = spcount_0,
+                  .spcount_0 = spcount_0,
                   .sasa = sasa};
+
+    sr.r = malloc(sizeof(double)*n_atoms);
+    assert(sr.r);
+    for (int i = 0; i < n_atoms; ++i) sr.r[i] = r[i] + probe_radius;
+
+    //calculate distances
+    sr.adj = freesasa_adjacency_new(xyz,sr.r);
+
 
     //calculate SASA
     if (n_threads > 1) {
@@ -118,6 +127,8 @@ int freesasa_shrake_rupley(double *sasa,
         }
     }
     freesasa_coord_free(srp);
+    freesasa_adjacency_free(sr.adj);
+    free(sr.r);
     return return_value;
 }
 
@@ -137,7 +148,7 @@ static void sasa_sr_do_threads(int n_threads, sasa_sr sr)
         int res = pthread_create(&thread[t], NULL, sasa_sr_thread, (void *) &srt[t]);
         if (res) {
             perror(freesasa_name);
-            exit(EXIT_FAILURE);
+            abort();
         }
     }
     for (int t = 0; t < n_threads; ++t) {
@@ -146,7 +157,7 @@ static void sasa_sr_do_threads(int n_threads, sasa_sr sr)
         int res = pthread_join(thread[t],&thread_result);
         if (res) {
             perror(freesasa_name);
-            exit(EXIT_FAILURE);
+            abort();
         }
     }
 }
@@ -173,11 +184,14 @@ static double sasa_sr_calc_atom(int i, const sasa_sr sr) {
     /* this array keeps track of which testpoints belonging to
        a certain atom overlap with other atoms */
     char spcount[n_points];
-    const double ri = sr.r[i]+sr.probe_radius;
+    //    const double ri = sr.r[i]+sr.probe_radius;
+    const double ri = sr.r[i];
     const double *restrict vi = freesasa_coord_i(xyz,i);
     double xi = vi[0], yi = vi[1], zi = vi[2];
     const double *restrict v = freesasa_coord_all(xyz);
-
+    const freesasa_adjacency_element *e = sr.adj->list[i];
+    const double *restrict r = sr.r;
+        
     /* testpoints for this atom */
     freesasa_coord* tp_coord_ri = freesasa_coord_copy(sr.srp);
     freesasa_coord_scale(tp_coord_ri, ri);
@@ -185,19 +199,23 @@ static double sasa_sr_calc_atom(int i, const sasa_sr sr) {
     const double *restrict tp = freesasa_coord_all(tp_coord_ri);
 
     memcpy(spcount,sr.spcount_0,sizeof(char)*n_points);
-
+    /*
     for (int j = 0; j < sr.n_atoms; ++j) {
         if (j == i) continue;
         const double rj = sr.r[j]+sr.probe_radius;
         const double cut2 = (ri+rj)*(ri+rj);
-
+    */
         /* this turns out to be the fastest way (by far) to access the
            coordinates, probably because it's easier for the compiler
            to optimize */
-        double xj = v[3*j+0], yj = v[3*j+1], zj = v[3*j+2];
+    /*    double xj = v[3*j+0], yj = v[3*j+1], zj = v[3*j+2];
         double dx = xj-xi, dy = yj-yi, dz = zj-zi;
         if (dx*dx + dy*dy + dz*dz > cut2) continue;
-
+    */
+    while (e) {
+        int ja = e->index;
+        double rj = r[ja];
+        double xj = v[3*ja+0], yj = v[3*ja+1], zj = v[3*ja+2];
         for (int k = 0; k < n_points; ++k) {
             if (spcount[k]) continue;
             double dx = tp[3*k]-xj, dy = tp[3*k+1]-yj, dz = tp[3*k+2]-zj;
@@ -207,6 +225,7 @@ static double sasa_sr_calc_atom(int i, const sasa_sr sr) {
             /* i.e. if |xyz[i]+ri*srp[k] - xyz[j]| <= rj we have an
                overlap. */
         }
+        e = e->next;
     }
     freesasa_coord_free(tp_coord_ri);
     int n_surface = 0;
