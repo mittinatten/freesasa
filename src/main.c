@@ -34,6 +34,12 @@ extern int getopt(int, char * const *, const char *);
 extern int optind;
 #endif
 
+#ifdef PACKAGE_VERSION
+const char *version = PACKAGE_VERSION;
+#else
+const char* version = "unknown";
+#endif
+
 char *program_name;
 
 typedef struct  {
@@ -51,7 +57,7 @@ settings_t def_settings = {
 };
 
 void help() {
-    fprintf(stderr,"\nUsage: %s [-hLSrn:d:t:p:B:] pdb-file(s)\n",
+    fprintf(stderr,"\nUsage: %s [-hLSrvn:d:t:p:B:] pdb-file(s)\n",
             program_name);
     fprintf(stderr,
             "\nOptions are:\n"
@@ -76,7 +82,9 @@ void help() {
             "       -R  print SASA for ecah residue, sequentially\n");
     fprintf(stderr,
             "       -B  print PDB file with SASA for each atom as B-factors,\n"
-            "           in specified output file.");
+            "           in specified output file.\n");
+    fprintf(stderr,
+            "       -v  print version of the program\n");
     fprintf(stderr,
             "\nIf no pdb-file is specified STDIN is used for input.\n\n");
 }
@@ -129,12 +137,15 @@ int main (int argc, char **argv) {
     program_name = argv[0];
 #endif
 
-    while ((opt = getopt(argc, argv, "n:d:t:p:B:hLSrR")) != -1) {
+    while ((opt = getopt(argc, argv, "n:d:t:p:B:hvLSrR")) != -1) {
         errno = 0;
         int result = FREESASA_SUCCESS;
         switch(opt) {
         case 'h':
             help();
+            exit(EXIT_SUCCESS);
+        case 'v':
+            printf("%s\n",version);
             exit(EXIT_SUCCESS);
         case 'B':
             settings.B = fopen(optarg, "w");
