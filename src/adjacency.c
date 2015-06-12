@@ -264,7 +264,7 @@ static void adjacency_add_pair(freesasa_adjacency *adj,int i, int j,
     double d = sqrt(dx*dx+dy*dy);
     ei->xyd = ej->xyd = d;
     ei->xd = -dx; ej->xd = dx;
-    ei->yd = -dx; ej->yd = dx;
+    ei->yd = -dy; ej->yd = dy;
 
     adjacency_add_element(adj,i,ei);
     adjacency_add_element(adj,j,ej);
