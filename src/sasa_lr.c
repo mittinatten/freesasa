@@ -71,7 +71,7 @@ static void *sasa_lr_thread(void *arg);
 static void sasa_add_slice_area(double z, sasa_lr*);
 
 /** Find which arcs are exposed in a slice */
-static void sasa_exposed_arcs(const sasa_lr_slice *,
+static void sasa_exposed_arcs(sasa_lr_slice *,
                               const sasa_lr *);
 
 /** a and b are a set of alpha and betas (in the notation of the
@@ -250,8 +250,9 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
     assert(slice->in_slice);
     double delta = lr->delta;
     const double *v = freesasa_coord_all(lr->xyz);
-    slice->idx = NULL;
-    slice->r = slice->DR = NULL;
+    slice->idx = NULL;//malloc(n_atoms*sizeof(int));//NULL;
+    slice->r = NULL;//malloc(n_atoms*sizeof(double));
+    slice->DR = NULL;//malloc(n_atoms*sizeof(double));//NULL;
     slice->z = z;
 
     memset(slice->in_slice,0,sizeof(int)*n_atoms);
@@ -262,9 +263,9 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
         double d = fabs(v[3*i+2]-z);
         double r;
         if (d < ri) {
-            slice->idx = (int*) realloc(slice->idx,(n_slice+1)*sizeof(int));
-            slice->r = (double*) realloc(slice->r,(n_slice+1)*sizeof(double));
-            slice->DR = (double*) realloc(slice->DR,(n_slice+1)*sizeof(double));
+            slice->idx = realloc(slice->idx,(n_slice+1)*sizeof(int));
+            slice->r = realloc(slice->r,(n_slice+1)*sizeof(double));
+            slice->DR = realloc(slice->DR,(n_slice+1)*sizeof(double));
             assert(slice->idx && slice->r && slice->DR);
             
             slice->idx[n_slice] = i;
@@ -286,13 +287,15 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
 
 static void sasa_free_slice(sasa_lr_slice* slice)
 {
-    free(slice->idx);
-    free(slice->xdi);
-    free(slice->in_slice);
-    free(slice->r);
-    free(slice->DR);
-    free(slice->exposed_arc);
-    free(slice);
+    if (slice) {
+        free(slice->idx);
+        free(slice->xdi);
+        free(slice->in_slice);
+        free(slice->r);
+        free(slice->DR);
+        free(slice->exposed_arc);
+        free(slice);
+    }
 }
 
 static void sasa_add_slice_area(double z, sasa_lr *lr)
@@ -309,18 +312,15 @@ static void sasa_add_slice_area(double z, sasa_lr *lr)
     sasa_free_slice(slice);
 }
 
-static void sasa_exposed_arcs(const sasa_lr_slice *slice,
+static void sasa_exposed_arcs(sasa_lr_slice *slice,
                               const sasa_lr *lr)
 {
     const int n_slice = slice->n_slice;
-    const freesasa_adjacency *adj = lr->adj;
-    const int *nn = adj->nn;
-    int * const *nb = adj->nb;
-    double * const *nb_xyd = adj->nb_xyd;
+    const int *nn = lr->adj->nn;
     const double *r = slice->r;
 
     char is_completely_buried[n_slice]; // keep track of completely buried circles
-    memset(is_completely_buried,0,sizeof is_completely_buried);
+    memset(is_completely_buried,0,n_slice);
     
     //loop over atoms in slice
     //lower-case i,j is atoms in the slice, upper-case I,J are their
@@ -334,12 +334,14 @@ static void sasa_exposed_arcs(const sasa_lr_slice *slice,
         double ri = slice->r[i], a[nn[I]], b[nn[I]];
         int n_buried = 0;
         // loop over neighbors
-        for (int ni = 0; ni < nn[I]; ++ni) {
-            int J = nb[I][ni];
+        const freesasa_adjacency_element *e = lr->adj->list[I];
+        if (e == NULL) continue;
+        do {
+            int J = e->index;
             if (slice->in_slice[J] == 0) continue;
             int j = slice->xdi[J];
             double rj = r[j];
-            double d = nb_xyd[I][ni];
+            double d = e->xyd;
             // reasons to skip calculation
             if (d >= ri + rj) continue;     // atoms aren't in contact
             if (d + ri < rj) { // circle i is completely inside j
@@ -353,12 +355,13 @@ static void sasa_exposed_arcs(const sasa_lr_slice *slice,
             // half the arclength occluded from circle i due to verlap with circle j
             double alpha = acos ((ri*ri + d*d - rj*rj)/(2.0*ri*d));
             // the polar coordinates angle of the vector connecting i and j
-            double beta = atan2 (adj->nb_yd[I][ni],adj->nb_xd[I][ni]);
+            double beta = atan2 (e->yd,e->xd);
             a[n_buried] = alpha;
             b[n_buried] = beta;
 
             ++n_buried;
-        }
+        } while (e = e->next);
+        
         if (is_completely_buried[i] == 0) {
             slice->exposed_arc[i] = 
                 ri*slice->DR[i]*sasa_sum_angles(n_buried,a,b);

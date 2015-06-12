@@ -23,15 +23,22 @@
 #include <stdlib.h>
 #include "coord.h"
 
+typedef struct freesasa_adjacency_element freesasa_adjacency_element;
+//! linked list
+struct freesasa_adjacency_element {
+    int index; //! coordinate index
+    double xd; //! x-distance to root 
+    double yd; //! y-distance to root
+    double xyd; //! distance to root in xy-plane
+    freesasa_adjacency_element *next; //! next element, NULL if end of list
+};
 
 //! Adjacency list
 typedef struct {
-    int **nb; //! neighbors to each element
-    int *nn; //! number of neighbors
+    freesasa_adjacency_element **list;
+    freesasa_adjacency_element **tail;
     int n; //! number of elements
-    double **nb_xyd; //! distance between neighbors in xy-plane
-    double **nb_xd; //! signed distance between neighbors along x-axis
-    double **nb_yd; //! signed distance between neighbors along y-axis
+    int *nn; //! length of each list
 } freesasa_adjacency;
 
 /**

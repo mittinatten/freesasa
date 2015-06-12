@@ -200,23 +200,17 @@ static freesasa_adjacency *freesasa_adjacency_alloc(int n)
     freesasa_adjacency *adj = malloc(sizeof(freesasa_adjacency));
     assert(adj);
     adj->n = n;
-    adj->nb = malloc(sizeof(int *)*n);
+    adj->list = malloc(sizeof(freesasa_adjacency_element*)*n);
+    adj->tail = malloc(sizeof(freesasa_adjacency_element*)*n);
     adj->nn = malloc(sizeof(int)*n);
-    adj->nb_xyd = malloc(sizeof(double *)*n);
-    adj->nb_xd = malloc(sizeof(double *)*n);
-    adj->nb_yd = malloc(sizeof(double *)*n);
-    
-    assert(adj->nb); assert(adj->nn);
-    assert(adj->nb_xyd); assert(adj->nb_xd); assert(adj->nb_yd);
-
-    for (int i=0; i < n; ++i) {
+    assert(adj->list);
+    assert(adj->tail);
+    assert(adj->nn);
+    for (int i = 0; i < n; ++i) {
+        adj->list[i] = NULL;
+        adj->tail[i] = NULL;
         adj->nn[i] = 0;
-        adj->nb[i] = NULL;
-        adj->nb_xyd[i] = NULL;
-        adj->nb_xd[i] = NULL;
-        adj->nb_yd[i] = NULL;
     }
-
     return adj;
 }
 
@@ -224,17 +218,33 @@ void freesasa_adjacency_free(freesasa_adjacency *adj)
 {
     if (adj) {
         for (int i = 0; i < adj->n; ++i) {
-            free(adj->nb[i]);
+            if (adj->list[i]) {
+                freesasa_adjacency_element *e = adj->list[i], *next;
+                while (e) {
+                    next = e->next;
+                    free(e);
+                    e = next;
+                } 
+            }
         }
-        free(adj->nb);
+        free(adj->tail);
+        free(adj->list);
         free(adj->nn);
-        free(adj->nb_xyd);
-        free(adj->nb_xd);
-        free(adj->nb_yd);
         free(adj);
     }
 }
 
+static inline void adjacency_add_element(freesasa_adjacency *adj, int i,
+                      freesasa_adjacency_element *e)
+{
+    ++adj->nn[i];
+    if (adj->list[i] == NULL) {
+        adj->list[i] = e;
+    } else {
+        adj->tail[i]->next = e;
+    }
+    adj->tail[i] = e;
+}
 /**
     Assumes the coordinates i and j have been determined to be
     neighbors and adds them both to the provided adjacency lists,
@@ -244,34 +254,20 @@ static void adjacency_add_pair(freesasa_adjacency *adj,int i, int j,
                                double dx, double dy)
 {
     assert(i != j);
-    int **nb = adj->nb;
-    int *nn = adj->nn;
-    double **nb_xyd = adj->nb_xyd;
-    double **nb_xd = adj->nb_xd;
-    double **nb_yd = adj->nb_yd;
-    ++nn[i]; ++nn[j];
-    nb[i] = realloc(nb[i],sizeof(int)*nn[i]); 
-    nb[j] = realloc(nb[j],sizeof(int)*nn[j]);
-    nb_xyd[i] = realloc(nb_xyd[i],sizeof(double)*nn[i]);
-    nb_xyd[j] = realloc(nb_xyd[j],sizeof(double)*nn[j]);
-    nb_xd[i] = realloc(nb_xd[i],sizeof(double)*nn[i]);
-    nb_xd[j] = realloc(nb_xd[j],sizeof(double)*nn[j]);
-    nb_yd[i] = realloc(nb_yd[i],sizeof(double)*nn[i]);
-    nb_yd[j] = realloc(nb_yd[j],sizeof(double)*nn[j]);
-    assert(nb[i] && nb[j]);
-    assert(nb_xyd[i] && nb_xyd[j]);
-    assert(nb_xd[i] && nb_xd[i] && nb_yd[i] && nb_yd[j]);
-    nb[i][nn[i]-1] = j;
-    nb[j][nn[j]-1] = i;
+    freesasa_adjacency_element *ei, *ej;
+    ei = malloc(sizeof(freesasa_adjacency_element));
+    ej = malloc(sizeof(freesasa_adjacency_element));
+    ei->index = j;
+    ej->index = i;
+    ei->next = ej->next = NULL;
     
     double d = sqrt(dx*dx+dy*dy);
-    nb_xyd[i][nn[i]-1] = d;
-    nb_xyd[j][nn[j]-1] = d;
-    
-    nb_xd[i][nn[i]-1] = dx;
-    nb_xd[j][nn[j]-1] = -dx;
-    nb_yd[i][nn[i]-1] = dy;
-    nb_yd[j][nn[j]-1] = -dy;
+    ei->xyd = ej->xyd = d;
+    ei->xd = -dx; ej->xd = dx;
+    ei->yd = -dx; ej->yd = dx;
+
+    adjacency_add_element(adj,i,ei);
+    adjacency_add_element(adj,j,ej);
 }
 
 /**
@@ -357,9 +353,10 @@ int freesasa_adjacency_contact(const freesasa_adjacency *adj,
     assert(adj);
     assert(i < adj->n && i >= 0);
     assert(j < adj->n && j >= 0);
-    for (int k = 0; k < adj->nn[i]; ++k) {
-        if (adj->nb[i][k] == j) return 1;
-    }
+    freesasa_adjacency_element *e = adj->list[i];
+    do {
+        if (e->index == j) return 1;
+    } while (e = e->next);
     return 0;
 }
 
