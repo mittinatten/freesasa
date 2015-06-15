@@ -245,15 +245,15 @@ void freesasa_adjacency_free(freesasa_adjacency *adj)
 }
 
 //! increases sizes of arrays when they cross a threshold
-static void chunk_up(int *capacity, int nn, int **nb, double **xyd, double **xd, double **yd) 
+static void chunk_up(int *capacity, int nni, int **nbi, double **xydi, double **xdi, double **ydi) 
 {
-    if (nn > *capacity) {
+    if (nni > *capacity) {
         *capacity += NB_CHUNK;
-        *nb = realloc(*nb,sizeof(int)*(*capacity)); 
-        *xyd = realloc(*xyd,sizeof(double)*(*capacity));
-        *xd = realloc(*xd,sizeof(double)*(*capacity));
-        *yd = realloc(*yd,sizeof(double)*(*capacity));
-        assert(*nb); assert(*xyd); assert(*xd); assert(*yd);
+        *nbi = realloc(*nbi,sizeof(int)*(*capacity)); 
+        *xydi = realloc(*xydi,sizeof(double)*(*capacity));
+        *xdi = realloc(*xdi,sizeof(double)*(*capacity));
+        *ydi = realloc(*ydi,sizeof(double)*(*capacity));
+        assert(*nbi); assert(*xydi); assert(*xdi); assert(*ydi);
     }
 }
 

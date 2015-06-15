@@ -197,19 +197,7 @@ static double sasa_sr_calc_atom(int i, const sasa_sr sr) {
     const double *restrict tp = freesasa_coord_all(tp_coord_ri);
 
     memcpy(spcount,sr.spcount_0,sizeof(char)*n_points);
-    /*
-    for (int j = 0; j < sr.n_atoms; ++j) {
-        if (j == i) continue;
-        const double rj = sr.r[j]+sr.probe_radius;
-        const double cut2 = (ri+rj)*(ri+rj);
-    */
-        /* this turns out to be the fastest way (by far) to access the
-           coordinates, probably because it's easier for the compiler
-           to optimize */
-    /*    double xj = v[3*j+0], yj = v[3*j+1], zj = v[3*j+2];
-        double dx = xj-xi, dy = yj-yi, dz = zj-zi;
-        if (dx*dx + dy*dy + dz*dz > cut2) continue;
-    */
+
     for (int j = 0; j < sr.adj->nn[i]; ++j) {
         const int ja = sr.adj->nb[i][j];
         const double rj = sr.r[ja];

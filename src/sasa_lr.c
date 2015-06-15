@@ -243,6 +243,8 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
     sasa_lr_slice *slice = malloc(sizeof(sasa_lr_slice));
     assert(slice);
     int n_atoms = lr->n_atoms;
+    int chunk = n_atoms/10 > 16 ? n_atoms/10 : 16;
+    int capacity = chunk;
     int n_slice = slice->n_slice = 0;
     slice->xdi = malloc(n_atoms*sizeof(int));
     assert(slice->xdi);
@@ -250,8 +252,9 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
     assert(slice->in_slice);
     double delta = lr->delta;
     const double *v = freesasa_coord_all(lr->xyz);
-    slice->idx = NULL;
-    slice->r = slice->DR = NULL;
+    slice->idx = malloc(chunk*sizeof(int));
+    slice->r = malloc(chunk*sizeof(double));
+    slice->DR = malloc(chunk*sizeof(double));
     slice->z = z;
 
     memset(slice->in_slice,0,sizeof(int)*n_atoms);
@@ -262,10 +265,14 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
         double d = fabs(v[3*i+2]-z);
         double r;
         if (d < ri) {
-            slice->idx = (int*) realloc(slice->idx,(n_slice+1)*sizeof(int));
-            slice->r = (double*) realloc(slice->r,(n_slice+1)*sizeof(double));
-            slice->DR = (double*) realloc(slice->DR,(n_slice+1)*sizeof(double));
-            assert(slice->idx && slice->r && slice->DR);
+            if (n_slice+1 > capacity) {
+                capacity += chunk;
+                slice->idx = (int*) realloc(slice->idx,(capacity)*sizeof(int));
+                slice->r = (double*) realloc(slice->r,(capacity)*sizeof(double));
+                slice->DR = (double*) realloc(slice->DR,(capacity)*sizeof(double));
+                assert(slice->idx && slice->r && slice->DR);
+            }
+
             
             slice->idx[n_slice] = i;
             slice->xdi[i] = n_slice;
@@ -479,84 +486,7 @@ static double sasa_sum_angles_int(int n_buried, double *restrict a, double *rest
     for (int i = 0; i < res; ++i) {
         if (buried[i]) ++count;
     }
-    //printf("%d\n",res-count);
     return 2*M_PI*((res - count)/(double)(res));
 }
 
-/* static void sasa_get_contacts(sasa_lr *lr) */
-/* { */
-/*     /\* For low resolution L&R this function is the bottleneck in */
-/*        speed. Will also depend on number of atoms. *\/ */
-/*     int n_atoms = lr->n_atoms; */
-/*     const double *v = freesasa_coord_all(lr->xyz); */
-/*     const double *radii = lr->radii; */
-
-/*     // init adjacency lists */
-/*     int *nn = malloc(sizeof(int)*n_atoms); */
-/*     int **nb = malloc(sizeof(int*)*n_atoms); */
-/*     double **nb_xyd = malloc(sizeof(double*)*n_atoms); */
-/*     double **nb_xd = malloc(sizeof(double*)*n_atoms); */
-/*     double **nb_yd = malloc(sizeof(double*)*n_atoms); */
-/*     assert(nn && nb && nb_xyd && nb_xd && nb_yd); */
-/*     for (int i = 0; i < n_atoms; ++i) { */
-/*         nn[i] = 0; nb[i] = NULL; */
-/*         nb_xyd[i] = NULL; nb_xd[i] = NULL; nb_yd[i] = NULL; */
-/*     } */
-
-/*     //calculate lists */
-/*     for (int i = 0; i < n_atoms; ++i) { */
-/*         double ri = radii[i]; */
-/*         double xi = v[i*3], yi = v[i*3+1], zi = v[i*3+2]; */
-/*         for (int j = i+1; j < n_atoms; ++j) { */
-/*             double rj = radii[j]; */
-/*             double cut2 = (ri+rj)*(ri+rj); */
-
-/*             /\* most pairs of atoms will be far away from each other on */
-/*                at least one axis, the following improves speed */
-/*                significantly for large proteins *\/ */
-/*             double xj = v[j*3], yj = v[j*3+1], zj = v[j*3+2]; */
-/*             if ((xj-xi)*(xj-xi) > cut2 || */
-/*                 (yj-yi)*(yj-yi) > cut2 || */
-/*                 (zj-zi)*(zj-zi) > cut2) { */
-/*                 continue; */
-/*             } */
-/*             double dx = xj-xi, dy = yj-yi, dz = zj-zi; */
-/*             if (dx*dx + dy*dy + dz*dz < cut2) { */
-/*                 ++nn[i]; ++nn[j]; */
-/*                 //record neighbors */
-/*                 nb[i] = (int*) realloc(nb[i],sizeof(int)*nn[i]); */
-/*                 nb[j] = (int*) realloc(nb[j],sizeof(int)*nn[j]); */
-/*                 assert(nb[i] && nb[j]); */
-/*                 nb[i][nn[i]-1] = j; */
-/*                 nb[j][nn[j]-1] = i; */
-
-/*                 //record neighbor distances */
-/*                 nb_xyd[i] = (double*) realloc(nb_xyd[i],sizeof(double)*nn[i]); */
-/*                 nb_xyd[j] = (double*) realloc(nb_xyd[j],sizeof(double)*nn[j]); */
-/*                 nb_xd[i] = (double*) realloc(nb_xd[i],sizeof(double)*nn[i]); */
-/*                 nb_xd[j] = (double*) realloc(nb_xd[j],sizeof(double)*nn[j]); */
-/*                 nb_yd[i] = (double*) realloc(nb_yd[i],sizeof(double)*nn[i]); */
-/*                 nb_yd[j] = (double*) realloc(nb_yd[j],sizeof(double)*nn[j]); */
-/*                 assert(nb_xyd[i] && nb_xyd[j]); */
-/*                 assert(nb_xd[i] && nb_xd[i] && nb_yd[i] && nb_yd[j]); */
-
-/*                 double d = sqrt(dx*dx+dy*dy); */
-/*                 nb_xyd[i][nn[i]-1] = d; */
-/*                 nb_xyd[j][nn[j]-1] = d; */
-
-/*                 nb_xd[i][nn[i]-1] = dx; */
-/*                 nb_xd[j][nn[j]-1] = -dx; */
-/*                 nb_yd[i][nn[i]-1] = dy; */
-/*                 nb_yd[j][nn[j]-1] = -dy; */
-/*             } */
-/*         } */
-/*     } */
-
-/*     //copy results */
-/*     lr->nn = nn; */
-/*     lr->nb = nb; */
-/*     lr->nb_xyd = nb_xyd; */
-/*     lr->nb_xd = nb_xd; */
-/*     lr->nb_yd = nb_yd; */
-/* } */
 
