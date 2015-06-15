@@ -243,6 +243,8 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
     sasa_lr_slice *slice = malloc(sizeof(sasa_lr_slice));
     assert(slice);
     int n_atoms = lr->n_atoms;
+    int chunk = n_atoms/10 > 16 ? n_atoms/10 : 16;
+    int capacity = chunk;
     int n_slice = slice->n_slice = 0;
     slice->xdi = malloc(n_atoms*sizeof(int));
     assert(slice->xdi);
@@ -250,9 +252,10 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
     assert(slice->in_slice);
     double delta = lr->delta;
     const double *v = freesasa_coord_all(lr->xyz);
-    slice->idx = NULL;
-    slice->r = NULL;
-    slice->DR = NULL;
+    slice->idx = malloc(chunk*sizeof(int));
+    slice->r = malloc(chunk*sizeof(double));
+    slice->DR = malloc(chunk*sizeof(double));
+    assert(slice->idx); assert(slice->r); assert(slice->DR);
     slice->z = z;
 
     memset(slice->in_slice,0,sizeof(int)*n_atoms);
@@ -263,10 +266,13 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
         double d = fabs(v[3*i+2]-z);
         double r;
         if (d < ri) {
-            slice->idx = realloc(slice->idx,(n_slice+1)*sizeof(int));
-            slice->r = realloc(slice->r,(n_slice+1)*sizeof(double));
-            slice->DR = realloc(slice->DR,(n_slice+1)*sizeof(double));
-            assert(slice->idx && slice->r && slice->DR);
+            if (n_slice+1 > capacity) {
+                capacity += chunk;
+                slice->idx = (int*) realloc(slice->idx,(capacity)*sizeof(int));
+                slice->r = (double*) realloc(slice->r,(capacity)*sizeof(double));
+                slice->DR = (double*) realloc(slice->DR,(capacity)*sizeof(double));
+                assert(slice->idx && slice->r && slice->DR);
+            }
             
             slice->idx[n_slice] = i;
             slice->xdi[i] = n_slice;
@@ -316,9 +322,11 @@ static void sasa_exposed_arcs(sasa_lr_slice *slice,
                               const sasa_lr *lr)
 {
     const int n_slice = slice->n_slice;
-    const int *nn = lr->adj->nn;
+    const freesasa_adjacency *adj = lr->adj;
+    const int *nn = adj->nn;
     const double *r = slice->r;
-
+    int * const *nb = adj->nb;
+    double * const *nb_xyd = adj->nb_xyd;
     char is_completely_buried[n_slice]; // keep track of completely buried circles
     memset(is_completely_buried,0,n_slice);
     
@@ -334,14 +342,12 @@ static void sasa_exposed_arcs(sasa_lr_slice *slice,
         double ri = slice->r[i], a[nn[I]], b[nn[I]];
         int n_buried = 0;
         // loop over neighbors
-        const freesasa_adjacency_element *e = lr->adj->list[I];
-        if (e == NULL) continue;
-        do {
-            int J = e->index;
+        for (int ni = 0; ni < nn[I]; ++ni) {
+            int J = nb[I][ni];
             if (slice->in_slice[J] == 0) continue;
             int j = slice->xdi[J];
             double rj = r[j];
-            double d = e->xyd;
+            double d = nb_xyd[I][ni];
             // reasons to skip calculation
             if (d >= ri + rj) continue;     // atoms aren't in contact
             if (d + ri < rj) { // circle i is completely inside j
@@ -355,12 +361,12 @@ static void sasa_exposed_arcs(sasa_lr_slice *slice,
             // half the arclength occluded from circle i due to verlap with circle j
             double alpha = acos ((ri*ri + d*d - rj*rj)/(2.0*ri*d));
             // the polar coordinates angle of the vector connecting i and j
-            double beta = atan2 (e->yd,e->xd);
+            double beta = atan2 (adj->nb_yd[I][ni],adj->nb_xd[I][ni]);
             a[n_buried] = alpha;
             b[n_buried] = beta;
 
             ++n_buried;
-        } while (e = e->next);
+        } 
         
         if (is_completely_buried[i] == 0) {
             slice->exposed_arc[i] = 

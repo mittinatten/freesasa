@@ -189,7 +189,6 @@ static double sasa_sr_calc_atom(int i, const sasa_sr sr) {
     const double *restrict vi = freesasa_coord_i(xyz,i);
     double xi = vi[0], yi = vi[1], zi = vi[2];
     const double *restrict v = freesasa_coord_all(xyz);
-    const freesasa_adjacency_element *e = sr.adj->list[i];
     const double *restrict r = sr.r;
         
     /* testpoints for this atom */
@@ -199,23 +198,11 @@ static double sasa_sr_calc_atom(int i, const sasa_sr sr) {
     const double *restrict tp = freesasa_coord_all(tp_coord_ri);
 
     memcpy(spcount,sr.spcount_0,sizeof(char)*n_points);
-    /*
-    for (int j = 0; j < sr.n_atoms; ++j) {
-        if (j == i) continue;
-        const double rj = sr.r[j]+sr.probe_radius;
-        const double cut2 = (ri+rj)*(ri+rj);
-    */
-        /* this turns out to be the fastest way (by far) to access the
-           coordinates, probably because it's easier for the compiler
-           to optimize */
-    /*    double xj = v[3*j+0], yj = v[3*j+1], zj = v[3*j+2];
-        double dx = xj-xi, dy = yj-yi, dz = zj-zi;
-        if (dx*dx + dy*dy + dz*dz > cut2) continue;
-    */
-    while (e) {
-        int ja = e->index;
-        double rj = r[ja];
-        double xj = v[3*ja+0], yj = v[3*ja+1], zj = v[3*ja+2];
+
+    for (int j = 0; j < sr.adj->nn[i]; ++j) {
+        const int ja = sr.adj->nb[i][j];
+        const double rj = sr.r[ja];
+        const double xj = v[3*ja+0], yj = v[3*ja+1], zj = v[3*ja+2];
         for (int k = 0; k < n_points; ++k) {
             if (spcount[k]) continue;
             double dx = tp[3*k]-xj, dy = tp[3*k+1]-yj, dz = tp[3*k+2]-zj;
@@ -225,7 +212,6 @@ static double sasa_sr_calc_atom(int i, const sasa_sr sr) {
             /* i.e. if |xyz[i]+ri*srp[k] - xyz[j]| <= rj we have an
                overlap. */
         }
-        e = e->next;
     }
     freesasa_coord_free(tp_coord_ri);
     int n_surface = 0;
