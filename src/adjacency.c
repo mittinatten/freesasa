@@ -23,6 +23,8 @@
 #include "freesasa.h"
 #include "adjacency.h"
 
+#define NB_CHUNK 32
+
 typedef struct freesasa_cell freesasa_cell;
 struct freesasa_cell {
     freesasa_cell *nb[17]; //! includes self, only forward neighbors
@@ -205,16 +207,19 @@ static freesasa_adjacency *freesasa_adjacency_alloc(int n)
     adj->nb_xyd = malloc(sizeof(double *)*n);
     adj->nb_xd = malloc(sizeof(double *)*n);
     adj->nb_yd = malloc(sizeof(double *)*n);
+    adj->capacity = malloc(sizeof(int *)*n);
     
     assert(adj->nb); assert(adj->nn);
     assert(adj->nb_xyd); assert(adj->nb_xd); assert(adj->nb_yd);
+    assert(adj->capacity);
 
     for (int i=0; i < n; ++i) {
         adj->nn[i] = 0;
-        adj->nb[i] = NULL;
-        adj->nb_xyd[i] = NULL;
-        adj->nb_xd[i] = NULL;
-        adj->nb_yd[i] = NULL;
+        adj->capacity[i] = NB_CHUNK;
+        adj->nb[i] = malloc(sizeof(int)*NB_CHUNK);
+        adj->nb_xyd[i] = malloc(sizeof(double)*NB_CHUNK);
+        adj->nb_xd[i] = malloc(sizeof(double)*NB_CHUNK);
+        adj->nb_yd[i] = malloc(sizeof(double)*NB_CHUNK);
     }
 
     return adj;
@@ -225,13 +230,30 @@ void freesasa_adjacency_free(freesasa_adjacency *adj)
     if (adj) {
         for (int i = 0; i < adj->n; ++i) {
             free(adj->nb[i]);
+            free(adj->nb_xyd[i]);
+            free(adj->nb_xd[i]);
+            free(adj->nb_yd[i]);
         }
         free(adj->nb);
         free(adj->nn);
         free(adj->nb_xyd);
         free(adj->nb_xd);
         free(adj->nb_yd);
+        free(adj->capacity);
         free(adj);
+    }
+}
+
+//! increases sizes of arrays when they cross a threshold
+static void chunk_up(int *capacity, int nn, int **nb, double **xyd, double **xd, double **yd) 
+{
+    if (nn > *capacity) {
+        *capacity += NB_CHUNK;
+        *nb = realloc(*nb,sizeof(int)*(*capacity)); 
+        *xyd = realloc(*xyd,sizeof(double)*(*capacity));
+        *xd = realloc(*xd,sizeof(double)*(*capacity));
+        *yd = realloc(*yd,sizeof(double)*(*capacity));
+        assert(*nb); assert(*xyd); assert(*xd); assert(*yd);
     }
 }
 
@@ -250,17 +272,10 @@ static void adjacency_add_pair(freesasa_adjacency *adj,int i, int j,
     double **nb_xd = adj->nb_xd;
     double **nb_yd = adj->nb_yd;
     ++nn[i]; ++nn[j];
-    nb[i] = realloc(nb[i],sizeof(int)*nn[i]); 
-    nb[j] = realloc(nb[j],sizeof(int)*nn[j]);
-    nb_xyd[i] = realloc(nb_xyd[i],sizeof(double)*nn[i]);
-    nb_xyd[j] = realloc(nb_xyd[j],sizeof(double)*nn[j]);
-    nb_xd[i] = realloc(nb_xd[i],sizeof(double)*nn[i]);
-    nb_xd[j] = realloc(nb_xd[j],sizeof(double)*nn[j]);
-    nb_yd[i] = realloc(nb_yd[i],sizeof(double)*nn[i]);
-    nb_yd[j] = realloc(nb_yd[j],sizeof(double)*nn[j]);
-    assert(nb[i] && nb[j]);
-    assert(nb_xyd[i] && nb_xyd[j]);
-    assert(nb_xd[i] && nb_xd[i] && nb_yd[i] && nb_yd[j]);
+
+    chunk_up(&(adj->capacity[i]), nn[i], &nb[i], &nb_xyd[i], &nb_xd[i], &nb_yd[i]);
+    chunk_up(&(adj->capacity[j]), nn[j], &nb[j], &nb_xyd[j], &nb_xd[j], &nb_yd[j]);
+
     nb[i][nn[i]-1] = j;
     nb[j][nn[j]-1] = i;
     

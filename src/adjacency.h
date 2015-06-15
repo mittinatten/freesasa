@@ -32,6 +32,7 @@ typedef struct {
     double **nb_xyd; //! distance between neighbors in xy-plane
     double **nb_xd; //! signed distance between neighbors along x-axis
     double **nb_yd; //! signed distance between neighbors along y-axis
+    int *capacity; //! keeps track of memory chunks (don't change this)
 } freesasa_adjacency;
 
 /**
