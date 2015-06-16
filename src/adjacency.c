@@ -233,6 +233,8 @@ void freesasa_adjacency_free(freesasa_adjacency *adj)
             free(adj->nb_xd[i]);
             free(adj->nb_yd[i]);
         }
+        free(adj->nn);
+        free(adj->nb);
         free(adj->nb_xyd);
         free(adj->nb_xd);
         free(adj->nb_yd);
