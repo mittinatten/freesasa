@@ -71,7 +71,7 @@ static void *sasa_lr_thread(void *arg);
 static void sasa_add_slice_area(double z, sasa_lr*);
 
 /** Find which arcs are exposed in a slice */
-static void sasa_exposed_arcs(sasa_lr_slice *,
+static void sasa_exposed_arcs(sasa_lr_slice * restrict,
                               const sasa_lr *);
 
 /** a and b are a set of alpha and betas (in the notation of the
@@ -89,6 +89,8 @@ static double sasa_sum_angles_int(int n_buried, double *restrict a,
 /** Calculate adjacency lists, given coordinates and radii. Also
     stores some distances to be used later. */
 static void sasa_get_contacts(sasa_lr *lr);
+
+static void sasa_add_atoms(sasa_lr *lr);
 
 /** Initialize object to be used for L&R calculation */
 static sasa_lr* freesasa_init_lr(double *sasa,
@@ -108,10 +110,10 @@ static sasa_lr* freesasa_init_lr(double *sasa,
     for (int i = 0; i < n_atoms; ++i) {
         radii[i] = atom_radii[i] + probe_radius;
         double z = v[3*i+2], r = radii[i];
-        max_z = z > max_z ? z : max_z;
-        min_z = z < min_z ? z : min_z;
+        max_z = fmax(z,max_z);
+        min_z = fmin(z,min_z);
         sasa[i] = 0.;
-        max_r = r > max_r ? r : max_r;
+        max_r = fmax(r, max_r);
     }
     min_z -= max_r;
     max_z += max_r;
@@ -174,9 +176,11 @@ int freesasa_lee_richards(double *sasa,
     }
     if (n_threads == 1) {
         // loop over slices
+        sasa_add_atoms(lr);
+        /*
         for (double z = lr->min_z; z < lr->max_z; z += lr->delta) {
             sasa_add_slice_area(z,lr);
-        }
+            }*/
     }
     freesasa_free_lr(lr);
 
@@ -246,12 +250,15 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
     int chunk = n_atoms/10 > 16 ? n_atoms/10 : 16;
     int capacity = chunk;
     int n_slice = slice->n_slice = 0;
+    double delta = lr->delta;
+    double d_half = delta/2.;
+    const double * restrict v = freesasa_coord_all(lr->xyz);
+    const double * restrict r = lr->radii;
+
     slice->xdi = malloc(n_atoms*sizeof(int));
     assert(slice->xdi);
     slice->in_slice = malloc(n_atoms*sizeof(int));
     assert(slice->in_slice);
-    double delta = lr->delta;
-    const double *v = freesasa_coord_all(lr->xyz);
     slice->idx = malloc(chunk*sizeof(int));
     slice->r = malloc(chunk*sizeof(double));
     slice->DR = malloc(chunk*sizeof(double));
@@ -262,7 +269,7 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
 
     // locate atoms in each slice and do some initialization
     for (int i = 0; i < n_atoms; ++i) {
-        double ri = lr->radii[i];
+        double ri = r[i];
         double d = fabs(v[3*i+2]-z);
         double r;
         if (d < ri) {
@@ -278,8 +285,8 @@ static sasa_lr_slice* sasa_init_slice(double z, const sasa_lr *lr)
             slice->xdi[i] = n_slice;
             slice->in_slice[i] = 1;
             slice->r[n_slice] = r = sqrt(ri*ri-d*d);
-            slice->DR[n_slice] = ri/r*(delta/2. +
-                                       (delta/2. < ri-d ? delta/2. : ri-d));
+            slice->DR[n_slice] = ri/r*(d_half +
+                                       (d_half < ri-d ? d_half : ri-d));
             ++n_slice;
         }  else {
             slice->xdi[i] = -1;
@@ -318,15 +325,15 @@ static void sasa_add_slice_area(double z, sasa_lr *lr)
     sasa_free_slice(slice);
 }
 
-static void sasa_exposed_arcs(sasa_lr_slice *slice,
+static void sasa_exposed_arcs(sasa_lr_slice * restrict slice,
                               const sasa_lr *lr)
 {
     const int n_slice = slice->n_slice;
-    const freesasa_adjacency *adj = lr->adj;
-    const int *nn = adj->nn;
-    const double *r = slice->r;
-    int * const *nb = adj->nb;
-    double * const *nb_xyd = adj->nb_xyd;
+    const freesasa_adjacency * restrict adj = lr->adj;
+    const int *restrict nn = adj->nn;
+    const double *restrict r = slice->r;
+    const char *restrict in_slice = slice->in_slice;
+    const int *restrict xdi = slice->xdi;
     char is_completely_buried[n_slice]; // keep track of completely buried circles
     memset(is_completely_buried,0,n_slice);
     
@@ -339,15 +346,17 @@ static void sasa_exposed_arcs(sasa_lr_slice *slice,
             continue;
         }
         int I = slice->idx[i];
-        double ri = slice->r[i], a[nn[I]], b[nn[I]];
+        double ri = r[i], a[nn[I]], b[nn[I]];
         int n_buried = 0;
+        const int * restrict nbI = adj->nb[I];
+        const double * restrict xydI = adj->nb_xyd[I];
         // loop over neighbors
         for (int ni = 0; ni < nn[I]; ++ni) {
-            int J = nb[I][ni];
-            if (slice->in_slice[J] == 0) continue;
-            int j = slice->xdi[J];
+            int J = nbI[ni];
+            if (in_slice[J] == 0) continue;
+            int j = xdi[J];
             double rj = r[j];
-            double d = nb_xyd[I][ni];
+            double d = xydI[ni];
             // reasons to skip calculation
             if (d >= ri + rj) continue;     // atoms aren't in contact
             if (d + ri < rj) { // circle i is completely inside j
@@ -394,6 +403,67 @@ static void sasa_exposed_arcs(sasa_lr_slice *slice,
             printf("\n");
         }
 #endif /* Debug */
+    }
+}
+
+static double sasa_atom_area(sasa_lr *lr,int i)
+{
+    const double * restrict v = freesasa_coord_all(lr->xyz);
+    const double * restrict r = lr->radii;
+    const int * restrict nbi = lr->adj->nb[i];
+    const double * restrict xydi = lr->adj->nb_xyd[i];
+    const double * restrict xdi = lr->adj->nb_xd[i];
+    const double * restrict ydi = lr->adj->nb_yd[i];
+    int nni = lr->adj->nn[i];
+    double sasa = 0, zi = v[3*i+2], z_slice, z0,
+        delta = lr->delta, ri = r[i], d_half = delta/2.;
+    double a[nni], b[nni];
+    int bottom = ((zi-ri)-lr->min_z)/delta;
+    z0 = lr->min_z+bottom*delta;
+
+    for (double z_slice = z0; z_slice < zi+ri; z_slice += delta) {
+        double di = fabs(zi - z_slice);
+        if (di > ri) continue; //deal with round off errors in z0
+        double ri_slice = sqrt(ri*ri-di*di);
+        double DR = ri/ri_slice*(d_half + fmin(d_half,ri-di));
+        int n_buried = 0, completely_buried = 0;
+        for (int j = 0; j < nni; ++j) {
+            double zj = v[3*nbi[j]+2];
+            double dj = fabs(zj - z_slice);
+            double rj = r[nbi[j]];
+            if (dj < rj) {
+                double rj_slice = sqrt(rj*rj-dj*dj);
+                //printf("di %f, ri %f, ri_s %f\n",dj,rj,rj_slice);
+                double dij = xydi[j];
+                if (dij >= ri_slice + rj_slice) { // atoms aren't in contact
+                    continue;
+                }
+                if (dij + ri_slice < rj_slice) { // circle i is completely inside j
+                    completely_buried = 1;
+                    break;
+                }
+                if (dij + rj_slice < ri_slice) { // circle j is completely inside i
+                    continue;
+                }
+                a[n_buried] = acos ((ri_slice*ri_slice + dij*dij
+                                     - rj_slice*rj_slice)/(2.0*ri*dij));
+                b[n_buried] = atan2 (ydi[j],xdi[j]);
+                
+                ++n_buried;
+            }
+        }
+        if (completely_buried == 0) {
+            sasa += ri*DR*sasa_sum_angles(n_buried,a,b);
+        }
+    }
+    // loop through slices
+    return sasa;
+}
+
+static void sasa_add_atoms(sasa_lr *lr)
+{
+    for (int i = 0; i < lr->n_atoms; ++i) {
+        lr->sasa[i] = sasa_atom_area(lr,i); 
     }
 }
 
