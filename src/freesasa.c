@@ -722,7 +722,6 @@ int freesasa_write_pdb(const freesasa *s, FILE *output)
 
 static freesasa_strvp* freesasa_alloc_strvp(int n)
 {
-    const int STRL=FREESASA_STRUCTURE_DESCRIPTOR_STRL;
     freesasa_strvp* svp = malloc(sizeof(freesasa_strvp));
     assert(svp);
     svp->value = malloc(sizeof(double)*n);
@@ -730,10 +729,6 @@ static freesasa_strvp* freesasa_alloc_strvp(int n)
     assert(svp->value && svp->string);
 
     svp->n = n;
-    for (int i = 0; i < n; ++i) {
-        svp->string[i] = malloc(sizeof(char)*STRL);
-        assert(svp->string[i]);
-    }
     return svp;
 }
 
@@ -763,7 +758,8 @@ freesasa_strvp* freesasa_string_value_pairs(const freesasa *s,freesasa_result_ty
         svp = freesasa_alloc_strvp(n);
         for (int i = 0; i < n; ++i) {
             svp->value[i] = freesasa_area_atom(s,i);
-            strcpy(svp->string[i],freesasa_structure_atom_descriptor(p,i));
+            svp->string[i] = strdup(freesasa_structure_atom_descriptor(p,i));
+            assert(svp->string[i]);
         }
         break;
     case FREESASA_RESIDUES:
@@ -771,7 +767,8 @@ freesasa_strvp* freesasa_string_value_pairs(const freesasa *s,freesasa_result_ty
         svp = freesasa_alloc_strvp(n);
         for (int i = 0; i < n; ++i) {
             svp->value[i] = freesasa_single_residue_sasa(s,i);
-            strcpy(svp->string[i],freesasa_structure_residue_descriptor(p,i));
+            svp->string[i] = strdup(freesasa_structure_residue_descriptor(p,i));
+            assert(svp->string[i]);
         }
         break;
     default:
