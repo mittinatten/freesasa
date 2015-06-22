@@ -86,10 +86,6 @@ static double sasa_sum_angles(int n_buried, double * restrict a,
 static double sasa_sum_angles_int(int n_buried, double *restrict a,
                                   double *restrict b);
 
-/** Calculate adjacency lists, given coordinates and radii. Also
-    stores some distances to be used later. */
-static void sasa_get_contacts(sasa_lr *lr);
-
 static void sasa_add_atoms(sasa_lr *lr);
 
 /** Initialize object to be used for L&R calculation */
@@ -177,8 +173,8 @@ int freesasa_lee_richards(double *sasa,
     if (n_threads == 1) {
         // loop over slices
         sasa_add_atoms(lr);
-        /*
-        for (double z = lr->min_z; z < lr->max_z; z += lr->delta) {
+        
+        /*for (double z = lr->min_z; z < lr->max_z; z += lr->delta) {
             sasa_add_slice_area(z,lr);
             }*/
     }
@@ -382,7 +378,6 @@ static void sasa_exposed_arcs(sasa_lr_slice * restrict slice,
                 ri*slice->DR[i]*sasa_sum_angles(n_buried,a,b);
         }
 #ifdef DEBUG
-        const double *v = freesasa_coord_all(lr->xyz);
         if (is_completely_buried[i] == 0) {
             //exposed_arc[i] = 0;
             const double *v = freesasa_coord_all(lr->xyz);
@@ -408,29 +403,35 @@ static void sasa_exposed_arcs(sasa_lr_slice * restrict slice,
 
 static double sasa_atom_area(sasa_lr *lr,int i)
 {
+    int nni = lr->adj->nn[i];
     const double * restrict v = freesasa_coord_all(lr->xyz);
     const double * restrict r = lr->radii;
     const int * restrict nbi = lr->adj->nb[i];
     const double * restrict xydi = lr->adj->nb_xyd[i];
     const double * restrict xdi = lr->adj->nb_xd[i];
     const double * restrict ydi = lr->adj->nb_yd[i];
-    int nni = lr->adj->nn[i];
     double sasa = 0, zi = v[3*i+2], z_slice, z0,
         delta = lr->delta, ri = r[i], d_half = delta/2.;
-    double a[nni], b[nni];
+    double a[nni], b[nni], z_nb[nni], r_nb[nni];
     int bottom = ((zi-ri)-lr->min_z)/delta;
-    z0 = lr->min_z+bottom*delta;
 
-    for (double z_slice = z0; z_slice < zi+ri; z_slice += delta) {
+    z0 = lr->min_z+bottom*delta;
+    
+    for (int j = 0; j < nni; ++j) {
+        z_nb[j] = v[3*nbi[j]+2];
+        r_nb[j] = r[nbi[j]];
+    }
+    
+    for (z_slice = z0; z_slice < zi+ri; z_slice += delta) {
         double di = fabs(zi - z_slice);
         if (di > ri) continue; //deal with round off errors in z0
         double ri_slice = sqrt(ri*ri-di*di);
         double DR = ri/ri_slice*(d_half + fmin(d_half,ri-di));
         int n_buried = 0, completely_buried = 0;
         for (int j = 0; j < nni; ++j) {
-            double zj = v[3*nbi[j]+2];
+            double zj = z_nb[j];
             double dj = fabs(zj - z_slice);
-            double rj = r[nbi[j]];
+            double rj = r_nb[j];
             if (dj < rj) {
                 double rj_slice = sqrt(rj*rj-dj*dj);
                 //printf("di %f, ri %f, ri_s %f\n",dj,rj,rj_slice);
@@ -446,17 +447,37 @@ static double sasa_atom_area(sasa_lr *lr,int i)
                     continue;
                 }
                 a[n_buried] = acos ((ri_slice*ri_slice + dij*dij
-                                     - rj_slice*rj_slice)/(2.0*ri*dij));
+                                     - rj_slice*rj_slice)/(2.0*ri_slice*dij));
                 b[n_buried] = atan2 (ydi[j],xdi[j]);
                 
                 ++n_buried;
             }
         }
         if (completely_buried == 0) {
-            sasa += ri*DR*sasa_sum_angles(n_buried,a,b);
+            sasa += ri_slice*DR*sasa_sum_angles(n_buried,a,b);
         }
+#ifdef DEBUG
+        if (completely_buried == 0) {
+            //exposed_arc[i] = 0;
+            double xi = v[3*i], yi = v[3*i+1];
+            for (double c = 0; c < 2*M_PI; c += M_PI/30.0) {
+                int is_exp = 1;
+                for (int j = 0; j < n_buried; ++j) {
+                    if ((c > b[j]-a[j] && c < b[j]+a[j]) ||
+                        (c - 2*M_PI > b[j]-a[j] && c - 2*M_PI < b[j]+a[j]) ||
+                        (c + 2*M_PI > b[j]-a[j] && c + 2*M_PI < b[j]+a[j])) {
+                        is_exp = 0; break;
+                    }
+                }
+                // print the arcs used in calculation
+                if (is_exp) printf("%6.2f %6.2f %6.2f %7.5f\n",
+                                   xi+ri_slice*cos(c),yi+ri_slice*sin(c),z_slice,c);
+            }
+            printf("\n");
+        }
+#endif /* Debug */
+
     }
-    // loop through slices
     return sasa;
 }
 
