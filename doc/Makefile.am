@@ -3,11 +3,11 @@ manual = manual.tex
 fig_eps = fig/lnr_circles.eps fig/lnr_slice.eps fig/time.eps fig/precision.eps
 fig_pdf = $(subst .eps,.pdf,$(fig_eps))
 
-dist_doc_DATA =
+dist_doc_DATA = 
 
 if HAVE_LATEX
 
-dist_doc_DATA += manual.dvi manual.ps
+dist_doc_DATA += manual.tex manual.dvi manual.ps
 
 $(fig_eps): 
 	@cd fig
