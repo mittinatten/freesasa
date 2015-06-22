@@ -3,11 +3,12 @@ manual = manual.tex
 fig_eps = fig/lnr_circles.eps fig/lnr_slice.eps fig/time.eps fig/precision.eps
 fig_pdf = $(subst .eps,.pdf,$(fig_eps))
 
+EXTRA_DIST = $(manual)
 dist_doc_DATA = 
 
 if HAVE_LATEX
 
-dist_doc_DATA += manual.tex manual.dvi manual.ps
+dist_doc_DATA += manual.dvi manual.ps
 
 $(fig_eps): 
 	@cd fig
@@ -34,7 +35,7 @@ endif
 
 if HAVE_PDF
 
-dist_doc_DATA += manual.pdf
+#dist_doc_DATA += manual.pdf
 
 $(fig_pdf):
 	@cd fig
