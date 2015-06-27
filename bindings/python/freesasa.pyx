@@ -25,8 +25,10 @@ def getVerbosity():
 
 cdef class FreeSASA:
      cdef cfreesasa.freesasa* _c_freesasa
+     cdef int calculated
 
      def __cinit__(self):
+         self.calculated = 0
          self._c_freesasa = cfreesasa.freesasa_new()
          if self._c_freesasa is NULL:
              raise MemoryError()
@@ -43,21 +45,20 @@ cdef class FreeSASA:
          fclose(input)
          if result is cfreesasa.FREESASA_FAIL:
             raise FreeSASAFail("Not able to calculate SASA, input valid?")
+         self.calculated = 1;
          if result is cfreesasa.FREESASA_WARN:     
             raise FreeSASAWarn("Warning: There may be errors in calculation, " \
                                "probably due to unrecognized input.")
 
      def totalArea(self):
-         area = cfreesasa.freesasa_area_total(self._c_freesasa)
-         if area < 0:
+         if self.calculated == 0:
             raise FreeSASAWarn("Tried to access total area for a FreeSASA object " \
                                "before valid calculation has been performed")
-         return area
 
+         return cfreesasa.freesasa_area_total(self._c_freesasa)
+         
      def areaOfClass(self,theClass):
-         area = cfreesasa.freesasa_area_class(self._c_freesasa,theClass)
-         if area < 0:
+        if self.calculated == 0:
              raise FreeSASAWarn("Tried to access area for a FreeSASA object before " \
                                "valid calculation has been performed")
-         return area
-         
+        return cfreesasa.freesasa_area_class(self._c_freesasa,theClass)
