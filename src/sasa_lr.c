@@ -222,7 +222,7 @@ static double sasa_atom_area(sasa_lr *lr,int i)
     double sasa = 0, zi = v[3*i+2], z_slice, z0,
         delta = lr->delta, ri = r[i], d_half = delta/2.;
     double a[nni], b[nni], z_nb[nni], r_nb[nni];
-    int bottom = ((zi-ri)-lr->min_z)/delta;
+    int bottom = ((zi-ri)-lr->min_z)/delta + 1;
 
     z0 = lr->min_z+bottom*delta;
     
@@ -233,8 +233,9 @@ static double sasa_atom_area(sasa_lr *lr,int i)
     
     for (z_slice = z0; z_slice < zi+ri; z_slice += delta) {
         double di = fabs(zi - z_slice);
-        if (di > ri) continue; //deal with round off errors in z0
-        double ri_slice = sqrt(ri*ri-di*di);
+        double ri_slice2 = ri*ri-di*di;
+        if (ri_slice2 < 0 ) continue; // handle round-off errors
+        double ri_slice = sqrt(ri_slice2);
         double DR = ri/ri_slice*(d_half + fmin(d_half,ri-di));
         int n_buried = 0, completely_buried = 0;
         for (int j = 0; j < nni; ++j) {
@@ -258,7 +259,6 @@ static double sasa_atom_area(sasa_lr *lr,int i)
                 a[n_buried] = acos ((ri_slice*ri_slice + dij*dij
                                      - rj_slice*rj_slice)/(2.0*ri_slice*dij));
                 b[n_buried] = atan2 (ydi[j],xdi[j]);
-                
                 ++n_buried;
             }
         }
@@ -288,11 +288,6 @@ static double sasa_atom_area(sasa_lr *lr,int i)
 
     }
     return sasa;
-}
-
-static void sasa_add_atoms(sasa_lr *lr)
-{
-
 }
 
 static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict b)
