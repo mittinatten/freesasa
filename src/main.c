@@ -47,6 +47,7 @@ typedef struct  {
     FILE *B;
     int per_residue_type;
     int per_residue;
+    int printlog;
 } settings_t;
 
 settings_t def_settings = {
@@ -54,10 +55,11 @@ settings_t def_settings = {
     .B = NULL,
     .per_residue_type = 0,
     .per_residue = 0,
+    .printlog = 1,
 };
 
 void help() {
-    fprintf(stderr,"\nUsage: %s [-hLSrvn:d:t:p:B:] pdb-file(s)\n",
+    fprintf(stderr,"\nUsage: %s [-hlLSrvn:d:t:p:B:] pdb-file(s)\n",
             program_name);
     fprintf(stderr,
             "\nOptions are:\n"
@@ -79,12 +81,13 @@ void help() {
 #endif
     fprintf(stderr,
             "       -r  print SASA for each residue type\n"
-            "       -R  print SASA for ecah residue, sequentially\n");
+            "       -R  print SASA for each residue, sequentially\n");
     fprintf(stderr,
             "       -B  print PDB file with SASA for each atom as B-factors,\n"
             "           in specified output file.\n");
     fprintf(stderr,
-            "       -v  print version of the program\n");
+            "       -v  print version of the program\n"
+            "       -l  don't print log message\n");
     fprintf(stderr,
             "\nIf no pdb-file is specified STDIN is used for input.\n\n");
 }
@@ -104,20 +107,20 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
                 program_name);
         exit(EXIT_FAILURE);
     }
-    freesasa_log(s,stdout);
-    printf("\nTotal:  %9.2f A2\nPolar:  %9.2f A2\nApolar: %9.2f A2\n",
-           freesasa_area_total(s), freesasa_area_class(s,FREESASA_POLAR),
-           freesasa_area_class(s, FREESASA_APOLAR));
+    if (settings->printlog) {
+        freesasa_log(s,stdout);
+        printf("\nTotal:  %9.2f A2\nPolar:  %9.2f A2\nApolar: %9.2f A2\n",
+               freesasa_area_total(s), freesasa_area_class(s,FREESASA_POLAR),
+               freesasa_area_class(s, FREESASA_APOLAR));
+    }
     if ((tmp = freesasa_area_class(s, FREESASA_NUCLEICACID)) > 0)
         printf("Nucleic: %9.2f A2\n",tmp);
     if ((tmp = freesasa_area_class(s, FREESASA_CLASS_UNKNOWN)) > 0)
         printf("Unknown: %9.2f A2\n",tmp);
     if (settings->per_residue_type) {
-        printf("\n");
         freesasa_per_residue_type(s,stdout);
     }
     if (settings->per_residue) {
-        printf("\n");
         freesasa_per_residue(s,stdout);
     }
     if (settings->B) freesasa_write_pdb(s,settings->B);
@@ -137,7 +140,7 @@ int main (int argc, char **argv) {
     program_name = argv[0];
 #endif
 
-    while ((opt = getopt(argc, argv, "n:d:t:p:B:hvLSrR")) != -1) {
+    while ((opt = getopt(argc, argv, "n:d:t:p:B:hvlLSrR")) != -1) {
         errno = 0;
         int result = FREESASA_SUCCESS;
         switch(opt) {
@@ -147,6 +150,9 @@ int main (int argc, char **argv) {
         case 'v':
             printf("%s\n",version);
             exit(EXIT_SUCCESS);
+        case 'l':
+            settings.printlog = 0;
+            break;
         case 'B':
             settings.B = fopen(optarg, "w");
             if (settings.B == NULL) {

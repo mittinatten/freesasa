@@ -44,6 +44,11 @@ const char *freesasa_name = PACKAGE_NAME;
 #else
 const char *freesasa_name = "freesasa";
 #endif
+#ifdef PACKAGE_VERSION
+const char *freesasa_version = PACKAGE_VERSION;
+#else
+const char *freesasa_version = "";
+#endif
 
 // to control error messages (used for debugging and testing)
 static freesasa_verbosity verbosity;
@@ -619,6 +624,7 @@ int freesasa_log(const freesasa *s, FILE *log)
        portable, but makes function a lot simpler than checking every
        return value. */
     errno = 0;
+    fprintf(log,"## %s %s ##\n",freesasa_name,freesasa_version);
     fprintf(log,
             "name: %s\nalgorithm: %s\nprobe-radius: %f A\n",
             s->proteinname,freesasa_alg_names[s->alg],
