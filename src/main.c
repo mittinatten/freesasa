@@ -85,7 +85,7 @@ void help() {
     fprintf(stderr,"\nUsage: %s [-hvlwLHSRrn:d:t:p:B:] pdb-file(s)\n",
             program_name);
     fprintf(stderr,
-            "\nOptions are:\n"
+            "\nOptions are:\n\n"
             "  -h (--help)           Print this message\n"
             "  -v (--version)        Print version of the program\n"
             "  -l (--no-log)         Don't print log message\n"
@@ -93,35 +93,32 @@ void help() {
             "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm [default]\n"
             "  -L (--lee-richards)   Use Lee & Richards algorithm\n"
             "  -H (--hetatm)         Include HETATM entries from input\n");
-    
     fprintf(stderr,
-            "  -p <value>  --probe-radius=<value>\n"
-            "      Probe radius. Default value is %4.2f Å.\n"
-            "  -d <value>  --lr-slice=<value>\n"
-            "      Slice spacing in Lee & Richards algorithm. "
-            "Default value is %4.2f Å\n"
+            "\n  -p <value>  --probe-radius=<value>\n"
+            "       Probe radius [default %4.2f Å].\n"
+            "\n  -d <value>  --lr-slice=<value>\n"
+            "       Slice spacing in Lee & Richards algorithm "
+            " [default %4.2f Å].\n"
             ,FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_LR_D);
     fprintf(stderr,
-            "  -n <value>  --sr-points=<value>\n"
-            "      Set number of test points in Shrake & Rupley algorithm\n"
-            "      Default is %d, allowed values are:\n        ", FREESASA_DEF_SR_N);
+            "\n  -n <value>  --sr-points=<value>\n"
+            "       Number of test points in Shrake & Rupley algorithm.\n"
+            "       Default is %d, allowed values are:\n"
+            "         ", FREESASA_DEF_SR_N);
     freesasa_srp_print_n_opt(stderr);
 #ifdef HAVE_LIBPTHREAD
     fprintf(stderr,
-            "  -t <value>  --n-threads=<value>\n"
-            "      Set number of threads to use in calculation (for multicore CPUs)\n");
+            "\n  -t <value>  --n-threads=<value>\n"
+            "       Number of threads to use in calculation.\n");
 #endif
     fprintf(stderr,
-            "  -r  --sasa-per-residue-type[=<output-file>]\n"
-            "      Print SASA for each residue type. "
-            "Writes to stdout if no output is specified.\n"
+            "\n  -r  --sasa-per-residue-type[=<output-file>]\n"
             "  -R  --sasa-per-residue-sequence[=<output-file>]\n"
-            "      Print SASA for each residue, sequentially. "
-            "Writes to stdout if no output is specified.\n");
-    fprintf(stderr,
-            "  -B  <output-file>  --print-as-B-values=<output-file>\n"
-            "      Print PDB file with SASA for each atom as B-factors, "
-            "in specified output file.\n");
+            "       Print SASA for each residue, either grouped by "
+            "type or sequentially.\n"
+            "       Writes to STDOUT if no output is specified.\n"
+            "\n  -B  <output-file>  --print-as-B-values=<output-file>\n"
+            "       Print PDB file with SASA for each atom as B-factors.\n");
     fprintf(stderr,
             "\nIf no pdb-file is specified STDIN is used for input.\n\n");
 }
