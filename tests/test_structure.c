@@ -111,12 +111,8 @@ END_TEST
 void setup_1ubq(void)
 {
     errno = 0;
-    FILE *pdb = fopen("data/1ubq.pdb","r");
-    if (pdb == NULL) {
-        fprintf(stderr,"error reading PDB-file for test. "
-                "(Tests must be run from directory test/): %s\n",
-                strerror(errno));
-    }
+    FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
+    ck_assert(pdb != NULL);
     if (s) freesasa_structure_free(s);
     s = freesasa_structure_from_pdb(pdb);
     fclose(pdb);
@@ -149,7 +145,7 @@ END_TEST
 
 START_TEST (test_write_1ubq) {
     FILE *tf = fopen("tmp/dummy_bfactors.pdb","w+"),
-        *ref = fopen("data/reference_bfactors.pdb","r");
+        *ref = fopen(DATADIR "reference_bfactors.pdb","r");
     ck_assert(tf != NULL);
     ck_assert(ref != NULL);
     const size_t n = freesasa_structure_n(s);
@@ -175,9 +171,9 @@ END_TEST
 
 START_TEST (test_pdb)
 {
-    const char *file_names[] = {"data/alt_model_twochain.pdb",
-                                "data/empty.pdb",
-                                "data/empty_model.pdb"};
+    const char *file_names[] = {DATADIR "alt_model_twochain.pdb",
+                                DATADIR "empty.pdb",
+                                DATADIR "empty_model.pdb"};
     const int result_null[] = {0,1,1};
     freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 0; i < 3; ++i) {

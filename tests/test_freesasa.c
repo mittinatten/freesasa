@@ -179,12 +179,7 @@ void teardown_lr(void)
 START_TEST (test_sasa_1ubq)
 {
     errno = 0;
-    FILE *pdb = fopen("data/1ubq.pdb","r");
-    if (pdb == NULL) {
-        fprintf(stderr,"error reading PDB-file for test. "
-                "(Tests must be run from directory test/): %s\n",
-                strerror(errno));
-    }
+    FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
     ck_assert(pdb != NULL);
     ck_assert(freesasa_calc_pdb(st,pdb) == FREESASA_SUCCESS);
     fclose(pdb);
@@ -341,7 +336,7 @@ START_TEST (test_calc_errors)
     freesasa_set_verbosity(FREESASA_V_SILENT);
 
     //test empty PDB-file
-    FILE *empty = fopen("data/empty.pdb","r");
+    FILE *empty = fopen(DATADIR "empty.pdb","r");
     ck_assert(empty != NULL);
     ck_assert(freesasa_calc_pdb(s,empty) == FREESASA_FAIL);
     fclose(empty);
@@ -381,12 +376,8 @@ START_TEST (test_multi_calc)
     freesasa_set_algorithm(s,FREESASA_SHRAKE_RUPLEY);
     freesasa_set_sr_points(s,100);
     freesasa_set_nthreads(s,2);
-    FILE *pdb = fopen("data/1ubq.pdb","r");
-    if (pdb == NULL) {
-        fprintf(stderr,"error reading PDB-file for test. "
-                "(Tests must be run from directory test/): %s\n",
-                strerror(errno));
-    }
+    FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
+    ck_assert(pdb != NULL);
     ck_assert(freesasa_calc_pdb(s,pdb) == FREESASA_SUCCESS);
     // The reference values were the output of FreeSASA on 2014-02-10
     ck_assert(fabs(freesasa_area_total(s) - 4759.86096) < 1e-5);
@@ -410,12 +401,8 @@ START_TEST (test_strvp)
     
     freesasa_set_verbosity(FREESASA_V_SILENT);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
-    FILE *pdb = fopen("data/1ubq.pdb","r");
-    if (pdb == NULL) {
-        fprintf(stderr,"error reading PDB-file for test. "
-                "(Tests must be run from directory test/): %s\n",
-                strerror(errno));
-    }
+    FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
+    ck_assert(pdb != NULL);
     freesasa_calc_pdb(s,pdb);
     fclose(pdb);
     svp = freesasa_string_value_pairs(s,FREESASA_ATOMS);

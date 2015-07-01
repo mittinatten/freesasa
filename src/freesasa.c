@@ -44,6 +44,11 @@ const char *freesasa_name = PACKAGE_NAME;
 #else
 const char *freesasa_name = "freesasa";
 #endif
+#ifdef PACKAGE_VERSION
+const char *freesasa_version = PACKAGE_VERSION;
+#else
+const char *freesasa_version = "";
+#endif
 
 // to control error messages (used for debugging and testing)
 static freesasa_verbosity verbosity;
@@ -619,6 +624,7 @@ int freesasa_log(const freesasa *s, FILE *log)
        portable, but makes function a lot simpler than checking every
        return value. */
     errno = 0;
+    fprintf(log,"## %s %s ##\n",freesasa_name,freesasa_version);
     fprintf(log,
             "name: %s\nalgorithm: %s\nprobe-radius: %f A\n",
             s->proteinname,freesasa_alg_names[s->alg],
@@ -722,7 +728,6 @@ int freesasa_write_pdb(const freesasa *s, FILE *output)
 
 static freesasa_strvp* freesasa_alloc_strvp(int n)
 {
-    const int STRL=FREESASA_STRUCTURE_DESCRIPTOR_STRL;
     freesasa_strvp* svp = malloc(sizeof(freesasa_strvp));
     assert(svp);
     svp->value = malloc(sizeof(double)*n);
@@ -730,10 +735,6 @@ static freesasa_strvp* freesasa_alloc_strvp(int n)
     assert(svp->value && svp->string);
 
     svp->n = n;
-    for (int i = 0; i < n; ++i) {
-        svp->string[i] = malloc(sizeof(char)*STRL);
-        assert(svp->string[i]);
-    }
     return svp;
 }
 
@@ -763,7 +764,8 @@ freesasa_strvp* freesasa_string_value_pairs(const freesasa *s,freesasa_result_ty
         svp = freesasa_alloc_strvp(n);
         for (int i = 0; i < n; ++i) {
             svp->value[i] = freesasa_area_atom(s,i);
-            strcpy(svp->string[i],freesasa_structure_atom_descriptor(p,i));
+            svp->string[i] = strdup(freesasa_structure_atom_descriptor(p,i));
+            assert(svp->string[i]);
         }
         break;
     case FREESASA_RESIDUES:
@@ -771,7 +773,8 @@ freesasa_strvp* freesasa_string_value_pairs(const freesasa *s,freesasa_result_ty
         svp = freesasa_alloc_strvp(n);
         for (int i = 0; i < n; ++i) {
             svp->value[i] = freesasa_single_residue_sasa(s,i);
-            strcpy(svp->string[i],freesasa_structure_residue_descriptor(p,i));
+            svp->string[i] = strdup(freesasa_structure_residue_descriptor(p,i));
+            assert(svp->string[i]);
         }
         break;
     default:
