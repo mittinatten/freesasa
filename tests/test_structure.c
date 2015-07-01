@@ -114,7 +114,7 @@ void setup_1ubq(void)
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
     ck_assert(pdb != NULL);
     if (s) freesasa_structure_free(s);
-    s = freesasa_structure_from_pdb(pdb);
+    s = freesasa_structure_from_pdb(pdb,0);
     fclose(pdb);
 }
 
@@ -179,7 +179,7 @@ START_TEST (test_pdb)
     for (int i = 0; i < 3; ++i) {
         FILE *pdb = fopen(file_names[i],"r");
         ck_assert(pdb != NULL);
-        freesasa_structure *s = freesasa_structure_from_pdb(pdb);
+        freesasa_structure *s = freesasa_structure_from_pdb(pdb,0);
         if (result_null[i]) ck_assert(s == NULL);
         else ck_assert(s != NULL);
         fclose(pdb);

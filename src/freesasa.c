@@ -79,6 +79,7 @@ struct freesasa {
     double d_lr;
     int n_threads;
     char proteinname[FREESASA_NAME_LIMIT+1];
+    int include_hetatm;
 
     //some internal flags
     int owns_r;
@@ -102,6 +103,7 @@ const freesasa freesasa_def_param = {
     .d_lr = FREESASA_DEF_LR_D,
     .n_threads = DEF_NTHREADS,
     .proteinname = "undef",
+    .include_hetatm = 0,
 
     .owns_r = 0,
     .calculated = 0,
@@ -138,7 +140,8 @@ int freesasa_fail(const char *format,...)
 
 int freesasa_warn(const char *format,...)
 {
-    if (verbosity == FREESASA_V_SILENT) return FREESASA_WARN;
+    if (verbosity == FREESASA_V_NOWARNINGS ||
+        verbosity == FREESASA_V_SILENT) return FREESASA_WARN;
     va_list arg;
     va_start(arg, format);
     freesasa_err_impl(FREESASA_WARN,format,arg);
@@ -283,6 +286,7 @@ void freesasa_copy_param(freesasa *target, const freesasa *source)
     target->n_sr = source->n_sr;
     target->d_lr = source->d_lr;
     target->n_threads = source->n_threads;
+    target->include_hetatm = source->include_hetatm;
     target->probe_radius = source->probe_radius;
     target->calculated = 0;
 }
@@ -343,7 +347,8 @@ int freesasa_calc_pdb(freesasa *s, FILE *pdb_file)
     assert(s);
     assert(pdb_file);
     s->calculated = 0;
-    freesasa_structure *p = freesasa_structure_from_pdb(pdb_file);
+    freesasa_structure *p = 
+        freesasa_structure_from_pdb(pdb_file,s->include_hetatm);
     if (p) {
         if (s->structure) freesasa_structure_free(s->structure);
         s->structure = p;
@@ -536,6 +541,13 @@ int freesasa_get_nthreads(const freesasa *s)
 {
     assert(s);
     return s->n_threads;
+}
+
+void freesasa_include_hetatm(freesasa *s, int include)
+{
+    assert(s);
+    assert(include == 0 || include == 1);
+    s->include_hetatm = include;
 }
 
 int freesasa_n_atoms(const freesasa *s)
@@ -784,7 +796,9 @@ freesasa_strvp* freesasa_string_value_pairs(const freesasa *s,freesasa_result_ty
 }
 
 int freesasa_set_verbosity(freesasa_verbosity s) {
-    if (s == FREESASA_V_NORMAL || s == FREESASA_V_SILENT) {
+    if (s == FREESASA_V_NORMAL ||
+        s == FREESASA_V_NOWARNINGS ||
+        s == FREESASA_V_SILENT) {
         verbosity = s;
         return FREESASA_SUCCESS;
     }

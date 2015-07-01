@@ -110,9 +110,12 @@ typedef enum  {FREESASA_ATOMS, FREESASA_RESIDUES}
 /**
     Verbosity levels. 
     - FREESASA_V_NORMAL: print all errors and warnings.
+    - FREESASA_V_NOWARNINGS: print only errors.
     - FREESASA_V_SILENT: print no errors and warnings.
  */
-typedef enum {FREESASA_V_NORMAL, FREESASA_V_SILENT} freesasa_verbosity;
+typedef enum {FREESASA_V_NORMAL,
+              FREESASA_V_NOWARNINGS,
+              FREESASA_V_SILENT} freesasa_verbosity;
 
 /// Limit for protein name lengths
 #define FREESASA_NAME_LIMIT 30
@@ -460,6 +463,14 @@ extern "C"{
     @return Protein name.
 */
     const char* freesasa_get_proteinname(const freesasa *s);
+
+/**
+    Include or don't include `HETATM` when reading PDB files.
+
+    @param s a ::freesasa-object
+    @param include 1 means use `HETATM` records, 0 means don't.
+*/
+    void freesasa_include_hetatm(freesasa *s, int include);
 
 /////////////
 // Results //

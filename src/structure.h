@@ -63,17 +63,20 @@ void freesasa_structure_free(freesasa_structure *s);
     Reads in a PDB-file and generates a structure
     object. Automatically skips hydrogens. If an atom has alternative
     coordinates, only the first alternative is used. If a file has
-    more than one `MODEL` (as in NMR structures) only the first model is
-    used. `HETATM` records are ignored. If non-default behavior is
-    wanted, the PDB-file needs to be modified before calling this
-    function, or atoms can be added manually using
+    more than one `MODEL` (as in NMR structures) only the first model
+    is used. User specifies if `HETATM` entries should be included. If
+    non-default behavior is wanted, the PDB-file needs to be modified
+    before calling this function, or atoms can be added manually using
     freesasa_structure_add_atom().
 
     @param pdb_file Input PDB-file.
+    @param include_hetatm The value 0 means only read `ATOM` entries, 1 
+    means also include `HETATM` entries.
     @return The generated struct. Returns `NULL` and prints error if
     input is invalid.
 */
-freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file);
+freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file,
+                                                int include_hetatm);
 
 /**
     Add individual atom to structure.

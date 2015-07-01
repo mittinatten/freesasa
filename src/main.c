@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <getopt.h>
@@ -72,22 +73,27 @@ static struct option long_options[] = {
     {"help", no_argument, 0, 'h'},
     {"version", no_argument, 0, 'v'},
     {"no-log", no_argument, 0, 'l'},
+    {"no-warnings", no_argument, 0, 'w'},
     {"n-threads",required_argument, 0, 't'},
+    {"hetatm",no_argument, 0, 'H'},
     {"sasa-per-residue-type",optional_argument,0,'r'},
     {"sasa-per-residue-sequence",optional_argument,0,'R'},
     {"print-as-B-values",required_argument,0,'B'}
 };
 
 void help() {
-    fprintf(stderr,"\nUsage: %s [-hvlLSRrn:d:t:p:B:] pdb-file(s)\n",
+    fprintf(stderr,"\nUsage: %s [-hvlwLHSRrn:d:t:p:B:] pdb-file(s)\n",
             program_name);
     fprintf(stderr,
             "\nOptions are:\n"
             "  -h (--help)           Print this message\n"
             "  -v (--version)        Print version of the program\n"
             "  -l (--no-log)         Don't print log message\n"
+            "  -w (--no-warnings)    Don't print warnings\n"
             "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm [default]\n"
-            "  -L (--lee-richards)   Use Lee & Richards algorithm\n");
+            "  -L (--lee-richards)   Use Lee & Richards algorithm\n"
+            "  -H (--hetatm)         Include HETATM entries from input\n");
+    
     fprintf(stderr,
             "  -p <value>  --probe-radius=<value>\n"
             "      Probe radius. Default value is %4.2f Å.\n"
@@ -175,7 +181,7 @@ int main (int argc, char **argv) {
     settings.s = freesasa_new();
     extern char *optarg;
     char opt;
-    int n_opt = 'z'-'A' + 1;
+    int n_opt = 'z';
     char opt_set[n_opt];
     memset(opt_set,0,n_opt);
 #ifdef PACKAGE_NAME
@@ -184,7 +190,7 @@ int main (int argc, char **argv) {
     program_name = argv[0];
 #endif
     int option_index = 0;
-    while ((opt = getopt_long(argc, argv, "hvlLSRrn:d:t:p:B:",
+    while ((opt = getopt_long(argc, argv, "hvlwLSHRrn:d:t:p:B:",
                               long_options, &option_index)) != -1) {
         errno = 0;
         opt_set[opt] = 1;
@@ -197,6 +203,9 @@ int main (int argc, char **argv) {
             exit(EXIT_SUCCESS);
         case 'l':
             settings.printlog = 0;
+            break;
+        case 'w':
+            freesasa_set_verbosity(FREESASA_V_NOWARNINGS);
             break;
         case 'B':
             settings.B = fopen(optarg, "w");
@@ -223,6 +232,9 @@ int main (int argc, char **argv) {
             break;
         case 'p':
             freesasa_set_probe_radius(settings.s,atof(optarg));
+            break;
+        case 'H':
+            freesasa_include_hetatm(settings.s,1);
             break;
         case 'r':
             settings.per_residue_type = 1;

@@ -96,7 +96,8 @@ char freesasa_structure_get_pdb_atom(atom_t *a, double *xyz, const char *line)
     return freesasa_pdb_get_alt_coord_label(line);
 }
 
-freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file)
+freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file,
+                                                int include_hetatm)
 {
     assert(pdb_file);
     freesasa_structure *p = freesasa_structure_new();
@@ -107,7 +108,10 @@ freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file)
     assert(line);
     char the_alt = ' ';
     while (getline(&line, &len, pdb_file) != -1) {
-        if (strncmp("ATOM",line,4)==0) {
+        if (strncmp("ATOM",line,4)==0 ||
+            ( (include_hetatm == 1) &&
+              (strncmp("HETATM",line,6) == 0) )
+            ) {
             if (freesasa_pdb_ishydrogen(line)) continue;
             double v[3];
             atom_t a;
