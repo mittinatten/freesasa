@@ -90,6 +90,14 @@ enum freesasa_oons_class {
     freesasa_oons_unknown
 };
 
+typedef struct {
+    char **residues; // the known residue type names
+    char ***atoms; // the known atom types per residue
+    int n_residues; // number of known residue types
+    int *n_atoms; // number of atoms per residue type
+    int **sasa_class; // sasa-class of each atom
+    double **radius; // radius of each atom
+} freesasa_classes;
 /**
     The radius of a given atom type.
 
@@ -327,5 +335,6 @@ int freesasa_classify_is_nucleicacid(int res);
 */
 int freesasa_classify_validate_atom(const char *res_name, 
                                     const char *atom_name);
+
 
 #endif
