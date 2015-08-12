@@ -212,6 +212,24 @@ START_TEST (test_sasa_1ubq)
 }
 END_TEST
 
+START_TEST (test_trimmed_pdb) 
+{
+    freesasa *s = freesasa_new();
+    double total_ref = 15955.547786749;
+    double polar_ref = 6543.356616946;
+    double apolar_ref = 9412.191169803;
+    errno = 0;
+    FILE *pdb = fopen(DATADIR "3bzd_trimmed.pdb","r");
+    ck_assert(pdb != NULL);
+    ck_assert(freesasa_calc_pdb(s,pdb) == FREESASA_SUCCESS);
+    fclose(pdb);
+    ck_assert(fabs(freesasa_area_total(s) - total_ref) < 1e-5);
+    ck_assert(fabs(freesasa_area_class(s,FREESASA_POLAR) - polar_ref) < 1e-5);
+    ck_assert(fabs(freesasa_area_class(s,FREESASA_APOLAR) - apolar_ref) < 1e-5);
+    freesasa_free(s);
+}
+END_TEST
+
 START_TEST (test_freesasa_api_basic)
 {
     freesasa_set_verbosity(FREESASA_V_SILENT);
@@ -271,6 +289,7 @@ START_TEST (test_freesasa_api_basic)
 #endif
 
     freesasa_set_verbosity(0);
+    freesasa_free(s);
 }
 END_TEST
 
@@ -444,6 +463,9 @@ Suite *sasa_suite()
     tcase_add_checked_fixture(tc_sr,setup_sr,teardown_sr);
     tcase_add_test(tc_sr, test_sasa_1ubq);
 
+    TCase *tc_trimmed = tcase_create("Trimmed PDB file");
+    tcase_add_test(tc_basic, test_trimmed_pdb);
+
     TCase *tc_strvp = tcase_create("string-value pairs");
     tcase_add_test(tc_strvp,test_strvp);
     
@@ -452,6 +474,7 @@ Suite *sasa_suite()
     suite_add_tcase(s, tc_sr_basic);
     suite_add_tcase(s, tc_lr);
     suite_add_tcase(s, tc_sr);
+    suite_add_tcase(s, tc_trimmed);
     suite_add_tcase(s, tc_strvp);
 
 #if HAVE_LIBPTHREAD
