@@ -19,8 +19,8 @@
 \author{Simon Mitternacht} 
 \date{\today} 
 \title{FreeSASA: A Free C Library for Solvent Accessible Surface
-  Area Calculations}
-
+  Area Calculations
+}
 \begin{document}
 \maketitle
 
@@ -323,7 +323,8 @@ Failure can involve both problems reading the PDB input and problems
 setting up the calculations.
 
 The PDB input module in FreeSASA is minimalistic. Only ATOM entries
-are read, and if a PDB file has many MODEL entries, reading is stopped
+are read (HETATM can be activated as an option),
+ and if a PDB file has many MODEL entries, reading is stopped
 at the first ENDML statement. In the standard OONS scheme for atomic
 radii, hydrogen atoms are not included, and they are therefore
 excluded from SASA calculations. Users who want to include these, and
@@ -339,11 +340,11 @@ for this.
 
 Several different types of atom classification are used internally in
 the library. All are based solely on the \emph{Atom name} and
-\emph{Residue name} fields in a PDB file ATOM entry. These are used
-for assigning atomic radii, residue type, element, OONS
-type~\cite{OONS} and if an atom is polar, apolar or part of a nucleic
-acid (the latter class might be divided and integrated into the former
-two eventually). The function 
+\emph{Residue name} fields in a PDB file ATOM entry (and optionally
+HETATM). These are used for assigning atomic radii, residue type,
+element, OONS type~\cite{OONS} and if an atom is polar, apolar or part
+of a nucleic acid (the latter class might be divided and integrated
+into the former two eventually). The function
 \begin{verbatim}
     double freesasa_radius(const char *residue_name, const char *atom_name)
 \end{verbatim}
@@ -359,7 +360,7 @@ properly defined.
 
 For the standard 20 amino acids, and most atoms in ASX, GLX, the
 regular OONS radii \cite{OONS} are used. For the unknown O or N atom
-in ASX and GLX a radius of 1.5 Å is used. For nucleic acids and UNK
+in ASX and GLX a radius of 1.5 Å is used. For nucleic acids, HETATM and UNK
 entries the element is deduced from the atom name and VdW radius from
 www.periodictable.com is used. Atoms in UNK residues are classified as
 unknown, instead of polar/apolar.

@@ -214,6 +214,7 @@ END_TEST
 
 START_TEST (test_trimmed_pdb) 
 {
+    // This test is due to suggestion from João Rodrigues (issue #6 on Github)
     freesasa *s = freesasa_new();
     double total_ref = 15955.547786749;
     double polar_ref = 6543.356616946;
