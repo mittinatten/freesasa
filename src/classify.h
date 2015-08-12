@@ -20,6 +20,7 @@
 #ifndef FREESASA_CLASSIFY_H
 #define FREESASA_CLASSIFY_H
 
+#include <stdio.h>
 #include "freesasa.h"
 
 /**
@@ -90,14 +91,9 @@ enum freesasa_oons_class {
     freesasa_oons_unknown
 };
 
-typedef struct {
-    char **residues; // the known residue type names
-    char ***atoms; // the known atom types per residue
-    int n_residues; // number of known residue types
-    int *n_atoms; // number of atoms per residue type
-    int **sasa_class; // sasa-class of each atom
-    double **radius; // radius of each atom
-} freesasa_classes;
+//! Struct to store custom atom classification read from file
+typedef struct freesasa_classify freesasa_classify;
+
 /**
     The radius of a given atom type.
 
@@ -113,7 +109,6 @@ typedef struct {
     @return Atom radius in Ångström.
 */
 double freesasa_classify_radius(const char *res_name, const char *atom_name);
-
 
 //////////////////////
 // Polar/Apolar/etc //
@@ -335,6 +330,25 @@ int freesasa_classify_is_nucleicacid(int res);
 */
 int freesasa_classify_validate_atom(const char *res_name, 
                                     const char *atom_name);
+
+///////////////////////////
+// User-provided classes //
+///////////////////////////
+
+freesasa_classify* freesasa_classify_user(FILE *input);
+
+void freesasa_classify_user_free(freesasa_classify* classes);
+
+int freesasa_classify_user_n_classes(const freesasa_classify* classes);
+
+double freesasa_classify_user_radius(const freesasa_classify *classses, 
+                                       const char *res_name, const char *atom_name);
+
+int freesasa_classify_user_class(const freesasa_classify *classes,
+                                   const char *res_name, const char *atom_name);
+
+const char* freesasa_classify_user_class2str(const freesasa_classify *classes, 
+                                               int class);
 
 
 #endif
