@@ -298,6 +298,9 @@ void freesasa_copy_param(freesasa *target, const freesasa *source)
     target->include_hetatm = source->include_hetatm;
     target->probe_radius = source->probe_radius;
     target->calculated = 0;
+    if (source->user_classes) {
+        target->user_classes = freesasa_classify_user_clone(source->user_classes);
+    }
 }
 
 void freesasa_free(freesasa *s)

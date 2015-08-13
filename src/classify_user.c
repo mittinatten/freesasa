@@ -38,7 +38,7 @@ struct freesasa_classify {
     int *n_atoms; // number of atoms per residue type
     int **atom_class; // sasa-class of each atom
     int *atom_type_class; //sasa-class of each atom type
-    double *atom_type_radius; // radius of each atom class
+    double *atom_type_radius; // radius of each atom type
     double **atom_radius; // radius of each atom in each residue
 };
 
@@ -219,6 +219,52 @@ freesasa_classify* freesasa_classify_user(FILE *input)
     freesasa_classify_read_types(classes, input, types);
     freesasa_classify_read_atoms(classes, input, atoms);
     return classes;
+}
+freesasa_classify* freesasa_classify_user_clone(const freesasa_classify* source)
+{
+    freesasa_classify *copy =freesasa_classify_new();
+    assert(copy);
+    
+    copy->n_classes = source->n_classes;
+    copy->n_types = source->n_types;
+    copy->n_residues = source->n_residues;
+
+    copy->classes = malloc(sizeof(char*)*source->n_classes);
+    copy->types = malloc(sizeof(char*)*source->n_types);
+    copy->residues = malloc(sizeof(char*)*source->n_residues);
+    copy->atoms = malloc(sizeof(char**)*source->n_residues);
+    copy->n_atoms = malloc(sizeof(int)*source->n_residues);
+    copy->atom_class = malloc(sizeof(int*)*source->n_residues);
+    copy->atom_type_class = malloc(sizeof(int)*source->n_types);
+    copy->atom_type_radius = malloc(sizeof(double)*source->n_types);
+    copy->atom_radius = malloc(sizeof(double*)*source->n_residues);
+    
+    assert(copy->classes); assert(copy->types);
+    assert(copy->residues); assert(copy->atoms);
+    assert(copy->n_atoms); assert(copy->atom_class);
+    assert(copy->atom_type_class); assert(copy->atom_type_radius);
+    assert(copy->atom_radius);
+    
+    memcpy(copy->n_atoms,source->n_atoms,sizeof(int)*source->n_residues);
+    memcpy(copy->atom_type_class,source->atom_type_class,sizeof(int)*source->n_types);
+    memcpy(copy->atom_type_radius,source->atom_type_radius,sizeof(double)*source->n_types);
+
+    for (int i = 0; i < source->n_classes; ++i)
+        copy->classes[i] = strdup(source->classes[i]);
+    for (int i = 0; i < source->n_types; ++i)
+        copy->types[i] = strdup(source->types[i]);
+    for (int i = 0; i < source->n_residues; ++i) {
+        copy->residues[i] = strdup(source->residues[i]);
+        copy->atoms[i] = malloc(sizeof(char*)*source->n_atoms[i]);
+        copy->atom_class[i] = malloc(sizeof(int)*source->n_atoms[i]);
+        copy->atom_radius[i] = malloc(sizeof(double)*source->n_atoms[i]);
+        memcpy(copy->atom_class[i],source->atom_class[i],sizeof(int)*source->n_atoms[i]);
+        memcpy(copy->atom_radius[i],source->atom_radius[i],sizeof(double)*source->n_atoms[i]);
+        for (int j = 0; j < source->n_atoms[i]; ++j) {
+            copy->atoms[i][j] = strdup(source->atoms[i][j]);
+        }
+    }
+    return copy;
 }
 
 void freesasa_classify_user_free(freesasa_classify* classes)

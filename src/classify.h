@@ -337,6 +337,8 @@ int freesasa_classify_validate_atom(const char *res_name,
 
 freesasa_classify* freesasa_classify_user(FILE *input);
 
+freesasa_classify* freesasa_classify_user_clone(const freesasa_classify* source);
+
 void freesasa_classify_user_free(freesasa_classify* classes);
 
 int freesasa_classify_user_n_classes(const freesasa_classify* classes);
@@ -349,6 +351,7 @@ int freesasa_classify_user_class(const freesasa_classify *classes,
 
 const char* freesasa_classify_user_class2str(const freesasa_classify *classes, 
                                              int class);
+
 
 
 #endif
