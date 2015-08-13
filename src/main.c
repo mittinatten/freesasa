@@ -76,13 +76,14 @@ static struct option long_options[] = {
     {"no-warnings", no_argument, 0, 'w'},
     {"n-threads",required_argument, 0, 't'},
     {"hetatm",no_argument, 0, 'H'},
+    {"config-file",required_argument,0,'c'},
     {"sasa-per-residue-type",optional_argument,0,'r'},
     {"sasa-per-residue-sequence",optional_argument,0,'R'},
     {"print-as-B-values",required_argument,0,'B'}
 };
 
 void help() {
-    fprintf(stderr,"\nUsage: %s [-hvlwLHSRrn:d:t:p:B:] pdb-file(s)\n",
+    fprintf(stderr,"\nUsage: %s [-hvlwLHSRrc:n:d:t:p:B:] pdb-file(s)\n",
             program_name);
     fprintf(stderr,
             "\nOptions are:\n\n"
@@ -93,6 +94,9 @@ void help() {
             "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm [default]\n"
             "  -L (--lee-richards)   Use Lee & Richards algorithm\n"
             "  -H (--hetatm)         Include HETATM entries from input\n");
+    fprintf(stderr,
+            "\n  -c <file> (--config-file=<file>)\n"
+            "       Use atomic radii and classes provided in file\n");
     fprintf(stderr,
             "\n  -p <value>  --probe-radius=<value>\n"
             "       Probe radius [default %4.2f Å].\n"
@@ -187,7 +191,7 @@ int main (int argc, char **argv) {
     program_name = argv[0];
 #endif
     int option_index = 0;
-    while ((opt = getopt_long(argc, argv, "hvlwLSHRrn:d:t:p:B:",
+    while ((opt = getopt_long(argc, argv, "hvlwLSHRrc:n:d:t:p:B:",
                               long_options, &option_index)) != -1) {
         errno = 0;
         opt_set[opt] = 1;
@@ -213,6 +217,19 @@ int main (int argc, char **argv) {
                 exit(EXIT_FAILURE);
             }
             break;
+        case 'c': {
+            FILE *f = fopen(optarg,"r");
+            if (f == NULL) {
+                fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
+                        program_name,optarg,strerror(errno));
+                short_help();
+                exit(EXIT_FAILURE);
+            } else {
+                freesasa_user_classification(settings.s,f);
+                fclose(f);
+            }
+            break;
+        }
         case 'n':
             freesasa_set_sr_points(settings.s,atoi(optarg));
             break;

@@ -348,6 +348,34 @@ START_TEST (test_element)
 }
 END_TEST
 
+START_TEST (test_user)
+{
+    FILE *f = fopen(DATADIR "oons.config","r");
+    freesasa_classify* c = freesasa_classify_user(f);
+    fclose(f);
+    ck_assert(c != NULL);
+    ck_assert(freesasa_classify_user_n_classes(c) == 2);
+    ck_assert(fabs(freesasa_classify_user_radius(c,"ALA","CA") - 2.0) < 1e-5);
+    ck_assert(fabs(freesasa_classify_user_radius(c,"ALA","N") - 1.55) < 1e-5);
+    ck_assert_str_eq(freesasa_classify_user_class2str(c,freesasa_classify_user_class(c,"ALA","CB")), "apolar");
+    ck_assert_str_eq(freesasa_classify_user_class2str(c,freesasa_classify_user_class(c,"ALA","O")), "polar");
+    // compare oons.config and built in classification (should be identical for standard atoms)
+    for (int i = 0; i < 188; ++i) {
+        const char *res_name = atoms[i].a, *atom_name = atoms[i].b;
+        if (strcmp(atom_name," X  ") == 0) continue;
+        if (strcmp(atom_name," Y  ") == 0) continue;
+        ck_assert(fabs(freesasa_classify_user_radius(c,res_name,atom_name) -
+                       freesasa_classify_radius(res_name,atom_name)) < 1e-5);
+        char *c1 = strdup(freesasa_classify_class2str(freesasa_classify_class(res_name,atom_name)));
+        char *c2 = strdup(freesasa_classify_user_class2str(c,freesasa_classify_user_class(c,res_name,atom_name)));
+        for (int i = 0; c1[i]; ++i) c1[i] = tolower(c1[i]); 
+        for (int i = 0; c2[i]; ++i) c2[i] = tolower(c2[i]); 
+        ck_assert_str_eq(c1,c2);
+    }
+    freesasa_classify_user_free(c);
+}
+END_TEST
+
 Suite* classify_suite()
 {
     Suite *s = suite_create("Classify");
@@ -357,6 +385,7 @@ Suite* classify_suite()
     tcase_add_test(tc_core,test_oons2str);
     tcase_add_test(tc_core,test_residue);
     tcase_add_test(tc_core,test_element);
+    tcase_add_test(tc_core,test_user);
     suite_add_tcase(s,tc_core);
 
     return s;
