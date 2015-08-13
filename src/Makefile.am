@@ -19,7 +19,6 @@ freesasa_SOURCES = main.c
 example_SOURCES = example.c
 freesasa_LDADD = libfreesasa.a
 example_LDADD = libfreesasa.a
-test_classify_LDADD = libfreesasa.a
 
 
 CLEANFILES = $(GCOV_FILES)
