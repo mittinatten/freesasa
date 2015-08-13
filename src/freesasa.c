@@ -71,6 +71,7 @@ struct freesasa {
     freesasa_class_data *class;
     int n_atoms;
     freesasa_structure *structure;
+    freesasa_classify *user_classes;
 
     //parameters
     freesasa_algorithm alg;
@@ -96,6 +97,7 @@ const freesasa freesasa_def_param = {
     .class = NULL,
     .n_atoms = 0,
     .structure = NULL,
+    .user_classes = NULL,
 
     .alg = FREESASA_SHRAKE_RUPLEY,
     .probe_radius = FREESASA_DEF_PROBE_RADIUS,
@@ -149,7 +151,8 @@ int freesasa_warn(const char *format,...)
     return FREESASA_WARN;
 }
 
-static freesasa_class_data* freesasa_classify_structure(const freesasa_structure *p)
+static freesasa_class_data* freesasa_classify_structure(const freesasa_structure *p, 
+                                                        const freesasa_classify *classes)
 {
     assert(p);
     assert(freesasa_structure_n(p) >= 0 &&
@@ -166,8 +169,13 @@ static freesasa_class_data* freesasa_classify_structure(const freesasa_structure
     for (int i = 0; i < n; ++i) {
         const char *res_name = freesasa_structure_atom_res_name(p,i);
         const char *atom_name = freesasa_structure_atom_name(p,i);
-        c->class[i] = freesasa_classify_class(res_name,atom_name);
         c->residue_type[i] = freesasa_classify_residue(res_name);
+
+        if (classes == NULL) {
+            c->class[i] = freesasa_classify_class(res_name,atom_name);
+        } else {
+            c->class[i] = freesasa_classify_user_class(classes,res_name,atom_name);
+        }
     }
 
     return c;
@@ -210,13 +218,14 @@ static void freesasa_result_free(freesasa_result *r)
     }
 }
 
-static void freesasa_get_class_result(freesasa *s, freesasa_structure *p)
+static void freesasa_get_class_result(freesasa *s)
 {
     assert(s);
-    assert(p);
+    assert(s->structure);
+    freesasa_structure *p = s->structure;
     
     if (s->class) freesasa_class_free(s->class);
-    s->class = freesasa_classify_structure(p);
+    s->class = freesasa_classify_structure(p,s->user_classes);
 
     for (int i = 0; i < freesasa_structure_n(p); ++i) {
         s->result->class[s->class->class[i]] += s->result->sasa[i];
@@ -330,16 +339,27 @@ static int freesasa_calc_structure(freesasa *s)
     assert(s);
     assert(s->structure);
 
-    //calc OONS radii
+    //calc radii
     if (s->owns_r && s->r) free(s->r);
     s->n_atoms = freesasa_structure_n(s->structure);
     s->r = malloc(sizeof(double)*s->n_atoms);
     assert(s->r);
     s->owns_r = 1;
-    freesasa_structure_r_def(s->r,s->structure);
+    if (s->user_classes != NULL) {
+        for (int i = 0; i < s->n_atoms; ++i) {
+            s->r[i] = 
+                freesasa_classify_user_radius(s->user_classes,
+                                              freesasa_structure_atom_res_name(s->structure,i),
+                                              freesasa_structure_atom_name(s->structure,i));
+            if (s->r[i] < 0) 
+                return freesasa_fail("%s: Failure calculating user-specified radii.",__func__);
+        }
+    } else { // Use OONS if nothing provided by user
+        freesasa_structure_r_def(s->r,s->structure);
+    }
     
     int res = freesasa_calc(s,freesasa_structure_xyz(s->structure),s->r);
-    if (res == FREESASA_SUCCESS) freesasa_get_class_result(s,s->structure);
+    if (res == FREESASA_SUCCESS) freesasa_get_class_result(s);
     return res;
 }
 int freesasa_calc_pdb(freesasa *s, FILE *pdb_file)
@@ -358,8 +378,8 @@ int freesasa_calc_pdb(freesasa *s, FILE *pdb_file)
 }
 
 int freesasa_calc_atoms(freesasa *s, const double *coord, 
-                         const char **resnames, 
-                         const char **atomnames, int n)
+                        const char **resnames, 
+                        const char **atomnames, int n)
 {
     assert(s);
     assert(coord);
@@ -384,8 +404,23 @@ int freesasa_calc_atoms(freesasa *s, const double *coord,
     return FREESASA_SUCCESS;
 }
 
-double freesasa_radius(const char* residue_name, const char* atom_name)
+int freesasa_user_classification(freesasa *s, FILE *config)
 {
+    assert(s);
+    assert(config);
+    if (s->user_classes) freesasa_classify_user_free(s->user_classes);
+    s->user_classes = freesasa_classify_user(config);
+    if (s->user_classes == NULL) {
+        return freesasa_fail("%s: Problems reading or parsing file.",__func__);
+    }
+    return FREESASA_SUCCESS;
+}
+
+double freesasa_radius(const freesasa* s, const char* residue_name, const char* atom_name)
+{
+    if (s->user_classes) {
+        return freesasa_classify_user_radius(s->user_classes,residue_name,atom_name);
+    }
     return freesasa_classify_radius(residue_name,atom_name);
 }
 int freesasa_link_coord(freesasa *s, const double *coord,

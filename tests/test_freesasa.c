@@ -226,7 +226,7 @@ START_TEST (test_freesasa_api_basic)
     ck_assert(freesasa_algorithm_name(s) != NULL);
 
     // atom radius calculation (more extensive analysis in test_classify)
-    ck_assert(fabs(freesasa_radius("ALA"," H  ")) < 1e-10);
+    ck_assert(fabs(freesasa_radius(s,"ALA"," H  ")) < 1e-10);
         
     // probe_radius
     ck_assert(freesasa_set_probe_radius(s,-1.) == FREESASA_WARN);
@@ -269,8 +269,34 @@ START_TEST (test_freesasa_api_basic)
     ck_assert(freesasa_set_nthreads(s,-1) == FREESASA_WARN);
     ck_assert(freesasa_get_nthreads(s) == nt_def);
 #endif
-
+    
     freesasa_set_verbosity(0);
+}
+END_TEST
+
+START_TEST (test_user_classes)
+{
+    freesasa *s = freesasa_new(), *s_ref = freesasa_new();
+    FILE *config = fopen(DATADIR "test.config", "r");
+    ck_assert(config);
+    ck_assert(freesasa_user_classification(s,config) == FREESASA_SUCCESS);
+    ck_assert(fabs(freesasa_radius(s,"AA","aa") - 1.0) < 1e-5);
+    fclose(config);
+
+    config = fopen(DATADIR "oons.config", "r");
+    ck_assert(config);
+    ck_assert(freesasa_user_classification(s,config) == FREESASA_SUCCESS);
+    FILE *ubq = fopen(DATADIR "1ubq.pdb", "r");
+    ck_assert(freesasa_calc_pdb(s,ubq) == FREESASA_SUCCESS);
+    rewind(ubq);
+    freesasa_calc_pdb(s_ref,ubq);    
+    ck_assert(fabs(freesasa_area_total(s) - freesasa_area_total(s_ref)) < 1e-5);
+    fclose(config);
+    
+
+
+    fclose(ubq);
+    freesasa_free(s);
 }
 END_TEST
 
@@ -427,6 +453,7 @@ Suite *sasa_suite()
     tcase_add_test(tc_basic, test_copyparam);
     tcase_add_test(tc_basic, test_calc_errors);
     tcase_add_test(tc_basic, test_minimal_calc);
+    tcase_add_test(tc_basic, test_user_classes);
     
     TCase *tc_lr_basic = tcase_create("Basic L&R");
     tcase_add_checked_fixture(tc_lr_basic,setup_lr_precision,teardown_lr_precision);

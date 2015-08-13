@@ -42,6 +42,9 @@ struct freesasa_classify {
     double **atom_radius; // radius of each atom in each residue
 };
 
+extern int freesasa_trim_whitespace(char *target, const char *src,
+                                    int length);
+
 static freesasa_classify* freesasa_classify_new()
 {
     freesasa_classify *classes = malloc(sizeof(freesasa_classify));
@@ -64,9 +67,12 @@ static int find_string(char **array, const char *key, int array_size)
 {
     assert(key);
     if (array == NULL || array_size == 0) return -1;
+    int n = strlen(key);
+    char key_trimmed[n];
+    freesasa_trim_whitespace(key_trimmed, key, n);
     for (int i = 0; i < array_size; ++i) {
         assert(array[i]);
-        if (strcmp(array[i],key) == 0) return i;
+        if (strcmp(array[i],key_trimmed) == 0) return i;
     }
     return -1;
 } 
@@ -239,22 +245,48 @@ void freesasa_classify_user_free(freesasa_classify* classes)
     }
 }
 
+static void freesasa_classify_find_any(const freesasa_classify *classes,
+                                      const char *atom_name,
+                                      int *res, int *atom)
+{
+    *res = find_string(classes->residues,"ANY",classes->n_residues);
+    if (*res >= 0) {
+        *atom = find_string(classes->atoms[*res],atom_name,classes->n_atoms[*res]); 
+    }
+}
+
+static int freesasa_classify_find_atom(const freesasa_classify *classes, 
+                                       const char *res_name, const char *atom_name,
+                                       int* res, int* atom)
+{
+    *atom = -1;
+    *res = find_string(classes->residues,res_name,classes->n_residues);
+    if (*res < 0) {
+        freesasa_classify_find_any(classes,atom_name,res,atom);
+    } else {
+        *atom = find_string(classes->atoms[*res],atom_name,classes->n_atoms[*res]);
+        if (*atom < 0) {
+            freesasa_classify_find_any(classes,atom_name,res,atom);
+        }
+    }
+    if (*atom < 0) {
+        return freesasa_fail("%s: Unknown residue '%s' and/or atom '%s'.",
+                             __func__, res_name, atom_name);
+    }
+    return FREESASA_SUCCESS;
+}
+
 double freesasa_classify_user_radius(const freesasa_classify *classes, 
-                                       const char *res_name, const char *atom_name)
+                                     const char *res_name, const char *atom_name)
 {
     assert(classes); assert(res_name); assert(atom_name);
-    int res = find_string(classes->residues,res_name,classes->n_residues);
-    if (res < 0) {
-        freesasa_warn("Unknown residue '%s', cannot calculate atom radius.", res_name);
-        return -1.0;
-    }
-    int atom = find_string(classes->atoms[res],atom_name,classes->n_atoms[res]);
-    if (atom < 0) {
-        freesasa_warn("Unknown combination of residue and atom '%s %s', "
-                      "cannot calculate atom radius.", res_name, atom_name);
-        return -1.0;
-    }
-    return classes->atom_radius[res][atom];
+    int res, atom, status;
+    status = freesasa_classify_find_atom(classes,res_name,atom_name,&res,&atom);
+    if (status == FREESASA_SUCCESS)
+        return classes->atom_radius[res][atom];
+    freesasa_fail("%s: couldn't find radius of atom '%s %s'.",
+                  __func__, res_name, atom_name);
+    return -1.0;
 }
 int freesasa_classify_user_n_classes(const freesasa_classify* classes)
 {
@@ -263,21 +295,15 @@ int freesasa_classify_user_n_classes(const freesasa_classify* classes)
 }
 
 int freesasa_classify_user_class(const freesasa_classify *classes,
-                                   const char *res_name, const char *atom_name)
+                                 const char *res_name, const char *atom_name)
 {
     assert(classes); assert(res_name); assert(atom_name);
-    int res = find_string(classes->residues,res_name,classes->n_residues);
-    if (res < 0) {
-        freesasa_warn("Unknown residue '%s', cannot calculate atom radius.", res_name);
-        return -1;
-    }
-    int atom = find_string(classes->atoms[res],atom_name,classes->n_atoms[res]);
-    if (atom < 0) {
-        freesasa_warn("Unknown combination of residue and atom '%s %s', "
-                      "cannot calculate atom radius.", res_name, atom_name);
-        return -1;
-    }
-    return classes->atom_class[res][atom];
+    int res, atom, status;
+    status = freesasa_classify_find_atom(classes,res_name,atom_name,&res,&atom);
+    if (status == FREESASA_SUCCESS)
+        return classes->atom_class[res][atom];
+    return freesasa_fail("%s: couldn't find classification of atom '%s %s'.",
+                         __func__, res_name, atom_name);
 }
 
 const char* freesasa_classify_user_class2str(const freesasa_classify *classes, 

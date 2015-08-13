@@ -342,13 +342,13 @@ void freesasa_classify_user_free(freesasa_classify* classes);
 int freesasa_classify_user_n_classes(const freesasa_classify* classes);
 
 double freesasa_classify_user_radius(const freesasa_classify *classses, 
-                                       const char *res_name, const char *atom_name);
+                                     const char *res_name, const char *atom_name);
 
 int freesasa_classify_user_class(const freesasa_classify *classes,
-                                   const char *res_name, const char *atom_name);
+                                 const char *res_name, const char *atom_name);
 
 const char* freesasa_classify_user_class2str(const freesasa_classify *classes, 
-                                               int class);
+                                             int class);
 
 
 #endif
