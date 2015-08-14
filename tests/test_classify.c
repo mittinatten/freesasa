@@ -327,8 +327,6 @@ START_TEST (test_element)
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" C  ")),"C");
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" CD ")),"C");
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" CE2")),"C");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("   C    ")),"C");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("   CE3  ")),"C");
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" N  ")),"N");
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" ND ")),"N");
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" NE2")),"N");
@@ -344,6 +342,8 @@ START_TEST (test_element)
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("XXXX")),"unknown");
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("XXXXX")),"unknown");
+    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("   C    ")),"unknown");
+    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("   CE3  ")),"unknown");
     ck_assert(freesasa_classify_element2str(-1)==NULL);
     freesasa_set_verbosity(0);
 }

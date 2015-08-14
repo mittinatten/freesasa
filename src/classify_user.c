@@ -42,9 +42,6 @@ struct freesasa_classify {
     double **atom_radius; // radius of each atom in each residue
 };
 
-extern int freesasa_trim_whitespace(char *target, const char *src,
-                                    int length);
-
 static freesasa_classify* freesasa_classify_new()
 {
     freesasa_classify *classes = malloc(sizeof(freesasa_classify));
@@ -69,7 +66,7 @@ static int find_string(char **array, const char *key, int array_size)
     if (array == NULL || array_size == 0) return -1;
     int n = strlen(key);
     char key_trimmed[n];
-    freesasa_trim_whitespace(key_trimmed, key, n);
+    sscanf(key,"%s",key_trimmed);
     for (int i = 0; i < array_size; ++i) {
         assert(array[i]);
         if (strcmp(array[i],key_trimmed) == 0) return i;
@@ -360,6 +357,6 @@ const char* freesasa_classify_user_class2str(const freesasa_classify *classes,
                                              int the_class)
 {
     assert(classes);
-    if (the_class >= 0 && the_class < classes->n_classes) return NULL;
+    if (the_class < 0 && the_class >= classes->n_classes) return NULL;
     return classes->classes[the_class];
 }
