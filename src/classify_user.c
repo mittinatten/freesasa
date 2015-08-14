@@ -258,6 +258,10 @@ freesasa_classify* freesasa_classify_user_clone(const freesasa_classify* source)
         copy->atoms[i] = malloc(sizeof(char*)*source->n_atoms[i]);
         copy->atom_class[i] = malloc(sizeof(int)*source->n_atoms[i]);
         copy->atom_radius[i] = malloc(sizeof(double)*source->n_atoms[i]);
+
+        assert(copy->residues[i]); assert(copy->atoms[i]);
+        assert(copy->atom_class[i]); assert(copy->atom_radius);
+        
         memcpy(copy->atom_class[i],source->atom_class[i],sizeof(int)*source->n_atoms[i]);
         memcpy(copy->atom_radius[i],source->atom_radius[i],sizeof(double)*source->n_atoms[i]);
         for (int j = 0; j < source->n_atoms[i]; ++j) {
@@ -353,9 +357,9 @@ int freesasa_classify_user_class(const freesasa_classify *classes,
 }
 
 const char* freesasa_classify_user_class2str(const freesasa_classify *classes, 
-                                               int class)
+                                             int the_class)
 {
     assert(classes);
-    assert(class >= 0 && class < classes->n_classes);
-    return classes->classes[class];
+    if (the_class >= 0 && the_class < classes->n_classes) return NULL;
+    return classes->classes[the_class];
 }
