@@ -695,6 +695,23 @@ int freesasa_log(const freesasa *s, FILE *log)
     }
     fprintf(log,"time_elapsed: %f s\nn_atoms: %d\n",
             s->elapsed_time,s->n_atoms);
+    fprintf(log,"\nTotal: %9.2f A2\n",freesasa_area_total(s));
+    if (s->user_classes) {
+        for (int i = 0; i < freesasa_classify_user_n_classes(s->user_classes); ++i) {
+            fprintf(log,"%s:  %9.2f A2\n",
+                    freesasa_classify_user_class2str(s->user_classes,i),
+                    freesasa_area_class(s,i));
+        }
+    } else {
+        double tmp;
+        fprintf(log,"Polar:  %9.2f A2\nApolar: %9.2f A2\n",
+                freesasa_area_class(s,FREESASA_POLAR),
+                freesasa_area_class(s, FREESASA_APOLAR));
+        if ((tmp = freesasa_area_class(s, FREESASA_NUCLEICACID)) > 0)
+            printf("Nucleic: %9.2f A2\n",tmp);
+        if ((tmp = freesasa_area_class(s, FREESASA_CLASS_UNKNOWN)) > 0)
+            printf("Unknown: %9.2f A2\n",tmp);
+    }
     if (errno != 0) { 
         return freesasa_warn("%s: %s",__func__,strerror(errno));
     }
