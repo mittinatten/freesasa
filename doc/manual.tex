@@ -365,6 +365,13 @@ entries the element is deduced from the atom name and VdW radius from
 www.periodictable.com is used. Atoms in UNK residues are classified as
 unknown, instead of polar/apolar.
 
+The user can also specify their own radii to the atoms using the function
+\begin{verbatim}
+    int freesasa_user_classification(freesasa *s, FILE *config)
+\end{verbatim}
+An example of such a config-file is included in the repository, and
+it's format documented in the header \verb|classify.h|.
+
 \subsection{Calculations using arrays of coordinates}
 
 The cartesian atom coordinates are stored internally as an array of
@@ -456,18 +463,6 @@ Finally the function
     int freesasa_log(FILE *log, const freesasa*);
 \end{verbatim}
 prints parameters to the file \verb|log|.
-
-\section{Ideas for improvement and extension}
-
-In no specific order
-\begin{itemize}
-\item Perl and/or Python bindings.
-\item Other algorithms?
-\item Allow HETATM-entries, if requested by user.
-\item Interface to download PDB-file and calculate SASA given only PDB
-  code? Is this useful?
-\end{itemize}
-
 
 \appendix
 
