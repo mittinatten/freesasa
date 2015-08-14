@@ -79,11 +79,11 @@ static int freesasa_classify_check_file(FILE *input,
                                         struct file_interval *atoms)
 {
     assert(input); assert(types); assert(atoms);
-    long last_tell = ftell(input);
+    long last_tell;
     const int blen = 200;
     char buf[blen];
     struct file_interval *last_interval = NULL;
-    
+        
     last_tell = ftell(input);
     types->begin = atoms->begin = -1;
     while (fscanf(input,"%s",buf) > 0) {
@@ -99,17 +99,49 @@ static int freesasa_classify_check_file(FILE *input,
         }
         last_tell = ftell(input);
     }
-    last_interval->end = last_tell;
+    if (last_interval != NULL) { 
+        last_interval->end = last_tell;
+    } 
     rewind(input);
-    
+
     if ((types->begin == -1) || 
         (atoms->begin == -1)) {
-        return freesasa_fail("Input configuration lacks (at least) one of "
+        return freesasa_fail("%s: Input configuration lacks (at least) one of "
                              "the entries 'types:' or "
-                             "'atoms:'.");
+                             "'atoms:'.", __func__);
     }
     
     return FREESASA_SUCCESS;
+}
+
+// removes comments and strips leading and trailing whitespace
+int freesasa_classify_user_strip_line(char **line, const char *input) {
+    char *linebuf = malloc(strlen(input));
+    strcpy(linebuf,input);
+    char *comment = strchr(linebuf,'#'), *first, *last;
+    if (comment) *comment = '\0'; // skip comments
+    first = linebuf;
+    last = linebuf + strlen(linebuf) - 1;
+    while (*first == ' ' || *first == '\t') ++first;
+    if (last > first) 
+        while (*last == ' ' || *last == '\t' || *last == '\n') --last;
+    *line = realloc(*line,strlen(first));
+    if (first >= last) {
+        **line = '\0';
+        return 0;
+    }
+    *(last+1) = '\0';
+    strcpy(*line,first);
+    free(linebuf);
+    return strlen(*line);
+}
+
+static int next_line(char **line, FILE *fp) {
+    char *linebuf = NULL;
+    size_t len = 0;
+    getline(&linebuf,&len,fp);
+    return freesasa_classify_user_strip_line(line,linebuf);
+    free(linebuf);
 }
 
 static int freesasa_classify_read_types(freesasa_classify *classes,
@@ -117,14 +149,15 @@ static int freesasa_classify_read_types(freesasa_classify *classes,
                                                struct file_interval fi)
 {
     size_t blen=100;
-    char buf1[blen], buf2[blen];
+    char *line = NULL, buf1[blen], buf2[blen];
     double r;
     fseek(input,fi.begin,SEEK_SET);
     // read command (and discard)
     fscanf(input,"%s",buf1);
     assert(strcmp(buf1,"types:") == 0);
     while (ftell(input) < fi.end) { 
-        if (fscanf(input,"%s %lf %s",buf1,&r,buf2) > 0) {
+        if (next_line(&line,input) == 0) continue;
+        if (sscanf(line,"%s %lf %s",buf1,&r,buf2) == 3) {
             if (find_string(classes->types, buf1, classes->n_types) >= 0) {
                 freesasa_warn("Ignoring duplicate entry '%s'.", buf1);
                 continue;
@@ -147,8 +180,15 @@ static int freesasa_classify_read_types(freesasa_classify *classes,
             classes->atom_type_class = realloc(classes->atom_type_class,
                                                  sizeof(int) * classes->n_types);
             classes->atom_type_class[classes->n_types-1] = areac;
+        } else {
+            return freesasa_fail("%s: Could not parse line '%s', "
+                                 "expecting triplet of type "
+                                 "'TYPE [RADIUS] CLASS' for example "
+                                 "'C_ALI 2.00 apolar'.",
+                                 __func__, line);
         }
     }
+    free(line);
     return FREESASA_SUCCESS;
 }
 
@@ -157,17 +197,19 @@ static int freesasa_classify_read_atoms(freesasa_classify *classes,
                                         struct file_interval fi)
 {
     size_t blen=100;
-    char buf1[blen], buf2[blen], buf3[blen];
+    char *line = NULL, buf1[blen], buf2[blen], buf3[blen];
     double r;
     fseek(input,fi.begin,SEEK_SET);
     // read command (and discard)
     fscanf(input,"%s",buf1);
     assert(strcmp(buf1,"atoms:") == 0);
     while (ftell(input) < fi.end) { 
-        if (fscanf(input,"%s %s %s",buf1,buf2,buf3) > 0) {
+        if (next_line(&line,input) == 0) continue;
+        if (sscanf(line,"%s %s %s",buf1,buf2,buf3) == 3) {
             int res = find_string(classes->residues, buf1, classes->n_residues);
             int type = find_string(classes->types, buf3, classes->n_types);
             if (type < 0) {
+                free(line);
                 return freesasa_fail("Unknown atom type '%s'",buf3);
             }
             if (res < 0) {
@@ -201,17 +243,23 @@ static int freesasa_classify_read_atoms(freesasa_classify *classes,
             classes->atoms[res][n-1] = strdup(buf2);
             classes->atom_class[res][n-1] = classes->atom_type_class[type];
             classes->atom_radius[res][n-1] = classes->atom_type_radius[type];
+        } else {
+            return freesasa_fail("%s: Could not parse line '%s', "
+                                 "expecting triplet of type "
+                                 "'RESIDUE ATOM CLASS' for example "
+                                 "'ALA CB C_ALI'.",
+                                 __func__, line);
         }
     }
-    
+    free(line);
     return FREESASA_SUCCESS;
 }
 freesasa_classify* freesasa_classify_user(FILE *input) 
 {
     assert(input);
     struct file_interval types, atoms; 
-    int result = freesasa_classify_check_file(input,&types, &atoms);
-    if (result != FREESASA_SUCCESS) return NULL;
+    if (freesasa_classify_check_file(input,&types, &atoms) != FREESASA_SUCCESS) 
+        return NULL;
     freesasa_classify *classes = freesasa_classify_new();
     freesasa_classify_read_types(classes, input, types);
     freesasa_classify_read_atoms(classes, input, atoms);
@@ -289,6 +337,7 @@ void freesasa_classify_user_free(freesasa_classify* classes)
         free(classes->atom_type_class);
         free(classes->atom_type_radius);
         free(classes->atom_radius);
+        free(classes);
     }
 }
 

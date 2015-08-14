@@ -71,9 +71,11 @@
        C_ALIPHATIC 2.00 apolar
        C_AROMATIC  1.75 apolar
        N 1.55 polar
-
+       
+       # this is a comment
+       
        atoms:
-       ANY N  N
+       ANY N  N             # this is also a comment
        ANY CB C_ALIPHATIC
 
        ARG CG C_ALIPHATIC

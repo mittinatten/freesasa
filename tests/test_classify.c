@@ -349,6 +349,8 @@ START_TEST (test_element)
 }
 END_TEST
 
+extern int freesasa_classify_user_strip_line(char **line, const char* input);
+
 START_TEST (test_user)
 {
     FILE *f = fopen(DATADIR "oons.config","r");
@@ -374,6 +376,31 @@ START_TEST (test_user)
         ck_assert_str_eq(c1,c2);
     }
     freesasa_classify_user_free(c);
+    
+    f = fopen(DATADIR "empty.pdb", "r");
+    c = freesasa_classify_user(f);
+    ck_assert(c==NULL);
+    fclose(f);
+    freesasa_classify_user_free(c);
+    
+    f = fopen(DATADIR "err.config", "r");
+    c = freesasa_classify_user(f);
+    ck_assert(c==NULL);
+    fclose(f);
+    freesasa_classify_user_free(c);
+    
+    char *line = NULL;
+    ck_assert(freesasa_classify_user_strip_line(&line, "  ") == 0);
+    ck_assert_str_eq(line,"");
+    ck_assert(freesasa_classify_user_strip_line(&line, " \t\n") == 0);
+    ck_assert_str_eq(line,"");
+    ck_assert(freesasa_classify_user_strip_line(&line, " \t# bla \t\n") == 0);
+    ck_assert_str_eq(line,"");
+    ck_assert(freesasa_classify_user_strip_line(&line, " \tabc # bla \t\n") == 3);
+    ck_assert_str_eq(line,"abc");
+    ck_assert(freesasa_classify_user_strip_line(&line, "abc") == 3);
+    ck_assert_str_eq(line,"abc");
+    
 }
 END_TEST
 
