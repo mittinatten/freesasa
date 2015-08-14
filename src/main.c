@@ -144,14 +144,7 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
     }
     if (settings->printlog) {
         freesasa_log(s,stdout);
-        printf("\nTotal:  %9.2f A2\nPolar:  %9.2f A2\nApolar: %9.2f A2\n",
-               freesasa_area_total(s), freesasa_area_class(s,FREESASA_POLAR),
-               freesasa_area_class(s, FREESASA_APOLAR));
     }
-    if ((tmp = freesasa_area_class(s, FREESASA_NUCLEICACID)) > 0)
-        printf("Nucleic: %9.2f A2\n",tmp);
-    if ((tmp = freesasa_area_class(s, FREESASA_CLASS_UNKNOWN)) > 0)
-        printf("Unknown: %9.2f A2\n",tmp);
     if (settings->per_residue_type) {
         FILE *f;
         if ((f = settings->per_residue_type_file) != NULL) {
