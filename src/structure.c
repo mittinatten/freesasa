@@ -310,11 +310,13 @@ const char* freesasa_structure_residue_descriptor(const freesasa_structure *s, i
 
 int freesasa_structure_write_pdb_bfactors(const freesasa_structure *p,
                                           FILE *output,
-                                          const double *values)
+                                          const double *values,
+                                          const double *radius)
 {
     assert(p);
     assert(output);
     assert(values);
+    assert(radius);
 
     // Write ATOM entries
     char buf[PDB_LINE_STRL+1];
@@ -325,7 +327,7 @@ int freesasa_structure_write_pdb_bfactors(const freesasa_structure *p,
                                  __func__);
         }
         strncpy(buf,p->a[i].line,PDB_LINE_STRL);
-        sprintf(&buf[60],"%6.2f",values[i]);
+        sprintf(&buf[54],"%6.2f%6.2f",radius[i],values[i]);
         errno = 0;
         if (fprintf(output,"%s\n",buf) < 0)
             return freesasa_fail("%s: %s", __func__, strerror(errno));

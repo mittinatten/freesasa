@@ -80,7 +80,7 @@ START_TEST (test_write_no_pdb)
     FILE *null = fopen("/dev/null","w"); // won't work on all platforms
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert(freesasa_structure_write_pdb_bfactors(s,null,bfactors) == FREESASA_FAIL);
+    ck_assert(freesasa_structure_write_pdb_bfactors(s,null,bfactors,bfactors) == FREESASA_FAIL);
     freesasa_set_verbosity(0);
 
     fclose(null);
@@ -152,7 +152,7 @@ START_TEST (test_write_1ubq) {
     double *b = (double*)malloc(sizeof(double)*n);
     for (int i = 0; i < n; ++i) b[i] = 1.23;
 
-    ck_assert(freesasa_structure_write_pdb_bfactors(s,tf,b) == FREESASA_SUCCESS);
+    ck_assert(freesasa_structure_write_pdb_bfactors(s,tf,b,b) == FREESASA_SUCCESS);
 
     rewind(tf);
 

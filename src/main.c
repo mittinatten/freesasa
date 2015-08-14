@@ -225,8 +225,12 @@ int main (int argc, char **argv) {
                 short_help();
                 exit(EXIT_FAILURE);
             } else {
-                freesasa_user_classification(settings.s,f);
+                int res = freesasa_user_classification(settings.s,f);
                 fclose(f);
+                if (res == FREESASA_FAIL) {
+                    short_help();
+                    exit(EXIT_FAILURE);
+                }
             }
             break;
         }

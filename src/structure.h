@@ -228,11 +228,13 @@ const char* freesasa_structure_residue_descriptor(const freesasa_structure *s, i
     @param s Self.
     @param output Output file.
     @param values Array of values to use as "B-factors" in the output.
+    @param radii Array of atomic radii to put in the occupancy field in the output.
     @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if there are problems with
     output-file.
  */
 int freesasa_structure_write_pdb_bfactors(const freesasa_structure *s,
                                           FILE *output,
-                                          const double *values);
+                                          const double *values,
+                                          const double *radii);
 
 #endif

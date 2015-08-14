@@ -771,8 +771,10 @@ int freesasa_write_pdb(const freesasa *s, FILE *output)
     assert(s->calculated);
     assert(s->structure);
     assert(s->result->sasa);
+    assert(s->r);
     return freesasa_structure_write_pdb_bfactors(s->structure,output,
-                                                 s->result->sasa);
+                                                 s->result->sasa,
+                                                 s->r);
 }
 
 

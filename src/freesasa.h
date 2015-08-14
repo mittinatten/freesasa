@@ -239,6 +239,16 @@ extern "C"{
                             const char **resnames, 
                             const char **atomnames, int n);
 
+/**
+    Use atom classifcations from file.
+    
+    Reverts to defaults if file not valid.
+
+    @param s a ::freesasa-object
+    @param config config-file
+    @return ::FREESASA_SUCCESS if file contains valid configuration,
+    else ::FREESASA_FAIL.
+ */
     int freesasa_user_classification(freesasa *s, FILE *config);
 
 /* Reads pdb-file and calculates radii for each atom. Memory is
