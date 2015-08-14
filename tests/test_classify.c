@@ -22,6 +22,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <errno.h>
+#include <ctype.h>
 #include <check.h>
 #include <classify.h>
 
