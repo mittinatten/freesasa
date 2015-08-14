@@ -96,7 +96,8 @@ char freesasa_structure_get_pdb_atom(atom_t *a, double *xyz, const char *line)
     return freesasa_pdb_get_alt_coord_label(line);
 }
 
-freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file)
+freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file,
+                                                int include_hetatm)
 {
     assert(pdb_file);
     freesasa_structure *p = freesasa_structure_new();
@@ -107,7 +108,10 @@ freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file)
     assert(line);
     char the_alt = ' ';
     while (getline(&line, &len, pdb_file) != -1) {
-        if (strncmp("ATOM",line,4)==0) {
+        if (strncmp("ATOM",line,4)==0 ||
+            ( (include_hetatm == 1) &&
+              (strncmp("HETATM",line,6) == 0) )
+            ) {
             if (freesasa_pdb_ishydrogen(line)) continue;
             double v[3];
             atom_t a;
@@ -306,11 +310,13 @@ const char* freesasa_structure_residue_descriptor(const freesasa_structure *s, i
 
 int freesasa_structure_write_pdb_bfactors(const freesasa_structure *p,
                                           FILE *output,
-                                          const double *values)
+                                          const double *values,
+                                          const double *radius)
 {
     assert(p);
     assert(output);
     assert(values);
+    assert(radius);
 
     // Write ATOM entries
     char buf[PDB_LINE_STRL+1];
@@ -321,7 +327,7 @@ int freesasa_structure_write_pdb_bfactors(const freesasa_structure *p,
                                  __func__);
         }
         strncpy(buf,p->a[i].line,PDB_LINE_STRL);
-        sprintf(&buf[60],"%6.2f",values[i]);
+        sprintf(&buf[54],"%6.2f%6.2f",radius[i],values[i]);
         errno = 0;
         if (fprintf(output,"%s\n",buf) < 0)
             return freesasa_fail("%s: %s", __func__, strerror(errno));

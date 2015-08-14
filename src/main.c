@@ -20,8 +20,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
+#include <getopt.h>
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif
@@ -45,49 +47,82 @@ char *program_name;
 typedef struct  {
     freesasa *s;
     FILE *B;
+    FILE *per_residue_type_file;
+    FILE *per_residue_file;
     int per_residue_type;
     int per_residue;
     int printlog;
 } settings_t;
 
-settings_t def_settings = {
+static settings_t def_settings = {
     .s = NULL,
     .B = NULL,
+    .per_residue_type_file = NULL,
+    .per_residue_file = NULL,
     .per_residue_type = 0,
     .per_residue = 0,
     .printlog = 1,
 };
 
+static struct option long_options[] = {
+    {"lee-richards", no_argument, 0, 'L'},
+    {"shrake-rupley", no_argument, 0, 'S'},
+    {"probe-radius", required_argument, 0, 'p'},
+    {"lr-slice", required_argument, 0, 'd'},
+    {"sr-points", required_argument, 0, 'n'},
+    {"help", no_argument, 0, 'h'},
+    {"version", no_argument, 0, 'v'},
+    {"no-log", no_argument, 0, 'l'},
+    {"no-warnings", no_argument, 0, 'w'},
+    {"n-threads",required_argument, 0, 't'},
+    {"hetatm",no_argument, 0, 'H'},
+    {"config-file",required_argument,0,'c'},
+    {"sasa-per-residue-type",optional_argument,0,'r'},
+    {"sasa-per-residue-sequence",optional_argument,0,'R'},
+    {"print-as-B-values",required_argument,0,'B'}
+};
+
 void help() {
-    fprintf(stderr,"\nUsage: %s [-hlLSrvn:d:t:p:B:] pdb-file(s)\n",
+    fprintf(stderr,"\nUsage: %s [-hvlwLHSRrc:n:d:t:p:B:] pdb-file(s)\n",
             program_name);
     fprintf(stderr,
-            "\nOptions are:\n"
-            "       -h  print this message\n"
-            "       -p  Probe radius. Default value is %4.2f Å.\n"
-            "       -S  use Shrake & Rupley algorithm [default]\n"
-            "       -L  use Lee & Richards algorithm\n"
-            "       -d  grid spacing in Lee & Richards algorithm\n"
-            "           Default value is %4.2f Å\n"
+            "\nOptions are:\n\n"
+            "  -h (--help)           Print this message\n"
+            "  -v (--version)        Print version of the program\n"
+            "  -l (--no-log)         Don't print log message\n"
+            "  -w (--no-warnings)    Don't print warnings\n"
+            "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm [default]\n"
+            "  -L (--lee-richards)   Use Lee & Richards algorithm\n"
+            "  -H (--hetatm)         Include HETATM entries from input\n");
+    fprintf(stderr,
+            "\n  -c <file> (--config-file=<file>)\n"
+            "       Use atomic radii and classes provided in file\n");
+    fprintf(stderr,
+            "\n  -p <value>  --probe-radius=<value>\n"
+            "       Probe radius [default %4.2f Å].\n"
+            "\n  -d <value>  --lr-slice=<value>\n"
+            "       Slice spacing in Lee & Richards algorithm "
+            " [default %4.2f Å].\n"
             ,FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_LR_D);
     fprintf(stderr,
-            "       -n  number of test points in Shrake & Rupley algorithm\n"
-            "           Default is %d, allowed values are:\n"
-            "           ",FREESASA_DEF_SR_N);
+            "\n  -n <value>  --sr-points=<value>\n"
+            "       Number of test points in Shrake & Rupley algorithm.\n"
+            "       Default is %d, allowed values are:\n"
+            "         ", FREESASA_DEF_SR_N);
     freesasa_srp_print_n_opt(stderr);
 #ifdef HAVE_LIBPTHREAD
     fprintf(stderr,
-            "       -t  number of threads to use in calculation (for multicore CPUs)\n");
+            "\n  -t <value>  --n-threads=<value>\n"
+            "       Number of threads to use in calculation.\n");
 #endif
     fprintf(stderr,
-            "       -r  print SASA for each residue type\n"
-            "       -R  print SASA for each residue, sequentially\n");
-    fprintf(stderr,
-            "       -B  print PDB file with SASA for each atom as B-factors,\n"
-            "           in specified output file.\n");
-    fprintf(stderr,
-            "       -v  print version of the program\n"
-            "       -l  don't print log message\n");
+            "\n  -r  --sasa-per-residue-type[=<output-file>]\n"
+            "  -R  --sasa-per-residue-sequence[=<output-file>]\n"
+            "       Print SASA for each residue, either grouped by "
+            "type or sequentially.\n"
+            "       Writes to STDOUT if no output is specified.\n"
+            "\n  -B  <output-file>  --print-as-B-values=<output-file>\n"
+            "       Print PDB file with SASA for each atom as B-factors.\n");
     fprintf(stderr,
             "\nIf no pdb-file is specified STDIN is used for input.\n\n");
 }
@@ -118,10 +153,23 @@ void run_analysis(FILE *input, const char *name, const settings_t *settings) {
     if ((tmp = freesasa_area_class(s, FREESASA_CLASS_UNKNOWN)) > 0)
         printf("Unknown: %9.2f A2\n",tmp);
     if (settings->per_residue_type) {
-        freesasa_per_residue_type(s,stdout);
+        FILE *f;
+        if ((f = settings->per_residue_type_file) != NULL) {
+            freesasa_per_residue_type(s,f);
+            fclose(f);
+        }
+        else {
+            freesasa_per_residue_type(s,stdout);
+        }
     }
     if (settings->per_residue) {
-        freesasa_per_residue(s,stdout);
+        FILE *f;
+        if ((f = settings->per_residue_file) != NULL) {
+            freesasa_per_residue(s,f);
+            fclose(f);
+        } else {
+            freesasa_per_residue(s,stdout);
+        }
     }
     if (settings->B) freesasa_write_pdb(s,settings->B);
     freesasa_free(s);
@@ -134,15 +182,19 @@ int main (int argc, char **argv) {
     settings.s = freesasa_new();
     extern char *optarg;
     char opt;
+    int n_opt = 'z';
+    char opt_set[n_opt];
+    memset(opt_set,0,n_opt);
 #ifdef PACKAGE_NAME
     program_name = PACKAGE_NAME;
 #else
     program_name = argv[0];
 #endif
-
-    while ((opt = getopt(argc, argv, "n:d:t:p:B:hvlLSrR")) != -1) {
+    int option_index = 0;
+    while ((opt = getopt_long(argc, argv, "hvlwLSHRrc:n:d:t:p:B:",
+                              long_options, &option_index)) != -1) {
         errno = 0;
-        int result = FREESASA_SUCCESS;
+        opt_set[opt] = 1;
         switch(opt) {
         case 'h':
             help();
@@ -153,6 +205,9 @@ int main (int argc, char **argv) {
         case 'l':
             settings.printlog = 0;
             break;
+        case 'w':
+            freesasa_set_verbosity(FREESASA_V_NOWARNINGS);
+            break;
         case 'B':
             settings.B = fopen(optarg, "w");
             if (settings.B == NULL) {
@@ -162,8 +217,25 @@ int main (int argc, char **argv) {
                 exit(EXIT_FAILURE);
             }
             break;
+        case 'c': {
+            FILE *f = fopen(optarg,"r");
+            if (f == NULL) {
+                fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
+                        program_name,optarg,strerror(errno));
+                short_help();
+                exit(EXIT_FAILURE);
+            } else {
+                int res = freesasa_user_classification(settings.s,f);
+                fclose(f);
+                if (res == FREESASA_FAIL) {
+                    short_help();
+                    exit(EXIT_FAILURE);
+                }
+            }
+            break;
+        }
         case 'n':
-            result = freesasa_set_sr_points(settings.s,atoi(optarg));
+            freesasa_set_sr_points(settings.s,atoi(optarg));
             break;
         case 'S':
             freesasa_set_algorithm(settings.s,FREESASA_SHRAKE_RUPLEY);
@@ -174,20 +246,41 @@ int main (int argc, char **argv) {
             ++alg_set;
             break;
         case 'd':
-            result = freesasa_set_lr_delta(settings.s,atof(optarg));
+            freesasa_set_lr_delta(settings.s,atof(optarg));
             break;
         case 'p':
-            result = freesasa_set_probe_radius(settings.s,atof(optarg));
+            freesasa_set_probe_radius(settings.s,atof(optarg));
+            break;
+        case 'H':
+            freesasa_include_hetatm(settings.s,1);
             break;
         case 'r':
             settings.per_residue_type = 1;
+            if (optarg) {
+                settings.per_residue_type_file = fopen(optarg,"w");
+                if (settings.per_residue_type_file == NULL) {
+                    fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
+                            program_name,optarg,strerror(errno));
+                    short_help();
+                    exit(EXIT_FAILURE);
+                }
+            }
             break;
         case 'R':
             settings.per_residue = 1;
+            if (optarg) {
+                settings.per_residue_file = fopen(optarg,"w");
+                if (settings.per_residue_type_file == NULL) {
+                    fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
+                            program_name,optarg,strerror(errno));
+                    short_help();
+                    exit(EXIT_FAILURE);
+                }
+            }
             break;
         case 't':
 #if HAVE_LIBPTHREAD
-            result = freesasa_set_nthreads(settings.s,atoi(optarg));
+            freesasa_set_nthreads(settings.s,atoi(optarg));
 #else
             fprintf(stderr, "%s: warning: option 't' only defined if program"
                     " compiled with thread support.\n",
@@ -199,24 +292,17 @@ int main (int argc, char **argv) {
                     program_name,opt);
             break;
         }
-        if (result == FREESASA_FAIL) {
-            fprintf(stderr, "%s: error: failed to start SASA calculation with "
-                    "provided options. Aborting",
-                    program_name);
-            if (errno != 0) fprintf(stderr,"; %s\n",strerror(errno));
-            else fprintf(stderr,".\n");
-            exit(EXIT_FAILURE);
-        } else if (result == FREESASA_WARN) {
-            fprintf(stderr, "%s: warning: calculations might not "
-                    "correspond to specification or results might "
-                    "be unreliable (see warnings).\n",
-                    program_name);
-        }
     }
     if (alg_set > 1) {
         fprintf(stderr, "%s: error: multiple algorithms specified.\n",
                 program_name);
         exit(EXIT_FAILURE);
+    }
+    if ((opt_set['L'] && opt_set['n']) ||
+        (!opt_set['L'] && opt_set['d']) ) {
+        fprintf(stderr, "%s: warning: The program was given parameters "
+                "not compatible with the selected algorithm. These will be ignored.\n",
+                program_name);
     }
 
     if (argc > optind) {

@@ -80,7 +80,7 @@ START_TEST (test_write_no_pdb)
     FILE *null = fopen("/dev/null","w"); // won't work on all platforms
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert(freesasa_structure_write_pdb_bfactors(s,null,bfactors) == FREESASA_FAIL);
+    ck_assert(freesasa_structure_write_pdb_bfactors(s,null,bfactors,bfactors) == FREESASA_FAIL);
     freesasa_set_verbosity(0);
 
     fclose(null);
@@ -114,7 +114,7 @@ void setup_1ubq(void)
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
     ck_assert(pdb != NULL);
     if (s) freesasa_structure_free(s);
-    s = freesasa_structure_from_pdb(pdb);
+    s = freesasa_structure_from_pdb(pdb,0);
     fclose(pdb);
 }
 
@@ -152,7 +152,7 @@ START_TEST (test_write_1ubq) {
     double *b = (double*)malloc(sizeof(double)*n);
     for (int i = 0; i < n; ++i) b[i] = 1.23;
 
-    ck_assert(freesasa_structure_write_pdb_bfactors(s,tf,b) == FREESASA_SUCCESS);
+    ck_assert(freesasa_structure_write_pdb_bfactors(s,tf,b,b) == FREESASA_SUCCESS);
 
     rewind(tf);
 
@@ -179,7 +179,7 @@ START_TEST (test_pdb)
     for (int i = 0; i < 3; ++i) {
         FILE *pdb = fopen(file_names[i],"r");
         ck_assert(pdb != NULL);
-        freesasa_structure *s = freesasa_structure_from_pdb(pdb);
+        freesasa_structure *s = freesasa_structure_from_pdb(pdb,0);
         if (result_null[i]) ck_assert(s == NULL);
         else ck_assert(s != NULL);
         fclose(pdb);

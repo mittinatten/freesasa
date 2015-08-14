@@ -110,9 +110,12 @@ typedef enum  {FREESASA_ATOMS, FREESASA_RESIDUES}
 /**
     Verbosity levels. 
     - FREESASA_V_NORMAL: print all errors and warnings.
+    - FREESASA_V_NOWARNINGS: print only errors.
     - FREESASA_V_SILENT: print no errors and warnings.
  */
-typedef enum {FREESASA_V_NORMAL, FREESASA_V_SILENT} freesasa_verbosity;
+typedef enum {FREESASA_V_NORMAL,
+              FREESASA_V_NOWARNINGS,
+              FREESASA_V_SILENT} freesasa_verbosity;
 
 /// Limit for protein name lengths
 #define FREESASA_NAME_LIMIT 30
@@ -236,6 +239,18 @@ extern "C"{
                             const char **resnames, 
                             const char **atomnames, int n);
 
+/**
+    Use atom classifcations from file.
+    
+    Reverts to defaults if file not valid.
+
+    @param s a ::freesasa-object
+    @param config config-file
+    @return ::FREESASA_SUCCESS if file contains valid configuration,
+    else ::FREESASA_FAIL.
+ */
+    int freesasa_user_classification(freesasa *s, FILE *config);
+
 /* Reads pdb-file and calculates radii for each atom. Memory is
    allocated to store them in the array 'r'. The return value is the
    size of the allocated array. Prints error and returns FREESASA_FAIL
@@ -246,20 +261,23 @@ extern "C"{
 //int freesasa_generate_radii(double **r, FILE *pdb_file);
 
 /**
-    Default radius of an atom type. 
+    Radius of an atom type. 
 
-    Returns the radius of an atom based on it's type, either according
-    to the OONS classification, or the element if OONS class cannot be
-    determined. Unknown atom types and hydrogens are assigned radius
-    0.0. The residue and atom names are the default names used in PDB
-    files. Any whitespace in the standard needs to be included here,
-    i.e. "CA" should be " CA ".
+    Returns the radius of an atom based on it's type. If no user
+    configuration has been provided, the radius will be either
+    according to the OONS classification, or the element if OONS class
+    cannot be determined. Unknown atom types and hydrogens are
+    assigned radius 0.0. The residue and atom names are the default
+    names used in PDB files. Any whitespace in the standard needs to
+    be included here, i.e. "CA" should be " CA ".
         
     @param residue_name Residue name in the PDB format, "ALA", "PHE", etc.
     @param atom_name Atom name, " CA ", " OXT", etc.
     @return Radius of atom in Ångström. 
 */
-    double freesasa_radius(const char *residue_name, const char *atom_name);
+    double freesasa_radius(const freesasa* s,
+                           const char *residue_name,
+                           const char *atom_name);
 
 /**
     Link a set of coordinates to the freesasa object.
@@ -460,6 +478,14 @@ extern "C"{
     @return Protein name.
 */
     const char* freesasa_get_proteinname(const freesasa *s);
+
+/**
+    Include or don't include `HETATM` when reading PDB files.
+
+    @param s a ::freesasa-object
+    @param include 1 means use `HETATM` records, 0 means don't.
+*/
+    void freesasa_include_hetatm(freesasa *s, int include);
 
 /////////////
 // Results //
