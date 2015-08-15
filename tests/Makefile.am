@@ -1,4 +1,4 @@
-if HAVE_CHECK
+if USE_CHECK
 
 if COND_GCOV
 AM_CFLAGS = --coverage
