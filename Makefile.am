@@ -1,6 +1,6 @@
-SUBDIRS = doc src
+SUBDIRS = doc src 
 
-if HAVE_CHECK
+if USE_CHECK
 SUBDIRS += tests
 endif
 

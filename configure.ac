@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([freesasa], [0.2.1])
+AC_INIT([freesasa], [0.2.1.1])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([src/freesasa.c])
 AC_CONFIG_HEADERS([config.h])
@@ -61,13 +61,13 @@ if test -n "$DOXYGEN"; then
 fi
 
 # Checks for testing
-PKG_CHECK_MODULES([CHECK],[check >= 0.9.4])
+PKG_CHECK_MODULES([CHECK],[check >= 0.9.4],[HAVE_CHECK=1],[HAVE_CHECK=0])
 AC_ARG_ENABLE([gcov],
   [AS_HELP_STRING([--enable-gcov],
     [use Gcov to test the test suite (default is no)])],
     [],
     [enable_gcov=no])
 AM_CONDITIONAL([COND_GCOV],[test '!' "$enable_gcov" = no])
-AM_CONDITIONAL([HAVE_CHECK],[test -n $CHECK])
+AM_CONDITIONAL([USE_CHECK],[test "$HAVE_CHECK" -eq 1])
 
 AC_OUTPUT
