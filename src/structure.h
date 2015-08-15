@@ -135,7 +135,7 @@ void freesasa_structure_r(double *r,
     @param r The array were the results will be stored.
     @param s Self.
     @see freesasa_classify_radius()
-*/
+ */
 
 void freesasa_structure_r_def(double *r, const freesasa_structure *s);
 
