@@ -32,7 +32,6 @@
 #define PASS 1
 #define NOPASS 0
 
-//freesasa *st = NULL;
 double total_ref, polar_ref, apolar_ref;
 double tolerance;
 
@@ -161,6 +160,24 @@ START_TEST (test_sasa_alg_basic)
 }
 END_TEST
 
+START_TEST (test_minimal_calc)
+{
+    freesasa_result result;
+    
+    double coord[3] = {0,0,0};
+    double r[1] = {1.0};
+
+    ck_assert(freesasa_calc_coord(&result,coord,r,1,NULL) == FREESASA_SUCCESS);
+
+    // access areas
+    ck_assert(fabs(result.sasa[0] - result.total) < 1e-10);
+    ck_assert(fabs(result.total - (4*M_PI*M_PI*2.4*2.4)));
+    
+    freesasa_result_free(result);
+}
+END_TEST
+
+
 void setup_sr (void)
 {
     parameters = freesasa_default_parameters;
@@ -217,7 +234,9 @@ START_TEST (test_sasa_1ubq)
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
     FILE *nowrite = fopen("/dev/null","r");
-    ck_assert(freesasa_log(nowrite,res,"test",st,NULL,res_class) == FREESASA_WARN);
+    ck_assert(freesasa_log(nowrite,res,"test",st,NULL,res_class) == FREESASA_FAIL);
+    ck_assert(freesasa_per_residue_type(nowrite,res,st) == FREESASA_FAIL);
+    ck_assert(freesasa_per_residue(nowrite,res,st) == FREESASA_FAIL);
     fclose(nowrite);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     
@@ -264,69 +283,6 @@ START_TEST (test_trimmed_pdb)
 }
 END_TEST
 /*
-START_TEST (test_freesasa_api_basic)
-{
-    freesasa_set_verbosity(FREESASA_V_SILENT);
-    freesasa *s = freesasa_new();
-    ck_assert(s != NULL);
-    ck_assert(freesasa_n_atoms(s) == 0);
-
-    // algorithm
-    ck_assert(freesasa_algorithm_name(s) != NULL);
-    freesasa_set_algorithm(s,FREESASA_LEE_RICHARDS);
-    ck_assert(freesasa_get_algorithm(s) == FREESASA_LEE_RICHARDS);
-    ck_assert(freesasa_algorithm_name(s) != NULL);
-
-    // atom radius calculation (more extensive analysis in test_classify)
-    ck_assert(fabs(freesasa_radius(s,"ALA"," H  ")) < 1e-10);
-        
-    // probe_radius
-    ck_assert(freesasa_set_probe_radius(s,-1.) == FREESASA_WARN);
-    ck_assert(freesasa_set_probe_radius(s,1.2) == FREESASA_SUCCESS);
-    ck_assert(fabs(freesasa_get_probe_radius(s)-1.2) < 1e-10);
-
-    // L&R delta
-    double lrd_def = freesasa_get_lr_delta(s);
-    ck_assert(freesasa_set_lr_delta(s,0.5) == FREESASA_SUCCESS);
-    ck_assert(fabs(freesasa_get_lr_delta(s)-0.5) < 1e-10);
-    ck_assert(freesasa_set_lr_delta(s, 10) == FREESASA_WARN);
-    ck_assert(fabs(freesasa_get_lr_delta(s)-10) < 1e-10);
-    ck_assert(freesasa_set_lr_delta(s,-1.0) == FREESASA_WARN);
-    ck_assert(fabs(freesasa_get_lr_delta(s)-lrd_def) < 1e-10);
-    ck_assert(freesasa_get_sr_points(s) == FREESASA_WARN);
-
-    // S&R test-points
-    freesasa_set_algorithm(s,FREESASA_SHRAKE_RUPLEY);
-    int srp_def = freesasa_get_sr_points(s);
-    ck_assert(freesasa_set_sr_points(s,100) == FREESASA_SUCCESS);
-    ck_assert(freesasa_get_sr_points(s) == 100);
-    ck_assert(freesasa_set_sr_points(s,1123) == FREESASA_WARN);
-    ck_assert(freesasa_set_sr_points(s,-1123) == FREESASA_WARN);
-    ck_assert(freesasa_get_sr_points(s) == srp_def);
-    ck_assert(freesasa_get_lr_delta(s) < 0);
-
-    // names
-    freesasa_set_proteinname(s,"bla");
-    ck_assert_str_eq(freesasa_get_proteinname(s),"bla");
-    const char* longstring = "XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX ";
-    ck_assert(strlen(longstring) > FREESASA_NAME_LIMIT); //necessary for the following test to make sense
-    freesasa_set_proteinname(s,longstring);
-    ck_assert(strlen(freesasa_get_proteinname(s))==FREESASA_NAME_LIMIT);
-
-#if HAVE_LIBPTHREAD
-    // Threads
-    int nt_def = freesasa_get_nthreads(s);
-    ck_assert(freesasa_set_nthreads(s,2) == FREESASA_SUCCESS);
-    ck_assert(freesasa_get_nthreads(s) == 2);
-    ck_assert(freesasa_set_nthreads(s,-1) == FREESASA_WARN);
-    ck_assert(freesasa_get_nthreads(s) == nt_def);
-#endif
-    
-    freesasa_set_verbosity(0);
-    freesasa_free(s);
-}
-END_TEST
-
 START_TEST (test_user_classes)
 {
     freesasa *s = freesasa_new(), *s_ref = freesasa_new();
@@ -352,57 +308,8 @@ START_TEST (test_user_classes)
     freesasa_free(s);
 }
 END_TEST
-
-START_TEST (test_copyparam)
-{
-    int alg = FREESASA_LEE_RICHARDS;
-    int n_sr = 500;
-    int n_thread = 3;
-    double d_lr = 0.5;
-    double probe_radius = 2;
-    freesasa *s1 = freesasa_new(), *s2 = freesasa_new();
-    ck_assert(s1 != NULL);
-    ck_assert(s2 != NULL);
-    freesasa_set_sr_points(s1,n_sr);
-    freesasa_set_algorithm(s1,alg);
-    freesasa_set_lr_delta(s1,d_lr);
-    freesasa_set_nthreads(s1,n_thread);
-    freesasa_set_probe_radius(s1,probe_radius);
-    freesasa_copy_param(s2,s1);
-    ck_assert(freesasa_get_algorithm(s2) == alg);
-    ck_assert(freesasa_get_sr_points(s2) == FREESASA_WARN);
-    ck_assert(freesasa_get_nthreads(s2) == n_thread);
-    ck_assert(fabs(freesasa_get_lr_delta(s2) - d_lr) < 1e-10);
-    ck_assert(fabs(freesasa_get_probe_radius(s2) - probe_radius) < 1e-10);
-    freesasa_set_algorithm(s2,FREESASA_SHRAKE_RUPLEY);
-    ck_assert(freesasa_get_sr_points(s2) == n_sr);
-    freesasa_free(s1);
-    freesasa_free(s2);
-}
-END_TEST
-
-START_TEST (test_minimal_calc)
-{
-    freesasa *s = freesasa_new();
-
-    double coord[3] = {0,0,0};
-    double r[1] = {1.0};
-
-    freesasa_set_verbosity(FREESASA_V_SILENT);
-
-    ck_assert(freesasa_calc_coord(s,coord,r,1) == FREESASA_SUCCESS);
-
-    // access areas
-    ck_assert(fabs(freesasa_area_atom(s,0) - freesasa_area_total(s)) < 1e-10);
-    const double *a = freesasa_area_atom_array(s);
-    ck_assert(a != NULL);
-    ck_assert(fabs(a[0] - freesasa_area_total(s)) < 1e-10);
-
-        freesasa_free(s);
-    freesasa_set_verbosity(0);
-}
-END_TEST
-
+*/
+/*
 START_TEST (test_calc_errors)
 {
     freesasa *s = freesasa_new();
@@ -472,40 +379,16 @@ START_TEST (test_multi_calc)
 #endif
 }
 END_TEST
-
-START_TEST (test_strvp)
-{
-    freesasa *s = freesasa_new();
-    freesasa_strvp *svp; 
-    
-    freesasa_set_verbosity(FREESASA_V_SILENT);
-    freesasa_set_verbosity(FREESASA_V_NORMAL);
-    FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
-    ck_assert(pdb != NULL);
-    freesasa_calc_pdb(s,pdb);
-    fclose(pdb);
-    svp = freesasa_string_value_pairs(s,FREESASA_ATOMS);
-    ck_assert(svp != NULL);
-    ck_assert(svp->n == freesasa_n_atoms(s));
-    ck_assert(svp->value[0] = freesasa_area_atom(s,0));
-    freesasa_strvp_free(svp);
-    svp = freesasa_string_value_pairs(s,FREESASA_RESIDUES);
-    ck_assert(svp != NULL);
-    ck_assert(svp->n == freesasa_n_residues(s));
-    ck_assert(svp->value[0] > 0);
-    freesasa_strvp_free(svp);
-}
-END_TEST
 */
+
 Suite *sasa_suite()
 {
     Suite *s = suite_create("SASA-calculation");
 
     TCase *tc_basic = tcase_create("Basic API");
-    //tcase_add_test(tc_basic, test_freesasa_api_basic);
+    tcase_add_test(tc_basic, test_minimal_calc);
     //tcase_add_test(tc_basic, test_copyparam);
     //tcase_add_test(tc_basic, test_calc_errors);
-    //tcase_add_test(tc_basic, test_minimal_calc);
     //tcase_add_test(tc_basic, test_user_classes);
     
     TCase *tc_lr_basic = tcase_create("Basic L&R");
@@ -527,16 +410,12 @@ Suite *sasa_suite()
     TCase *tc_trimmed = tcase_create("Trimmed PDB file");
     tcase_add_test(tc_basic, test_trimmed_pdb);
 
-    TCase *tc_strvp = tcase_create("string-value pairs");
-    //tcase_add_test(tc_strvp,test_strvp);
-    
     suite_add_tcase(s, tc_basic);
     suite_add_tcase(s, tc_lr_basic);
     suite_add_tcase(s, tc_sr_basic);
     suite_add_tcase(s, tc_lr);
     suite_add_tcase(s, tc_sr);
     suite_add_tcase(s, tc_trimmed);
-    suite_add_tcase(s, tc_strvp);
 
 #if HAVE_LIBPTHREAD
     printf("Using pthread\n");

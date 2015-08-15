@@ -228,23 +228,8 @@ void freesasa_structure_free(freesasa_structure* structure);
 double* freesasa_structure_radius(freesasa_structure *structure,
                                   freesasa_classifier *classifier);
 /**
-    Sums up the SASA for groups of atoms defined by a classifier.
-
-    @param result The results to be analyzed.
-    @param structure Structure to be used to determine atom types.
-    @param classifier The classifier. If NULL default is used.
-    @return A new set of string-value-pairs if classifications was
-    successful that should be freed with
-    freesasa_strvp_free(). Returns NULL if classifier was not
-    compatible with structure.
- */
-freesasa_strvp* freesasa_result_classify(freesasa_result result,
-                                         const freesasa_structure *structure,
-                                         const freesasa_classifier *classifier);
-
-/**
     Generate a classifier from a config-file.
-    
+
     @param file File containing configuration
     @return The generated classifier. NULL if file there were
     problems parsing or reading the file.
@@ -258,21 +243,89 @@ freesasa_classifier* freesasa_classifier_from_file(FILE *file);
  */
 void freesasa_classifier_free(freesasa_classifier classifier);
 
-void freesasa_strvp_free(freesasa_strvp *svp);
-                         
+/**
+    Sums up the SASA for groups of atoms defined by a classifier.
+
+    @param result The results to be analyzed.
+    @param structure Structure to be used to determine atom types.
+    @param classifier The classifier. If NULL, default is used.
+    @return A new set of string-value-pairs if classifications was
+    successful that should be freed with
+    freesasa_strvp_free(). Returns NULL if classifier was not
+    compatible with structure.
+ */
+freesasa_strvp* freesasa_result_classify(freesasa_result result,
+                                         const freesasa_structure *structure,
+                                         const freesasa_classifier *classifier);
+
+/**
+    Frees a ::freesasa_strvp object
+
+    @param strvp the object to be freed
+ */
+void freesasa_strvp_free(freesasa_strvp *strvp);
+
+/**
+    Write SASA values and atomic radii to PDB-file.
+
+    Takes original PDB and for each atom replace the B-factor with the
+    atom's SASA values from latest calculation and the occupancy
+    factor with the radius used.
+
+    @param output File to write to.
+    @param result SASA values.
+    @param structure Structure to use to print PDB.
+    @param radii Radii of atoms.
+    @return ::FREESASA_FAIL if there is no previous PDB input to base
+    output on. ::FREESASA_SUCCESS else.
+ */
 int freesasa_write_pdb(FILE *output, 
                        freesasa_result result,
                        const freesasa_structure *structure, 
                        const double *radii);
 
+/**
+    Print SASA for all residue types to file.
+
+    Prints name/value-pairs with the total SASA of each residue
+    type. The standard 20 amino acids are always included in output,
+    non-standard ones and nucleotides only if they were present in
+    input. Each line in the output is prefixed by the string 'RES:'.
+
+    @param output Output file.
+    @param result SASA values.
+    @param structure The structure (includes sequence information).
+    @return ::FREESASA_FAIL if problems writing to
+    output. ::FREESASA_SUCCESS else.
+*/
 int freesasa_per_residue_type(FILE *output, 
                               freesasa_result result,
                               const freesasa_structure *structure);
+/**
+    Print SASA for each residue individually to file. 
 
+    Each line in the output is prefixed by the string 'SEQ:'.
+
+    @param output Output file.
+    @param result SASA values.
+    @param structure The structure (includes sequence information).
+    @return ::FREESASA_FAIL if problems writing to
+    output. ::FREESASA_SUCCESS else.
+*/
 int freesasa_per_residue(FILE *output,
                          freesasa_result result,
                          const freesasa_structure *structure);
+/**
+    Log calculation results.
 
+    Prints log of calculation results to specified file. 
+
+    @param log Output-file.
+    @param result SASA values.
+    @param name Name of the protein
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
+    problems writing to file.
+*/
 int freesasa_log(FILE *log, 
                  freesasa_result result,
                  const char *name,
@@ -280,8 +333,20 @@ int freesasa_log(FILE *log,
                  const freesasa_parameters *parameters,
                  const freesasa_strvp* area_of_classes);
 
+/**
+    Set the global verbosity level.
+
+    @arg v the verbosity level
+    @return ::FREESASA_SUCCESS. If v is invalid ::FREESASA_FAIL.
+    @see freesasa_verbosity
+*/
 int freesasa_set_verbosity(freesasa_verbosity v);
 
+/**
+    Get the current verbosity level
+
+    @return the verbosity level. 
+*/
 freesasa_verbosity freesasa_get_verbosity(void);
 
 //#ifdef __cplusplus

@@ -299,9 +299,11 @@ int freesasa_log(FILE *log,
     errno = 0;
 
     fprintf(log,"## %s %s ##\n",freesasa_name,freesasa_version);
-    fprintf(log,
-            "name: %s\nalgorithm: %s\nprobe-radius: %f A\n",
-            name,freesasa_alg_names[p->alg],
+    if (name == NULL) fprintf(log,"name: unknown\n");
+    else              fprintf(log,"name: %s\n",name);
+
+    fprintf(log,"algorithm: %s\nprobe-radius: %f A\n",
+            freesasa_alg_names[p->alg],
             p->probe_radius);
     if(HAVE_LIBPTHREAD) {
         fprintf(log,"n_thread: %d\n",p->n_threads);
@@ -326,7 +328,7 @@ int freesasa_log(FILE *log,
         }
     } 
     if (errno != 0) { 
-        return freesasa_warn("%s: %s",__func__,strerror(errno));
+        return freesasa_fail("%s: %s",__func__,strerror(errno));
     }
     return FREESASA_SUCCESS;
 }
