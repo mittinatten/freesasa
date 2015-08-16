@@ -3,8 +3,9 @@ manual = manual.tex
 fig_eps = fig/lnr_circles.eps fig/lnr_slice.eps fig/time.eps fig/precision.eps
 fig_pdf = $(subst .eps,.pdf,$(fig_eps))
 
-EXTRA_DIST = $(manual)
-dist_doc_DATA = 
+EXTRA_DIST = $(manual) $(fig_eps)
+CLEANFILES =
+dist_doc_DATA = $(fig_eps)
 
 if HAVE_LATEX
 
@@ -35,7 +36,7 @@ endif
 
 if HAVE_PDF
 
-#dist_doc_DATA += manual.pdf
+dist_doc_DATA += manual.pdf $(fig_pdf)
 
 $(fig_pdf):
 	@cd fig
@@ -46,6 +47,7 @@ pdf-local: manual.pdf
 manual.pdf: $(manual) $(fig_pdf)
 	pdflatex -interaction=batchmode manual.tex 
 	pdflatex -interaction=batchmode manual.tex 
+	cp manual.pdf html/
 else
 pdf-local: 
 	@echo "pdflatex needed to build .pdf-manual"
@@ -55,10 +57,11 @@ endif
 if HAVE_DOXYGEN
 
 doxyfile.stamp: $(top_srcdir)/src/*.h
+	@if [ ! -d "html/" ]; then mkdir html; fi
 	$(DOXYGEN) Doxyfile
 	echo Timestamp > doxyfile.stamp
 
-CLEANFILES = doxyfile.stamp 
+CLEANFILES += doxyfile.stamp
 
 all-local: doxyfile.stamp
 else
@@ -68,4 +71,7 @@ endif
 
 clean-local:
 	rm -f *.ps *.dvi *.aux *.log *.pdf *.toc *~ 
-	rm -rf doxygen/
+	rm -rf html/doxygen
+
+distclean-local:
+	rm -rf html
