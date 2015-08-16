@@ -28,6 +28,7 @@
 #endif
 
 #include <freesasa.h>
+#include <structure.h>
 
 #define PASS 1
 #define NOPASS 0
@@ -279,38 +280,55 @@ START_TEST (test_trimmed_pdb)
     freesasa_strvp_free(res_class);
 }
 END_TEST
-/*
+
 START_TEST (test_user_classes)
 {
-    freesasa *s = freesasa_new(), *s_ref = freesasa_new();
-    FILE *config = fopen(DATADIR "test.config", "r");
-    ck_assert(config);
-    ck_assert(freesasa_user_classification(s,config) == FREESASA_SUCCESS);
-    ck_assert(fabs(freesasa_radius(s,"AA","aa") - 1.0) < 1e-5);
+    FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
+    FILE *config = fopen(DATADIR "oons.config", "r");
+    freesasa_structure *st;
+    freesasa_classifier *classifier;
+    double *radii,*radii_ref;
+    freesasa_result res;
+    freesasa_strvp *res_class, *res_class_ref;
+
+    ck_assert(pdb != NULL);
+    ck_assert(config != NULL);
+
+    classifier = freesasa_classifier_from_file(config);
+    ck_assert(classifier != NULL);
     fclose(config);
 
-    config = fopen(DATADIR "oons.config", "r");
-    ck_assert(config);
-    ck_assert(freesasa_user_classification(s,config) == FREESASA_SUCCESS);
-    FILE *ubq = fopen(DATADIR "1ubq.pdb", "r");
-    ck_assert(freesasa_calc_pdb(s,ubq) == FREESASA_SUCCESS);
-    rewind(ubq);
-    freesasa_calc_pdb(s_ref,ubq);    
-    ck_assert(fabs(freesasa_area_total(s) - freesasa_area_total(s_ref)) < 1e-5);
-    fclose(config);
+    st = freesasa_structure_from_pdb(pdb,0);
+    ck_assert(st != NULL);
+    fclose(pdb);
     
-
-
-    fclose(ubq);
-    freesasa_free(s);
+    radii = freesasa_structure_radius(st,classifier);
+    radii_ref = freesasa_structure_radius(st,NULL);
+    for (int i = 0; i < freesasa_structure_n(st); ++i) {
+        ck_assert(fabs(radii[i] - radii_ref[i]) < 1e-5);
+    }
+    ck_assert(freesasa_calc_structure(&res,st,radii,NULL) == FREESASA_SUCCESS);
+    res_class = freesasa_result_classify(res,st,classifier);
+    res_class_ref = freesasa_result_classify(res,st,NULL);
+    ck_assert(res_class->n <= res_class_ref->n);
+    for (int i = 0; i < res_class->n; ++i) {
+        ck_assert(res_class->value[i] = res_class_ref->value[i]);
+    }
+    
+    freesasa_strvp_free(res_class);
+    freesasa_strvp_free(res_class_ref);
+    free(radii);
+    free(radii_ref);
+    freesasa_structure_free(st);
+    freesasa_classifier_free(classifier);
+    freesasa_result_free(result);
 }
 END_TEST
-*/
-/*
+
+
 START_TEST (test_calc_errors)
 {
-    freesasa *s = freesasa_new();
-    double dummy;
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 
     fputs("Testing error messages:\n",stderr);
     freesasa_fail("Test fail-message.");
@@ -321,72 +339,51 @@ START_TEST (test_calc_errors)
     //test empty PDB-file
     FILE *empty = fopen(DATADIR "empty.pdb","r");
     ck_assert(empty != NULL);
-    ck_assert(freesasa_calc_pdb(s,empty) == FREESASA_FAIL);
+    ck_assert(freesasa_structure_from_pdb(empty,0) == NULL);
     fclose(empty);
-
-    //test freesasa_calc_atoms
-    const char *da[1] = {""};
-    const char *ala[1] = {"ALA"};
-    const char *calpha[1] = {" CA "};
-    const char *unk[1] = {" XY "};
-    const char *ill[1] = {"  XY  "};
-    const double coord[3] = {0,0,0};
-
-    ck_assert(freesasa_calc_atoms(s,coord,da,da,1) == FREESASA_WARN);
-    ck_assert(freesasa_calc_atoms(s,coord,ala,da,1) == FREESASA_WARN);
-    ck_assert(freesasa_calc_atoms(s,coord,da,calpha,1) == FREESASA_WARN);
-    ck_assert(freesasa_calc_atoms(s,coord,ala,unk,1) == FREESASA_WARN);
-    ck_assert(freesasa_calc_atoms(s,coord,ala,ill,1) == FREESASA_WARN);
-    ck_assert(freesasa_calc_atoms(s,coord,ill,calpha,1) == FREESASA_WARN);
-    ck_assert(freesasa_calc_atoms(s,coord,ala,calpha,1) == FREESASA_SUCCESS);
-    ck_assert((dummy=freesasa_area_total(s)) > 0);
-    ck_assert(fabs(freesasa_area_class(s,FREESASA_APOLAR)- dummy) < 1e-10);
-    ck_assert(fabs(freesasa_area_class(s,FREESASA_POLAR)) < 1e-10 );
-    ck_assert(freesasa_radius_atom(s,0) > 0);
     
-    freesasa_set_verbosity(0);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 
-    freesasa_free(s);
 }
 END_TEST
 
 START_TEST (test_multi_calc)
 {
 #if HAVE_LIBPTHREAD
-    errno = 0;
-    freesasa *s = freesasa_new();
-    //S&R
-    freesasa_set_algorithm(s,FREESASA_SHRAKE_RUPLEY);
-    freesasa_set_sr_points(s,100);
-    freesasa_set_nthreads(s,2);
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
-    ck_assert(pdb != NULL);
-    ck_assert(freesasa_calc_pdb(s,pdb) == FREESASA_SUCCESS);
-    // The reference values were the output of FreeSASA on 2014-02-10
-    ck_assert(fabs(freesasa_area_total(s) - 4759.86096) < 1e-5);
-    // L&R
-    freesasa_set_algorithm(s,FREESASA_LEE_RICHARDS);
-    freesasa_set_lr_delta(s,0.25);
-    rewind(pdb);
-    ck_assert(freesasa_calc_pdb(s,pdb) == FREESASA_SUCCESS);
-    ck_assert(fabs(freesasa_area_total(s) - 4728.26159) < 1e-5);
-
+    freesasa_structure *st = freesasa_structure_from_pdb(pdb,0);
+    freesasa_result res;
+    freesasa_parameters p = freesasa_default_parameters;
+    double *radii = freesasa_structure_radius(st,NULL);
     fclose(pdb);
-    freesasa_free(s);
+
+    //S&R
+    p.n_threads = 2;
+    p.alg = FREESASA_SHRAKE_RUPLEY;
+    ck_assert(freesasa_calc_structure(&res,st,radii,&p) == FREESASA_SUCCESS);
+    ck_assert(fabs(res.total - 4759.86096) < 1e-5);
+    // L&R
+    p.alg = FREESASA_LEE_RICHARDS;
+    p.lee_richards_delta = 0.25;
+    ck_assert(freesasa_calc_structure(&res,st,radii,&p) == FREESASA_SUCCESS);
+    ck_assert(fabs(res.total - 4728.26159) < 1e-5);
+    
+    freesasa_structure_free(st);
+    freesasa_result_free(res);
+    free(radii);
 #endif
 }
 END_TEST
-*/
+
 
 Suite *sasa_suite()
 {
     Suite *s = suite_create("SASA-calculation");
 
-    TCase *tc_basic = tcase_create("Basic API");
+    TCase *tc_basic = tcase_create("API");
     tcase_add_test(tc_basic, test_minimal_calc);
-    //tcase_add_test(tc_basic, test_copyparam);
-    //tcase_add_test(tc_basic, test_calc_errors);
-    //tcase_add_test(tc_basic, test_user_classes);
+    tcase_add_test(tc_basic, test_calc_errors);
+    tcase_add_test(tc_basic, test_user_classes);
     
     TCase *tc_lr_basic = tcase_create("Basic L&R");
     tcase_add_checked_fixture(tc_lr_basic,setup_lr_precision,teardown_lr_precision);
@@ -417,7 +414,7 @@ Suite *sasa_suite()
 #if HAVE_LIBPTHREAD
     printf("Using pthread\n");
     TCase *tc_pthr = tcase_create("Pthread");
-    //tcase_add_test(tc_pthr,test_multi_calc);
+    tcase_add_test(tc_pthr,test_multi_calc);
     suite_add_tcase(s, tc_pthr);
 #endif
     return s;
