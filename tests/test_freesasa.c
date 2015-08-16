@@ -222,8 +222,6 @@ START_TEST (test_sasa_1ubq)
     ck_assert(fabs(res.total - total_ref) < 1e-5);
     ck_assert(fabs(res_class->value[FREESASA_POLAR] - polar_ref) < 1e-5);
     ck_assert(fabs(res_class->value[FREESASA_APOLAR] - apolar_ref) < 1e-5);
-    //ck_assert(freesasa_area_residue(st,"ALA") > 0);
-    //ck_assert(freesasa_n_residues(st) == 76);
     
     FILE *devnull = fopen("/dev/null","w");
     ck_assert(freesasa_write_pdb(devnull,res,st,radii) == FREESASA_SUCCESS);
@@ -271,7 +269,6 @@ START_TEST (test_trimmed_pdb)
     res_class = freesasa_result_classify(result,st,NULL);
     ck_assert(res_class != NULL);
     
-    fprintf(stderr,"%f %f\n",result.total,total_ref); fflush(stderr);
     ck_assert(fabs(result.total - total_ref) < 1e-5);
     ck_assert(fabs(res_class->value[FREESASA_POLAR] - polar_ref) < 1e-5);
     ck_assert(fabs(res_class->value[FREESASA_APOLAR] - apolar_ref) < 1e-5);

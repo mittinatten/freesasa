@@ -349,58 +349,51 @@ START_TEST (test_element)
 }
 END_TEST
 
-extern int freesasa_classify_user_strip_line(char **line, const char* input);
-
 START_TEST (test_user)
 {
     FILE *f = fopen(DATADIR "oons.config","r");
-    freesasa_classify* c = freesasa_classify_user(f);
+    freesasa_classifier* c = freesasa_classifier_from_file(f);
     fclose(f);
     ck_assert(c != NULL);
-    ck_assert(freesasa_classify_user_n_classes(c) == 2);
-    ck_assert(fabs(freesasa_classify_user_radius(c,"ALA","CA") - 2.0) < 1e-5);
-    ck_assert(fabs(freesasa_classify_user_radius(c,"ALA","N") - 1.55) < 1e-5);
-    ck_assert_str_eq(freesasa_classify_user_class2str(c,freesasa_classify_user_class(c,"ALA","CB")), "apolar");
-    ck_assert_str_eq(freesasa_classify_user_class2str(c,freesasa_classify_user_class(c,"ALA","O")), "polar");
+    ck_assert(c->n_classes == 2);
+    ck_assert(fabs(c->radius("ALA","CA",c) - 2.0) < 1e-5);
+    ck_assert(fabs(c->radius("ALA","N",c) - 1.55) < 1e-5);
+    ck_assert_str_eq(c->class2str(c->sasa_class("ALA","CB",c),c), "apolar");
+    ck_assert_str_eq(c->class2str(c->sasa_class("ALA","O",c),c), "polar");
     // compare oons.config and built in classification (should be identical for standard atoms)
     for (int i = 0; i < 188; ++i) {
         const char *res_name = atoms[i].a, *atom_name = atoms[i].b;
         if (strcmp(atom_name," X  ") == 0) continue;
         if (strcmp(atom_name," Y  ") == 0) continue;
-        ck_assert(fabs(freesasa_classify_user_radius(c,res_name,atom_name) -
+        ck_assert(fabs(c->radius(res_name,atom_name,c) -
                        freesasa_classify_radius(res_name,atom_name)) < 1e-5);
         char *c1 = strdup(freesasa_classify_class2str(freesasa_classify_class(res_name,atom_name)));
-        char *c2 = strdup(freesasa_classify_user_class2str(c,freesasa_classify_user_class(c,res_name,atom_name)));
+        char *c2 = strdup(c->class2str(c->sasa_class(res_name,atom_name,c),c));
         for (int i = 0; c1[i]; ++i) c1[i] = tolower(c1[i]); 
         for (int i = 0; c2[i]; ++i) c2[i] = tolower(c2[i]); 
         ck_assert_str_eq(c1,c2);
     }
-    freesasa_classify_user_free(c);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    ck_assert(c->radius("ALA","X",c) < 0);
+    ck_assert(c->radius("X","CB",c) > 0);
+    ck_assert(c->radius("X","X",c) < 0);
+    ck_assert(c->sasa_class("ALA","X",c) == FREESASA_FAIL);
+    ck_assert(c->sasa_class("X","CB",c) >= 0);
+    ck_assert(c->sasa_class("X","X",c) == FREESASA_FAIL);
+    freesasa_classifier_free(c);
     
     f = fopen(DATADIR "empty.pdb", "r");
-    c = freesasa_classify_user(f);
+    c = freesasa_classifier_from_file(f);
     ck_assert(c==NULL);
     fclose(f);
-    freesasa_classify_user_free(c);
+    freesasa_classifier_free(c);
     
     f = fopen(DATADIR "err.config", "r");
-    c = freesasa_classify_user(f);
+    c = freesasa_classifier_from_file(f);
     ck_assert(c==NULL);
     fclose(f);
-    freesasa_classify_user_free(c);
-    
-    char *line = NULL;
-    ck_assert(freesasa_classify_user_strip_line(&line, "  ") == 0);
-    ck_assert_str_eq(line,"");
-    ck_assert(freesasa_classify_user_strip_line(&line, " \t\n") == 0);
-    ck_assert_str_eq(line,"");
-    ck_assert(freesasa_classify_user_strip_line(&line, " \t# bla \t\n") == 0);
-    ck_assert_str_eq(line,"");
-    ck_assert(freesasa_classify_user_strip_line(&line, " \tabc # bla \t\n") == 3);
-    ck_assert_str_eq(line,"abc");
-    ck_assert(freesasa_classify_user_strip_line(&line, "abc") == 3);
-    ck_assert_str_eq(line,"abc");
-    
+    freesasa_classifier_free(c);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 

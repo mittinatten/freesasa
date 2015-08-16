@@ -165,14 +165,14 @@ typedef struct freesasa_classifier {
                       const struct freesasa_classifier*);
     const char* (*class2str)(int the_class,
                              const struct freesasa_classifier*);
+    void (*free_config)(void*);
     int n_classes;
-    void *classifier_data;
+    void *config;
 } freesasa_classifier;
 
 extern const freesasa_parameters freesasa_default_parameters;
 
 extern const freesasa_classifier freesasa_default_classifier;
-
 extern const freesasa_classifier freesasa_residue_classifier;
 
 /**
@@ -241,7 +241,7 @@ freesasa_classifier* freesasa_classifier_from_file(FILE *file);
 
     @param classifier The classifier.
  */
-void freesasa_classifier_free(freesasa_classifier classifier);
+void freesasa_classifier_free(freesasa_classifier *classifier);
 
 /**
     Sums up the SASA for groups of atoms defined by a classifier.

@@ -459,6 +459,3 @@ freesasa_verbosity freesasa_get_verbosity(void) {
     return verbosity;
 }
 
-freesasa_classifier* freesasa_classifier_from_file(FILE *file) { }
-
-void freesasa_classifier_free(freesasa_classifier classifier) { }
