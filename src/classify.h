@@ -52,42 +52,6 @@
     internally for now, and might be expanded as more functionality is
     required.
 
-    The user can also read in a configuration from a file to specify
-    their own classes and atomic radii. The functions that do this
-    have names that start with freesasa_classify_user_, this
-    functionality is still experimental, in that the interface might
-    change, but the file format for the config files should be stable
-    (except that more features might be added). The file should have
-    two sections: `types:` and `atoms:`. The types-section defines
-    what types of atoms are available (aliphatic, aromatic, hydroxyl,
-    ...), what the radius of that type is and what class a type
-    belongs to (polar, apolar, ...). The user is free to define as
-    many types and classes as necessary. The atoms-section consists of
-    triplets of residue-name, atom-name (as in the corresponding PDB
-    entries) and type. A prototype file would be
-    
-       ~~~
-       types:
-       C_ALIPHATIC 2.00 apolar
-       C_AROMATIC  1.75 apolar
-       N 1.55 polar
-       
-       # this is a comment
-       
-       atoms:
-       ANY N  N             # this is also a comment
-       ANY CB C_ALIPHATIC
-
-       ARG CG C_ALIPHATIC
-
-       PRO CB C_AROMATIC
-       ~~~
-
-    The residue type `ANY` can be used for atoms that are the same in
-    all or most residues (such as backbone atoms). If there is an
-    exception for a given amino acid this can be overridden as is
-    shown for `PRO CB` in the example.
-
  */
 
 //! The residue types that are returned by freesasa_classify_residue()

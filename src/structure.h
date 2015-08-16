@@ -26,22 +26,18 @@
 
    This header defines the type ::freesasa_structure, which
    represents a protein structure, and functions to deal with it.
+
+   The functions freesasa_structure_from_pdb() and
+   freesasa_structure_free() are part of the public API and are
+   declared in `freesasa.h`.
  */
 
 #include <stdio.h>
+#include "freesasa.h"
 #include "coord.h"
 
 //! The maximum string length of returned by freesasa_structure_descriptor() 
 #define FREESASA_STRUCTURE_DESCRIPTOR_STRL 20
-
-/**
-    Struct for structure object.
-
-    The struct includes coordinates, and atom names, etc. If it was
-    initiated from a PDB file enough info will be stored so that
-    a new PDB-file can be printed.
-*/
-typedef struct freesasa_structure freesasa_structure;
 
 /**
     Allocate and initialize empty structure.
@@ -49,34 +45,6 @@ typedef struct freesasa_structure freesasa_structure;
     @return The generated struct.
  */
 freesasa_structure* freesasa_structure_new(void);
-
-/**
-    Free structure.
-    
-    @param s Self.
- */
-void freesasa_structure_free(freesasa_structure *s);
-
-/**
-    Init protein with coordinates from pdb-file.  
-
-    Reads in a PDB-file and generates a structure
-    object. Automatically skips hydrogens. If an atom has alternative
-    coordinates, only the first alternative is used. If a file has
-    more than one `MODEL` (as in NMR structures) only the first model
-    is used. User specifies if `HETATM` entries should be included. If
-    non-default behavior is wanted, the PDB-file needs to be modified
-    before calling this function, or atoms can be added manually using
-    freesasa_structure_add_atom().
-
-    @param pdb_file Input PDB-file.
-    @param include_hetatm The value 0 means only read `ATOM` entries, 1 
-    means also include `HETATM` entries.
-    @return The generated struct. Returns `NULL` and prints error if
-    input is invalid.
-*/
-freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file,
-                                                int include_hetatm);
 
 /**
     Add individual atom to structure.
@@ -113,8 +81,7 @@ int freesasa_structure_add_atom(freesasa_structure *s,
 const freesasa_coord* freesasa_structure_xyz(const freesasa_structure *s);
 
 /**
-    Get array of radii using custom conversion function.     
-    
+    \deprecated Get array of radii using custom conversion function.     
     @param r The array were the results will be stored. 
     @param s Self.
     @param atom2radius Function pointer to function that converts 
@@ -127,11 +94,9 @@ void freesasa_structure_r(double *r,
                                                 const char *atom_name));
 
 /**
-    Get array of default atomic radii. 
-
+    \deprecated Get array of default atomic radii. 
     Calls freesasa_structure_r() using freesasa_classify_radius() for
     radius calculations..
-    
     @param r The array were the results will be stored.
     @param s Self.
     @see freesasa_classify_radius()

@@ -225,14 +225,14 @@ START_TEST (test_sasa_1ubq)
     
     FILE *devnull = fopen("/dev/null","w");
     ck_assert(freesasa_write_pdb(devnull,res,st,radii) == FREESASA_SUCCESS);
-    ck_assert(freesasa_log(devnull,res,"test",st,NULL,res_class) == FREESASA_SUCCESS);
+    ck_assert(freesasa_log(devnull,res,"test",NULL,res_class) == FREESASA_SUCCESS);
     ck_assert(freesasa_per_residue_type(devnull,res,st) == FREESASA_SUCCESS);
     ck_assert(freesasa_per_residue(devnull,res,st) == FREESASA_SUCCESS);
     fclose(devnull);
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
     FILE *nowrite = fopen("/dev/null","r");
-    ck_assert(freesasa_log(nowrite,res,"test",st,NULL,res_class) == FREESASA_FAIL);
+    ck_assert(freesasa_log(nowrite,res,"test",NULL,res_class) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue_type(nowrite,res,st) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue(nowrite,res,st) == FREESASA_FAIL);
     fclose(nowrite);

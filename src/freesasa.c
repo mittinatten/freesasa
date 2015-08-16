@@ -283,13 +283,10 @@ double* freesasa_structure_radius(freesasa_structure *structure,
 int freesasa_log(FILE *log, 
                  freesasa_result result,
                  const char *name,
-                 const freesasa_structure *structure, 
                  const freesasa_parameters *parameters,
                  const freesasa_strvp* class_area)
 {
     assert(log);
-    assert(name);
-    assert(structure);
     const freesasa_parameters *p = parameters;
     if (p == NULL) p = &freesasa_default_parameters;
     // Using errno to check for fprintf-errors. Perhaps not completely

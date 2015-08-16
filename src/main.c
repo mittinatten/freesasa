@@ -153,7 +153,7 @@ void run_analysis(FILE *input, const char *name) {
         exit(EXIT_FAILURE);
     }
     if (printlog) {
-        freesasa_log(stdout,result,name,structure,
+        freesasa_log(stdout,result,name,
                      &parameters,classes);
     }
     if (per_residue_type) {
