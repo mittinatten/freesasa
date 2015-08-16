@@ -41,3 +41,4 @@ aclocal.m4
 tmp*
 doc/doxygen
 bindings/python/*.c
+doc/html/
