@@ -21,19 +21,24 @@
 #include "freesasa.h"
 
 int main(int argc, char **argv) {
-    //initialize freesasa-object with default parameters
-    freesasa *s = freesasa_new();
 
-    //do the calculation using default parameters with protein
-    //structure from STDIN
-    freesasa_calc_pdb(s,stdin);
+    freesasa_result result;
+    freesasa_strvp *class_area;
+    freesasa_structure *structure = freesasa_structure_from_pdb(stdin,0);
+    double *radii = freesasa_structure_radius(structure,NULL);
 
-    //print results
-    freesasa_log(s,stdout);
-    printf("Total area: %f A2\n", freesasa_area_total(s));
+    freesasa_calc_structure(&result,structure,radii,NULL);
+    class_area = freesasa_result_classify(result,structure,NULL);
 
-    //clean up
-    freesasa_free(s);
+    printf("Total area: %f A2\n",result.total);
+    for (int i = 0; i < class_area->n; ++i)
+        printf("%s: %f A2\n",class_area->string[i],class_area->value[i]);
+
+    // Free allocated resources, not strictly necessary but good style
+    freesasa_result_free(result);
+    freesasa_strvp_free(class_area);
+    freesasa_structure_free(structure);
+    free(radii);
 
     return EXIT_SUCCESS;
 }
