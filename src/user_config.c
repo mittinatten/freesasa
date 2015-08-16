@@ -46,24 +46,6 @@ typedef struct user_config {
 ///////////////////////////
 
 
-//static freesasa_classifier* freesasa_classify_user_clone(const freesasa_classifier* source);
-/*
-static void user_config_free(void* u);
-
-//static int n_classes();
-
-static double user_radius(const char *res_name, 
-                          const char *atom_name,
-                          const void *config); 
-             
-static int user_class(const char *res_name, 
-                      const char *atom_name,
-                      const void *config);
-
-static const char* user_class2str(int the_class,
-                                  const void *config);
-
-*/
 static user_config* user_config_new()
 {
     user_config *config = malloc(sizeof(user_config));
@@ -86,8 +68,10 @@ static int find_string(char **array, const char *key, int array_size)
 {
     assert(key);
     if (array == NULL || array_size == 0) return -1;
+
     int n = strlen(key);
     char key_trimmed[n];
+
     sscanf(key,"%s",key_trimmed);
     for (int i = 0; i < array_size; ++i) {
         assert(array[i]);
@@ -138,23 +122,30 @@ static int check_file(FILE *input,
 
 // removes comments and strips leading and trailing whitespace
 int strip_line(char **line, const char *input) {
-    char *linebuf = malloc(strlen(input));
+    char *linebuf = malloc(strlen(input)), 
+        *comment, *first, *last;
+    
     strcpy(linebuf,input);
-    char *comment = strchr(linebuf,'#'), *first, *last;
+    comment = strchr(linebuf,'#');
     if (comment) *comment = '\0'; // skip comments
+    
     first = linebuf;
     last = linebuf + strlen(linebuf) - 1;
     while (*first == ' ' || *first == '\t') ++first;
+    
     if (last > first) 
         while (*last == ' ' || *last == '\t' || *last == '\n') --last;
     *line = realloc(*line,strlen(first));
+    
     if (first >= last) {
         **line = '\0';
         return 0;
     }
+    
     *(last+1) = '\0';
     strcpy(*line,first);
     free(linebuf);
+    
     return strlen(*line);
 }
 
@@ -177,6 +168,7 @@ static int read_types(user_config *config,
     size_t blen=100;
     char *line = NULL, buf1[blen], buf2[blen];
     double r;
+    int areac;
     fseek(input,fi.begin,SEEK_SET);
     // read command (and discard)
     fscanf(input,"%s",buf1);
@@ -188,7 +180,7 @@ static int read_types(user_config *config,
                 freesasa_warn("Ignoring duplicate entry for '%s'.", buf1);
                 continue;
             }
-            int areac = find_string(config->classes, buf2, config->n_classes);
+            areac = find_string(config->classes, buf2, config->n_classes);
             if (areac < 0) {
                 config->n_classes++;
                 config->classes = realloc(config->classes,
@@ -225,6 +217,7 @@ static int read_atoms(user_config *config,
     size_t blen=100;
     char *line = NULL, buf1[blen], buf2[blen], buf3[blen];
     double r;
+    int res, type, n;
     fseek(input,fi.begin,SEEK_SET);
     // read command (and discard)
     fscanf(input,"%s",buf1);
@@ -232,8 +225,8 @@ static int read_atoms(user_config *config,
     while (ftell(input) < fi.end) { 
         if (next_line(&line,input) == 0) continue;
         if (sscanf(line,"%s %s %s",buf1,buf2,buf3) == 3) {
-            int res = find_string(config->residues, buf1, config->n_residues);
-            int type = find_string(config->types, buf3, config->n_types);
+            res = find_string(config->residues, buf1, config->n_residues);
+            type = find_string(config->types, buf3, config->n_types);
             if (type < 0) {
                 free(line);
                 return freesasa_fail("Unknown atom type '%s'",buf3);
@@ -262,7 +255,7 @@ static int read_atoms(user_config *config,
                 continue;
             }
             fflush(stdout);
-            int n = ++config->n_atoms[res];
+            n = ++config->n_atoms[res];
             config->atoms[res] = realloc(config->atoms[res],sizeof(char*)*n);
             config->atom_class[res] = realloc(config->atom_class[res],sizeof(int)*n);
             config->atom_radius[res] = realloc(config->atom_radius[res],sizeof(double)*n);
@@ -285,72 +278,23 @@ user_config* read_config(FILE *input)
     assert(input);
     struct file_interval types, atoms; 
     int ret1, ret2;
+    user_config *config;
+    
     if (check_file(input,&types, &atoms) != FREESASA_SUCCESS) 
         return NULL;
-    user_config *config = user_config_new();
+    config = user_config_new();
     ret1 = read_types(config, input, types);
     ret2 = read_atoms(config, input, atoms);
     if (ret1 != FREESASA_SUCCESS || ret2 != FREESASA_SUCCESS) 
         return NULL;
     return config;
 }
-/*
-freesasa_classify* freesasa_classify_user_clone(const freesasa_classify* source)
-{
-    freesasa_classify *copy =freesasa_classify_new();
-    assert(copy);
-    
-    copy->n_classes = source->n_classes;
-    copy->n_types = source->n_types;
-    copy->n_residues = source->n_residues;
-
-    copy->classes = malloc(sizeof(char*)*source->n_classes);
-    copy->types = malloc(sizeof(char*)*source->n_types);
-    copy->residues = malloc(sizeof(char*)*source->n_residues);
-    copy->atoms = malloc(sizeof(char**)*source->n_residues);
-    copy->n_atoms = malloc(sizeof(int)*source->n_residues);
-    copy->atom_class = malloc(sizeof(int*)*source->n_residues);
-    copy->atom_type_class = malloc(sizeof(int)*source->n_types);
-    copy->atom_type_radius = malloc(sizeof(double)*source->n_types);
-    copy->atom_radius = malloc(sizeof(double*)*source->n_residues);
-    
-    assert(copy->classes); assert(copy->types);
-    assert(copy->residues); assert(copy->atoms);
-    assert(copy->n_atoms); assert(copy->atom_class);
-    assert(copy->atom_type_class); assert(copy->atom_type_radius);
-    assert(copy->atom_radius);
-    
-    memcpy(copy->n_atoms,source->n_atoms,sizeof(int)*source->n_residues);
-    memcpy(copy->atom_type_class,source->atom_type_class,sizeof(int)*source->n_types);
-    memcpy(copy->atom_type_radius,source->atom_type_radius,sizeof(double)*source->n_types);
-
-    for (int i = 0; i < source->n_classes; ++i)
-        copy->classes[i] = strdup(source->classes[i]);
-    for (int i = 0; i < source->n_types; ++i)
-        copy->types[i] = strdup(source->types[i]);
-    for (int i = 0; i < source->n_residues; ++i) {
-        copy->residues[i] = strdup(source->residues[i]);
-        copy->atoms[i] = malloc(sizeof(char*)*source->n_atoms[i]);
-        copy->atom_class[i] = malloc(sizeof(int)*source->n_atoms[i]);
-        copy->atom_radius[i] = malloc(sizeof(double)*source->n_atoms[i]);
-
-        assert(copy->residues[i]); assert(copy->atoms[i]);
-        assert(copy->atom_class[i]); assert(copy->atom_radius);
-        
-        memcpy(copy->atom_class[i],source->atom_class[i],sizeof(int)*source->n_atoms[i]);
-        memcpy(copy->atom_radius[i],source->atom_radius[i],sizeof(double)*source->n_atoms[i]);
-        for (int j = 0; j < source->n_atoms[i]; ++j) {
-            copy->atoms[i][j] = strdup(source->atoms[i][j]);
-        }
-    }
-    return copy;
-}
-*/
 
 void user_config_free(void *p)
 {
+    user_config *config;
     if (p) {
-        user_config *config = p;
+        config = p;
         free(config->classes);
         free(config->types);
         for (int i = 0; i < config->n_residues; ++i) {
@@ -411,8 +355,10 @@ static double user_radius(const char *res_name,
                           const freesasa_classifier *classifier)
 {
     assert(classifier); assert(res_name); assert(atom_name);
+    
     int res, atom, status;
     const user_config *config = classifier->config;
+    
     status = find_atom(config,res_name,atom_name,&res,&atom);
     if (status == FREESASA_SUCCESS)
         return config->atom_radius[res][atom];
@@ -420,13 +366,6 @@ static double user_radius(const char *res_name,
                   __func__, res_name, atom_name);
     return -1.0;
 }
-/*
-static int user_n_classes(const freesasa_classify* classes)
-{
-    assert(classes);
-    return classes->n_classes;
-}
-*/
 
 static int user_class(const char *res_name, 
                       const char *atom_name,
@@ -454,8 +393,10 @@ static const char* user_class2str(int the_class,
 freesasa_classifier* freesasa_classifier_from_file(FILE *file)
 {
     assert(file);
+    
     freesasa_classifier* c = malloc(sizeof(freesasa_classifier));
     user_config* config = read_config(file);
+
     if (config == NULL) return NULL;
 
     c->radius = user_radius;

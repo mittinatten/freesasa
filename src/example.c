@@ -21,15 +21,24 @@
 #include "freesasa.h"
 
 int main(int argc, char **argv) {
-
     freesasa_result result;
     freesasa_strvp *class_area;
-    freesasa_structure *structure = freesasa_structure_from_pdb(stdin,0);
-    double *radii = freesasa_structure_radius(structure,NULL);
+    freesasa_structure *structure;
+    double *radii;
 
+    // Read structure from stdin
+    structure = freesasa_structure_from_pdb(stdin,0);
+
+    // Calculate radii for the atoms
+    radii = freesasa_structure_radius(structure,NULL);
+
+    // Calculate SASA using structure and radii, store in 'result'
     freesasa_calc_structure(&result,structure,radii,NULL);
+    
+    // Calculate area of classe (Polar/Apolar/..)
     class_area = freesasa_result_classify(result,structure,NULL);
 
+    // Print results
     printf("Total area: %f A2\n",result.total);
     for (int i = 0; i < class_area->n; ++i)
         printf("%s: %f A2\n",class_area->string[i],class_area->value[i]);

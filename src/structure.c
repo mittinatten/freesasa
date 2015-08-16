@@ -101,21 +101,23 @@ freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file,
 {
     assert(pdb_file);
     freesasa_structure *p = freesasa_structure_new();
-    assert(p);
-    
     size_t len = PDB_LINE_STRL;
     char *line = malloc(sizeof(char)*(len+1));
-    assert(line);
     char the_alt = ' ';
+
+    assert(p);
+    assert(line);
+
     while (getline(&line, &len, pdb_file) != -1) {
         if (strncmp("ATOM",line,4)==0 ||
             ( (include_hetatm == 1) &&
               (strncmp("HETATM",line,6) == 0) )
             ) {
-            if (freesasa_pdb_ishydrogen(line)) continue;
             double v[3];
             atom_t a;
-            char alt = freesasa_structure_get_pdb_atom(&a,v,line);
+            char alt;
+            if (freesasa_pdb_ishydrogen(line)) continue;
+            alt = freesasa_structure_get_pdb_atom(&a,v,line);
             if ((alt != ' ' && the_alt == ' ') || (alt == ' ')) {
                 the_alt = alt;
             } else if (alt != ' ' && alt != the_alt) {
@@ -164,7 +166,10 @@ int freesasa_structure_add_atom(freesasa_structure *p,
     assert(atom_name); assert(residue_name); assert(residue_number);
 
     // check input for consistency
+    int na;
+    atom_t *a;
     int validity = freesasa_classify_validate_atom(residue_name,atom_name);
+
     if (validity != FREESASA_SUCCESS) {
         return freesasa_warn("Skipping atom '%s' in residue '%s'",
                              atom_name,residue_name);
@@ -172,10 +177,10 @@ int freesasa_structure_add_atom(freesasa_structure *p,
 
     // allocate memory, increase number of atoms counter
     freesasa_structure_alloc_one(p);
-    int na = p->number_atoms;
+    na = p->number_atoms;
     assert(na > 0);
     freesasa_coord_append_xyz(p->xyz,&x,&y,&z,1);
-    atom_t *a = &p->a[na-1];
+    a = &p->a[na-1];
     strcpy(a->atom_name,atom_name);
     strcpy(a->res_name,residue_name);
     strcpy(a->res_number,residue_number);
@@ -319,7 +324,7 @@ int freesasa_structure_write_pdb_bfactors(const freesasa_structure *p,
     assert(radius);
 
     // Write ATOM entries
-    char buf[PDB_LINE_STRL+1];
+    char buf[PDB_LINE_STRL+1], buf2[6];
     int n = freesasa_structure_n(p);
     for (int i = 0; i < n; ++i) {
         if (p->a[i].line[0] == '\0') {
@@ -334,7 +339,6 @@ int freesasa_structure_write_pdb_bfactors(const freesasa_structure *p,
     }
     // Write TER line
     errno = 0;
-    char buf2[6];
     strncpy(buf2,&buf[6],5);
     buf2[5]='\0';
     if (fprintf(output,"TER   %5d     %4s %c%4s\n",

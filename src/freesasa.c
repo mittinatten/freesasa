@@ -53,34 +53,6 @@ const char *freesasa_version = "";
 // to control error messages (used for debugging and testing)
 static freesasa_verbosity verbosity;
 
-/*
-struct freesasa {
-    double *r;
-    freesasa_coord *coord;
-    freesasa_class_data *class;
-    int n_atoms;
-    freesasa_structure *structure;
-    freesasa_classify *user_classes;
-
-    //parameters
-    freesasa_algorithm alg;
-    double probe_radius;
-    int n_sr;
-    double d_lr;
-    int n_threads;
-    char proteinname[FREESASA_NAME_LIMIT+1];
-    int include_hetatm;
-
-    //some internal flags
-    int owns_r;
-    int calculated;
-
-    //results
-    double elapsed_time;
-    freesasa_result *result;
-};
-*/
-
 const freesasa_parameters freesasa_default_parameters = {
     .alg = FREESASA_SHRAKE_RUPLEY,
     .probe_radius = FREESASA_DEF_PROBE_RADIUS,
@@ -88,30 +60,6 @@ const freesasa_parameters freesasa_default_parameters = {
     .lee_richards_delta = FREESASA_DEF_LR_D,
     .n_threads = DEF_NTHREADS,
 };
-/*
-const freesasa freesasa_def_param = {
-    .r = NULL,
-    .coord = NULL,
-    .class = NULL,
-    .n_atoms = 0,
-    .structure = NULL,
-    .user_classes = NULL,
-
-    .alg = FREESASA_SHRAKE_RUPLEY,
-    .probe_radius = FREESASA_DEF_PROBE_RADIUS,
-    .n_sr = FREESASA_DEF_SR_N,
-    .d_lr = FREESASA_DEF_LR_D,
-    .n_threads = DEF_NTHREADS,
-    .proteinname = "undef",
-    .include_hetatm = 0,
-
-    .owns_r = 0,
-    .calculated = 0,
-
-    .elapsed_time = 0,
-    .result = NULL
-};
-*/
 
 const char *freesasa_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
@@ -133,8 +81,8 @@ static void freesasa_err_impl(int err, const char *format, va_list arg)
 
 int freesasa_fail(const char *format,...)
 {
-    if (verbosity == FREESASA_V_SILENT) return FREESASA_FAIL;
     va_list arg;
+    if (verbosity == FREESASA_V_SILENT) return FREESASA_FAIL;
     va_start(arg, format);
     freesasa_err_impl(FREESASA_FAIL,format,arg);
     va_end(arg);
@@ -143,9 +91,9 @@ int freesasa_fail(const char *format,...)
 
 int freesasa_warn(const char *format,...)
 {
+    va_list arg;
     if (verbosity == FREESASA_V_NOWARNINGS ||
         verbosity == FREESASA_V_SILENT) return FREESASA_WARN;
-    va_list arg;
     va_start(arg, format);
     freesasa_err_impl(FREESASA_WARN,format,arg);
     va_end(arg);
@@ -157,12 +105,16 @@ freesasa_strvp* freesasa_result_classify(freesasa_result result,
                                          const freesasa_classifier *c) 
 {
     assert(structure);
+
+    int n_atoms;
+    int n_classes;
+    freesasa_strvp *strvp;
     const freesasa_classifier *classifier = c;
     if (c == NULL) classifier = &freesasa_default_classifier;
 
-    int n_atoms = freesasa_structure_n(structure);
-    int n_classes = classifier->n_classes;
-    freesasa_strvp* strvp = freesasa_strvp_new(n_classes);
+    n_atoms = freesasa_structure_n(structure);
+    n_classes = classifier->n_classes;
+    strvp = freesasa_strvp_new(n_classes);
     assert(strvp);
     for(int i = 0; i < n_classes; ++i) {
         strvp->string[i] = strdup(classifier->class2str(i,classifier));
@@ -266,10 +218,13 @@ double* freesasa_structure_radius(freesasa_structure *structure,
                                   freesasa_classifier *classifier)
 {
     assert(structure);
-    const freesasa_classifier *c = classifier;
-    if (c == NULL) c = &freesasa_default_classifier;
+
     int n = freesasa_structure_n(structure);
     double *r = malloc(sizeof(double)*n);
+    const freesasa_classifier *c = classifier;
+
+    if (c == NULL) c = &freesasa_default_classifier;
+
     for (int i = 0; i < n; ++i) {
         const char *res_name = 
             freesasa_structure_atom_res_name(structure, i);
@@ -287,8 +242,10 @@ int freesasa_log(FILE *log,
                  const freesasa_strvp* class_area)
 {
     assert(log);
+
     const freesasa_parameters *p = parameters;
     if (p == NULL) p = &freesasa_default_parameters;
+
     // Using errno to check for fprintf-errors. Perhaps not completely
     // portable, but makes function a lot simpler than checking every
     // return value. 
@@ -319,11 +276,11 @@ int freesasa_log(FILE *log,
         fprintf(log,"\nTotal: %9.2f A2\n",result.total);
     } else {
         int m = 6;
+        char fmt[21];
         for (int i = 0; i < class_area->n; ++i) {
             int l = strlen(class_area->string[i]);
             m = (l > m) ? l : m;
         }
-        char fmt[21];
         sprintf(fmt," %%%ds: %%10.2f A2\n",m);
         fprintf(log,"\n");
         fprintf(log,fmt,"Total",result.total);
@@ -346,9 +303,11 @@ int freesasa_per_residue_type(FILE *output,
 {
     assert(output);
     assert(structure);
+
     const freesasa_classifier *c = &freesasa_residue_classifier;
     freesasa_strvp *residue_area
         = freesasa_result_classify(result,structure,c);
+
     for (int i = 0; i < c->n_classes; ++i) {
         double sasa = residue_area->value[i];
         int result = 0;
@@ -373,10 +332,13 @@ static double freesasa_single_residue_sasa(const freesasa_result *r,
 {
     assert(r);
     assert(s);
+    
     int first, last;
     const double *sasa = r->sasa;            
-    freesasa_structure_residue_atoms(s,r_i,&first,&last);
     double a = 0;
+    
+    freesasa_structure_residue_atoms(s,r_i,&first,&last);
+    
     for (int j = first; j <= last; ++j) {
         a += sasa[r_i];
     }        
@@ -404,16 +366,6 @@ int freesasa_per_residue(FILE *output,
     return FREESASA_SUCCESS;
 }
 
-/*
-double freesasa_area_residue(const freesasa *s, const char *res_name)
-{
-    assert(s); assert(res_name);
-    assert(s->calculated);
-    assert(s->result->residue_type);
-    int res = freesasa_classify_residue(res_name);
-    return s->result->residue_type[res];
-}
-*/
 int freesasa_write_pdb(FILE *output, 
                        freesasa_result result,
                        const freesasa_structure *structure, 
@@ -422,6 +374,7 @@ int freesasa_write_pdb(FILE *output,
     assert(structure); 
     assert(output);
     assert(radii);
+
     return freesasa_structure_write_pdb_bfactors(structure,output,
                                                  result.sasa,
                                                  radii);
@@ -435,21 +388,22 @@ freesasa_strvp* freesasa_strvp_new(int n)
     svp->value = malloc(sizeof(double)*n);
     svp->string = malloc(sizeof(char*)*n);
     assert(svp->value && svp->string);
-
     svp->n = n;
     return svp;
 }
 
 void freesasa_strvp_free(freesasa_strvp *svp)
 {
-    if (svp->value) free(svp->value);
-    if (svp->string) {
-        for (int i = 0; i < svp->n; ++i) {
-            if (svp->string[i]) free(svp->string[i]);
+    if (svp) {
+        if (svp->value) free(svp->value);
+        if (svp->string) {
+            for (int i = 0; i < svp->n; ++i) {
+                if (svp->string[i]) free(svp->string[i]);
+            }
+            free(svp->string);
         }
-        free(svp->string);
+        free(svp);
     }
-    free(svp);
 }
 
 int freesasa_set_verbosity(freesasa_verbosity s) {
@@ -461,6 +415,7 @@ int freesasa_set_verbosity(freesasa_verbosity s) {
     }
     return FREESASA_WARN;
 }
+
 freesasa_verbosity freesasa_get_verbosity(void) {
     return verbosity;
 }

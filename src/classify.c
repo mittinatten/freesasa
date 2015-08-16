@@ -324,13 +324,15 @@ int freesasa_classify_oons(const char *res_name, const char *a)
 {
     assert(strlen(a) == PDB_ATOM_NAME_STRL);
     assert(strlen(res_name) == PDB_ATOM_RES_NAME_STRL);
+    
+    int res;
 
     /* Hydrogens and deuteriums (important to do them here, so they
        can be skipped below */
     if (a[1] == 'H' || a[0] == 'H' ||
         a[1] == 'D' || a[0] == 'D') return freesasa_oons_unknown;
 
-    int res = freesasa_classify_residue(res_name);
+    res = freesasa_classify_residue(res_name);
 
     if (freesasa_classify_is_aminoacid(res)) {
         // backbone

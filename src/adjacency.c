@@ -174,8 +174,10 @@ freesasa_cell_list* freesasa_cell_list_new(double cell_size,
 {
     assert(cell_size > 0);
     assert(coord);
+
     freesasa_cell_list *c = malloc(sizeof(freesasa_cell_list));
     assert(c);
+
     c->d = cell_size;
     cell_list_bounds(c,coord);
     c->cell = malloc(sizeof(freesasa_cell)*c->n);
@@ -271,6 +273,8 @@ static void adjacency_add_pair(freesasa_adjacency *adj,int i, int j,
     double **nb_xyd = adj->nb_xyd;
     double **nb_xd = adj->nb_xd;
     double **nb_yd = adj->nb_yd;
+    double d;
+
     ++nn[i]; ++nn[j];
 
     chunk_up(&(adj->capacity[i]), nn[i], &nb[i], &nb_xyd[i], &nb_xd[i], &nb_yd[i]);
@@ -279,7 +283,7 @@ static void adjacency_add_pair(freesasa_adjacency *adj,int i, int j,
     nb[i][nn[i]-1] = j;
     nb[j][nn[j]-1] = i;
 
-    double d = sqrt(dx*dx+dy*dy);
+    d = sqrt(dx*dx+dy*dy);
 
     nb_xyd[i][nn[i]-1] = d;
     nb_xyd[j][nn[j]-1] = d;
@@ -306,6 +310,7 @@ static void adjacency_calc_cell_pair(freesasa_adjacency *adj,
         dx, dy, dz, cut2;
     int count_neighbors[ci->n_atoms];
     int i,j,ia,ja;
+    
     for (i = 0; i < ci->n_atoms; ++i) {
         ia = ci->atom[i];
         ri = radii[ia];
@@ -361,6 +366,7 @@ freesasa_adjacency *freesasa_adjacency_new(const freesasa_coord* coord,
     double cell_size = 2*max_array(radii,n);
     freesasa_cell_list *c = freesasa_cell_list_new(cell_size,coord);
     assert(c);
+    
     adjacency_fill_list(adj,c,coord,radii);
     freesasa_cell_list_free(c);
     
