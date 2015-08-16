@@ -87,7 +87,6 @@ const freesasa_parameters freesasa_default_parameters = {
     .shrake_rupley_n_points = FREESASA_DEF_SR_N,
     .lee_richards_delta = FREESASA_DEF_LR_D,
     .n_threads = DEF_NTHREADS,
-    .include_hetatm = 0
 };
 /*
 const freesasa freesasa_def_param = {
@@ -319,10 +318,20 @@ int freesasa_log(FILE *log,
         assert(0);
         break;
     }
-    fprintf(log,"\nTotal: %9.2f A2\n",result.total);
-    if (class_area) {
+    if (class_area == NULL) {
+        fprintf(log,"\nTotal: %9.2f A2\n",result.total);
+    } else {
+        int m = 6;
         for (int i = 0; i < class_area->n; ++i) {
-            fprintf(log,"%s:  %9.2f A2\n",
+            int l = strlen(class_area->string[i]);
+            m = (l > m) ? l : m;
+        }
+        char fmt[21];
+        sprintf(fmt," %%%ds: %%10.2f A2\n",m);
+        fprintf(log,"\n");
+        fprintf(log,fmt,"Total",result.total);
+        for (int i = 0; i < class_area->n; ++i) {
+            fprintf(log,fmt,
                     class_area->string[i],
                     class_area->value[i]);
         }

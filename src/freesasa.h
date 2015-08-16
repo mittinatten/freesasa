@@ -123,7 +123,6 @@ typedef struct {
     int shrake_rupley_n_points;
     double lee_richards_delta;
     int n_threads;
-    int include_hetatm;
 } freesasa_parameters;
 
 //! Struct to store results of SASA calculation
