@@ -28,29 +28,83 @@
 
     The header freesasa.h contains the API of FreeSASA and is the only
     header installed by the `make install` target. It provides
-    functions to init and perform a SASA calculation. The user xan
-    select algorithm and provide parameters. The type ::freesasa is
-    used to store parameters and access results. The manual in
-    `doc/manual.pdf` gives some examples of how to use this API.
+    functions to init and perform a SASA calculation.
+
+    @subsection Customizing Customizing behavior
+
+    The types ::freesasa_parameters and ::freesasa_classifier can be
+    used to change the parameters of the calculations. Users who wish
+    to use the defaults can pass NULL wherever pointers to these are
+    requested.
+
+    @subsubsection Parameters Parameters
+
+    Changing parameters is done by passing a ::freesasa_parameters
+    object with the desired values. It can be initialized to default
+    by
+
+    ~~~{.c}
+    freesasa_parameters p = freesasa_default_parameters;
+    ~~~
+
+    @subsubsection Classification Specifying atomic radii and classes
+
+    A classifier-configuration can be read from a file using
+    freesasa_configuration_from_file().
+
+    The user can also read in a configuration from a file to specify
+    their own classes and atomic radii. The functions that do this
+    have names that start with freesasa_classify_user_, this
+    functionality is still experimental, in that the interface might
+    change, but the file format for the config files should be stable
+    (except that more features might be added). The file should have
+    two sections: `types:` and `atoms:`. The types-section defines
+    what types of atoms are available (aliphatic, aromatic, hydroxyl,
+    ...), what the radius of that type is and what class a type
+    belongs to (polar, apolar, ...). The user is free to define as
+    many types and classes as necessary. The atoms-section consists of
+    triplets of residue-name, atom-name (as in the corresponding PDB
+    entries) and type. A prototype file would be
+
+       ~~~
+       types:
+       C_ALIPHATIC 2.00 apolar
+       C_AROMATIC  1.75 apolar
+       N 1.55 polar
+
+       # this is a comment
+
+       atoms:
+       ANY N  N             # this is also a comment
+       ANY CB C_ALIPHATIC
+
+       ARG CG C_ALIPHATIC
+
+       PRO CB C_AROMATIC
+       ~~~
+
+    The residue type `ANY` can be used for atoms that are the same in
+    all or most residues (such as backbone atoms). If there is an
+    exception for a given amino acid this can be overridden as is
+    shown for `PRO CB` in the example.
 
     @subsection Coordinates
 
     If users wish to supply their own coordinates and radii, these are
     accepted as arrays of doubles. The coordinate-array should have
-    size 3*n with coordinates in the order x1,y1,z1,x2,y2,z2,...
+    size 3*n with coordinates in the order
+    `x1,y1,z1,x2,y2,z2,...,xn,yn,zn`.
 
     @subsection Error-reporting 
 
-    Input and user parameters are checked for errors and
-    inconsistencies. All errors are written to stderr and are prefixed
+    All errors and warnings are written to stderr and are prefixed
     with the string 'freesasa'. There are two error codes
     ::FREESASA_WARN and ::FREESASA_FAIL (see documentation of each
     function to see when these are used). ::FREESASA_SUCCESS is used
     for success.
 
     Errors that are attributable to programmers using the library,
-    such as passing null pointers, or calling functions in the wrong
-    order, are checked by asserts.
+    such as passing null pointers are checked by asserts.
 
     Memory allocation errors are only checked with asserts. These
     should be rare in a library of this type, the asserts are there to
@@ -64,28 +118,16 @@
     memory allocation and I/O, and thread-safety should generally not
     be an issue (to the extent that your c library has a threadsafe
     fprintf). The SASA calculation itself can be parallelized by
-    increasing the number of threads through freesasa_set_nthreads()
-    before calling any of the calculation-functions.
+    passing a ::freesasa_parameters struct with
+    ::freesasa_parameters.n_threads set to a value > 1 to any of the
+    calculation functions.
  */
 
 #include <stdio.h>
 
-/**
-   Type used to store parameters and results of FreeSASA
-   calculations. 
- */
-typedef struct freesasa freesasa;
-
-/**
-   Type used to store SASA values for a groups of atoms and strings
-   describing those groups of atoms. The parameter n specifies how
-   many elements the arrays have.
- */
-typedef struct {
-    double *value;
-    char **string;
-    int n;
-} freesasa_strvp;
+#ifdef __cplusplus
+extern "C"{
+#endif
 
 /**
     The FreeSASA algorithms.
@@ -128,391 +170,215 @@ typedef enum {FREESASA_V_NORMAL,
 #define FREESASA_SUCCESS 0 //!< All is ok
 #define FREESASA_FAIL -1 //!< Something went seriously wrong.
 #define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful
-                         
-/////////////////////////////////////////
-// Initialization, freeing and copying //
-/////////////////////////////////////////
 
-#ifdef __cplusplus
-extern "C"{
-#endif
+//! Struct to store parameters for SASA calculation
+typedef struct {
+    freesasa_algorithm alg;     //!< Algorithm
+    double probe_radius;        //!< Probe radius
+    int shrake_rupley_n_points; //!< Number of test points in S&R calculation
+    double lee_richards_delta;  //!< Slice width in L&R calculation
+    int n_threads;              //!< Number of threads to use, if compiled with thread-support
+} freesasa_parameters;
+
+//! Struct to store results of SASA calculation
+typedef struct {
+    double total; //!< Total SASA in A2
+    double *sasa; //!< SASA of each atom in A2
+    int n_atoms;  //!< Number of atoms
+} freesasa_result;
+/**
+    Struct for structure object.
+
+    The struct includes coordinates, and atom names, etc. If it was
+    initiated from a PDB file enough info will be stored so that
+    a new PDB-file can be printed.
+*/
+typedef struct freesasa_structure freesasa_structure;
 
 /**
-    Initiate freesasa-object
-
-    Allocates empty freesasa object with default parameters. Must be
-    called before calculation. 
-
-    @return The created object
+    Struct used to store n string-value-pairs (strvp) in arrays of
+    doubles and strings. freesasa_strvp_free() assumes both arrays
+    and strings are dynamically allocated.
  */
-    freesasa* freesasa_new(void);
+typedef struct {
+    double *value; //!< Array of values
+    char **string; //!< Array of strings
+    int n;         //!< Number of values and strings
+} freesasa_strvp;
 
 /**
-    Frees resources allocated to a freesasa object. 
-
-    @param s a ::freesasa-object
+    Struct used for calculating classes and radii for atoms given
+    their residue-names ('ALA','ARG',...) and atom-names
+    ('CA','N',...).
  */
-    void freesasa_free(freesasa *s);
+typedef struct freesasa_classifier {
+    int n_classes; //!< Total number of different classes
+    void *config;  //!< Optional configuration to allow flexibility
+
+    //! Function that returns an atom radius.
+    double (*radius)(const char* res_name,
+                     const char* atom_name,
+                     const struct freesasa_classifier*);
+
+    //! Function that returns the class [0,1,...,n_classes-1] of an atom
+    int (*sasa_class)(const char* res_name,
+                      const char* atom_name,
+                      const struct freesasa_classifier*);
+
+    //! Function that converts a class to its string descriptor
+    const char* (*class2str)(int the_class,
+                             const struct freesasa_classifier*);
+
+    //! Function that can be called to free the config-pointer
+    void (*free_config)(void*);
+} freesasa_classifier;
+
+//! The default parameters for FreeSASA
+extern const freesasa_parameters freesasa_default_parameters;
+
+//! The default classifier, uses the functions in `classify.h`
+extern const freesasa_classifier freesasa_default_classifier;
+//! Classifier that classifies each atom according to residue
+extern const freesasa_classifier freesasa_residue_classifier;
 
 /**
-    Copy parameters
-    
-    Copies all algorithm parameters. Data from calculations are not
-    copied, i.e. this can be used for setting up several calculations
-    with identical parameters for different proteins.
-    
-    @param target The target configuration
-    @param source The source configuration
+    Calculates SASA based for a given structure and atomic radii.
+
+    @param result Results are written to this pointer
+    @param structure The structure
+    @param radii Atomic radii, this array should have same number of
+    elements as there are atoms in the structure.
+    @param parameters Parameters for the calculation, if NULL
+    defaults are used.
+
+    @return ::FREESASA_SUCCESS if calculations were successful. Else
+    ::FREESASA_FAIL
+*/
+int freesasa_calc_structure(freesasa_result *result,
+                            const freesasa_structure *structure,
+                            const double *radii,
+                            const freesasa_parameters *parameters);
+
+/**
+    Calculates SASA based for a given set of coordinates and radii.
+
+    @param result Results are written to this pointer.
+    @param parameters Parameters for the calculation, if NULL
+    defaults are used.
+    @param xyz Array of coordinates in the form x1,y1,z1,x2,y2,z2,...,xn,yn,zn.
+    @param radii Radii, this array should have same number of
+    elements as there are coordinates.
+    @param n Number of coordinates (i.e. xyz has size 3*n, radii size n).
+
+    @return ::FREESASA_SUCCESS if calculations were successful. Else
+    ::FREESASA_FAIL
  */
-    void freesasa_copy_param(freesasa *target, const freesasa *source);
-
-
-//////////////////////////
-// Perform calculations //
-//////////////////////////
+int freesasa_calc_coord(freesasa_result *result,
+                        const double *xyz, 
+                        const double *radii,
+                        int n,
+                        const freesasa_parameters *parameters);
 
 /**
-    Calculate SASA from coordinates and radii. 
+    Frees the contents of ::freesasa_result object.
 
-    Can be run on any set of spheres. Coordinates and radii will not
-    be stored. This will only generate a total SASA, not polar or
-    apolar, since only radii are provided, not atom types.
-
-    @see freesasa_calc_pdb()
-    @see freesasa_calc_atoms()
-    @param s a ::freesasa-object
-    @param coord An array of coordinates for sphere centers
-      (x1,y1,z1,x2,y2,z2,...)
-    @param r An array of radii for the spheres
-    @param n number of spheres
-    @return ::FREESASA_SUCCESS upon successful calculation, prints and
-    error and returns ::FREESASA_FAIL else. 
+    @param result the object to be freed.
  */
-    int freesasa_calc_coord(freesasa  *s, const double *coord,
-                            const double *r, int n);
+void freesasa_result_free(freesasa_result result);
 
 /**
-    Calculate SASA from PDB-file.
-    
-    Reads PDB-file and calculates SASA. HETATM records are
-    ignored. Results stored in parameter s. If s is not initialized
-    default values are used, these are stored in s.  If the object has
-    been used in calculations previously, the results from these will
-    be over-written. 
+    Init structure with coordinates from pdb-file.
 
-    @see freesasa_calc_atoms()
-    @see freesasa_calc_coord()
-    @param s a ::freesasa-object
-    @param pdb_file PDB-file for input
-    @return ::FREESASA_SUCCESS if calculation successful, prints an
-    error and returns ::FREESASA_FAIL if not.
+    Reads in a PDB-file and generates a structure object.
+    Automatically skips hydrogens. If an atom has alternative
+    coordinates, only the first alternative is used. If a file has
+    more than one `MODEL` (as in NMR structures) only the first model
+    is used. User specifies if `HETATM` entries should be included. If
+    non-default behavior is wanted, the PDB-file needs to be modified
+    before calling this function, or atoms can be added manually using
+    freesasa_structure_add_atom().
+
+    @param pdb Input PDB-file.
+    @param include_hetatm The value 0 means only read `ATOM` entries, 1
+    means also include `HETATM` entries.
+    @return The generated struct. Returns `NULL` and prints error if
+    input is invalid.
+*/
+freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
+                                                int include_hetatm);
+/**
+    Free structure.
+
+    @param structure The structure to free..
  */
-    int freesasa_calc_pdb(freesasa *s, FILE *pdb_file);
+void freesasa_structure_free(freesasa_structure* structure);
 
 /**
-    Calculate SASA from a set of atoms.
-    
-    Similar to freesasa_calc_pdb(), but takes array of coordinates,
-    and residue and atom names separately. The format for resnames and
-    atomnames is the same as used in freesasa_radius(). These are
-    necessary to determine radii and classify atoms
-    (polar/apolar/etc). The same object can be reused for repeated
-    calculations on different structures (i.e. the necessary variables
-    are reset when it is called). 
+    Calculates radii to all atoms in the structure using provided
+    classifier.
 
-    @see freesasa_calc_pdb()
-    @see freesasa_calc_coord()
-    @param s a ::freesasa-object
-    @param coord Array of atom coordinates (x1,y1,z1,x2,y2,z2,...). Should
-      have 3*n elements.
-    @param resnames Array of strings of the format "ALA", "PHE", etc. 
-      Should have n elements.
-    @param atomnames Array of strings of the format " CA ", " OXT", etc. 
-      Should have n elements.
-    @param n number of atoms (>0)
-
-    @return ::FREESASA_SUCCESS if calculation successful.
-      ::FREESASA_WARN if atoms can't be classified. ::FREESASA_FAIL if
-      if calculations failed.
-*/
-    int freesasa_calc_atoms(freesasa *s, const double *coord,
-                            const char **resnames, 
-                            const char **atomnames, int n);
-
-/**
-    Use atom classifcations from file.
-    
-    Reverts to defaults if file not valid.
-
-    @param s a ::freesasa-object
-    @param config config-file
-    @return ::FREESASA_SUCCESS if file contains valid configuration,
-    else ::FREESASA_FAIL.
+    @param structure The structure.
+    @param classifier The classifier.
+    @return Malloc'd array of radii, callers responsibility to free.
  */
-    int freesasa_user_classification(freesasa *s, FILE *config);
-
-/* Reads pdb-file and calculates radii for each atom. Memory is
-   allocated to store them in the array 'r'. The return value is the
-   size of the allocated array. Prints error and returns FREESASA_FAIL
-   if reading input fails. This can be used if coordinates are linked
-   as below and default radii are to be used.  Not properly tested
-   yet!
-*/
-//int freesasa_generate_radii(double **r, FILE *pdb_file);
-
+double* freesasa_structure_radius(freesasa_structure *structure,
+                                  freesasa_classifier *classifier);
 /**
-    Radius of an atom type. 
+    Generate a classifier from a config-file.
 
-    Returns the radius of an atom based on it's type. If no user
-    configuration has been provided, the radius will be either
-    according to the OONS classification, or the element if OONS class
-    cannot be determined. Unknown atom types and hydrogens are
-    assigned radius 0.0. The residue and atom names are the default
-    names used in PDB files. Any whitespace in the standard needs to
-    be included here, i.e. "CA" should be " CA ".
-        
-    @param residue_name Residue name in the PDB format, "ALA", "PHE", etc.
-    @param atom_name Atom name, " CA ", " OXT", etc.
-    @return Radius of atom in Ångström. 
-*/
-    double freesasa_radius(const freesasa* s,
-                           const char *residue_name,
-                           const char *atom_name);
-
-/**
-    Link a set of coordinates to the freesasa object.
-
-    If the linked coordinates are updated freesasa_refresh() can be
-    used to recalculate SASA. FreeSASA will not change the
-    coordinates. If the freesasa-object has been initalized with a
-    PDB file the corresponding memory is released and the results
-    erased.
-    
-    @see freesasa_refresh()
-    @param s a ::freesasa-object
-    @param coord An array of coordinates for sphere centers (x1,y1,z1,x2,y2,z2,...)
-    @param r An array of radii for the spheres
-    @param n number of spheres (>0)
-    @return At the moment always returns ::FREESASA_SUCCESS
-*/
-    int freesasa_link_coord(freesasa *s, const double *coord,
-                            double *r, int n);
-
-/**
-    Recalculate SASA based on linked coordinates.
-
-    Recalculates SASA, based on the assumption that a set of external
-    coordinates have been updated elsewhere. 
-
-    @see freesasa_link_coord()
-    @param s a ::freesasa-object. Used for parameters, coordinate-link
-    and to store results.  
-    @return ::FREESASA_SUCCESS upon successful computation. ::FREESASA_FAIL else.
-*/
-    int freesasa_refresh(freesasa *s);
-
-/**
-    The number of atoms in the latest SASA calculation.  
-    
-    Returns 0 if no coordinates have been linked or no calculation
-    has been performed.
-
-    @param s a ::freesasa-object
-    @return The number of atoms
-*/
-    int freesasa_n_atoms(const freesasa *s);
-
-/**
-    The number of residues in the protein.
-
-    Requires that a protein, not only raw coordinates, has been
-    associated with the provided ::freesasa-object. That is,
-    freesasa_calc_pdb() or freesasa_calc_atoms() have been called
-    successfully beforehand.
-
-    @param s a ::freesasa-object
-    @return The number of residues.
+    @param file File containing configuration
+    @return The generated classifier. NULL if file there were
+    problems parsing or reading the file.
  */
-    int freesasa_n_residues(const freesasa *s);
-
-//////////////////////////////
-// Settings for calculation //
-//////////////////////////////
+freesasa_classifier* freesasa_classifier_from_file(FILE *file);
 
 /**
-    Set algorithm. 
+    Frees the contents of a classifier object
 
-    @param s a ::freesasa-object
-    @param alg The algorithm to be set.
-*/
-    void freesasa_set_algorithm(freesasa *s, freesasa_algorithm alg);
-
-/**
-    Get algorithm. 
-
-    @param s a ::freesasa-object
-    @return The algorithm.
-*/
-    freesasa_algorithm freesasa_get_algorithm(const freesasa *s);
+    @param classifier The classifier.
+ */
+void freesasa_classifier_free(freesasa_classifier *classifier);
 
 /**
-    Get algorithm as string.
- 
-    @param s a ::freesasa-object
-    @return The algorithm as a string.
-*/
-    const char* freesasa_algorithm_name(const freesasa *s);
+    Sums up the SASA for groups of atoms defined by a classifier.
+
+    @param result The results to be analyzed.
+    @param structure Structure to be used to determine atom types.
+    @param classifier The classifier. If NULL, default is used.
+    @return A new set of string-value-pairs if classifications was
+    successful that should be freed with
+    freesasa_strvp_free(). Returns NULL if classifier was not
+    compatible with structure.
+ */
+freesasa_strvp* freesasa_result_classify(freesasa_result result,
+                                         const freesasa_structure *structure,
+                                         const freesasa_classifier *classifier);
 
 /**
-    Set probe radius.
+    Frees a ::freesasa_strvp object
 
-    Sets probe radius for SASA calculations (default
-    ::FREESASA_DEF_PROBE_RADIUS = 1.4 Å). If submitted radius is
-    invalid, previous value is kept and an error message printed.
-
-    @param s a ::freesasa-object
-    @param r Value for probe radius in Ångström.
-    @return ::FREESASA_SUCCESS for valid r-values. ::FREESASA_WARN else. 
-*/
-    int freesasa_set_probe_radius(freesasa *s,double r);
+    @param strvp the object to be freed
+ */
+void freesasa_strvp_free(freesasa_strvp *strvp);
 
 /**
-    Get probe radius.
+    Write SASA values and atomic radii to PDB-file.
 
-    @param s a ::freesasa-object
-    @return Probe radius in Ångström. 
-*/
-    double freesasa_get_probe_radius(const freesasa *s);
-    
-/**
-    Set number of test points for S&R algorithm.
+    Takes original PDB and for each atom replace the B-factor with the
+    atom's SASA values from latest calculation and the occupancy
+    factor with the radius used.
 
-    Sets number of test points for S&R algorithm (default
-    ::FREESASA_DEF_SR_N = 100).
-    
-    @param s a ::freesasa-object
-    @param n Number of points.
-    @return ::FREESASA_SUCCESS if n is valid. Else: prints error
-    message, returns ::FREESASA_WARN and sets to default value.
-*/
-    int freesasa_set_sr_points(freesasa *s, int n);
-
-/**
-    Get number of test points for S&R algorithm. 
-
-    @param s a ::freesasa-object
-    @return Number of points. ::FREESASA_WARN if S&R algorithm not
-    selected.
-*/
-    int freesasa_get_sr_points(const freesasa *s);
-
-/**
-    Set L&R slice width.
-
-    Sets slice width d for L&R algorithm in Ångström (default
-    FREESASA_DEF_LR_D = 0.25 Å). 
-
-    @param s a ::freesasa-object
-    @param d Slice width.
-
-    @return ::FREESASA_SUCCESS if 0 < d <= 2.0. Larger d are accepted
-    but the functions returns ::FREESASA_WARN and prints
-    warning. Returns ::FREESASA_WARN and sets to default value for d
-    <= 0 or when d is not finite.
-    
-*/
-    int freesasa_set_lr_delta(freesasa *s, double d);
-
-/**
-    Get L&R slice width.
-    
-    Get slice width for L&R algorithm in Ångström. 
-
-    @param s a ::freesasa-object
-    @return Slice width. Negative value if L&R algorithm not
-    selected. 
-*/
-    double freesasa_get_lr_delta(const freesasa *s);
-
-/**
-    Set number of threads.
-
-    Sets the number of threads to use for parallel computations,
-    useful for large proteins and high resolution. Minimal gain for
-    smaller systems.
-
-    @param s a ::freesasa-object
-    @param n Number of threads.
-    @return ::FREESASA_SUCCESS if n is valid, uses default value and
-    returns ::FREESASA_WARN else.
-*/
-    int freesasa_set_nthreads(freesasa *s,int n);
-
-/**
-    Get number of threads.
-
-    Gets the number of threads used in the calcultion.
-
-    @param s a ::freesasa-object
-    @return Number of threads.
-*/
-    int freesasa_get_nthreads(const freesasa *s);
-
-/**
-    Set protein name
-    
-    Sets name of protein, useful for logging. Uses last
-    ::FREESASA_NAME_LIMIT characters if name is too long (since then it
-    is probably a file name and the last characters are the most
-    interesting). 
-
-    @param s a ::freesasa-object
-    @param name Protein name.
-*/
-    void freesasa_set_proteinname(freesasa *s,const char *name);
-
-/**
-    Get protein name. 
-
-    @param s a ::freesasa-object
-    @return Protein name.
-*/
-    const char* freesasa_get_proteinname(const freesasa *s);
-
-/**
-    Include or don't include `HETATM` when reading PDB files.
-
-    @param s a ::freesasa-object
-    @param include 1 means use `HETATM` records, 0 means don't.
-*/
-    void freesasa_include_hetatm(freesasa *s, int include);
-
-/////////////
-// Results //
-/////////////
-
-/**
-    Total SASA. 
-
-    Asserts that calculations have been performed.
-    
-    @param s a ::freesasa-object
-    @return Total SASA in Å^2. x
-*/
-    double freesasa_area_total(const freesasa *s);
-
-/**
-    SASA of a certain class of atoms
-
-    Asserts that calculations have been performed and that there is
-    information about the atoms (i.e. calculations were not done
-    on "abstract" coordinates).
-
-    @param s a ::freesasa-object
-    @param c Class of atoms (polar/apolar/nucleic/unknown). 
-    @return SASA of class c. 
-*/
-    double freesasa_area_class(const freesasa *s, freesasa_class c);
+    @param output File to write to.
+    @param result SASA values.
+    @param structure Structure to use to print PDB.
+    @param radii Radii of atoms.
+    @return ::FREESASA_FAIL if there is no previous PDB input to base
+    output on. ::FREESASA_SUCCESS else.
+ */
+int freesasa_write_pdb(FILE *output, 
+                       freesasa_result result,
+                       const freesasa_structure *structure, 
+                       const double *radii);
 
 /**
     Print SASA for all residue types to file.
@@ -522,151 +388,48 @@ extern "C"{
     non-standard ones and nucleotides only if they were present in
     input. Each line in the output is prefixed by the string 'RES:'.
 
-    Asserts that calculations have been performed and that there is
-    information about the atoms (i.e. calculations were not done
-    on "abstract" coordinates).
-
-    @param s a ::freesasa-object
     @param output Output file.
+    @param result SASA values.
+    @param structure The structure (includes sequence information).
     @return ::FREESASA_FAIL if problems writing to
     output. ::FREESASA_SUCCESS else.
 */
-    int freesasa_per_residue_type(const freesasa *s, FILE *output);
-
+int freesasa_per_residue_type(FILE *output, 
+                              freesasa_result result,
+                              const freesasa_structure *structure);
 /**
     Print SASA for each residue individually to file. 
 
     Each line in the output is prefixed by the string 'SEQ:'.
 
-
-    @param s a ::freesasa-object
     @param output Output file.
+    @param result SASA values.
+    @param structure The structure (includes sequence information).
     @return ::FREESASA_FAIL if problems writing to
     output. ::FREESASA_SUCCESS else.
- */
-    int freesasa_per_residue(const freesasa *s, FILE *output);
-/**
-
-    Total SASA for specific residue type.
-
-    Returns total SASA for residue of specified type. If the value of
-    res_name is unknown, a warning is printed and the SASA value for
-    residue type UNK returned, because that is where it would be
-    stored. I.e. if residues not known by FreeSASA are used, the only
-    option currently is to group them under "UNK". 
-
-    Asserts that calculations have been performed and that there is
-    information about the atoms (i.e. calculations were not done
-    on "abstract" coordinates).
-
-    @param s a ::freesasa-object
-    @param res_name The residue (string of format "ALA", "PHE", etc).
-    @return SASA of residue type res_name. 
 */
-    double freesasa_area_residue(const freesasa *s, const char *res_name);
-
-/**
-    Don't use yet!
-
-    Groups atoms, and returns SASA for each group and a string
-    describing it. The available types of atom groups. The returned
-    struct should be freed using freesasa_free_strvp().
-
-    @see freesasa_free_strvp()
-
-    @param s a ::freesasa-object
-    @param type The type of result
-    @return the string-value pairs. Returns NULL if calculation has
-    not been performed yet or if type is illegal
- */
-    freesasa_strvp* freesasa_string_value_pairs(const freesasa *s,freesasa_result_type type);
-
-/**
-    Don't use yet!
-    
-    Free string-value pair arrays allocated by freesasa_string_value_pairs()
-
-    @param s the object to free.
-    @see freesasa_string_value_pairs()
- */
-    void freesasa_strvp_free(freesasa_strvp* s);
-
-/**
-    Write SASA values to PDB-file.
-    
-    Takes original PDB and replaces B-factors with those from latest
-    calculation. 
-
-    Asserts that calculations have been performed.
-
-    @param s a ::freesasa-object
-    @param output File to write to.
-    @return ::FREESASA_FAIL if there is no previous PDB input to base
-    output on. ::FREESASA_SUCCESS else.
- */
-    int freesasa_write_pdb(const freesasa *s, FILE *output);
-
-
-//////////////////////////////////
-// Results for individual atoms //
-//////////////////////////////////
-
-/**
-    SASA value for given atom.
-
-    Asserts that calculations have been performed and that index is
-    valid.
-
-    @param s a ::freesasa-object
-    @param i Atom index
-    @return SASA value for atom i. 
-*/
-    double freesasa_area_atom(const freesasa *s, int i);
-
-/**
-    SASA for all atoms individually.
-
-    Asserts that calculations have been performed.
-
-    @param s a ::freesasa-object
-    @return Array of SASA for all atoms. 
-*/
-    const double* freesasa_area_atom_array(const freesasa *s);
-
-/**
-    Radius of given atom.
-    
-    @param s a ::freesasa-object
-    @param i Atom index.
-    @return Radius of atom in Ångström. Prints error and returns negative
-    value if atom index is invalid or no value available.
-*/
-    double freesasa_radius_atom(const freesasa *s, int i);
-
-/**
-    Get atomic radii.
-    
-    @param s a ::freesasa-object
-    @return Array of all atomic radii. Returns NULL if no radii are
-    available.
-*/
-    const double* freesasa_radius_atom_array(const freesasa *s);
-
-////////////////////////////
-// Other types of results //
-////////////////////////////
-
+int freesasa_per_residue(FILE *output,
+                         freesasa_result result,
+                         const freesasa_structure *structure);
 /**
     Log calculation results.
 
     Prints log of calculation results to specified file. 
 
-    @param s a ::freesasa-object
     @param log Output-file.
-    @return ::FREESASA_SUCCESS on success, ::FREESASA_WARN if
+    @param result SASA values.
+    @param name Name of the protein, if NULL "unknown" used.
+    @param parameters Parameters to print, if NULL defaults are used
+    @param class_sasa The SASA values for each class, if NULL
+    only total SASA printed
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
     problems writing to file.
 */
-    int freesasa_log(const freesasa *s, FILE *log);
+int freesasa_log(FILE *log, 
+                 freesasa_result result,
+                 const char *name,
+                 const freesasa_parameters *parameters,
+                 const freesasa_strvp* class_sasa);
 
 /**
     Set the global verbosity level.
@@ -674,14 +437,15 @@ extern "C"{
     @arg v the verbosity level
     @return ::FREESASA_SUCCESS. If v is invalid ::FREESASA_FAIL.
     @see freesasa_verbosity
- */    
-    int freesasa_set_verbosity(freesasa_verbosity v);
+*/
+int freesasa_set_verbosity(freesasa_verbosity v);
+
 /**
     Get the current verbosity level
 
     @return the verbosity level. 
- */
-    freesasa_verbosity freesasa_get_verbosity(void);
+*/
+freesasa_verbosity freesasa_get_verbosity(void);
 
 #ifdef __cplusplus
 }

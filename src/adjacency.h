@@ -27,13 +27,13 @@ typedef struct freesasa_adjacency_element freesasa_adjacency_element;
 
 //! Adjacency list
 typedef struct {
-    int n; //! number of elements
-    int **nb;
-    int *nn; //! number of neighbors to each element
-    double **nb_xyd; //! distance between neighbors in xy-plane
-    double **nb_xd; //! signed distance between neighbors along x-axis
-    double **nb_yd; //! signed distance between neighbors along y-axis
-    int *capacity; //! keeps track of memory chunks (don't change this)
+    int n; //!< number of elements
+    int **nb; //!< neighbors to each element
+    int *nn; //!< number of neighbors to each element
+    double **nb_xyd; //!< distance between neighbors in xy-plane
+    double **nb_xd; //!< signed distance between neighbors along x-axis
+    double **nb_yd; //!< signed distance between neighbors along y-axis
+    int *capacity; //!< keeps track of memory chunks (don't change this)
 } freesasa_adjacency;
 
 /**

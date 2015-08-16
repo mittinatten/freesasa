@@ -59,14 +59,57 @@ static const char *oons_names[] = {
     "unknown_polar","unknown"
 };
 
-/** helper function, trims whitespace from beginning and end of string */
-/*int freesasa_trim_whitespace(char *target, const char *src,
-                             int length)
+static double default_radius(const char *res_name,
+                             const char *atom_name,
+                             const freesasa_classifier *c)
 {
-    sscanf(src,"%s",target);
-    return strlen(target);
-    }*/
+    return freesasa_classify_radius(res_name,atom_name);
+}
 
+static int default_class(const char *res_name,
+                         const char *atom_name,
+                         const freesasa_classifier *c)
+{
+    return freesasa_classify_class(res_name,atom_name);
+}
+
+const char* default_class2str(int i,
+                              const freesasa_classifier *c)
+{
+    return freesasa_classify_class2str(i);
+}
+
+const freesasa_classifier freesasa_default_classifier = {
+    .radius = default_radius,
+    .sasa_class = default_class,
+    .class2str = default_class2str,
+    .n_classes = FREESASA_CLASS_UNKNOWN+1,
+    .free_config = NULL,
+    .config = NULL
+};
+
+static int residue(const char *res_name,
+                   const char *atom_name,
+                   const freesasa_classifier *c)
+{
+    return freesasa_classify_residue(res_name);
+}
+
+static const char* residue2str(int the_residue,
+                               const freesasa_classifier *c)
+{
+    return freesasa_classify_residue2str(the_residue);
+}
+
+const freesasa_classifier freesasa_residue_classifier = {
+    .radius = default_radius,
+    .sasa_class = residue,
+    .class2str = residue2str,
+    .n_classes = freesasa_NN+1,
+    .free_config = NULL,
+    .config = NULL
+};
+  
 double freesasa_classify_radius(const char *res_name, const char *atom_name)
 {
     int res = freesasa_classify_residue(res_name);

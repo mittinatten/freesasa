@@ -52,42 +52,6 @@
     internally for now, and might be expanded as more functionality is
     required.
 
-    The user can also read in a configuration from a file to specify
-    their own classes and atomic radii. The functions that do this
-    have names that start with freesasa_classify_user_, this
-    functionality is still experimental, in that the interface might
-    change, but the file format for the config files should be stable
-    (except that more features might be added). The file should have
-    two sections: `types:` and `atoms:`. The types-section defines
-    what types of atoms are available (aliphatic, aromatic, hydroxyl,
-    ...), what the radius of that type is and what class a type
-    belongs to (polar, apolar, ...). The user is free to define as
-    many types and classes as necessary. The atoms-section consists of
-    triplets of residue-name, atom-name (as in the corresponding PDB
-    entries) and type. A prototype file would be
-    
-       ~~~
-       types:
-       C_ALIPHATIC 2.00 apolar
-       C_AROMATIC  1.75 apolar
-       N 1.55 polar
-       
-       # this is a comment
-       
-       atoms:
-       ANY N  N             # this is also a comment
-       ANY CB C_ALIPHATIC
-
-       ARG CG C_ALIPHATIC
-
-       PRO CB C_AROMATIC
-       ~~~
-
-    The residue type `ANY` can be used for atoms that are the same in
-    all or most residues (such as backbone atoms). If there is an
-    exception for a given amino acid this can be overridden as is
-    shown for `PRO CB` in the example.
-
  */
 
 //! The residue types that are returned by freesasa_classify_residue()
@@ -127,9 +91,6 @@ enum freesasa_oons_class {
     freesasa_oons_unknown_polar,
     freesasa_oons_unknown
 };
-
-//! Struct to store custom atom classification read from file
-typedef struct freesasa_classify freesasa_classify;
 
 /**
     The radius of a given atom type.
@@ -367,80 +328,6 @@ int freesasa_classify_is_nucleicacid(int res);
 */
 int freesasa_classify_validate_atom(const char *res_name, 
                                     const char *atom_name);
-
-///////////////////////////
-// User-provided classes //
-///////////////////////////
-
-/**
-    Read user-specified classification rules from file
-
-    @param input config-file 
-    @return a ::freesasa_classify object. To be freed with
-    freesasa_classify_user_free() and copied with
-    freesasa_classify_euser_clone(). Returns NULL if there
-    was a problem reading or parsing the file.
- */ 
-freesasa_classify* freesasa_classify_user(FILE *input);
-
-/**
-    Create copy of a ::freesasa_classify object
-
-    @param source the object to be copied
-    @return the copy
- */
-freesasa_classify* freesasa_classify_user_clone(const freesasa_classify* source);
-
-/**
-    Freeses ::freesasa_classify objects
- */
-void freesasa_classify_user_free(freesasa_classify* classes);
-
-/**
-    The number of classes 
-
-    @param classes the classifier
-    @return The number of classes in the provided definitions
- */
-int freesasa_classify_user_n_classes(const freesasa_classify* classes);
-
-/**
-    The radius of an atom-type
-
-    @param classes the classifier
-    @param res_name the name of the residue (i.e. "ALA", "ARG", etc)
-    @param atom_name the name of the atom (i.e. "CA","N", etc)
-    @return the radius. Prints warning and returns a negative value if
-    the atom is not recognized.
- */
-double freesasa_classify_user_radius(const freesasa_classify *classes, 
-                                     const char *res_name, const char *atom_name);
-
-/**
-    The integer representation of an atom class (for example polar=0/apolar=1)
-
-    @param classes the classifier
-    @param res_name the name of the residue (i.e. "ALA", "ARG", etc)
-    @param atom_name the name of the atom (i.e. "CA","N", etc)
-    @return the class as a non-negative integer,
-    freesasa_classify_user_class2str() can be used to find out what
-    class it represents. Returns ::FREESASA_FAIL if the atom is
-    unknown.
- */
-int freesasa_classify_user_class(const freesasa_classify *classes,
-                                 const char *res_name, const char *atom_name);
-
-/**
-    The string representation of an atom class
-
-    @param classes the classifier
-    @param the_class the integer-representation of the class
-    @return A string describing the_class. Returns NULL if 
-    the_class is unknown
- */
-const char* freesasa_classify_user_class2str(const freesasa_classify *classes, 
-                                             int the_class);
-
 
 
 #endif

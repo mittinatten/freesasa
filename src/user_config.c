@@ -20,14 +20,14 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#include "classify.h"
+#include "freesasa.h"
 
 extern int freesasa_fail(const char *format,...);
 extern int freesasa_warn(const char *format,...);
 
 struct file_interval {long begin; long end;};
 
-struct freesasa_classify {
+typedef struct user_config {
     char **classes; // names of area classes (polar/subpolar/etc)
     char **types; // names of atom types (aliphatic/aromatic/etc)
     char **residues; // names of residue types
@@ -40,24 +40,46 @@ struct freesasa_classify {
     int *atom_type_class; //sasa-class of each atom type
     double *atom_type_radius; // radius of each atom type
     double **atom_radius; // radius of each atom in each residue
-};
+} user_config;
+///////////////////////////
+// User-provided classes //
+///////////////////////////
 
-static freesasa_classify* freesasa_classify_new()
+
+//static freesasa_classifier* freesasa_classify_user_clone(const freesasa_classifier* source);
+/*
+static void user_config_free(void* u);
+
+//static int n_classes();
+
+static double user_radius(const char *res_name, 
+                          const char *atom_name,
+                          const void *config); 
+             
+static int user_class(const char *res_name, 
+                      const char *atom_name,
+                      const void *config);
+
+static const char* user_class2str(int the_class,
+                                  const void *config);
+
+*/
+static user_config* user_config_new()
 {
-    freesasa_classify *classes = malloc(sizeof(freesasa_classify));
-    classes->classes = NULL;
-    classes->types = NULL;
-    classes->residues = NULL;
-    classes->atoms = NULL;
-    classes->n_classes = 0;
-    classes->n_types = 0;
-    classes->n_residues = 0;
-    classes->n_atoms = NULL;
-    classes->atom_class = NULL;
-    classes->atom_type_class = NULL;
-    classes->atom_type_radius = NULL;
-    classes->atom_radius = NULL;
-    return classes;
+    user_config *config = malloc(sizeof(user_config));
+    config->classes = NULL;
+    config->types = NULL;
+    config->residues = NULL;
+    config->atoms = NULL;
+    config->n_classes = 0;
+    config->n_types = 0;
+    config->n_residues = 0;
+    config->n_atoms = NULL;
+    config->atom_class = NULL;
+    config->atom_type_class = NULL;
+    config->atom_type_radius = NULL;
+    config->atom_radius = NULL;
+    return config;
 }
 
 static int find_string(char **array, const char *key, int array_size)
@@ -74,9 +96,9 @@ static int find_string(char **array, const char *key, int array_size)
     return -1;
 } 
 
-static int freesasa_classify_check_file(FILE *input,
-                                        struct file_interval *types, 
-                                        struct file_interval *atoms)
+static int check_file(FILE *input,
+                      struct file_interval *types, 
+                      struct file_interval *atoms)
 {
     assert(input); assert(types); assert(atoms);
     long last_tell;
@@ -115,7 +137,7 @@ static int freesasa_classify_check_file(FILE *input,
 }
 
 // removes comments and strips leading and trailing whitespace
-int freesasa_classify_user_strip_line(char **line, const char *input) {
+int strip_line(char **line, const char *input) {
     char *linebuf = malloc(strlen(input));
     strcpy(linebuf,input);
     char *comment = strchr(linebuf,'#'), *first, *last;
@@ -139,14 +161,18 @@ int freesasa_classify_user_strip_line(char **line, const char *input) {
 static int next_line(char **line, FILE *fp) {
     char *linebuf = NULL;
     size_t len = 0;
+    int ret;
+    
     getline(&linebuf,&len,fp);
-    return freesasa_classify_user_strip_line(line,linebuf);
+    ret = strip_line(line,linebuf);
     free(linebuf);
+    
+    return ret;
 }
 
-static int freesasa_classify_read_types(freesasa_classify *classes,
-                                               FILE *input,
-                                               struct file_interval fi)
+static int read_types(user_config *config,
+                      FILE *input,
+                      struct file_interval fi)
 {
     size_t blen=100;
     char *line = NULL, buf1[blen], buf2[blen];
@@ -158,28 +184,28 @@ static int freesasa_classify_read_types(freesasa_classify *classes,
     while (ftell(input) < fi.end) { 
         if (next_line(&line,input) == 0) continue;
         if (sscanf(line,"%s %lf %s",buf1,&r,buf2) == 3) {
-            if (find_string(classes->types, buf1, classes->n_types) >= 0) {
-                freesasa_warn("Ignoring duplicate entry '%s'.", buf1);
+            if (find_string(config->types, buf1, config->n_types) >= 0) {
+                freesasa_warn("Ignoring duplicate entry for '%s'.", buf1);
                 continue;
             }
-            int areac = find_string(classes->classes, buf2, classes->n_classes);
+            int areac = find_string(config->classes, buf2, config->n_classes);
             if (areac < 0) {
-                classes->n_classes++;
-                classes->classes = realloc(classes->classes,
-                                                sizeof(char*) * classes->n_classes);
-                classes->classes[classes->n_classes-1] = strdup(buf2);
-                areac = classes->n_classes - 1;
+                config->n_classes++;
+                config->classes = realloc(config->classes,
+                                                sizeof(char*) * config->n_classes);
+                config->classes[config->n_classes-1] = strdup(buf2);
+                areac = config->n_classes - 1;
             }
-            classes->n_types++;
-            classes->types = realloc(classes->types,
-                                            sizeof(char*) * classes->n_types);
-            classes->types[classes->n_types-1] = strdup(buf1);
-            classes->atom_type_radius = realloc(classes->atom_type_radius,
-                                                 sizeof(double) * classes->n_types);
-            classes->atom_type_radius[classes->n_types-1] = r;
-            classes->atom_type_class = realloc(classes->atom_type_class,
-                                                 sizeof(int) * classes->n_types);
-            classes->atom_type_class[classes->n_types-1] = areac;
+            config->n_types++;
+            config->types = realloc(config->types,
+                                            sizeof(char*) * config->n_types);
+            config->types[config->n_types-1] = strdup(buf1);
+            config->atom_type_radius = realloc(config->atom_type_radius,
+                                                 sizeof(double) * config->n_types);
+            config->atom_type_radius[config->n_types-1] = r;
+            config->atom_type_class = realloc(config->atom_type_class,
+                                                 sizeof(int) * config->n_types);
+            config->atom_type_class[config->n_types-1] = areac;
         } else {
             return freesasa_fail("%s: Could not parse line '%s', "
                                  "expecting triplet of type "
@@ -192,9 +218,9 @@ static int freesasa_classify_read_types(freesasa_classify *classes,
     return FREESASA_SUCCESS;
 }
 
-static int freesasa_classify_read_atoms(freesasa_classify *classes,
-                                        FILE *input,
-                                        struct file_interval fi)
+static int read_atoms(user_config *config,
+                      FILE *input,
+                      struct file_interval fi)
 {
     size_t blen=100;
     char *line = NULL, buf1[blen], buf2[blen], buf3[blen];
@@ -206,43 +232,43 @@ static int freesasa_classify_read_atoms(freesasa_classify *classes,
     while (ftell(input) < fi.end) { 
         if (next_line(&line,input) == 0) continue;
         if (sscanf(line,"%s %s %s",buf1,buf2,buf3) == 3) {
-            int res = find_string(classes->residues, buf1, classes->n_residues);
-            int type = find_string(classes->types, buf3, classes->n_types);
+            int res = find_string(config->residues, buf1, config->n_residues);
+            int type = find_string(config->types, buf3, config->n_types);
             if (type < 0) {
                 free(line);
                 return freesasa_fail("Unknown atom type '%s'",buf3);
             }
             if (res < 0) {
-                classes->n_residues++;
-                res = classes->n_residues - 1;
-                classes->residues = realloc(classes->residues,
-                                            sizeof(char*) * classes->n_residues);
-                classes->n_atoms = realloc(classes->n_atoms,
-                                           sizeof(int) * classes->n_residues);
-                classes->atoms = realloc (classes->atoms,
-                                          sizeof(char**) * classes->n_residues);
-                classes->atom_class = realloc(classes->atom_class,
-                                              sizeof(int*) * classes->n_residues);
-                classes->atom_radius = realloc(classes->atom_radius,
-                                               sizeof(int*) * classes->n_residues);
-                classes->residues[res] = strdup(buf1);
-                classes->n_atoms[res] = 0;
-                classes->atoms[res] = NULL;
-                classes->atom_class[res] = NULL;
-                classes->atom_radius[res] = NULL;
+                config->n_residues++;
+                res = config->n_residues - 1;
+                config->residues = realloc(config->residues,
+                                            sizeof(char*) * config->n_residues);
+                config->n_atoms = realloc(config->n_atoms,
+                                           sizeof(int) * config->n_residues);
+                config->atoms = realloc (config->atoms,
+                                          sizeof(char**) * config->n_residues);
+                config->atom_class = realloc(config->atom_class,
+                                              sizeof(int*) * config->n_residues);
+                config->atom_radius = realloc(config->atom_radius,
+                                               sizeof(int*) * config->n_residues);
+                config->residues[res] = strdup(buf1);
+                config->n_atoms[res] = 0;
+                config->atoms[res] = NULL;
+                config->atom_class[res] = NULL;
+                config->atom_radius[res] = NULL;
             } 
-            if (find_string(classes->atoms[res],buf2,classes->n_atoms[res]) >= 0) {
+            if (find_string(config->atoms[res],buf2,config->n_atoms[res]) >= 0) {
                 freesasa_warn("Ignoring duplicate entry '%s %s %s'", buf1, buf2, buf3);
                 continue;
             }
             fflush(stdout);
-            int n = ++classes->n_atoms[res];
-            classes->atoms[res] = realloc(classes->atoms[res],sizeof(char*)*n);
-            classes->atom_class[res] = realloc(classes->atom_class[res],sizeof(int)*n);
-            classes->atom_radius[res] = realloc(classes->atom_radius[res],sizeof(double)*n);
-            classes->atoms[res][n-1] = strdup(buf2);
-            classes->atom_class[res][n-1] = classes->atom_type_class[type];
-            classes->atom_radius[res][n-1] = classes->atom_type_radius[type];
+            int n = ++config->n_atoms[res];
+            config->atoms[res] = realloc(config->atoms[res],sizeof(char*)*n);
+            config->atom_class[res] = realloc(config->atom_class[res],sizeof(int)*n);
+            config->atom_radius[res] = realloc(config->atom_radius[res],sizeof(double)*n);
+            config->atoms[res][n-1] = strdup(buf2);
+            config->atom_class[res][n-1] = config->atom_type_class[type];
+            config->atom_radius[res][n-1] = config->atom_type_radius[type];
         } else {
             return freesasa_fail("%s: Could not parse line '%s', "
                                  "expecting triplet of type "
@@ -254,17 +280,21 @@ static int freesasa_classify_read_atoms(freesasa_classify *classes,
     free(line);
     return FREESASA_SUCCESS;
 }
-freesasa_classify* freesasa_classify_user(FILE *input) 
+user_config* read_config(FILE *input) 
 {
     assert(input);
     struct file_interval types, atoms; 
-    if (freesasa_classify_check_file(input,&types, &atoms) != FREESASA_SUCCESS) 
+    int ret1, ret2;
+    if (check_file(input,&types, &atoms) != FREESASA_SUCCESS) 
         return NULL;
-    freesasa_classify *classes = freesasa_classify_new();
-    freesasa_classify_read_types(classes, input, types);
-    freesasa_classify_read_atoms(classes, input, atoms);
-    return classes;
+    user_config *config = user_config_new();
+    ret1 = read_types(config, input, types);
+    ret2 = read_atoms(config, input, atoms);
+    if (ret1 != FREESASA_SUCCESS || ret2 != FREESASA_SUCCESS) 
+        return NULL;
+    return config;
 }
+/*
 freesasa_classify* freesasa_classify_user_clone(const freesasa_classify* source)
 {
     freesasa_classify *copy =freesasa_classify_new();
@@ -315,54 +345,58 @@ freesasa_classify* freesasa_classify_user_clone(const freesasa_classify* source)
     }
     return copy;
 }
+*/
 
-void freesasa_classify_user_free(freesasa_classify* classes)
+void user_config_free(void *p)
 {
-    if (classes) {
-        free(classes->classes);
-        free(classes->types);
-        for (int i = 0; i < classes->n_residues; ++i) {
-            free(classes->residues[i]);
-            for (int j = 0; j < classes->n_atoms[i]; ++j) { 
-                free(classes->atoms[i][j]);
+    if (p) {
+        user_config *config = p;
+        free(config->classes);
+        free(config->types);
+        for (int i = 0; i < config->n_residues; ++i) {
+            free(config->residues[i]);
+            for (int j = 0; j < config->n_atoms[i]; ++j) { 
+                free(config->atoms[i][j]);
             }
-            free(classes->atoms[i]);
-            free(classes->atom_class[i]);
-            free(classes->atom_radius[i]);
+            free(config->atoms[i]);
+            free(config->atom_class[i]);
+            free(config->atom_radius[i]);
         }
-        free(classes->residues);
-        free(classes->atoms);
-        free(classes->n_atoms);
-        free(classes->atom_class);
-        free(classes->atom_type_class);
-        free(classes->atom_type_radius);
-        free(classes->atom_radius);
-        free(classes);
+        free(config->residues);
+        free(config->atoms);
+        free(config->n_atoms);
+        free(config->atom_class);
+        free(config->atom_type_class);
+        free(config->atom_type_radius);
+        free(config->atom_radius);
+        free(config);
     }
 }
 
-static void freesasa_classify_find_any(const freesasa_classify *classes,
-                                      const char *atom_name,
-                                      int *res, int *atom)
+static void find_any(const user_config *config,
+                     const char *atom_name,
+                     int *res, int *atom)
 {
-    *res = find_string(classes->residues,"ANY",classes->n_residues);
+    *res = find_string(config->residues,"ANY",config->n_residues);
     if (*res >= 0) {
-        *atom = find_string(classes->atoms[*res],atom_name,classes->n_atoms[*res]); 
+        *atom = find_string(config->atoms[*res],atom_name,config->n_atoms[*res]); 
     }
 }
 
-static int freesasa_classify_find_atom(const freesasa_classify *classes, 
-                                       const char *res_name, const char *atom_name,
-                                       int* res, int* atom)
+static int find_atom(const user_config *config, 
+                     const char *res_name,
+                     const char *atom_name,
+                     int* res,
+                     int* atom)
 {
     *atom = -1;
-    *res = find_string(classes->residues,res_name,classes->n_residues);
+    *res = find_string(config->residues,res_name,config->n_residues);
     if (*res < 0) {
-        freesasa_classify_find_any(classes,atom_name,res,atom);
+        find_any(config,atom_name,res,atom);
     } else {
-        *atom = find_string(classes->atoms[*res],atom_name,classes->n_atoms[*res]);
+        *atom = find_string(config->atoms[*res],atom_name,config->n_atoms[*res]);
         if (*atom < 0) {
-            freesasa_classify_find_any(classes,atom_name,res,atom);
+            find_any(config,atom_name,res,atom);
         }
     }
     if (*atom < 0) {
@@ -372,40 +406,73 @@ static int freesasa_classify_find_atom(const freesasa_classify *classes,
     return FREESASA_SUCCESS;
 }
 
-double freesasa_classify_user_radius(const freesasa_classify *classes, 
-                                     const char *res_name, const char *atom_name)
+static double user_radius(const char *res_name,
+                          const char *atom_name,
+                          const freesasa_classifier *classifier)
 {
-    assert(classes); assert(res_name); assert(atom_name);
+    assert(classifier); assert(res_name); assert(atom_name);
     int res, atom, status;
-    status = freesasa_classify_find_atom(classes,res_name,atom_name,&res,&atom);
+    const user_config *config = classifier->config;
+    status = find_atom(config,res_name,atom_name,&res,&atom);
     if (status == FREESASA_SUCCESS)
-        return classes->atom_radius[res][atom];
+        return config->atom_radius[res][atom];
     freesasa_fail("%s: couldn't find radius of atom '%s %s'.",
                   __func__, res_name, atom_name);
     return -1.0;
 }
-int freesasa_classify_user_n_classes(const freesasa_classify* classes)
+/*
+static int user_n_classes(const freesasa_classify* classes)
 {
     assert(classes);
     return classes->n_classes;
 }
+*/
 
-int freesasa_classify_user_class(const freesasa_classify *classes,
-                                 const char *res_name, const char *atom_name)
+static int user_class(const char *res_name, 
+                      const char *atom_name,
+                      const freesasa_classifier *classifier)
 {
-    assert(classes); assert(res_name); assert(atom_name);
+    assert(classifier); assert(res_name); assert(atom_name);
     int res, atom, status;
-    status = freesasa_classify_find_atom(classes,res_name,atom_name,&res,&atom);
+    const user_config* config = classifier->config;
+    status = find_atom(config,res_name,atom_name,&res,&atom);
     if (status == FREESASA_SUCCESS)
-        return classes->atom_class[res][atom];
+        return config->atom_class[res][atom];
     return freesasa_fail("%s: couldn't find classification of atom '%s %s'.",
                          __func__, res_name, atom_name);
 }
 
-const char* freesasa_classify_user_class2str(const freesasa_classify *classes, 
-                                             int the_class)
+static const char* user_class2str(int the_class,
+                                  const freesasa_classifier *classifier)
 {
-    assert(classes);
-    if (the_class < 0 && the_class >= classes->n_classes) return NULL;
-    return classes->classes[the_class];
+    assert(classifier);
+    const user_config* config = classifier->config;
+    if (the_class < 0 && the_class >= config->n_classes) return NULL;
+    return config->classes[the_class];
+}
+
+freesasa_classifier* freesasa_classifier_from_file(FILE *file)
+{
+    assert(file);
+    freesasa_classifier* c = malloc(sizeof(freesasa_classifier));
+    user_config* config = read_config(file);
+    if (config == NULL) return NULL;
+
+    c->radius = user_radius;
+    c->sasa_class = user_class;
+    c->class2str = user_class2str;
+    c->free_config = user_config_free;
+    c->config = config;
+    c->n_classes = config->n_classes;
+    return c;
+}
+
+void freesasa_classifier_free(freesasa_classifier *classifier)
+{
+    if (classifier != NULL) {
+        if (classifier->free_config != NULL &&
+            classifier->config != NULL) {
+            classifier->free_config(classifier->config);
+        }
+    }
 }
