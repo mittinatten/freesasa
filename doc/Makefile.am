@@ -47,7 +47,9 @@ pdf-local: manual.pdf
 manual.pdf: $(manual) $(fig_pdf)
 	pdflatex -interaction=batchmode manual.tex 
 	pdflatex -interaction=batchmode manual.tex 
+	@if [ ! -d "html/" ]; then mkdir html; fi
 	cp manual.pdf html/
+
 else
 pdf-local: 
 	@echo "pdflatex needed to build .pdf-manual"
