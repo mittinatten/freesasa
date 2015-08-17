@@ -12,10 +12,12 @@ calculations and by visual inspection of the surfaces found by them
 resolution versions of the algorithms, the calculations give identical
 results.
 
-The OONS atom-classification and radii are used by default (Ooi et al.
-PNAS 1987). Users can also provide their own atomic radii, config-files
-for the OONS- and NACCESS-parameters are available in the directory 
-`share`. 
+The OONS atom-classification and radii are used by default ([Ooi et al.
+PNAS 1987, 84: 3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/)). 
+Users can also provide their own atomic radii; example config-files for 
+NACCESS 
+([Hubbard & Thornton 1993](http://www.bioinf.manchester.ac.uk/naccess/)) 
+and OONS are available in the directory `share`. 
 
 The library is still a work in progress, but, the calculations have been 
 verified to give correct results for a large number of proteins. Therefore, 
