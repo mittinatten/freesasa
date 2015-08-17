@@ -100,7 +100,7 @@ int freesasa_warn(const char *format,...)
     return FREESASA_WARN;
 }
 
-freesasa_strvp* freesasa_result_classify(freesasa_result result, 
+freesasa_strvp* freesasa_result_classify(freesasa_result *result, 
                                          const freesasa_structure *structure,
                                          const freesasa_classifier *c) 
 {
@@ -124,33 +124,36 @@ freesasa_strvp* freesasa_result_classify(freesasa_result result,
         const char *res_name = freesasa_structure_atom_res_name(structure,i);
         const char *atom_name = freesasa_structure_atom_name(structure,i);
         int c = classifier->sasa_class(res_name,atom_name,classifier);
-        strvp->value[c] += result.sasa[i];
+        strvp->value[c] += result->sasa[i];
     }
     return strvp;
 }
 
-void freesasa_result_free(freesasa_result r)
+void freesasa_result_free(freesasa_result *r)
 {
-    free(r.sasa);
+    if (r) {
+        free(r->sasa);
+        free(r);
+    }
 }
 
-static int freesasa_calc(freesasa_result *result,
-                         const freesasa_coord *c, 
-                         const double *radii,
-                         const freesasa_parameters *parameters)
+static freesasa_result* freesasa_calc(const freesasa_coord *c, 
+                                      const double *radii,
+                                      const freesasa_parameters *parameters)
 
 {
-    assert(result);
     assert(c);
     assert(radii);
 
+    freesasa_result *result = malloc(sizeof(freesasa_result));
     int ret;
     const freesasa_parameters *p = parameters;
     if (p == NULL) p = &freesasa_default_parameters;
 
     //struct timeval t1, t2;
     //gettimeofday(&t1,NULL);
-
+    
+    
     result->sasa = malloc(sizeof(double)*freesasa_coord_n(c));
     assert(result->sasa);
 
@@ -180,38 +183,38 @@ static int freesasa_calc(freesasa_result *result,
     //s->elapsed_time = (t2.tv_sec-t1.tv_sec);
     //s->elapsed_time += (t2.tv_usec-t1.tv_usec) / 1e6; // s
 
-    if (ret == FREESASA_FAIL) freesasa_result_free(*result);
+    if (ret == FREESASA_FAIL) {
+        freesasa_result_free(result);
+        return NULL;
+    }
 
-    return ret;
+    return result;
 }
 
-int freesasa_calc_coord(freesasa_result *result,
-                        const double *xyz, 
-                        const double *radii,
-                        int n,
-                        const freesasa_parameters *parameters)
+freesasa_result* freesasa_calc_coord(const double *xyz, 
+                                     const double *radii,
+                                     int n,
+                                     const freesasa_parameters *parameters)
 {
+    assert(xyz);
+    assert(radii);
     // We don't want to store the supplied parameters (to allow const-ness),
     // and want to make sure user doesn't access outdated parameters
     freesasa_coord *c = freesasa_coord_new_linked(xyz,n);
-    int res = freesasa_calc(result,c,radii,parameters);
+    freesasa_result *result = freesasa_calc(c,radii,parameters);
     freesasa_coord_free(c);
 
-    return res;
+    return result;
 }
-int freesasa_calc_structure(freesasa_result *result,
-                            const freesasa_structure* structure,
-                            const double *radii,
-                            const freesasa_parameters* parameters)
+freesasa_result* freesasa_calc_structure(const freesasa_structure* structure,
+                                         const double *radii,
+                                         const freesasa_parameters* parameters)
 {
-    assert(result);
     assert(structure);
     assert(radii);
 
-    //calc radii
-    int res = freesasa_calc(result,freesasa_structure_xyz(structure),
-                            radii,parameters);
-    return res;
+    return freesasa_calc(freesasa_structure_xyz(structure),
+                         radii,parameters);
 }
 
 double* freesasa_structure_radius(freesasa_structure *structure,
@@ -236,7 +239,7 @@ double* freesasa_structure_radius(freesasa_structure *structure,
 }
 
 int freesasa_log(FILE *log, 
-                 freesasa_result result,
+                 freesasa_result *result,
                  const char *name,
                  const freesasa_parameters *parameters,
                  const freesasa_strvp* class_area)
@@ -273,7 +276,7 @@ int freesasa_log(FILE *log,
         break;
     }
     if (class_area == NULL) {
-        fprintf(log,"\nTotal: %9.2f A2\n",result.total);
+        fprintf(log,"\nTotal: %9.2f A2\n",result->total);
     } else {
         int m = 6;
         char fmt[21];
@@ -283,7 +286,7 @@ int freesasa_log(FILE *log,
         }
         sprintf(fmt," %%%ds: %%10.2f A2\n",m);
         fprintf(log,"\n");
-        fprintf(log,fmt,"Total",result.total);
+        fprintf(log,fmt,"Total",result->total);
         for (int i = 0; i < class_area->n; ++i) {
             fprintf(log,fmt,
                     class_area->string[i],
@@ -298,7 +301,7 @@ int freesasa_log(FILE *log,
 
 
 int freesasa_per_residue_type(FILE *output, 
-                              freesasa_result result,
+                              freesasa_result *result,
                               const freesasa_structure *structure)
 {
     assert(output);
@@ -347,7 +350,7 @@ static double freesasa_single_residue_sasa(const freesasa_result *r,
 
 
 int freesasa_per_residue(FILE *output,
-                         freesasa_result result,
+                         freesasa_result *result,
                          const freesasa_structure *structure)
 {
     assert(output);
@@ -359,7 +362,7 @@ int freesasa_per_residue(FILE *output,
         int area =
             fprintf(output,"SEQ: %s %7.2f\n",
                     freesasa_structure_residue_descriptor(structure,i),
-                    freesasa_single_residue_sasa(&result,structure,i));
+                    freesasa_single_residue_sasa(result,structure,i));
         if (area < 0)
             return freesasa_fail("%s: %s", __func__,strerror(errno));
     }
@@ -367,7 +370,7 @@ int freesasa_per_residue(FILE *output,
 }
 
 int freesasa_write_pdb(FILE *output, 
-                       freesasa_result result,
+                       freesasa_result *result,
                        const freesasa_structure *structure, 
                        const double *radii)
 {
@@ -376,7 +379,7 @@ int freesasa_write_pdb(FILE *output,
     assert(radii);
 
     return freesasa_structure_write_pdb_bfactors(structure,output,
-                                                 result.sasa,
+                                                 result->sasa,
                                                  radii);
 }
 

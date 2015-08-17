@@ -21,7 +21,7 @@
 #include "freesasa.h"
 
 int main(int argc, char **argv) {
-    freesasa_result result;
+    freesasa_result* result;
     freesasa_strvp *class_area;
     freesasa_structure *structure;
     double *radii;
@@ -33,13 +33,13 @@ int main(int argc, char **argv) {
     radii = freesasa_structure_radius(structure,NULL);
 
     // Calculate SASA using structure and radii, store in 'result'
-    freesasa_calc_structure(&result,structure,radii,NULL);
+    result = freesasa_calc_structure(structure,radii,NULL);
     
     // Calculate area of classe (Polar/Apolar/..)
     class_area = freesasa_result_classify(result,structure,NULL);
 
     // Print results
-    printf("Total area: %f A2\n",result.total);
+    printf("Total area: %f A2\n",result->total);
     for (int i = 0; i < class_area->n; ++i)
         printf("%s: %f A2\n",class_area->string[i],class_area->value[i]);
 

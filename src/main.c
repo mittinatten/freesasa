@@ -126,7 +126,7 @@ void short_help() {
 
 void run_analysis(FILE *input, const char *name) {
     double tmp, *radii;
-    freesasa_result result;
+    freesasa_result *result;
     freesasa_strvp *classes;
     freesasa_structure* structure = 
         freesasa_structure_from_pdb(input,include_hetatm);
@@ -141,7 +141,7 @@ void run_analysis(FILE *input, const char *name) {
                 program_name);
         exit(EXIT_FAILURE);
     }
-    if (freesasa_calc_structure(&result,structure,radii,&parameters) == FREESASA_FAIL) {
+    if ((result = freesasa_calc_structure(structure,radii,&parameters)) == NULL) {
         fprintf(stderr,"%s: error: Can't calculate SASA. Aborting.\n",
                 program_name);
         exit(EXIT_FAILURE);

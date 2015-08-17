@@ -37,7 +37,6 @@ double total_ref, polar_ref, apolar_ref;
 double tolerance;
 
 freesasa_parameters parameters;
-freesasa_result result;
 
 extern int freesasa_fail(const char*);
 extern int freesasa_warn(const char*);
@@ -70,10 +69,10 @@ int test_sasa(double ref, const char *test, const double *xyz,
               const double *r, int n)
 {
     double err;
-    freesasa_result result;
+    freesasa_result *result;
     int pass = PASS;
-    freesasa_calc_coord(&result,xyz,r,n,&parameters);
-    if ((err = rel_err(ref,result.total))
+    result = freesasa_calc_coord(xyz,r,n,&parameters);
+    if ((err = rel_err(ref,result->total))
         > tolerance) {
         pass = NOPASS;
     }
@@ -129,9 +128,9 @@ START_TEST (test_sasa_alg_basic)
     double coord2[12] = {0,0,0, 1,0,0, 0,1,0, 1,1,0};
     double r2[4] = {1,1,2,1};
     n = 4;
-    freesasa_result result;
-    freesasa_calc_coord(&result,coord2,r2,4,&parameters);
-    double ref = result.total;
+    freesasa_result *result = freesasa_calc_coord(coord2,r2,4,&parameters);
+    double ref = result->total;
+    freesasa_result_free(result);
 
     //translate
     for (int i = 0; i < 12; ++i) coord2[i] += 1.;
@@ -157,22 +156,21 @@ START_TEST (test_sasa_alg_basic)
     ck_assert(test_sasa(ref,"Four spheres in plane, rotated 90 deg round x-axis.",
                         coord2,r2,n));
     
-    freesasa_result_free(result);
 }
 END_TEST
 
 START_TEST (test_minimal_calc)
 {
-    freesasa_result result;
+    freesasa_result *result;
     
     double coord[3] = {0,0,0};
     double r[1] = {1.0};
 
-    ck_assert(freesasa_calc_coord(&result,coord,r,1,NULL) == FREESASA_SUCCESS);
+    ck_assert((result = freesasa_calc_coord(coord,r,1,NULL)) != NULL);
 
     // access areas
-    ck_assert(fabs(result.sasa[0] - result.total) < 1e-10);
-    ck_assert(fabs(result.total - (4*M_PI*M_PI*2.4*2.4)));
+    ck_assert(fabs(result->sasa[0] - result->total) < 1e-10);
+    ck_assert(fabs(result->total - (4*M_PI*M_PI*2.4*2.4)));
     
     freesasa_result_free(result);
 }
@@ -213,14 +211,14 @@ START_TEST (test_sasa_1ubq)
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
     ck_assert(pdb != NULL);
     freesasa_structure *st = freesasa_structure_from_pdb(pdb,0);
-    freesasa_result res;
+    freesasa_result *res;
     double *radii = freesasa_structure_radius(st,NULL);
-    ck_assert(freesasa_calc_structure(&res,st,radii,&parameters) == FREESASA_SUCCESS);
+    ck_assert((res = freesasa_calc_structure(st,radii,&parameters)) != NULL);
     freesasa_strvp* res_class = freesasa_result_classify(res,st,NULL);
     fclose(pdb);
 
     // The reference values were the output of FreeSASA on 2014-02-10
-    ck_assert(fabs(res.total - total_ref) < 1e-5);
+    ck_assert(fabs(res->total - total_ref) < 1e-5);
     ck_assert(fabs(res_class->value[FREESASA_POLAR] - polar_ref) < 1e-5);
     ck_assert(fabs(res_class->value[FREESASA_APOLAR] - apolar_ref) < 1e-5);
     
@@ -252,7 +250,7 @@ START_TEST (test_trimmed_pdb)
     double total_ref = 15955.547786749;
     double polar_ref = 6543.356616946;
     double apolar_ref = 9412.191169803;
-    freesasa_result result;
+    freesasa_result *result;
     freesasa_structure *st;
     FILE *pdb;
     double *radii;
@@ -266,11 +264,11 @@ START_TEST (test_trimmed_pdb)
 
     radii = freesasa_structure_radius(st,NULL);
     ck_assert(radii != NULL);
-    ck_assert(freesasa_calc_structure(&result,st,radii,NULL) == FREESASA_SUCCESS);
+    ck_assert((result = freesasa_calc_structure(st,radii,NULL)) != NULL);
     res_class = freesasa_result_classify(result,st,NULL);
     ck_assert(res_class != NULL);
     
-    ck_assert(fabs(result.total - total_ref) < 1e-5);
+    ck_assert(fabs(result->total - total_ref) < 1e-5);
     ck_assert(fabs(res_class->value[FREESASA_POLAR] - polar_ref) < 1e-5);
     ck_assert(fabs(res_class->value[FREESASA_APOLAR] - apolar_ref) < 1e-5);
     
@@ -288,7 +286,7 @@ START_TEST (test_user_classes)
     freesasa_structure *st;
     freesasa_classifier *classifier;
     double *radii,*radii_ref;
-    freesasa_result res;
+    freesasa_result *res;
     freesasa_strvp *res_class, *res_class_ref;
 
     ck_assert(pdb != NULL);
@@ -307,7 +305,7 @@ START_TEST (test_user_classes)
     for (int i = 0; i < freesasa_structure_n(st); ++i) {
         ck_assert(fabs(radii[i] - radii_ref[i]) < 1e-5);
     }
-    ck_assert(freesasa_calc_structure(&res,st,radii,NULL) == FREESASA_SUCCESS);
+    ck_assert((res = freesasa_calc_structure(st,radii,NULL)) != NULL);
     res_class = freesasa_result_classify(res,st,classifier);
     res_class_ref = freesasa_result_classify(res,st,NULL);
     ck_assert(res_class->n <= res_class_ref->n);
@@ -321,7 +319,7 @@ START_TEST (test_user_classes)
     free(radii_ref);
     freesasa_structure_free(st);
     freesasa_classifier_free(classifier);
-    freesasa_result_free(result);
+    freesasa_result_free(res);
 }
 END_TEST
 
@@ -352,7 +350,7 @@ START_TEST (test_multi_calc)
 #if HAVE_LIBPTHREAD
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
     freesasa_structure *st = freesasa_structure_from_pdb(pdb,0);
-    freesasa_result res;
+    freesasa_result *res;
     freesasa_parameters p = freesasa_default_parameters;
     double *radii = freesasa_structure_radius(st,NULL);
     fclose(pdb);
@@ -360,13 +358,13 @@ START_TEST (test_multi_calc)
     //S&R
     p.n_threads = 2;
     p.alg = FREESASA_SHRAKE_RUPLEY;
-    ck_assert(freesasa_calc_structure(&res,st,radii,&p) == FREESASA_SUCCESS);
-    ck_assert(fabs(res.total - 4759.86096) < 1e-5);
+    ck_assert((res = freesasa_calc_structure(st,radii,&p)) != NULL);
+    ck_assert(fabs(res->total - 4759.86096) < 1e-5);
     // L&R
     p.alg = FREESASA_LEE_RICHARDS;
     p.lee_richards_delta = 0.25;
-    ck_assert(freesasa_calc_structure(&res,st,radii,&p) == FREESASA_SUCCESS);
-    ck_assert(fabs(res.total - 4728.26159) < 1e-5);
+    ck_assert((res = freesasa_calc_structure(st,radii,&p)) != NULL);
+    ck_assert(fabs(res->total - 4728.26159) < 1e-5);
     
     freesasa_structure_free(st);
     freesasa_result_free(res);

@@ -244,25 +244,21 @@ extern const freesasa_classifier freesasa_residue_classifier;
 /**
     Calculates SASA based for a given structure and atomic radii.
 
-    @param result Results are written to this pointer
     @param structure The structure
     @param radii Atomic radii, this array should have same number of
     elements as there are atoms in the structure.
     @param parameters Parameters for the calculation, if NULL
     defaults are used.
 
-    @return ::FREESASA_SUCCESS if calculations were successful. Else
-    ::FREESASA_FAIL
+    @return The result of the calculation, NULL if something went wrong.
 */
-int freesasa_calc_structure(freesasa_result *result,
-                            const freesasa_structure *structure,
-                            const double *radii,
-                            const freesasa_parameters *parameters);
+freesasa_result* freesasa_calc_structure(const freesasa_structure *structure,
+                                         const double *radii,
+                                         const freesasa_parameters *parameters);
 
 /**
     Calculates SASA based for a given set of coordinates and radii.
 
-    @param result Results are written to this pointer.
     @param parameters Parameters for the calculation, if NULL
     defaults are used.
     @param xyz Array of coordinates in the form x1,y1,z1,x2,y2,z2,...,xn,yn,zn.
@@ -270,21 +266,19 @@ int freesasa_calc_structure(freesasa_result *result,
     elements as there are coordinates.
     @param n Number of coordinates (i.e. xyz has size 3*n, radii size n).
 
-    @return ::FREESASA_SUCCESS if calculations were successful. Else
-    ::FREESASA_FAIL
+    @return The result of the calculation, NULL if something went wrong.
  */
-int freesasa_calc_coord(freesasa_result *result,
-                        const double *xyz, 
-                        const double *radii,
-                        int n,
-                        const freesasa_parameters *parameters);
+freesasa_result* freesasa_calc_coord(const double *xyz, 
+                                     const double *radii,
+                                     int n,
+                                     const freesasa_parameters *parameters);
 
 /**
     Frees the contents of ::freesasa_result object.
 
     @param result the object to be freed.
  */
-void freesasa_result_free(freesasa_result result);
+void freesasa_result_free(freesasa_result *result);
 
 /**
     Init structure with coordinates from pdb-file.
@@ -350,7 +344,7 @@ void freesasa_classifier_free(freesasa_classifier *classifier);
     freesasa_strvp_free(). Returns NULL if classifier was not
     compatible with structure.
  */
-freesasa_strvp* freesasa_result_classify(freesasa_result result,
+freesasa_strvp* freesasa_result_classify(freesasa_result *result,
                                          const freesasa_structure *structure,
                                          const freesasa_classifier *classifier);
 
@@ -376,7 +370,7 @@ void freesasa_strvp_free(freesasa_strvp *strvp);
     output on. ::FREESASA_SUCCESS else.
  */
 int freesasa_write_pdb(FILE *output, 
-                       freesasa_result result,
+                       freesasa_result *result,
                        const freesasa_structure *structure, 
                        const double *radii);
 
@@ -395,7 +389,7 @@ int freesasa_write_pdb(FILE *output,
     output. ::FREESASA_SUCCESS else.
 */
 int freesasa_per_residue_type(FILE *output, 
-                              freesasa_result result,
+                              freesasa_result *result,
                               const freesasa_structure *structure);
 /**
     Print SASA for each residue individually to file. 
@@ -409,7 +403,7 @@ int freesasa_per_residue_type(FILE *output,
     output. ::FREESASA_SUCCESS else.
 */
 int freesasa_per_residue(FILE *output,
-                         freesasa_result result,
+                         freesasa_result *result,
                          const freesasa_structure *structure);
 /**
     Log calculation results.
@@ -426,7 +420,7 @@ int freesasa_per_residue(FILE *output,
     problems writing to file.
 */
 int freesasa_log(FILE *log, 
-                 freesasa_result result,
+                 freesasa_result *result,
                  const char *name,
                  const freesasa_parameters *parameters,
                  const freesasa_strvp* class_sasa);
