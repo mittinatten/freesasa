@@ -13,7 +13,9 @@ resolution versions of the algorithms, the calculations give identical
 results.
 
 The OONS atom-classification and radii are used by default (Ooi et al.
-PNAS 1987). Users can also provide their own atomic radii.
+PNAS 1987). Users can also provide their own atomic radii, config-files
+for the OONS- and NACCESS-parameters are available in the directory 
+`share`. 
 
 The library is still a work in progress, but, the calculations have been 
 verified to give correct results for a large number of proteins. Therefore, 
@@ -24,10 +26,15 @@ tool and expanding the Python bindings.
 Documentation
 -------------
 
-A regular build generates a manual (in `doc/manual.pdf`) with examples
-and explanation of how to use the commandline tool and the API, and a
-full reference manual can be built using Doxygen (if available). After
-building the package, calling
+A regular build generates a manual (in 
+[doc/manual.pdf](http://mittinatten.github.io/freesasa/manual.pdf)) with 
+examples and explanation of how to use the commandline tool and the API, 
+and a
+[full reference manual](http://mittinatten.github.io/freesasa/doxygen/)
+can be built using Doxygen (if available). Both are also available from 
+the GitHub-pages at http://mittinatten.github.io/freesasa/. 
+
+After building the package, calling
 
     freesasa -h
     
@@ -62,3 +69,6 @@ Profiling has shown that configuring with
 increases the speed of the Shrake & Rupley algorithm significantly (10
 % or so), as compared to the standard "-O2". There seems to be no
 measurable effect on Lee & Richards.
+
+To enable gcov to measure coverage of tests, run 
+`./configure --enable-gcov`.
