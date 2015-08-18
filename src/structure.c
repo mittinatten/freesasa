@@ -102,11 +102,10 @@ freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file,
     assert(pdb_file);
     freesasa_structure *p = freesasa_structure_new();
     size_t len = PDB_LINE_STRL;
-    char *line = malloc(sizeof(char)*(len+1));
+    char *line = NULL;
     char the_alt = ' ';
 
     assert(p);
-    assert(line);
 
     while (getline(&line, &len, pdb_file) != -1) {
         if (strncmp("ATOM",line,4)==0 ||
@@ -131,9 +130,8 @@ freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file,
         if (strncmp("ENDMDL",line,4)==0) {
             if (p->number_atoms == 0) {
                 freesasa_fail("input had ENDMDL before first ATOM entry.");
-                free(line);
                 freesasa_structure_free(p);
-                return NULL;
+                p = NULL;
             }
             break;
         }
@@ -151,7 +149,7 @@ static void freesasa_structure_alloc_one(freesasa_structure *p)
 {
     assert(p);
     int na = ++p->number_atoms;
-    p->a = (atom_t*) realloc(p->a,sizeof(atom_t)*na);
+    p->a = realloc(p->a,sizeof(atom_t)*na);
     assert(p->a);
 }
 

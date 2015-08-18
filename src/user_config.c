@@ -122,7 +122,7 @@ static int check_file(FILE *input,
 
 // removes comments and strips leading and trailing whitespace
 int strip_line(char **line, const char *input) {
-    char *linebuf = malloc(strlen(input)), 
+    char *linebuf = malloc(strlen(input)+1),
         *comment, *first, *last;
     
     strcpy(linebuf,input);
@@ -135,10 +135,11 @@ int strip_line(char **line, const char *input) {
     
     if (last > first) 
         while (*last == ' ' || *last == '\t' || *last == '\n') --last;
-    *line = realloc(*line,strlen(first));
+    *line = realloc(*line,strlen(first)+1);
     
     if (first >= last) {
         **line = '\0';
+        free(linebuf);
         return 0;
     }
     
@@ -295,7 +296,11 @@ void user_config_free(void *p)
     user_config *config;
     if (p) {
         config = p;
+        for (int i = 0; i < config->n_classes; ++i)
+            free(config->classes[i]);
         free(config->classes);
+        for (int i = 0; i < config->n_types; ++i)
+            free(config->types[i]);
         free(config->types);
         for (int i = 0; i < config->n_residues; ++i) {
             free(config->residues[i]);
@@ -415,5 +420,6 @@ void freesasa_classifier_free(freesasa_classifier *classifier)
             classifier->config != NULL) {
             classifier->free_config(classifier->config);
         }
+        free(classifier);
     }
 }

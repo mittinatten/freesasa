@@ -127,8 +127,8 @@ void short_help() {
 void run_analysis(FILE *input, const char *name) {
     double tmp, *radii;
     freesasa_result *result;
-    freesasa_strvp *classes;
-    freesasa_structure* structure = 
+    freesasa_strvp *classes = NULL;
+    freesasa_structure *structure =
         freesasa_structure_from_pdb(input,include_hetatm);
     if (structure == NULL) {
         fprintf(stderr,"%s: error: Invalid input. Aborting.\n",
