@@ -1,4 +1,7 @@
-if USE_CHECK
+
+EXTRA_DIST = data
+check_PROGRAMS =
+TESTS =
 
 if COND_GCOV
 AM_CFLAGS = --coverage
@@ -8,18 +11,17 @@ else
 GCOV_FILES = 
 endif
 
-EXTRA_DIST = data
+if USE_CHECK
 
-
-TESTS = test
-check_PROGRAMS = test
+TESTS += test
+check_PROGRAMS += test
 test_SOURCES = test.c test_pdb.c test_freesasa.c test_structure.c \
 	test_classify.c test_coord.c test_adjacency.c
 
 test_CFLAGS = -I$(top_srcdir)/src $(AM_CFLAGS) \
 	-DDATADIR=\"$(top_srcdir)/tests/data/\"
 
-test_LDADD = ../src/libfreesasa.a @CHECK_LIBS@
+test_LDADD = ../src/libfreesasa.a -lcheck
 
 CLEANFILES = tmp/*  $(GCOV_FILES)
 
