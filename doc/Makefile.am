@@ -3,56 +3,51 @@ manual = manual.tex
 fig_eps = fig/lnr_circles.eps fig/lnr_slice.eps fig/time.eps fig/precision.eps
 fig_pdf = $(subst .eps,.pdf,$(fig_eps))
 
-EXTRA_DIST = $(manual) $(fig_eps)
 CLEANFILES =
-dist_doc_DATA = $(fig_eps)
+ALLFILES =
+
+EXTRA_DIST = $(manual)
 
 if HAVE_LATEX
 
-dist_doc_DATA += manual.dvi manual.ps
-
-$(fig_eps): 
-	@cd fig
-	@make ps
-	@cd ..
-
-manual.ps: manual.dvi
-	dvips -Ppdf manual.dvi -q
-manual.dvi: $(manual) $(fig_eps)
-	latex -interaction=batchmode manual.tex
-	latex -interaction=batchmode manual.tex
-
-
-dvi-local: manual.dvi
-
-ps-local: manual.ps
-
-else
-nolatex:
-	@echo "LaTeX needed to build .dvi and .ps manual"
-dvi-local: nolatex
-ps-local: nolatex
-endif
-
-if HAVE_PDF
-
-dist_doc_DATA += manual.pdf $(fig_pdf)
+doc_DATA = manual.pdf manual.ps $(fig_eps) $(fig_pdf)
 
 $(fig_pdf):
 	@cd fig
 	@make pdf
 	@cd ..
 
-pdf-local: manual.pdf 
-manual.pdf: $(manual) $(fig_pdf)
-	pdflatex -interaction=batchmode manual.tex 
-	pdflatex -interaction=batchmode manual.tex 
-	cp manual.pdf html/
-else
-pdf-local: 
-	@echo "pdflatex needed to build .pdf-manual"
-endif
+$(fig_eps): 
+	@cd fig
+	@make ps
+	@cd ..
 
+manual.dvi: $(srcdir)/$(manual) $(fig_eps)
+	latex -interaction=batchmode $<
+	latex -interaction=batchmode $<
+
+manual.ps: manual.dvi
+	dvips -Ppdf manual.dvi -q
+
+manual.pdf: $(srcdir)/$(manual)  $(fig_eps)
+	pdflatex -interaction=batchmode $<
+	pdflatex -interaction=batchmode $<
+	@if [ ! -d "html/" ]; then mkdir html; fi
+	cp manual.pdf html/
+
+dvi-local: manual.dvi
+ps-local: manual.ps
+pdf-local: manual.pdf
+ALLFILES += manual.dvi manual.ps manual.pdf
+
+else
+nolatex:
+	@echo LaTex disabled, run configure script with option --enable-latex to enable
+dvi-local: nolatex
+ps-local: nolatex
+pdf-local: nolatex
+
+endif
 
 if HAVE_DOXYGEN
 
@@ -62,11 +57,18 @@ doxyfile.stamp: $(top_srcdir)/src/*.h
 	echo Timestamp > doxyfile.stamp
 
 CLEANFILES += doxyfile.stamp
+ALLFILES += doxyfile.stamp
 
-all-local: doxyfile.stamp
+doxygen: doxyfile.stamp
 else
-all-local:	
-	@echo "Doxygen needed to build full reference manual."
+doxygen:
+	@echo Doxygen disabled, run configure-script with option --enable-doxygen to enable
+endif
+
+if BUILD_DOC
+all-local: $(ALLFILES)
+else
+all-local:
 endif
 
 clean-local:
