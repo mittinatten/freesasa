@@ -137,7 +137,7 @@ freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file,
         }
     }
     free(line);
-    if (p->number_atoms == 0) {
+    if (p != NULL && p->number_atoms == 0) {
         freesasa_fail("input had no ATOM entries.");
         freesasa_structure_free(p);
         return NULL;
