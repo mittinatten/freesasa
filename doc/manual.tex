@@ -198,7 +198,6 @@ and is by default compiled to a binary called \verb|example| using
 
 \begin{figure}
   \begin{Verbatim}[frame=single,fontsize=\small,framesep=5mm]
-// example.c
 #include <stdlib.h>
 #include <stdio.h>
 #include "freesasa.h"
@@ -209,31 +208,37 @@ int main(int argc, char **argv) {
     freesasa_structure *structure;
     double *radii;
 
-    // Read structure from stdin
+    /* Read structure from stdin */
     structure = freesasa_structure_from_pdb(stdin,0);
 
-    // Calculate radii for the atoms
+    /* Calculate radii for the atoms based on structure.  NULL means
+       default classifier. */
     radii = freesasa_structure_radius(structure,NULL);
 
-    // Calculate SASA using structure and radii, store in 'result'
+    /* Calculate SASA using structure and radii, store in
+       'result'. NULL means default parameters. */
     result = freesasa_calc_structure(structure,radii,NULL);
     
-    // Calculate area of classe (Polar/Apolar/..)
+    /* Calculate area of classes (Polar/Apolar/..) using default
+       classifier */
     class_area = freesasa_result_classify(result,structure,NULL);
 
-    // Print results
+    /* Print results */
     printf("Total area: %f A2\n",result->total);
     for (int i = 0; i < class_area->n; ++i)
-        printf("%s: %f A2\n",class_area->string[i],class_area->value[i]);
+        printf("%s: %f A2\n",class_area->string[i],
+               class_area->value[i]);
 
-    // Free allocated resources, not strictly necessary but good style
-    freesasa_result_free(result);
+    /* Free allocated resources, not strictly necessary in this
+       context */
     freesasa_strvp_free(class_area);
-    freesasa_structure_free(structure);
+    freesasa_result_free(result);
     free(radii);
+    freesasa_structure_free(structure);
 
     return EXIT_SUCCESS;
 }
+
   \end{Verbatim}
   \caption{An example program demonstrating basic use of the
     library. No error checks are done here. \label{fig:example_c}}
