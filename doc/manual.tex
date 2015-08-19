@@ -85,14 +85,6 @@ flexibility in interpreting and analyzing the results. The other 2
 cases can only be handled through the API. Both the API and the CLI
 allow the user to set parameters for the calculation. 
 
-A lot of the internals of the library are involved with classification
-and categorization of atoms, which is necessary for assigning radii
-and to present SASA values integrated over different atom types, amino
-acid types, etc. If the user wants FreeSASA to classify atoms and
-assign radii, data must be provided in the PDB-format. Users can also
-provide their own radii and coordinates, and get the SASA for each
-individual atom.
-
 This document is organized as follows. Section \ref{sec:howto_short}
 gives a brief introduction to the library, presenting the command line
 interface and a short sample program that gives a general idea of how
@@ -137,44 +129,22 @@ Compilation creates the binary \verb|freesasa| from
 \verb|main.c|, which can be used to calculate the SASA of a
 PDB-file. The simplest program call, with default parameters would be
 \begin{verbatim}
-    freesasa PDB-file
+    $ freesasa PDB-file
 \end{verbatim}
-Or, from STDIN:
+Or, from \verb|stdin|:
 \begin{verbatim} 
-    freesasa < PDB-file    
+    $ freesasa < PDB-file    
 \end{verbatim}
-STDIN is only read if no file is specified.  By default the Shrake \&
-Rupley algorithm is used, with 100 test points. 
-
-As an illustration of configuration options, the command
-\begin{verbatim}
-   freesasa -L -d 0.1 -t 2 -r PDB-file
-\end{verbatim}
-calculates the SASA of the supplied PDB-file using Lee \& Richards
-(-L), with a slice width of 0.1 Å (-d), using two threads (-t) and
-will print the total SASA of each residue type (-r) in addition to the
-standard output. The command \verb|freesasa -h| prints a help message
-listing all available options. Several PDB-files can be analyzed in
-one call, the results will be printed consecutively for each input
-file:
-\begin{verbatim}
-   freesasa 1abc.pdb 2abc.pdb ...
-\end{verbatim}
-If several threads are requested each calculation is parallelized
-individually, if the user wants to analyze several proteins
-simultaneously this will have to be done by calling several instances
-of the program.
-
-Running the program using the default parameters on the PDB structure
-1UBQ gives the following output
+\verb|stdin| is only read if no file is specified.  By default the
+Shrake \& Rupley algorithm is used, with 100 test points. Running the
+program using the default parameters on the PDB structure 1UBQ gives
+the following output
 \begin{verbatim}
    name: 1ubq.pdb
    algorithm: Shrake & Rupley
    probe-radius: 1.400000 A
    n_thread: 1
    n_testpoint: 100
-   time_elapsed: 0.013833 s
-   n_atoms: 602
    
    Total:    4756.12 A2
    Polar:    1968.06 A2
@@ -185,20 +155,52 @@ followed by data for calculation time and the size of the
 protein. Finally the result of the calculation is printed, with SASA
 values in Å$^2$.
 
-\subsection{Simple example (\texttt{example.c})}\label{sec:simple_sample}
+As an illustration of a few of the configuration options, the command
+\begin{verbatim}
+   $ freesasa -L -d 0.1 -B -l PDB-file
+\end{verbatim}
+calculates the SASA of the supplied PDB-file using Lee \& Richards
+(-L), with a slice width of 0.1 Å (-d). The option -l suppresses the
+regular log message. Output will instead, beacuse of the flag -B, be
+the provided PDB-file with the SASA of each atom replacing the
+temperature factors, and the atomic radii stored in the occupancy
+factor field, written to \verb|stdout|. The program can thus be used
+as a PDB-file filter. If a file-name is provided after -B the
+output will be written to that file instead.
 
-Figure~\ref{fig:example_c} shows the minimal program \verb|example.c|,
-which performs a SASA-calculation using a PDB-file as input. This
-program is basically a stripped down version of \verb|main.c| without
-error handling, and without any commandline options. This code is
-meant to illustrate the most basic parts of the library interface and
-is by default compiled to a binary called \verb|example| using
+The command \verb|freesasa -h| prints a help message listing all
+available options. The program classifies each atom and assigns it an
+atomic radius accordingly, based on the PDB input, but users can also
+provide their own configuration files to customize classification (via
+-c).  Several PDB-files can be analyzed in one call, the results will
+be printed consecutively for each input file:
+\begin{verbatim}
+   $ freesasa 1abc.pdb 2abc.pdb ...
+\end{verbatim}
+If several threads are requested each calculation is parallelized
+individually, if the user wants to analyze several proteins
+simultaneously this will have to be done by calling several instances
+of the program.
+
+\subsection{Application programming interface}\label{sec:api}
+
+As an illustration of the API, figure~\ref{fig:example_c} shows the
+minimal program \verb|example.c|, which performs a SASA-calculation
+using a PDB-file as input, with no error handling and default
+parameters. The three points were null pointers are passed as
+arguments are places were user-defined parameters and atomic
+classifiers could have been provided. The source code for the CLI, in
+the file \verb|main.c|, illustrates full-fledged use of most parts of
+the API including error checking and customization. The example here
+is meant to illustrate the most basic parts of the library interface
+and is by default compiled to a binary called \verb|example| using
 \verb|make|.
 
 \begin{figure}
   \begin{Verbatim}[frame=single,fontsize=\small,framesep=5mm]
 // example.c
 #include <stdlib.h>
+#include <stdio.h>
 #include "freesasa.h"
 
 int main(int argc, char **argv) {
@@ -239,251 +241,6 @@ int main(int argc, char **argv) {
 
 This program generates output similar to that of the previous
 section.
-
-\section{API} \label{sec:using}
-
-The FreeSASA API is designed to cater to the three use cases outlined
-in the introduction. Therefore there are several different entry
-points, giving varying degrees of control and ways of supplying atom
-coordinates. Any calculation involves the following four steps.
-\begin{enumerate}
-  \item Initialize structure/acquire coordinates.
-  \item Calculate/specify atomic radii.
-  \item Calculate SASA.
-  \item Output results grouping atoms/residues in different ways.
-\end{enumerate}
-The third step is the core functionality of the library and can be
-used separately by users who wish to handle the other steps
-themselves. 
-
-The header \texttt{freesasa.h} contains all functions necessary for
-doing calculations with FreeSASA. They wrap lower level functionality,
-simplifying I/O, housekeeping, and do sanity checks on parameters,
-etc. It is the main interface to library, and is the only header
-installed by \verb|make install|. The following will outline some of
-the most important functions in this header, a full reference manual
-can be built from source using Doxygen. In addition, the source for
-\texttt{main.c} serves as an illustration of how to use the library,
-using a large portion of the available functionality.
-
-\subsection{Error handling}
-
-FreeSASA follows the convention that I/O errors, inconstistencies in
-input and parameters, and other errors attributable to user input are
-handled through return codes. Programming errors such as passing null
-pointers or requesting results before calculations have been performed
-are checked by asserts. The specific error behavior of the different
-API functions can be found in the reference manual.
-
-\subsection{Initialization}
-
-The FreeSASA API defines one struct, \verb|freesasa|, that stores both
-parameters and results. Coordinates stored elsewhere can be linked to
-this struct to allow repeated calculations using the same parameters
-without reinitializing the object for each calculation. A
-\verb|freesasa|-object can be initalized using
-\begin{verbatim}
-    freesasa* freesasa_new()
-\end{verbatim}
-and the allocated resources freed using
-\begin{verbatim}
-    void freesasa_free(freesasa *s)
-\end{verbatim}
-The object generated by \verb|freesasa_new()| has default parameters,
-and can be used directly to perform a calculation, given the correct
-input. The same object can be used more than once to perform
-calculations on several different proteins or different conformations
-of the same protein.
-
-\subsection{Setting parameters}
-
-There are a number of setter- and getter-functions for specifying the
-parameters of the calculations. If the specified parameter-value is
-invalid the setters print an error message explaining what is wrong,
-return \verb|FREESASA_WARN|, and proceed with the previously set value
-(usually the default value).
-
-\subsubsection{Algorithms}
-
-The following functions can be used to set and get the algorithm to be
-used for a calculation. Possible values for the algorithm are
-\verb|FREESASA_LEE_RICHARDS| and \verb|FREESASA_SHRAKE_RUPLEY|.  The
-third function below returns the name of
-the current algorithm.
-\begin{verbatim}
-    int freesasa_set_algorithm(freesasa*, freesasa_algorithm alg)
-    freesasa_algorithm freesasa_get_algorithm(const freesasa*)
-    const char* freesasa_algorithm_name(const freesasa*)
-\end{verbatim}
-The second function will always return a valid value since all
-initialized \verb|freesasa| objects will have an assigned algorithm.
-
-The following two functions are used to set the number of
-points to be used in S\&R calculations, and the slice width in L\&R.
-\begin{verbatim}
-    int freesasa_set_sr_points(freesasa*, int n)
-    int freesasa_set_lr_delta(freesasa*, double d) 
-\end{verbatim}
-
-Finally, parameters can be copied between two \verb|freesasa| objects
-using
-\begin{verbatim}
-    void freesasa_copy_param(freesasa *target, const freesasa *source)
-\end{verbatim}
-
-\subsection{Calculations from PDB input}
-
-The function 
-\begin{verbatim}
-    int freesasa_calc_pdb(freesasa *s, FILE *pdb_file)
-\end{verbatim}
-is used to calculate SASA for a PDB-file. The \verb|freesasa|-object
-needs to be initialized before this function is called. This function
-returns either \verb|FREESASA_SUCCESS| or \verb|FREESASA_FAIL|.
-Failure can involve both problems reading the PDB input and problems
-setting up the calculations.
-
-The PDB input module in FreeSASA is minimalistic. Only ATOM entries
-are read (HETATM can be activated as an option),
- and if a PDB file has many MODEL entries, reading is stopped
-at the first ENDML statement. In the standard OONS scheme for atomic
-radii, hydrogen atoms are not included, and they are therefore
-excluded from SASA calculations. Users who want to include these, and
-use their own set of radii will have to provide coordinates and radii
-themselves. If atoms have several alternate coordinates, only the
-first one is used. The files are assumed to be well-ordered, such that
-each time the residue number changes in a file, it is assumed to
-correspond to a new residue. Users who need more advanced and/or
-robust handling of PDB files are recommended to use external libraries
-for this.
-
-\subsection{Atom classification and atomic radii}
-
-Several different types of atom classification are used internally in
-the library. All are based solely on the \emph{Atom name} and
-\emph{Residue name} fields in a PDB file ATOM entry (and optionally
-HETATM). These are used for assigning atomic radii, residue type,
-element, OONS type~\cite{OONS} and if an atom is polar, apolar or part
-of a nucleic acid (the latter class might be divided and integrated
-into the former two eventually). The function
-\begin{verbatim}
-    double freesasa_radius(const char *residue_name, const char *atom_name)
-\end{verbatim}
-returns the default radius of a given atom in a residue.
-
-FreeSASA knows about the standard 20 amino acids, plus ASX, GLX, CSE
-and UNK and the nucleic acids with labels DA, DC, DG, DT, DU, DI, A,
-C, G, U, I, T and N. The classification scheme was run against the
-entire PDB in October 2013 and no ATOM entries not corresponding to
-these classes were found. The library prints a warning when UNK
-entries are found, to alert the reader that something might not be
-properly defined.
-
-For the standard 20 amino acids, and most atoms in ASX, GLX, the
-regular OONS radii \cite{OONS} are used. For the unknown O or N atom
-in ASX and GLX a radius of 1.5 Å is used. For nucleic acids, HETATM and UNK
-entries the element is deduced from the atom name and VdW radius from
-www.periodictable.com is used. Atoms in UNK residues are classified as
-unknown, instead of polar/apolar.
-
-The user can also specify their own radii to the atoms using the function
-\begin{verbatim}
-    int freesasa_user_classification(freesasa *s, FILE *config)
-\end{verbatim}
-An example of such a config-file is included in the repository, and
-it's format documented in the header \verb|classify.h|.
-
-\subsection{Calculations using arrays of coordinates}
-
-The cartesian atom coordinates are stored internally as an array of
-size $3N$ and ordered as $$x_1,y_1,z_1, x_2,y_2,z_2, \ldots
-,x_N,y_N,z_N\,.$$ Users who want to calculate the SASA of a set of
-coordinates in this form, with corresponding atomic radii, can use the
-function
-\begin{verbatim}
-    int freesasa_calc_coord(freesasa*, const double *coord, 
-                            const double *r, size_t n)
-\end{verbatim}
-If the user instead wants to link coordinates to a
-\verb|freesasa|-object to allow repeated calculations on different
-conformations of the same molecule, this can be done using
-\begin{verbatim}
-    int freesasa_link_coord(freesasa*, const double *coord,
-                            double *r, size_t n)
-\end{verbatim}
-
-Since the library can only assign radii using PDB input the user has
-to supply the radii separately in both the above cases. When new SASA
-values are needed these can be recalculated from the linked
-coordinates using
-\begin{verbatim} 
-    int freesasa_refresh(freesasa *s)
-\end{verbatim}
-
-\subsection{Results}
-
-The total SASA is accessed using
-\begin{verbatim}
-    double freesasa_area_total(const freesasa*)
-\end{verbatim}
-The integrated SASA for different classes of atoms is accessed by
-\begin{verbatim}
-    double freesasa_area_class(const freesasa*, freesasa_class c)
-\end{verbatim}
-where the argument \verb|c| can have the values \verb|FREESASA_POLAR|, 
-\verb|FREESASA_APOLAR|, \verb|FREESASA_NUCLEICACID| or 
-\verb|FREESASA_CLASS_UNKNOWN|.
-
-The SASA of each residue in the sequence can be accessed through
-\begin{verbatim}
-    int freesasa_per_residue(FILE *output, const freesasa *s)
-\end{verbatim}
-This prints the SASA of each residue to the specified file, each
-line prefixed with the string 'SEQ:'.
-
-To access the SASA for the different amino acid types there are two
-options:
-\begin{verbatim}
-    int freesasa_per_residue_type(FILE *output, const freesasa *s)
-    double freesasa_area_residue(const freesasa*, const char *res_name)
-\end{verbatim}
-The first prints string-value pairs of all residue types to the
-specified file, each line prefixed with the string 'RES:'. All of the
-standard 20 residues are included, and the other types are printed
-only if the SASA is non-zero.  The second function takes the residue
-name as an argument and returns the SASA for the corresponding
-residue. If the residue name is unknown a warning is printed and the
-value recorded for the residue type ``UNK'' is returned.
-
-SASA of individual atoms are accessed either one by one, or
-as an array of doubles:
-\begin{verbatim}
-    double freesasa_area_atom(const freesasa*, int i)
-    const double* freesasa_area_atom_array(const freesasa*)
-\end{verbatim}
-and the same goes for atomic radii
-\begin{verbatim}
-    double freesasa_radius_atom(const freesasa*, int i);
-    const double* freesasa_radius_atom_array(const freesasa *s);
-\end{verbatim}
-In both cases the single-valued functions return negative values if
-either argument is out of bounds or there is no data available. 
-
-In addition, if the calculation was done directly on a PDB file, the
-SASA values for individual atoms can be written as B-factors in a new
-PDB file, replacing the original ones:
-\begin{verbatim}
-    int freesasa_write_pdb(FILE *output, const freesasa *s);
-\end{verbatim}
-This can be useful for visualization or as a shortcut in an analysis
-workflow where there are already tools available to extract values
-from PDB-files.
-
-Finally the function
-\begin{verbatim}
-    int freesasa_log(FILE *log, const freesasa*);
-\end{verbatim}
-prints parameters to the file \verb|log|.
 
 \appendix
 
