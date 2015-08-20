@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([freesasa], [0.2.1.4])
+AC_INIT([freesasa], [0.3.0])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([src/freesasa.c])
 AC_CONFIG_HEADERS([config.h])
