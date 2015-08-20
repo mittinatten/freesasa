@@ -21,9 +21,14 @@
 #define FREESASA_H
 
 /**
+    \defgroup API Public API 
+ */
+
+/**
     @file
     @author Simon Mitternacht
-    
+    @ingroup API
+
     @section The FreeSASA API
 
     The header freesasa.h contains the API of FreeSASA and is the only
@@ -129,49 +134,38 @@
 extern "C"{
 #endif
 
-/**
-    The FreeSASA algorithms.
- */
+//! The FreeSASA algorithms. @ingroup API
 typedef enum {FREESASA_LEE_RICHARDS, FREESASA_SHRAKE_RUPLEY}
     freesasa_algorithm;
 
-/**
-    4 classes of atoms/chemical groups used 
- */
+//! 4 classes of atoms/chemical groups used @ingroup API
 typedef enum {
     FREESASA_POLAR=0, FREESASA_APOLAR,
     FREESASA_NUCLEICACID, FREESASA_CLASS_UNKNOWN
 } freesasa_class;
 
 /**
-   Granularity levels for arrays of results in freesasa_string_value_pairs().
- */
-typedef enum  {FREESASA_ATOMS, FREESASA_RESIDUES}
-    freesasa_result_type;
-
-/**
     Verbosity levels. 
     - FREESASA_V_NORMAL: print all errors and warnings.
     - FREESASA_V_NOWARNINGS: print only errors.
     - FREESASA_V_SILENT: print no errors and warnings.
- */
+
+    @ingroup API
+*/    
 typedef enum {FREESASA_V_NORMAL,
               FREESASA_V_NOWARNINGS,
               FREESASA_V_SILENT} freesasa_verbosity;
 
-/// Limit for protein name lengths
-#define FREESASA_NAME_LIMIT 30
-
 // Default parameters
-#define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångtström)
-#define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R
-#define FREESASA_DEF_LR_D 0.25 //!< Default slice width in L&R (in Ångström)
+#define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångtström) @ingroup API
+#define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R @ingroup API
+#define FREESASA_DEF_LR_D 0.25 //!< Default slice width in L&R (in Ångström) @ingroup API
 
-#define FREESASA_SUCCESS 0 //!< All is ok
-#define FREESASA_FAIL -1 //!< Something went seriously wrong.
-#define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful
+#define FREESASA_SUCCESS 0 //!< All is ok @ingroup API
+#define FREESASA_FAIL -1 //!< Something went seriously wrong. @ingroup API
+#define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful @ingroup API
 
-//! Struct to store parameters for SASA calculation
+//! Struct to store parameters for SASA calculation @ingroup API
 typedef struct {
     freesasa_algorithm alg;     //!< Algorithm
     double probe_radius;        //!< Probe radius
@@ -180,7 +174,7 @@ typedef struct {
     int n_threads;              //!< Number of threads to use, if compiled with thread-support
 } freesasa_parameters;
 
-//! Struct to store results of SASA calculation
+//! Struct to store results of SASA calculation @ingroup API
 typedef struct {
     double total; //!< Total SASA in A2
     double *sasa; //!< SASA of each atom in A2
@@ -192,6 +186,8 @@ typedef struct {
     The struct includes coordinates, and atom names, etc. If it was
     initiated from a PDB file enough info will be stored so that
     a new PDB-file can be printed.
+
+    @ingroup API
 */
 typedef struct freesasa_structure freesasa_structure;
 
@@ -199,6 +195,8 @@ typedef struct freesasa_structure freesasa_structure;
     Struct used to store n string-value-pairs (strvp) in arrays of
     doubles and strings. freesasa_strvp_free() assumes both arrays
     and strings are dynamically allocated.
+
+    @ingroup API
  */
 typedef struct {
     double *value; //!< Array of values
@@ -210,6 +208,8 @@ typedef struct {
     Struct used for calculating classes and radii for atoms given
     their residue-names ('ALA','ARG',...) and atom-names
     ('CA','N',...).
+
+    @ingroup API
  */
 typedef struct freesasa_classifier {
     int n_classes; //!< Total number of different classes
@@ -233,12 +233,12 @@ typedef struct freesasa_classifier {
     void (*free_config)(void*);
 } freesasa_classifier;
 
-//! The default parameters for FreeSASA
+//! The default parameters for FreeSASA @ingroup API
 extern const freesasa_parameters freesasa_default_parameters;
 
-//! The default classifier, uses the functions in `classify.h`
+//! The default classifier, uses the functions in `classify.h` @ingroup API
 extern const freesasa_classifier freesasa_default_classifier;
-//! Classifier that classifies each atom according to residue
+//! Classifier that classifies each atom according to residue @ingroup API
 extern const freesasa_classifier freesasa_residue_classifier;
 
 /**
@@ -251,6 +251,8 @@ extern const freesasa_classifier freesasa_residue_classifier;
     defaults are used.
 
     @return The result of the calculation, NULL if something went wrong.
+
+    @ingroup API
 */
 freesasa_result* freesasa_calc_structure(const freesasa_structure *structure,
                                          const double *radii,
@@ -267,6 +269,8 @@ freesasa_result* freesasa_calc_structure(const freesasa_structure *structure,
     @param n Number of coordinates (i.e. xyz has size 3*n, radii size n).
 
     @return The result of the calculation, NULL if something went wrong.
+
+    @ingroup API
  */
 freesasa_result* freesasa_calc_coord(const double *xyz, 
                                      const double *radii,
@@ -277,6 +281,8 @@ freesasa_result* freesasa_calc_coord(const double *xyz,
     Frees the contents of ::freesasa_result object.
 
     @param result the object to be freed.
+
+    @ingroup API
  */
 void freesasa_result_free(freesasa_result *result);
 
@@ -297,6 +303,8 @@ void freesasa_result_free(freesasa_result *result);
     means also include `HETATM` entries.
     @return The generated struct. Returns `NULL` and prints error if
     input is invalid.
+
+    @ingroup API
 */
 freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
                                                 int include_hetatm);
@@ -304,6 +312,8 @@ freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
     Free structure.
 
     @param structure The structure to free..
+
+    @ingroup API
  */
 void freesasa_structure_free(freesasa_structure* structure);
 
@@ -314,6 +324,8 @@ void freesasa_structure_free(freesasa_structure* structure);
     @param structure The structure.
     @param classifier The classifier.
     @return Malloc'd array of radii, callers responsibility to free.
+
+    @ingroup API
  */
 double* freesasa_structure_radius(freesasa_structure *structure,
                                   freesasa_classifier *classifier);
@@ -323,6 +335,8 @@ double* freesasa_structure_radius(freesasa_structure *structure,
     @param file File containing configuration
     @return The generated classifier. NULL if file there were
     problems parsing or reading the file.
+
+    @ingroup API
  */
 freesasa_classifier* freesasa_classifier_from_file(FILE *file);
 
@@ -330,6 +344,8 @@ freesasa_classifier* freesasa_classifier_from_file(FILE *file);
     Frees the contents of a classifier object
 
     @param classifier The classifier.
+
+    @ingroup API
  */
 void freesasa_classifier_free(freesasa_classifier *classifier);
 
@@ -343,6 +359,8 @@ void freesasa_classifier_free(freesasa_classifier *classifier);
     successful that should be freed with
     freesasa_strvp_free(). Returns NULL if classifier was not
     compatible with structure.
+
+    @ingroup API
  */
 freesasa_strvp* freesasa_result_classify(freesasa_result *result,
                                          const freesasa_structure *structure,
@@ -352,6 +370,8 @@ freesasa_strvp* freesasa_result_classify(freesasa_result *result,
     Frees a ::freesasa_strvp object
 
     @param strvp the object to be freed
+
+    @ingroup API
  */
 void freesasa_strvp_free(freesasa_strvp *strvp);
 
@@ -368,6 +388,8 @@ void freesasa_strvp_free(freesasa_strvp *strvp);
     @param radii Radii of atoms.
     @return ::FREESASA_FAIL if there is no previous PDB input to base
     output on. ::FREESASA_SUCCESS else.
+
+    @ingroup API
  */
 int freesasa_write_pdb(FILE *output, 
                        freesasa_result *result,
@@ -387,6 +409,8 @@ int freesasa_write_pdb(FILE *output,
     @param structure The structure (includes sequence information).
     @return ::FREESASA_FAIL if problems writing to
     output. ::FREESASA_SUCCESS else.
+    
+    @ingroup API
 */
 int freesasa_per_residue_type(FILE *output, 
                               freesasa_result *result,
@@ -401,7 +425,9 @@ int freesasa_per_residue_type(FILE *output,
     @param structure The structure (includes sequence information).
     @return ::FREESASA_FAIL if problems writing to
     output. ::FREESASA_SUCCESS else.
-*/
+
+    @ingroup API
+ */
 int freesasa_per_residue(FILE *output,
                          freesasa_result *result,
                          const freesasa_structure *structure);
@@ -418,6 +444,8 @@ int freesasa_per_residue(FILE *output,
     only total SASA printed
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
     problems writing to file.
+
+    @ingroup API
 */
 int freesasa_log(FILE *log, 
                  freesasa_result *result,
@@ -431,6 +459,8 @@ int freesasa_log(FILE *log,
     @arg v the verbosity level
     @return ::FREESASA_SUCCESS. If v is invalid ::FREESASA_FAIL.
     @see freesasa_verbosity
+
+    @ingroup API
 */
 int freesasa_set_verbosity(freesasa_verbosity v);
 
@@ -438,6 +468,8 @@ int freesasa_set_verbosity(freesasa_verbosity v);
     Get the current verbosity level
 
     @return the verbosity level. 
+
+    @ingroup API
 */
 freesasa_verbosity freesasa_get_verbosity(void);
 

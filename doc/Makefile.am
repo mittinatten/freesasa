@@ -6,7 +6,7 @@ fig_pdf = $(subst .eps,.pdf,$(fig_eps))
 CLEANFILES =
 ALLFILES =
 
-EXTRA_DIST = $(manual)
+EXTRA_DIST = $(manual) doxy_main.md GPL.md
 
 if HAVE_LATEX
 
@@ -51,7 +51,7 @@ endif
 
 if HAVE_DOXYGEN
 
-doxyfile.stamp: $(top_srcdir)/src/*.h
+doxyfile.stamp: $(top_srcdir)/src/*.h doxy_main.md $(top_srcdir)/README.md Doxyfile
 	@if [ ! -d "html/" ]; then mkdir html; fi
 	$(DOXYGEN) Doxyfile
 	echo Timestamp > doxyfile.stamp
@@ -75,5 +75,3 @@ clean-local:
 	rm -f *.ps *.dvi *.aux *.log *.pdf *.toc *~ 
 	rm -rf html/doxygen
 
-distclean-local:
-	rm -rf html
