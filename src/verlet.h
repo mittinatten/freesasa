@@ -32,8 +32,6 @@
    struct (as demonstrated by the
  */
 
-typedef struct freesasa_verlet_element freesasa_verlet_element;
-
 //! Verlet list
 typedef struct {
     int n; //!< number of elements

@@ -25,6 +25,9 @@
 
 #define NB_CHUNK 32
 
+
+typedef struct freesasa_verlet_element freesasa_verlet_element;
+
 typedef struct freesasa_cell freesasa_cell;
 struct freesasa_cell {
     freesasa_cell *nb[17]; //! includes self, only forward neighbors
