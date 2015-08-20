@@ -27,7 +27,7 @@
     @file
     @author Simon Mitternacht
 
-    Functions to perform actual calculations.
+    Functions to perform the actual SASA calculations.
  */
 
 /**
@@ -85,6 +85,5 @@ int freesasa_lee_richards(double* sasa,
                           double grid,
                           int n_threads);
 
-// other algorithms?
 
 #endif

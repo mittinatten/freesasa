@@ -92,22 +92,6 @@ double a2r(const char *rn, const char *am)
     return 1.0;
 }
 
-/* this will only test that reasonable values are obtained, the tests
-   for classify.h will do more exhaustive classification analysis */
-START_TEST (test_radii) {
-    double r[N];
-    freesasa_structure_r_def(r,s);
-    ck_assert(fabs(r[0]-1.55) < 1e-10);
-    ck_assert(fabs(r[1]-2.00) < 1e-10);
-    ck_assert(fabs(r[2]-1.40) < 1e-10);
-    ck_assert(fabs(r[3]-2.00) < 1e-10);
-    ck_assert(fabs(r[4]-2.00) < 1e-10);
-
-    freesasa_structure_r(r,s,a2r);
-    for (int i = 0; i < N; ++i) ck_assert(fabs(r[i]-1.0) < 1e-10);
-}
-END_TEST
-
 void setup_1ubq(void)
 {
     errno = 0;
@@ -194,7 +178,6 @@ Suite* structure_suite() {
     TCase *tc_core = tcase_create("Core");
     tcase_add_checked_fixture(tc_core,setup,teardown);
     tcase_add_test(tc_core, test_structure_api);
-    tcase_add_test(tc_core, test_radii);
     tcase_add_test(tc_core, test_write_no_pdb);
 
     TCase *tc_pdb = tcase_create("PDB");

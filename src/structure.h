@@ -24,7 +24,7 @@
    @file 
    @author Simon Mitternacht
 
-   This header defines the type ::freesasa_structure, which
+   This header declares functions to deal , which
    represents a protein structure, and functions to deal with it.
 
    The functions freesasa_structure_from_pdb() and
@@ -64,7 +64,8 @@ freesasa_structure* freesasa_structure_new(void);
     @param z z-coordinate of atom.
     @return ::FREESASA_SUCCESS if input valid. ::FREESASA_FAIL if any of
     the strings are malformatted. ::FREESASA_WARN if the atom type is
-    unknown. */
+    unknown. 
+ */
 int freesasa_structure_add_atom(freesasa_structure *s,
                                 const char* atom_name,
                                 const char* residue_name,
@@ -79,30 +80,6 @@ int freesasa_structure_add_atom(freesasa_structure *s,
     @return The coordinates of the structure as a ::freesasa_coord struct.
  */
 const freesasa_coord* freesasa_structure_xyz(const freesasa_structure *s);
-
-/**
-    \deprecated Get array of radii using custom conversion function.     
-    @param r The array were the results will be stored. 
-    @param s Self.
-    @param atom2radius Function pointer to function that converts 
-      an atom label into a radius.
-    @see freesasa_structure_r_def()
-*/
-void freesasa_structure_r(double *r,
-                          const freesasa_structure *s,
-                          double (*atom2radius)(const char *res_name,
-                                                const char *atom_name));
-
-/**
-    \deprecated Get array of default atomic radii. 
-    Calls freesasa_structure_r() using freesasa_classify_radius() for
-    radius calculations..
-    @param r The array were the results will be stored.
-    @param s Self.
-    @see freesasa_classify_radius()
- */
-
-void freesasa_structure_r_def(double *r, const freesasa_structure *s);
 
 /**
     Get number of atoms.
@@ -122,6 +99,7 @@ int freesasa_structure_n(const freesasa_structure *s);
     @return Number of residues.
  */
 int freesasa_structure_n_residues(const freesasa_structure *s);
+
 /**
     Get atom name
     

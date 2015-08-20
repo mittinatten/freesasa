@@ -218,21 +218,6 @@ int freesasa_structure_add_atom(freesasa_structure *p,
     return FREESASA_SUCCESS;
 }
 
-void freesasa_structure_r(double *r,
-                          const freesasa_structure *p,
-                          double (*atom2radius)(const char *res_name,
-                                                const char *atom_name))
-{
-    assert(r); assert(p);
-    for (int i = 0; i < p->number_atoms; ++i) {
-        r[i] = atom2radius(p->a[i].res_name, p->a[i].atom_name);
-    }
-}
-
-void freesasa_structure_r_def(double *r, const freesasa_structure *p)
-{
-    freesasa_structure_r(r,p,freesasa_classify_radius);
-}
 
 const freesasa_coord* freesasa_structure_xyz(const freesasa_structure *p)
 {

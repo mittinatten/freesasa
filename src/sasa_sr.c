@@ -33,7 +33,7 @@
 #include "freesasa.h"
 #include "sasa.h"
 #include "srp.h"
-#include "adjacency.h"
+#include "verlet.h"
 
 #ifdef __GNUC__
 #define __attrib_pure__ __attribute__((pure))
@@ -54,7 +54,7 @@ typedef struct {
     const freesasa_coord *xyz;
     const freesasa_coord *srp;
     double *r;
-    freesasa_adjacency *adj;
+    freesasa_verlet *adj;
     double *sasa;
     char *spcount_0;
 } sasa_sr;
@@ -108,7 +108,7 @@ int freesasa_shrake_rupley(double *sasa,
     for (int i = 0; i < n_atoms; ++i) sr.r[i] = r[i] + probe_radius;
 
     //calculate distances
-    sr.adj = freesasa_adjacency_new(xyz,sr.r);
+    sr.adj = freesasa_verlet_new(xyz,sr.r);
 
 
     //calculate SASA
@@ -130,7 +130,7 @@ int freesasa_shrake_rupley(double *sasa,
         }
     }
     freesasa_coord_free(srp);
-    freesasa_adjacency_free(sr.adj);
+    freesasa_verlet_free(sr.adj);
     free(sr.r);
     return return_value;
 }

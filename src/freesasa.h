@@ -31,9 +31,11 @@
 
     @section The FreeSASA API
 
-    The header freesasa.h contains the API of FreeSASA and is the only
-    header installed by the `make install` target. It provides
-    functions to init and perform a SASA calculation.
+    The header freesasa.h contains the @ref API of FreeSASA and is the
+    only header installed by the `make install` target. It provides
+    the functions and data types necessary to perfrom and analyze a
+    SASA calculation, including facilities to customize assignment of
+    radii to, and classification of atoms.
 
     @subsection Customizing Customizing behavior
 
@@ -52,24 +54,20 @@
     freesasa_parameters p = freesasa_default_parameters;
     ~~~
 
+    To allow the user to only change the parameters that are
+    non-default.
+
     @subsubsection Classification Specifying atomic radii and classes
 
     A classifier-configuration can be read from a file using
-    freesasa_configuration_from_file().
-
-    The user can also read in a configuration from a file to specify
-    their own classes and atomic radii. The functions that do this
-    have names that start with freesasa_classify_user_, this
-    functionality is still experimental, in that the interface might
-    change, but the file format for the config files should be stable
-    (except that more features might be added). The file should have
-    two sections: `types:` and `atoms:`. The types-section defines
-    what types of atoms are available (aliphatic, aromatic, hydroxyl,
-    ...), what the radius of that type is and what class a type
-    belongs to (polar, apolar, ...). The user is free to define as
-    many types and classes as necessary. The atoms-section consists of
-    triplets of residue-name, atom-name (as in the corresponding PDB
-    entries) and type. A prototype file would be
+    freesasa_configuration_from_file(). The file should have two
+    sections: `types:` and `atoms:`. The types-section defines what
+    types of atoms are available (aliphatic, aromatic, hydroxyl, ...),
+    what the radius of that type is and what class a type belongs to
+    (polar, apolar, ...). The user is free to define as many types and
+    classes as necessary. The atoms-section consists of triplets of
+    residue-name, atom-name (as in the corresponding PDB entries) and
+    type. A prototype file would be
 
        ~~~
        types:
@@ -96,17 +94,16 @@
     @subsection Coordinates
 
     If users wish to supply their own coordinates and radii, these are
-    accepted as arrays of doubles. The coordinate-array should have
-    size 3*n with coordinates in the order
-    `x1,y1,z1,x2,y2,z2,...,xn,yn,zn`.
+    accepted as arrays of doubles passed to the function
+    freesasa_calc_coord(). The coordinate-array should have size 3*n
+    with coordinates in the order `x1,y1,z1,x2,y2,z2,...,xn,yn,zn`.
 
     @subsection Error-reporting 
 
-    All errors and warnings are written to stderr and are prefixed
-    with the string 'freesasa'. There are two error codes
-    ::FREESASA_WARN and ::FREESASA_FAIL (see documentation of each
-    function to see when these are used). ::FREESASA_SUCCESS is used
-    for success.
+    Errors due to user or system errors, such as malformatted
+    config-files, I/O errors are reported through return values,
+    either ::FREESASA_FAIL or ::FREESASA_WARN, or by NULL
+    pointers. See the documentation for the individual functions.
 
     Errors that are attributable to programmers using the library,
     such as passing null pointers are checked by asserts.
@@ -121,11 +118,11 @@
     freesasa_set_verbosity()). It should be clear from the
     documentation when the other functions have side effects such as
     memory allocation and I/O, and thread-safety should generally not
-    be an issue (to the extent that your c library has a threadsafe
+    be an issue (to the extent that your C library has a threadsafe
     fprintf). The SASA calculation itself can be parallelized by
     passing a ::freesasa_parameters struct with
-    ::freesasa_parameters.n_threads set to a value > 1 to any of the
-    calculation functions.
+    ::freesasa_parameters.n_threads set to a value > 1 to
+    freesasa_calc_pdb() or freesasa_calc_coord().
  */
 
 #include <stdio.h>
@@ -138,12 +135,6 @@ extern "C"{
 typedef enum {FREESASA_LEE_RICHARDS, FREESASA_SHRAKE_RUPLEY}
     freesasa_algorithm;
 
-//! 4 classes of atoms/chemical groups used @ingroup API
-typedef enum {
-    FREESASA_POLAR=0, FREESASA_APOLAR,
-    FREESASA_NUCLEICACID, FREESASA_CLASS_UNKNOWN
-} freesasa_class;
-
 /**
     Verbosity levels. 
     - FREESASA_V_NORMAL: print all errors and warnings.
@@ -155,6 +146,16 @@ typedef enum {
 typedef enum {FREESASA_V_NORMAL,
               FREESASA_V_NOWARNINGS,
               FREESASA_V_SILENT} freesasa_verbosity;
+/**
+    4 classes of atoms/chemical groups 
+    (classes in freesasa_default_classifier)
+    @ingroup API
+ */
+typedef enum {
+    FREESASA_POLAR=0, FREESASA_APOLAR,
+    FREESASA_NUCLEICACID, FREESASA_CLASS_UNKNOWN
+} freesasa_class;
+
 
 // Default parameters
 #define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångtström) @ingroup API

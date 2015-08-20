@@ -17,15 +17,24 @@
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FREESASA_ADJACENCY_H
-#define FREESASA_ADJACENCY_H
+#ifndef FREESASA_VERLET_H
+#define FREESASA_VERLET_H
 
 #include <stdlib.h>
 #include "coord.h"
+/**
+   @file
+   @author Simon Mitternacht
+   
+   Functions to compute Verlet lists. The function
+   freesasa_verlet_contact() is mainly intended for checking
+   consitency, in performance-critical code it is advisible to use the
+   struct (as demonstrated by the
+ */
 
-typedef struct freesasa_adjacency_element freesasa_adjacency_element;
+typedef struct freesasa_verlet_element freesasa_verlet_element;
 
-//! Adjacency list
+//! Verlet list
 typedef struct {
     int n; //!< number of elements
     int **nb; //!< neighbors to each element
@@ -34,40 +43,40 @@ typedef struct {
     double **nb_xd; //!< signed distance between neighbors along x-axis
     double **nb_yd; //!< signed distance between neighbors along y-axis
     int *capacity; //!< keeps track of memory chunks (don't change this)
-} freesasa_adjacency;
+} freesasa_verlet;
 
 /**
-    Creates an adjacency list based on a set of coordinates with
+    Creates a Verlet list based on a set of coordinates with
     corresponding sphere radii. 
 
     Implemented using Verlet lists, giving O(N) performance. Should be
-    freed with freesasa_adjacency_free(). For efficient calculations
+    freed with freesasa_verlet_free(). For efficient calculations
     using this list the members of the returned struct should be used
-    directly and not freesasa_adjacency_contact().
+    directly and not freesasa_verlet_contact().
 
     @param coord a set of coordinates
     @param radii radii for the coordinates
-    @return an adjacency list.
+    @return a Verlet list.
  */
-freesasa_adjacency *freesasa_adjacency_new(const freesasa_coord *coord,
-                                           const double *radii);
+freesasa_verlet *freesasa_verlet_new(const freesasa_coord *coord,
+                                     const double *radii);
 
 /**
-    Frees an adjacency list created by freesasa_adjacency_new().
+    Frees a Verlet list created by freesasa_verlet_new().
 
-    @param adj the adjacency list to free
+    @param adj the Verlet list to free
  */
-void freesasa_adjacency_free(freesasa_adjacency *adj);
+void freesasa_verlet_free(freesasa_verlet *adj);
 
 /**
     Checks if two atoms are in contact. Only included for reference.
 
-    @param adj the adjacency list
+    @param adj the verlet list
     @param i index of first coordinate
     @param j index of second coordinate
     @return 1 if contact, 0 else.
  */
-int freesasa_adjacency_contact(const freesasa_adjacency *adj,
-                               int i, int j);
+int freesasa_verlet_contact(const freesasa_verlet *adj,
+                            int i, int j);
 
 #endif
