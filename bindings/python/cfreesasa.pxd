@@ -1,5 +1,9 @@
 from libc.stdio cimport FILE
 
+#cdef extern from "stdint.h" nogil:
+#    ctypedef size_t uintptr_t:
+#        pass
+
 
 cdef extern from "freesasa.h":
     ctypedef enum freesasa_algorithm:
