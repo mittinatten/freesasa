@@ -2,8 +2,6 @@ from libc.stdio cimport FILE
 
 
 cdef extern from "freesasa.h":
-    ctypedef struct freesasa:
-        pass
     ctypedef enum freesasa_algorithm:
         FREESASA_LEE_RICHARDS, FREESASA_SHRAKE_RUPLEY
     ctypedef enum freesasa_class:
@@ -12,62 +10,101 @@ cdef extern from "freesasa.h":
     ctypedef enum freesasa_verbosity:
         FREESASA_V_NORMAL, FREESASA_V_SILENT
 
-    cdef int FREESASA_NAME_LIMIT
     cdef int FREESASA_DEF_PROBE_RADIUS
     cdef int FREESASA_DEF_SR_N
     cdef double FREESASA_DEF_LR_D
     cdef int FREESASA_SUCCESS
     cdef int FREESASA_FAIL
     cdef int FREESASA_WARN
-    
-    # init
-    freesasa* freesasa_new()
-    void freesasa_free(freesasa *self)
 
-    # calculate
-    void freesasa_copy_param(freesasa *target, const freesasa *source)
-    int freesasa_calc_coord(freesasa  *self, const double *coord,
-                            const double *r, size_t n)
-    int freesasa_calc_pdb(freesasa *self, FILE *pdb_file)
-    int freesasa_calc_atoms(freesasa *self, const double *coord,
-                            const char **residueNames, 
-                            const char **atomNames, size_t n)
-    int freesasa_link_coord(freesasa *self, const double *coord,
-                            double *radii, size_t n)
-    int freesasa_refresh(freesasa *self)
+    ctypedef struct freesasa_parameters:
+        freesasa_algorithm alg
+        double probe_radius
+        int shrake_rupley_n_points
+        double lee_richards_delta
+        int n_threads
 
-    # protein info
-    double freesasa_radius(const char *residueName, const char *atomName)
-    size_t freesasa_n_atoms(const freesasa *self)
+    ctypedef struct freesasa_result:
+        double total
+        double *sasa
+        int n_atoms
 
-    # calculation settings
-    int freesasa_set_algorithm(freesasa *s, freesasa_algorithm alg)
-    freesasa_algorithm freesasa_get_algorithm(const freesasa *s)
-    const char* freesasa_algorithm_name(const freesasa *self)
-    int freesasa_set_probe_radius(freesasa *self,double r)
-    double freesasa_get_probe_radius(const freesasa *self)
-    int freesasa_set_sr_points(freesasa *self, int n)
-    int freesasa_get_sr_points(const freesasa *self)
-    int freesasa_set_lr_delta(freesasa *self, double delta)
-    double freesasa_get_lr_delta(const freesasa *self)
-    int freesasa_set_nthreads(freesasa *self,int n)
-    int freesasa_get_nthreads(const freesasa *self)
-    void freesasa_set_proteinname(freesasa *self,const char *name)
-    const char* freesasa_get_proteinname(const freesasa *self)
+    ctypedef struct freesasa_strvp:
+        double *value
+        char **string
+        int n
 
-    # access results
-    double freesasa_area_total(const freesasa *self)
-    double freesasa_area_class(const freesasa *self, freesasa_class c)
-    double freesasa_area_residue(const freesasa *self, const char *residueName)
-    double freesasa_area_atom(const freesasa *self, int atom)
-    const double* freesasa_area_atom_array(const freesasa *self)
-    double freesasa_radius_atom(const freesasa *self, int atom)
-    const double* freesasa_radius_atom_array(const freesasa *self)
+    ctypedef struct freesasa_classifier:
+        int n_classes
+        void *config
+        double (*radius)(const char* res_name,
+                         const char* atom_name,
+                         const freesasa_classifier *c)
+        int (*sasa_class)(const char* res_name,
+                          const char* atom_name,
+                          const freesasa_classifier *c)
+        const char* (*class2str)(int the_class,
+                                 const freesasa_classifier *c)
+        void (*free_config)(void*)
 
-    # write results to output
-    int freesasa_write_pdb(const freesasa *self, FILE *output)
-    int freesasa_per_residue_type(const freesasa *self, FILE *output)
-    int freesasa_per_residue(const freesasa *self, FILE *output)
+    ctypedef struct freesasa_structure:
+        pass
+
+    cdef extern const freesasa_parameters freesasa_default_parameters
+    cdef extern const freesasa_classifier freesasa_default_classifier
+    cdef extern const freesasa_classifier freesasa_residue_classifier
+
+    freesasa_result* freesasa_calc_structure(const freesasa_structure *structure,
+                                             const double *radii,
+                                             const freesasa_parameters *parameters)
+
+    freesasa_result* freesasa_calc_coord(const double *xyz,
+                                         const double *radii,
+                                         int n,
+                                         const freesasa_parameters *parameters)
+
+    void freesasa_result_free(freesasa_result *result)
+
+    freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
+                                                    int include_hetatm)
+
+    int freesasa_structure_n(freesasa_structure *structure)
+
+    void freesasa_structure_free(freesasa_structure* structure)
+
+    double* freesasa_structure_radius(freesasa_structure *structure,
+                                      freesasa_classifier *classifier)
+
+    freesasa_classifier* freesasa_classifier_from_file(FILE *file)
+
+    void freesasa_classifier_free(freesasa_classifier *classifier)
+
+    freesasa_strvp* freesasa_result_classify(freesasa_result *result,
+                                             const freesasa_structure *structure,
+                                             const freesasa_classifier *classifier)
+
+    void freesasa_strvp_free(freesasa_strvp *strvp)
+
+    int freesasa_write_pdb(FILE *output,
+                           freesasa_result *result,
+                           const freesasa_structure *structure,
+                           const double *radii)
+
+    int freesasa_per_residue_type(FILE *output,
+                                  freesasa_result *result,
+                                  const freesasa_structure *structure)
+
+    int freesasa_per_residue(FILE *output,
+                             freesasa_result *result,
+                             const freesasa_structure *structure)
+
+    int freesasa_log(FILE *log,
+                     freesasa_result *result,
+                     const char *name,
+                     const freesasa_parameters *parameters,
+                     const freesasa_strvp* class_sasa)
 
     int freesasa_set_verbosity(freesasa_verbosity v)
-    freesasa_verbosity freesasa_get_verbosity() 
+
+    freesasa_verbosity freesasa_get_verbosity()
+

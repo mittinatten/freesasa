@@ -27,8 +27,8 @@
    This header declares functions to deal , which
    represents a protein structure, and functions to deal with it.
 
-   The functions freesasa_structure_from_pdb() and
-   freesasa_structure_free() are part of the public API and are
+   The functions freesasa_structure_from_pdb(), freesasa_structure_n()
+   and freesasa_structure_free() are part of the public API and are
    declared in `freesasa.h`.
  */
 
@@ -80,14 +80,6 @@ int freesasa_structure_add_atom(freesasa_structure *s,
     @return The coordinates of the structure as a ::freesasa_coord struct.
  */
 const freesasa_coord* freesasa_structure_xyz(const freesasa_structure *s);
-
-/**
-    Get number of atoms.
-    
-    @param s Self.
-    @return Number of atoms.
-*/
-int freesasa_structure_n(const freesasa_structure *s);
 
 /**
     Get number of residues.
