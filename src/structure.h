@@ -154,6 +154,14 @@ const char* freesasa_structure_atom_descriptor(const freesasa_structure *s, int 
 int freesasa_structure_residue_atoms(const freesasa_structure *s, int r_i, 
                                      int *first, int *last);
 
+/**
+    Get a string describin a residue.
+    Format: "A    1 ALA" (chain lable, resiude number, atom name)
+    
+    @param s Self.
+    @param r_i atom index
+    @return Descriptor string
+ */
 const char* freesasa_structure_residue_descriptor(const freesasa_structure *s, int r_i);
 
 /**

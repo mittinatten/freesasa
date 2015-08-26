@@ -334,7 +334,7 @@ void freesasa_structure_free(freesasa_structure* structure);
     classifier.
 
     @param structure The structure.
-    @param classifier The classifier.
+    @param classifier The classifier. If NULL the default is used.
     @return Malloc'd array of radii, callers responsibility to free.
 
     @ingroup API
