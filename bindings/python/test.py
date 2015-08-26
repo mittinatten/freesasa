@@ -76,6 +76,16 @@ class FreeSASATestCase(unittest.TestCase):
         s = freesasa.Structure("data/1ubq.pdb")
         r = freesasa.calc(s)
         self.assertTrue(math.fabs(r.totalArea() - 4759.86096) < 1e-5)
+        sasa_classes = freesasa.classifyResults(r,s)
+        self.assertTrue(math.fabs(sasa_classes['Polar'] - 2232.23039) < 1e-5)
+        self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2527.63057) < 1e-5)
+
+        r = freesasa.calc(s,freesasa.Parameters({'algorithm' : freesasa.LeeRichards, 'delta' : 0.25}))
+        sasa_classes = freesasa.classifyResults(r,s)
+        self.assertTrue(math.fabs(r.totalArea() - 4728.26159) < 1e-5)
+        self.assertTrue(math.fabs(sasa_classes['Polar'] - 2211.41649) < 1e-5)
+        self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2516.84510) < 1e-5)
+        
 
 if __name__ == '__main__':
     unittest.main()
