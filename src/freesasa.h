@@ -309,6 +309,17 @@ void freesasa_result_free(freesasa_result *result);
 */
 freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
                                                 int include_hetatm);
+
+/**
+    Get number of atoms.
+    
+    @param s Self.
+    @return Number of atoms.
+
+    @ingroup API
+*/
+int freesasa_structure_n(const freesasa_structure *s);
+
 /**
     Free structure.
 
