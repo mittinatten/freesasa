@@ -100,7 +100,7 @@ int freesasa_warn(const char *format,...)
     return FREESASA_WARN;
 }
 
-freesasa_strvp* freesasa_result_classify(freesasa_result *result, 
+freesasa_strvp* freesasa_result_classify(const freesasa_result *result, 
                                          const freesasa_structure *structure,
                                          const freesasa_classifier *c) 
 {
@@ -217,8 +217,8 @@ freesasa_result* freesasa_calc_structure(const freesasa_structure* structure,
                          radii,parameters);
 }
 
-double* freesasa_structure_radius(freesasa_structure *structure,
-                                  freesasa_classifier *classifier)
+double* freesasa_structure_radius(const freesasa_structure *structure,
+                                  const freesasa_classifier *classifier)
 {
     assert(structure);
 

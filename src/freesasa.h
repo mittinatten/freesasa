@@ -339,8 +339,8 @@ void freesasa_structure_free(freesasa_structure* structure);
 
     @ingroup API
  */
-double* freesasa_structure_radius(freesasa_structure *structure,
-                                  freesasa_classifier *classifier);
+double* freesasa_structure_radius(const freesasa_structure *structure,
+                                  const freesasa_classifier *classifier);
 /**
     Generate a classifier from a config-file.
 
@@ -374,7 +374,7 @@ void freesasa_classifier_free(freesasa_classifier *classifier);
 
     @ingroup API
  */
-freesasa_strvp* freesasa_result_classify(freesasa_result *result,
+freesasa_strvp* freesasa_result_classify(const freesasa_result *result,
                                          const freesasa_structure *structure,
                                          const freesasa_classifier *classifier);
 
