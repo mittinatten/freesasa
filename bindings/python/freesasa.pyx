@@ -4,16 +4,12 @@ from libc.string cimport memcpy
 from cpython cimport array
 from cfreesasa cimport *
 
-polar = FREESASA_POLAR
-apolar = FREESASA_APOLAR 
-nucleic = FREESASA_NUCLEICACID
-unknown = FREESASA_CLASS_UNKNOWN
-ShrakeRupley = FREESASA_SHRAKE_RUPLEY
-LeeRichards = FREESASA_LEE_RICHARDS
+ShrakeRupley = 'ShrakeRupley'
+LeeRichards = 'LeeRichards'
 silent = FREESASA_V_SILENT
 normal = FREESASA_V_NORMAL
 
-defaultParameters = {'algorithm' : FREESASA_SHRAKE_RUPLEY, #freesasa_default_parameters.alg,
+defaultParameters = {'algorithm' : ShrakeRupley, #freesasa_default_parameters.alg,
                      'probe-radius' : freesasa_default_parameters.probe_radius,
                      'n-points' :
                        freesasa_default_parameters.shrake_rupley_n_points,
@@ -34,8 +30,12 @@ cdef class Parameters:
                   if 'n-threads' in param:    self.setNThreads(param['n-threads'])
 
       def setAlgorithm(self,alg):
-            assert(alg in [ShrakeRupley, LeeRichards])
-            self._c_param.alg = alg
+            if (alg == ShrakeRupley):
+                  self._c_param.alg = FREESASA_SHRAKE_RUPLEY
+            elif (alg == LeeRichards):
+                  self._c_param.alg = FREESASA_LEE_RICHARDS
+            else:
+                  raise AssertionError("Algorithm '%s' is unknown" % alg)
 
       def algorithm(self):
             return self._c_param.alg
@@ -108,6 +108,7 @@ cdef class Classifier:
                   if config is NULL:
                         raise IOError("File '%s' could not be opened." % fileName)
                   self._c_classifier = freesasa_classifier_from_file(config)
+                  fclose(config)
                   if self._c_classifier is NULL:
                         raise Exception("Error parsing configuration in '%s'." % fileName)
 
