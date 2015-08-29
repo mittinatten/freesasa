@@ -27,6 +27,9 @@
 /**
     @defgroup StructureAPI Structure API
     @ingroup API
+
+    @brief Sub-module containing all functions to deal with protein
+    structures (::freesasa_structure).
  */
 
 /**
@@ -38,7 +41,11 @@
  */
 
 /**
-    @addtogroup API
+    @addtogroup API 
+
+    @brief Functions and datatypes for performing and analyzing SASA
+    calculations.
+
     @section The FreeSASA API
 
     The header @ref freesasa.h contains the @ref API of FreeSASA and
