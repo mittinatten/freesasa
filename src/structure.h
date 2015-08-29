@@ -24,12 +24,9 @@
    @file 
    @author Simon Mitternacht
 
-   This header declares functions to deal , which
-   represents a protein structure, and functions to deal with it.
-
-   The functions freesasa_structure_from_pdb(), freesasa_structure_n()
-   and freesasa_structure_free() are part of the public API and are
-   declared in `freesasa.h`.
+   This header contains some functions to deal with
+   ::freesasa_structure objects that for various reasons are not part
+   of the public API.
  */
 
 #include <stdio.h>
@@ -38,40 +35,6 @@
 
 //! The maximum string length of returned by freesasa_structure_descriptor() 
 #define FREESASA_STRUCTURE_DESCRIPTOR_STRL 20
-
-/**
-    Allocate and initialize empty structure.
-
-    @return The generated struct.
- */
-freesasa_structure* freesasa_structure_new(void);
-
-/**
-    Add individual atom to structure.
-    
-    A structures can be built by adding atoms one by one. Storing
-    residue numbers as strings allows for non-numeric labels. Will
-    include hydrogens if added (i.e. up to caller to make sure these
-    are excluded if necessesary).
-
-    @param s Self.
-    @param atom_name String of the format `" CA "`, `" OXT"`, etc.
-    @param residue_name String of the format `"ALA"`, `"PHE"`, etc.
-    @param residue_number String of the format `"   1"`, `" 123"`, etc.
-    @param chain_label Any character to label chain, typically `'A'`, `'B'`, etc.
-    @param x x-coordinate of atom.
-    @param y y-coordinate of atom.
-    @param z z-coordinate of atom.
-    @return ::FREESASA_SUCCESS if input valid. ::FREESASA_FAIL if any of
-    the strings are malformatted. ::FREESASA_WARN if the atom type is
-    unknown. 
- */
-int freesasa_structure_add_atom(freesasa_structure *s,
-                                const char* atom_name,
-                                const char* residue_name,
-                                const char* residue_number,
-                                char chain_label,
-                                double x, double y, double z);
 
 /**
     Get coordinates.
@@ -84,52 +47,18 @@ const freesasa_coord* freesasa_structure_xyz(const freesasa_structure *s);
 /**
     Get number of residues.
 
-    Number of unique combinations of residue name and chain label
-    contained in the structure.
+    Calculated crudely by determining the Number of unique
+    combinations of residue name and chain label contained in the
+    structure. If residues are mingled i.e. atoms of the same residue
+    are present more than once at different places in the file this
+    might be off.
 
     @param s Self.
     @return Number of residues.
+
+    @ingroup StructureAPI
  */
 int freesasa_structure_n_residues(const freesasa_structure *s);
-
-/**
-    Get atom name
-    
-    @param s Self.
-    @param i Atom index.
-    @return Atom name in the form `" CA "`, `" OXT"`, etc.
- */
-const char* freesasa_structure_atom_name(const freesasa_structure *s,
-                                         int i);
-
-/**
-    Get residue name.
-    
-    @param s Self.
-    @param i Atom index.
-    @return Residue name in the form `"ALA"`, `"PHE"`, etc.
-*/
-const char* freesasa_structure_atom_res_name(const freesasa_structure *s,
-                                             int i);
-
-/**
-    Get residue number.
-
-    @param s Self.
-    @param i Atom index.
-    @return Residue name in the form `"   1"`, `" 123"`, etc.
-*/
-const char* freesasa_structure_atom_res_number(const freesasa_structure *s,
-                                               int i);
-
-/**
-    Get chain label.
-   
-    @param s Self.
-    @param i Atom index.
-    @return Chain label (`'A'`, `'B'`, etc.)
- */
-char freesasa_structure_atom_chain(const freesasa_structure *s, int i);
 
 /**
     Get a string describing an atom. 
