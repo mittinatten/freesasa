@@ -369,21 +369,6 @@ int freesasa_per_residue(FILE *output,
     return FREESASA_SUCCESS;
 }
 
-int freesasa_write_pdb(FILE *output, 
-                       freesasa_result *result,
-                       const freesasa_structure *structure, 
-                       const double *radii)
-{
-    assert(structure); 
-    assert(output);
-    assert(radii);
-
-    return freesasa_structure_write_pdb_bfactors(structure,output,
-                                                 result->sasa,
-                                                 radii);
-}
-
-
 freesasa_strvp* freesasa_strvp_new(int n)
 {
     freesasa_strvp* svp = malloc(sizeof(freesasa_strvp));

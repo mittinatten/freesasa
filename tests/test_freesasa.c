@@ -244,6 +244,40 @@ START_TEST (test_sasa_1ubq)
 }
 END_TEST
 
+START_TEST (test_write_1ubq) {
+    FILE *tf = fopen("tmp/dummy_bfactors.pdb","w+"),
+        *ref = fopen(DATADIR "reference_bfactors.pdb","r"),
+        *pdb = fopen(DATADIR "1ubq.pdb","r");
+    ck_assert(tf != NULL);
+    ck_assert(ref != NULL);
+    ck_assert(pdb != NULL);
+    freesasa_structure *s = freesasa_structure_from_pdb(pdb,0);
+    const int n = freesasa_structure_n(s);
+    freesasa_result res;
+    fclose(pdb);
+
+    res.sasa = malloc(sizeof(double)*n);
+    for (int i = 0; i < n; ++i) res.sasa[i] = 1.23;
+
+    ck_assert(freesasa_write_pdb(tf,&res,s,res.sasa) == FREESASA_SUCCESS);
+
+    rewind(tf);
+    free(res.sasa);
+
+    //check that output matches reference file
+    size_t bufsize = 100;
+    char *buf_tf = malloc(bufsize), *buf_ref = malloc(bufsize);
+    while(getline(&buf_tf,&bufsize,tf) > 0 && getline(&buf_ref,&bufsize,ref) > 0) {
+        ck_assert_str_eq(buf_ref,buf_tf);
+    }
+    free(buf_tf);
+    free(buf_ref);
+    fclose(ref);
+    fclose(tf);
+}
+END_TEST
+
+
 START_TEST (test_trimmed_pdb) 
 {
     // This test is due to suggestion from João Rodrigues (issue #6 on Github)
@@ -382,6 +416,7 @@ Suite *sasa_suite()
     tcase_add_test(tc_basic, test_minimal_calc);
     tcase_add_test(tc_basic, test_calc_errors);
     tcase_add_test(tc_basic, test_user_classes);
+    tcase_add_test(tc_basic, test_write_1ubq);
     
     TCase *tc_lr_basic = tcase_create("Basic L&R");
     tcase_add_checked_fixture(tc_lr_basic,setup_lr_precision,teardown_lr_precision);

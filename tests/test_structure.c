@@ -75,18 +75,6 @@ START_TEST (test_structure_api)
 }
 END_TEST
 
-START_TEST (test_write_no_pdb)
-{
-    FILE *null = fopen("/dev/null","w"); // won't work on all platforms
-
-    freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert(freesasa_structure_write_pdb_bfactors(s,null,bfactors,bfactors) == FREESASA_FAIL);
-    freesasa_set_verbosity(0);
-
-    fclose(null);
-}
-END_TEST
-
 double a2r(const char *rn, const char *am)
 {
     return 1.0;
@@ -127,32 +115,6 @@ START_TEST (test_structure_1ubq)
 }
 END_TEST
 
-START_TEST (test_write_1ubq) {
-    FILE *tf = fopen("tmp/dummy_bfactors.pdb","w+"),
-        *ref = fopen(DATADIR "reference_bfactors.pdb","r");
-    ck_assert(tf != NULL);
-    ck_assert(ref != NULL);
-    const size_t n = freesasa_structure_n(s);
-    double *b = (double*)malloc(sizeof(double)*n);
-    for (int i = 0; i < n; ++i) b[i] = 1.23;
-
-    ck_assert(freesasa_structure_write_pdb_bfactors(s,tf,b,b) == FREESASA_SUCCESS);
-
-    rewind(tf);
-
-    //check that output matches reference file
-    size_t bufsize = 100;
-    char *buf_tf = malloc(bufsize), *buf_ref = malloc(bufsize);
-    while(getline(&buf_tf,&bufsize,tf) > 0 && getline(&buf_ref,&bufsize,ref) > 0) {
-        ck_assert_str_eq(buf_ref,buf_tf);
-    }
-    free(buf_tf);
-    free(buf_ref);
-    fclose(ref);
-    fclose(tf);
-}
-END_TEST
-
 START_TEST (test_pdb)
 {
     const char *file_names[] = {DATADIR "alt_model_twochain.pdb",
@@ -178,7 +140,6 @@ Suite* structure_suite() {
     TCase *tc_core = tcase_create("Core");
     tcase_add_checked_fixture(tc_core,setup,teardown);
     tcase_add_test(tc_core, test_structure_api);
-    tcase_add_test(tc_core, test_write_no_pdb);
 
     TCase *tc_pdb = tcase_create("PDB");
     tcase_add_test(tc_pdb,test_pdb);
@@ -186,7 +147,6 @@ Suite* structure_suite() {
     TCase *tc_1ubq = tcase_create("1UBQ");
     tcase_add_checked_fixture(tc_1ubq,setup_1ubq,teardown_1ubq);
     tcase_add_test(tc_1ubq,test_structure_1ubq);
-    tcase_add_test(tc_1ubq,test_write_1ubq);
 
     suite_add_tcase(s, tc_core);
     suite_add_tcase(s, tc_pdb);

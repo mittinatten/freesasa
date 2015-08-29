@@ -47,16 +47,14 @@ const freesasa_coord* freesasa_structure_xyz(const freesasa_structure *s);
 /**
     Get number of residues.
 
-    Calculated crudely by determining the Number of unique
+    Calculated crudely by determining the number of unique
     combinations of residue name and chain label contained in the
     structure. If residues are mingled i.e. atoms of the same residue
-    are present more than once at different places in the file this
-    might be off.
+    are in non-contiguous regions of the file, this function might be
+    off.
 
     @param s Self.
     @return Number of residues.
-
-    @ingroup StructureAPI
  */
 int freesasa_structure_n_residues(const freesasa_structure *s);
 
@@ -93,20 +91,5 @@ int freesasa_structure_residue_atoms(const freesasa_structure *s, int r_i,
  */
 const char* freesasa_structure_residue_descriptor(const freesasa_structure *s, int r_i);
 
-/**
-    Writes PDB file, but with B-factors replaced by new values. Can be
-    used to visualize SASA.
-
-    @param s Self.
-    @param output Output file.
-    @param values Array of values to use as "B-factors" in the output.
-    @param radii Array of atomic radii to put in the occupancy field in the output.
-    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if there are problems with
-    output-file.
- */
-int freesasa_structure_write_pdb_bfactors(const freesasa_structure *s,
-                                          FILE *output,
-                                          const double *values,
-                                          const double *radii);
 
 #endif

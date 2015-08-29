@@ -34,15 +34,20 @@
     @author Simon Mitternacht
     @ingroup API
 
+    Contains the @ref API of FreeSASA.
+ */
+
+/**
+    @addtogroup API
     @section The FreeSASA API
 
-    The header freesasa.h contains the @ref API of FreeSASA and is the
-    only header installed by the `make install` target. It provides
-    the functions and data types necessary to perfrom and analyze a
-    SASA calculation, including facilities to customize assignment of
-    radii to, and classification of atoms. The API for dealing with
-    structures is documented in the submodule @ref StructureAPI (but
-    the functions are in the same header).
+    The header @ref freesasa.h contains the @ref API of FreeSASA and
+    is the only header installed by the `make install` target. It
+    provides the functions and data types necessary to perfrom and
+    analyze a SASA calculation, including facilities to customize
+    assignment of radii to, and classification of atoms. The API for
+    dealing with structures is documented in the submodule @ref
+    StructureAPI (but the functions are in the same header).
 
     @subsection Customizing Customizing behavior
 
@@ -550,6 +555,9 @@ freesasa_verbosity freesasa_get_verbosity(void);
     of the structure and its atoms, which is not necessary for users
     of the core functionality of the library, but might be useful for
     extensions or more detailed analyses of the results.
+
+    The Structure API is declared in the header @ref freesasa.h, just
+    like the rest of the @ref API.
  */
 
 /**
