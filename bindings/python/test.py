@@ -7,6 +7,7 @@ class FreeSASATestCase(unittest.TestCase):
     def testParameters(self):
         d = freesasa.defaultParameters
         p = freesasa.Parameters()
+        self.assertTrue(p.algorithm() == freesasa.ShrakeRupley)
         self.assertTrue(p.algorithm() == d['algorithm'])
         self.assertTrue(p.probeRadius() == d['probe-radius'])
         self.assertTrue(p.nPoints() == d['n-points'])
@@ -71,6 +72,19 @@ class FreeSASATestCase(unittest.TestCase):
 
         s = freesasa.Structure("data/1ubq.pdb")
         self.assertTrue(s.nAtoms() == 602)
+
+        s = freesasa.Structure("data/1ubq.pdb")
+        self.assertTrue(s.nAtoms() == 602)
+        self.assertTrue(s.radius(1) == 2.0)
+
+        s2 = freesasa.Structure("data/1ubq.pdb",freesasa.Classifier("data/oons.config"))
+        self.assertTrue(s.nAtoms() == 602)
+        self.assertTrue(s.radius(1) == 2.0)
+
+        for i in range (0,601):
+            self.assertTrue(math.fabs(s.radius(i)- s2.radius(i)) < 1e-5)
+
+        self.assertRaises(Exception,lambda: freesasa.Structure("data/1ubq.pdb","data/err.config"))
 
     def testCalc(self):
         s = freesasa.Structure("data/1ubq.pdb")
