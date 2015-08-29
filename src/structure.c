@@ -96,22 +96,27 @@ char freesasa_structure_get_pdb_atom(atom_t *a, double *xyz, const char *line)
     return freesasa_pdb_get_alt_coord_label(line);
 }
 
-freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file)
+freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file,
+                                                int include_hetatm)
 {
     assert(pdb_file);
     freesasa_structure *p = freesasa_structure_new();
-    assert(p);
-    
     size_t len = PDB_LINE_STRL;
-    char *line = malloc(sizeof(char)*(len+1));
-    assert(line);
+    char *line = NULL;
     char the_alt = ' ';
+
+    assert(p);
+
     while (getline(&line, &len, pdb_file) != -1) {
-        if (strncmp("ATOM",line,4)==0) {
-            if (freesasa_pdb_ishydrogen(line)) continue;
+        if (strncmp("ATOM",line,4)==0 ||
+            ( (include_hetatm == 1) &&
+              (strncmp("HETATM",line,6) == 0) )
+            ) {
             double v[3];
             atom_t a;
-            char alt = freesasa_structure_get_pdb_atom(&a,v,line);
+            char alt;
+            if (freesasa_pdb_ishydrogen(line)) continue;
+            alt = freesasa_structure_get_pdb_atom(&a,v,line);
             if ((alt != ' ' && the_alt == ' ') || (alt == ' ')) {
                 the_alt = alt;
             } else if (alt != ' ' && alt != the_alt) {
@@ -125,15 +130,14 @@ freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file)
         if (strncmp("ENDMDL",line,4)==0) {
             if (p->number_atoms == 0) {
                 freesasa_fail("input had ENDMDL before first ATOM entry.");
-                free(line);
                 freesasa_structure_free(p);
-                return NULL;
+                p = NULL;
             }
             break;
         }
     }
     free(line);
-    if (p->number_atoms == 0) {
+    if (p != NULL && p->number_atoms == 0) {
         freesasa_fail("input had no ATOM entries.");
         freesasa_structure_free(p);
         return NULL;
@@ -145,7 +149,7 @@ static void freesasa_structure_alloc_one(freesasa_structure *p)
 {
     assert(p);
     int na = ++p->number_atoms;
-    p->a = (atom_t*) realloc(p->a,sizeof(atom_t)*na);
+    p->a = realloc(p->a,sizeof(atom_t)*na);
     assert(p->a);
 }
 
@@ -160,7 +164,10 @@ int freesasa_structure_add_atom(freesasa_structure *p,
     assert(atom_name); assert(residue_name); assert(residue_number);
 
     // check input for consistency
+    int na;
+    atom_t *a;
     int validity = freesasa_classify_validate_atom(residue_name,atom_name);
+
     if (validity != FREESASA_SUCCESS) {
         return freesasa_warn("Skipping atom '%s' in residue '%s'",
                              atom_name,residue_name);
@@ -168,10 +175,10 @@ int freesasa_structure_add_atom(freesasa_structure *p,
 
     // allocate memory, increase number of atoms counter
     freesasa_structure_alloc_one(p);
-    int na = p->number_atoms;
+    na = p->number_atoms;
     assert(na > 0);
     freesasa_coord_append_xyz(p->xyz,&x,&y,&z,1);
-    atom_t *a = &p->a[na-1];
+    a = &p->a[na-1];
     strcpy(a->atom_name,atom_name);
     strcpy(a->res_name,residue_name);
     strcpy(a->res_number,residue_number);
@@ -211,21 +218,6 @@ int freesasa_structure_add_atom(freesasa_structure *p,
     return FREESASA_SUCCESS;
 }
 
-void freesasa_structure_r(double *r,
-                          const freesasa_structure *p,
-                          double (*atom2radius)(const char *res_name,
-                                                const char *atom_name))
-{
-    assert(r); assert(p);
-    for (int i = 0; i < p->number_atoms; ++i) {
-        r[i] = atom2radius(p->a[i].res_name, p->a[i].atom_name);
-    }
-}
-
-void freesasa_structure_r_def(double *r, const freesasa_structure *p)
-{
-    freesasa_structure_r(r,p,freesasa_classify_radius);
-}
 
 const freesasa_coord* freesasa_structure_xyz(const freesasa_structure *p)
 {
@@ -304,31 +296,34 @@ const char* freesasa_structure_residue_descriptor(const freesasa_structure *s, i
     return s->res_desc[r_i];
 }
 
-int freesasa_structure_write_pdb_bfactors(const freesasa_structure *p,
-                                          FILE *output,
-                                          const double *values)
+int freesasa_write_pdb(FILE *output,
+                       freesasa_result *result,
+                       const freesasa_structure *p,
+                       const double *radii)
 {
     assert(p);
     assert(output);
-    assert(values);
+    assert(radii);
+    assert(result);
+    assert(result->sasa);
 
-    // Write ATOM entries
-    char buf[PDB_LINE_STRL+1];
+    const double* values = result->sasa;
+    char buf[PDB_LINE_STRL+1], buf2[6];
     int n = freesasa_structure_n(p);
+    // Write ATOM entries
     for (int i = 0; i < n; ++i) {
         if (p->a[i].line[0] == '\0') {
             return freesasa_fail("%s: PDB input not valid or not present.",
                                  __func__);
         }
         strncpy(buf,p->a[i].line,PDB_LINE_STRL);
-        sprintf(&buf[60],"%6.2f",values[i]);
+        sprintf(&buf[54],"%6.2f%6.2f",radii[i],values[i]);
         errno = 0;
         if (fprintf(output,"%s\n",buf) < 0)
             return freesasa_fail("%s: %s", __func__, strerror(errno));
     }
     // Write TER line
     errno = 0;
-    char buf2[6];
     strncpy(buf2,&buf[6],5);
     buf2[5]='\0';
     if (fprintf(output,"TER   %5d     %4s %c%4s\n",
@@ -338,4 +333,5 @@ int freesasa_structure_write_pdb_bfactors(const freesasa_structure *p,
         return FREESASA_FAIL;
     }
     return FREESASA_SUCCESS;
+
 }

@@ -20,8 +20,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
+#include <getopt.h>
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif
@@ -42,49 +44,77 @@ const char* version = "unknown";
 
 char *program_name;
 
-typedef struct  {
-    freesasa *s;
-    FILE *B;
-    int per_residue_type;
-    int per_residue;
-} settings_t;
+freesasa_parameters parameters;
+freesasa_classifier *classifier = NULL;
+FILE *output_pdb = NULL;
+FILE *per_residue_type_file = NULL;
+FILE *per_residue_file = NULL;
+int per_residue_type = 0;
+int per_residue = 0;
+int printlog = 1;
+int include_hetatm = 0;
+int printpdb = 0;
 
-settings_t def_settings = {
-    .s = NULL,
-    .B = NULL,
-    .per_residue_type = 0,
-    .per_residue = 0,
+static struct option long_options[] = {
+    {"lee-richards", no_argument, 0, 'L'},
+    {"shrake-rupley", no_argument, 0, 'S'},
+    {"probe-radius", required_argument, 0, 'p'},
+    {"lr-slice", required_argument, 0, 'd'},
+    {"sr-points", required_argument, 0, 'n'},
+    {"help", no_argument, 0, 'h'},
+    {"version", no_argument, 0, 'v'},
+    {"no-log", no_argument, 0, 'l'},
+    {"no-warnings", no_argument, 0, 'w'},
+    {"n-threads",required_argument, 0, 't'},
+    {"hetatm",no_argument, 0, 'H'},
+    {"config-file",required_argument,0,'c'},
+    {"sasa-per-residue-type",optional_argument,0,'r'},
+    {"sasa-per-residue-sequence",optional_argument,0,'R'},
+    {"print-as-B-values",optional_argument,0,'B'}
 };
 
 void help() {
-    fprintf(stderr,"\nUsage: %s [-hLSrvn:d:t:p:B:] pdb-file(s)\n",
+    fprintf(stderr,"\nUsage: %s [-hvlwLHSBRrc:n:d:t:p:] pdb-file(s)\n",
             program_name);
     fprintf(stderr,
-            "\nOptions are:\n"
-            "       -h  print this message\n"
-            "       -p  Probe radius. Default value is %4.2f Å.\n"
-            "       -S  use Shrake & Rupley algorithm [default]\n"
-            "       -L  use Lee & Richards algorithm\n"
-            "       -d  grid spacing in Lee & Richards algorithm\n"
-            "           Default value is %4.2f Å\n"
+            "\nOptions are:\n\n"
+            "  -h (--help)           Print this message\n"
+            "  -v (--version)        Print version of the program\n"
+            "  -l (--no-log)         Don't print log message\n"
+            "  -w (--no-warnings)    Don't print warnings\n"
+            "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm [default]\n"
+            "  -L (--lee-richards)   Use Lee & Richards algorithm\n"
+            "  -H (--hetatm)         Include HETATM entries from input\n");
+    fprintf(stderr,
+            "\n  -c <file> (--config-file=<file>)\n"
+            "       Use atomic radii and classes provided in file\n");
+    fprintf(stderr,
+            "\n  -p <value>  --probe-radius=<value>\n"
+            "       Probe radius [default %4.2f Å].\n"
+            "\n  -d <value>  --lr-slice=<value>\n"
+            "       Slice spacing in Lee & Richards algorithm "
+            " [default %4.2f Å].\n"
             ,FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_LR_D);
     fprintf(stderr,
-            "       -n  number of test points in Shrake & Rupley algorithm\n"
-            "           Default is %d, allowed values are:\n"
-            "           ",FREESASA_DEF_SR_N);
+            "\n  -n <value>  --sr-points=<value>\n"
+            "       Number of test points in Shrake & Rupley algorithm.\n"
+            "       Default is %d, allowed values are:\n"
+            "         ", FREESASA_DEF_SR_N);
     freesasa_srp_print_n_opt(stderr);
 #ifdef HAVE_LIBPTHREAD
     fprintf(stderr,
-            "       -t  number of threads to use in calculation (for multicore CPUs)\n");
+            "\n  -t <value>  --n-threads=<value>\n"
+            "       Number of threads to use in calculation.\n");
 #endif
     fprintf(stderr,
-            "       -r  print SASA for each residue type\n"
-            "       -R  print SASA for ecah residue, sequentially\n");
-    fprintf(stderr,
-            "       -B  print PDB file with SASA for each atom as B-factors,\n"
-            "           in specified output file.\n");
-    fprintf(stderr,
-            "       -v  print version of the program\n");
+            "\n  -r  --sasa-per-residue-type[=<output-file>]\n"
+            "  -R  --sasa-per-residue-sequence[=<output-file>]\n"
+            "       Print SASA for each residue, either grouped by "
+            "type or sequentially.\n"
+            "       Writes to STDOUT if no output is specified.\n"
+            "\n  -B  <output-file>  --print-as-B-values=<output-file>\n"
+            "       Print PDB file with SASA for each atom as B-factors.\n"
+            "       Write to STDOUT if no output is specified.\n");
     fprintf(stderr,
             "\nIf no pdb-file is specified STDIN is used for input.\n\n");
 }
@@ -94,52 +124,86 @@ void short_help() {
             program_name);
 }
 
-void run_analysis(FILE *input, const char *name, const settings_t *settings) {
-    freesasa *s = freesasa_new();
-    double tmp;
-    freesasa_copy_param(s,settings->s);
-    freesasa_set_proteinname(s,name);
-    if (freesasa_calc_pdb(s,input) == FREESASA_FAIL) {
+void run_analysis(FILE *input, const char *name) {
+    double tmp, *radii;
+    freesasa_result *result;
+    freesasa_strvp *classes = NULL;
+    freesasa_structure *structure =
+        freesasa_structure_from_pdb(input,include_hetatm);
+    if (structure == NULL) {
         fprintf(stderr,"%s: error: Invalid input. Aborting.\n",
                 program_name);
         exit(EXIT_FAILURE);
     }
-    freesasa_log(s,stdout);
-    printf("\nTotal:  %9.2f A2\nPolar:  %9.2f A2\nApolar: %9.2f A2\n",
-           freesasa_area_total(s), freesasa_area_class(s,FREESASA_POLAR),
-           freesasa_area_class(s, FREESASA_APOLAR));
-    if ((tmp = freesasa_area_class(s, FREESASA_NUCLEICACID)) > 0)
-        printf("Nucleic: %9.2f A2\n",tmp);
-    if ((tmp = freesasa_area_class(s, FREESASA_CLASS_UNKNOWN)) > 0)
-        printf("Unknown: %9.2f A2\n",tmp);
-    if (settings->per_residue_type) {
-        printf("\n");
-        freesasa_per_residue_type(s,stdout);
+    radii = freesasa_structure_radius(structure,classifier);
+    if (radii == NULL) {
+        fprintf(stderr,"%s: error: Can't calculate atomic radii. Aborting.\n",
+                program_name);
+        exit(EXIT_FAILURE);
     }
-    if (settings->per_residue) {
-        printf("\n");
-        freesasa_per_residue(s,stdout);
+    if ((result = freesasa_calc_structure(structure,radii,&parameters)) == NULL) {
+        fprintf(stderr,"%s: error: Can't calculate SASA. Aborting.\n",
+                program_name);
+        exit(EXIT_FAILURE);
     }
-    if (settings->B) freesasa_write_pdb(s,settings->B);
-    freesasa_free(s);
+    classes = freesasa_result_classify(result,structure,classifier);
+    if (classes == NULL) {
+        fprintf(stderr,"%s: warning: Can't determine atom classes. Aborting.\n",
+                program_name);
+        exit(EXIT_FAILURE);
+    }
+    if (printlog) {
+        freesasa_log(stdout,result,name,
+                     &parameters,classes);
+    }
+    if (per_residue_type) {
+        if (per_residue_type_file != NULL) {
+            freesasa_per_residue_type(per_residue_type_file,result,structure);
+        }
+        else {
+            freesasa_per_residue_type(stdout,result,structure);
+        }
+    }
+    if (per_residue) {
+        if (per_residue_file != NULL) {
+            freesasa_per_residue(per_residue_file,result,structure);
+        } else {
+            freesasa_per_residue(stdout,result,structure);
+        }
+    }
+    if (printpdb) {
+        if (output_pdb != NULL) {
+            freesasa_write_pdb(output_pdb,result,structure,radii);
+        } else {
+            freesasa_write_pdb(stdout,result,structure,radii);
+        }
+        
+    }
+    freesasa_result_free(result);
+    freesasa_strvp_free(classes);
+    freesasa_structure_free(structure);
+    free(radii);
 }
 
 int main (int argc, char **argv) {
     int alg_set = 0;
     FILE *input = NULL;
-    settings_t settings = def_settings;
-    settings.s = freesasa_new();
     extern char *optarg;
+    parameters = freesasa_default_parameters;
     char opt;
+    int n_opt = 'z';
+    char opt_set[n_opt];
+    memset(opt_set,0,n_opt);
 #ifdef PACKAGE_NAME
     program_name = PACKAGE_NAME;
 #else
     program_name = argv[0];
 #endif
-
-    while ((opt = getopt(argc, argv, "n:d:t:p:B:hvLSrR")) != -1) {
+    int option_index = 0;
+    while ((opt = getopt_long(argc, argv, "hvlwLSHBRrc:n:d:t:p:",
+                              long_options, &option_index)) != -1) {
         errno = 0;
-        int result = FREESASA_SUCCESS;
+        opt_set[opt] = 1;
         switch(opt) {
         case 'h':
             help();
@@ -147,41 +211,89 @@ int main (int argc, char **argv) {
         case 'v':
             printf("%s\n",version);
             exit(EXIT_SUCCESS);
-        case 'B':
-            settings.B = fopen(optarg, "w");
-            if (settings.B == NULL) {
-                fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
+        case 'l':
+            printlog = 0;
+            break;
+        case 'w':
+            freesasa_set_verbosity(FREESASA_V_NOWARNINGS);
+            break;
+        case 'c': {
+            FILE *f = fopen(optarg,"r");
+            if (f == NULL) {
+                fprintf(stderr,"%s: error: could not open file '%s'; %s\nAborting.",
                         program_name,optarg,strerror(errno));
                 short_help();
                 exit(EXIT_FAILURE);
+            } else {
+                classifier = freesasa_classifier_from_file(f);
+                fclose(f);
+                if (f == NULL) {
+                    fprintf(stderr,"%s: error: Can't read file '%s'. Aborting.",
+                            program_name,optarg);
+                    exit(EXIT_FAILURE);
+                }
             }
             break;
+        }
         case 'n':
-            result = freesasa_set_sr_points(settings.s,atoi(optarg));
+            parameters.shrake_rupley_n_points = atoi(optarg);
             break;
         case 'S':
-            freesasa_set_algorithm(settings.s,FREESASA_SHRAKE_RUPLEY);
+            parameters.alg = FREESASA_SHRAKE_RUPLEY;
             ++alg_set;
             break;
         case 'L':
-            freesasa_set_algorithm(settings.s,FREESASA_LEE_RICHARDS);
+            parameters.alg = FREESASA_LEE_RICHARDS;
             ++alg_set;
             break;
         case 'd':
-            result = freesasa_set_lr_delta(settings.s,atof(optarg));
+            parameters.lee_richards_delta = atof(optarg);
             break;
         case 'p':
-            result = freesasa_set_probe_radius(settings.s,atof(optarg));
+            parameters.probe_radius = atof(optarg);
+            break;
+        case 'H':
+            include_hetatm = 1;
             break;
         case 'r':
-            settings.per_residue_type = 1;
+            per_residue_type = 1;
+            if (optarg) {
+                per_residue_type_file = fopen(optarg,"w");
+                if (per_residue_type_file == NULL) {
+                    fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
+                            program_name,optarg,strerror(errno));
+                    short_help();
+                    exit(EXIT_FAILURE);
+                }
+            }
             break;
         case 'R':
-            settings.per_residue = 1;
+            per_residue = 1;
+            if (optarg) {
+                per_residue_file = fopen(optarg,"w");
+                if (per_residue_type_file == NULL) {
+                    fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
+                            program_name,optarg,strerror(errno));
+                    short_help();
+                    exit(EXIT_FAILURE);
+                }
+            }
+            break;
+        case 'B':
+            printpdb = 1;
+            if (optarg) {
+                output_pdb = fopen(optarg, "w");
+                if (output_pdb == NULL) {
+                    fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
+                            program_name,optarg,strerror(errno));
+                    short_help();
+                    exit(EXIT_FAILURE);
+                }
+            }
             break;
         case 't':
 #if HAVE_LIBPTHREAD
-            result = freesasa_set_nthreads(settings.s,atoi(optarg));
+            parameters.n_threads = atoi(optarg);
 #else
             fprintf(stderr, "%s: warning: option 't' only defined if program"
                     " compiled with thread support.\n",
@@ -193,24 +305,17 @@ int main (int argc, char **argv) {
                     program_name,opt);
             break;
         }
-        if (result == FREESASA_FAIL) {
-            fprintf(stderr, "%s: error: failed to start SASA calculation with "
-                    "provided options. Aborting",
-                    program_name);
-            if (errno != 0) fprintf(stderr,"; %s\n",strerror(errno));
-            else fprintf(stderr,".\n");
-            exit(EXIT_FAILURE);
-        } else if (result == FREESASA_WARN) {
-            fprintf(stderr, "%s: warning: calculations might not "
-                    "correspond to specification or results might "
-                    "be unreliable (see warnings).\n",
-                    program_name);
-        }
     }
     if (alg_set > 1) {
         fprintf(stderr, "%s: error: multiple algorithms specified.\n",
                 program_name);
         exit(EXIT_FAILURE);
+    }
+    if ((opt_set['L'] && opt_set['n']) ||
+        (!opt_set['L'] && opt_set['d']) ) {
+        fprintf(stderr, "%s: warning: The program was given parameters "
+                "not compatible with the selected algorithm. These will be ignored.\n",
+                program_name);
     }
 
     if (argc > optind) {
@@ -218,7 +323,7 @@ int main (int argc, char **argv) {
             errno = 0;
             input = fopen(argv[i],"r");
             if (input != NULL) {
-                run_analysis(input,argv[i],&settings);
+                run_analysis(input,argv[i]);
                 fclose(input);
             } else {
                 fprintf(stderr, "%s: error opening file '%s'; %s\n",
@@ -228,7 +333,7 @@ int main (int argc, char **argv) {
         }
     } else {
         if (!isatty(STDIN_FILENO)) {
-            run_analysis(stdin,"stdin",&settings);
+            run_analysis(stdin,"stdin");
         } else {
             fprintf(stderr,"%s: no input.\n",
                     program_name);
@@ -236,7 +341,9 @@ int main (int argc, char **argv) {
         }
     }
 
-    freesasa_free(settings.s);
-    if (settings.B) fclose(settings.B);
+    if (classifier) freesasa_classifier_free(classifier);
+    if (output_pdb) fclose(output_pdb);
+    if (per_residue_type_file) fclose(per_residue_type_file);
+    if (per_residue_file) fclose(per_residue_file);
     return EXIT_SUCCESS;
 }

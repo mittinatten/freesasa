@@ -21,9 +21,12 @@
 #include <math.h>
 #include <assert.h>
 #include "freesasa.h"
-#include "adjacency.h"
+#include "verlet.h"
 
 #define NB_CHUNK 32
+
+
+typedef struct freesasa_verlet_element freesasa_verlet_element;
 
 typedef struct freesasa_cell freesasa_cell;
 struct freesasa_cell {
@@ -174,8 +177,10 @@ freesasa_cell_list* freesasa_cell_list_new(double cell_size,
 {
     assert(cell_size > 0);
     assert(coord);
+
     freesasa_cell_list *c = malloc(sizeof(freesasa_cell_list));
     assert(c);
+
     c->d = cell_size;
     cell_list_bounds(c,coord);
     c->cell = malloc(sizeof(freesasa_cell)*c->n);
@@ -196,10 +201,10 @@ static double max_array(const double *a,int n)
     return max;
 }
 
-//! allocate memory for ::freesasa_adjacency object
-static freesasa_adjacency *freesasa_adjacency_alloc(int n)
+//! allocate memory for ::freesasa_verlet object
+static freesasa_verlet *freesasa_verlet_alloc(int n)
 {
-    freesasa_adjacency *adj = malloc(sizeof(freesasa_adjacency));
+    freesasa_verlet *adj = malloc(sizeof(freesasa_verlet));
     assert(adj);
     adj->n = n;
     adj->nn = malloc(sizeof(int)*n);
@@ -224,7 +229,7 @@ static freesasa_adjacency *freesasa_adjacency_alloc(int n)
     return adj;
 }
 
-void freesasa_adjacency_free(freesasa_adjacency *adj)
+void freesasa_verlet_free(freesasa_verlet *adj)
 {
     if (adj) {
         for (int i = 0; i < adj->n; ++i) {
@@ -244,7 +249,12 @@ void freesasa_adjacency_free(freesasa_adjacency *adj)
 }
 
 //! increases sizes of arrays when they cross a threshold
-static void chunk_up(int *capacity, int nni, int **nbi, double **xydi, double **xdi, double **ydi) 
+static void chunk_up(int *capacity, 
+                     int nni, 
+                     int **nbi, 
+                     double **xydi, 
+                     double **xdi, 
+                     double **ydi) 
 {
     if (nni > *capacity) {
         *capacity += NB_CHUNK;
@@ -258,11 +268,11 @@ static void chunk_up(int *capacity, int nni, int **nbi, double **xydi, double **
 
 /**
     Assumes the coordinates i and j have been determined to be
-    neighbors and adds them both to the provided adjacency lists,
+    neighbors and adds them both to the provided verlet lists,
     symmetrically.
 */
-static void adjacency_add_pair(freesasa_adjacency *adj,int i, int j,
-                               double dx, double dy)
+static void verlet_add_pair(freesasa_verlet *adj,int i, int j,
+                            double dx, double dy)
 {
     assert(i != j);
 
@@ -271,6 +281,8 @@ static void adjacency_add_pair(freesasa_adjacency *adj,int i, int j,
     double **nb_xyd = adj->nb_xyd;
     double **nb_xd = adj->nb_xd;
     double **nb_yd = adj->nb_yd;
+    double d;
+
     ++nn[i]; ++nn[j];
 
     chunk_up(&(adj->capacity[i]), nn[i], &nb[i], &nb_xyd[i], &nb_xd[i], &nb_yd[i]);
@@ -279,7 +291,7 @@ static void adjacency_add_pair(freesasa_adjacency *adj,int i, int j,
     nb[i][nn[i]-1] = j;
     nb[j][nn[j]-1] = i;
 
-    double d = sqrt(dx*dx+dy*dy);
+    d = sqrt(dx*dx+dy*dy);
 
     nb_xyd[i][nn[i]-1] = d;
     nb_xyd[j][nn[j]-1] = d;
@@ -291,21 +303,22 @@ static void adjacency_add_pair(freesasa_adjacency *adj,int i, int j,
 }
 
 /**
-    Fills the adjacency list for all contacts between coordinates
+    Fills the verlet list for all contacts between coordinates
     belonging to the cells ci and cj. Handles the case ci == cj
     correctly.
 */
-static void adjacency_calc_cell_pair(freesasa_adjacency *adj,
-                                     const freesasa_coord* coord,
-                                     const double *radii,
-                                     const freesasa_cell *ci,
-                                     const freesasa_cell *cj)
+static void verlet_calc_cell_pair(freesasa_verlet *adj,
+                                  const freesasa_coord* coord,
+                                  const double *radii,
+                                  const freesasa_cell *ci,
+                                  const freesasa_cell *cj)
 {
     const double *v = freesasa_coord_all(coord);
     double ri, rj, xi, yi, zi, xj, yj, zj,
         dx, dy, dz, cut2;
     int count_neighbors[ci->n_atoms];
     int i,j,ia,ja;
+    
     for (i = 0; i < ci->n_atoms; ++i) {
         ia = ci->atom[i];
         ri = radii[ia];
@@ -326,7 +339,7 @@ static void adjacency_calc_cell_pair(freesasa_adjacency *adj,
             }
             dx = xj-xi; dy = yj-yi; dz = zj-zi;
             if (dx*dx + dy*dy + dz*dz < cut2) {
-                adjacency_add_pair(adj,ia,ja,dx,dy);
+                verlet_add_pair(adj,ia,ja,dx,dy);
             }
         }
     }
@@ -336,39 +349,40 @@ static void adjacency_calc_cell_pair(freesasa_adjacency *adj,
     Iterates through the cells and records all contacts in the
     provided adjacecency list
 */
-static void adjacency_fill_list(freesasa_adjacency *adj,
-                                freesasa_cell_list *c,
-                                const freesasa_coord *coord,
-                                const double *radii)
+static void verlet_fill_list(freesasa_verlet *adj,
+                             freesasa_cell_list *c,
+                             const freesasa_coord *coord,
+                             const double *radii)
 {
     int nc = c->n;
     for (int ic = 0; ic < nc; ++ic) {
         const freesasa_cell *ci = &c->cell[ic];
         for (int jc = 0; jc < ci->n_nb; ++jc) {
             const freesasa_cell *cj = ci->nb[jc];
-            adjacency_calc_cell_pair(adj,coord,radii,ci,cj);
+            verlet_calc_cell_pair(adj,coord,radii,ci,cj);
         }
     }
 }
 
-freesasa_adjacency *freesasa_adjacency_new(const freesasa_coord* coord,
-                                           const double *radii)
+freesasa_verlet *freesasa_verlet_new(const freesasa_coord* coord,
+                                     const double *radii)
 {
     assert(coord);
     assert(radii);
     int n = freesasa_coord_n(coord);
-    freesasa_adjacency *adj = freesasa_adjacency_alloc(n);
+    freesasa_verlet *adj = freesasa_verlet_alloc(n);
     double cell_size = 2*max_array(radii,n);
     freesasa_cell_list *c = freesasa_cell_list_new(cell_size,coord);
     assert(c);
-    adjacency_fill_list(adj,c,coord,radii);
+    
+    verlet_fill_list(adj,c,coord,radii);
     freesasa_cell_list_free(c);
     
     return adj;
 }
 
-int freesasa_adjacency_contact(const freesasa_adjacency *adj,
-                               int i, int j)
+int freesasa_verlet_contact(const freesasa_verlet *adj,
+                            int i, int j)
 {
     assert(adj);
     assert(i < adj->n && i >= 0);

@@ -80,14 +80,17 @@ freesasa_coord* freesasa_coord_new_linked(const double *xyz, int n)
 void freesasa_coord_append(freesasa_coord *c, const double *xyz, int n)
 {
     assert(c); assert(xyz); assert(!c->is_const);
-    if (n == 0) return;
-    
+
+    double *dest;
     int n_old = c->n;
+
+    if (n == 0) return;
+
     c->n += n;
     c->xyz = (double*) realloc(c->xyz, sizeof(double)*3*c->n);
     assert(c->xyz);
 
-    double *dest = memcpy(&(c->xyz[3*n_old]), xyz, sizeof(double)*n*3);
+    dest = memcpy(&(c->xyz[3*n_old]), xyz, sizeof(double)*n*3);
     assert(dest);
 }
 
@@ -97,10 +100,13 @@ void freesasa_coord_append_xyz(freesasa_coord *c,
 {
     assert(c); assert(x); assert(y); assert(z);
     assert(!c->is_const);
+    double *xyz;
+
     if (n == 0) return;
     
-    double *xyz = malloc(sizeof(double)*n*3);
+    xyz = malloc(sizeof(double)*n*3);
     assert(xyz);
+    
     for (int i = 0; i < n; ++i) {
         xyz[i*3] = x[i];
         xyz[i*3+1] = y[i];

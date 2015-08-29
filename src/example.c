@@ -18,22 +18,42 @@
 */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "freesasa.h"
 
 int main(int argc, char **argv) {
-    //initialize freesasa-object with default parameters
-    freesasa *s = freesasa_new();
+    freesasa_result* result;
+    freesasa_strvp *class_area;
+    freesasa_structure *structure;
+    double *radii;
 
-    //do the calculation using default parameters with protein
-    //structure from STDIN
-    freesasa_calc_pdb(s,stdin);
+    /* Read structure from stdin */
+    structure = freesasa_structure_from_pdb(stdin,0);
 
-    //print results
-    freesasa_log(s,stdout);
-    printf("Total area: %f A2\n", freesasa_area_total(s));
+    /* Calculate radii for the atoms based on structure.  NULL means
+       default classifier. */
+    radii = freesasa_structure_radius(structure,NULL);
 
-    //clean up
-    freesasa_free(s);
+    /* Calculate SASA using structure and radii, store in
+       'result'. NULL means default parameters. */
+    result = freesasa_calc_structure(structure,radii,NULL);
+    
+    /* Calculate area of classes (Polar/Apolar/..) using default
+       classifier */
+    class_area = freesasa_result_classify(result,structure,NULL);
+
+    /* Print results */
+    printf("Total area: %f A2\n",result->total);
+    for (int i = 0; i < class_area->n; ++i)
+        printf("%s: %f A2\n",class_area->string[i],
+               class_area->value[i]);
+
+    /* Free allocated resources, not strictly necessary in this
+       context */
+    freesasa_strvp_free(class_area);
+    freesasa_result_free(result);
+    free(radii);
+    freesasa_structure_free(structure);
 
     return EXIT_SUCCESS;
 }

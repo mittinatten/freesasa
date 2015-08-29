@@ -22,6 +22,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <errno.h>
+#include <ctype.h>
 #include <check.h>
 #include <classify.h>
 
@@ -326,8 +327,6 @@ START_TEST (test_element)
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" C  ")),"C");
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" CD ")),"C");
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" CE2")),"C");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("   C    ")),"C");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("   CE3  ")),"C");
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" N  ")),"N");
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" ND ")),"N");
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" NE2")),"N");
@@ -343,8 +342,58 @@ START_TEST (test_element)
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("XXXX")),"unknown");
     ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("XXXXX")),"unknown");
+    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("   C    ")),"unknown");
+    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("   CE3  ")),"unknown");
     ck_assert(freesasa_classify_element2str(-1)==NULL);
     freesasa_set_verbosity(0);
+}
+END_TEST
+
+START_TEST (test_user)
+{
+    FILE *f = fopen(DATADIR "oons.config","r");
+    freesasa_classifier* c = freesasa_classifier_from_file(f);
+    fclose(f);
+    ck_assert(c != NULL);
+    ck_assert(c->n_classes == 2);
+    ck_assert(fabs(c->radius("ALA","CA",c) - 2.0) < 1e-5);
+    ck_assert(fabs(c->radius("ALA","N",c) - 1.55) < 1e-5);
+    ck_assert_str_eq(c->class2str(c->sasa_class("ALA","CB",c),c), "apolar");
+    ck_assert_str_eq(c->class2str(c->sasa_class("ALA","O",c),c), "polar");
+    // compare oons.config and built in classification (should be identical for standard atoms)
+    for (int i = 0; i < 188; ++i) {
+        const char *res_name = atoms[i].a, *atom_name = atoms[i].b;
+        if (strcmp(atom_name," X  ") == 0) continue;
+        if (strcmp(atom_name," Y  ") == 0) continue;
+        ck_assert(fabs(c->radius(res_name,atom_name,c) -
+                       freesasa_classify_radius(res_name,atom_name)) < 1e-5);
+        char *c1 = strdup(freesasa_classify_class2str(freesasa_classify_class(res_name,atom_name)));
+        char *c2 = strdup(c->class2str(c->sasa_class(res_name,atom_name,c),c));
+        for (int i = 0; c1[i]; ++i) c1[i] = tolower(c1[i]); 
+        for (int i = 0; c2[i]; ++i) c2[i] = tolower(c2[i]); 
+        ck_assert_str_eq(c1,c2);
+    }
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    ck_assert(c->radius("ALA","X",c) < 0);
+    ck_assert(c->radius("X","CB",c) > 0);
+    ck_assert(c->radius("X","X",c) < 0);
+    ck_assert(c->sasa_class("ALA","X",c) == FREESASA_FAIL);
+    ck_assert(c->sasa_class("X","CB",c) >= 0);
+    ck_assert(c->sasa_class("X","X",c) == FREESASA_FAIL);
+    freesasa_classifier_free(c);
+    
+    f = fopen(DATADIR "empty.pdb", "r");
+    c = freesasa_classifier_from_file(f);
+    ck_assert(c==NULL);
+    fclose(f);
+    freesasa_classifier_free(c);
+    
+    f = fopen(DATADIR "err.config", "r");
+    c = freesasa_classifier_from_file(f);
+    ck_assert(c==NULL);
+    fclose(f);
+    freesasa_classifier_free(c);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 
@@ -357,6 +406,7 @@ Suite* classify_suite()
     tcase_add_test(tc_core,test_oons2str);
     tcase_add_test(tc_core,test_residue);
     tcase_add_test(tc_core,test_element);
+    tcase_add_test(tc_core,test_user);
     suite_add_tcase(s,tc_core);
 
     return s;

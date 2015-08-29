@@ -75,50 +75,18 @@ START_TEST (test_structure_api)
 }
 END_TEST
 
-START_TEST (test_write_no_pdb)
-{
-    FILE *null = fopen("/dev/null","w"); // won't work on all platforms
-
-    freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert(freesasa_structure_write_pdb_bfactors(s,null,bfactors) == FREESASA_FAIL);
-    freesasa_set_verbosity(0);
-
-    fclose(null);
-}
-END_TEST
-
 double a2r(const char *rn, const char *am)
 {
     return 1.0;
 }
 
-/* this will only test that reasonable values are obtained, the tests
-   for classify.h will do more exhaustive classification analysis */
-START_TEST (test_radii) {
-    double r[N];
-    freesasa_structure_r_def(r,s);
-    ck_assert(fabs(r[0]-1.55) < 1e-10);
-    ck_assert(fabs(r[1]-2.00) < 1e-10);
-    ck_assert(fabs(r[2]-1.40) < 1e-10);
-    ck_assert(fabs(r[3]-2.00) < 1e-10);
-    ck_assert(fabs(r[4]-2.00) < 1e-10);
-
-    freesasa_structure_r(r,s,a2r);
-    for (int i = 0; i < N; ++i) ck_assert(fabs(r[i]-1.0) < 1e-10);
-}
-END_TEST
-
 void setup_1ubq(void)
 {
     errno = 0;
-    FILE *pdb = fopen("data/1ubq.pdb","r");
-    if (pdb == NULL) {
-        fprintf(stderr,"error reading PDB-file for test. "
-                "(Tests must be run from directory test/): %s\n",
-                strerror(errno));
-    }
+    FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
+    ck_assert(pdb != NULL);
     if (s) freesasa_structure_free(s);
-    s = freesasa_structure_from_pdb(pdb);
+    s = freesasa_structure_from_pdb(pdb,0);
     fclose(pdb);
 }
 
@@ -147,43 +115,17 @@ START_TEST (test_structure_1ubq)
 }
 END_TEST
 
-START_TEST (test_write_1ubq) {
-    FILE *tf = fopen("tmp/dummy_bfactors.pdb","w+"),
-        *ref = fopen("data/reference_bfactors.pdb","r");
-    ck_assert(tf != NULL);
-    ck_assert(ref != NULL);
-    const size_t n = freesasa_structure_n(s);
-    double *b = (double*)malloc(sizeof(double)*n);
-    for (int i = 0; i < n; ++i) b[i] = 1.23;
-
-    ck_assert(freesasa_structure_write_pdb_bfactors(s,tf,b) == FREESASA_SUCCESS);
-
-    rewind(tf);
-
-    //check that output matches reference file
-    size_t bufsize = 100;
-    char *buf_tf = malloc(bufsize), *buf_ref = malloc(bufsize);
-    while(getline(&buf_tf,&bufsize,tf) > 0 && getline(&buf_ref,&bufsize,ref) > 0) {
-        ck_assert_str_eq(buf_ref,buf_tf);
-    }
-    free(buf_tf);
-    free(buf_ref);
-    fclose(ref);
-    fclose(tf);
-}
-END_TEST
-
 START_TEST (test_pdb)
 {
-    const char *file_names[] = {"data/alt_model_twochain.pdb",
-                                "data/empty.pdb",
-                                "data/empty_model.pdb"};
+    const char *file_names[] = {DATADIR "alt_model_twochain.pdb",
+                                DATADIR "empty.pdb",
+                                DATADIR "empty_model.pdb"};
     const int result_null[] = {0,1,1};
     freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 0; i < 3; ++i) {
         FILE *pdb = fopen(file_names[i],"r");
         ck_assert(pdb != NULL);
-        freesasa_structure *s = freesasa_structure_from_pdb(pdb);
+        freesasa_structure *s = freesasa_structure_from_pdb(pdb,0);
         if (result_null[i]) ck_assert(s == NULL);
         else ck_assert(s != NULL);
         fclose(pdb);
@@ -198,8 +140,6 @@ Suite* structure_suite() {
     TCase *tc_core = tcase_create("Core");
     tcase_add_checked_fixture(tc_core,setup,teardown);
     tcase_add_test(tc_core, test_structure_api);
-    tcase_add_test(tc_core, test_radii);
-    tcase_add_test(tc_core, test_write_no_pdb);
 
     TCase *tc_pdb = tcase_create("PDB");
     tcase_add_test(tc_pdb,test_pdb);
@@ -207,7 +147,6 @@ Suite* structure_suite() {
     TCase *tc_1ubq = tcase_create("1UBQ");
     tcase_add_checked_fixture(tc_1ubq,setup_1ubq,teardown_1ubq);
     tcase_add_test(tc_1ubq,test_structure_1ubq);
-    tcase_add_test(tc_1ubq,test_write_1ubq);
 
     suite_add_tcase(s, tc_core);
     suite_add_tcase(s, tc_pdb);

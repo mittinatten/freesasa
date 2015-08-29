@@ -5,8 +5,6 @@ from Cython.Build import cythonize
 extensions = [
     Extension("*", ["*.pyx"],
               include_dirs = ["../../src"],
-              #libraries = ["freesasa"],
-              #library_dirs = ["../../src"]
               language='c',
               extra_objects = ["../../src/libfreesasa.a"]
               )

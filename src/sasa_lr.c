@@ -33,7 +33,7 @@
 #include "freesasa.h"
 #include "sasa.h"
 #include "srp.h"
-#include "adjacency.h"
+#include "verlet.h"
 
 extern const char *freesasa_name;
 extern int freesasa_fail(const char *format, ...);
@@ -44,7 +44,7 @@ typedef struct {
     int n_atoms;
     double *radii; //including probe
     const freesasa_coord *xyz;
-    freesasa_adjacency *adj;
+    freesasa_verlet *adj;
     double delta; // slice width
     double min_z; // bounds of the molecule
     double max_z;
@@ -83,18 +83,20 @@ static sasa_lr* freesasa_init_lr(double *sasa,
                                  const double *atom_radii,
                                  double probe_radius,
                                  double delta) {
-    sasa_lr* lr = malloc(sizeof(sasa_lr));
-    assert(lr);
     const int n_atoms = freesasa_coord_n(xyz);
     double max_z=-1e50, min_z=1e50;
     double max_r = 0;
-    double *radii = malloc(sizeof(double)*n_atoms);
-    assert(radii);
     const double *v = freesasa_coord_all(xyz);
+    sasa_lr* lr = malloc(sizeof(sasa_lr));
+    double *radii = malloc(sizeof(double)*n_atoms);
+    assert(lr);
+    assert(radii);
     //find bounds of protein along z-axis and init radii
     for (int i = 0; i < n_atoms; ++i) {
+        double z, r;
         radii[i] = atom_radii[i] + probe_radius;
-        double z = v[3*i+2], r = radii[i];
+        z = v[3*i+2];
+        r = radii[i];
         max_z = fmax(z,max_z);
         min_z = fmin(z,min_z);
         sasa[i] = 0.;
@@ -117,7 +119,7 @@ static sasa_lr* freesasa_init_lr(double *sasa,
 static void freesasa_free_lr(sasa_lr *lr)
 {
     free(lr->radii);
-    freesasa_adjacency_free(lr->adj);
+    freesasa_verlet_free(lr->adj);
     free(lr);
 }
 
@@ -133,17 +135,18 @@ int freesasa_lee_richards(double *sasa,
     assert(atom_radii);
 
     int return_value = FREESASA_SUCCESS;
+    sasa_lr *lr;
 
     if (freesasa_coord_n(xyz) == 0) {
         return freesasa_warn("%s: empty coordinates",__func__);
     }
 
     // determine slice range and init radii and sasa arrays
-    sasa_lr *lr = freesasa_init_lr(sasa, xyz, atom_radii,
-                                   probe_radius, delta);
+    lr = freesasa_init_lr(sasa, xyz, atom_radii,
+                          probe_radius, delta);
 
     // determine which atoms are neighbours
-    lr->adj = freesasa_adjacency_new(xyz,lr->radii);
+    lr->adj = freesasa_verlet_new(xyz,lr->radii);
 
     if (n_threads > 1) {
 #if HAVE_LIBPTHREAD
@@ -171,8 +174,9 @@ static void sasa_lr_do_threads(int n_threads, sasa_lr *lr)
 {
     pthread_t thread[n_threads];
     sasa_lr_thread_interval t_data[n_threads];
-    int n_atoms = lr->n_atoms;
-    int n_perthread = n_atoms/n_threads;
+    int n_atoms = lr->n_atoms, n_perthread = n_atoms/n_threads, res;
+    void *thread_result;
+ 
     for (int t = 0; t < n_threads; ++t) {
         t_data[t].first_atom = t*n_perthread;
         if (t == n_threads-1) {
@@ -181,7 +185,7 @@ static void sasa_lr_do_threads(int n_threads, sasa_lr *lr)
             t_data[t].last_atom = (t+1)*n_perthread - 1;
         }
         t_data[t].lr = lr;
-        int res = pthread_create(&thread[t], NULL, sasa_lr_thread,
+        res = pthread_create(&thread[t], NULL, sasa_lr_thread,
                                  (void *) &t_data[t]);
         if (res) {
             perror(freesasa_name);
@@ -189,8 +193,7 @@ static void sasa_lr_do_threads(int n_threads, sasa_lr *lr)
         }
     }
     for (int t = 0; t < n_threads; ++t) {
-        void *thread_result;
-        int res = pthread_join(thread[t],&thread_result);
+        res = pthread_join(thread[t],&thread_result);
         if (res) {
             perror(freesasa_name);
             exit(EXIT_FAILURE);
@@ -222,7 +225,7 @@ static double sasa_atom_area(sasa_lr *lr,int i)
     double sasa = 0, zi = v[3*i+2], z_slice, z0,
         delta = lr->delta, ri = r[i], d_half = delta/2.;
     double a[nni], b[nni], z_nb[nni], r_nb[nni];
-    int bottom = ((zi-ri)-lr->min_z)/delta;
+    int bottom = ((zi-ri)-lr->min_z)/delta + 1;
 
     z0 = lr->min_z+bottom*delta;
     
@@ -233,8 +236,9 @@ static double sasa_atom_area(sasa_lr *lr,int i)
     
     for (z_slice = z0; z_slice < zi+ri; z_slice += delta) {
         double di = fabs(zi - z_slice);
-        if (di > ri) continue; //deal with round off errors in z0
-        double ri_slice = sqrt(ri*ri-di*di);
+        double ri_slice2 = ri*ri-di*di;
+        if (ri_slice2 < 0 ) continue; // handle round-off errors
+        double ri_slice = sqrt(ri_slice2);
         double DR = ri/ri_slice*(d_half + fmin(d_half,ri-di));
         int n_buried = 0, completely_buried = 0;
         for (int j = 0; j < nni; ++j) {
@@ -243,7 +247,6 @@ static double sasa_atom_area(sasa_lr *lr,int i)
             double rj = r_nb[j];
             if (dj < rj) {
                 double rj_slice = sqrt(rj*rj-dj*dj);
-                //printf("di %f, ri %f, ri_s %f\n",dj,rj,rj_slice);
                 double dij = xydi[j];
                 if (dij >= ri_slice + rj_slice) { // atoms aren't in contact
                     continue;
@@ -258,7 +261,6 @@ static double sasa_atom_area(sasa_lr *lr,int i)
                 a[n_buried] = acos ((ri_slice*ri_slice + dij*dij
                                      - rj_slice*rj_slice)/(2.0*ri_slice*dij));
                 b[n_buried] = atan2 (ydi[j],xdi[j]);
-                
                 ++n_buried;
             }
         }
@@ -290,17 +292,13 @@ static double sasa_atom_area(sasa_lr *lr,int i)
     return sasa;
 }
 
-static void sasa_add_atoms(sasa_lr *lr)
-{
-
-}
-
 static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict b)
 {
     /* Innermost function in L&R, could potentially be sped up, but
        probably requires rethinking, algorithmically. Perhaps
        recursion could be rolled out somehow. */
     char excluded[n_buried], n_exc = 0, n_overlap = 0;
+    double ai,aj,bi,bj,d,inf,sup,buried_angle;
     memset(excluded,0,n_buried);
 
     for (int i = 0; i < n_buried; ++i) {
@@ -310,9 +308,8 @@ static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict
             if (excluded[j]) continue;
             
             //check for overlap
-            double bi = b[i], ai = a[i]; //will be updating throughout the loop
-            double bj = b[j], aj = a[j];
-            double d;
+            bi = b[i]; ai = a[i]; //will be updating throughout the loop
+            bj = b[j], aj = a[j];
             for (;;) {
                 d = bj - bi;
                 if (d > M_PI) bj -= 2*M_PI;
@@ -323,8 +320,8 @@ static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict
             ++n_overlap;
 
             //calculate new joint interval
-            double inf = fmin(bi-ai,bj-aj);
-            double sup = fmax(bi+ai,bj+aj);
+            inf = fmin(bi-ai,bj-aj);
+            sup = fmax(bi+ai,bj+aj);
             b[i] = (inf + sup)/2.0;
             a[i] = (sup - inf)/2.0;
             if (a[i] > M_PI) return 0;
@@ -352,7 +349,7 @@ static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict
         return sasa_sum_angles(n,a2,b2);
     }
     // else return angle
-    double buried_angle = 0;
+    buried_angle = 0;
     for (int i = 0; i < n_buried; ++i) {
         buried_angle += 2.0*a[i];
     }
@@ -364,9 +361,9 @@ static double sasa_sum_angles_int(int n_buried, double *restrict a, double *rest
 {
     const int res = 360; // "degrees per circle", can be increased to improve accuracy
     char buried[res];
-    memset(buried,0,res);
-
     const double rad2uni = 1./(2*M_PI);
+    
+    memset(buried,0,res);
 
     for (int i = 0; i < n_buried; ++i) {
         const double bi = b[i] + 2*M_PI; //makes sure there are no negative values

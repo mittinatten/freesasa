@@ -63,7 +63,7 @@ int freesasa_pdb_get_coord(double *xyz, const char *line)
 {
     assert(xyz);
     assert(line);
-    if (pdb_line_check(line,78) == FREESASA_FAIL) {
+    if (pdb_line_check(line,54) == FREESASA_FAIL) {
         return FREESASA_FAIL;
     }
     sscanf(line+30, "%lf%lf%lf", &xyz[0], &xyz[1], &xyz[2]);

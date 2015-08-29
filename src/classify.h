@@ -20,17 +20,18 @@
 #ifndef FREESASA_CLASSIFY_H
 #define FREESASA_CLASSIFY_H
 
+#include <stdio.h>
 #include "freesasa.h"
 
 /**
     @file
     @author Simon Mitternacht
 
-    This set of functions maps between different classes of atoms and
-    residues. In addition, the function freesasa_classify_radius()
-    maps atom type to radius, using the definitions by Ooi et
-    al. (1987) for regular protein atoms and by element for other
-    atoms.
+    The functions in this header are the ones used by
+    ::freesasa_default_classifier and
+    ::freesasa_residue_classifier. They follow th OONS scheme as far
+    as possible and do educated guesses for atoms not included in the 
+    original definitions by Ooi et al. (1987). 
 
     The different classes are specified by integers in an interval
     from 0 to n-1. For each class there is a function that returns the
@@ -44,12 +45,6 @@
     - ::freesasa_residue (residue ALA/CYS/...)
     - ::freesasa_element (element C/N/...)
     - ::freesasa_oons_class (OONS class, plus some specific to FreeSASA):
-
-    The enum for the first class, ::freesasa_class, is in the header
-    freesasa.h, because it is used in the main API. The enums for the
-    other classes are made pubic in this header, but are only used
-    internally for now, and might be expanded as more functionality is
-    required.
  */
 
 //! The residue types that are returned by freesasa_classify_residue()
@@ -94,7 +89,7 @@ enum freesasa_oons_class {
     The radius of a given atom type.
 
     Given an atom this function returns an atomic radius. Regular
-    protein atoms are given radii according to OONS (see documentation
+    protein atoms are given radii according to OONS (see manual
     for reference). Atoms in unknown amino acid residues or in nucleic
     acids are given radii based on element (see function
     freesasa_classify_element_radius()). Unknown atom types and
@@ -105,7 +100,6 @@ enum freesasa_oons_class {
     @return Atom radius in Ångström.
 */
 double freesasa_classify_radius(const char *res_name, const char *atom_name);
-
 
 //////////////////////
 // Polar/Apolar/etc //
@@ -151,7 +145,7 @@ int freesasa_classify_nclasses(void);
     value for each of the 20 regular amino acids, plus ASX, GLX, XLE,
     CSE and UNK. In addition nucleic acids are treated as separate
     residue types. Return values span from 0 to
-    freesasa_classify_nresiduetypes()-1. The standard 20 amino acids
+    `freesasa_classify_nresiduetypes()-1`. The standard 20 amino acids
     have indices 0 to 19.
     
     @param res_name The residue name in the format `"ALA"`, `"PHE"`, etc.
@@ -327,5 +321,6 @@ int freesasa_classify_is_nucleicacid(int res);
 */
 int freesasa_classify_validate_atom(const char *res_name, 
                                     const char *atom_name);
+
 
 #endif
