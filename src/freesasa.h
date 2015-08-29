@@ -74,9 +74,9 @@
     The type ::freesasa_classifier has function pointers to functions
     that take residue and atom names as argument (pairs such as
     "ALA"," CA "), and returns a radius or a class (polar, apolar,
-    etc). Such a classifier can be passed freesasa_structure_radius()
-    to generate an array of atomic radii to be used to calculate the
-    SASA of the structure. It can also be used in
+    etc). The classifier can be passed to freesasa_structure_radius()
+    to generate an array of atomic radii, which can then be used to
+    calculate the SASA of the structure. It can also be used in
     freesasa_result_classify() to get the SASA integrated over the
     different classes of atoms, i.e. the SASA of all polar atoms, etc.
 
@@ -96,9 +96,9 @@
     The types-section defines what types of atoms are available
     (aliphatic, aromatic, hydroxyl, ...), what the radius of that type
     is and what class a type belongs to (polar, apolar, ...). The
-    types are just a shorthand to associate a certain atom with a
-    certain class and radius. The user is free to define as many types
-    and classes as necessary.
+    types are just shorthands to associate an atom with a given
+    combination of class and radius. The user is free to define as
+    many types and classes as necessary.
 
     The atoms-section consists of triplets of residue-name, atom-name
     (as in the corresponding PDB entries) and type. A prototype file
@@ -149,15 +149,16 @@
 
     @subsection Thread-safety 
     
-    The only state the library stores is the verbosity level (set by
-    freesasa_set_verbosity()). It should be clear from the
+    The only global state the library stores is the verbosity level
+    (set by freesasa_set_verbosity()). It should be clear from the
     documentation when the other functions have side effects such as
     memory allocation and I/O, and thread-safety should generally not
     be an issue (to the extent that your C library has a threadsafe
-    fprintf). The SASA calculation itself can be parallelized by
+    fprintf()). The SASA calculation itself can be parallelized by
     passing a ::freesasa_parameters struct with
     ::freesasa_parameters.n_threads set to a value > 1 to
-    freesasa_calc_pdb() or freesasa_calc_coord().
+    freesasa_calc_pdb() or freesasa_calc_coord(). This only gives a
+    significant effect on performance for large proteins.
  */
 
 #include <stdio.h>
@@ -221,8 +222,9 @@ typedef struct {
     Struct for structure object.
 
     The struct includes coordinates, and atom names, etc. If it was
-    initiated from a PDB file enough info will be stored so that
-    a new PDB-file can be printed.
+    initiated from a PDB file enough info will be stored so that a
+    PDB-file can be printed using the original one as template (see
+    freesasa_write_pdb()).
 
     @ingroup StructureAPI
 */
@@ -293,7 +295,7 @@ extern const freesasa_classifier freesasa_residue_classifier;
     @return The result of the calculation, NULL if something went wrong.
 
     @ingroup API
-*/
+ */
 freesasa_result* freesasa_calc_structure(const freesasa_structure *structure,
                                          const double *radii,
                                          const freesasa_parameters *parameters);
@@ -329,69 +331,9 @@ freesasa_result* freesasa_calc_coord(const double *xyz,
 void freesasa_result_free(freesasa_result *result);
 
 /**
-    Init structure with coordinates from pdb-file.
-
-    Reads in a PDB-file and generates a structure object.
-    Automatically skips hydrogens. If an atom has alternative
-    coordinates, only the first alternative is used. If a file has
-    more than one `MODEL` (as in NMR structures) only the first model
-    is used. User specifies if `HETATM` entries should be included. If
-    non-default behavior is wanted, the PDB-file needs to be modified
-    before calling this function, or atoms can be added manually one
-    by one using freesasa_structure_add_atom().
-
-    Return value is dynamically allocated, should be freed with
-    freesasa_structure_free().
-
-    @param pdb Input PDB-file.
-    @param include_hetatm The value 0 means only read `ATOM` entries, 1
-    means also include `HETATM` entries.
-    @return The generated structure. Returns `NULL` and prints error if
-    input is invalid.
-
-    @ingroup StructureAPI
-*/
-freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
-                                                int include_hetatm);
-
-/**
-    Get number of atoms.
-    
-    @param s Self.
-    @return Number of atoms.
-
-    @ingroup StructureAPI
-*/
-int freesasa_structure_n(const freesasa_structure *s);
-
-/**
-    Free structure.
-
-    @param structure The structure to free.
-
-    @ingroup StructureAPI
- */
-void freesasa_structure_free(freesasa_structure* structure);
-
-/**
-    Calculates radii to all atoms in the structure using provided
-    classifier.
-
-    Return value is dynamically allocated, should be freed with
-    standard free().
-
-    @param structure The structure.
-    @param classifier The classifier. If NULL the default is used.
-    @return Array of radii.
-
-    @ingroup StructureAPI
- */
-double* freesasa_structure_radius(const freesasa_structure *structure,
-                                  const freesasa_classifier *classifier);
-/**
     Generate a classifier from a config-file.
 
-    File-format is documented at @ref Config-file
+    Input file format described in @ref Config-file
 
     Return value is dynamically allocated, should be freed with
     freesasa_classifier_free().
@@ -401,6 +343,8 @@ double* freesasa_structure_radius(const freesasa_structure *structure,
     problems parsing or reading the file.
 
     @ingroup API
+
+    @see @ref Config-file
  */
 freesasa_classifier* freesasa_classifier_from_file(FILE *file);
 
@@ -448,12 +392,17 @@ void freesasa_strvp_free(freesasa_strvp *strvp);
     the atom's SASA values in the results, and the occupancy
     factors with the radii.
 
+    Will only work if the structure was initialized from a PDB-file, i.e.
+    using freesasa_structure_from_pdb().
+
     @param output File to write to.
     @param result SASA values.
     @param structure Structure to use to print PDB.
     @param radii Radii of atoms.
-    @return ::FREESASA_FAIL if there is no previous PDB input to base
-    output on. ::FREESASA_SUCCESS else.
+
+    @return ::FREESASA_SUCCESS if file written successfully.
+    ::FREESASA_FAIL if there is no previous PDB input to base output
+    on or if there were problems writing to the file.
 
     @ingroup API
  */
@@ -483,7 +432,7 @@ int freesasa_per_residue_type(FILE *output,
                               const freesasa_structure *structure);
 
 /**
-    Print SASA for each residue individually to file. 
+    Print SASA for each residue in the sequence to file.
 
     Each line in the output is prefixed by the string 'SEQ:'.
 
@@ -573,6 +522,32 @@ freesasa_verbosity freesasa_get_verbosity(void);
 freesasa_structure* freesasa_structure_new(void);
 
 /**
+    Init structure with coordinates from pdb-file.
+
+    Reads in a PDB-file and generates a structure object.
+    Automatically skips hydrogens. If an atom has alternative
+    coordinates, only the first alternative is used. If a file has
+    more than one `MODEL` (as in NMR structures) only the first model
+    is used. User specifies if `HETATM` entries should be included. If
+    non-default behavior is wanted, the PDB-file needs to be modified
+    before calling this function, or atoms can be added manually one
+    by one using freesasa_structure_add_atom().
+
+    Return value is dynamically allocated, should be freed with
+    freesasa_structure_free().
+
+    @param pdb Input PDB-file.
+    @param include_hetatm The value 0 means only read `ATOM` entries, 1
+    means also include `HETATM` entries.
+    @return The generated structure. Returns `NULL` and prints error if
+    input is invalid.
+
+    @ingroup StructureAPI
+*/
+freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
+                                                int include_hetatm);
+
+/**
     Add individual atom to structure.
 
     A structure can be built by adding atoms one by one. Storing
@@ -581,7 +556,7 @@ freesasa_structure* freesasa_structure_new(void);
     are excluded if necessesary).
 
     The three string arguments all have specific lengths, specified by
-    the correspoding PDB ATOM fields. It is important to use the same
+    the corresponding PDB ATOM fields. It is important to use the same
     padding as in the PDB specification (i.e. `" CA "` instead of
     `"CA"` or `" CA"`). (This might be more flexible in future
     versions of the library).
@@ -606,6 +581,41 @@ int freesasa_structure_add_atom(freesasa_structure *s,
                                 const char* residue_number,
                                 char chain_label,
                                 double x, double y, double z);
+
+/**
+    Get number of atoms.
+
+    @param s Self.
+    @return Number of atoms.
+
+    @ingroup StructureAPI
+*/
+int freesasa_structure_n(const freesasa_structure *s);
+
+/**
+    Free structure.
+
+    @param structure The structure to free.
+
+    @ingroup StructureAPI
+ */
+void freesasa_structure_free(freesasa_structure* structure);
+
+/**
+    Calculates radii of all atoms in the structure using provided
+    classifier.
+
+    Return value is dynamically allocated, should be freed with
+    standard free().
+
+    @param structure The structure.
+    @param classifier The classifier. If NULL the default is used.
+    @return Array of radii.
+
+    @ingroup StructureAPI
+ */
+double* freesasa_structure_radius(const freesasa_structure *structure,
+                                  const freesasa_classifier *classifier);
 
 /**
     Get atom name
