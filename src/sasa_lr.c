@@ -341,7 +341,7 @@ inline static void sort_arcs(int n, double *restrict arc)
 inline static double sasa_sum_arcs(int n, double *arc) 
 {
     if (n == 0) return TWOPI;
-    double sum = 0, sup, tmp;
+    double sum, sup, tmp;
     sort_arcs(n,arc);
     sum = arc[0];
     sup = arc[1];
