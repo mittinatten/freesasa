@@ -67,19 +67,9 @@ static void *sasa_lr_thread(void *arg);
 /** Returns the are of atom i */
 static double sasa_atom_area(sasa_lr *lr,int i);
 
-/** a and b are a set of alpha and betas (in the notation of the
-    manual). This function finds the union of those intervals on the
-    circle, and returns 2*PI minus the length of the joined
-    interval(s) (i.e. the exposed arc length). Does not necessarily
-    leave a and b in a consistent state. */
-static double sasa_sum_angles(int n_buried, double * restrict a,
-                              double * restrict b);
-
+/** Sum of exposed arcs based on buried arc intervals arc, assumes no
+    intervals cross zero */
 static double sasa_sum_arcs(int n_buried, double *restrict arc);
-
-/** Same as the above but discretizes circle */
-static double sasa_sum_angles_int(int n_buried, double *restrict a,
-                                  double *restrict b);
 
 /** Initialize object to be used for L&R calculation */
 static sasa_lr* freesasa_init_lr(double *sasa,
@@ -219,17 +209,19 @@ static void *sasa_lr_thread(void *arg)
 
 static double sasa_atom_area(sasa_lr *lr,int i)
 {
-    int nni = lr->adj->nn[i];
-    const double * restrict v = freesasa_coord_all(lr->xyz);
-    const double * restrict r = lr->radii;
-    const int * restrict nbi = lr->adj->nb[i];
-    const double * restrict xydi = lr->adj->nb_xyd[i];
-    const double * restrict xdi = lr->adj->nb_xd[i];
-    const double * restrict ydi = lr->adj->nb_yd[i];
-    double sasa = 0, zi = v[3*i+2], z_slice, z0,
-        delta = lr->delta, ri = r[i], d_half = delta/2.;
+    // This function is large because a large number of pre-calculated
+    // arrays need to be accessed efficiently
+    const int nni = lr->adj->nn[i];
+    const double * restrict const v = freesasa_coord_all(lr->xyz);
+    const double * restrict const r = lr->radii;
+    const int * restrict const nbi = lr->adj->nb[i];
+    const double * restrict const xydi = lr->adj->nb_xyd[i];
+    const double * restrict const xdi = lr->adj->nb_xd[i];
+    const double * restrict const ydi = lr->adj->nb_yd[i];
+    const double zi = v[3*i+2], delta = lr->delta, ri = r[i], d_half = delta/2.;
     double arc[nni*4], z_nb[nni], r_nb[nni];
-    int bottom = ((zi-ri)-lr->min_z)/delta + 1;
+    double z_slice, z0, sasa = 0;
+    const int bottom = ((zi-ri)-lr->min_z)/delta + 1;
 
     z0 = lr->min_z+bottom*delta;
     
@@ -239,20 +231,21 @@ static double sasa_atom_area(sasa_lr *lr,int i)
     }
     
     for (z_slice = z0; z_slice < zi+ri; z_slice += delta) {
-        double di = fabs(zi - z_slice);
-        double ri_slice2 = ri*ri-di*di;
+        const double di = fabs(zi - z_slice);
+        const double ri_slice2 = ri*ri-di*di;
         if (ri_slice2 < 0 ) continue; // handle round-off errors
-        double ri_slice = sqrt(ri_slice2);
-        double DR = ri/ri_slice*(d_half + fmin(d_half,ri-di));
+        const double ri_slice = sqrt(ri_slice2);
+        const double DR = ri/ri_slice*(d_half + fmin(d_half,ri-di));
         int n_buried = 0, completely_buried = 0;
         for (int j = 0; j < nni; ++j) {
-            double zj = z_nb[j];
-            double dj = fabs(zj - z_slice);
-            double rj = r_nb[j];
+            const double zj = z_nb[j];
+            const double dj = fabs(zj - z_slice);
+            const double rj = r_nb[j];
             if (dj < rj) {
+                const double rj_slice2 = rj*rj-dj*dj;
+                const double rj_slice = sqrt(rj_slice2);
+                const double dij = xydi[j];
                 double alpha, beta, inf, sup;
-                double rj_slice = sqrt(rj*rj-dj*dj);
-                double dij = xydi[j];
                 int nbur2;
                 if (dij >= ri_slice + rj_slice) { // atoms aren't in contact
                     continue;
@@ -264,8 +257,7 @@ static double sasa_atom_area(sasa_lr *lr,int i)
                 if (dij + rj_slice < ri_slice) { // circle j is completely inside i
                     continue;
                 }
-                alpha = acos ((ri_slice*ri_slice + dij*dij
-                            - rj_slice*rj_slice)/(2.0*ri_slice*dij));
+                alpha = acos ((ri_slice2 + dij*dij - rj_slice2)/(2.0*ri_slice*dij));
                 beta = atan2 (ydi[j],xdi[j]) + M_PI;
                 inf = beta - alpha;
                 sup = beta + alpha;
@@ -289,11 +281,10 @@ static double sasa_atom_area(sasa_lr *lr,int i)
             }
         }
         if (completely_buried == 0) {
-            double f = ri_slice*DR;
-            if (n_buried == 0) sasa += f*TWOPI;
-            else sasa += f*sasa_sum_arcs(n_buried,arc);
+            sasa += ri_slice*DR*sasa_sum_arcs(n_buried,arc);
         }
 #ifdef DEBUG
+        //awkard loop structure to allow direct comparison with older version
         if (completely_buried == 0) {
             //exposed_arc[i] = 0;
             double xi = v[3*i], yi = v[3*i+1];
@@ -334,25 +325,22 @@ static double sasa_atom_area(sasa_lr *lr,int i)
 //insertion sort (faster than qsort for these short lists)
 inline static void sort_arcs(int n, double *restrict arc) 
 {
-    double x1,x2;
-    int i, j;
-    for (i = 2; i < 2*n; i += 2) {
-        x1 = arc[i];
-        x2 = arc[i+1];
-        j = i;
-        while (j > 0 && arc[j-2] > x1) {
-            arc[j] = arc[j-2];
-            arc[j+1] = arc[j-1];
-            j -= 2;
+    double tmp[2];
+    double *end = arc+2*n, *arcj, *arci;
+    for (arci = arc+2; arci < end; arci += 2) {
+        memcpy(tmp,arci,2*sizeof(double));
+        arcj = arci;
+        while (arcj > arc && *(arcj-2) > tmp[0]) {
+            memcpy(arcj,arcj-2,2*sizeof(double));
+            arcj -= 2;
         }
-        arc[j] = x1;
-        arc[j+1] = x2;
+        memcpy(arcj,tmp,2*sizeof(double));
     }
 }
 
 inline static double sasa_sum_arcs(int n, double *arc) 
 {
-    //if (n == 0) return TWOPI;
+    if (n == 0) return TWOPI;
     double sum = 0, sup, tmp;
     sort_arcs(n,arc);
     sum = arc[0];
@@ -362,4 +350,5 @@ inline static double sasa_sum_arcs(int n, double *arc)
         tmp = arc[i2+1];
         if (tmp > sup) sup = tmp;
     } 
-    return sum + TWOPI - sup;}
+    return sum + TWOPI - sup;
+}
