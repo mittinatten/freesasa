@@ -39,6 +39,8 @@ extern const char *freesasa_name;
 extern int freesasa_fail(const char *format, ...);
 extern int freesasa_warn(const char *format, ...);
 
+const double TWOPI = 2*M_PI;
+
 //calculation parameters (results stored in *sasa)
 typedef struct {
     int n_atoms;
@@ -72,6 +74,8 @@ static double sasa_atom_area(sasa_lr *lr,int i);
     leave a and b in a consistent state. */
 static double sasa_sum_angles(int n_buried, double * restrict a,
                               double * restrict b);
+
+static double sasa_sum_arcs(int n_buried, double *restrict arc);
 
 /** Same as the above but discretizes circle */
 static double sasa_sum_angles_int(int n_buried, double *restrict a,
@@ -224,7 +228,7 @@ static double sasa_atom_area(sasa_lr *lr,int i)
     const double * restrict ydi = lr->adj->nb_yd[i];
     double sasa = 0, zi = v[3*i+2], z_slice, z0,
         delta = lr->delta, ri = r[i], d_half = delta/2.;
-    double a[nni], b[nni], z_nb[nni], r_nb[nni];
+    double arc[nni*4], z_nb[nni], r_nb[nni];
     int bottom = ((zi-ri)-lr->min_z)/delta + 1;
 
     z0 = lr->min_z+bottom*delta;
@@ -246,8 +250,10 @@ static double sasa_atom_area(sasa_lr *lr,int i)
             double dj = fabs(zj - z_slice);
             double rj = r_nb[j];
             if (dj < rj) {
+                double alpha, beta, inf, sup;
                 double rj_slice = sqrt(rj*rj-dj*dj);
                 double dij = xydi[j];
+                int nbur2;
                 if (dij >= ri_slice + rj_slice) { // atoms aren't in contact
                     continue;
                 }
@@ -258,31 +264,64 @@ static double sasa_atom_area(sasa_lr *lr,int i)
                 if (dij + rj_slice < ri_slice) { // circle j is completely inside i
                     continue;
                 }
-                a[n_buried] = acos ((ri_slice*ri_slice + dij*dij
-                                     - rj_slice*rj_slice)/(2.0*ri_slice*dij));
-                b[n_buried] = atan2 (ydi[j],xdi[j]);
-                ++n_buried;
+                alpha = acos ((ri_slice*ri_slice + dij*dij
+                            - rj_slice*rj_slice)/(2.0*ri_slice*dij));
+                beta = atan2 (ydi[j],xdi[j]) + M_PI;
+                inf = beta - alpha;
+                sup = beta + alpha;
+                if (inf < 0) inf += TWOPI;
+                if (sup > 2*M_PI) sup -= TWOPI;
+                nbur2 = 2*n_buried;
+                // if arc passes 2*PI split into two
+                if (sup < inf) {
+                    //store arcs as contiguous pairs of angles
+                    arc[nbur2]   = 0;
+                    arc[nbur2+1] = sup;
+                    //second arc
+                    arc[nbur2+2] = inf;
+                    arc[nbur2+3] = TWOPI;
+                    n_buried += 2;
+                } else { 
+                    arc[nbur2]   = inf;
+                    arc[nbur2+1] = sup;
+                    ++n_buried;
+                }
             }
         }
         if (completely_buried == 0) {
-            sasa += ri_slice*DR*sasa_sum_angles(n_buried,a,b);
+            double f = ri_slice*DR;
+            if (n_buried == 0) sasa += f*TWOPI;
+            else sasa += f*sasa_sum_arcs(n_buried,arc);
         }
 #ifdef DEBUG
         if (completely_buried == 0) {
             //exposed_arc[i] = 0;
             double xi = v[3*i], yi = v[3*i+1];
-            for (double c = 0; c < 2*M_PI; c += M_PI/30.0) {
+            for (double c = M_PI; c < 2*M_PI-.00001; c += M_PI/30.0) {
                 int is_exp = 1;
                 for (int j = 0; j < n_buried; ++j) {
-                    if ((c > b[j]-a[j] && c < b[j]+a[j]) ||
-                        (c - 2*M_PI > b[j]-a[j] && c - 2*M_PI < b[j]+a[j]) ||
-                        (c + 2*M_PI > b[j]-a[j] && c + 2*M_PI < b[j]+a[j])) {
+                    double inf = arc[2*j], sup = arc[2*j+1];
+                    if (c >= inf && c <= sup) {
                         is_exp = 0; break;
                     }
                 }
+                double d = c-M_PI;
                 // print the arcs used in calculation
                 if (is_exp) printf("%6.2f %6.2f %6.2f %7.5f\n",
-                                   xi+ri_slice*cos(c),yi+ri_slice*sin(c),z_slice,c);
+                                   xi+ri_slice*cos(d),yi+ri_slice*sin(d),z_slice,d);
+            }
+            for (double c = 0; c < M_PI+0.0000001; c += M_PI/30.0) {
+                int is_exp = 1;
+                for (int j = 0; j < n_buried; ++j) {
+                    double inf = arc[2*j], sup = arc[2*j+1];
+                    if (c >= inf && c <= sup) {
+                        is_exp = 0; break;
+                    }
+                }
+                double d = c+M_PI;
+                // print the arcs used in calculation
+                if (is_exp) printf("%6.2f %6.2f %6.2f %7.5f\n",
+                                   xi+ri_slice*cos(d),yi+ri_slice*sin(d),z_slice,d);
             }
             printf("\n");
         }
@@ -292,97 +331,35 @@ static double sasa_atom_area(sasa_lr *lr,int i)
     return sasa;
 }
 
-static double sasa_sum_angles(int n_buried, double *restrict a, double *restrict b)
+//insertion sort (faster than qsort for these short lists)
+inline static void sort_arcs(int n, double *restrict arc) 
 {
-    /* Innermost function in L&R, could potentially be sped up, but
-       probably requires rethinking, algorithmically. Perhaps
-       recursion could be rolled out somehow. */
-    char excluded[n_buried], n_exc = 0, n_overlap = 0;
-    double ai,aj,bi,bj,d,inf,sup,buried_angle;
-    memset(excluded,0,n_buried);
-
-    for (int i = 0; i < n_buried; ++i) {
-        if (excluded[i]) continue;
-        for (int j = 0; j < n_buried; ++j) {
-            if (i == j) continue;
-            if (excluded[j]) continue;
-            
-            //check for overlap
-            bi = b[i]; ai = a[i]; //will be updating throughout the loop
-            bj = b[j], aj = a[j];
-            for (;;) {
-                d = bj - bi;
-                if (d > M_PI) bj -= 2*M_PI;
-                else if (d < -M_PI) bj += 2*M_PI;
-                else break;
-            }
-            if (fabs(d) > ai+aj) continue;
-            ++n_overlap;
-
-            //calculate new joint interval
-            inf = fmin(bi-ai,bj-aj);
-            sup = fmax(bi+ai,bj+aj);
-            b[i] = (inf + sup)/2.0;
-            a[i] = (sup - inf)/2.0;
-            if (a[i] > M_PI) return 0;
-            if (b[i] > M_PI) b[i] -= 2*M_PI;
-            if (b[i] < -M_PI) b[i] += 2*M_PI;
-
-            a[j] = 0; // the j:th interval should be ignored
-            excluded[j] = 1;
-            if (++n_exc == n_buried-1) break;
+    double x1,x2;
+    int i, j;
+    for (i = 2; i < 2*n; i += 2) {
+        x1 = arc[i];
+        x2 = arc[i+1];
+        j = i;
+        while (j > 0 && arc[j-2] > x1) {
+            arc[j] = arc[j-2];
+            arc[j+1] = arc[j-1];
+            j -= 2;
         }
-        if (n_exc == n_buried-1) break; // means everything's been counted
+        arc[j] = x1;
+        arc[j+1] = x2;
     }
-
-    // recursion until no overlapping intervals
-    if (n_overlap) {
-        double b2[n_buried], a2[n_buried];
-        int n = 0;
-        for (int i = 0; i < n_buried; ++i) {
-            if (excluded[i] == 0) {
-                b2[n] = b[i];
-                a2[n] = a[i];
-                ++n;
-            }
-        }
-        return sasa_sum_angles(n,a2,b2);
-    }
-    // else return angle
-    buried_angle = 0;
-    for (int i = 0; i < n_buried; ++i) {
-        buried_angle += 2.0*a[i];
-    }
-    return 2*M_PI - buried_angle;
 }
 
-//discretizes circle, but for now it's not faster than other algorithm..
-static double sasa_sum_angles_int(int n_buried, double *restrict a, double *restrict b)
+inline static double sasa_sum_arcs(int n, double *arc) 
 {
-    const int res = 360; // "degrees per circle", can be increased to improve accuracy
-    char buried[res];
-    const double rad2uni = 1./(2*M_PI);
-    
-    memset(buried,0,res);
-
-    for (int i = 0; i < n_buried; ++i) {
-        const double bi = b[i] + 2*M_PI; //makes sure there are no negative values
-        const double ai = a[i];
-
-        int inf = ((int) ((bi - ai) * rad2uni*res)) % res;
-        int sup = ((int) ((bi + ai) * rad2uni*res)) % res;
-        
-        if (inf < sup) {
-            memset(buried+inf,1,sup-inf);
-        } else {
-            memset(buried,1,sup);
-            memset(buried+inf,1,res-inf);
-        }
-    }
-    int count = 0;
-    for (int i = 0; i < res; ++i) {
-        if (buried[i]) ++count;
-    }
-    return 2*M_PI*((res - count)/(double)(res));
-}
-
+    //if (n == 0) return TWOPI;
+    double sum = 0, sup, tmp;
+    sort_arcs(n,arc);
+    sum = arc[0];
+    sup = arc[1];
+    for (int i2 = 2; i2 < 2*n; i2 += 2) {
+        if (sup < arc[i2]) sum += arc[i2] - sup;
+        tmp = arc[i2+1];
+        if (tmp > sup) sup = tmp;
+    } 
+    return sum + TWOPI - sup;}
