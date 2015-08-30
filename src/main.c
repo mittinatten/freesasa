@@ -74,7 +74,7 @@ static struct option long_options[] = {
 };
 
 void help() {
-    fprintf(stderr,"\nUsage: %s [-hvlwLHSBRrc:n:d:t:p:] pdb-file(s)\n",
+    fprintf(stderr,"\nUsage: %s [-hvlwLHSRrB:c:n:d:t:p:] pdb-file(s)\n",
             program_name);
     fprintf(stderr,
             "\nOptions are:\n\n"
@@ -200,7 +200,7 @@ int main (int argc, char **argv) {
     program_name = argv[0];
 #endif
     int option_index = 0;
-    while ((opt = getopt_long(argc, argv, "hvlwLSHBRrc:n:d:t:p:",
+    while ((opt = getopt_long(argc, argv, "hvlwLSHRrB:c::n:d:t:p:",
                               long_options, &option_index)) != -1) {
         errno = 0;
         opt_set[opt] = 1;
