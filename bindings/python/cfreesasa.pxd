@@ -112,3 +112,25 @@ cdef extern from "freesasa.h":
 
     freesasa_verbosity freesasa_get_verbosity()
 
+    freesasa_structure* freesasa_structure_new()
+
+    int freesasa_structure_add_atom(freesasa_structure *s,
+                                    const char* atom_name,
+                                    const char* residue_name,
+                                    const char* residue_number,
+                                    char chain_label,
+                                    double x, double y, double z)
+
+    double* freesasa_structure_radius(const freesasa_structure *structure,
+                                      const freesasa_classifier *classifier)
+
+    const char* freesasa_structure_atom_name(const freesasa_structure *s,
+                                             int i)
+
+    const char* freesasa_structure_atom_res_name(const freesasa_structure *s,
+                                                 int i)
+
+    const char* freesasa_structure_atom_res_number(const freesasa_structure *s,
+                                                   int i)
+
+    char freesasa_structure_atom_chain(const freesasa_structure *s, int i)
