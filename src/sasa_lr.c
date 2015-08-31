@@ -41,7 +41,7 @@ extern int freesasa_warn(const char *format, ...);
 
 const double TWOPI = 2*M_PI;
 
-//calculation parameters (results stored in *sasa)
+//calculation parameters and data (results stored in *sasa)
 typedef struct {
     int n_atoms;
     double *radii; //including probe
@@ -51,37 +51,37 @@ typedef struct {
     double min_z; // bounds of the molecule
     double max_z;
     double *sasa; // results
-} sasa_lr;
+} lr_data;
 
 typedef struct {
     int first_atom;
     int last_atom;
-    sasa_lr *lr;
-} sasa_lr_thread_interval;
+    lr_data *lr;
+} lr_thread_interval;
 
 #if HAVE_LIBPTHREAD
-static void sasa_lr_do_threads(int n_threads, sasa_lr*);
-static void *sasa_lr_thread(void *arg);
+static void lr_do_threads(int n_threads, lr_data*);
+static void *lr_thread(void *arg);
 #endif
 
 /** Returns the are of atom i */
-static double sasa_atom_area(sasa_lr *lr,int i);
+static double atom_area(lr_data *lr,int i);
 
 /** Sum of exposed arcs based on buried arc intervals arc, assumes no
     intervals cross zero */
-static double sasa_sum_arcs(int n_buried, double *restrict arc);
+static double sum_arcs(int n_buried, double *restrict arc);
 
 /** Initialize object to be used for L&R calculation */
-static sasa_lr* freesasa_init_lr(double *sasa,
-                                 const freesasa_coord *xyz,
-                                 const double *atom_radii,
-                                 double probe_radius,
-                                 double delta) {
+static lr_data* init_lr(double *sasa,
+                        const freesasa_coord *xyz,
+                        const double *atom_radii,
+                        double probe_radius,
+                        double delta) {
     const int n_atoms = freesasa_coord_n(xyz);
     double max_z=-1e50, min_z=1e50;
     double max_r = 0;
     const double *v = freesasa_coord_all(xyz);
-    sasa_lr* lr = malloc(sizeof(sasa_lr));
+    lr_data* lr = malloc(sizeof(lr_data));
     double *radii = malloc(sizeof(double)*n_atoms);
     assert(lr);
     assert(radii);
@@ -93,8 +93,8 @@ static sasa_lr* freesasa_init_lr(double *sasa,
         r = radii[i];
         max_z = fmax(z,max_z);
         min_z = fmin(z,min_z);
-        sasa[i] = 0.;
         max_r = fmax(r, max_r);
+        sasa[i] = 0.;
     }
     min_z -= max_r;
     max_z += max_r;
@@ -106,11 +106,11 @@ static sasa_lr* freesasa_init_lr(double *sasa,
     lr->min_z = min_z; lr->max_z = max_z;
     lr->sasa = sasa;
     lr->adj = NULL;
-    
+
     return lr;
 }
 
-static void freesasa_free_lr(sasa_lr *lr)
+static void free_lr(lr_data *lr)
 {
     free(lr->radii);
     freesasa_verlet_free(lr->adj);
@@ -129,22 +129,21 @@ int freesasa_lee_richards(double *sasa,
     assert(atom_radii);
 
     int return_value = FREESASA_SUCCESS;
-    sasa_lr *lr;
+    lr_data *lr;
 
     if (freesasa_coord_n(xyz) == 0) {
         return freesasa_warn("%s: empty coordinates",__func__);
     }
 
     // determine slice range and init radii and sasa arrays
-    lr = freesasa_init_lr(sasa, xyz, atom_radii,
-                          probe_radius, delta);
+    lr = init_lr(sasa, xyz, atom_radii, probe_radius, delta);
 
     // determine which atoms are neighbours
     lr->adj = freesasa_verlet_new(xyz,lr->radii);
 
     if (n_threads > 1) {
 #if HAVE_LIBPTHREAD
-        sasa_lr_do_threads(n_threads, lr);
+        lr_do_threads(n_threads, lr);
 #else
         return_value = freesasa_warn("%s: program compiled for single-threaded use, "
                                      "but multiple threads were requested. Will "
@@ -155,19 +154,19 @@ int freesasa_lee_richards(double *sasa,
     }
     if (n_threads == 1) {
         for (int i = 0; i < lr->n_atoms; ++i) {
-            lr->sasa[i] = sasa_atom_area(lr,i); 
+            lr->sasa[i] = atom_area(lr,i);
         }        
     }
-    freesasa_free_lr(lr);
+    free_lr(lr);
 
     return return_value;
 }
 
 #if HAVE_LIBPTHREAD
-static void sasa_lr_do_threads(int n_threads, sasa_lr *lr)
+static void lr_do_threads(int n_threads, lr_data *lr)
 {
     pthread_t thread[n_threads];
-    sasa_lr_thread_interval t_data[n_threads];
+    lr_thread_interval t_data[n_threads];
     int n_atoms = lr->n_atoms, n_perthread = n_atoms/n_threads, res;
     void *thread_result;
  
@@ -179,7 +178,7 @@ static void sasa_lr_do_threads(int n_threads, sasa_lr *lr)
             t_data[t].last_atom = (t+1)*n_perthread - 1;
         }
         t_data[t].lr = lr;
-        res = pthread_create(&thread[t], NULL, sasa_lr_thread,
+        res = pthread_create(&thread[t], NULL, lr_thread,
                                  (void *) &t_data[t]);
         if (res) {
             perror(freesasa_name);
@@ -195,22 +194,23 @@ static void sasa_lr_do_threads(int n_threads, sasa_lr *lr)
     }
 }
 
-static void *sasa_lr_thread(void *arg)
+static void *lr_thread(void *arg)
 {
-    sasa_lr_thread_interval *ti = ((sasa_lr_thread_interval*) arg);
+    lr_thread_interval *ti = ((lr_thread_interval*) arg);
     for (int i = ti->first_atom; i <= ti->last_atom; ++i) {
         /* the different threads write to different parts of the
            array, so locking shouldn't be necessary */
-        ti->lr->sasa[i] = sasa_atom_area(ti->lr, i);
+        ti->lr->sasa[i] = atom_area(ti->lr, i);
     }
     pthread_exit(NULL);
 }
 #endif /* pthread */
 
-static double sasa_atom_area(sasa_lr *lr,int i)
+static double atom_area(lr_data *lr,int i)
 {
     // This function is large because a large number of pre-calculated
-    // arrays need to be accessed efficiently
+    // arrays need to be accessed efficiently. Partially dereferenced
+    // here to make access more efficient.
     const int nni = lr->adj->nn[i];
     const double * restrict const v = freesasa_coord_all(lr->xyz);
     const double * restrict const r = lr->radii;
@@ -236,7 +236,7 @@ static double sasa_atom_area(sasa_lr *lr,int i)
         if (ri_slice2 < 0 ) continue; // handle round-off errors
         const double ri_slice = sqrt(ri_slice2);
         const double DR = ri/ri_slice*(d_half + fmin(d_half,ri-di));
-        int n_buried = 0, completely_buried = 0;
+        int n_arcs = 0, is_buried = 0;
         for (int j = 0; j < nni; ++j) {
             const double zj = z_nb[j];
             const double dj = fabs(zj - z_slice);
@@ -246,49 +246,50 @@ static double sasa_atom_area(sasa_lr *lr,int i)
                 const double rj_slice = sqrt(rj_slice2);
                 const double dij = xydi[j];
                 double alpha, beta, inf, sup;
-                int nbur2;
+                int narc2;
                 if (dij >= ri_slice + rj_slice) { // atoms aren't in contact
                     continue;
                 }
                 if (dij + ri_slice < rj_slice) { // circle i is completely inside j
-                    completely_buried = 1;
+                    is_buried = 1;
                     break;
                 }
                 if (dij + rj_slice < ri_slice) { // circle j is completely inside i
                     continue;
                 }
+                // arc of circle i intersected by circle j
                 alpha = acos ((ri_slice2 + dij*dij - rj_slice2)/(2.0*ri_slice*dij));
+                // position of mid-point of intersection along circle i
                 beta = atan2 (ydi[j],xdi[j]) + M_PI;
                 inf = beta - alpha;
                 sup = beta + alpha;
                 if (inf < 0) inf += TWOPI;
                 if (sup > 2*M_PI) sup -= TWOPI;
-                nbur2 = 2*n_buried;
-                // if arc passes 2*PI split into two
+                narc2 = 2*n_arcs;
+                // store the arc, if arc passes 2*PI split into two
                 if (sup < inf) {
                     //store arcs as contiguous pairs of angles
-                    arc[nbur2]   = 0;
-                    arc[nbur2+1] = sup;
+                    arc[narc2]   = 0;
+                    arc[narc2+1] = sup;
                     //second arc
-                    arc[nbur2+2] = inf;
-                    arc[nbur2+3] = TWOPI;
-                    n_buried += 2;
+                    arc[narc2+2] = inf;
+                    arc[narc2+3] = TWOPI;
+                    n_arcs += 2;
                 } else { 
-                    arc[nbur2]   = inf;
-                    arc[nbur2+1] = sup;
-                    ++n_buried;
+                    arc[narc2]   = inf;
+                    arc[narc2+1] = sup;
+                    ++n_arcs;
                 }
             }
         }
-        if (completely_buried == 0) {
-            sasa += ri_slice*DR*sasa_sum_arcs(n_buried,arc);
+        if (is_buried == 0) {
+            sasa += ri_slice*DR*sum_arcs(n_arcs,arc);
         }
 #ifdef DEBUG
-        //awkard loop structure to allow direct comparison with older version
         if (completely_buried == 0) {
             //exposed_arc[i] = 0;
             double xi = v[3*i], yi = v[3*i+1];
-            for (double c = M_PI; c < 2*M_PI-.00001; c += M_PI/30.0) {
+            for (double c = 0; c < 2*M_PI; c += M_PI/30.0) {
                 int is_exp = 1;
                 for (int j = 0; j < n_buried; ++j) {
                     double inf = arc[2*j], sup = arc[2*j+1];
@@ -297,19 +298,6 @@ static double sasa_atom_area(sasa_lr *lr,int i)
                     }
                 }
                 double d = c-M_PI;
-                // print the arcs used in calculation
-                if (is_exp) printf("%6.2f %6.2f %6.2f %7.5f\n",
-                                   xi+ri_slice*cos(d),yi+ri_slice*sin(d),z_slice,d);
-            }
-            for (double c = 0; c < M_PI+0.0000001; c += M_PI/30.0) {
-                int is_exp = 1;
-                for (int j = 0; j < n_buried; ++j) {
-                    double inf = arc[2*j], sup = arc[2*j+1];
-                    if (c >= inf && c <= sup) {
-                        is_exp = 0; break;
-                    }
-                }
-                double d = c+M_PI;
                 // print the arcs used in calculation
                 if (is_exp) printf("%6.2f %6.2f %6.2f %7.5f\n",
                                    xi+ri_slice*cos(d),yi+ri_slice*sin(d),z_slice,d);
@@ -338,7 +326,9 @@ inline static void sort_arcs(int n, double *restrict arc)
     }
 }
 
-inline static double sasa_sum_arcs(int n, double *arc) 
+// sort arcs by start-point, loop through them to sum parts of circle
+// not covered by any of the arcs
+inline static double sum_arcs(int n, double *arc)
 {
     if (n == 0) return TWOPI;
     double sum, sup, tmp;
