@@ -630,7 +630,6 @@ WARN_LOGFILE           =
 INPUT                  = @top_srcdir@/src
 INPUT                  += doxy_main.md
 # INPUT                  += @top_srcdir@/COPYING
-INPUT                  += @top_srcdir@/README.md
 INPUT                  += GPL.md README.md
 USE_MDFILE_AS_MAINPAGE = doxy_main.md
 

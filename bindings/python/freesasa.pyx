@@ -18,9 +18,8 @@ these classes are wrapping, which are necessary in the functions
 calc() and classifyResults(). They are not intended to be used outside
 of this module.
 """
-
 from libc.stdio cimport FILE, fopen, fclose
-from libc.stdlib cimport free 
+from libc.stdlib cimport free, realloc
 from libc.string cimport memcpy
 from cpython cimport array
 from cfreesasa cimport *
@@ -212,6 +211,17 @@ cdef class Result:
             if self._c_result is not NULL:
                   freesasa_result_free(self._c_result)
 
+      def nAtoms(self):
+            """
+            Number of atoms in the results
+
+            Returns:
+                Number of atoms
+            """
+            if self._c_result is not NULL:
+                  return self._c_result.n_atoms
+            return 0
+
       def totalArea(self):
             """
             Total SASA.
@@ -257,11 +267,15 @@ cdef class Classifier:
       Atom names should be of the format " CA ", " N ", etc. The
       default classifier requires these to have length 4, but the
       custom classifiers can handle shorter strings like "CA","N".
+
+      In addition to reading configurations from file, subclasses
+      derived from Classifier can be used to define custom atomic
+      radii and classes.
       """
 
       cdef freesasa_classifier* _c_classifier
       
-      def __cinit__ (self,fileName=None):
+      def __init__ (self,fileName=None):
             """
             Initalizes classifier.
             
@@ -361,12 +375,17 @@ cdef class Structure:
       cdef freesasa_structure* _c_structure
       cdef double* _c_radii
 
-      def __cinit__(self,fileName,classifier=None,hetatm=0):
+      def __cinit__(self,fileName=None,classifier=None,hetatm=0):
             """
-            Initializes Structure from PDB-file
+            Initializes Structure
+
+            If PDB file is provided, the structure will be constructed
+            based on the file. If not this simply initializes an empty
+            structure and the other arguments are ignored. In this case 
+            atoms will have to be added manually using addAtom().
             
             Args:
-                fileName (str): PDB file
+                fileName (str): PDB file (if None empty structure generated)
                 classifier: An optional classifier to calculate atomic
                     radii, uses default if none provided
                 hetatm (int): Includes hetatms in structure if this is 1
@@ -376,6 +395,9 @@ cdef class Structure:
             """
             self._c_structure = NULL
             self._c_radii = NULL
+            if fileName is None:
+                  self._c_structure = freesasa_structure_new()
+                  return
             cdef FILE *input
             input = fopen(fileName,'r')
             if input is NULL:
@@ -385,13 +407,78 @@ cdef class Structure:
             if self._c_structure is NULL:
                   raise Exception("Error reading '%s' as PDB-file." % fileName)
             
+            self.setRadiiWithClassifier(classifier)
+                        
+      def addAtom(self, atomName, residueName, residueNumber, chainLabel, x, y, z):
+            """
+            Add atom to structure
+            
+            This function is meant to be used if the structure was
+            not initialized from a PDB
+            
+            Args:
+                atomName (str): 4-character string with atom name (e.g. ' CA ')
+                residueName (str): 3-character string with residue name (e.g. 'ALA')
+                residueNumber (str or int): 4-character string with residue number (e.g. '  12')
+                  or integer <= 9999. Some PDBs have residue-numbers that aren't 
+                  regular numbers. Therefore treated as a string primarily.
+                chainLabel (str): 1-character string with chain label (e.g. 'A')
+                x,y,z (float): coordinates
+            Raises:
+                AssertionError: string-arguments invalid
+                Exception: Residue-number invalid
+            """
+            if (type(residueNumber) is str):
+                  resnum = residueNumber
+            elif (type(residueNumber) is int):
+                  assert residueNumber < 10000
+                  resnum = "%4d" % residueNumber
+            else:
+                  raise Exception("Residue-number invalid, must be either string or number")
+            assert len(atomName) == 4
+            assert len(residueName) == 3
+            assert len(resnum) == 4
+            assert len(chainLabel) == 1
+            cdef const char *label = chainLabel
+            freesasa_structure_add_atom(self._c_structure, atomName,
+                                        residueName, resnum, label[0],
+                                        x, y, z)
+
+      def setRadiiWithClassifier(self,classifier=None):
+            """
+            Assign radii to atoms in structure using a classifier
+
+            If no classifier is specified default will be
+            used. Over-writes previously assigned radii. Mainly
+            intended to be used when atoms were added individually
+            using addAtom(). When structure is initialized from PDB a
+            classifier can be passed directly to the constructor.
+            
+            Args: 
+                classifier: A classifier to use to calculate radii
+            """
             if classifier is None:
                   classifier = Classifier()
-            cdef const freesasa_classifier *c = NULL
-            classifier._assign_ptr(<size_t>&c)
-            self._c_radii = freesasa_structure_radius(self._c_structure,c)
-            if self._c_radii is NULL:
-                  raise Exception("Error calculating atomic radii for '%s' using provided classifier")
+            n = self.nAtoms()
+            self._c_radii = <double *> realloc(self._c_radii,n*sizeof(double))
+            for i in range(0,n):
+                  self._c_radii[i] = classifier.radius(self.residueName(i),self.atomName(i))
+      
+      def setRadii(self,array):
+            """
+            Set atomic radii from an array
+
+            Args:
+                array: Array of atomic radii in Ångström, should 
+                    have nAtoms() elements.
+            Raises:
+                AssertionError: if array has wrong dimension 
+            """
+            n = self.nAtoms()
+            assert len(array) == n
+            self._c_radii = <double*> realloc(self._c_radii,n*sizeof(double))
+            for i in range(0,n):
+                  self._c_radii[i] = array[i]
             
       def nAtoms(self):
             """
@@ -419,6 +506,73 @@ cdef class Structure:
             assert(i >= 0 and i < self.nAtoms())
             assert(self._c_radii is not NULL)
             return self._c_radii[i]
+      
+      def atomName(self,i):
+            """
+            Get atom name
+            
+            Args:
+                i (int): Atom index
+            Returns:
+                Atom name as 4-character string
+            Raises:
+                AssertionError: if index out of range or 
+                   Structure not properly initialized
+            """
+            assert(i >= 0 and i < self.nAtoms())
+            assert(self._c_structure is not NULL)
+            return freesasa_structure_atom_name(self._c_structure,i);
+      
+      def residueName(self,i):
+            """
+            Get residue name of given atom
+            
+            Args:
+                i (int): Atom index
+            Returns:
+                Residue name as 3-character string
+            Raises:
+                AssertionError: if index out of range or 
+                   Structure not properly initialized
+            """
+            assert(i >= 0 and i < self.nAtoms())
+            assert(self._c_structure is not NULL)
+            return freesasa_structure_atom_res_name(self._c_structure,i)
+
+      def residueNumber(self,i):
+            """
+            Get residue number for given atom
+            
+            Args:
+                i (int): Atom index
+            Returns:
+                Residue number as 4-character string
+            Raises:
+                AssertionError: if index out of range or 
+                Structure not properly initialized
+            """
+            assert(i >= 0 and i < self.nAtoms())
+            assert(self._c_structure is not NULL)
+            return freesasa_structure_atom_res_number(self._c_structure,i);
+
+      def chainLabel(self,i):
+            """
+            Get chain label for given atom
+            
+            Args:
+                i (int): Atom index
+            Returns:
+                Chain label as 1-character string
+            Raises:
+                AssertionError: if index out of range or 
+                Structure not properly initialized
+            """
+            assert(i >= 0 and i < self.nAtoms())
+            assert(self._c_structure is not NULL)
+            cdef char label[2]
+            label[0] = freesasa_structure_atom_chain(self._c_structure,i); 
+            label[1] = '\0'
+            return label
 
       def _assign_ptr(self, size_t ptr2ptr):
             cdef freesasa_structure **p = <freesasa_structure**> ptr2ptr
@@ -478,19 +632,14 @@ def classifyResults(result,structure,classifier=None):
       Raises:
           Exception: Problems with classification, see C library error messages
       """
-      cdef const freesasa_classifier *c = NULL
-      cdef const freesasa_structure *s = NULL
-      cdef const freesasa_result *r = NULL
-      if classifier is not None:
-            classifier._assign_ptr(<size_t>&c)
-      structure._assign_ptr(<size_t>&s)
-      result._assign_ptr(<size_t>&r)
-      cdef freesasa_strvp* strvp =  <freesasa_strvp*> freesasa_result_classify(r,s,c)
-      if strvp is NULL:
-            raise Exception("Problem calculating SASA classes.")
+      if classifier is None:
+            classifier = Classifier()
       ret = dict()
-      for i in range(0,strvp.n):
-            ret[strvp.string[i]] = strvp.value[i]
+      for i in range(0,structure.nAtoms()):
+            name = classifier.class2str(classifier.classify(structure.residueName(i),structure.atomName(i))) 
+            if name not in ret:
+                  ret[name] = 0
+            ret[name] += result.atomArea(i)
       return ret
 
 # set verbosity for FreeSASA

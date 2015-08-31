@@ -1,7 +1,18 @@
 import freesasa
 import unittest
 import math
+import os
 from exceptions import Exception
+
+class DummyClassifier(freesasa.Classifier):
+    def classify(self,residueName,atomName):
+        return 0
+
+    def radius(self,residueName,atomName):
+        return 10
+
+    def class2str(self,classIndex):
+        return "bla"
 
 class FreeSASATestCase(unittest.TestCase):
     def testParameters(self):
@@ -72,10 +83,11 @@ class FreeSASATestCase(unittest.TestCase):
 
         s = freesasa.Structure("data/1ubq.pdb")
         self.assertTrue(s.nAtoms() == 602)
-
-        s = freesasa.Structure("data/1ubq.pdb")
-        self.assertTrue(s.nAtoms() == 602)
         self.assertTrue(s.radius(1) == 2.0)
+        self.assertTrue(s.chainLabel(1) == 'A')
+        self.assertTrue(s.atomName(1) == ' CA ')
+        self.assertTrue(s.residueName(1) == 'MET')
+        self.assertTrue(s.residueNumber(1) == '   1')
 
         s2 = freesasa.Structure("data/1ubq.pdb",freesasa.Classifier("data/oons.config"))
         self.assertTrue(s.nAtoms() == 602)
@@ -85,6 +97,47 @@ class FreeSASATestCase(unittest.TestCase):
             self.assertTrue(math.fabs(s.radius(i)- s2.radius(i)) < 1e-5)
 
         self.assertRaises(Exception,lambda: freesasa.Structure("data/1ubq.pdb","data/err.config"))
+
+        s = freesasa.Structure()
+        s.addAtom(' CA ','ALA','   1','A',1,1,1)
+        self.assertTrue(s.nAtoms() == 1)
+        self.assertTrue(s.atomName(0) == ' CA ');
+        self.assertTrue(s.residueName(0) == 'ALA');
+        self.assertTrue(s.residueNumber(0) == '   1');
+        self.assertTrue(s.chainLabel(0) == 'A');
+        self.assertRaises(AssertionError,lambda: s.radius(0))
+        self.assertRaises(AssertionError,lambda: s.addAtom('CA','ALA','  12','A',1,1,1))
+        self.assertRaises(AssertionError,lambda: s.addAtom('CA   ','ALA','  12','A',1,1,1))
+        self.assertRaises(AssertionError,lambda: s.addAtom(' CA ',' ALA','  12','A',1,1,1))
+        self.assertRaises(AssertionError,lambda: s.addAtom(' CA ','AL','  12','A',1,1,1))
+        self.assertRaises(AssertionError,lambda: s.addAtom(' CA ','ALA',' 12','A',1,1,1))
+        self.assertRaises(AssertionError,lambda: s.addAtom(' CA ','ALA',' 12  ','A',1,1,1))
+        self.assertRaises(AssertionError,lambda: s.addAtom(' CA ','ALA',12345,'A',1,1,1))
+        self.assertRaises(AssertionError,lambda: s.addAtom(' CA ','ALA','  12','AB',1,1,1))
+        self.assertRaises(AssertionError,lambda: s.addAtom(' CA ','ALA','  12','',1,1,1))
+        self.assertTrue(s.nAtoms() == 1)
+        s.addAtom(' CB ','ALA',2,'A',2,1,1)
+        self.assertTrue(s.nAtoms() == 2)
+        self.assertTrue(s.residueNumber(1) == '   2')
+
+        s.setRadiiWithClassifier()
+        self.assertTrue(s.radius(0) == 2.0)
+        self.assertTrue(s.radius(1) == 2.0)
+
+        s.setRadiiWithClassifier(DummyClassifier())
+        self.assertTrue(s.radius(0) == s.radius(1) == 10.0)
+        
+        s.setRadii([1.0,3.0])
+        self.assertTrue(s.radius(0) == 1.0)
+        self.assertTrue(s.radius(1) == 3.0)
+
+        self.assertRaises(AssertionError,lambda: s.setRadii([1]))
+        self.assertRaises(AssertionError,lambda: s.setRadii([1,2,3]))
+
+        self.assertRaises(AssertionError,lambda: s.atomName(2))
+        self.assertRaises(AssertionError,lambda: s.residueName(2))
+        self.assertRaises(AssertionError,lambda: s.residueNumber(2))
+        self.assertRaises(AssertionError,lambda: s.chainLabel(2))
 
     def testCalc(self):
         s = freesasa.Structure("data/1ubq.pdb")
@@ -100,7 +153,15 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(math.fabs(sasa_classes['Polar'] - 2211.41649) < 1e-5)
         self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2516.84510) < 1e-5)
         
+        sasa_classes = freesasa.classifyResults(r,s,DummyClassifier())
+        self.assertTrue(math.fabs(sasa_classes['bla'] - 4728.26159) < 1e-5)
+        
 
 if __name__ == '__main__':
+    # make sure we're in the right directory (if script is called from
+    # outside the directory)
+    abspath = os.path.abspath(__file__)
+    dirname = os.path.dirname(abspath)
+    os.chdir(dirname)
     unittest.main()
 

@@ -156,6 +156,7 @@ static freesasa_result* freesasa_calc(const freesasa_coord *c,
     
     result->sasa = malloc(sizeof(double)*freesasa_coord_n(c));
     assert(result->sasa);
+    result->n_atoms = freesasa_coord_n(c);
 
     switch(p->alg) {
     case FREESASA_SHRAKE_RUPLEY:

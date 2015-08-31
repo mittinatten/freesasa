@@ -372,7 +372,11 @@ sets of test-points are then stored as static arrays in a special
 source file (\texttt{srp.c}), to make the program independent of any
 auxiliary input files. Sets containing 20, 50, 100, 200, 500, 1000,
 2000 and 5000 test points are included in the program. This set should
-cover most users' need for speed and accuracy.
+cover most users' need for speed and accuracy. One potential speed-up
+of this implementation, at least in the high accuracy limit, would be
+to include a grid for the test points as well, as in the double cubic 
+lattice method~\cite{DCLM}.
+ 
 
 \section{Comparison of the two}\label{sec:compare}
 
@@ -492,9 +496,15 @@ present implementation.
   Academy of Sciences of the United States of America 84: 3086–3090.
 
 \bibitem{Verlet} 
-  Verlet, L (1967). Computer ``Experiments'' on Classical
+  Verlet L (1967). Computer ``Experiments'' on Classical
   Fluids. I. Thermodynamical Properties of Lennard-Jones
   Molecules. Physical Review 159: 98--103.
+
+\bibitem{DCLM}
+  Eisenhaber F, Lijnzaad P, Argos P, Sander C, Scharf M (1994)
+  The double cubic lattice method: efficient approaches to numerical
+  integration of surface area and volume and to dot surface contouring
+  molecular assemblies. Journal of Computational Chemistry 16:273--284.
 
 \bibitem{PISCES}
   Wang G, Dunbrack RL (2003) PISCES: a protein sequence culling server. 

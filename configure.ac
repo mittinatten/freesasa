@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([FreeSASA], [0.3.2.1])
+AC_INIT([FreeSASA], [0.3.3])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([src/freesasa.c])
 AC_CONFIG_HEADERS([config.h])
@@ -34,15 +34,33 @@ AC_CHECK_FUNCS([gettimeofday sqrt strerror])
 AC_CHECK_FUNCS([mkdir])
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile
-                 doc/fig/Makefile tests/Makefile ])
+                 doc/fig/Makefile tests/Makefile bindings/Makefile])
 
+# Python-bindings
+
+AC_ARG_WITH([python],
+  AS_HELP_STRING([--with-python=<python-binary>], [Specify which python to use.]),
+    [python_bin=$withval],[python_bin=python])
+
+AC_ARG_ENABLE([python-binding],
+  [AS_HELP_STRING([--enable-python-binding],
+    [build Python bindings using Cython])],
+  [enable_python_binding=yes], [enable_python_binding=no])
+
+if test x$enable_python_binding = xyes ; then
+  AC_CHECK_PROG(PYTHON, python, $python_bin)
+  AC_CHECK_PROG(CYTHON, cython, cython) 
+  AM_CONDITIONAL([HAVE_CYTHON], [test -n "$CYTHON" && test -n "$PYTHON"])
+  AM_COND_IF([HAVE_CYTHON],[],[echo "Cython not available, will not build Python bindings"])
+else
+  AM_CONDITIONAL([HAVE_CYTHON],FALSE)
+fi
 
 # Enable LaTeX
 AC_ARG_ENABLE([latex],
  [AS_HELP_STRING([--enable-latex],
    [build documentation from latex sources])],
- [enable_latex=yes],
- [enable_latex=no])
+ [enable_latex=yes], [enable_latex=no])
 
 if test x$enable_latex = xyes ; then
   AC_CHECK_PROG(LATEX, latex, latex)
