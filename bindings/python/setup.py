@@ -6,7 +6,8 @@ extensions = [
     Extension("*", ["*.pyx"],
               include_dirs = ["../../src"],
               language='c',
-              extra_objects = ["../../src/libfreesasa.a"]
+              extra_objects = ["../../src/libfreesasa.a"],
+              extra_compile_args = ["-w"] 
               )
 ]
 

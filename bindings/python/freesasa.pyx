@@ -18,13 +18,11 @@ these classes are wrapping, which are necessary in the functions
 calc() and classifyResults(). They are not intended to be used outside
 of this module.
 """
-
 from libc.stdio cimport FILE, fopen, fclose
 from libc.stdlib cimport free, realloc
 from libc.string cimport memcpy
 from cpython cimport array
 from cfreesasa cimport *
-#from type import *
 
 ShrakeRupley = 'ShrakeRupley'
 """string: Used to specify the algorithm by Shrake & Rupley"""

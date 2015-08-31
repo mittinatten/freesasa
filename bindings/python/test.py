@@ -1,6 +1,7 @@
 import freesasa
 import unittest
 import math
+import os
 from exceptions import Exception
 
 class DummyClassifier(freesasa.Classifier):
@@ -157,5 +158,10 @@ class FreeSASATestCase(unittest.TestCase):
         
 
 if __name__ == '__main__':
+    # make sure we're in the right directory (if script is called from
+    # outside the directory)
+    abspath = os.path.abspath(__file__)
+    dirname = os.path.dirname(abspath)
+    os.chdir(dirname)
     unittest.main()
 

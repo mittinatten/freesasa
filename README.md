@@ -48,8 +48,10 @@ increases the speed of the Shrake & Rupley algorithm significantly (10
 % or so), as compared to the standard "-O2". There seems to be no
 measurable effect on Lee & Richards.
 
-Four customization options are available for the configure script
+The configuration script can be customized with
 
+* `--enable-python-binding` builds Python bindings, requires Cython
+* `--with-python=<python>` specifies which python binary to use
 * `--enable-check` enables unit-testing using the Check framework
 * `--enable-gcov` adds compiler flags for measuring coverage of tests using gcov
 * `--enable-doxygen` activates building of Doxygen documentation
