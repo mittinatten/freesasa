@@ -4,9 +4,11 @@
 # is compared with reference output, but the correctness of
 # calculations is generally handled by the unit tests.
 
+# Making this a .in-file was necessary to get 'make distcheck' to work
+
 cli=../src/freesasa
-datadir=../tests/data
-sharedir=../share/
+datadir=@top_srcdir@/tests/data
+sharedir=@top_srcdir@/share/
 dump=tmp/test-cli.dump # will only contain the latest output
 nofile=nonexistent-file
 nodir=nonexistent-dir/file

@@ -1,7 +1,7 @@
 
-EXTRA_DIST = data 
+EXTRA_DIST = data test-cli.sh.in run-test-cli.sh
 check_PROGRAMS =
-TESTS = test-cli.sh
+TESTS = run-test-cli.sh
 
 if COND_GCOV
 AM_CFLAGS = --coverage
