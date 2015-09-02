@@ -27,6 +27,15 @@ extern int freesasa_warn(const char *format,...);
 
 struct file_interval {long begin; long end;};
 
+/**
+    Struct to store user-configurations for classification.
+
+    The file format is documented in the Public API.
+
+    The types (aliphatic/aromatic/...) are stored here, but are only
+    used as intermediaries for constructing the classification, and
+    are not used later on.
+ */
 typedef struct user_config {
     char **classes; // names of area classes (polar/subpolar/etc)
     char **types; // names of atom types (aliphatic/aromatic/etc)
@@ -37,14 +46,10 @@ typedef struct user_config {
     int n_residues; // number of residue types
     int *n_atoms; // number of atoms per residue type
     int **atom_class; // sasa-class of each atom
-    int *atom_type_class; //sasa-class of each atom type
-    double *atom_type_radius; // radius of each atom type
+    int *type_class; //sasa-class of each atom type
+    double *type_radius; // radius of each atom type
     double **atom_radius; // radius of each atom in each residue
 } user_config;
-///////////////////////////
-// User-provided classes //
-///////////////////////////
-
 
 static user_config* user_config_new()
 {
@@ -58,12 +63,43 @@ static user_config* user_config_new()
     config->n_residues = 0;
     config->n_atoms = NULL;
     config->atom_class = NULL;
-    config->atom_type_class = NULL;
-    config->atom_type_radius = NULL;
+    config->type_class = NULL;
+    config->type_radius = NULL;
     config->atom_radius = NULL;
     return config;
 }
+static void user_config_free(void *p)
+{
+    user_config *config;
+    if (p) {
+        config = p;
+        for (int i = 0; i < config->n_classes; ++i)
+            free(config->classes[i]);
+        free(config->classes);
+        for (int i = 0; i < config->n_types; ++i)
+            free(config->types[i]);
+        free(config->types);
+        for (int i = 0; i < config->n_residues; ++i) {
+            free(config->residues[i]);
+            for (int j = 0; j < config->n_atoms[i]; ++j) { 
+                free(config->atoms[i][j]);
+            }
+            free(config->atoms[i]);
+            free(config->atom_class[i]);
+            free(config->atom_radius[i]);
+        }
+        free(config->residues);
+        free(config->atoms);
+        free(config->n_atoms);
+        free(config->atom_class);
+        free(config->type_class);
+        free(config->type_radius);
+        free(config->atom_radius);
+        free(config);
+    }
+}
 
+// check if array of strings has a string that matches key
 static int find_string(char **array, const char *key, int array_size)
 {
     assert(key);
@@ -72,14 +108,19 @@ static int find_string(char **array, const char *key, int array_size)
     int n = strlen(key);
     char key_trimmed[n];
 
+    // remove trailing and leading whitespace
     sscanf(key,"%s",key_trimmed);
     for (int i = 0; i < array_size; ++i) {
         assert(array[i]);
         if (strcmp(array[i],key_trimmed) == 0) return i;
     }
     return -1;
-} 
+}
 
+/**
+    Checks that input file has the required fields and locates the
+    'types' and 'atoms' sections. No syntax checking.
+ */
 static int check_file(FILE *input,
                       struct file_interval *types, 
                       struct file_interval *atoms)
@@ -162,6 +203,10 @@ static int next_line(char **line, FILE *fp) {
     return ret;
 }
 
+/**
+    Reads info about types from the user config. Assoicates each type
+    with a class and a radius in the config struct..
+*/
 static int read_types(user_config *config,
                       FILE *input,
                       struct file_interval fi)
@@ -185,21 +230,22 @@ static int read_types(user_config *config,
             if (areac < 0) {
                 config->n_classes++;
                 config->classes = realloc(config->classes,
-                                                sizeof(char*) * config->n_classes);
+                                          sizeof(char*) * config->n_classes);
                 config->classes[config->n_classes-1] = strdup(buf2);
                 areac = config->n_classes - 1;
             }
             config->n_types++;
             config->types = realloc(config->types,
-                                            sizeof(char*) * config->n_types);
+                                    sizeof(char*) * config->n_types);
             config->types[config->n_types-1] = strdup(buf1);
-            config->atom_type_radius = realloc(config->atom_type_radius,
-                                                 sizeof(double) * config->n_types);
-            config->atom_type_radius[config->n_types-1] = r;
-            config->atom_type_class = realloc(config->atom_type_class,
-                                                 sizeof(int) * config->n_types);
-            config->atom_type_class[config->n_types-1] = areac;
+            config->type_radius = realloc(config->type_radius,
+                                          sizeof(double) * config->n_types);
+            config->type_radius[config->n_types-1] = r;
+            config->type_class = realloc(config->type_class,
+                                         sizeof(int) * config->n_types);
+            config->type_class[config->n_types-1] = areac;
         } else {
+            free(line);
             return freesasa_fail("%s: Could not parse line '%s', "
                                  "expecting triplet of type "
                                  "'TYPE [RADIUS] CLASS' for example "
@@ -210,7 +256,11 @@ static int read_types(user_config *config,
     free(line);
     return FREESASA_SUCCESS;
 }
-
+/**
+    Reads atom configurations from config-file. Associates each atom
+    with a radius and class using the types that should already have
+    been stored in the config struct.
+ */
 static int read_atoms(user_config *config,
                       FILE *input,
                       struct file_interval fi)
@@ -228,45 +278,48 @@ static int read_atoms(user_config *config,
         if (sscanf(line,"%s %s %s",buf1,buf2,buf3) == 3) {
             res = find_string(config->residues, buf1, config->n_residues);
             type = find_string(config->types, buf3, config->n_types);
-            if (type < 0) {
+            if (type < 0) { // type not known
                 free(line);
                 return freesasa_fail("Unknown atom type '%s'",buf3);
             }
-            if (res < 0) {
+            if (res < 0) { // new residue type found
                 config->n_residues++;
                 res = config->n_residues - 1;
                 config->residues = realloc(config->residues,
-                                            sizeof(char*) * config->n_residues);
+                                           sizeof(char*) * config->n_residues);
                 config->n_atoms = realloc(config->n_atoms,
-                                           sizeof(int) * config->n_residues);
+                                          sizeof(int) * config->n_residues);
                 config->atoms = realloc (config->atoms,
-                                          sizeof(char**) * config->n_residues);
+                                         sizeof(char**) * config->n_residues);
                 config->atom_class = realloc(config->atom_class,
-                                              sizeof(int*) * config->n_residues);
+                                             sizeof(int*) * config->n_residues);
                 config->atom_radius = realloc(config->atom_radius,
-                                               sizeof(int*) * config->n_residues);
+                                              sizeof(int*) * config->n_residues);
                 config->residues[res] = strdup(buf1);
                 config->n_atoms[res] = 0;
                 config->atoms[res] = NULL;
                 config->atom_class[res] = NULL;
                 config->atom_radius[res] = NULL;
             } 
+            // check for duplicate entries (and ignore)
             if (find_string(config->atoms[res],buf2,config->n_atoms[res]) >= 0) {
                 freesasa_warn("Ignoring duplicate entry '%s %s %s'", buf1, buf2, buf3);
                 continue;
             }
             fflush(stdout);
             n = ++config->n_atoms[res];
+            // store atom config
             config->atoms[res] = realloc(config->atoms[res],sizeof(char*)*n);
             config->atom_class[res] = realloc(config->atom_class[res],sizeof(int)*n);
             config->atom_radius[res] = realloc(config->atom_radius[res],sizeof(double)*n);
             config->atoms[res][n-1] = strdup(buf2);
-            config->atom_class[res][n-1] = config->atom_type_class[type];
-            config->atom_radius[res][n-1] = config->atom_type_radius[type];
+            config->atom_class[res][n-1] = config->type_class[type];
+            config->atom_radius[res][n-1] = config->type_radius[type];
         } else {
+            free(line);
             return freesasa_fail("%s: Could not parse line '%s', "
                                  "expecting triplet of type "
-                                 "'RESIDUE ATOM CLASS' for example "
+                                 "'RESIDUE ATOM CLASS', for example "
                                  "'ALA CB C_ALI'.",
                                  __func__, line);
         }
@@ -274,7 +327,8 @@ static int read_atoms(user_config *config,
     free(line);
     return FREESASA_SUCCESS;
 }
-user_config* read_config(FILE *input) 
+
+static user_config* read_config(FILE *input) 
 {
     assert(input);
     struct file_interval types, atoms; 
@@ -286,40 +340,11 @@ user_config* read_config(FILE *input)
     config = user_config_new();
     ret1 = read_types(config, input, types);
     ret2 = read_atoms(config, input, atoms);
-    if (ret1 != FREESASA_SUCCESS || ret2 != FREESASA_SUCCESS) 
+    if (ret1 != FREESASA_SUCCESS || ret2 != FREESASA_SUCCESS) {
+        user_config_free(config);
         return NULL;
-    return config;
-}
-
-void user_config_free(void *p)
-{
-    user_config *config;
-    if (p) {
-        config = p;
-        for (int i = 0; i < config->n_classes; ++i)
-            free(config->classes[i]);
-        free(config->classes);
-        for (int i = 0; i < config->n_types; ++i)
-            free(config->types[i]);
-        free(config->types);
-        for (int i = 0; i < config->n_residues; ++i) {
-            free(config->residues[i]);
-            for (int j = 0; j < config->n_atoms[i]; ++j) { 
-                free(config->atoms[i][j]);
-            }
-            free(config->atoms[i]);
-            free(config->atom_class[i]);
-            free(config->atom_radius[i]);
-        }
-        free(config->residues);
-        free(config->atoms);
-        free(config->n_atoms);
-        free(config->atom_class);
-        free(config->atom_type_class);
-        free(config->atom_type_radius);
-        free(config->atom_radius);
-        free(config);
     }
+    return config;
 }
 
 static void find_any(const user_config *config,
@@ -402,8 +427,9 @@ freesasa_classifier* freesasa_classifier_from_file(FILE *file)
     freesasa_classifier* c = malloc(sizeof(freesasa_classifier));
     user_config* config = read_config(file);
 
-    if (config == NULL) return NULL;
-
+    if (config == NULL) {
+        return NULL;
+    }
     c->radius = user_radius;
     c->sasa_class = user_class;
     c->class2str = user_class2str;
