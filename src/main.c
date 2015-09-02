@@ -74,7 +74,7 @@ static struct option long_options[] = {
 };
 
 void help() {
-    fprintf(stderr,"\nUsage: %s [-hvlwLHSRrB:c:n:d:t:p:] pdb-file(s)\n",
+    fprintf(stderr,"\nUsage: %s [-hvlwLHSR::r::B::c:n:d:t:p:] pdb-file(s)\n",
             program_name);
     fprintf(stderr,
             "\nOptions are:\n\n"
@@ -112,7 +112,7 @@ void help() {
             "       Print SASA for each residue, either grouped by "
             "type or sequentially.\n"
             "       Writes to STDOUT if no output is specified.\n"
-            "\n  -B  <output-file>  --print-as-B-values=<output-file>\n"
+            "\n  -B  --print-as-B-values[=<output-file>]\n"
             "       Print PDB file with SASA for each atom as B-factors.\n"
             "       Write to STDOUT if no output is specified.\n");
     fprintf(stderr,
@@ -200,7 +200,7 @@ int main (int argc, char **argv) {
     program_name = argv[0];
 #endif
     int option_index = 0;
-    while ((opt = getopt_long(argc, argv, "hvlwLSHRrB:c::n:d:t:p:",
+    while ((opt = getopt_long(argc, argv, "hvlwLSHR::r::B::c:n:d:t:p:",
                               long_options, &option_index)) != -1) {
         errno = 0;
         opt_set[opt] = 1;
@@ -226,9 +226,9 @@ int main (int argc, char **argv) {
                 exit(EXIT_FAILURE);
             } else {
                 classifier = freesasa_classifier_from_file(f);
-                fclose(f);
-                if (f == NULL) {
-                    fprintf(stderr,"%s: error: Can't read file '%s'. Aborting.",
+                if (classifier == NULL) {
+                    fclose(f);
+                    fprintf(stderr,"%s: error: Can't read file '%s'. Aborting.\n",
                             program_name,optarg);
                     exit(EXIT_FAILURE);
                 }
@@ -251,6 +251,11 @@ int main (int argc, char **argv) {
             break;
         case 'p':
             parameters.probe_radius = atof(optarg);
+            if (parameters.probe_radius < 0) {
+                fprintf(stderr, "%s: error: probe radius must be 0 or larger.\n",
+                        program_name);
+                exit(EXIT_FAILURE);
+            }
             break;
         case 'H':
             include_hetatm = 1;
@@ -271,7 +276,7 @@ int main (int argc, char **argv) {
             per_residue = 1;
             if (optarg) {
                 per_residue_file = fopen(optarg,"w");
-                if (per_residue_type_file == NULL) {
+                if (per_residue_file == NULL) {
                     fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
                             program_name,optarg,strerror(errno));
                     short_help();
@@ -282,7 +287,7 @@ int main (int argc, char **argv) {
         case 'B':
             printpdb = 1;
             if (optarg) {
-                output_pdb = fopen(optarg, "w");
+                output_pdb = fopen(optarg,"w");
                 if (output_pdb == NULL) {
                     fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
                             program_name,optarg,strerror(errno));
@@ -294,6 +299,11 @@ int main (int argc, char **argv) {
         case 't':
 #if HAVE_LIBPTHREAD
             parameters.n_threads = atoi(optarg);
+            if (parameters.n_threads < 1) {
+                fprintf(stderr, "%s: error: number of threads must be 1 or larger.\n",
+                        program_name);
+                exit(EXIT_FAILURE);
+            }
 #else
             fprintf(stderr, "%s: warning: option 't' only defined if program"
                     " compiled with thread support.\n",
@@ -338,6 +348,7 @@ int main (int argc, char **argv) {
             fprintf(stderr,"%s: no input.\n",
                     program_name);
             short_help();
+            exit(EXIT_FAILURE);
         }
     }
 

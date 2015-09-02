@@ -127,6 +127,8 @@ int freesasa_lee_richards(double *sasa,
     assert(sasa);
     assert(xyz);
     assert(atom_radii);
+    if (delta <= 0) return freesasa_fail("%s: delta = %f is invalid, must be > 0\n",
+                                         __func__,delta);
 
     int return_value = FREESASA_SUCCESS;
     lr_data *lr;

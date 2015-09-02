@@ -1,5 +1,4 @@
 TESTS =
-lib_LIBRARIES = 
 
 cython_src = python/cfreesasa.pxd python/freesasa.pyx 
 
