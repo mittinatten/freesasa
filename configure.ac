@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([FreeSASA], [0.3.3])
+AC_INIT([FreeSASA], [0.3.3.1])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([src/freesasa.c])
 AC_CONFIG_HEADERS([config.h])
@@ -37,7 +37,6 @@ AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile
                  doc/fig/Makefile tests/Makefile bindings/Makefile])
 
 # Python-bindings
-
 AC_ARG_WITH([python],
   AS_HELP_STRING([--with-python=<python-binary>], [Specify which python to use.]),
     [python_bin=$withval],[python_bin=python])
@@ -117,10 +116,10 @@ fi
 
 # Enable gcov
 AC_ARG_ENABLE([gcov],
-        [AS_HELP_STRING([--enable-gcov],
-                [compile with Gcov to measure coverage])],
-        [enable_gcov=yes],
-        [enable_gcov=no])
+  [AS_HELP_STRING([--enable-gcov],
+    [compile with Gcov to measure coverage])],
+  [enable_gcov=yes],[enable_gcov=no])
 AM_CONDITIONAL([COND_GCOV],[test "x$enable_gcov" = xyes])
+
 
 AC_OUTPUT

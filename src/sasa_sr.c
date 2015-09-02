@@ -47,24 +47,23 @@ extern int freesasa_warn(const char *format, ...);
 
 // calculation parameters (results stored in *sasa)
 typedef struct {
-    int i1,i2;
+    int i1,i2; // for multithreading, range of atoms
     int n_atoms;
     int n_points;
     double probe_radius;
     const freesasa_coord *xyz;
-    const freesasa_coord *srp;
+    const freesasa_coord *srp; // test-points
     double *r;
     freesasa_verlet *adj;
     double *sasa;
-    char *spcount_0;
-} sasa_sr;
+} sr_data;
 
 #if HAVE_LIBPTHREAD
-static void sasa_sr_do_threads(int n_threads, sasa_sr sr);
-static void *sasa_sr_thread(void *arg);
+static void sr_do_threads(int n_threads, sr_data sr);
+static void *sr_thread(void *arg);
 #endif
 
-static double sasa_sr_calc_atom(int i,const sasa_sr) __attrib_pure__;
+static double sr_atom_area(int i,const sr_data) __attrib_pure__;
 
 int freesasa_shrake_rupley(double *sasa,
                            const freesasa_coord *xyz,
@@ -81,7 +80,6 @@ int freesasa_shrake_rupley(double *sasa,
     int return_value = FREESASA_SUCCESS;
     const double *srp_p;
     freesasa_coord *srp;
-    char spcount_0[n_points];
 
     if (n_atoms == 0) {
         return freesasa_warn("%s: empty coordinates", __func__);
@@ -91,16 +89,11 @@ int freesasa_shrake_rupley(double *sasa,
     srp_p = freesasa_srp_get_points(n_points);
     if (srp_p == NULL) return FREESASA_FAIL;
     srp = freesasa_coord_new_linked(srp_p,n_points);
-    
-    /* a reference zero array is prepared so that it won't need to be
-       initialized for each atom */
-    memset(spcount_0,0,n_points);
 
     //store parameters and reference arrays
-    sasa_sr sr = {.n_atoms = n_atoms, .n_points = n_points,
+    sr_data sr = {.n_atoms = n_atoms, .n_points = n_points,
                   .probe_radius = probe_radius,
                   .xyz = xyz, .srp = srp,
-                  .spcount_0 = spcount_0,
                   .sasa = sasa};
 
     sr.r = malloc(sizeof(double)*n_atoms);
@@ -110,11 +103,10 @@ int freesasa_shrake_rupley(double *sasa,
     //calculate distances
     sr.adj = freesasa_verlet_new(xyz,sr.r);
 
-
     //calculate SASA
     if (n_threads > 1) {
 #if HAVE_LIBPTHREAD
-        sasa_sr_do_threads(n_threads, sr);
+        sr_do_threads(n_threads, sr);
 #else
         return_value = freesasa_warn("%s: program compiled for single-threaded use, "
                                      "but multiple threads were requested. Will "
@@ -126,7 +118,7 @@ int freesasa_shrake_rupley(double *sasa,
     if (n_threads == 1) {
         // don't want the overhead of generating threads if only one is used
         for (int i = 0; i < n_atoms; ++i) {
-            sasa[i] = sasa_sr_calc_atom(i,sr);
+            sasa[i] = sr_atom_area(i,sr);
         }
     }
     freesasa_coord_free(srp);
@@ -136,22 +128,23 @@ int freesasa_shrake_rupley(double *sasa,
 }
 
 #if HAVE_LIBPTHREAD
-static void sasa_sr_do_threads(int n_threads, sasa_sr sr)
+static void sr_do_threads(int n_threads, sr_data sr)
 {
     pthread_t thread[n_threads];
-    sasa_sr srt[n_threads];
+    sr_data srt[n_threads];
     int n_atoms = sr.n_atoms;
     int thread_block_size = n_atoms/n_threads;
     int res;
     void *thread_result;
 
+    // divide atoms evenly over threads
     for (int t = 0; t < n_threads; ++t) {
         srt[t] = sr;
         srt[t].i1 = t*thread_block_size;
         if (t == n_threads-1) srt[t].i2 = n_atoms;
         else srt[t].i2 = (t+1)*thread_block_size;
         errno = 0;
-        res = pthread_create(&thread[t], NULL, sasa_sr_thread, (void *) &srt[t]);
+        res = pthread_create(&thread[t], NULL, sr_thread, (void *) &srt[t]);
         if (res) {
             perror(freesasa_name);
             abort();
@@ -167,27 +160,27 @@ static void sasa_sr_do_threads(int n_threads, sasa_sr sr)
     }
 }
 
-static void *sasa_sr_thread(void* arg)
+static void *sr_thread(void* arg)
 {
-    sasa_sr sr = *((sasa_sr*) arg);
+    sr_data sr = *((sr_data*) arg);
     int n = sr.i2-sr.i1;
     double *sasa = malloc(sizeof(double)*n);
     assert(sasa);
     for (int i = 0; i < n; ++i) {
-        sasa[i] = sasa_sr_calc_atom(i+sr.i1,sr);
+        sasa[i] = sr_atom_area(i+sr.i1,sr);
     }
-    // mutex should not be necessary, but might be safer to have one here?
+    // mutex should not be necessary, writes to non-overlapping regions
     memcpy(&sr.sasa[sr.i1],sasa,sizeof(double)*n);
     free(sasa);
     pthread_exit(NULL);
 }
 #endif
 
-static double sasa_sr_calc_atom(int i, const sasa_sr sr) {
+static double sr_atom_area(int i, const sr_data sr) {
     const int n_points = sr.n_points;
     const freesasa_coord *xyz = sr.xyz;
     /* this array keeps track of which testpoints belonging to
-       a certain atom overlap with other atoms */
+       a certain atom are inside other atoms */
     char spcount[n_points];
     const double ri = sr.r[i];
     const double *restrict vi = freesasa_coord_i(xyz,i);
@@ -203,7 +196,7 @@ static double sasa_sr_calc_atom(int i, const sasa_sr sr) {
     freesasa_coord_translate(tp_coord_ri, vi);
     tp = freesasa_coord_all(tp_coord_ri);
 
-    memcpy(spcount,sr.spcount_0,sizeof(char)*n_points);
+    memset(spcount,0,n_points);
 
     for (int j = 0; j < sr.adj->nn[i]; ++j) {
         const int ja = sr.adj->nb[i][j];
