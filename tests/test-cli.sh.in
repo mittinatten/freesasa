@@ -80,6 +80,9 @@ assert_pass "grep 'Apolar:\s\s*2527.63 A2' $dump"
 assert_pass "$cli -Y $datadir/1d3z.pdb > $dump"
 assert_pass "grep 'n_atoms: 1231' $dump"
 assert_pass "grep 'Total:\s\s*4895.90 A2' $dump"
+assert_pass "$cli -H $datadir/1ubq.pdb > $dump"
+assert_pass "grep 'n_atoms: 660' $dump"
+assert_pass "grep 'Total:\s\s*5607.72 A2' $dump"
 
 echo
 #check parameter errors

@@ -152,6 +152,18 @@ START_TEST (test_hydrogen)
 }
 END_TEST
 
+START_TEST (test_hetatm) 
+{
+    FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
+    ck_assert(pdb != NULL);
+    freesasa_structure* s = freesasa_structure_from_pdb(pdb,FREESASA_INCLUDE_HETATM);
+    ck_assert(s != NULL);
+    ck_assert(freesasa_structure_n(s) == 660);
+    freesasa_structure_free(s);
+    fclose(pdb);
+}
+END_TEST
+
 Suite* structure_suite() {
     Suite *s = suite_create("Structure");
     TCase *tc_core = tcase_create("Core");
@@ -161,6 +173,7 @@ Suite* structure_suite() {
     TCase *tc_pdb = tcase_create("PDB");
     tcase_add_test(tc_pdb,test_pdb);
     tcase_add_test(tc_pdb,test_hydrogen);
+    tcase_add_test(tc_pdb,test_hetatm);
 
     TCase *tc_1ubq = tcase_create("1UBQ");
     tcase_add_checked_fixture(tc_1ubq,setup_1ubq,teardown_1ubq);
