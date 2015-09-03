@@ -112,6 +112,8 @@ const freesasa_classifier freesasa_residue_classifier = {
   
 double freesasa_classify_radius(const char *res_name, const char *atom_name)
 {
+    if (freesasa_classify_element(atom_name) == freesasa_hydrogen) 
+        return freesasa_classify_element_radius(freesasa_hydrogen);
     int res = freesasa_classify_residue(res_name);
     if (freesasa_classify_is_aminoacid(res)) {
         return freesasa_classify_oons_radius(freesasa_classify_oons(res_name,
@@ -215,6 +217,7 @@ int freesasa_classify_element(const char *atom_name)
         case 'N': return freesasa_nitrogen;
         case 'S': return freesasa_sulfur;
         case 'P': return freesasa_phosphorus;
+        case 'H': return freesasa_hydrogen;
             // what about Se?
         default:
             freesasa_warn("%s: atom '%s' unknown.\n",__func__,atom_name);
@@ -252,7 +255,7 @@ double freesasa_classify_element_radius(int element)
     case freesasa_sulfur: return 1.8;
     case freesasa_phosphorus: return 1.8;
     case freesasa_selenium: return 1.9;
-        //case freesasa_hydrogen: return 1.2;
+    case freesasa_hydrogen: return 0.0; // the exception
     case freesasa_element_unknown:
     default:
         return 0.0;

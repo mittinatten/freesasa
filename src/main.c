@@ -52,7 +52,7 @@ FILE *per_residue_file = NULL;
 int per_residue_type = 0;
 int per_residue = 0;
 int printlog = 1;
-int include_hetatm = 0;
+int structure_options = 0;
 int printpdb = 0;
 
 static struct option long_options[] = {
@@ -67,6 +67,7 @@ static struct option long_options[] = {
     {"no-warnings", no_argument, 0, 'w'},
     {"n-threads",required_argument, 0, 't'},
     {"hetatm",no_argument, 0, 'H'},
+    {"hydrogen",no_argument, 0, 'Y'},
     {"config-file",required_argument,0,'c'},
     {"sasa-per-residue-type",optional_argument,0,'r'},
     {"sasa-per-residue-sequence",optional_argument,0,'R'},
@@ -74,7 +75,7 @@ static struct option long_options[] = {
 };
 
 void help() {
-    fprintf(stderr,"\nUsage: %s [-hvlwLHSR::r::B::c:n:d:t:p:] pdb-file(s)\n",
+    fprintf(stderr,"\nUsage: %s [-hvlwLHYSR::r::B::c:n:d:t:p:] pdb-file(s)\n",
             program_name);
     fprintf(stderr,
             "\nOptions are:\n\n"
@@ -84,7 +85,9 @@ void help() {
             "  -w (--no-warnings)    Don't print warnings\n"
             "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm [default]\n"
             "  -L (--lee-richards)   Use Lee & Richards algorithm\n"
-            "  -H (--hetatm)         Include HETATM entries from input\n");
+            "  -H (--hetatm)         Include HETATM entries from input\n"
+            "  -Y (--hydrogen)       Include hydrogen atoms. Only makes sense in concjunction\n"
+            "                        with -c option. Default H radius is 0 Å.\n");
     fprintf(stderr,
             "\n  -c <file> (--config-file=<file>)\n"
             "       Use atomic radii and classes provided in file\n");
@@ -129,7 +132,7 @@ void run_analysis(FILE *input, const char *name) {
     freesasa_result *result;
     freesasa_strvp *classes = NULL;
     freesasa_structure *structure =
-        freesasa_structure_from_pdb(input,include_hetatm);
+        freesasa_structure_from_pdb(input,structure_options);
     if (structure == NULL) {
         fprintf(stderr,"%s: error: Invalid input. Aborting.\n",
                 program_name);
@@ -200,7 +203,7 @@ int main (int argc, char **argv) {
     program_name = argv[0];
 #endif
     int option_index = 0;
-    while ((opt = getopt_long(argc, argv, "hvlwLSHR::r::B::c:n:d:t:p:",
+    while ((opt = getopt_long(argc, argv, "hvlwLSHYR::r::B::c:n:d:t:p:",
                               long_options, &option_index)) != -1) {
         errno = 0;
         opt_set[opt] = 1;
@@ -258,7 +261,10 @@ int main (int argc, char **argv) {
             }
             break;
         case 'H':
-            include_hetatm = 1;
+            structure_options |= FREESASA_INCLUDE_HETATM;
+            break;
+        case 'Y':
+            structure_options |= FREESASA_INCLUDE_HYDROGEN;
             break;
         case 'r':
             per_residue_type = 1;

@@ -65,6 +65,7 @@ assert_pass "grep '## FreeSASA $version ##' $dump"
 assert_pass "grep 'name: stdin' $dump"
 $cli $datadir/1ubq.pdb > $dump
 assert_pass "grep 'name: $datadir/1ubq.pdb' $dump"
+assert_pass "grep 'n_atoms: 602' $dump"
 assert_pass "grep 'probe-radius: \d' $dump"
 assert_pass "grep 'n_thread: \d' $dump"
 assert_pass "grep 'n_testpoint: \d' $dump"
@@ -76,6 +77,9 @@ assert_pass "grep 'Apolar:\s\s*2527.63 A2' $dump"
 # whitespace, and also version. Allows non-essential details to change
 # without breaking the test. Will not be performed for variant
 # parameter values, those should be covered by tests.
+assert_pass "$cli -Y $datadir/1d3z.pdb > $dump"
+assert_pass "grep 'n_atoms: 1231' $dump"
+assert_pass "grep 'Total:\s\s*4895.90 A2' $dump"
 
 echo
 #check parameter errors

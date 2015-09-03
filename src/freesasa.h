@@ -199,7 +199,6 @@ typedef enum {
     FREESASA_NUCLEICACID, FREESASA_CLASS_UNKNOWN
 } freesasa_class;
 
-
 // Default parameters
 #define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångström) @ingroup API
 #define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R @ingroup API
@@ -208,6 +207,9 @@ typedef enum {
 #define FREESASA_SUCCESS 0 //!< All is ok @ingroup API
 #define FREESASA_FAIL -1 //!< Something went seriously wrong. @ingroup API
 #define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful @ingroup API
+
+#define FREESASA_INCLUDE_HETATM 1
+#define FREESASA_INCLUDE_HYDROGEN 2
 
 //! Struct to store parameters for SASA calculation @ingroup API
 typedef struct {
@@ -535,24 +537,28 @@ freesasa_structure* freesasa_structure_new(void);
     Automatically skips hydrogens. If an atom has alternative
     coordinates, only the first alternative is used. If a file has
     more than one `MODEL` (as in NMR structures) only the first model
-    is used. User specifies if `HETATM` entries should be included. If
-    non-default behavior is wanted, the PDB-file needs to be modified
-    before calling this function, or atoms can be added manually one
-    by one using freesasa_structure_add_atom().
+    is used. User specifies if `HETATM` entries and/or hydrogen atoms
+    should be included. If non-default behavior is wanted, the
+    PDB-file needs to be modified before calling this function, or
+    atoms can be added manually one by one using
+    freesasa_structure_add_atom().
 
     Return value is dynamically allocated, should be freed with
     freesasa_structure_free().
 
     @param pdb Input PDB-file.
-    @param include_hetatm The value 0 means only read `ATOM` entries, 1
-    means also include `HETATM` entries.
-    @return The generated structure. Returns `NULL` and prints error if
-    input is invalid.
+    @param options Bitfield. 0 means only use non-hydrogen `ATOM`
+      entries. ::FREESASA_INCLUDE_HETATM and ::FREESASA_INCLUDE_HYDROGEN
+      can be used to include more atoms. 
+      `FREESASA_INCLUDE_HETATM | FREESASA_INCLUDE_HYDROGEN` means include 
+      both.
+    @return The generated structure. Returns `NULL` and prints error
+      if input is invalid.
 
     @ingroup StructureAPI
 */
 freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
-                                                int include_hetatm);
+                                                int options);
 
 /**
     Add individual atom to structure.
