@@ -131,7 +131,8 @@ static freesasa_structure* from_pdb_impl(FILE *pdb_file,
                                         a.chain_label, v[0], v[1], v[2]);
             strncpy(p->a[p->number_atoms-1].line,line,PDB_LINE_STRL);
         }
-        if (strncmp("ENDMDL",line,6)==0) {
+        if (! (options & FREESASA_JOIN_MODELS) && 
+            strncmp("ENDMDL",line,6)==0) {
             if (p->number_atoms == 0) {
                 freesasa_fail("input had ENDMDL before first ATOM entry.");
                 freesasa_structure_free(p);
@@ -238,7 +239,7 @@ freesasa_structure** freesasa_structure_array(FILE *pdb,
                                               int *n,
                                               int options)
 {
-    assert( (options & FREESASA_INCLUDE_ALL_MODELS) || (options & FREESASA_SEPARATE_CHAINS) );
+    assert( (options & FREESASA_SEPARATE_MODELS) || (options & FREESASA_SEPARATE_CHAINS) );
     assert(pdb);
     assert(n);
 
@@ -250,7 +251,7 @@ freesasa_structure** freesasa_structure_array(FILE *pdb,
     }
 
     //only keep first model
-    if (! (options & FREESASA_INCLUDE_ALL_MODELS) ) *n = 1;
+    if (! (options & FREESASA_SEPARATE_MODELS) ) *n = 1;
 
     if (options & FREESASA_SEPARATE_CHAINS) *n = get_chains(pdb,&it,*n,options);
 

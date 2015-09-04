@@ -80,9 +80,28 @@ assert_pass "grep 'Apolar:\s\s*2527.63 A2' $dump"
 assert_pass "$cli -Y $datadir/1d3z.pdb > $dump"
 assert_pass "grep 'n_atoms: 1231' $dump"
 assert_pass "grep 'Total:\s\s*4895.90 A2' $dump"
-assert_pass "$cli -H $datadir/1ubq.pdb > $dump"
+assert_pass "$cli -H -w $datadir/1ubq.pdb > $dump" # suppress warnings here
 assert_pass "grep 'n_atoms: 660' $dump"
 assert_pass "grep 'Total:\s\s*5607.72 A2' $dump"
+
+assert_pass "$cli -M $datadir/1d3z.pdb > $dump"
+n_mod=`grep 1d3z.pdb $dump | wc -l`
+assert_pass "test $n_mod -eq 10"
+assert_pass "$cli -C $datadir/1d3z.pdb > $dump"
+n_mod=`grep 1d3z.pdb $dump | wc -l`
+assert_pass "test $n_mod -eq 1"
+assert_pass "$cli -M -C $datadir/1d3z.pdb > $dump"
+n_mod=`grep 1d3z.pdb $dump | wc -l`
+assert_pass "test $n_mod -eq 10"
+assert_pass "$cli -M $datadir/2jo4.pdb > $dump"
+n_mod=`grep 2jo4.pdb $dump | wc -l`
+assert_pass "test $n_mod -eq 10"
+assert_pass "$cli -C $datadir/2jo4.pdb > $dump"
+n_mod=`grep 2jo4.pdb $dump | wc -l`
+assert_pass "test $n_mod -eq 4"
+assert_pass "$cli -M -C  $datadir/2jo4.pdb > $dump"
+n_mod=`grep 2jo4.pdb $dump | wc -l`
+assert_pass "test $n_mod -eq 40"
 
 echo
 #check parameter errors

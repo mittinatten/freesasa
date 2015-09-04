@@ -173,7 +173,7 @@ START_TEST (test_structure_array)
     FILE *pdb = fopen(DATADIR "1d3z.pdb","r");
     ck_assert(pdb != NULL);
     int n = 0;
-    freesasa_structure** ss = freesasa_structure_array(pdb,&n,FREESASA_INCLUDE_ALL_MODELS);
+    freesasa_structure** ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_MODELS);
         
     ck_assert(ss != NULL);
     ck_assert(n == 10);
@@ -195,7 +195,7 @@ START_TEST (test_structure_array)
     free(ss[0]);
     
     rewind(pdb);
-    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_CHAINS | FREESASA_INCLUDE_ALL_MODELS |
+    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_CHAINS | FREESASA_SEPARATE_MODELS |
                                   FREESASA_INCLUDE_HYDROGEN);
     ck_assert(ss != NULL);
     ck_assert(n == 10);
@@ -208,7 +208,7 @@ START_TEST (test_structure_array)
 
     fclose(pdb);
     pdb = fopen(DATADIR "2jo4.pdb", "r");
-    ss = freesasa_structure_array(pdb,&n,FREESASA_INCLUDE_ALL_MODELS |
+    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_MODELS |
                                   FREESASA_INCLUDE_HETATM | FREESASA_INCLUDE_HYDROGEN);
     ck_assert(ss != NULL);
     ck_assert(n == 10);
@@ -221,7 +221,7 @@ START_TEST (test_structure_array)
 
     rewind(pdb);
     pdb = fopen(DATADIR "2jo4.pdb", "r");
-    ss = freesasa_structure_array(pdb,&n,FREESASA_INCLUDE_ALL_MODELS | FREESASA_SEPARATE_CHAINS |
+    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_MODELS | FREESASA_SEPARATE_CHAINS |
                                   FREESASA_INCLUDE_HETATM | FREESASA_INCLUDE_HYDROGEN);
     ck_assert(ss != NULL);
     ck_assert(n == 10*4);
@@ -232,6 +232,13 @@ START_TEST (test_structure_array)
     }
     free(ss);
 
+    rewind(pdb);
+    freesasa_structure *s = freesasa_structure_from_pdb(pdb,FREESASA_INCLUDE_HETATM | 
+                                                        FREESASA_INCLUDE_HYDROGEN |
+                                                        FREESASA_JOIN_MODELS);
+    ck_assert(s != NULL);
+    ck_assert(freesasa_structure_n(s) == 286*4*10);
+    freesasa_structure_free(s);
     fclose(pdb);
 }
 END_TEST

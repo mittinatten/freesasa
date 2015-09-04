@@ -429,7 +429,7 @@ START_TEST (test_1d3z)
     free(radii);
     rewind(pdb);
 
-    freesasa_structure** ss = freesasa_structure_array(pdb,&n,FREESASA_INCLUDE_ALL_MODELS);
+    freesasa_structure** ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_MODELS);
     ck_assert(n == 10);
     radii = freesasa_structure_radius(ss[0],NULL);
     result = freesasa_calc_structure(ss[0],radii,NULL);

@@ -218,8 +218,9 @@ typedef enum {
 // Parameters for reading structure from PDB
 #define FREESASA_INCLUDE_HETATM 1 //! Include HETATM entries
 #define FREESASA_INCLUDE_HYDROGEN 2 //! Include hydrogen atoms
-#define FREESASA_INCLUDE_ALL_MODELS 4 //! Read MODELs as separate structures
+#define FREESASA_SEPARATE_MODELS 4 //! Read MODELs as separate structures
 #define FREESASA_SEPARATE_CHAINS 8 //! Read separate chains as separate structures
+#define FREESASA_JOIN_MODELS 16 //! Read MODELs as part of one big structure
 
 //! Struct to store parameters for SASA calculation @ingroup API
 typedef struct {
@@ -586,7 +587,7 @@ freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
     @param options Bitfield. 0 means only use non-hydrogen `ATOM`
       entries. ::FREESASA_INCLUDE_HETATM and
       ::FREESASA_INCLUDE_HYDROGEN can be used to include more
-      atoms. ::FREESASA_INCLUDE_MODELS_ALL_MODELS and
+      atoms. ::FREESASA_SEPARATE_MODELS and
       ::FREESASA_SEPARATE_CHAINS can be used to generate one structure
       per model and one structure per chain, respectively.  All four
       options can be combined using `|`, analogously to

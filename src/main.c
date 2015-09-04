@@ -68,6 +68,9 @@ static struct option long_options[] = {
     {"n-threads",required_argument, 0, 't'},
     {"hetatm",no_argument, 0, 'H'},
     {"hydrogen",no_argument, 0, 'Y'},
+    {"treat-chains-separately",no_argument, 0, 'C'},
+    {"treat-models-separately",no_argument, 0, 'M'},
+    {"join-models",no_argument, 0, 'm'},
     {"config-file",required_argument,0,'c'},
     {"sasa-per-residue-type",optional_argument,0,'r'},
     {"sasa-per-residue-sequence",optional_argument,0,'R'},
@@ -75,7 +78,7 @@ static struct option long_options[] = {
 };
 
 void help() {
-    fprintf(stderr,"\nUsage: %s [-hvlwLHYSR::r::B::c:n:d:t:p:] pdb-file(s)\n",
+    fprintf(stderr,"\nUsage: %s [-hvlwLHYCMmSR::r::B::c:n:d:t:p:] pdb-file(s)\n",
             program_name);
     fprintf(stderr,
             "\nOptions are:\n\n"
@@ -87,7 +90,12 @@ void help() {
             "  -L (--lee-richards)   Use Lee & Richards algorithm\n"
             "  -H (--hetatm)         Include HETATM entries from input\n"
             "  -Y (--hydrogen)       Include hydrogen atoms. Only makes sense in concjunction\n"
-            "                        with -c option. Default H radius is 0 Å.\n");
+            "                        with -c option. Default H radius is 0 Å.\n"
+            "  -C (--treat-chains-separately)  Calculate SASA for each chain in input separately.\n"
+            "                          Default is to join chains into one structure."
+            "  -M (--treat-models-separately)  Calculate SASA for each MODEL in input separately.\n"
+            "                          Default is to only use first MODEL in input."
+            "  -m (--join-models)    Join all MODELs in input into one big structure.");
     fprintf(stderr,
             "\n  -c <file> (--config-file=<file>)\n"
             "       Use atomic radii and classes provided in file\n");
@@ -129,63 +137,78 @@ void short_help() {
 
 void run_analysis(FILE *input, const char *name) {
     double tmp, *radii;
+    int several_structures = 0, name_len = strlen(name);
     freesasa_result *result;
     freesasa_strvp *classes = NULL;
-    freesasa_structure *structure =
-        freesasa_structure_from_pdb(input,structure_options);
-    if (structure == NULL) {
+    freesasa_structure *single_structure[1];
+    freesasa_structure **structures;
+    int n = 0;
+    if ((structure_options & FREESASA_SEPARATE_CHAINS) ||
+        (structure_options & FREESASA_SEPARATE_MODELS)) {
+        structures = freesasa_structure_array(input,&n,structure_options);
+        several_structures = 1;
+    } else {
+        single_structure[0] = freesasa_structure_from_pdb(input,structure_options);
+        structures = single_structure;
+        n = 1;
+    }
+    if (structures == NULL) {
         fprintf(stderr,"%s: error: Invalid input. Aborting.\n",
                 program_name);
         exit(EXIT_FAILURE);
     }
-    radii = freesasa_structure_radius(structure,classifier);
-    if (radii == NULL) {
-        fprintf(stderr,"%s: error: Can't calculate atomic radii. Aborting.\n",
-                program_name);
-        exit(EXIT_FAILURE);
-    }
-    if ((result = freesasa_calc_structure(structure,radii,&parameters)) == NULL) {
-        fprintf(stderr,"%s: error: Can't calculate SASA. Aborting.\n",
-                program_name);
-        exit(EXIT_FAILURE);
-    }
-    classes = freesasa_result_classify(result,structure,classifier);
-    if (classes == NULL) {
-        fprintf(stderr,"%s: warning: Can't determine atom classes. Aborting.\n",
-                program_name);
-        exit(EXIT_FAILURE);
-    }
-    if (printlog) {
-        freesasa_log(stdout,result,name,
-                     &parameters,classes);
-    }
-    if (per_residue_type) {
-        if (per_residue_type_file != NULL) {
-            freesasa_per_residue_type(per_residue_type_file,result,structure);
+    for (int i = 0; i < n; ++i) {
+        if (structures[i] == NULL) {
+            fprintf(stderr,"%s: error: Invalid input. Aborting.\n",
+                    program_name);
+            exit(EXIT_FAILURE);
         }
-        else {
-            freesasa_per_residue_type(stdout,result,structure);
+        radii = freesasa_structure_radius(structures[i],classifier);
+        if (radii == NULL) {
+            fprintf(stderr,"%s: error: Can't calculate atomic radii. Aborting.\n",
+                    program_name);
+            exit(EXIT_FAILURE);
         }
-    }
-    if (per_residue) {
-        if (per_residue_file != NULL) {
-            freesasa_per_residue(per_residue_file,result,structure);
-        } else {
-            freesasa_per_residue(stdout,result,structure);
+        if ((result = freesasa_calc_structure(structures[i],radii,&parameters)) == NULL) {
+            fprintf(stderr,"%s: error: Can't calculate SASA. Aborting.\n",
+                    program_name);
+            exit(EXIT_FAILURE);
         }
-    }
-    if (printpdb) {
-        if (output_pdb != NULL) {
-            freesasa_write_pdb(output_pdb,result,structure,radii);
-        } else {
-            freesasa_write_pdb(stdout,result,structure,radii);
+        classes = freesasa_result_classify(result,structures[i],classifier);
+        if (classes == NULL) {
+            fprintf(stderr,"%s: warning: Can't determine atom classes. Aborting.\n",
+                    program_name);
+            exit(EXIT_FAILURE);
         }
-        
+        if (printlog) {
+            char name_i[name_len+10];
+            strcpy(name_i,name);
+            if (several_structures) {
+                if (structure_options & FREESASA_SEPARATE_MODELS) 
+                    sprintf(name_i+strlen(name_i),":%d",i);
+                if (structure_options & FREESASA_SEPARATE_CHAINS) 
+                    sprintf(name_i+strlen(name_i),":%c",freesasa_structure_atom_chain(structures[i],0));
+            }
+            freesasa_log(stdout,result,name_i,&parameters,classes);
+            if (several_structures) printf("\n");
+        }
+        if (per_residue_type) {
+            if (several_structures) fprintf(per_residue_type_file,"\n## Structure %d\n",i);
+            freesasa_per_residue_type(per_residue_type_file,result,structures[i]);
+        }
+        if (per_residue) {
+            if (several_structures) fprintf(per_residue_file,"\n## Structure %d\n",i);
+            freesasa_per_residue(per_residue_file,result,structures[i]);
+        }
+        if (printpdb) {
+            freesasa_write_pdb(output_pdb,result,structures[i],radii);
+        }
+        freesasa_result_free(result);
+        freesasa_strvp_free(classes);
+        freesasa_structure_free(structures[i]);
+        free(radii);
     }
-    freesasa_result_free(result);
-    freesasa_strvp_free(classes);
-    freesasa_structure_free(structure);
-    free(radii);
+    if (structures != single_structure) free(structures);
 }
 
 int main (int argc, char **argv) {
@@ -203,7 +226,7 @@ int main (int argc, char **argv) {
     program_name = argv[0];
 #endif
     int option_index = 0;
-    while ((opt = getopt_long(argc, argv, "hvlwLSHYR::r::B::c:n:d:t:p:",
+    while ((opt = getopt_long(argc, argv, "hvlwLSHYCMmR::r::B::c:n:d:t:p:",
                               long_options, &option_index)) != -1) {
         errno = 0;
         opt_set[opt] = 1;
@@ -266,6 +289,15 @@ int main (int argc, char **argv) {
         case 'Y':
             structure_options |= FREESASA_INCLUDE_HYDROGEN;
             break;
+        case 'M':
+            structure_options |= FREESASA_SEPARATE_MODELS;
+            break;
+        case 'm':
+            structure_options |= FREESASA_JOIN_MODELS;
+            break;
+        case 'C':
+            structure_options |= FREESASA_SEPARATE_CHAINS;
+            break;
         case 'r':
             per_residue_type = 1;
             if (optarg) {
@@ -276,6 +308,8 @@ int main (int argc, char **argv) {
                     short_help();
                     exit(EXIT_FAILURE);
                 }
+            } else {
+                per_residue_type_file = stdout;
             }
             break;
         case 'R':
@@ -288,6 +322,8 @@ int main (int argc, char **argv) {
                     short_help();
                     exit(EXIT_FAILURE);
                 }
+            } else {
+                per_residue_file = stdout;
             }
             break;
         case 'B':
@@ -300,6 +336,8 @@ int main (int argc, char **argv) {
                     short_help();
                     exit(EXIT_FAILURE);
                 }
+            } else {
+                output_pdb = stdout;
             }
             break;
         case 't':
