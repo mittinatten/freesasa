@@ -37,6 +37,21 @@ function assert_fail
     fi
 }
 
+function assert_equal_opt
+{
+    tmp1=tmp/tmp1
+    tmp2=tmp/tmp2
+    eval $1 $2 > $tmp1 2>/dev/null
+    eval $1 $3 > $tmp2 2>/dev/null
+    diff $tmp1 $tmp2
+    if [[ $? -ne 0 ]]; then
+        echo Error: \"$1\" gives different results with arguments \"$2\" and \"$3\"
+        let errors=errors+1
+    else
+        echo \"$1\" gives same result with arguments \"$2\" and \"$3\". Success.
+    fi
+}
+
 if [[ ! -d tmp ]]; then mkdir tmp; fi
 
 rm -f tmp/*
@@ -150,6 +165,30 @@ assert_pass "$cli -t 1 -L < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -t 2 -L < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -t 10 -L < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli -t 0 < $datadir/1ubq.pdb > $dump"
+echo
+echo "== Testing long-options =="
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-h" "--help" 
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-v" "--version" 
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-S" "--shrake-rupley" 
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-L" "--lee-richards"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-p 1.5" "--probe-radius=1.5" 
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-L -d 0.1" "-L --lr-slice=0.1"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-n 20" "--sr-points=20"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-t 4" "--n-threads=4"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-c $sharedir/naccess.config" "--config-file=$sharedir/naccess.config"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-H -w" "--hetatm -w"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-Y" "--hydrogen"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-m" "--join-models"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-C" "--separate-chains"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-M" "--separate-models"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-l" "--no-log"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-w" "--no-warnings"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-r" "--sasa-per-residue-type"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-R" "--sasa-per-residue-sequence"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-B" "--print-as-B-values"
+
+rm -f tmp/*
+
 echo
 echo "There where $errors errors."
 echo

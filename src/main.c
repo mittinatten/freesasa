@@ -101,7 +101,7 @@ void help() {
     freesasa_srp_print_n_opt(stderr);
 #ifdef HAVE_LIBPTHREAD
     fprintf(stderr,
-            "\n  -t <value>  --n-threads=<value>\n"
+            "  -t <value>  --n-threads=<value>\n"
             "                        Number of threads to use in calculation.\n");
 #endif
     fprintf(stderr,
@@ -117,7 +117,7 @@ void help() {
             "  -C (--separate-chains) Calculate SASA for each chain separately.\n"
             "  -M (--separate-models) Calculate SASA for each MODEL separately.\n");
     fprintf(stderr,"\nOutput options:\n"
-            "  -l (--no-log)         Don't print log message\n"
+            "  -l (--no-log)         Don't print log message (useful with -r -R and -B)\n"
             "  -w (--no-warnings)    Don't print warnings\n"
             "  -r  --sasa-per-residue-type[=<output-file>]\n"
             "  -R  --sasa-per-residue-sequence[=<output-file>]\n"
