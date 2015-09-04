@@ -1,10 +1,8 @@
 if COND_GCOV
 AM_CFLAGS = --coverage
 AM_LDFLAGS = -lgcov
-GCOV_FILES = *.gcda *.gcno *.gcov
-else
-GCOV_FILES =
 endif
+GCOV_FILES = *.gcda *.gcno *.gcov
 
 bin_PROGRAMS = freesasa
 lib_LIBRARIES = libfreesasa.a
@@ -21,4 +19,4 @@ freesasa_LDADD = libfreesasa.a
 example_LDADD = libfreesasa.a
 
 
-CLEANFILES = $(GCOV_FILES)
+CLEANFILES = $(GCOV_FILES) *~
