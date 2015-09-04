@@ -68,8 +68,8 @@ static struct option long_options[] = {
     {"n-threads",required_argument, 0, 't'},
     {"hetatm",no_argument, 0, 'H'},
     {"hydrogen",no_argument, 0, 'Y'},
-    {"treat-chains-separately",no_argument, 0, 'C'},
-    {"treat-models-separately",no_argument, 0, 'M'},
+    {"separate-chains",no_argument, 0, 'C'},
+    {"separate-models",no_argument, 0, 'M'},
     {"join-models",no_argument, 0, 'm'},
     {"config-file",required_argument,0,'c'},
     {"sasa-per-residue-type",optional_argument,0,'r'},
@@ -80,52 +80,52 @@ static struct option long_options[] = {
 void help() {
     fprintf(stderr,"\nUsage: %s [-hvlwLHYCMmSR::r::B::c:n:d:t:p:] pdb-file(s)\n",
             program_name);
-    fprintf(stderr,
-            "\nOptions are:\n\n"
+    fprintf(stderr,"\n"
             "  -h (--help)           Print this message\n"
-            "  -v (--version)        Print version of the program\n"
-            "  -l (--no-log)         Don't print log message\n"
-            "  -w (--no-warnings)    Don't print warnings\n"
+            "  -v (--version)        Print version of the program\n");
+    fprintf(stderr,"\nSASA calculation parameters:\n"
             "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm [default]\n"
-            "  -L (--lee-richards)   Use Lee & Richards algorithm\n"
-            "  -H (--hetatm)         Include HETATM entries from input\n"
-            "  -Y (--hydrogen)       Include hydrogen atoms. Only makes sense in concjunction\n"
-            "                        with -c option. Default H radius is 0 Å.\n"
-            "  -C (--treat-chains-separately)  Calculate SASA for each chain in input separately.\n"
-            "                          Default is to join chains into one structure."
-            "  -M (--treat-models-separately)  Calculate SASA for each MODEL in input separately.\n"
-            "                          Default is to only use first MODEL in input."
-            "  -m (--join-models)    Join all MODELs in input into one big structure.");
+            "  -L (--lee-richards)   Use Lee & Richards algorithm\n");
     fprintf(stderr,
-            "\n  -c <file> (--config-file=<file>)\n"
-            "       Use atomic radii and classes provided in file\n");
+            "  -p <value>  --probe-radius=<value>\n"
+            "                        Probe radius [default %4.2f Å]\n"
+            "  -d <value>  --lr-slice=<value>\n"
+            "                        Slice spacing in Lee & Richards algorithm \n"
+            "                        [default %4.2f Å].\n",
+            FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_LR_D);
     fprintf(stderr,
-            "\n  -p <value>  --probe-radius=<value>\n"
-            "       Probe radius [default %4.2f Å].\n"
-            "\n  -d <value>  --lr-slice=<value>\n"
-            "       Slice spacing in Lee & Richards algorithm "
-            " [default %4.2f Å].\n"
-            ,FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_LR_D);
-    fprintf(stderr,
-            "\n  -n <value>  --sr-points=<value>\n"
-            "       Number of test points in Shrake & Rupley algorithm.\n"
-            "       Default is %d, allowed values are:\n"
-            "         ", FREESASA_DEF_SR_N);
+            "  -n <value>  --sr-points=<value>\n"
+            "                        Number of test points in Shrake & Rupley algorithm.\n"
+            "                        Default is %d, allowed values are:\n"
+            "                          ", FREESASA_DEF_SR_N);
     freesasa_srp_print_n_opt(stderr);
 #ifdef HAVE_LIBPTHREAD
     fprintf(stderr,
             "\n  -t <value>  --n-threads=<value>\n"
-            "       Number of threads to use in calculation.\n");
+            "                        Number of threads to use in calculation.\n");
 #endif
     fprintf(stderr,
-            "\n  -r  --sasa-per-residue-type[=<output-file>]\n"
+            "  -c <file> (--config-file=<file>)\n"
+            "                        Use atomic radii and classes provided in file\n");
+    fprintf(stderr,
+            "\nInput PDB:              (default: ignore HETATM and hydrogens, include all\n"
+            "                         chains of the first MODEL)\n"
+            "  -H (--hetatm)         Include HETATM entries from input\n"
+            "  -Y (--hydrogen)       Include hydrogen atoms. Only makes sense in concjunction\n"
+            "                        with -c option. Default H radius is 0 Å.\n"
+            "  -m (--join-models)    Join all MODELs in input into one big structure.\n"
+            "  -C (--separate-chains) Calculate SASA for each chain separately.\n"
+            "  -M (--separate-models) Calculate SASA for each MODEL separately.\n");
+    fprintf(stderr,"\nOutput options:\n"
+            "  -l (--no-log)         Don't print log message\n"
+            "  -w (--no-warnings)    Don't print warnings\n"
+            "  -r  --sasa-per-residue-type[=<output-file>]\n"
             "  -R  --sasa-per-residue-sequence[=<output-file>]\n"
-            "       Print SASA for each residue, either grouped by "
-            "type or sequentially.\n"
-            "       Writes to STDOUT if no output is specified.\n"
-            "\n  -B  --print-as-B-values[=<output-file>]\n"
-            "       Print PDB file with SASA for each atom as B-factors.\n"
-            "       Write to STDOUT if no output is specified.\n");
+            "                        Print SASA for each residue, either grouped by type or sequentially.\n"
+            "                        Writes to STDOUT if no output is specified.\n"
+            "  -B  --print-as-B-values[=<output-file>]\n"
+            "                        Print PDB file with SASA for each atom as B-factors.\n"
+            "                        Write to STDOUT if no output is specified.\n");
     fprintf(stderr,
             "\nIf no pdb-file is specified STDIN is used for input.\n\n");
 }
