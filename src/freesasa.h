@@ -208,8 +208,11 @@ typedef enum {
 #define FREESASA_FAIL -1 //!< Something went seriously wrong. @ingroup API
 #define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful @ingroup API
 
-#define FREESASA_INCLUDE_HETATM 1
-#define FREESASA_INCLUDE_HYDROGEN 2
+// Parameters for reading structure from PDB
+#define FREESASA_INCLUDE_HETATM 1 //! Include HETATM entries
+#define FREESASA_INCLUDE_HYDROGEN 2 //! Include hydrogen atoms
+#define FREESASA_INCLUDE_ALL_MODELS 4 //! Read MODELs as separate structures
+#define FREESASA_SEPARATE_CHAINS 8 //! Read separate chains as separate structures
 
 //! Struct to store parameters for SASA calculation @ingroup API
 typedef struct {
@@ -559,6 +562,34 @@ freesasa_structure* freesasa_structure_new(void);
 */
 freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
                                                 int options);
+
+/**
+    Init array of structures from PDB.
+    
+    Either iniatilize one structure per model in multimodel PDB, or
+    one per chain, or both. Otherwise equivalent to
+    freesasa_structure_from_pdb(). 
+
+    Still experimental.
+
+    @param pdb Input PDB-file.  
+    
+    @param n Number of structures found are written to this integer.
+    
+    @param options Bitfield. 0 means only use non-hydrogen `ATOM`
+      entries. ::FREESASA_INCLUDE_HETATM and
+      ::FREESASA_INCLUDE_HYDROGEN can be used to include more
+      atoms. ::FREESASA_INCLUDE_MODELS_ALL_MODELS and
+      ::FREESASA_SEPARATE_CHAINS can be used to generate one structure
+      per model and one structure per chain, respectively.  All four
+      options can be combined using `|`, analogously to
+      freesasa_structure_from_pdb().
+      
+    @ingroup StructureAPI
+ */
+freesasa_structure** freesasa_structure_array(FILE *pdb,
+                                              int *n,
+                                              int options);
 
 /**
     Add individual atom to structure.

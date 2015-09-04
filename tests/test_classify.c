@@ -168,6 +168,7 @@ const struct atom atoms[n_atom_types] = {
 START_TEST (test_radius)
 {
     char buf[50];
+    freesasa_set_verbosity(FREESASA_V_SILENT); // the X and Y atoms give warnings
     for (int i = 0; i < n_atom_types; ++i) {
         const struct atom a = atoms[i];
         int oons_type = freesasa_classify_oons(a.a,a.b);
@@ -179,7 +180,6 @@ START_TEST (test_radius)
         // make sure all regular atoms are given OONS-radii
         ck_assert(fabs(r1-r2) < 1e-10);
     }
-    freesasa_set_verbosity(FREESASA_V_SILENT);
     // non OONS-atoms
     ck_assert(fabs(freesasa_classify_radius("XXX"," C  ") - 1.7) < 1e-10);
     ck_assert(fabs(freesasa_classify_radius("XXX"," N  ") - 1.55) < 1e-10 );

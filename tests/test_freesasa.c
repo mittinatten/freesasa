@@ -407,6 +407,49 @@ START_TEST (test_multi_calc)
 }
 END_TEST
 
+// test an NMR structure with hydrogens and several models
+START_TEST (test_1d3z) 
+{
+    FILE *pdb = fopen(DATADIR "1d3z.pdb","r");
+    int n = 0;
+    freesasa_structure* st = freesasa_structure_from_pdb(pdb,0);
+    double *radii = freesasa_structure_radius(st,NULL);
+    freesasa_result *result = freesasa_calc_structure(st,radii,NULL);
+    ck_assert(freesasa_structure_n(st) == 602);
+    ck_assert(fabs(result->total - 4895.902916) < 1e-5);
+    free(radii);
+    rewind(pdb);
+    
+    st = freesasa_structure_from_pdb(pdb,FREESASA_INCLUDE_HYDROGEN);
+    radii = freesasa_structure_radius(st,NULL);
+    result = freesasa_calc_structure(st,radii,NULL);
+    ck_assert(freesasa_structure_n(st) == 1231);
+    // Hydrogens too small to affect total area
+    ck_assert(fabs(result->total - 4895.902916) < 1e-5);
+    free(radii);
+    rewind(pdb);
+
+    freesasa_structure** ss = freesasa_structure_array(pdb,&n,FREESASA_INCLUDE_ALL_MODELS);
+    ck_assert(n == 10);
+    radii = freesasa_structure_radius(ss[0],NULL);
+    result = freesasa_calc_structure(ss[0],radii,NULL);
+    ck_assert(freesasa_structure_n(ss[0]) == 602);
+    ck_assert(fabs(result->total - 4895.902916) < 1e-5);
+    for (int i = 0; i < n; ++i) {
+        double *r2 = freesasa_structure_radius(ss[i],NULL);
+        ck_assert(r2 != NULL);
+        for (int j = 0; j < 602; ++j) {
+            ck_assert(fabs(r2[j] - radii[j]) < 1e-10);
+        }
+        freesasa_structure_free(ss[i]);
+        free(r2);
+    }
+    free(ss);
+    freesasa_result_free(result);
+    freesasa_structure_free(st);
+    fclose(pdb);
+}
+END_TEST
 
 Suite *sasa_suite()
 {
@@ -435,7 +478,10 @@ Suite *sasa_suite()
     tcase_add_test(tc_sr, test_sasa_1ubq);
 
     TCase *tc_trimmed = tcase_create("Trimmed PDB file");
-    tcase_add_test(tc_basic, test_trimmed_pdb);
+    tcase_add_test(tc_trimmed, test_trimmed_pdb);
+
+    TCase *tc_1d3z = tcase_create("NMR PDB-file 1D3Z (several models, hydrogens)");
+    tcase_add_test(tc_1d3z,test_1d3z);
 
     suite_add_tcase(s, tc_basic);
     suite_add_tcase(s, tc_lr_basic);
@@ -443,6 +489,7 @@ Suite *sasa_suite()
     suite_add_tcase(s, tc_lr);
     suite_add_tcase(s, tc_sr);
     suite_add_tcase(s, tc_trimmed);
+    suite_add_tcase(s, tc_1d3z);
 
 #if HAVE_LIBPTHREAD
     printf("Using pthread\n");
