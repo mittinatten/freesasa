@@ -214,7 +214,6 @@ START_TEST (test_structure_array)
     ck_assert(n == 10);
     for (int i = 0; i < n; ++i) {
         ck_assert(ss[i] != NULL);
-        fprintf(stderr,"%d\n",freesasa_structure_n(ss[i]));
         ck_assert(freesasa_structure_n(ss[i]) == 286*4);
         freesasa_structure_free(ss[i]);
     }
@@ -228,7 +227,6 @@ START_TEST (test_structure_array)
     ck_assert(n == 10*4);
     for (int i = 0; i < n; ++i) {
         ck_assert(ss[i] != NULL);
-        fprintf(stderr,"%d\n",freesasa_structure_n(ss[i]));
         ck_assert(freesasa_structure_n(ss[i]) == 286);
         freesasa_structure_free(ss[i]);
     }

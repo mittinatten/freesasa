@@ -93,7 +93,14 @@
     using freesasa_classifier_from_file() (see @ref Config-file).
 
     The default classifier is available as a global const variable
-    ::freesasa_default_classifier.
+    ::freesasa_default_classifier. This uses the classes and radii,
+    defined in the paper by Ooi et al.  ([PNAS 1987, 84:
+    3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/)) for
+    the standard amino acids and also for some capping groups
+    (ACE/NH2) if HETATM fields are included when the PDB input is
+    read. For other residues such as Nucleic Acids or nonstandard
+    amino acids, or unrecognized HETATM entries the VdW radius of
+    the element is used. Warnings are emitted in this case.
 
     @subsubsection Config-file Classifier configuration files
 

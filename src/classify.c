@@ -36,6 +36,7 @@ static const char *residue_names[] = {
     "MET","PHE","PRO","SER",
     "THR","TRP","TYR","VAL",
     "CSE","ASX","GLX",
+    "ACE","NH2",
     "UNK",
     //DNA
     "DA","DC","DG","DT","DU","DI",
@@ -43,6 +44,7 @@ static const char *residue_names[] = {
     "A","C","G","U","I","T",
     //General nuceleotide
     "N"
+        
 };
 
 
@@ -322,6 +324,18 @@ static int classify_oons_cse(const char* a)
     return freesasa_oons_unknown;
 }
 
+static int classify_oons_nh2(const char* a) 
+{
+    if (a[1] == 'N' && a[2] == 'H' && a[3] == '2') return freesasa_amide_N;
+    return freesasa_oons_unknown;
+}
+
+static int classify_oons_ace(const char* a)
+{
+    if (a[1] == 'C' && a[2] == 'H' && a[3] == '3') return freesasa_aliphatic_C;
+    return freesasa_oons_unknown;
+}
+
 /** Main OONS function */
 int freesasa_classify_oons(const char *res_name, const char *a)
 {
@@ -379,6 +393,8 @@ int freesasa_classify_oons(const char *res_name, const char *a)
     case freesasa_ASX: return classify_oons_ND(a);
     case freesasa_GLX: return classify_oons_QE(a);
     case freesasa_CSE: return classify_oons_cse(a);
+    case freesasa_ACE: return classify_oons_ace(a);
+    case freesasa_NH2: return classify_oons_nh2(a);
     default:
         return freesasa_oons_unknown;
     }
