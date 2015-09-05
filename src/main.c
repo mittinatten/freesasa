@@ -184,6 +184,7 @@ void run_analysis(FILE *input, const char *name) {
             char name_i[name_len+10];
             strcpy(name_i,name);
             if (several_structures) {
+                printf("\n");
                 if (structure_options & FREESASA_SEPARATE_MODELS) 
                     sprintf(name_i+strlen(name_i),":%d",freesasa_structure_model(structures[i]));
                 if (structure_options & FREESASA_SEPARATE_CHAINS) 
@@ -371,7 +372,12 @@ int main (int argc, char **argv) {
                 "not compatible with the selected algorithm. These will be ignored.\n",
                 program_name);
     }
-
+    if (opt_set['m'] && opt_set['M']) {
+        fprintf(stderr, "%s: error: The options -m and -M can't be combined.\n",
+                program_name);
+        exit(EXIT_FAILURE);
+    }
+    if (printlog) printf("## %s %s ##\n",program_name,version);
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {
             errno = 0;

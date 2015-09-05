@@ -255,7 +255,6 @@ int freesasa_log(FILE *log,
     // return value. 
     errno = 0;
 
-    fprintf(log,"## %s %s ##\n",freesasa_name,freesasa_version);
     if (name == NULL) fprintf(log,"name: unknown\n");
     else              fprintf(log,"name: %s\n",name);
 

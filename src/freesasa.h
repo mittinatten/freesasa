@@ -216,11 +216,11 @@ typedef enum {
 #define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful @ingroup API
 
 // Parameters for reading structure from PDB
-#define FREESASA_INCLUDE_HETATM 1 //! Include HETATM entries
-#define FREESASA_INCLUDE_HYDROGEN 2 //! Include hydrogen atoms
-#define FREESASA_SEPARATE_MODELS 4 //! Read MODELs as separate structures
-#define FREESASA_SEPARATE_CHAINS 8 //! Read separate chains as separate structures
-#define FREESASA_JOIN_MODELS 16 //! Read MODELs as part of one big structure
+#define FREESASA_INCLUDE_HETATM 1 //!< Include HETATM entries
+#define FREESASA_INCLUDE_HYDROGEN 2 //!< Include hydrogen atoms
+#define FREESASA_SEPARATE_MODELS 4 //!< Read MODELs as separate structures
+#define FREESASA_SEPARATE_CHAINS 8 //!< Read separate chains as separate structures
+#define FREESASA_JOIN_MODELS 16 //!< Read MODELs as part of one big structure
 
 //! Struct to store parameters for SASA calculation @ingroup API
 typedef struct {
@@ -582,7 +582,9 @@ freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
     one per chain, or both. Otherwise equivalent to
     freesasa_structure_from_pdb(). 
 
-    Still experimental.
+    Returns dynamically allocated array of size n. Its members should
+    be freed using freesasa_structure_free() and the array itself with
+    free().
 
     @param pdb Input PDB-file.  
     

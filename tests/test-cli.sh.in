@@ -99,7 +99,11 @@ assert_pass "grep 'Total:\s\s*4895.90 A2' $dump"
 assert_pass "$cli -H -w $datadir/1ubq.pdb > $dump" # suppress warnings here
 assert_pass "grep 'n_atoms: 660' $dump"
 assert_pass "grep 'Total:\s\s*5607.72 A2' $dump"
-
+#check parameter errors
+assert_pass "$cli -n 500 < $datadir/1ubq.pdb > $dump"
+assert_fail "$cli -n 501 < $datadir/1ubq.pdb > $dump"
+echo
+echo "== Testing -m -M and -C options =="
 assert_pass "$cli -M $datadir/1d3z.pdb > $dump"
 n_mod=`grep 1d3z.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 10"
@@ -118,11 +122,7 @@ assert_pass "test $n_mod -eq 4"
 assert_pass "$cli -M -C  $datadir/2jo4.pdb > $dump"
 n_mod=`grep 2jo4.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 40"
-
-echo
-#check parameter errors
-assert_pass "$cli -n 500 < $datadir/1ubq.pdb > $dump"
-assert_fail "$cli -n 501 < $datadir/1ubq.pdb > $dump"
+assert_fail "$cli -mM $datadir/2jo4.pdb > $dump"
 echo
 echo "== Testing L&R =="
 assert_pass "$cli -L < $datadir/1ubq.pdb > $dump"
