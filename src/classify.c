@@ -36,6 +36,7 @@ static const char *residue_names[] = {
     "MET","PHE","PRO","SER",
     "THR","TRP","TYR","VAL",
     "CSE","ASX","GLX",
+    "ACE","NH2",
     "UNK",
     //DNA
     "DA","DC","DG","DT","DU","DI",
@@ -43,6 +44,7 @@ static const char *residue_names[] = {
     "A","C","G","U","I","T",
     //General nuceleotide
     "N"
+        
 };
 
 
@@ -112,6 +114,8 @@ const freesasa_classifier freesasa_residue_classifier = {
   
 double freesasa_classify_radius(const char *res_name, const char *atom_name)
 {
+    if (freesasa_classify_element(atom_name) == freesasa_hydrogen) 
+        return freesasa_classify_element_radius(freesasa_hydrogen);
     int res = freesasa_classify_residue(res_name);
     if (freesasa_classify_is_aminoacid(res)) {
         return freesasa_classify_oons_radius(freesasa_classify_oons(res_name,
@@ -215,6 +219,7 @@ int freesasa_classify_element(const char *atom_name)
         case 'N': return freesasa_nitrogen;
         case 'S': return freesasa_sulfur;
         case 'P': return freesasa_phosphorus;
+        case 'H': return freesasa_hydrogen;
             // what about Se?
         default:
             freesasa_warn("%s: atom '%s' unknown.\n",__func__,atom_name);
@@ -252,7 +257,7 @@ double freesasa_classify_element_radius(int element)
     case freesasa_sulfur: return 1.8;
     case freesasa_phosphorus: return 1.8;
     case freesasa_selenium: return 1.9;
-        //case freesasa_hydrogen: return 1.2;
+    case freesasa_hydrogen: return 0.0; // the exception
     case freesasa_element_unknown:
     default:
         return 0.0;
@@ -319,6 +324,18 @@ static int classify_oons_cse(const char* a)
     return freesasa_oons_unknown;
 }
 
+static int classify_oons_nh2(const char* a) 
+{
+    if (a[1] == 'N' && a[2] == 'H' && a[3] == '2') return freesasa_amide_N;
+    return freesasa_oons_unknown;
+}
+
+static int classify_oons_ace(const char* a)
+{
+    if (a[1] == 'C' && a[2] == 'H' && a[3] == '3') return freesasa_aliphatic_C;
+    return freesasa_oons_unknown;
+}
+
 /** Main OONS function */
 int freesasa_classify_oons(const char *res_name, const char *a)
 {
@@ -376,6 +393,8 @@ int freesasa_classify_oons(const char *res_name, const char *a)
     case freesasa_ASX: return classify_oons_ND(a);
     case freesasa_GLX: return classify_oons_QE(a);
     case freesasa_CSE: return classify_oons_cse(a);
+    case freesasa_ACE: return classify_oons_ace(a);
+    case freesasa_NH2: return classify_oons_nh2(a);
     default:
         return freesasa_oons_unknown;
     }

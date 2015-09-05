@@ -93,7 +93,14 @@
     using freesasa_classifier_from_file() (see @ref Config-file).
 
     The default classifier is available as a global const variable
-    ::freesasa_default_classifier.
+    ::freesasa_default_classifier. This uses the classes and radii,
+    defined in the paper by Ooi et al.  ([PNAS 1987, 84:
+    3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/)) for
+    the standard amino acids and also for some capping groups
+    (ACE/NH2) if HETATM fields are included when the PDB input is
+    read. For other residues such as Nucleic Acids or nonstandard
+    amino acids, or unrecognized HETATM entries the VdW radius of
+    the element is used. Warnings are emitted in this case.
 
     @subsubsection Config-file Classifier configuration files
 
@@ -199,7 +206,6 @@ typedef enum {
     FREESASA_NUCLEICACID, FREESASA_CLASS_UNKNOWN
 } freesasa_class;
 
-
 // Default parameters
 #define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångström) @ingroup API
 #define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R @ingroup API
@@ -208,6 +214,13 @@ typedef enum {
 #define FREESASA_SUCCESS 0 //!< All is ok @ingroup API
 #define FREESASA_FAIL -1 //!< Something went seriously wrong. @ingroup API
 #define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful @ingroup API
+
+// Parameters for reading structure from PDB
+#define FREESASA_INCLUDE_HETATM 1 //!< Include HETATM entries
+#define FREESASA_INCLUDE_HYDROGEN 2 //!< Include hydrogen atoms
+#define FREESASA_SEPARATE_MODELS 4 //!< Read MODELs as separate structures
+#define FREESASA_SEPARATE_CHAINS 8 //!< Read separate chains as separate structures
+#define FREESASA_JOIN_MODELS 16 //!< Read MODELs as part of one big structure
 
 //! Struct to store parameters for SASA calculation @ingroup API
 typedef struct {
@@ -535,24 +548,62 @@ freesasa_structure* freesasa_structure_new(void);
     Automatically skips hydrogens. If an atom has alternative
     coordinates, only the first alternative is used. If a file has
     more than one `MODEL` (as in NMR structures) only the first model
-    is used. User specifies if `HETATM` entries should be included. If
-    non-default behavior is wanted, the PDB-file needs to be modified
-    before calling this function, or atoms can be added manually one
-    by one using freesasa_structure_add_atom().
+    is used. User specifies if `HETATM` entries and/or hydrogen atoms
+    should be included. It is also possible to specify that all MODELs
+    should be joined to one large structure. If more fine-grained
+    control over which atoms to include is needed, the PDB-file needs
+    to be modified before calling this function, or atoms can be added
+    manually one by one using freesasa_structure_add_atom().
 
     Return value is dynamically allocated, should be freed with
     freesasa_structure_free().
 
     @param pdb Input PDB-file.
-    @param include_hetatm The value 0 means only read `ATOM` entries, 1
-    means also include `HETATM` entries.
-    @return The generated structure. Returns `NULL` and prints error if
-    input is invalid.
+    @param options Bitfield. 0 means only use non-hydrogen `ATOM`
+      entries, first MODEL only. ::FREESASA_INCLUDE_HETATM and
+      ::FREESASA_INCLUDE_HYDROGEN can be used to include more
+      atoms. ::FREESASA_JOIN_MODELS can be used if input has several
+      models that should be considered part of the same structure. The
+      options can be included using `|`, for example
+      `FREESASA_INCLUDE_HETATM | FREESASA_INCLUDE_HYDROGEN` means
+      include both hydrogens and HETATMs.
+    @return The generated structure. Returns `NULL` and prints error
+      if input is invalid.
 
     @ingroup StructureAPI
 */
 freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
-                                                int include_hetatm);
+                                                int options);
+
+/**
+    Init array of structures from PDB.
+    
+    Either iniatilize one structure per model in multimodel PDB, or
+    one per chain, or both. Otherwise equivalent to
+    freesasa_structure_from_pdb(). 
+
+    Returns dynamically allocated array of size n. Its members should
+    be freed using freesasa_structure_free() and the array itself with
+    free().
+
+    @param pdb Input PDB-file.  
+    
+    @param n Number of structures found are written to this integer.
+    
+    @param options Bitfield. 0 means only use non-hydrogen `ATOM`
+      entries. ::FREESASA_INCLUDE_HETATM and
+      ::FREESASA_INCLUDE_HYDROGEN can be used to include more
+      atoms. ::FREESASA_SEPARATE_MODELS and
+      ::FREESASA_SEPARATE_CHAINS can be used to generate one structure
+      per model and one structure per chain, respectively.  All four
+      options can be combined using `|`, analogously to
+      freesasa_structure_from_pdb().
+      
+    @ingroup StructureAPI
+ */
+freesasa_structure** freesasa_structure_array(FILE *pdb,
+                                              int *n,
+                                              int options);
 
 /**
     Add individual atom to structure.
@@ -624,6 +675,7 @@ void freesasa_structure_free(freesasa_structure* structure);
 double* freesasa_structure_radius(const freesasa_structure *structure,
                                   const freesasa_classifier *classifier);
 
+
 /**
     Get atom name
 
@@ -671,6 +723,15 @@ const char* freesasa_structure_atom_res_number(const freesasa_structure *s,
  */
 char freesasa_structure_atom_chain(const freesasa_structure *s, int i);
 
+/**
+    Get model number for structure.
+
+    Useful if structure was generated with freesasa_structure_array().
+
+    @param structure The structure.  
+    @return The model number. 0 means no model number has been read.
+ */
+int freesasa_structure_model(const freesasa_structure *structure);
 
 #ifdef __cplusplus
 }

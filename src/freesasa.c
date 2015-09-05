@@ -255,9 +255,10 @@ int freesasa_log(FILE *log,
     // return value. 
     errno = 0;
 
-    fprintf(log,"## %s %s ##\n",freesasa_name,freesasa_version);
     if (name == NULL) fprintf(log,"name: unknown\n");
     else              fprintf(log,"name: %s\n",name);
+
+    fprintf(log,"n_atoms: %d\n",result->n_atoms);
 
     fprintf(log,"algorithm: %s\nprobe-radius: %f A\n",
             freesasa_alg_names[p->alg],

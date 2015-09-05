@@ -58,7 +58,7 @@ const char *other_aa[n_other] = {"GLX", "ASX", "CSE"};
 const char *nuc[n_nuc] = {"DA","DC","DG","DT","DU","DI","A","C","G","T","U","I","N"};
 
 
-#define n_atom_types 218
+#define n_atom_types 222
 const struct atom atoms[n_atom_types] = {
     {"ALA"," C  ",car_C,POL}, {"ALA"," O  ",car_O,POL}, {"ALA"," CA ",ali_C,APO},
     {"ALA"," N  ",ami_N,POL}, {"ALA"," CB ",ali_C,APO}, {"ALA"," X  ",r_unk,UNK},
@@ -162,12 +162,16 @@ const struct atom atoms[n_atom_types] = {
     {"CSE"," N  ",ami_N,POL}, {"CSE"," CB ",ali_C,APO}, {"CSE"," SE ",sele,POL},
     {"CSE"," X  ",r_unk,UNK},
 // 218
+    {"ACE"," C  ",car_C,POL}, {"ACE"," O  ",car_O,POL}, {"ACE"," CH3",ali_C,APO},
+    {"NH2"," NH2",ami_N,POL}
+// 222
 };
 
 // tests freesasa_classify_radius() and freesasa_classify_oons_radius()
 START_TEST (test_radius)
 {
     char buf[50];
+    freesasa_set_verbosity(FREESASA_V_SILENT); // the X and Y atoms give warnings
     for (int i = 0; i < n_atom_types; ++i) {
         const struct atom a = atoms[i];
         int oons_type = freesasa_classify_oons(a.a,a.b);
@@ -179,7 +183,6 @@ START_TEST (test_radius)
         // make sure all regular atoms are given OONS-radii
         ck_assert(fabs(r1-r2) < 1e-10);
     }
-    freesasa_set_verbosity(FREESASA_V_SILENT);
     // non OONS-atoms
     ck_assert(fabs(freesasa_classify_radius("XXX"," C  ") - 1.7) < 1e-10);
     ck_assert(fabs(freesasa_classify_radius("XXX"," N  ") - 1.55) < 1e-10 );

@@ -131,7 +131,115 @@ START_TEST (test_pdb)
         fclose(pdb);
         freesasa_structure_free(s);
     }
-    freesasa_set_verbosity(0);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+}
+END_TEST
+
+START_TEST (test_hydrogen) 
+{
+    FILE *pdb = fopen(DATADIR "1d3z.pdb","r");
+    ck_assert(pdb != NULL);
+    freesasa_structure* s = freesasa_structure_from_pdb(pdb,0);
+    ck_assert(s != NULL);
+    ck_assert(freesasa_structure_n(s) == 602);
+    freesasa_structure_free(s);
+    rewind(pdb);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    s = freesasa_structure_from_pdb(pdb,FREESASA_INCLUDE_HYDROGEN);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+    ck_assert(s != NULL);
+    ck_assert(freesasa_structure_n(s) == 1231);
+    freesasa_structure_free(s);
+    fclose(pdb);
+}
+END_TEST
+
+START_TEST (test_hetatm) 
+{
+    FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
+    ck_assert(pdb != NULL);
+    freesasa_set_verbosity(FREESASA_V_SILENT); // unknown atoms warnings suppressed
+    freesasa_structure* s = freesasa_structure_from_pdb(pdb,FREESASA_INCLUDE_HETATM);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+    ck_assert(s != NULL);
+    ck_assert(freesasa_structure_n(s) == 660);
+    freesasa_structure_free(s);
+    fclose(pdb);
+}
+END_TEST
+
+START_TEST (test_structure_array)
+{
+    FILE *pdb = fopen(DATADIR "1d3z.pdb","r");
+    ck_assert(pdb != NULL);
+    int n = 0;
+    freesasa_structure** ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_MODELS);
+        
+    ck_assert(ss != NULL);
+    ck_assert(n == 10);
+
+    for (int i = 0; i < n; ++i) {
+        ck_assert(ss[i] != NULL);
+        ck_assert(freesasa_structure_n(ss[i]) == 602);
+        freesasa_structure_free(ss[i]);
+    }
+    free(ss);
+
+    rewind(pdb);
+    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_CHAINS);
+    ck_assert(ss != NULL);
+    ck_assert(n == 1);
+    ck_assert(ss[0] != NULL);
+    ck_assert(freesasa_structure_n(ss[0]) == 602);
+    free(ss);
+    free(ss[0]);
+    
+    rewind(pdb);
+    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_CHAINS | FREESASA_SEPARATE_MODELS |
+                                  FREESASA_INCLUDE_HYDROGEN);
+    ck_assert(ss != NULL);
+    ck_assert(n == 10);
+    for (int i = 0; i < n; ++i) {
+        ck_assert(ss[i] != NULL);
+        ck_assert(freesasa_structure_n(ss[i]) == 1231);
+        freesasa_structure_free(ss[i]);
+    }
+    free(ss);
+
+    fclose(pdb);
+    pdb = fopen(DATADIR "2jo4.pdb", "r");
+    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_MODELS |
+                                  FREESASA_INCLUDE_HETATM | FREESASA_INCLUDE_HYDROGEN);
+    ck_assert(ss != NULL);
+    ck_assert(n == 10);
+    for (int i = 0; i < n; ++i) {
+        ck_assert(ss[i] != NULL);
+        ck_assert(freesasa_structure_n(ss[i]) == 286*4);
+        freesasa_structure_free(ss[i]);
+    }
+    free(ss);
+
+    rewind(pdb);
+    pdb = fopen(DATADIR "2jo4.pdb", "r");
+    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_MODELS | FREESASA_SEPARATE_CHAINS |
+                                  FREESASA_INCLUDE_HETATM | FREESASA_INCLUDE_HYDROGEN);
+    ck_assert(ss != NULL);
+    ck_assert(n == 10*4);
+    for (int i = 0; i < n; ++i) {
+        ck_assert(ss[i] != NULL);
+        ck_assert(freesasa_structure_n(ss[i]) == 286);
+        freesasa_structure_free(ss[i]);
+    }
+    free(ss);
+
+    rewind(pdb);
+    freesasa_structure *s = freesasa_structure_from_pdb(pdb,FREESASA_INCLUDE_HETATM | 
+                                                        FREESASA_INCLUDE_HYDROGEN |
+                                                        FREESASA_JOIN_MODELS);
+    ck_assert(s != NULL);
+    ck_assert(freesasa_structure_n(s) == 286*4*10);
+    freesasa_structure_free(s);
+    fclose(pdb);
 }
 END_TEST
 
@@ -143,6 +251,9 @@ Suite* structure_suite() {
 
     TCase *tc_pdb = tcase_create("PDB");
     tcase_add_test(tc_pdb,test_pdb);
+    tcase_add_test(tc_pdb,test_hydrogen);
+    tcase_add_test(tc_pdb,test_hetatm);
+    tcase_add_test(tc_pdb,test_structure_array);
 
     TCase *tc_1ubq = tcase_create("1UBQ");
     tcase_add_checked_fixture(tc_1ubq,setup_1ubq,teardown_1ubq);

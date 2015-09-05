@@ -43,3 +43,4 @@ doc/doxygen
 bindings/python/*.c
 doc/html/
 tests/libtest
+tests/test-cli.sh

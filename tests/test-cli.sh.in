@@ -1,3 +1,4 @@
+#!/bin/bash
 
 # The tests here mainly check that errors are caught and that
 # execution is successful in normal cases. For some cases the output
@@ -37,6 +38,21 @@ function assert_fail
     fi
 }
 
+function assert_equal_opt
+{
+    tmp1=tmp/tmp1
+    tmp2=tmp/tmp2
+    eval $1 $2 > $tmp1 2>/dev/null
+    eval $1 $3 > $tmp2 2>/dev/null
+    diff $tmp1 $tmp2
+    if [[ $? -ne 0 ]]; then
+        echo Error: \"$1\" gives different results with arguments \"$2\" and \"$3\"
+        let errors=errors+1
+    else
+        echo \"$1\" gives same result with arguments \"$2\" and \"$3\". Success.
+    fi
+}
+
 if [[ ! -d tmp ]]; then mkdir tmp; fi
 
 rm -f tmp/*
@@ -65,6 +81,7 @@ assert_pass "grep '## FreeSASA $version ##' $dump"
 assert_pass "grep 'name: stdin' $dump"
 $cli $datadir/1ubq.pdb > $dump
 assert_pass "grep 'name: $datadir/1ubq.pdb' $dump"
+assert_pass "grep 'n_atoms: 602' $dump"
 assert_pass "grep 'probe-radius: \d' $dump"
 assert_pass "grep 'n_thread: \d' $dump"
 assert_pass "grep 'n_testpoint: \d' $dump"
@@ -76,11 +93,36 @@ assert_pass "grep 'Apolar:\s\s*2527.63 A2' $dump"
 # whitespace, and also version. Allows non-essential details to change
 # without breaking the test. Will not be performed for variant
 # parameter values, those should be covered by tests.
-
-echo
+assert_pass "$cli -Y $datadir/1d3z.pdb > $dump"
+assert_pass "grep 'n_atoms: 1231' $dump"
+assert_pass "grep 'Total:\s\s*4895.90 A2' $dump"
+assert_pass "$cli -H -w $datadir/1ubq.pdb > $dump" # suppress warnings here
+assert_pass "grep 'n_atoms: 660' $dump"
+assert_pass "grep 'Total:\s\s*5607.72 A2' $dump"
 #check parameter errors
 assert_pass "$cli -n 500 < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli -n 501 < $datadir/1ubq.pdb > $dump"
+echo
+echo "== Testing -m -M and -C options =="
+assert_pass "$cli -M $datadir/1d3z.pdb > $dump"
+n_mod=`grep 1d3z.pdb $dump | wc -l`
+assert_pass "test $n_mod -eq 10"
+assert_pass "$cli -C $datadir/1d3z.pdb > $dump"
+n_mod=`grep 1d3z.pdb $dump | wc -l`
+assert_pass "test $n_mod -eq 1"
+assert_pass "$cli -M -C $datadir/1d3z.pdb > $dump"
+n_mod=`grep 1d3z.pdb $dump | wc -l`
+assert_pass "test $n_mod -eq 10"
+assert_pass "$cli -M $datadir/2jo4.pdb > $dump"
+n_mod=`grep 2jo4.pdb $dump | wc -l`
+assert_pass "test $n_mod -eq 10"
+assert_pass "$cli -C $datadir/2jo4.pdb > $dump"
+n_mod=`grep 2jo4.pdb $dump | wc -l`
+assert_pass "test $n_mod -eq 4"
+assert_pass "$cli -M -C  $datadir/2jo4.pdb > $dump"
+n_mod=`grep 2jo4.pdb $dump | wc -l`
+assert_pass "test $n_mod -eq 40"
+assert_fail "$cli -mM $datadir/2jo4.pdb > $dump"
 echo
 echo "== Testing L&R =="
 assert_pass "$cli -L < $datadir/1ubq.pdb > $dump"
@@ -124,6 +166,30 @@ assert_pass "$cli -t 1 -L < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -t 2 -L < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -t 10 -L < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli -t 0 < $datadir/1ubq.pdb > $dump"
+echo
+echo "== Testing long-options =="
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-h" "--help" 
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-v" "--version" 
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-S" "--shrake-rupley" 
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-L" "--lee-richards"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-p 1.5" "--probe-radius=1.5" 
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-L -d 0.1" "-L --lr-slice=0.1"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-n 20" "--sr-points=20"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-t 4" "--n-threads=4"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-c $sharedir/naccess.config" "--config-file=$sharedir/naccess.config"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-H -w" "--hetatm -w"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-Y" "--hydrogen"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-m" "--join-models"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-C" "--separate-chains"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-M" "--separate-models"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-l" "--no-log"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-w" "--no-warnings"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-r" "--sasa-per-residue-type"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-R" "--sasa-per-residue-sequence"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-B" "--print-as-B-values"
+
+rm -f tmp/*
+
 echo
 echo "There where $errors errors."
 echo
