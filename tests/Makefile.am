@@ -6,10 +6,9 @@ TESTS = run-test-cli.sh
 if COND_GCOV
 AM_CFLAGS = --coverage
 AM_LDFLAGS = -lgcov
-GCOV_FILES = *.gcda *.gcno *.gcov
-else
-GCOV_FILES = 
 endif
+
+GCOV_FILES = *.gcda *.gcno *.gcov
 
 if USE_CHECK
 
@@ -23,6 +22,7 @@ libtest_CFLAGS = -I$(top_srcdir)/src $(AM_CFLAGS) \
 
 libtest_LDADD = ../src/libfreesasa.a -lcheck
 
-CLEANFILES = tmp/*  $(GCOV_FILES)
+endif 
 
-endif
+CLEANFILES = tmp/*  $(GCOV_FILES) *~
+
