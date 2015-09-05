@@ -549,20 +549,24 @@ freesasa_structure* freesasa_structure_new(void);
     coordinates, only the first alternative is used. If a file has
     more than one `MODEL` (as in NMR structures) only the first model
     is used. User specifies if `HETATM` entries and/or hydrogen atoms
-    should be included. If non-default behavior is wanted, the
-    PDB-file needs to be modified before calling this function, or
-    atoms can be added manually one by one using
-    freesasa_structure_add_atom().
+    should be included. It is also possible to specify that all MODELs
+    should be joined to one large structure. If more fine-grained
+    control over which atoms to include is needed, the PDB-file needs
+    to be modified before calling this function, or atoms can be added
+    manually one by one using freesasa_structure_add_atom().
 
     Return value is dynamically allocated, should be freed with
     freesasa_structure_free().
 
     @param pdb Input PDB-file.
     @param options Bitfield. 0 means only use non-hydrogen `ATOM`
-      entries. ::FREESASA_INCLUDE_HETATM and ::FREESASA_INCLUDE_HYDROGEN
-      can be used to include more atoms. 
-      `FREESASA_INCLUDE_HETATM | FREESASA_INCLUDE_HYDROGEN` means include 
-      both.
+      entries, first MODEL only. ::FREESASA_INCLUDE_HETATM and
+      ::FREESASA_INCLUDE_HYDROGEN can be used to include more
+      atoms. ::FREESASA_JOIN_MODELS can be used if input has several
+      models that should be considered part of the same structure. The
+      options can be included using `|`, for example
+      `FREESASA_INCLUDE_HETATM | FREESASA_INCLUDE_HYDROGEN` means
+      include both hydrogens and HETATMs.
     @return The generated structure. Returns `NULL` and prints error
       if input is invalid.
 
@@ -669,6 +673,7 @@ void freesasa_structure_free(freesasa_structure* structure);
 double* freesasa_structure_radius(const freesasa_structure *structure,
                                   const freesasa_classifier *classifier);
 
+
 /**
     Get atom name
 
@@ -716,6 +721,15 @@ const char* freesasa_structure_atom_res_number(const freesasa_structure *s,
  */
 char freesasa_structure_atom_chain(const freesasa_structure *s, int i);
 
+/**
+    Get model number for structure.
+
+    Useful if structure was generated with freesasa_structure_array().
+
+    @param structure The structure.  
+    @return The model number. 0 means no model number has been read.
+ */
+int freesasa_structure_model(const freesasa_structure *structure);
 
 #ifdef __cplusplus
 }

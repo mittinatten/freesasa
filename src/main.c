@@ -185,7 +185,7 @@ void run_analysis(FILE *input, const char *name) {
             strcpy(name_i,name);
             if (several_structures) {
                 if (structure_options & FREESASA_SEPARATE_MODELS) 
-                    sprintf(name_i+strlen(name_i),":%d",i);
+                    sprintf(name_i+strlen(name_i),":%d",freesasa_structure_model(structures[i]));
                 if (structure_options & FREESASA_SEPARATE_CHAINS) 
                     sprintf(name_i+strlen(name_i),":%c",freesasa_structure_atom_chain(structures[i],0));
             }
