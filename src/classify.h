@@ -56,7 +56,7 @@ enum freesasa_residue {
     freesasa_MET, freesasa_PHE, freesasa_PRO, freesasa_SER,
     freesasa_THR, freesasa_TRP, freesasa_TYR, freesasa_VAL,
     //some non-standard ones
-    freesasa_CSE, freesasa_ASX, freesasa_GLX,
+    freesasa_CSE, freesasa_SEC, freesasa_ASX, freesasa_GLX,
     //capping N- and C-terminal groups (usually HETATM)
     freesasa_ACE, freesasa_NH2,
     //residue unknown
