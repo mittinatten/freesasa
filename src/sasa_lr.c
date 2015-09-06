@@ -237,6 +237,7 @@ static double atom_area(lr_data *lr,int i)
         const double ri_slice2 = ri*ri-di*di;
         if (ri_slice2 < 0 ) continue; // handle round-off errors
         const double ri_slice = sqrt(ri_slice2);
+        if (ri_slice <= 0) continue; // more round-off errors
         const double DR = ri/ri_slice*(d_half + fmin(d_half,ri-di));
         int n_arcs = 0, is_buried = 0;
         for (int j = 0; j < nni; ++j) {

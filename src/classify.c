@@ -35,7 +35,7 @@ static const char *residue_names[] = {
     "HIS","ILE","LEU","LYS",
     "MET","PHE","PRO","SER",
     "THR","TRP","TYR","VAL",
-    "CSE","ASX","GLX",
+    "CSE","SEC","ASX","GLX",
     "ACE","NH2",
     "UNK",
     //DNA
@@ -393,6 +393,7 @@ int freesasa_classify_oons(const char *res_name, const char *a)
     case freesasa_ASX: return classify_oons_ND(a);
     case freesasa_GLX: return classify_oons_QE(a);
     case freesasa_CSE: return classify_oons_cse(a);
+    case freesasa_SEC: return classify_oons_cse(a);
     case freesasa_ACE: return classify_oons_ace(a);
     case freesasa_NH2: return classify_oons_nh2(a);
     default:
