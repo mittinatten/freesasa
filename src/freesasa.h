@@ -730,6 +730,8 @@ char freesasa_structure_atom_chain(const freesasa_structure *s, int i);
 
     @param structure The structure.  
     @return The model number. 0 means no model number has been read.
+
+    @ingroup StructureAPI
  */
 int freesasa_structure_model(const freesasa_structure *structure);
 
