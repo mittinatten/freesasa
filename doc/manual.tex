@@ -276,9 +276,10 @@ Divide the protein into slices of thickness $\delta$ along an
 arbitrary axis. The position of the middle of the slice along that
 axis is denoted $z$, as in figure~\ref{fig:slice}. The center of atom
 $i$, along the same axis, is at $z_i$. In the slice, each atom is thus
-a circle of radius $$R_i^\prime = \sqrt{R_i^2-(z-z_i)^2}\,.$$ These
-circles are either completely buried, completely exposed, or partially
-exposed.
+a circle of radius 
+\begin{equation}R_i^\prime = \sqrt{R_i^2-(z-z_i)^2}\,.\end{equation}
+These circles are either completely buried, completely exposed, or
+partially exposed.
 
 \begin{figure}
 %\begin{center}
@@ -293,22 +294,30 @@ on the slice is $d_{ij}$ (independent of $z$). If $d_{ij} > R_i^\prime
 + R_j^\prime$, there is no overlap. If $d_{ij} < R_j^\prime -
 R_i^\prime$ circle $i$ is completely inside $j$ (and the other way
 around). If $d_{ij}$ lies between these two cases the angle of circle
-$i$ that is buried due to circle $j$ is $$\alpha = 2\arccos
-\bigl[({R_i^\prime}^2 + d_{ij}^2 - {R_{j}^\prime}^2)/(2R_i^\prime
-  d_{ij})\bigr].$$ The middle point of the arc on the circle is at an
+$i$ that is buried due to circle $j$ is 
+\begin{equation}
+  \alpha = 2\arccos
+  \bigl[({R_i^\prime}^2 + d_{ij}^2 - {R_{j}^\prime}^2)/(2R_i^\prime
+  d_{ij})\bigr].
+\end{equation}
+The middle point of the arc on the circle is at an
 angle $\beta$ in circle $i$, and thus the arc spans the interval
 $[\beta-\alpha/2,\beta+\alpha/2]$ on the circle. By adding up these
 arcs and taking into account any overlap between them we get the total
 buried angle $\gamma_i$ of circle $i$. The exposed arc length in this
 slice is thus $L_i = R_i^\prime(2\pi-\gamma_i)$.
 
-The contribution to the SASA from each slice is $$ S_\delta =
-\sum_{i \in \text{slice}}L_i\Delta_i $$ where
-$$
+The contribution to the SASA from each slice is 
+\begin{equation}\label{eq:LR_SASA}
+  S_\delta =
+  \sum_{i \in \text{slice}}L_i\Delta_i 
+\end{equation}
+where
+\begin{equation}\label{eq:Delta_i}
   \Delta_i = \frac{R_i}{R_i^\prime} \biggl[\frac{\delta}{2} 
     + \min\biggl(\frac{\delta}{2},R_i -
     \lvert z - z_i \rvert\biggr)\biggr]. 
-$$ 
+\end{equation}
 The factor $R_i/R_i^\prime$ comes from approximating the area of the
 slice by a conical segment of the sphere, instead of a cylinder.
 Finally, the total SASA is obtained by adding up the contribution from
@@ -345,23 +354,21 @@ significant for large proteins.
 \subsection{L\&R}
 
 In FreeSASA, the L\&R SASA calculation begins by finding overlapping
-spheres and storing the contacts in an adjacency list. For a given
-slice, one needs then only check the overlap between circles that are
-in the slice, and are known to potentially be in contact. The buried
-arcs due to overlapping circles are calculated as described in section
-\ref{sec:alg_LnR}. When all buried arcs have been counted for a given
-circle they are reduced to non-overlapping intervals recursively. In
-most cases only one recursion step is necessary. The lengths of
-exposed arcs are then summed up for all atoms in the slice to
-calculate the total contribution to the area as described in
-\ref{sec:alg_LnR}.
+spheres and storing the contacts in an adjacency list. It then
+iterates through all the slices of each atom and checks for overlap
+with adjacent atoms in each slice. The buried arcs due to overlapping
+circles are calculated as described in section \ref{sec:alg_LnR}. If
+the atom is not completely buried, the exposed arc length is
+calculated and it's contribution to the total area calculated
+using~\ref{eq:LR_SASA}.
 
-As we will see in section \ref{sec:accuracy}, this algorithm is
-significantly slower than S\&R. Profiling runs give no hints at
-obvious improvements. The calculations of each slice are completely
-independent and the current implementation allows division of labor to
-an arbitrary number of threads, whereas the calculation of adjacency
-lists has not been parallelized.
+As we will see in section \ref{sec:performance}, this algorithm is
+significantly slower than S\&R. Calculation times are very close to
+those of the program NACCESS~\cite{NACCESS}, indicating that it will
+be challenging to implement L\&R much faster. The calculations of each
+slice are completely independent and the current implementation allows
+division of labor to an arbitrary number of threads, whereas the
+calculation of adjacency lists has not been parallelized.
 
 \subsection{S\&R}
 
@@ -378,99 +385,80 @@ to include a grid for the test points as well, as in the double cubic
 lattice method~\cite{DCLM}.
  
 
-\section{Comparison of the two}\label{sec:compare}
+\section{Performance}\label{sec:performance}
 
-[The data in this section corresponds to an older version of the code
-  without Verlet lists.]
+To compare the computational efficiency of the two algorithms, the
+most restrictive set of PDB files was downloaded from
+PISCES~\cite{PISCES}.  88 PDB files were selected randomly from this
+set by taking up to 10 structures (if available), in the sequence
+length brackets $[0,100]$, $[100,200]$, $\dots$, $[1100,1200]$ amino
+acids. The PISCES set specifies a specific chain in each file, but in
+the following, all chains were used in each, which resulted in the
+largest structure studied having over 30\,000 atoms (1JZ8).
 
-\subsection{Data set}\label{sec:dataset}
-
-For evaluating and comparing the two algorithms a list of proteins was
-downloaded from the PISCES server \cite{PISCES} (on Aug 12, 2013). The
-proteins have less than 20\,\% sequence identity, and the structures a
-resolution of 1.6~Å or less and R-factors less than 0.25\footnote{The
-  resolution of the structures is not relevant for the present
-  study. It was only restricted to get a sufficiently small set of
-  independent structures.}. The list specifies which chain to use in a
-specific PDB-file. For the calculations here, whole PDB-files are
-used, giving a larger variation in protein size, which is useful for
-our purposes. The 2117 chains in the list gave a set of 2056 protein
-structures used for all calculations below.
-
-\subsection{Speed}\label{sec:speed}
-
-In the limit of low precision the calculation time will be limited by
-the time it takes to find which atoms are neighbors, which scales as
-the square of the number of atoms. As described above this calculation
-can be linearized, but with a relatively large overhead making it
-worthwhile only for large proteins.
-
-In the limit of high precision the calculation time of both algorithms
-will instead scale as the number of atoms: If the number of
-test-points is large in S\&R, most of the time will be spent
-calculating the extent of overlap, instead of which atoms are in
-contact. If there are many slices in L\&R, the calculation time will
-be proportional to the number of slices, and the time of each slice
-linear in the number of atoms in the slice.  The point where the
-calculation time crosses over from linear to quadratic in the number
-of atoms thus depends on the precision as figure~\ref{fig:time} shows.
-
+The calculation time of both algorithms scales linearly with the
+number of atoms as can be seen from figure~\ref{fig:scaling}. The
+effect of spreading the calculation over several threads can be seen
+in figure~\ref{fig:threads}. Since the generation of Verlet lists is
+not parallelized, using more than one thread only gives a significant
+performance benefit at the limit of high precision. For the cases
+studied here, using more than two threads only gives a limited
+improvement.\footnote{The tests were run on a computer with four
+  cores, so there was probably some performance lost due to
+  interference from background process in the measurement with four
+  threads.}
 \begin{figure}
   \begin{center}
-  \includegraphics{fig/time}
-  \caption{(Top) Calculation time as function of number of atoms for
-    different levels of precision. In both cases the cross-over from
-    linear to quadratic scaling as function of protein size is only
-    clearly visible for the lowest precision used.  (Bottom)
-    Comparison of calculation time with one and two threads, the
-    histograms shows the distribution of the calculation time using
-    two threads divided by the time using one thread. Thus a value of
-    2 would correspond to ``perfect'' parallelization. The values
-    above 2 are likely due to noise, i.e. in the very short
-    simulations the timing is both inexact and might be affected by
-    random factors such as background system processes.
-    \label{fig:time}}
+  \includegraphics{fig/scaling}
+  \caption{Calculation time as function of number of atoms for
+    different levels of precision. In all cases, calculation time
+    scales linearly ($O(N)$) with the number of atoms. The reason for
+    the deviation for the smallest structure in some cases is unknown,
+    but it is probably due to some discrete effect such as the program
+    becoming small enough to fit into a cache of the specific
+    processor used.
+    \label{fig:scaling}}
+  \end{center}
+\end{figure}
+\begin{figure}
+  \begin{center}
+  \includegraphics{fig/threads} 
+  \caption{Comparison of calculation time with one, two and four
+    threads, the histograms shows the distribution of the calculation
+    time using two threads divided by the time using one thread. Thus
+    values of two and four, respectively, would correspond to
+    ``perfect'' parallelization.
+    \label{fig:threads}}
   \end{center}
 \end{figure}
 
-Where it can be done trivially, both algorithms have been
-parallelized in FreeSASA. As mentioned above, in S\&R each atom can be treated
-independently, and in L\&R each slice. The efficiency of the
-parallelization in a two-threaded run can be seen in figure
-\ref{fig:time}. For S\&R the speed increase is close to twofold and
-almost independent of the accuracy, as expected. For L\&R the
-efficiency of parallelization increases with precision, i.e. the more
-slices are calculated, the more there is to gain from parallelizing
-the calculations. This result was also expected since the time needed
-to compute which atoms are neighbors, which is done in only one thread
-in the current implement, is independent of precision.
-
-\subsection{Accuracy as function of speed}\label{sec:accuracy}
-
 To measure accuracy of the two algorithms a reference SASA value,
 $S_\text{ref}$ was calculated using L\&R with slice thickness
-0.001~Å. The error of a given SASA-value, $S$ is then $\delta = \lvert
-S - S_\text{ref} \rvert / N$, where $N$ is the number of atoms in the
-protein. Figure~\ref{fig:precision} shows the results of these
+$0.001\,\mathrm{\AA}$. The error of a given SASA-value, $S$ is then $\epsilon =
+\lvert S - S_\text{ref} \rvert / N$, where $N$ is the number of atoms
+in the protein. Figure~\ref{fig:precision} shows the results of these
 calculations for the 2056 proteins described above.  It is clear from
 this picture that S\&R is on average an order of magnitude more
 accurate than L\&R given the same computational effort -- in the
-present implementation.
+present implementation. The value $0.25\,\mathrm{\AA}$ for example is close to
+the default accuracy of NACCESS\footnote{The parameter $z$ in NACCESS
+  is multiplied by the atomic diameter to get the slice width. The
+  default $z=0.05$ thus gives a slice width of $0.28-0.32\,\mathrm{\AA}$
+  depending on the atom type.}~\cite{NACCESS}, but for the same
+computational effort an order of magnitude better accuracy can be
+achieved using the FreeSASA implementation of S\&R with 500
+test-points.
+
 
 \begin{figure}
   \begin{center}
   \includegraphics{fig/precision}
-  \caption{The error $\delta$ in calculated SASA vs calculation time
+  \caption{The error $\epsilon$ in calculated SASA vs calculation time
     $t$ for the two algorithms. For the different S\&R calculations
     20, 50, 100, 200, 500, 1000, 2000 and 5000 test points were
-    used. For L\&R slice thicknesses 0.01, 0.1, 0.2, 0.3, 0.5, 1.0,
-    2.5 and 5.0 Å. The borders of the boxes indicate the quartiles of
-    the distribution of $t$ and $\delta$ (i.e. 50~\% of the data are
-    within the box), and the error bars 5th and 95th percentiles.  The
-    horizontal bars are wider for S\&R because calculation time is
-    less linear as function of the number of atoms than for L\&R (see
-    figure~\ref{fig:time}). It is not clear why the precision varies
-    more for S\&R than for L\&R.
+    used. For L\&R slice thicknesses 0.01, 0.025, 0.5, 0.1, 0.25, and
+    0.5~Å. The error bars indicate the 10th and 90th percentiles,
+    i.e.\ $80\,\%$ of the values are within the error bars along both axes.
     \label{fig:precision}}
   \end{center}
 \end{figure}
@@ -499,6 +487,11 @@ present implementation.
   Verlet L (1967). Computer ``Experiments'' on Classical
   Fluids. I. Thermodynamical Properties of Lennard-Jones
   Molecules. Physical Review 159: 98--103.
+
+\bibitem{NACCESS} 
+  Hubbard SJ, Thornton JM (1993) 'NACCESS', Computer Program,
+  Department of Biochemistry and Molecular Biology, University College
+  London.
 
 \bibitem{DCLM}
   Eisenhaber F, Lijnzaad P, Argos P, Sander C, Scharf M (1994)
