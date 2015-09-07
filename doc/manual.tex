@@ -94,13 +94,13 @@ CLI allow the user to set all parameters.
 This document is organized as follows. Section \ref{sec:installation}
 describes how to install the program, section \ref{sec:cli} how to
 used the CLI, and section \ref{sec:api} gives a short sample program
-demonstrating basic use of the API. The introduction is intended to
-cover most casual users' needs. Section \ref{sec:performance} analyzes
-the performance of the program. Appendix \ref{sec:algorithm} describes
-the algorithms, and appendix \ref{sec:implementation} their
-implementation. A full Doxygen-generated documentation of the API is
-available at \url{http://mittinatten.github.io/freesasa/}, and is also
-included in the source files.
+demonstrating basic use of the API. This introduction is intended to
+cover most casual users' needs.  Appendix \ref{sec:algorithm}
+describes the algorithms and some implementation details. Appendix
+\ref{sec:performance} gives a performance analysis of the program.  A
+full Doxygen-generated documentation of the API is available at
+\url{http://mittinatten.github.io/freesasa/}, and is also included in
+the source files.
 
 \section{Installation}\label{sec:installation}
 
@@ -240,6 +240,161 @@ int main(int argc, char **argv) {
 This program generates output similar to that of the last three output
 lines in the previous section.
 
+\section{Conclusion}
+
+FreeSASA is an open-source stand-alone program for calculating
+SASA. It can be used both as command-line tool and as an API. The
+implementation of Lee and Richards' algorithm has similar computation
+time to NACCESS, and the Shrake and Rupley implementation is about an
+order of magnitude faster for the same level of precision.
+
+\appendix
+
+\begin{small}
+
+\section{Algorithms}\label{sec:algorithm}
+
+There are two classical approximate algorithms that can be used to
+calculate SASA. One by Lee \& Richards \cite{LnR} where the surface is
+calculated for slices of the protein and then added up, one by Shrake
+\& Rupley \cite{SnR} where the surface of each sphere is approximated
+by a set of test points. The SASA can be calculated to arbitrary
+precision by refining the resolution of both. 
+
+Both algorithms are pretty straightforward to implement, and both
+require determining which atoms are in contact. Finding contacts can
+be done efficiently using Verlet lists~\cite{Verlet}, which means the
+calculation time of adjacency lists is $O(N)$. There is a slight
+overhead in generating the lists, which means that for small proteins
+the calculations are slower than in a na\"{i}ve $O(N^2)$
+implementation. The gains are however significant for large
+proteins. Both algorithms then treat each atom independently, making
+also the second part of the calculation $O(N)$. In addition, this
+second part is trivially parallelizable.
+
+The correctness of the implementations was tested by comparing with
+analytical results for the two atom case, and by performing high
+precision SASA calculations using the two independent algorithms for a
+number of proteins (see section \ref{sec:performance}) and comparing
+the results. In addition, the calculated surface test points and slice
+contours were inspected visually.
+
+As will be clear from this section and the analysis in section
+\ref{sec:performance}, S\&R is the simpler and faster of the
+two. Therefore the casual user is recommended to use S\&R. L\&R is
+mainly included for reference, and for the fact that the precision is
+only limited by floating point precision. In the current
+implementation S\&R can only be used with a predefined set of levels
+of precision. However, it is not obvious what applications would
+require very high precision SASA values.
+
+In describing the details of the algorithms we will use the following
+notation: An atom $i$ has a van der Waals radius $r_i$, the rolling
+sphere (or \emph{probe}) has radius $r_\text{P}$ and when these are
+added we get an extended radius $R_i = r_i + r_\text{P}$. The sphere
+of radius $R_i$ centered at the position of atom $i$ represents the
+volume not accessible to the center of the probe. The SASA for a
+molecule is then obtained by calculating the non-buried surface area
+of the extended spheres.
+
+\subsection{L\&R} \label{sec:alg_LnR}
+
+Lee \& Richards' algorithm calculates the surface area by slicing the
+protein, calculating the length of the solvent exposed contours in
+each slice and then adding up the length multiplied by the slice
+thickness. Precision is increased by making the slices thinner and the
+calculation time scales approximately as the number of slices.
+
+Divide the protein into slices of thickness $\delta$ along an
+arbitrary axis. The position of the middle of the slice along that
+axis is denoted $z$, as in figure~\ref{fig:slice}. The center of atom
+$i$, along the same axis, is at $z_i$. In the slice, each atom is thus
+a circle of radius 
+\begin{equation}R_i^\prime = \sqrt{R_i^2-(z-z_i)^2}\,.\end{equation}
+These circles are either completely buried, completely exposed, or
+partially exposed.
+
+\begin{figure}
+%\begin{center}
+\includegraphics{fig/lnr_slice}
+\includegraphics{fig/lnr_circles}
+\caption{Geometry of slice in L\&R.\label{fig:slice}}
+\end{figure}
+
+The exposed arc lengths for each atom can be calculated exactly. For
+each pair of atoms $i,j$, the distance between their centers projected
+on the slice is $d_{ij}$ (independent of $z$). If $d_{ij} > R_i^\prime
++ R_j^\prime$, there is no overlap. If $d_{ij} < R_j^\prime -
+R_i^\prime$ circle $i$ is completely inside $j$ (and the other way
+around). If $d_{ij}$ lies between these two cases the angle of circle
+$i$ that is buried due to circle $j$ is 
+\begin{equation}
+  \alpha = 2\arccos
+  \bigl[({R_i^\prime}^2 + d_{ij}^2 - {R_{j}^\prime}^2)/(2R_i^\prime
+  d_{ij})\bigr].
+\end{equation}
+The middle point of the arc on the circle is at an
+angle $\beta$ in circle $i$, and thus the arc spans the interval
+$[\beta-\alpha/2,\beta+\alpha/2]$ on the circle. By adding up these
+arcs and taking into account any overlap between them we get the total
+buried angle $\gamma_i$ of circle $i$. The exposed arc length in this
+slice is thus $L_i = R_i^\prime(2\pi-\gamma_i)$.
+
+The contribution to the SASA from each slice is 
+\begin{equation}\label{eq:LR_SASA}
+  S_\delta =
+  \sum_{i \in \text{slice}}L_i\Delta_i 
+\end{equation}
+where
+\begin{equation}\label{eq:Delta_i}
+  \Delta_i = \frac{R_i}{R_i^\prime} \biggl[\frac{\delta}{2} 
+    + \min\biggl(\frac{\delta}{2},R_i -
+    \lvert z - z_i \rvert\biggr)\biggr]. 
+\end{equation}
+The factor $R_i/R_i^\prime$ comes from approximating the area of the
+slice by a conical segment of the sphere, instead of a cylinder.
+Finally, the total SASA is obtained by adding up the contribution from
+all the slices, either for the whole protein, or atom by atom.
+
+In FreeSASA, the L\&R SASA calculation begins by finding overlapping
+spheres and storing the contacts in an adjacency list. It then
+iterates through all the slices of each atom and checks for overlap
+with adjacent atoms in each slice, and adds up the exposed arcs to
+calculate the atom's contribution to the SASA of the slice.
+
+As we will see in section \ref{sec:performance}, this algorithm is
+significantly slower than S\&R. Calculation times are very close to
+those of the program NACCESS~\cite{NACCESS}, indicating that it will
+be challenging to implement L\&R much faster. The calculations of each
+slice are completely independent and the current implementation allows
+division of labor to an arbitrary number of threads, whereas the
+calculation of adjacency lists has not been parallelized.
+
+\subsection{S\&R}
+
+Shrake \& Rupley's algorithm uses test points on a sphere to estimate
+what parts of an atom are exposed. For each atom $i$, use a set of
+test points evenly distributed (approximately) over the sphere of
+radius $R_i$, and count how many of the test points are not inside any
+other sphere. The number of exposed test points divided by the total
+number of test points gives the exposed solid angle of that atom. The
+precision of the algorithm is increased by increasing the number of
+test points, and calculation time scales approximately linearly with
+the number of test points.
+
+Test points in FreeSASA were generated by placing a given number of
+equally charged particles on the surface of a sphere and then
+minimizing the potential energy of the set of particles using a simple
+Monte Carlo simulation. The obtained sets of test-points are then
+stored as static arrays in a dedicated source file (\texttt{srp.c}),
+to make the program independent of any auxiliary input files. Sets
+containing 20, 50, 100, 200, 500, 1000, 2000 and 5000 test points are
+included in the program. This set should cover most users' need for
+speed and accuracy. One potential speed-up of this implementation, at
+least in the high accuracy limit, would be to include a grid for the
+test points as well, as in the double cubic lattice
+method~\cite{DCLM}.
+ 
 \section{Performance}\label{sec:performance}
 
 To compare the computational efficiency of the two algorithms, the
@@ -249,7 +404,10 @@ set by taking up to 10 structures (if available), in the sequence
 length brackets $[0,100]$, $[100,200]$, $\dots$, $[1100,1200]$ amino
 acids. The PISCES set specifies a specific chain in each file, but in
 the following, all chains were used in each, which resulted in the
-largest structure studied having over 30\,000 atoms (1JZ8).
+largest structure studied having over 30\,000 atoms (1JZ8). To average
+out some variation in the running time in these rather short
+calculations (in som cases 10's of milliseconds), each calculation was
+run three times.
 
 The calculation time of both algorithms scales linearly with the
 number of atoms as can be seen from figure~\ref{fig:scaling}. The
@@ -318,166 +476,7 @@ test-points.
   \end{center}
 \end{figure}
 
-\section{Conclusion}
 
-FreeSASA is an open-source stand-alone program for calculating
-SASA. It can be used both as command-line tool and as an API. The
-implementation of Lee and Richards' algorithm has similar computation
-time to NACCESS, and the Shrake and Rupley implementation is about an
-order of magnitude faster for the same level of precision.
-
-\clearpage
-
-\appendix
-
-\begin{small}
-
-\section{Algorithms}\label{sec:alg}
-
-There are two classical approximate algorithms that can be used to
-calculate SASA. One by Lee \& Richards \cite{LnR} where the surface is
-calculated for slices of the protein and then added up, one by Shrake
-\& Rupley \cite{SnR} where the surface of each sphere is approximated
-by a set of test points. The SASA can be calculated to arbitrary
-precision by refining the resolution of both. 
-
-As will be clear from this section and the analysis in section
-\ref{sec:performance}, S\&R is the simpler and faster of the
-two. Therefore the casual user is recommended to use S\&R. L\&R is
-mainly included for reference, and for the fact that the precision is
-only limited by floating point precision. In the current
-implementation S\&R can only be used with a predefined set of levels
-of precision. However, it is not obvious what applications would
-require very high precision SASA values.
-
-We will use the following notation: An atom $i$ has a van der Waals
-radius $r_i$, the rolling sphere (or \emph{probe}) has radius
-$r_\text{P}$ and when these are added we get an extended radius $R_i =
-r_i + r_\text{P}$. The sphere of radius $R_i$ centered at the position
-of atom $i$ represents the volume not accessible to the center of the
-probe. The SASA for a molecule is then obtained by calculating the
-non-buried surface area of the extended spheres.
-
-\subsection{L\&R} \label{sec:alg_LnR}
-
-Lee \& Richards' algorithm calculates the surface area by slicing the
-protein, calculating the length of the solvent exposed contours in
-each slice and then adding up the length multiplied by the slice
-thickness. Precision is increased by making the slices thinner and the
-calculation time scales approximately as the number of slices.
-
-Divide the protein into slices of thickness $\delta$ along an
-arbitrary axis. The position of the middle of the slice along that
-axis is denoted $z$, as in figure~\ref{fig:slice}. The center of atom
-$i$, along the same axis, is at $z_i$. In the slice, each atom is thus
-a circle of radius 
-\begin{equation}R_i^\prime = \sqrt{R_i^2-(z-z_i)^2}\,.\end{equation}
-These circles are either completely buried, completely exposed, or
-partially exposed.
-
-\begin{figure}
-%\begin{center}
-\includegraphics{fig/lnr_slice}
-\includegraphics{fig/lnr_circles}
-\caption{Geometry of slice in L\&R.\label{fig:slice}}
-\end{figure}
-
-The exposed arc lengths for each atom can be calculated exactly. For
-each pair of atoms $i,j$, the distance between their centers projected
-on the slice is $d_{ij}$ (independent of $z$). If $d_{ij} > R_i^\prime
-+ R_j^\prime$, there is no overlap. If $d_{ij} < R_j^\prime -
-R_i^\prime$ circle $i$ is completely inside $j$ (and the other way
-around). If $d_{ij}$ lies between these two cases the angle of circle
-$i$ that is buried due to circle $j$ is 
-\begin{equation}
-  \alpha = 2\arccos
-  \bigl[({R_i^\prime}^2 + d_{ij}^2 - {R_{j}^\prime}^2)/(2R_i^\prime
-  d_{ij})\bigr].
-\end{equation}
-The middle point of the arc on the circle is at an
-angle $\beta$ in circle $i$, and thus the arc spans the interval
-$[\beta-\alpha/2,\beta+\alpha/2]$ on the circle. By adding up these
-arcs and taking into account any overlap between them we get the total
-buried angle $\gamma_i$ of circle $i$. The exposed arc length in this
-slice is thus $L_i = R_i^\prime(2\pi-\gamma_i)$.
-
-The contribution to the SASA from each slice is 
-\begin{equation}\label{eq:LR_SASA}
-  S_\delta =
-  \sum_{i \in \text{slice}}L_i\Delta_i 
-\end{equation}
-where
-\begin{equation}\label{eq:Delta_i}
-  \Delta_i = \frac{R_i}{R_i^\prime} \biggl[\frac{\delta}{2} 
-    + \min\biggl(\frac{\delta}{2},R_i -
-    \lvert z - z_i \rvert\biggr)\biggr]. 
-\end{equation}
-The factor $R_i/R_i^\prime$ comes from approximating the area of the
-slice by a conical segment of the sphere, instead of a cylinder.
-Finally, the total SASA is obtained by adding up the contribution from
-all the slices, either for the whole protein, or atom by atom.
-
-\subsection{S\&R}
-
-Shrake \& Rupley's algorithm uses test points on a sphere to estimate
-what parts of an atom are exposed. For each atom $i$, use a set of
-test points evenly distributed (approximately) over the sphere of
-radius $R_i$, and count how many of the test points are not inside any
-other sphere. The number of exposed test points divided by the total
-number of test points gives the exposed solid angle of that atom. The
-precision of the algorithm is increased by increasing the number of
-test points, and calculation time scales approximately linearly with
-the number of test points.
-
-\section{Implementation}\label{sec:imp}
-
-The correctness of the implementations was tested by comparing with
-analytical results for the two atom case, and by performing high
-precision SASA calculations using the two independent algorithms for a
-number of proteins (see section \ref{sec:performance}) and comparing
-the results. In addition, the calculated surface test points and slice
-contours were inspected visually.
-
-Both algorithms require determining which atoms are in contact, this
-is done by Verlet lists~\cite{Verlet}, which means the calculation
-time is $O(N)$. There is a slight overhead in generating the lists,
-which means that for small proteins the calculations are slower than
-in a na\"{i}ve $O(N^2)$ implementation. The gains are however
-significant for large proteins.
-
-\subsection{L\&R}
-
-In FreeSASA, the L\&R SASA calculation begins by finding overlapping
-spheres and storing the contacts in an adjacency list. It then
-iterates through all the slices of each atom and checks for overlap
-with adjacent atoms in each slice. The buried arcs due to overlapping
-circles are calculated as described in section \ref{sec:alg_LnR}. If
-the atom is not completely buried, the exposed arc length is
-calculated and it's contribution to the total area calculated
-using~\ref{eq:LR_SASA}.
-
-As we will see in section \ref{sec:performance}, this algorithm is
-significantly slower than S\&R. Calculation times are very close to
-those of the program NACCESS~\cite{NACCESS}, indicating that it will
-be challenging to implement L\&R much faster. The calculations of each
-slice are completely independent and the current implementation allows
-division of labor to an arbitrary number of threads, whereas the
-calculation of adjacency lists has not been parallelized.
-
-\subsection{S\&R}
-
-Test points were generated by placing a given number of equally
-charged particles on the surface of a sphere and then minimizing the
-Coulomb potential using a simple Monte Carlo simulation. The obtained
-sets of test-points are then stored as static arrays in a special
-source file (\texttt{srp.c}), to make the program independent of any
-auxiliary input files. Sets containing 20, 50, 100, 200, 500, 1000,
-2000 and 5000 test points are included in the program. This set should
-cover most users' need for speed and accuracy. One potential speed-up
-of this implementation, at least in the high accuracy limit, would be
-to include a grid for the test points as well, as in the double cubic 
-lattice method~\cite{DCLM}.
- 
 \begin{thebibliography}{50}
 
 \bibitem{LnR} 
