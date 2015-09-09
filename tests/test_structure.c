@@ -219,7 +219,7 @@ START_TEST (test_structure_array)
     }
     free(ss);
 
-    rewind(pdb);
+    fclose(pdb);
     pdb = fopen(DATADIR "2jo4.pdb", "r");
     ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_MODELS | FREESASA_SEPARATE_CHAINS |
                                   FREESASA_INCLUDE_HETATM | FREESASA_INCLUDE_HYDROGEN);
@@ -239,7 +239,21 @@ START_TEST (test_structure_array)
     ck_assert(s != NULL);
     ck_assert(freesasa_structure_n(s) == 286*4*10);
     freesasa_structure_free(s);
+    
     fclose(pdb);
+    pdb = fopen(DATADIR "1ubq.pdb","r");
+    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_CHAINS);
+    
+    ck_assert(ss != NULL);
+    ck_assert(n == 1);
+    ck_assert(freesasa_structure_n(ss[0]) == 602);
+    freesasa_structure_free(ss[0]);
+    free(ss);
+    fclose(pdb);
+
+    pdb = fopen(DATADIR "err.config","r");
+    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_CHAINS);
+    ck_assert(ss == NULL);
 }
 END_TEST
 

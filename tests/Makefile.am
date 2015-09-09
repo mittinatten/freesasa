@@ -1,7 +1,7 @@
 
 EXTRA_DIST = data test-cli.sh.in run-test-cli.sh
 check_PROGRAMS =
-TESTS = run-test-cli.sh
+TESTS = 
 
 if COND_GCOV
 AM_CFLAGS = --coverage
@@ -23,6 +23,9 @@ libtest_CFLAGS = -I$(top_srcdir)/src $(AM_CFLAGS) \
 libtest_LDADD = ../src/libfreesasa.a -lcheck
 
 endif 
+
+# we want this to run second if Check is active, since it is much slower
+TESTS += run-test-cli.sh
 
 CLEANFILES = tmp/*  $(GCOV_FILES) *~
 

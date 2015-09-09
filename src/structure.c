@@ -162,6 +162,7 @@ static int get_models(FILE *pdb, struct file_interval** intervals) {
     char *line = NULL;
     int n = 0, n_end = 0, error = 0;
     long last_pos = ftell(pdb);
+    long first_pos = last_pos;
     struct file_interval *it = NULL;
     
     while (getline(&line, &len, pdb) != -1) {
@@ -180,12 +181,16 @@ static int get_models(FILE *pdb, struct file_interval** intervals) {
         }
         last_pos = ftell(pdb);
     }
-    if (n == 0) {
-        error = freesasa_fail("%s: No MODEL entries found in input\n",__func__);
+    if (n == 0) { // when there are no models, the whole file is the model
+        n = 1;
+        it = malloc(sizeof(struct file_interval));
+        it[0].begin = first_pos;
+        it[0].end = last_pos;
+        //error = freesasa_fail("%s: No MODEL entries found in input\n",__func__);
     }
     if (error == FREESASA_FAIL) {
         free(it);
-        intervals = 0;
+        intervals = NULL;
         return FREESASA_FAIL;
     }
     *intervals = it;
@@ -223,9 +228,11 @@ int get_chains(FILE *pdb, struct file_interval model, struct file_interval **int
         }
         last_pos = ftell(pdb);
     }
-    chains[n_chains-1].end = last_pos;
-    chains[0].begin = model.begin; //preserve model info
-    *intervals = chains;
+    if (chains != NULL) {
+        chains[n_chains-1].end = last_pos;
+        chains[0].begin = model.begin; //preserve model info
+        *intervals = chains;
+    }
     return n_chains;
 }
 
@@ -251,12 +258,13 @@ freesasa_structure** freesasa_structure_array(FILE *pdb,
     struct file_interval *models = NULL;
     int n_models = get_models(pdb,&models), n_chains = 0;
     freesasa_structure **ss = NULL;
+    int err = 0;
 
     if (n_models == FREESASA_FAIL) {
         freesasa_fail("%s: problems reading PDB-file.");
         return NULL;
     }
-
+    
     //only keep first model if option not provided
     if (! (options & FREESASA_SEPARATE_MODELS) ) n_models = 1;
     
@@ -265,10 +273,16 @@ freesasa_structure** freesasa_structure_array(FILE *pdb,
         for (int i = 0; i < n_models; ++i) {
             struct file_interval* chains = NULL;
             int new_chains = get_chains(pdb,models[i],&chains,options);
+            if (new_chains == 0) freesasa_warn("%s: warning: No chains found (in model %d).",__func__,i+1);
             ss = realloc(ss,sizeof(freesasa_structure*)*(n_chains+new_chains));
             for (int j = 0; j < new_chains; ++j) {
-                ss[n_chains+j] = from_pdb_impl(pdb,chains[j],options);
-                ss[n_chains+j]->model = ss[n_chains]->model; // all have the same model number
+                freesasa_structure *s = from_pdb_impl(pdb,chains[j],options);
+                if (s != NULL) { 
+                    ss[n_chains+j] = s;
+                    ss[n_chains+j]->model = ss[n_chains]->model; // all have the same model number
+                } else {
+                    ++err;
+                }
             }
             n_chains += new_chains;
             free(chains);
@@ -277,10 +291,18 @@ freesasa_structure** freesasa_structure_array(FILE *pdb,
     } else {
         ss = malloc(sizeof(freesasa_structure*)*n_models);
         for (int i = 0; i < n_models; ++i) {
-            ss[i] = from_pdb_impl(pdb,models[i],options);
+            freesasa_structure *s = from_pdb_impl(pdb,models[i],options);
+            if (s != NULL) ss[i] = s;
+            else ++err;
         }
         *n = n_models;
     }
+    if (err || *n == 0) {
+        *n = 0;
+        free(ss);
+        freesasa_fail("%s: error: Problems reading input.",__func__);
+        ss = NULL;
+    } 
     free(models);
     return ss;
 }
