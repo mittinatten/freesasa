@@ -12,12 +12,22 @@ calculations and by visual inspection of the surfaces found by them
 resolution versions of the algorithms, the calculations give identical
 results.
 
-The OONS atom-classification and radii are used by default ([Ooi et al.
-PNAS 1987, 84: 3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/)). 
-Users can also provide their own atomic radii; example config-files for 
-NACCESS 
-([Hubbard & Thornton 1993](http://www.bioinf.manchester.ac.uk/naccess/)) 
-and OONS are available in the directory `share`. 
+FreeSASA assigns a radius and a class to each atom. The atomic radii
+are by default those defined by [Ooi et al.  PNAS 1987, 84:
+3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/) (OONS
+classification) for standard protein atoms, and the van der Waals
+radius of the element for other atoms (in for example nucleci
+acids). Each atom is also assigned to a class. The default classes are
+`polar`, `apolar`, `nucleic acid`, and `unknown`. The program outputs
+the total SASA and the area of the four classes.
+
+Users can also provide their own atomic radii and classes, either via
+configuration files or via the API. The input format for configuration
+files is described in the [online
+documentation](http://mittinatten.github.io/freesasa/doxygen/group__API.html#Config-file),
+and the `share/` directory contains two sample configurations, one for
+the NACCESS parameters ([Hubbard & Thornton
+1993](http://www.bioinf.manchester.ac.uk/naccess/)) and one for OONS.
 
 The library is still a work in progress, but the calculations have
 been verified to give correct results for a large number of
@@ -57,22 +67,6 @@ The configuration script can be customized with
 * `--enable-gcov` adds compiler flags for measuring coverage of tests using gcov
 * `--enable-doxygen` activates building of Doxygen documentation
 * `--enable-latex` activates building of LaTeX documentation
-
-
-User-configuration 
------------------- 
-
-FreeSASA assigns a radius and a class to each atom. The atomic radii
-are by default those defined by Ooi et al.~\cite{OONS} for standard
-protein atoms, and the van der Waals radius of the element for other
-atoms (in for example nucleci acids). Each atom is also assigned to a
-class. The default classes are `polar`, `apolar`, `nucleic acid`, and
-`unknown`. The program outputs the total SASA and the area of the four
-classes. Users can define both their own radii and classes, either by
-providing their own classifier through the API, or by a configuration
-file. The input format for configuration files is described in the 
-[online documentation](http://mittinatten.github.io/freesasa/doxygen/group__API.html#Config-file), 
-and the `share/` directory contains two sample configurations.
 
 
 Documentation
