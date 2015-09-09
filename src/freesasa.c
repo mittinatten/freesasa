@@ -235,6 +235,10 @@ double* freesasa_structure_radius(const freesasa_structure *structure,
         const char *atom_name = 
             freesasa_structure_atom_name(structure, i);
         r[i] = c->radius(res_name,atom_name,c);
+        if (r[i] < 0) {
+            free(r);
+            return NULL;
+        }
     }
     return r;
 }
