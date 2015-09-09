@@ -144,15 +144,53 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertRaises(AssertionError,lambda: s.residueNumber(2))
         self.assertRaises(AssertionError,lambda: s.chainLabel(2))
 
-        s = Structure("data/1d3z.pdb",None,False,True)
+        s = Structure("data/1d3z.pdb",None,{'hydrogen' : True})
         self.assertTrue(s.nAtoms() == 1231)
 
-        s = Structure("data/1d3z.pdb",None,False,True,True)
+        s = Structure("data/1d3z.pdb",None,{'hydrogen' : True, 'join-models' : True})
         self.assertTrue(s.nAtoms() == 12310)
 
         setVerbosity(silent) # waters aren't recognized, should produce warnings, but we don't want to see them here
-        s = Structure("data/1ubq.pdb",None,True)
+        s = Structure("data/1ubq.pdb",None,{'hetatm' : True})
         self.assertTrue(s.nAtoms() == 660)
+        setVerbosity(normal)
+
+    def testStructureArray(self):
+        # default separates chains, only uses first model (129 atoms per chain)
+        ss = structureArray("data/2jo4.pdb")
+        self.assertTrue(len(ss) == 4)
+        for s in ss:
+            self.assertTrue(s.nAtoms() == 129)
+
+        # include all models, separate chains, and include hydrogen and hetatm (286 atoms per chain)
+        ss = structureArray("data/2jo4.pdb",{'separate-models' : True,
+                                             'hydrogen' : True,
+                                             'hetatm' : True,
+                                             'separate-chains' : True})
+        self.assertTrue(len(ss) == 4*10)
+        for s in ss:
+            self.assertTrue(s.nAtoms() == 286)
+
+        # include all models, and include hydrogen and hetatm (286 atoms per chain)
+        ss = structureArray("data/2jo4.pdb",{'separate-models' : True,
+                                             'hydrogen' : True,
+                                             'hetatm' : True})
+        self.assertTrue(len(ss) == 10)
+        for s in ss:
+            self.assertTrue(s.nAtoms() == 286*4)
+        
+        # check that the structures initialized this way can be used for calculations
+        ss = structureArray("data/1ubq.pdb")
+        self.assertTrue(len(ss) == 1)
+        self.assertTrue(ss[0].nAtoms() == 602)
+        result = calc(ss[0])
+        self.assertTrue(math.fabs(result.totalArea() - 4759.86096) < 1e-5)
+
+        # Test exceptions
+        setVerbosity(silent)
+        self.assertRaises(AssertionError,lambda: structureArray(None))
+        self.assertRaises(IOError,lambda: structureArray(""))
+        self.assertRaises(Exception,lambda: structureArray("data/err.config"))
         setVerbosity(normal)
 
     def testCalc(self):

@@ -189,7 +189,7 @@ cdef class Parameters:
             """
             return self._c_param.n_threads
 
-      def _assign_ptr(self, size_t ptr2ptr):
+      def _get_address(self, size_t ptr2ptr):
             cdef freesasa_parameters **p = <freesasa_parameters**> ptr2ptr
             p[0] = &self._c_param
 
@@ -251,7 +251,7 @@ cdef class Result:
             assert(i < self._c_result.n_atoms)
             return self._c_result.sasa[i]
 
-      def _assign_ptr(self, size_t ptr2ptr):
+      def _get_address(self, size_t ptr2ptr):
             cdef freesasa_result **p = <freesasa_result**> ptr2ptr
             p[0] = self._c_result
 
@@ -357,7 +357,7 @@ cdef class Classifier:
             assert(classIndex < freesasa_default_classifier.n_classes)
             return freesasa_default_classifier.class2str(classIndex,&freesasa_default_classifier)
 
-      def _assign_ptr(self, size_t ptr2ptr):
+      def _get_address(self, size_t ptr2ptr):
             cdef freesasa_classifier **p = <freesasa_classifier**> ptr2ptr
             p[0] = self._c_classifier
 
@@ -373,9 +373,10 @@ cdef class Structure:
       """
 
       cdef freesasa_structure* _c_structure
-      cdef double* _c_radii
+      cdef array.array _radii
 
-      def __cinit__(self,fileName=None,classifier=None,hetatm=False,hydrogens=False,joinModels=False):
+      def __cinit__(self,fileName=None,classifier=None,
+                    options = {'hetatm' : False, 'hydrogen' : False, 'join-models' : False}):
             """
             Initializes Structure
 
@@ -396,19 +397,13 @@ cdef class Structure:
                 Exception: Problem parsing PDB file or calculating atomic radii
             """
             self._c_structure = NULL
-            self._c_radii = NULL
+            self._radii = array.array('d',[])
             if fileName is None:
                   self._c_structure = freesasa_structure_new()
                   return
             cdef FILE *input
             input = fopen(fileName,'r')
-            structure_options = 0
-            if hetatm is True:
-                  structure_options |= FREESASA_INCLUDE_HETATM
-            if hydrogens is True:
-                  structure_options |= FREESASA_INCLUDE_HYDROGEN
-            if joinModels is True:
-                  structure_options |= FREESASA_JOIN_MODELS
+            structure_options = Structure._get_structure_options(options)
             if input is NULL:
                   raise IOError("File '%s' could not be opened." % fileName)
             self._c_structure = freesasa_structure_from_pdb(input,structure_options)
@@ -469,11 +464,11 @@ cdef class Structure:
             if classifier is None:
                   classifier = Classifier()
             n = self.nAtoms()
-            self._c_radii = <double *> realloc(self._c_radii,n*sizeof(double))
+            array.resize(self._radii,n*sizeof(double))
             for i in range(0,n):
-                  self._c_radii[i] = classifier.radius(self.residueName(i),self.atomName(i))
+                  self._radii[i] = classifier.radius(self.residueName(i),self.atomName(i))
       
-      def setRadii(self,array):
+      def setRadii(self,radiusArray):
             """
             Set atomic radii from an array
 
@@ -484,10 +479,10 @@ cdef class Structure:
                 AssertionError: if array has wrong dimension 
             """
             n = self.nAtoms()
-            assert len(array) == n
-            self._c_radii = <double*> realloc(self._c_radii,n*sizeof(double))
+            assert len(radiusArray) == n
+            array.resize(self._radii,n*sizeof(double))
             for i in range(0,n):
-                  self._c_radii[i] = array[i]
+                  self._radii[i] = radiusArray[i]
             
       def nAtoms(self):
             """
@@ -513,8 +508,8 @@ cdef class Structure:
                 AssertionError: index out of bounds or object not properly initalized
             """
             assert(i >= 0 and i < self.nAtoms())
-            assert(self._c_radii is not NULL)
-            return self._c_radii[i]
+            assert(self._radii.ob_size > 0)
+            return self._radii[i]
       
       def atomName(self,i):
             """
@@ -583,19 +578,81 @@ cdef class Structure:
             label[1] = '\0'
             return label
 
-      def _assign_ptr(self, size_t ptr2ptr):
+      @staticmethod
+      def _get_structure_options(param):
+            options = 0
+            if 'hetatm' in param and param['hetatm']:
+                  options |= FREESASA_INCLUDE_HETATM
+            if 'hydrogen' in param and param['hydrogen']:
+                  options |= FREESASA_INCLUDE_HYDROGEN
+            if 'join-models' in param and param['join-models']:
+                  options |= FREESASA_JOIN_MODELS
+            if 'separate-models' in param and param['separate-models']:
+                  options |= FREESASA_SEPARATE_MODELS
+            if 'separate-chains' in param and param['separate-chains']:
+                  options |= FREESASA_SEPARATE_CHAINS
+            return options
+
+      def _get_address(self, size_t ptr2ptr):
             cdef freesasa_structure **p = <freesasa_structure**> ptr2ptr
             p[0] = self._c_structure
-      
-      def _assign_ptr_radius(self, size_t ptr2ptr):
-            cdef double **p = <double**> ptr2ptr
-            p[0] = self._c_radii
 
+      def _get_address_radius(self, size_t ptr2ptr):
+            cdef double **p = <double**> ptr2ptr
+            p[0] = self._radii.data.as_doubles
+
+      def _set_address(self, size_t ptr2ptr):
+            cdef freesasa_structure **p = <freesasa_structure**> ptr2ptr
+            self._c_structure = p[0]
+      
       def __dealloc__(self):
             if self._c_structure is not NULL:
                   freesasa_structure_free(self._c_structure)
-            if self._c_radii is not NULL:
-                  free(self._c_radii)
+
+def structureArray(fileName,
+                   options = {'hetatm' : False,
+                              'hydrogen' : False,
+                              'separate-chains' : True,
+                              'separate-models' : False},
+                   classifier = None):
+      """
+      Create array of structures from PDB file
+
+      Split PDB file into several structures by either by treating
+      chains separately, by treating each MODEL as a separate
+      structure, or both.
+
+      Args:
+          fileName (str): The PDB file.
+          options (dict): Specification for how to read the PDB-file
+              (see def value for options).
+          classifier: Classifier to assign atoms radii, default is used
+              if none specified.
+      Raises:
+          AssertionError: if fileName is None
+          IOError: if can't open file
+          Exception: if there are problems parsing the input
+      Returns:
+          An array of Structures
+      """
+      assert fileName is not None
+      structure_options = Structure._get_structure_options(options)
+      cdef FILE *input
+      input = fopen(fileName,'r')
+      if input is NULL:
+            raise IOError("File '%s' could not be opened." % fileName)
+      cdef int n;
+      cdef freesasa_structure** sArray = freesasa_structure_array(input,&n,structure_options)
+      fclose(input)
+      if sArray is NULL:
+            raise Exception("Problems reading structures in '%s'." % fileName)
+      structures = []
+      for i in range(0,n):
+            structures.append(Structure())
+            structures[-1]._set_address(<size_t> &sArray[i])
+            structures[-1].setRadiiWithClassifier(classifier)
+      free(sArray)
+      return structures
 
 # calculate SASA values for structure
 
@@ -611,19 +668,17 @@ def calc(structure,parameters=None):
       Raises:
           Exception: something went wrong in calculation (see C library error messages)
       """
-      cdef const freesasa_classifier *c = NULL
-      cdef const freesasa_structure *s = NULL
       cdef const freesasa_parameters *p = NULL
+      cdef const freesasa_structure *s = NULL
       cdef const double *radii = NULL
-      if parameters is not None:
-            parameters._assign_ptr(<size_t>&p)
-      structure._assign_ptr(<size_t>&s)
-      structure._assign_ptr_radius(<size_t>&radii)
-      r = Result()
-      r._c_result = <freesasa_result*> freesasa_calc_structure(s, radii,p)
-      if r._c_result is NULL:
+      if parameters is not None:  parameters._get_address(<size_t>&p)
+      structure._get_address(<size_t>&s)
+      structure._get_address_radius(<size_t>&radii)
+      result = Result()
+      result._c_result = <freesasa_result*> freesasa_calc_structure(s, radii,p)
+      if result._c_result is NULL:
             raise Exception("Error calculating SASA.")
-      return r
+      return result
             
 
 # classify results of calculation, returns dictionary with class names
