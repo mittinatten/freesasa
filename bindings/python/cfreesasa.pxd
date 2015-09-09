@@ -14,12 +14,16 @@ cdef extern from "freesasa.h":
     ctypedef enum freesasa_verbosity:
         FREESASA_V_NORMAL, FREESASA_V_SILENT
 
-    cdef int FREESASA_DEF_PROBE_RADIUS
+    cdef double FREESASA_DEF_PROBE_RADIUS
     cdef int FREESASA_DEF_SR_N
     cdef double FREESASA_DEF_LR_D
     cdef int FREESASA_SUCCESS
     cdef int FREESASA_FAIL
     cdef int FREESASA_WARN
+
+    cdef int FREESASA_INCLUDE_HETATM
+    cdef int FREESASA_INCLUDE_HYDROGEN
+    cdef int FREESASA_JOIN_MODELS
 
     ctypedef struct freesasa_parameters:
         freesasa_algorithm alg
@@ -70,7 +74,7 @@ cdef extern from "freesasa.h":
     void freesasa_result_free(freesasa_result *result)
 
     freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
-                                                    int include_hetatm)
+                                                    int structure_options)
 
     int freesasa_structure_n(freesasa_structure *structure)
 

@@ -144,6 +144,17 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertRaises(AssertionError,lambda: s.residueNumber(2))
         self.assertRaises(AssertionError,lambda: s.chainLabel(2))
 
+        s = Structure("data/1d3z.pdb",None,False,True)
+        self.assertTrue(s.nAtoms() == 1231)
+
+        s = Structure("data/1d3z.pdb",None,False,True,True)
+        self.assertTrue(s.nAtoms() == 12310)
+
+        setVerbosity(silent) # waters aren't recognized, should produce warnings, but we don't want to see them here
+        s = Structure("data/1ubq.pdb",None,True)
+        self.assertTrue(s.nAtoms() == 660)
+        setVerbosity(normal)
+
     def testCalc(self):
         # test default settings
         structure = Structure("data/1ubq.pdb")

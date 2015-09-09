@@ -375,7 +375,7 @@ cdef class Structure:
       cdef freesasa_structure* _c_structure
       cdef double* _c_radii
 
-      def __cinit__(self,fileName=None,classifier=None,hetatm=0):
+      def __cinit__(self,fileName=None,classifier=None,hetatm=False,hydrogens=False,joinModels=False):
             """
             Initializes Structure
 
@@ -400,9 +400,16 @@ cdef class Structure:
                   return
             cdef FILE *input
             input = fopen(fileName,'r')
+            structure_options = 0
+            if hetatm is True:
+                  structure_options |= FREESASA_INCLUDE_HETATM
+            if hydrogens is True:
+                  structure_options |= FREESASA_INCLUDE_HYDROGEN
+            if joinModels is True:
+                  structure_options |= FREESASA_JOIN_MODELS
             if input is NULL:
                   raise IOError("File '%s' could not be opened." % fileName)
-            self._c_structure = freesasa_structure_from_pdb(input,hetatm)
+            self._c_structure = freesasa_structure_from_pdb(input,structure_options)
             fclose(input)
             if self._c_structure is NULL:
                   raise Exception("Error reading '%s' as PDB-file." % fileName)
