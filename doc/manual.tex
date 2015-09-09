@@ -18,8 +18,8 @@
 
 \author{Simon Mitternacht} 
 \date{\today} 
-\title{FreeSASA: A Free C Library for Solvent Accessible Surface
-  Area Calculations
+\title{FreeSASA: An open source C library for solvent accessible surface
+  area calculations
 }
 \begin{document}
 \maketitle
@@ -42,18 +42,18 @@ measure of the contact area between molecule and solvent. This area
 can for example quantify how folded the conformation of a
 macromolecule is, or be used to compare the exposed hydrophobic
 surfaces of different conformations or different molecules, or to
-measure the surface that is buried in protein oligomers. To
-define the SASA, $A$, of a given molecule, let a spherical probe roll
-over the surface of the molecule, including internal cavities. $A$ is
-then the surface drawn by the center of the probe.~\cite{LnR} The
-probe represents a solvent molecule (i.e.\ water). Cavities smaller
-than the solvent molecule do not contribute to $A$.
+measure the surface that is buried in protein oligomers. To define the
+SASA, $A$, let a spherical probe roll over the van der Waals surface of
+a molecule, including internal cavities. $A$ is then the area of the
+surface drawn by the center of the probe~\cite{LnR}. The probe
+represents a solvent molecule (i.e.\ water). Cavities smaller than the
+solvent molecule do not contribute to $A$.
 
 Calculating SASA is a run-of-the-mill calculation in protein structure
-studies. The probably most commonly used tool is the program
-NACCESS~\cite{NACCESS}, which is a Fortran implementation of the
-approximation algorithm by Lee \& Richards~\cite{LnR} (freely
-available to academic users). The program DSSP calculates accessible
+studies. A popular program for doing this is NACCESS~\cite{NACCESS},
+which is a Fortran implementation of the approximation algorithm by
+Lee \& Richards~\cite{LnR} (freely available to academic
+users). Another well-known program is DSSP which calculates accessible
 surface areas in addition to its secondary structure
 assignments~\cite{DSSP} (using the approximation algorithm by Shrake
 \& Rupley~\cite{SnR}, available as open source). Some simulation
@@ -69,23 +69,25 @@ other programs. FreeSASA is an attempt to resolve both these issues,
 and is released under the GNU General Public License 3 to facilitate
 reuse. Python bindings are also provided along with the C source.
 
-FreeSASA is both a standalone command line program and a C library
-for protein SASA calculations. The library provides a simple interface
-that takes PDB-files as input. It has default parameters to allow
-straightforward calculations (using the atomic radii from Ooi et
-al.~\cite{OONS}), but also allows the user to change most parameters
-of the calculation. In addition, the user can treat the calculation as
-a purely mathematical operation on a set of spheres, by providing
-arbitrary coordinates and atomic radii. Both Lee \& Richards'
-\cite{LnR} and Shrake \& Rupley's \cite{SnR} algorithms have been
-implemented. They will be referred to as L\&R and S\&R throughout this
+FreeSASA is both a standalone command line program and a C library for
+SASA calculations. The library provides a simple interface that takes
+PDB-files as input. It has sensible default parameters to allow
+straightforward efficient calculations (using the atomic radii from
+Ooi et al.~\cite{OONS}), but also allows the user to change most
+parameters of the calculation. In addition, the user can treat the
+calculation as a purely mathematical operation on a set of spheres, by
+providing arbitrary coordinates and atomic radii. Both Lee \&
+Richards' \cite{LnR} and Shrake \& Rupley's \cite{SnR} approximations
+can be used. They will be referred to as L\&R and S\&R throughout this
 document. In the current implementation S\&R is the more efficient,
-and therefore recommended for most applications.
+and therefore recommended for most applications. It only relies on
+standard C libraries, and should therefore be straightforward to
+compile and install on most platforms.
 
 In constructing the library three possible use cases were considered. 
 \begin{enumerate}
-\item The user has a PDB-file and wishes to calculate the total SASA of
-  the structure, or the SASA for certain groups or types of atoms.
+\item The user has a PDB-file and wishes to calculate the total SASA, 
+  or the SASA for certain groups or types of atoms.
 \item The user has a set of spheres (typically a molecule), and wants
   to calculate the total SASA for this object.
 \item The user is simulating different conformations of a molecule and
@@ -97,33 +99,14 @@ flexibility in interpreting and analyzing the results. The other 2
 cases are probably best handled using the API. Both the API and the
 CLI allow the user to set all parameters.
 
-This document is organized as follows. Section \ref{sec:installation}
-describes how to install the program, section \ref{sec:cli} how to
-used the CLI, and section \ref{sec:api} gives a short sample program
-demonstrating basic use of the API. This introduction is intended to
-cover most casual users' needs.  Appendix \ref{sec:algorithm}
-describes the algorithms and some implementation details. Appendix
-\ref{sec:performance} gives a performance analysis of the program.  A
-full Doxygen-generated documentation of the API is available at
-\url{http://mittinatten.github.io/freesasa/}, and is also included in
-the source files.
-
-\section{Installation}\label{sec:installation}
-
-The repository can be cloned from Github, either by using git directly
-with the command
-\begin{verbatim}
-    $ git clone https://github.com/mittinatten/freesasa.git
-\end{verbatim}
-or by downloading the latest distribution tarball from
-\begin{verbatim}
-    http://mittinatten.github.io/freesasa/
-\end{verbatim}
-FreeSASA itself only depends on regular C and GNU libraries, and
-should therefore be straightforward to compile and install. It has
-been tested on Mac OS X and a few Linux platforms. Building the git
-clone requires autotools, whereas the tarball includes the
-auto-generated scripts needed to build and install the program.
+%This document is organized as follows. Section \ref{sec:cli} describes
+%how to use the CLI and section \ref{sec:api} gives a short sample
+%program demonstrating basic use of the API. This introduction is
+%intended to cover most casual users' needs. The appendix describes the
+%algorithms, a few implementation details and has a performance
+%analysis of the program. A full Doxygen-generated documentation of
+%the API is available at \url{http://mittinatten.github.io/freesasa/},
+%and is also included in the source files.
 
 \section{Command-line interface}\label{sec:cli}
 
@@ -245,14 +228,6 @@ int main(int argc, char **argv) {
 
 This program generates output similar to that of the last three output
 lines in the previous section.
-
-\section{Conclusion}
-
-FreeSASA is an open-source stand-alone program for calculating
-SASA. It can be used both as command-line tool and as an API. The
-implementation of Lee and Richards' algorithm has similar computation
-time to NACCESS, and the Shrake and Rupley implementation is about an
-order of magnitude faster for the same level of precision.
 
 \appendix
 
