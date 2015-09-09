@@ -388,7 +388,9 @@ cdef class Structure:
                 fileName (str): PDB file (if None empty structure generated)
                 classifier: An optional classifier to calculate atomic
                     radii, uses default if none provided
-                hetatm (int): Includes hetatms in structure if this is 1
+                hetatm (bool): Includes hetatms in structure if this is True
+                hydrogens (bool): Includes hydrogen in structure if this is True
+                joinModels (bool): Include all MODEL entries in structure if this is True
             Raises:
                 IOErorr: Problem opening/reading file.
                 Exception: Problem parsing PDB file or calculating atomic radii
