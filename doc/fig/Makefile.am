@@ -1,6 +1,6 @@
 fig_sources = lnr_circles.tex lnr_slice.tex
 gen_eps = ${subst .tex,.eps,${fig_sources}}
-other_eps = time.eps precision.eps
+other_eps = scaling.eps precision.eps threads.eps
 fig_eps = $(gen_eps) $(other_eps)
 fig_pdf = ${subst .eps,.pdf,${fig_eps}}
 

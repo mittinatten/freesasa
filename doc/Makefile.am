@@ -1,6 +1,6 @@
 SUBDIRS = fig
 manual = manual.tex
-fig_eps = fig/lnr_circles.eps fig/lnr_slice.eps fig/time.eps fig/precision.eps
+fig_eps = fig/lnr_circles.eps fig/lnr_slice.eps fig/scaling.eps fig/precision.eps fig/threads.eps
 fig_pdf = $(subst .eps,.pdf,$(fig_eps))
 
 CLEANFILES =

@@ -14,12 +14,18 @@ cdef extern from "freesasa.h":
     ctypedef enum freesasa_verbosity:
         FREESASA_V_NORMAL, FREESASA_V_SILENT
 
-    cdef int FREESASA_DEF_PROBE_RADIUS
+    cdef double FREESASA_DEF_PROBE_RADIUS
     cdef int FREESASA_DEF_SR_N
     cdef double FREESASA_DEF_LR_D
     cdef int FREESASA_SUCCESS
     cdef int FREESASA_FAIL
     cdef int FREESASA_WARN
+
+    cdef int FREESASA_INCLUDE_HETATM
+    cdef int FREESASA_INCLUDE_HYDROGEN
+    cdef int FREESASA_SEPARATE_CHAINS
+    cdef int FREESASA_SEPARATE_MODELS
+    cdef int FREESASA_JOIN_MODELS
 
     ctypedef struct freesasa_parameters:
         freesasa_algorithm alg
@@ -69,16 +75,6 @@ cdef extern from "freesasa.h":
 
     void freesasa_result_free(freesasa_result *result)
 
-    freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
-                                                    int include_hetatm)
-
-    int freesasa_structure_n(freesasa_structure *structure)
-
-    void freesasa_structure_free(freesasa_structure* structure)
-
-    double* freesasa_structure_radius(freesasa_structure *structure,
-                                      freesasa_classifier *classifier)
-
     freesasa_classifier* freesasa_classifier_from_file(FILE *file)
 
     void freesasa_classifier_free(freesasa_classifier *classifier)
@@ -112,7 +108,23 @@ cdef extern from "freesasa.h":
 
     freesasa_verbosity freesasa_get_verbosity()
 
+    freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
+                                                    int options)
+
+    freesasa_structure** freesasa_structure_array(FILE *pdb,
+                                                  int *n,
+                                                  int options)
+
     freesasa_structure* freesasa_structure_new()
+
+    int freesasa_structure_n(freesasa_structure *structure)
+
+    void freesasa_structure_free(freesasa_structure* structure)
+
+    double* freesasa_structure_radius(freesasa_structure *structure,
+                                      freesasa_classifier *classifier)
+
+
 
     int freesasa_structure_add_atom(freesasa_structure *s,
                                     const char* atom_name,
