@@ -4,7 +4,8 @@ import math
 import os
 from exceptions import Exception
 
-class DummyClassifier(freesasa.Classifier):
+# this class tests using derived classes to create custom Classifiers
+class DerivedClassifier(freesasa.Classifier):
     def classify(self,residueName,atomName):
         return 0
 
@@ -72,6 +73,10 @@ class FreeSASATestCase(unittest.TestCase):
         c = freesasa.Classifier("data/oons.config")
         self.assertTrue(c.radius("ALA"," CB ") == 2.00)
 
+        c = DerivedClassifier()
+        self.assertTrue(c.radius("ALA"," CB ") == 10)
+        self.assertTrue(c.radius("ABCDEFG","HIJKLMNO") == 10)
+
     def testStructure(self):
         self.assertRaises(IOError,lambda: freesasa.Structure("xyz#$%"))
         freesasa.setVerbosity(freesasa.silent)
@@ -124,7 +129,7 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(s.radius(0) == 2.0)
         self.assertTrue(s.radius(1) == 2.0)
 
-        s.setRadiiWithClassifier(DummyClassifier())
+        s.setRadiiWithClassifier(DerivedClassifier())
         self.assertTrue(s.radius(0) == s.radius(1) == 10.0)
         
         s.setRadii([1.0,3.0])
@@ -152,9 +157,20 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(math.fabs(r.totalArea() - 4728.26159) < 1e-5)
         self.assertTrue(math.fabs(sasa_classes['Polar'] - 2211.41649) < 1e-5)
         self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2516.84510) < 1e-5)
-        
-        sasa_classes = freesasa.classifyResults(r,s,DummyClassifier())
+
+        # test extending Classifier with derived class
+        sasa_classes = freesasa.classifyResults(r,s,DerivedClassifier())
         self.assertTrue(math.fabs(sasa_classes['bla'] - 4728.26159) < 1e-5)
+        
+        ## test calculating with user-defined classifier ##
+        classifier = freesasa.Classifier("data/naccess.config")
+        # classifier passed to assign user-defined radii, could also have used s.assignRadiiWithClassifier()
+        s = freesasa.Structure("data/1ubq.pdb",classifier) 
+        r = freesasa.calc(s)
+        self.assertTrue(math.fabs(r.totalArea() - 4777.39) < 0.1)
+        sasa_classes = freesasa.classifyResults(r,s,classifier) # classifier passed to get user-classes
+        self.assertTrue(math.fabs(sasa_classes['polar'] - 2361.92) < 0.1)
+        self.assertTrue(math.fabs(sasa_classes['apolar'] - 2415.47) < 0.1)
         
 
 if __name__ == '__main__':
