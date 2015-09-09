@@ -5,3 +5,4 @@ EXTRA_DIST = README.md share/
 # we want to test all features for dist-check
 DISTCHECK_CONFIGURE_FLAGS = --enable-check
 
+CLEANFILES = *~
