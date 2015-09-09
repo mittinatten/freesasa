@@ -166,7 +166,7 @@ class FreeSASATestCase(unittest.TestCase):
         
         ## test calculating with user-defined classifier ##
         classifier = Classifier("data/naccess.config")
-        # classifier passed to assign user-defined radii, could also have used assignRadiiWithClassifier()
+        # classifier passed to assign user-defined radii, could also have used setRadiiWithClassifier()
         structure = Structure("data/1ubq.pdb",classifier) 
         result = calc(structure)
         self.assertTrue(math.fabs(result.totalArea() - 4777.39) < 0.1)
