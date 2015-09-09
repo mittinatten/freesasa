@@ -19,11 +19,12 @@ NACCESS
 ([Hubbard & Thornton 1993](http://www.bioinf.manchester.ac.uk/naccess/)) 
 and OONS are available in the directory `share`. 
 
-The library is still a work in progress, but, the calculations have been 
-verified to give correct results for a large number of proteins. Therefore, 
-the commandline tool can be considered reliable and stable. Planned changes 
-mainly include refining the API, adding more options to the commandline
-tool and expanding the Python bindings.
+The library is still a work in progress, but the calculations have
+been verified to give correct results for a large number of
+proteins. Therefore, the commandline tool can be considered reliable
+and stable. Planned changes mainly include refining the API, adding
+more options to the commandline tool and possibly expanding the Python
+bindings.
 
 Compiling and installing
 ------------------------
@@ -77,9 +78,12 @@ explains how the commandline tool can be used.
 Compatibility
 -------------
 
-Has been tested successfully with several versions of GNU C Compiler
-and Clang/LLVM. Building the library only requires standard C and GNU
-libraries.  Developers who want to do testing need to install the
-Check unit testing framework.  Building the full reference manual
-requires Doxygen (version > 1.8.8), and the 'regular' manual, LaTeX.
+The program has been tested successfully with several versions of GNU
+C Compiler and Clang/LLVM. Building the library only requires standard
+C and GNU libraries. Developers who want to do testing need to install
+the Check unit testing framework. Building the full reference manual
+requires Doxygen (version > 1.8.8), and the 'regular' manual requires
+LaTeX. Building the Python bindings requires Cython. All these build
+options are disabled by default to reduce the dependencies to a
+minimum.
 
