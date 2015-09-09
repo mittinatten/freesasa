@@ -14,8 +14,8 @@ results.
 
 FreeSASA assigns a radius and a class to each atom. The atomic radii
 are by default those defined by [Ooi et al.  PNAS 1987, 84:
-3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/) (OONS
-classification) for standard protein atoms, and the van der Waals
+3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/) (OONS) 
+for standard protein atoms, and the van der Waals
 radius of the element for other atoms (in for example nucleci
 acids). Each atom is also assigned to a class. The default classes are
 `polar`, `apolar`, `nucleic acid`, and `unknown`. The program outputs
