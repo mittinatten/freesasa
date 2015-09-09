@@ -58,6 +58,23 @@ The configuration script can be customized with
 * `--enable-doxygen` activates building of Doxygen documentation
 * `--enable-latex` activates building of LaTeX documentation
 
+
+User-configuration 
+------------------ 
+
+FreeSASA assigns a radius and a class to each atom. The atomic radii
+are by default those defined by Ooi et al.~\cite{OONS} for standard
+protein atoms, and the van der Waals radius of the element for other
+atoms (in for example nucleci acids). Each atom is also assigned to a
+class. The default classes are `polar`, `apolar`, `nucleic acid`, and
+`unknown`. The program outputs the total SASA and the area of the four
+classes. Users can define both their own radii and classes, either by
+providing their own classifier through the API, or by a configuration
+file. The input format for configuration files is described in the 
+[online documentation](http://mittinatten.github.io/freesasa/doxygen/group__API.html#Config-file), 
+and the `share/` directory contains two sample configurations.
+
+
 Documentation
 -------------
 
