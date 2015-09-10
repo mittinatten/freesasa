@@ -129,6 +129,13 @@ assert_pass "$cli -L < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -L -d 0.1 < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli -L -d 0 < $datadir/1ubq.pdb > $dump"
 echo
+echo "== Testing option chain groups =="
+assert_pass "$cli -g A $datadir/1ubq.pdb > $dump"
+assert_fail "$cli -g B $datadir/1ubq.pdb > $dump"
+assert_pass "$cli -g AB $datadir/2oj4.pdb > $dump"
+assert_fail "$cli -g E $datadir/2oj4.pdb > $dump"
+assert_pass "$cli -g AB+CD $datadir/2oj4.pdb > $dump"
+echo
 echo "== Testing B-factors =="
 assert_pass "$cli -l -B < $datadir/1ubq.pdb > tmp/bfactor.pdb"
 assert_pass "diff tmp/bfactor.pdb $datadir/1ubq.B.pdb"
@@ -187,6 +194,8 @@ assert_equal_opt "$cli $datadir/1ubq.pdb" "-w" "--no-warnings"
 assert_equal_opt "$cli $datadir/1ubq.pdb" "-r" "--per-residue-type"
 assert_equal_opt "$cli $datadir/1ubq.pdb" "-R" "--per-sequence"
 assert_equal_opt "$cli $datadir/1ubq.pdb" "-B" "--print-as-B-values"
+assert_equal_opt "$cli $datadir/2oj4.pdb" "-g AB+CD" "--chain-groups AB+CD"
+assert_equal_opt "$cli $datadir/2oj4.pdb" "-g AB+CD" "-g AB -g CD"
 
 rm -f tmp/*
 

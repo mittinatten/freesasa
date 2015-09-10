@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <string.h>
 #include <getopt.h>
+#include <stdarg.h>
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif
@@ -55,6 +56,8 @@ int per_residue = 0;
 int printlog = 1;
 int structure_options = 0;
 int printpdb = 0;
+int n_chain_groups = 0;
+const char** chain_groups;
 
 void help() {
     fprintf(stderr,"\nUsage: %s [%s] pdb-file(s)\n",
@@ -94,7 +97,12 @@ void help() {
             "                        with -c option. Default H radius is 0 Å.\n"
             "  -m (--join-models)    Join all MODELs in input into one big structure.\n"
             "  -C (--separate-chains) Calculate SASA for each chain separately.\n"
-            "  -M (--separate-models) Calculate SASA for each MODEL separately.\n");
+            "  -M (--separate-models) Calculate SASA for each MODEL separately.\n"
+            "  -g <chains> --chain-groups <chains>\n"
+            "                        Select chain or group of chains to treat separately.\n"
+            "                        Several groups can be concatenated by '+', or by repetition.\n"
+            "                        Examples:\n"
+            "                                    '-g A', '-g AB', -g 'A+B', '-g A -g B', '-g AB+CD', etc\n");
     fprintf(stderr,"\nOutput options:\n"
             "  -l (--no-log)         Don't print log message (useful with -r -R and -B)\n"
             "  -w (--no-warnings)    Don't print warnings (will still print warnings due to invalid command\n"
@@ -116,6 +124,21 @@ void short_help() {
             program_name);
 }
 
+void abort_msg(const char *format, ...)
+{
+    va_list arg;
+    va_start(arg, format);
+    fprintf(stderr, "%s: error: ", program_name);
+    vfprintf(stderr, format, arg);
+    va_end(arg);
+    fputc('\n', stderr);
+    short_help();
+    fputc('\n', stderr);
+    fflush(stderr);
+    exit(EXIT_FAILURE);
+}
+
+
 void run_analysis(FILE *input, const char *name) {
     double tmp, *radii;
     int several_structures = 0, name_len = strlen(name);
@@ -133,34 +156,37 @@ void run_analysis(FILE *input, const char *name) {
         structures = single_structure;
         n = 1;
     }
-    if (structures == NULL) {
-        fprintf(stderr,"%s: error: Invalid input. Aborting.\n",
-                program_name);
-        exit(EXIT_FAILURE);
+    if (structures == NULL) abort_msg("Invalid input. Aborting.\n");
+
+    if (n_chain_groups > 0) {
+        int n2 = n;
+        if (several_structures == 0) {
+            structures = malloc(sizeof(freesasa_structure*));
+            structures[0] = single_structure[0];
+            several_structures = 1;
+        }
+        for (int i = 0; i < n_chain_groups; ++i) {
+            for (int j = 0; j < n; ++j) {
+                freesasa_structure* tmp = freesasa_structure_get_chains(structures[j],chain_groups[i]);
+                if (tmp != NULL) {
+                    ++n2;
+                    structures = realloc(structures,sizeof(freesasa_structure*)*n2);
+                    structures[n2-1] = tmp;
+                } else {
+                    abort_msg("Chain(s) '%s' not found.\n",chain_groups[i]);
+                }
+            }
+        }
+        n = n2;
     }
     for (int i = 0; i < n; ++i) {
-        if (structures[i] == NULL) {
-            fprintf(stderr,"%s: error: Invalid input. Aborting.\n",
-                    program_name);
-            exit(EXIT_FAILURE);
-        }
+        if (structures[i] == NULL) abort_msg("Invalid input.\n");
         radii = freesasa_structure_radius(structures[i],classifier);
-        if (radii == NULL) {
-            fprintf(stderr,"%s: error: Can't calculate atomic radii. Aborting.\n",
-                    program_name);
-            exit(EXIT_FAILURE);
-        }
-        if ((result = freesasa_calc_structure(structures[i],radii,&parameters)) == NULL) {
-            fprintf(stderr,"%s: error: Can't calculate SASA. Aborting.\n",
-                    program_name);
-            exit(EXIT_FAILURE);
-        }
+        if (radii == NULL)         abort_msg("Can't calculate atomic radii.\n");
+        result = freesasa_calc_structure(structures[i],radii,&parameters);
+        if (result == NULL)       abort_msg("Can't calculate SASA.\n");
         classes = freesasa_result_classify(result,structures[i],classifier);
-        if (classes == NULL) {
-            fprintf(stderr,"%s: warning: Can't determine atom classes. Aborting.\n",
-                    program_name);
-            exit(EXIT_FAILURE);
-        }
+        if (classes == NULL)      abort_msg("Can't determine atom classes. Aborting.\n");
         if (printlog) {
             char name_i[name_len+10];
             strcpy(name_i,name);
@@ -168,8 +194,7 @@ void run_analysis(FILE *input, const char *name) {
                 printf("\n");
                 if (structure_options & FREESASA_SEPARATE_MODELS) 
                     sprintf(name_i+strlen(name_i),":%d",freesasa_structure_model(structures[i]));
-                if (structure_options & FREESASA_SEPARATE_CHAINS) 
-                    sprintf(name_i+strlen(name_i),":%c",freesasa_structure_atom_chain(structures[i],0));
+                sprintf(name_i+strlen(name_i),":%s",freesasa_structure_chain_labels(structures[i]));
             }
             freesasa_log(stdout,result,name_i,&parameters,classes);
             if (several_structures) printf("\n");
@@ -197,12 +222,25 @@ FILE* fopen_werr(const char* filename,const char* mode) {
     errno = 0;
     FILE *f = fopen(filename,mode);
     if (f == NULL) {
-        fprintf(stderr,"%s: error: could not open file '%s'; %s\nAborting.",
+        fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
                 program_name,optarg,strerror(errno));
         short_help();
         exit(EXIT_FAILURE);
     }
     return f;
+}
+
+void add_chain_groups(const char* cmd) 
+{
+    char *str = strdup(cmd);
+    const char *token = strtok(str,"+");
+    while (token) {
+        ++n_chain_groups;
+        chain_groups = realloc(chain_groups,sizeof(char*)*n_chain_groups);
+        chain_groups[n_chain_groups-1] = strdup(token);
+        token = strtok(0,",");
+    }
+    free(str);
 }
 
 int main (int argc, char **argv) {
@@ -242,15 +280,23 @@ int main (int argc, char **argv) {
         {"per-residue-type",no_argument,0,'r'},
         {"per-sequence",no_argument,0,'R'},
         {"print-as-B-values",no_argument,0,'B'},
+        {"chain-groups",required_argument,0,'g'},
         {"per-residue-type-file",required_argument,&option_flag,RES_FILE},
         {"per-sequence-file",required_argument,&option_flag,SEQ_FILE},
         {"B-value-file",required_argument,&option_flag,B_FILE}
     };
-    options_string = "hvlwLSHYCMmBrRc:n:d:t:p:";
+    options_string = "hvlwLSHYCMmBrRc:n:d:t:p:g:";
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
-        errno = 0;
         opt_set[opt] = 1;
+        errno = 0;
+        // Assume arguments starting with dash are actually missing arguments
+        if (optarg != NULL && optarg[0] == '-') {
+            if (option_index > 0) abort_msg("Missing argument? Value '%s' cannot be argument to '--%s'.\n",
+                                            program_name,optarg,long_options[option_index].name);
+            else abort_msg("Missing argument? Value '%s' cannot be argument to '-%c'.\n",
+                           program_name,optarg,opt);
+        }
         switch(opt) {
         case 0:
             switch(long_options[option_index].val) {
@@ -286,11 +332,7 @@ int main (int argc, char **argv) {
             FILE *f = fopen_werr(optarg,"r");
             classifier = freesasa_classifier_from_file(f);
             fclose(f);
-            if (classifier == NULL) {
-                fprintf(stderr,"%s: error: Can't read file '%s'. Aborting.\n",
-                        program_name,optarg);
-                exit(EXIT_FAILURE);
-            }
+            if (classifier == NULL) abort_msg("Can't read file '%s'.\n",optarg);
             break;
         }
         case 'n':
@@ -309,11 +351,7 @@ int main (int argc, char **argv) {
             break;
         case 'p':
             parameters.probe_radius = atof(optarg);
-            if (parameters.probe_radius < 0) {
-                fprintf(stderr, "%s: error: probe radius must be 0 or larger.\n",
-                        program_name);
-                exit(EXIT_FAILURE);
-            }
+            if (parameters.probe_radius < 0) abort_msg("error: probe radius must be 0 or larger.\n");
             break;
         case 'H':
             structure_options |= FREESASA_INCLUDE_HETATM;
@@ -343,43 +381,31 @@ int main (int argc, char **argv) {
             printpdb = 1;
             if (output_pdb == NULL) output_pdb = stdout;
             break;
+        case 'g':
+            add_chain_groups(optarg);
+            break;
         case 't':
 #if HAVE_LIBPTHREAD
             parameters.n_threads = atoi(optarg);
-            if (parameters.n_threads < 1) {
-                fprintf(stderr, "%s: error: number of threads must be 1 or larger.\n",
-                        program_name);
-                exit(EXIT_FAILURE);
-            }
+            if (parameters.n_threads < 1) abort_msg("Number of threads must be 1 or larger.\n");
 #else
-            fprintf(stderr, "%s: warning: option 't' only defined if program"
-                    " compiled with thread support.\n",
-                    program_name);
+            abort_msg("option 't' only defined if program compiled with thread support.\n");
 #endif
             break;
         default:
-            fprintf(stderr, "%s: warning: unknown option '%c' (will be ignored)\n",
+            fprintf(stderr, "%s: warning: Unknown option '%c' (will be ignored)\n",
                     program_name,opt);
             break;
         }
     }
-    if (alg_set > 1) {
-        fprintf(stderr, "%s: error: multiple algorithms specified.\n",
-                program_name);
-        exit(EXIT_FAILURE);
-    }
+    if (alg_set > 1) abort_msg("Multiple algorithms specified.\n");
     if ((opt_set['L'] && opt_set['n']) ||
         (!opt_set['L'] && opt_set['d']) ) {
-        fprintf(stderr, "%s: warning: The program was given parameters "
-                "not compatible with the selected algorithm. These will be ignored.\n",
-                program_name);
+        abort_msg("The program was given parameters not compatible with the selected "
+                  "algorithm. These will be ignored.\n");
     }
-    
-    if (opt_set['m'] && opt_set['M']) {
-        fprintf(stderr, "%s: error: The options -m and -M can't be combined.\n",
-                program_name);
-        exit(EXIT_FAILURE);
-    }
+    if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.\n");
+    if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.\n");
     if (printlog) printf("## %s %s ##\n",program_name,version);
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {
@@ -389,20 +415,12 @@ int main (int argc, char **argv) {
                 run_analysis(input,argv[i]);
                 fclose(input);
             } else {
-                fprintf(stderr, "%s: error opening file '%s'; %s\n",
-                        program_name,argv[i],strerror(errno));
-                exit(EXIT_FAILURE);
+                abort_msg("Opening file '%s'; %s\n",argv[i],strerror(errno));
             }
         }
     } else {
-        if (!isatty(STDIN_FILENO)) {
-            run_analysis(stdin,"stdin");
-        } else {
-            fprintf(stderr,"%s: no input.\n",
-                    program_name);
-            short_help();
-            exit(EXIT_FAILURE);
-        }
+        if (!isatty(STDIN_FILENO)) run_analysis(stdin,"stdin");
+        else abort_msg("No input.\n", program_name);
     }
 
     if (classifier) freesasa_classifier_free(classifier);

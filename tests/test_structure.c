@@ -261,6 +261,7 @@ START_TEST (test_get_chains) {
     FILE *pdb = fopen(DATADIR "2jo4.pdb","r");
     freesasa_structure *s = freesasa_structure_from_pdb(pdb,0);
     ck_assert(freesasa_structure_n(s) == 4*129);
+    ck_assert_str_eq(freesasa_structure_chain_labels(s),"ABCD");
 
     freesasa_structure *s2 = freesasa_structure_get_chains(s,"");
     ck_assert(s2 == NULL);
@@ -270,17 +271,20 @@ START_TEST (test_get_chains) {
     s2 = freesasa_structure_get_chains(s,"A");
     ck_assert(freesasa_structure_n(s2) == 129);
     ck_assert(freesasa_structure_atom_chain(s2,0) == 'A');
+    ck_assert_str_eq(freesasa_structure_chain_labels(s2),"A");
     freesasa_structure_free(s2);
 
     s2 = freesasa_structure_get_chains(s,"D");
     ck_assert(freesasa_structure_n(s2) == 129);
     ck_assert(freesasa_structure_atom_chain(s2,0) == 'D');
+    ck_assert_str_eq(freesasa_structure_chain_labels(s2),"D");
     freesasa_structure_free(s2);
 
     s2 = freesasa_structure_get_chains(s,"AC");
     ck_assert(freesasa_structure_n(s2) == 2*129);
     ck_assert(freesasa_structure_atom_chain(s2,0) == 'A');
     ck_assert(freesasa_structure_atom_chain(s2,129) == 'C');
+    ck_assert_str_eq(freesasa_structure_chain_labels(s2),"AC");
     freesasa_structure_free(s2);
 }
 END_TEST

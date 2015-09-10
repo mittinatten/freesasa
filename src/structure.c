@@ -51,6 +51,7 @@ struct freesasa_structure {
     int number_residues;
     int number_chains;
     int model; // model number
+    char *chains; //all chain labels found (as string)
     int *res_first_atom; // first atom of each residue
     char **res_desc;
 };
@@ -63,6 +64,8 @@ freesasa_structure* freesasa_structure_new()
     p->number_residues = 0;
     p->number_chains = 0;
     p->model = 0;
+    p->chains = malloc(1);
+    p->chains[0] = '\0';
     p->a = malloc(sizeof(atom_t));
     assert(p->a);
     p->xyz = freesasa_coord_new();
@@ -79,6 +82,7 @@ void freesasa_structure_free(freesasa_structure *p)
     if (p->a) free(p->a);
     if (p->xyz) freesasa_coord_free(p->xyz);
     if (p->res_first_atom) free(p->res_first_atom);
+    if (p->chains) free(p->chains);
     if (p->res_desc) {
         for (int i = 0; i < p->number_residues; ++i) {
             if (p->res_desc[i]) free(p->res_desc[i]);
@@ -348,15 +352,18 @@ int freesasa_structure_add_atom(freesasa_structure *p,
     a->chain_label = chain_label;
     a->line[0] = '\0';
 
-    /* here we assume atoms are ordered sequentially, i.e. chains are
-       not mixed in input: if two sequential atoms have different
-       residue numbers or chain labels a new residue or new chain is
-       assumed to begin */
-    if (p->number_chains == 0)
-        ++p->number_chains;
-    if (na > 1 && chain_label != p->a[na-2].chain_label)
-        ++p->number_chains;
+    // register new chain
+    if (strchr(p->chains,chain_label) == NULL) {
+        int n = ++p->number_chains;
+        p->chains = realloc(p->chains,n + 1);
+        p->chains[n-1] = chain_label;
+        p->chains[n] = '\0';
+        assert (strlen(p->chains) == p->number_chains);
+    }
 
+    /* here we assume atoms are ordered sequentially, i.e. residues are
+       not mixed in input: if two sequential atoms have different
+       residue numbers, a new residue is assumed to begin */
     if (p->number_residues == 0) {
         ++p->number_residues;
         p->res_first_atom[0] = 0;
@@ -386,7 +393,8 @@ freesasa_structure* freesasa_structure_get_chains(const freesasa_structure *p, c
     if (strlen(chains) == 0) return NULL;
     
     freesasa_structure *new_p = freesasa_structure_new();
-    
+    new_p->model = p->model;
+
     for (int i = 0; i < p->number_atoms; ++i) {
         atom_t *ai = &(p->a[i]);
         char c = ai->chain_label;
@@ -404,6 +412,10 @@ freesasa_structure* freesasa_structure_get_chains(const freesasa_structure *p, c
     return new_p;
 }
 
+const char* freesasa_structure_chain_labels(const freesasa_structure *structure) {
+    assert(structure);
+    return structure->chains;
+}
 
 const freesasa_coord* freesasa_structure_xyz(const freesasa_structure *p)
 {

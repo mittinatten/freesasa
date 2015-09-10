@@ -655,6 +655,15 @@ int freesasa_structure_add_atom(freesasa_structure *structure,
 freesasa_structure* freesasa_structure_get_chains(const freesasa_structure *structure, 
                                                   const char* chains);
 /**
+    Get string listing all chains in structure.
+
+    @param structure The structure.
+    @return String with all chain labels in structure ("A", "ABC", etc).
+
+    @ingroup StructureAPI
+ */
+const char* freesasa_structure_chain_labels(const freesasa_structure *structure);
+/**
     Get number of atoms.
 
     @param structure The structure.
