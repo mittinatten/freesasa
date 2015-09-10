@@ -43,6 +43,7 @@ const char* version = "unknown";
 #endif
 
 char *program_name;
+const char* options_string;
 
 freesasa_parameters parameters;
 freesasa_classifier *classifier = NULL;
@@ -55,31 +56,9 @@ int printlog = 1;
 int structure_options = 0;
 int printpdb = 0;
 
-static struct option long_options[] = {
-    {"lee-richards", no_argument, 0, 'L'},
-    {"shrake-rupley", no_argument, 0, 'S'},
-    {"probe-radius", required_argument, 0, 'p'},
-    {"lr-slice", required_argument, 0, 'd'},
-    {"sr-points", required_argument, 0, 'n'},
-    {"help", no_argument, 0, 'h'},
-    {"version", no_argument, 0, 'v'},
-    {"no-log", no_argument, 0, 'l'},
-    {"no-warnings", no_argument, 0, 'w'},
-    {"n-threads",required_argument, 0, 't'},
-    {"hetatm",no_argument, 0, 'H'},
-    {"hydrogen",no_argument, 0, 'Y'},
-    {"separate-chains",no_argument, 0, 'C'},
-    {"separate-models",no_argument, 0, 'M'},
-    {"join-models",no_argument, 0, 'm'},
-    {"config-file",required_argument,0,'c'},
-    {"sasa-per-residue-type",optional_argument,0,'r'},
-    {"sasa-per-residue-sequence",optional_argument,0,'R'},
-    {"print-as-B-values",optional_argument,0,'B'}
-};
-
 void help() {
-    fprintf(stderr,"\nUsage: %s [-hvlwLHYCMmSR::r::B::c:n:d:t:p:] pdb-file(s)\n",
-            program_name);
+    fprintf(stderr,"\nUsage: %s [%s] pdb-file(s)\n",
+            program_name,options_string);
     fprintf(stderr,"\n"
             "  -h (--help)           Print this message\n"
             "  -v (--version)        Print version of the program\n");
@@ -118,14 +97,16 @@ void help() {
             "  -M (--separate-models) Calculate SASA for each MODEL separately.\n");
     fprintf(stderr,"\nOutput options:\n"
             "  -l (--no-log)         Don't print log message (useful with -r -R and -B)\n"
-            "  -w (--no-warnings)    Don't print warnings\n"
-            "  -r  --sasa-per-residue-type[=<output-file>]\n"
-            "  -R  --sasa-per-residue-sequence[=<output-file>]\n"
+            "  -w (--no-warnings)    Don't print warnings (will still print warnings due to invalid command\n"
+            "                        line options)\n\n"
+            "  -r  --per-residue-type --per-residue-type-file <output-file>\n"
+            "  -R  --per-sequence --per-sequence-file <output-file>\n"
             "                        Print SASA for each residue, either grouped by type or sequentially.\n"
-            "                        Writes to STDOUT if no output is specified.\n"
-            "  -B  --print-as-B-values[=<output-file>]\n"
-            "                        Print PDB file with SASA for each atom as B-factors.\n"
-            "                        Write to STDOUT if no output is specified.\n");
+            "                        Use the -file variant to specify an output file.\n\n"
+            "  -B  --print-as-B-values --B-value-file <output-file>\n"
+            "                        Print PDB file with where the temperature factor of each atom has\n"
+            "                        been replaced by its SASA, and the occupancy number by the atomic\n"
+            "                        radius. Use the -file variant to specify an output file.\n");
     fprintf(stderr,
             "\nIf no pdb-file is specified STDIN is used for input.\n\n");
 }
@@ -212,26 +193,83 @@ void run_analysis(FILE *input, const char *name) {
     if (structures != single_structure) free(structures);
 }
 
+FILE* fopen_werr(const char* filename,const char* mode) {
+    errno = 0;
+    FILE *f = fopen(filename,mode);
+    if (f == NULL) {
+        fprintf(stderr,"%s: error: could not open file '%s'; %s\nAborting.",
+                program_name,optarg,strerror(errno));
+        short_help();
+        exit(EXIT_FAILURE);
+    }
+    return f;
+}
+
 int main (int argc, char **argv) {
     int alg_set = 0;
     FILE *input = NULL;
     extern char *optarg;
     parameters = freesasa_default_parameters;
     char opt;
-    int n_opt = 'z';
+    int n_opt = 'z'+1;
     char opt_set[n_opt];
+    int option_index = 0;
+    static int option_flag;
+    enum {B_FILE,RES_FILE,SEQ_FILE};
     memset(opt_set,0,n_opt);
 #ifdef PACKAGE_NAME
     program_name = PACKAGE_NAME;
 #else
     program_name = argv[0];
 #endif
-    int option_index = 0;
-    while ((opt = getopt_long(argc, argv, "hvlwLSHYCMmR::r::B::c:n:d:t:p:",
+    static struct option long_options[] = {
+        {"lee-richards", no_argument, 0, 'L'},
+        {"shrake-rupley", no_argument, 0, 'S'},
+        {"probe-radius", required_argument, 0, 'p'},
+        {"lr-slice", required_argument, 0, 'd'},
+        {"sr-points", required_argument, 0, 'n'},
+        {"help", no_argument, 0, 'h'},
+        {"version", no_argument, 0, 'v'},
+        {"no-log", no_argument, 0, 'l'},
+        {"no-warnings", no_argument, 0, 'w'},
+        {"n-threads",required_argument, 0, 't'},
+        {"hetatm",no_argument, 0, 'H'},
+        {"hydrogen",no_argument, 0, 'Y'},
+        {"separate-chains",no_argument, 0, 'C'},
+        {"separate-models",no_argument, 0, 'M'},
+        {"join-models",no_argument, 0, 'm'},
+        {"config-file",required_argument,0,'c'},
+        {"per-residue-type",no_argument,0,'r'},
+        {"per-sequence",no_argument,0,'R'},
+        {"print-as-B-values",no_argument,0,'B'},
+        {"per-residue-type-file",required_argument,&option_flag,RES_FILE},
+        {"per-sequence-file",required_argument,&option_flag,SEQ_FILE},
+        {"B-value-file",required_argument,&option_flag,B_FILE}
+    };
+    options_string = "hvlwLSHYCMmBrRc:n:d:t:p:";
+    while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
         errno = 0;
         opt_set[opt] = 1;
         switch(opt) {
+        case 0:
+            switch(long_options[option_index].val) {
+            case RES_FILE:
+                per_residue_type = 1;
+                per_residue_type_file = fopen_werr(optarg,"w");
+                break;
+            case SEQ_FILE:
+                per_residue = 1;
+                per_residue_file = fopen_werr(optarg,"w");
+                break;
+            case B_FILE:
+                printpdb = 1;
+                output_pdb = fopen_werr(optarg,"w");
+                break;
+            default:
+                abort(); // what does this even mean?
+            }
+            break;
         case 'h':
             help();
             exit(EXIT_SUCCESS);
@@ -245,20 +283,13 @@ int main (int argc, char **argv) {
             freesasa_set_verbosity(FREESASA_V_NOWARNINGS);
             break;
         case 'c': {
-            FILE *f = fopen(optarg,"r");
-            if (f == NULL) {
-                fprintf(stderr,"%s: error: could not open file '%s'; %s\nAborting.",
-                        program_name,optarg,strerror(errno));
-                short_help();
+            FILE *f = fopen_werr(optarg,"r");
+            classifier = freesasa_classifier_from_file(f);
+            fclose(f);
+            if (classifier == NULL) {
+                fprintf(stderr,"%s: error: Can't read file '%s'. Aborting.\n",
+                        program_name,optarg);
                 exit(EXIT_FAILURE);
-            } else {
-                classifier = freesasa_classifier_from_file(f);
-                if (classifier == NULL) {
-                    fclose(f);
-                    fprintf(stderr,"%s: error: Can't read file '%s'. Aborting.\n",
-                            program_name,optarg);
-                    exit(EXIT_FAILURE);
-                }
             }
             break;
         }
@@ -301,45 +332,16 @@ int main (int argc, char **argv) {
             break;
         case 'r':
             per_residue_type = 1;
-            if (optarg) {
-                per_residue_type_file = fopen(optarg,"w");
-                if (per_residue_type_file == NULL) {
-                    fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
-                            program_name,optarg,strerror(errno));
-                    short_help();
-                    exit(EXIT_FAILURE);
-                }
-            } else {
-                per_residue_type_file = stdout;
-            }
+            if (per_residue_type_file == NULL) per_residue_type_file = stdout;
             break;
         case 'R':
             per_residue = 1;
-            if (optarg) {
-                per_residue_file = fopen(optarg,"w");
-                if (per_residue_file == NULL) {
-                    fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
-                            program_name,optarg,strerror(errno));
-                    short_help();
-                    exit(EXIT_FAILURE);
-                }
-            } else {
-                per_residue_file = stdout;
-            }
+            if (per_residue_file == NULL) per_residue_file = stdout;
             break;
+        case 'b':
         case 'B':
             printpdb = 1;
-            if (optarg) {
-                output_pdb = fopen(optarg,"w");
-                if (output_pdb == NULL) {
-                    fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
-                            program_name,optarg,strerror(errno));
-                    short_help();
-                    exit(EXIT_FAILURE);
-                }
-            } else {
-                output_pdb = stdout;
-            }
+            if (output_pdb == NULL) output_pdb = stdout;
             break;
         case 't':
 #if HAVE_LIBPTHREAD
@@ -372,6 +374,7 @@ int main (int argc, char **argv) {
                 "not compatible with the selected algorithm. These will be ignored.\n",
                 program_name);
     }
+    
     if (opt_set['m'] && opt_set['M']) {
         fprintf(stderr, "%s: error: The options -m and -M can't be combined.\n",
                 program_name);
