@@ -116,7 +116,10 @@ void help() {
             "                        been replaced by its SASA, and the occupancy number by the atomic\n"
             "                        radius. Use the -file variant to specify an output file.\n");
     fprintf(stderr,
-            "\nIf no pdb-file is specified STDIN is used for input.\n\n");
+            "\nIf no pdb-file is specified STDIN is used for input.\n\n"
+            "To calculate SASA of one or several PDB file using default parameters simply type:\n\n"
+            "   '%s pdb-file(s)'     or    '%s < pdb-file'\n\n",
+            program_name,program_name);
 }
 
 void short_help() {
@@ -246,20 +249,16 @@ void add_chain_groups(const char* cmd)
 int main (int argc, char **argv) {
     int alg_set = 0;
     FILE *input = NULL;
-    extern char *optarg;
-    parameters = freesasa_default_parameters;
     char opt;
     int n_opt = 'z'+1;
     char opt_set[n_opt];
     int option_index = 0;
     static int option_flag;
     enum {B_FILE,RES_FILE,SEQ_FILE};
+    parameters = freesasa_default_parameters;
     memset(opt_set,0,n_opt);
-#ifdef PACKAGE_NAME
-    program_name = PACKAGE_NAME;
-#else
-    program_name = argv[0];
-#endif
+    // errors from this file will be prepended with freesasa, library errors with FreeSASA
+    program_name = "freesasa";
     static struct option long_options[] = {
         {"lee-richards", no_argument, 0, 'L'},
         {"shrake-rupley", no_argument, 0, 'S'},
@@ -285,7 +284,7 @@ int main (int argc, char **argv) {
         {"per-sequence-file",required_argument,&option_flag,SEQ_FILE},
         {"B-value-file",required_argument,&option_flag,B_FILE}
     };
-    options_string = "hvlwLSHYCMmBrRc:n:d:t:p:g:";
+    options_string = ":hvlwLSHYCMmBrRc:n:d:t:p:g:";
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
         opt_set[opt] = 1;
@@ -295,7 +294,7 @@ int main (int argc, char **argv) {
             if (option_index > 0) abort_msg("Missing argument? Value '%s' cannot be argument to '--%s'.\n",
                                             program_name,optarg,long_options[option_index].name);
             else abort_msg("Missing argument? Value '%s' cannot be argument to '-%c'.\n",
-                           program_name,optarg,opt);
+                           optarg,opt);
         }
         switch(opt) {
         case 0:
@@ -389,11 +388,14 @@ int main (int argc, char **argv) {
             parameters.n_threads = atoi(optarg);
             if (parameters.n_threads < 1) abort_msg("Number of threads must be 1 or larger.\n");
 #else
-            abort_msg("option 't' only defined if program compiled with thread support.\n");
+            abort_msg("Option '-t' only defined if program compiled with thread support.\n");
 #endif
             break;
+        case ':':
+            abort_msg("Option '-%c' missing argument.\n",optopt);
+        case '?':
         default:
-            fprintf(stderr, "%s: warning: Unknown option '%c' (will be ignored)\n",
+            fprintf(stderr, "%s: warning: Unknown option '-%c' (will be ignored)\n",
                     program_name,opt);
             break;
         }
