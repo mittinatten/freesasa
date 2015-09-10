@@ -257,7 +257,36 @@ START_TEST (test_structure_array)
 }
 END_TEST
 
+START_TEST (test_get_chains) {
+    FILE *pdb = fopen(DATADIR "2jo4.pdb","r");
+    freesasa_structure *s = freesasa_structure_from_pdb(pdb,0);
+    ck_assert(freesasa_structure_n(s) == 4*129);
+
+    freesasa_structure *s2 = freesasa_structure_get_chains(s,"");
+    ck_assert(s2 == NULL);
+    s2 = freesasa_structure_get_chains(s,"X");
+    ck_assert(s2 == NULL);
+
+    s2 = freesasa_structure_get_chains(s,"A");
+    ck_assert(freesasa_structure_n(s2) == 129);
+    ck_assert(freesasa_structure_atom_chain(s2,0) == 'A');
+    freesasa_structure_free(s2);
+
+    s2 = freesasa_structure_get_chains(s,"D");
+    ck_assert(freesasa_structure_n(s2) == 129);
+    ck_assert(freesasa_structure_atom_chain(s2,0) == 'D');
+    freesasa_structure_free(s2);
+
+    s2 = freesasa_structure_get_chains(s,"AC");
+    ck_assert(freesasa_structure_n(s2) == 2*129);
+    ck_assert(freesasa_structure_atom_chain(s2,0) == 'A');
+    ck_assert(freesasa_structure_atom_chain(s2,129) == 'C');
+    freesasa_structure_free(s2);
+}
+END_TEST
+
 Suite* structure_suite() {
+    // what goes in what Case is kind of arbitrary
     Suite *s = suite_create("Structure");
     TCase *tc_core = tcase_create("Core");
     tcase_add_checked_fixture(tc_core,setup,teardown);
@@ -268,6 +297,7 @@ Suite* structure_suite() {
     tcase_add_test(tc_pdb,test_hydrogen);
     tcase_add_test(tc_pdb,test_hetatm);
     tcase_add_test(tc_pdb,test_structure_array);
+    tcase_add_test(tc_pdb,test_get_chains);
 
     TCase *tc_1ubq = tcase_create("1UBQ");
     tcase_add_checked_fixture(tc_1ubq,setup_1ubq,teardown_1ubq);

@@ -104,7 +104,7 @@ void help() {
             "                        Print SASA for each residue, either grouped by type or sequentially.\n"
             "                        Use the -file variant to specify an output file.\n\n"
             "  -B  --print-as-B-values --B-value-file <output-file>\n"
-            "                        Print PDB file with where the temperature factor of each atom has\n"
+            "                        Print PDB file where the temperature factor of each atom has\n"
             "                        been replaced by its SASA, and the occupancy number by the atomic\n"
             "                        radius. Use the -file variant to specify an output file.\n");
     fprintf(stderr,

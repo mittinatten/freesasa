@@ -380,6 +380,30 @@ int freesasa_structure_add_atom(freesasa_structure *p,
     return FREESASA_SUCCESS;
 }
 
+freesasa_structure* freesasa_structure_get_chains(const freesasa_structure *p, const char* chains)
+{
+    assert(p);
+    if (strlen(chains) == 0) return NULL;
+    
+    freesasa_structure *new_p = freesasa_structure_new();
+    
+    for (int i = 0; i < p->number_atoms; ++i) {
+        atom_t *ai = &(p->a[i]);
+        char c = ai->chain_label;
+        if (strchr(chains,c) != NULL) {
+            const double *v = freesasa_coord_i(p->xyz,i);
+            freesasa_structure_add_atom(new_p, ai->atom_name, 
+                                        ai->res_name, ai->res_number,
+                                        c, v[0], v[1], v[2]);
+        }
+    }
+    if (new_p->number_atoms == 0) {
+        freesasa_structure_free(new_p);
+        new_p = NULL;
+    }
+    return new_p;
+}
+
 
 const freesasa_coord* freesasa_structure_xyz(const freesasa_structure *p)
 {

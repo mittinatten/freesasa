@@ -619,7 +619,7 @@ freesasa_structure** freesasa_structure_array(FILE *pdb,
     `"CA"` or `" CA"`). (This might be more flexible in future
     versions of the library).
 
-    @param s Self.
+    @param structure The structure to add to.
     @param atom_name String of 4 characters, of the format `" CA "`, `" OXT"`, etc.
     @param residue_name String of 3 charachters, of the format `"ALA"`, `"PHE"`, etc.
     @param residue_number String of 4 characters, of the format `"   1"`, `" 123"`, etc.
@@ -633,22 +633,36 @@ freesasa_structure** freesasa_structure_array(FILE *pdb,
 
     @ingroup StructureAPI
  */
-int freesasa_structure_add_atom(freesasa_structure *s,
+int freesasa_structure_add_atom(freesasa_structure *structure,
                                 const char* atom_name,
                                 const char* residue_name,
                                 const char* residue_number,
                                 char chain_label,
                                 double x, double y, double z);
+/**
+    Create new structure consisting of a selection chains from the provided structure.
 
+    Return value is dynamically allocated, should be freed with
+    freesasa_structure_free().
+
+    @param structure Input structure.
+    @param chains String of chain labels (e.g. "AB")
+    @return A new structure consisting only of the specified chains. Returns NULL
+        if the input structure doesn't have any matching chains.
+
+    @ingroup StructureAPI
+ */
+freesasa_structure* freesasa_structure_get_chains(const freesasa_structure *structure, 
+                                                  const char* chains);
 /**
     Get number of atoms.
 
-    @param s Self.
+    @param structure The structure.
     @return Number of atoms.
 
     @ingroup StructureAPI
 */
-int freesasa_structure_n(const freesasa_structure *s);
+int freesasa_structure_n(const freesasa_structure *structure);
 
 /**
     Free structure.
@@ -679,49 +693,49 @@ double* freesasa_structure_radius(const freesasa_structure *structure,
 /**
     Get atom name
 
-    @param s Self.
+    @param structure The structure.
     @param i Atom index.
     @return Atom name in the form `" CA "`, `" OXT"`, etc.
 
     @ingroup StructureAPI
  */
-const char* freesasa_structure_atom_name(const freesasa_structure *s,
+const char* freesasa_structure_atom_name(const freesasa_structure *structure,
                                          int i);
 
 /**
     Get residue name.
 
-    @param s Self.
+    @param structure The structure.
     @param i Atom index.
     @return Residue name in the form `"ALA"`, `"PHE"`, etc.
 
     @ingroup StructureAPI
  */
-const char* freesasa_structure_atom_res_name(const freesasa_structure *s,
+const char* freesasa_structure_atom_res_name(const freesasa_structure *structure,
                                              int i);
 
 /**
     Get residue number.
 
-    @param s Self.
+    @param structure The structure.
     @param i Atom index.
     @return Residue name in the form `"   1"`, `" 123"`, etc.
 
     @ingroup StructureAPI
  */
-const char* freesasa_structure_atom_res_number(const freesasa_structure *s,
+const char* freesasa_structure_atom_res_number(const freesasa_structure *structure,
                                                int i);
 
 /**
     Get chain label.
 
-    @param s Self.
+    @param structure The structure.
     @param i Atom index.
     @return Chain label (`'A'`, `'B'`, etc.)
 
     @ingroup StructureAPI
  */
-char freesasa_structure_atom_chain(const freesasa_structure *s, int i);
+char freesasa_structure_atom_chain(const freesasa_structure *structure, int i);
 
 /**
     Get model number for structure.
