@@ -42,7 +42,7 @@ START_TEST (test_cell) {
 }
 END_TEST
 
-Suite* verlet_static_suite() {
+int main(int argc, char **argv) {
     Suite *s = suite_create("Verlet static functions");
 
     TCase *tc = tcase_create("Basic");
@@ -50,5 +50,9 @@ Suite* verlet_static_suite() {
     
     suite_add_tcase(s, tc);
     
-    return s;
+    SRunner *sr = srunner_create(s);
+    
+    srunner_run_all(sr,CK_VERBOSE);
+
+    return (srunner_ntests_failed(sr) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
