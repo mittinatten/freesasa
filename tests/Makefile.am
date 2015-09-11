@@ -24,8 +24,9 @@ libtest_LDADD = ../src/libfreesasa.a -lcheck
 
 endif 
 
-# we want this to run second if Check is active, since it is much slower
+if RUN_CLI_TESTS # on by default
 TESTS += run-test-cli.sh
+endif
 
 CLEANFILES = tmp/*  $(GCOV_FILES) *~
 
