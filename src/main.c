@@ -114,7 +114,9 @@ void help() {
             "  -B  --print-as-B-values --B-value-file <output-file>\n"
             "                        Print PDB file where the temperature factor of each atom has\n"
             "                        been replaced by its SASA, and the occupancy number by the atomic\n"
-            "                        radius. Use the -file variant to specify an output file.\n");
+            "                        radius. Use the -file variant to specify an output file.\n"
+            "                        This option might at moment give confusing output when used in conjuction\n"
+            "                        with the options -C and -g.\n");
     fprintf(stderr,
             "\nIf no pdb-file is specified STDIN is used for input.\n\n"
             "To calculate SASA of one or several PDB file using default parameters simply type:\n\n"
