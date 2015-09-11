@@ -35,7 +35,7 @@ START_TEST (test_cell) {
     cell_list *cell_list = cell_list_new(r_max,coord);
     ck_assert(cell_list != NULL);
     ck_assert(fabs(cell_list->d - r_max) < 1e-10);
-    ck_assert(fabs(cell_list->x_min - (-1 - r_max/2.)) < 1e-10);
+    ck_assert(fabs(cell_list->x_min - (-5 - r_max/2.)) < 1e-1);
     
     cell_list_free(cell_list);
     freesasa_coord_free(coord);
