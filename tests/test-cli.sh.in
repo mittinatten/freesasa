@@ -77,7 +77,6 @@ echo "== Testing S&R =="
 assert_pass "$cli < $datadir/1ubq.pdb > $dump"
 echo
 #check that output message has required components
-assert_pass "grep '## freesasa $version ##' $dump"
 assert_pass "grep 'name: stdin' $dump"
 $cli $datadir/1ubq.pdb > $dump
 assert_pass "grep 'name: $datadir/1ubq.pdb' $dump"

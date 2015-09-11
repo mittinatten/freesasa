@@ -122,5 +122,16 @@ AC_ARG_ENABLE([gcov],
   [enable_gcov=yes],[enable_gcov=no])
 AM_CONDITIONAL([COND_GCOV],[test "x$enable_gcov" = xyes])
 
+# Disable test for CLI
+AC_ARG_ENABLE([CLI-tests],
+        AS_HELP_STRING([--disable-CLI-tests],
+          [Disable testing of command-line interface. These take time and
+           disabling them can help speed up development when only unit
+           tests are needed.]))
+if test x$enable_CLI_tests != xno ; then
+   AM_CONDITIONAL([RUN_CLI_TESTS],TRUE)
+else
+   AM_CONDITIONAL([RUN_CLI_TESTS],FALSE)
+fi
 
 AC_OUTPUT
