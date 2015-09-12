@@ -184,14 +184,14 @@ static void lr_do_threads(int n_threads, lr_data *lr)
                                  (void *) &t_data[t]);
         if (res) {
             perror(freesasa_name);
-            exit(EXIT_FAILURE);
+            abort();
         }
     }
     for (int t = 0; t < n_threads; ++t) {
         res = pthread_join(thread[t],&thread_result);
         if (res) {
             perror(freesasa_name);
-            exit(EXIT_FAILURE);
+            abort();
         }
     }
 }

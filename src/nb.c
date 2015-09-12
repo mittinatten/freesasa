@@ -25,7 +25,6 @@
 
 #define NB_CHUNK 32
 
-
 typedef struct freesasa_nb_element freesasa_nb_element;
 
 typedef struct cell cell;
@@ -36,6 +35,7 @@ struct cell {
     int n_atoms; //! number of atoms in cell
 };
 
+//! Verlet cell lists
 typedef struct cell_list {
     cell *cell; //! the cells
     int n; //! number of cells
@@ -180,12 +180,10 @@ static cell_list* cell_list_new(double cell_size,
     assert(coord);
 
     cell_list *c = malloc(sizeof(cell_list));
-    assert(c);
 
     c->d = cell_size;
     cell_list_bounds(c,coord);
     c->cell = malloc(sizeof(cell)*c->n);
-    assert(c->cell);
     for (int i = 0; i < c->n; ++i) c->cell[i].atom = NULL;
     fill_cells(c,coord);
     get_nb(c);
@@ -205,8 +203,9 @@ static double max_array(const double *a,int n)
 //! allocate memory for ::freesasa_nb object
 static freesasa_nb *freesasa_nb_alloc(int n)
 {
+    assert(n > 0);
     freesasa_nb *adj = malloc(sizeof(freesasa_nb));
-    assert(adj);
+
     adj->n = n;
     adj->nn = malloc(sizeof(int)*n);
     adj->nb = malloc(sizeof(int*)*n);
@@ -215,10 +214,6 @@ static freesasa_nb *freesasa_nb_alloc(int n)
     adj->nb_yd = malloc(sizeof(double *)*n);
     adj->capacity = malloc(sizeof(int *)*n);
     
-    assert(adj->nb); assert(adj->nn);
-    assert(adj->nb_xyd); assert(adj->nb_xd); assert(adj->nb_yd);
-    assert(adj->capacity);
-
     for (int i=0; i < n; ++i) {
         adj->nn[i] = 0;
         adj->capacity[i] = NB_CHUNK;
@@ -232,7 +227,7 @@ static freesasa_nb *freesasa_nb_alloc(int n)
 
 void freesasa_nb_free(freesasa_nb *adj)
 {
-    if (adj) {
+    if (adj != NULL) {
         for (int i = 0; i < adj->n; ++i) {
             free(adj->nb[i]);
             free(adj->nb_xyd[i]);
@@ -348,7 +343,7 @@ static void nb_calc_cell_pair(freesasa_nb *adj,
                              
 /**
     Iterates through the cells and records all contacts in the
-    provided adjacecency list
+    provided nb list
  */
 static void nb_fill_list(freesasa_nb *adj,
                          cell_list *c,
@@ -368,11 +363,12 @@ static void nb_fill_list(freesasa_nb *adj,
 freesasa_nb *freesasa_nb_new(const freesasa_coord* coord,
                              const double *radii)
 {
-    assert(coord);
-    assert(radii);
+    if (coord == NULL || radii == NULL) return NULL;
     int n = freesasa_coord_n(coord);
     freesasa_nb *adj = freesasa_nb_alloc(n);
+    if (!adj) return NULL;
     double cell_size = 2*max_array(radii,n);
+    assert(cell_size > 0);
     cell_list *c = cell_list_new(cell_size,coord);
     assert(c);
     
@@ -385,7 +381,7 @@ freesasa_nb *freesasa_nb_new(const freesasa_coord* coord,
 int freesasa_nb_contact(const freesasa_nb *adj,
                         int i, int j)
 {
-    assert(adj);
+    assert(adj != NULL);
     assert(i < adj->n && i >= 0);
     assert(j < adj->n && j >= 0);
     for (int k = 0; k < adj->nn[i]; ++k) {

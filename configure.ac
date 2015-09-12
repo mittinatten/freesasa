@@ -35,7 +35,7 @@ AC_CHECK_FUNCS([mkdir])
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile
                  doc/fig/Makefile tests/Makefile bindings/Makefile
-                 tests/test-cli.sh])
+                 tests/test-cli])
 
 # Python-bindings
 AC_ARG_WITH([python],
