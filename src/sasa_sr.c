@@ -184,7 +184,6 @@ static double sr_atom_area(int i, const sr_data sr) {
     char spcount[n_points];
     const double ri = sr.r[i];
     const double *restrict vi = freesasa_coord_i(xyz,i);
-    double xi = vi[0], yi = vi[1], zi = vi[2];
     const double *restrict v = freesasa_coord_all(xyz);
     const double *restrict r = sr.r;
     const double *restrict tp;
@@ -200,7 +199,7 @@ static double sr_atom_area(int i, const sr_data sr) {
 
     for (int j = 0; j < sr.adj->nn[i]; ++j) {
         const int ja = sr.adj->nb[i][j];
-        const double rj = sr.r[ja];
+        const double rj = r[ja];
         const double xj = v[3*ja+0], yj = v[3*ja+1], zj = v[3*ja+2];
         for (int k = 0; k < n_points; ++k) {
             if (spcount[k]) continue;

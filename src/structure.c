@@ -173,7 +173,6 @@ static int get_models(FILE *pdb, struct file_interval** intervals) {
     char *line = NULL;
     int n = 0, n_end = 0, error = 0;
     long last_pos = ftell(pdb);
-    long first_pos = last_pos;
     struct file_interval *it = NULL;
     
     while (getline(&line, &len, pdb) != -1) {
@@ -194,7 +193,7 @@ static int get_models(FILE *pdb, struct file_interval** intervals) {
     }
     if (n == 0) { // when there are no models, the whole file is the model
         free(it);
-        intervals == NULL;
+        it = NULL;
     }
     if (error == FREESASA_FAIL) {
         free(it);

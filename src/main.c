@@ -145,7 +145,7 @@ void abort_msg(const char *format, ...)
 
 
 void run_analysis(FILE *input, const char *name) {
-    double tmp, *radii;
+    double *radii;
     int several_structures = 0, name_len = strlen(name);
     freesasa_result *result;
     freesasa_strvp *classes = NULL;
@@ -289,7 +289,7 @@ int main (int argc, char **argv) {
     options_string = ":hvlwLSHYCMmBrRc:n:d:t:p:g:";
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
-        opt_set[opt] = 1;
+        opt_set[(int)opt] = 1;
         errno = 0;
         // Assume arguments starting with dash are actually missing arguments
         if (optarg != NULL && optarg[0] == '-') {

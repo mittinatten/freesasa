@@ -326,7 +326,7 @@ int freesasa_per_residue_type(FILE *output,
                              residue_area->string[i],sasa);
         }
         if (result < 0) {
-            freesasa_strvp(residue_area);
+            freesasa_strvp_free(residue_area);
             return freesasa_fail("%s: %s", __func__,strerror(errno));
         }
     }

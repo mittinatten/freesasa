@@ -139,8 +139,6 @@ static int coord2cell_index(const cell_list *c, const double *xyz)
 //! Assigns cells to each coordinate
 static void fill_cells(cell_list *c, const freesasa_coord *coord)
 {
-    const double d = c->d;
-    const int nx = c->nx, ny = c->ny, nz = c->nz;
     for (int i = 0; i < c->n; ++i) {
         c->cell[i].n_atoms = 0;
     }
@@ -312,7 +310,6 @@ static void nb_calc_cell_pair(freesasa_nb *adj,
     const double *v = freesasa_coord_all(coord);
     double ri, rj, xi, yi, zi, xj, yj, zj,
         dx, dy, dz, cut2;
-    int count_neighbors[ci->n_atoms];
     int i,j,ia,ja;
     
     for (i = 0; i < ci->n_atoms; ++i) {

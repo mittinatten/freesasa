@@ -26,6 +26,7 @@ AC_C_RESTRICT
 
 # use C99
 AC_PROG_CC_C99
+AC_C_INLINE
 
 # Checks for library functions.
 AC_FUNC_MALLOC

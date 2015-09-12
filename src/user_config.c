@@ -267,7 +267,6 @@ static int read_atoms(user_config *config,
 {
     size_t blen=100;
     char *line = NULL, buf1[blen], buf2[blen], buf3[blen];
-    double r;
     int res, type, n;
     fseek(input,fi.begin,SEEK_SET);
     // read command (and discard)
