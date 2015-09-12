@@ -21,12 +21,12 @@
 #include <math.h>
 #include <assert.h>
 #include "freesasa.h"
-#include "verlet.h"
+#include "nb.h"
 
 #define NB_CHUNK 32
 
 
-typedef struct freesasa_verlet_element freesasa_verlet_element;
+typedef struct freesasa_nb_element freesasa_nb_element;
 
 typedef struct freesasa_cell freesasa_cell;
 struct freesasa_cell {
@@ -79,7 +79,7 @@ void cell_list_bounds(freesasa_cell_list *c, const freesasa_coord *coord)
 
 //! find the given
 static inline int cell_index(const freesasa_cell_list *c,
-                           int ix, int iy, int iz)
+                             int ix, int iy, int iz)
 {
     assert(ix >= 0 && ix < c->nx);
     assert(iy >= 0 && iy < c->ny);
@@ -201,10 +201,10 @@ static double max_array(const double *a,int n)
     return max;
 }
 
-//! allocate memory for ::freesasa_verlet object
-static freesasa_verlet *freesasa_verlet_alloc(int n)
+//! allocate memory for ::freesasa_nb object
+static freesasa_nb *freesasa_nb_alloc(int n)
 {
-    freesasa_verlet *adj = malloc(sizeof(freesasa_verlet));
+    freesasa_nb *adj = malloc(sizeof(freesasa_nb));
     assert(adj);
     adj->n = n;
     adj->nn = malloc(sizeof(int)*n);
@@ -229,7 +229,7 @@ static freesasa_verlet *freesasa_verlet_alloc(int n)
     return adj;
 }
 
-void freesasa_verlet_free(freesasa_verlet *adj)
+void freesasa_nb_free(freesasa_nb *adj)
 {
     if (adj) {
         for (int i = 0; i < adj->n; ++i) {
@@ -268,10 +268,10 @@ static void chunk_up(int *capacity,
 
 /**
     Assumes the coordinates i and j have been determined to be
-    neighbors and adds them both to the provided verlet lists,
+    neighbors and adds them both to the provided nb lists,
     symmetrically.
 */
-static void verlet_add_pair(freesasa_verlet *adj,int i, int j,
+static void nb_add_pair(freesasa_nb *adj,int i, int j,
                             double dx, double dy)
 {
     assert(i != j);
@@ -303,15 +303,15 @@ static void verlet_add_pair(freesasa_verlet *adj,int i, int j,
 }
 
 /**
-    Fills the verlet list for all contacts between coordinates
+    Fills the nb list for all contacts between coordinates
     belonging to the cells ci and cj. Handles the case ci == cj
     correctly.
 */
-static void verlet_calc_cell_pair(freesasa_verlet *adj,
-                                  const freesasa_coord* coord,
-                                  const double *radii,
-                                  const freesasa_cell *ci,
-                                  const freesasa_cell *cj)
+static void nb_calc_cell_pair(freesasa_nb *adj,
+                              const freesasa_coord* coord,
+                              const double *radii,
+                              const freesasa_cell *ci,
+                              const freesasa_cell *cj)
 {
     const double *v = freesasa_coord_all(coord);
     double ri, rj, xi, yi, zi, xj, yj, zj,
@@ -339,7 +339,7 @@ static void verlet_calc_cell_pair(freesasa_verlet *adj,
             }
             dx = xj-xi; dy = yj-yi; dz = zj-zi;
             if (dx*dx + dy*dy + dz*dz < cut2) {
-                verlet_add_pair(adj,ia,ja,dx,dy);
+                nb_add_pair(adj,ia,ja,dx,dy);
             }
         }
     }
@@ -349,40 +349,40 @@ static void verlet_calc_cell_pair(freesasa_verlet *adj,
     Iterates through the cells and records all contacts in the
     provided adjacecency list
 */
-static void verlet_fill_list(freesasa_verlet *adj,
-                             freesasa_cell_list *c,
-                             const freesasa_coord *coord,
-                             const double *radii)
+static void nb_fill_list(freesasa_nb *adj,
+                         freesasa_cell_list *c,
+                         const freesasa_coord *coord,
+                         const double *radii)
 {
     int nc = c->n;
     for (int ic = 0; ic < nc; ++ic) {
         const freesasa_cell *ci = &c->cell[ic];
         for (int jc = 0; jc < ci->n_nb; ++jc) {
             const freesasa_cell *cj = ci->nb[jc];
-            verlet_calc_cell_pair(adj,coord,radii,ci,cj);
+            nb_calc_cell_pair(adj,coord,radii,ci,cj);
         }
     }
 }
 
-freesasa_verlet *freesasa_verlet_new(const freesasa_coord* coord,
-                                     const double *radii)
+freesasa_nb *freesasa_nb_new(const freesasa_coord* coord,
+                             const double *radii)
 {
     assert(coord);
     assert(radii);
     int n = freesasa_coord_n(coord);
-    freesasa_verlet *adj = freesasa_verlet_alloc(n);
+    freesasa_nb *adj = freesasa_nb_alloc(n);
     double cell_size = 2*max_array(radii,n);
     freesasa_cell_list *c = freesasa_cell_list_new(cell_size,coord);
     assert(c);
     
-    verlet_fill_list(adj,c,coord,radii);
+    nb_fill_list(adj,c,coord,radii);
     freesasa_cell_list_free(c);
     
     return adj;
 }
 
-int freesasa_verlet_contact(const freesasa_verlet *adj,
-                            int i, int j)
+int freesasa_nb_contact(const freesasa_nb *adj,
+                        int i, int j)
 {
     assert(adj);
     assert(i < adj->n && i >= 0);

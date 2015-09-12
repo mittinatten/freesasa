@@ -17,8 +17,8 @@
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FREESASA_VERLET_H
-#define FREESASA_VERLET_H
+#ifndef FREESASA_NB_H
+#define FREESASA_NB_H
 
 #include <stdlib.h>
 #include "coord.h"
@@ -26,13 +26,13 @@
    @file
    @author Simon Mitternacht
    
-   Functions to compute Verlet lists. The function
-   freesasa_verlet_contact() is mainly intended for checking
+   Functions to compute neigbor lists. The function
+   freesasa_nb_contact() is mainly intended for checking
    consitency, in performance-critical code it is advisible to use the
    struct (as demonstrated by the
  */
 
-//! Verlet list
+//! neigbor list
 typedef struct {
     int n; //!< number of elements
     int **nb; //!< neighbors to each element
@@ -41,40 +41,40 @@ typedef struct {
     double **nb_xd; //!< signed distance between neighbors along x-axis
     double **nb_yd; //!< signed distance between neighbors along y-axis
     int *capacity; //!< keeps track of memory chunks (don't change this)
-} freesasa_verlet;
+} freesasa_nb;
 
 /**
-    Creates a Verlet list based on a set of coordinates with
+    Creates a neigbor list based on a set of coordinates with
     corresponding sphere radii. 
 
-    Implemented using Verlet lists, giving O(N) performance. Should be
-    freed with freesasa_verlet_free(). For efficient calculations
+    Implemented using neigbor lists, giving O(N) performance. Should be
+    freed with freesasa_nb_free(). For efficient calculations
     using this list the members of the returned struct should be used
-    directly and not freesasa_verlet_contact().
+    directly and not freesasa_nb_contact().
 
     @param coord a set of coordinates
     @param radii radii for the coordinates
-    @return a Verlet list.
+    @return a neigbor list.
  */
-freesasa_verlet *freesasa_verlet_new(const freesasa_coord *coord,
-                                     const double *radii);
+freesasa_nb *freesasa_nb_new(const freesasa_coord *coord,
+                             const double *radii);
 
 /**
-    Frees a Verlet list created by freesasa_verlet_new().
+    Frees a neigbor list created by freesasa_nb_new().
 
-    @param adj the Verlet list to free
+    @param adj the neigbor list to free
  */
-void freesasa_verlet_free(freesasa_verlet *adj);
+void freesasa_nb_free(freesasa_nb *adj);
 
 /**
     Checks if two atoms are in contact. Only included for reference.
 
-    @param adj the verlet list
+    @param adj the neigbor list
     @param i index of first coordinate
     @param j index of second coordinate
     @return 1 if contact, 0 else.
  */
-int freesasa_verlet_contact(const freesasa_verlet *adj,
-                            int i, int j);
+int freesasa_nb_contact(const freesasa_nb *adj,
+                        int i, int j);
 
-#endif
+#endif /* FREESASA_NB_H*/
