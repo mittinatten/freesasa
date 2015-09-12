@@ -33,7 +33,7 @@
 #include "freesasa.h"
 #include "sasa.h"
 #include "srp.h"
-#include "verlet.h"
+#include "nb.h"
 
 #ifdef __GNUC__
 #define __attrib_pure__ __attribute__((pure))
@@ -54,7 +54,7 @@ typedef struct {
     const freesasa_coord *xyz;
     const freesasa_coord *srp; // test-points
     double *r;
-    freesasa_verlet *adj;
+    freesasa_nb *adj;
     double *sasa;
 } sr_data;
 
@@ -101,7 +101,7 @@ int freesasa_shrake_rupley(double *sasa,
     for (int i = 0; i < n_atoms; ++i) sr.r[i] = r[i] + probe_radius;
 
     //calculate distances
-    sr.adj = freesasa_verlet_new(xyz,sr.r);
+    sr.adj = freesasa_nb_new(xyz,sr.r);
 
     //calculate SASA
     if (n_threads > 1) {
@@ -122,7 +122,7 @@ int freesasa_shrake_rupley(double *sasa,
         }
     }
     freesasa_coord_free(srp);
-    freesasa_verlet_free(sr.adj);
+    freesasa_nb_free(sr.adj);
     free(sr.r);
     return return_value;
 }

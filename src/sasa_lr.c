@@ -33,7 +33,7 @@
 #include "freesasa.h"
 #include "sasa.h"
 #include "srp.h"
-#include "verlet.h"
+#include "nb.h"
 
 extern const char *freesasa_name;
 extern int freesasa_fail(const char *format, ...);
@@ -46,7 +46,7 @@ typedef struct {
     int n_atoms;
     double *radii; //including probe
     const freesasa_coord *xyz;
-    freesasa_verlet *adj;
+    freesasa_nb *adj;
     double delta; // slice width
     double min_z; // bounds of the molecule
     double max_z;
@@ -113,7 +113,7 @@ static lr_data* init_lr(double *sasa,
 static void free_lr(lr_data *lr)
 {
     free(lr->radii);
-    freesasa_verlet_free(lr->adj);
+    freesasa_nb_free(lr->adj);
     free(lr);
 }
 
@@ -141,7 +141,7 @@ int freesasa_lee_richards(double *sasa,
     lr = init_lr(sasa, xyz, atom_radii, probe_radius, delta);
 
     // determine which atoms are neighbours
-    lr->adj = freesasa_verlet_new(xyz,lr->radii);
+    lr->adj = freesasa_nb_new(xyz,lr->radii);
 
     if (n_threads > 1) {
 #if HAVE_LIBPTHREAD

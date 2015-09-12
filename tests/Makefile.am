@@ -17,8 +17,8 @@ static_tests = static-verlet static-sasa-lr
 TESTS += libtest $(static_tests)
 check_PROGRAMS += libtest $(static_tests)
 libtest_SOURCES = libtest.c test_pdb.c test_freesasa.c test_structure.c \
-	test_classify.c test_coord.c test_verlet.c
-static_verlet_SOURCES = static_verlet.c
+	test_classify.c test_coord.c test_nb.c
+static_verlet_SOURCES = static_nb.c
 static_sasa_lr_SOURCES = static_sasa_lr.c
 
 CFLAGS = -I$(top_srcdir)/src $(AM_CFLAGS) \
