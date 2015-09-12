@@ -69,7 +69,7 @@ static double atom_area(lr_data *lr,int i);
 
 /** Sum of exposed arcs based on buried arc intervals arc, assumes no
     intervals cross zero */
-static double sum_arcs(int n_buried, double *restrict arc);
+static double exposed_arc_length(double *restrict arc, int n);
 
 /** Initialize object to be used for L&R calculation */
 static lr_data* init_lr(double *sasa,
@@ -286,7 +286,7 @@ static double atom_area(lr_data *lr,int i)
             }
         }
         if (is_buried == 0) {
-            sasa += ri_slice*DR*sum_arcs(n_arcs,arc);
+            sasa += ri_slice*DR*exposed_arc_length(arc,n_arcs);
         }
 #ifdef DEBUG
         if (completely_buried == 0) {
@@ -314,7 +314,7 @@ static double atom_area(lr_data *lr,int i)
 }
 
 //insertion sort (faster than qsort for these short lists)
-inline static void sort_arcs(int n, double *restrict arc) 
+inline static void sort_arcs(double *restrict arc, int n) 
 {
     double tmp[2];
     double *end = arc+2*n, *arcj, *arci;
@@ -331,13 +331,14 @@ inline static void sort_arcs(int n, double *restrict arc)
 
 // sort arcs by start-point, loop through them to sum parts of circle
 // not covered by any of the arcs
-inline static double sum_arcs(int n, double *arc)
+inline static double exposed_arc_length(double * restrict arc, int n)
 {
     if (n == 0) return TWOPI;
     double sum, sup, tmp;
-    sort_arcs(n,arc);
+    sort_arcs(arc,n);
     sum = arc[0];
     sup = arc[1];
+    // in the following it is assumed that the arc[i2] <= arc[i2+1]
     for (int i2 = 2; i2 < 2*n; i2 += 2) {
         if (sup < arc[i2]) sum += arc[i2] - sup;
         tmp = arc[i2+1];
