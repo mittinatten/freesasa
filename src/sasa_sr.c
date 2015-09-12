@@ -178,28 +178,26 @@ static void *sr_thread(void* arg)
 
 static double sr_atom_area(int i, const sr_data sr) {
     const int n_points = sr.n_points;
-    const freesasa_coord *xyz = sr.xyz;
     /* this array keeps track of which testpoints belonging to
        a certain atom are inside other atoms */
-    char spcount[n_points];
+    int spcount[n_points]; 
     const double ri = sr.r[i];
-    const double *restrict vi = freesasa_coord_i(xyz,i);
-    const double *restrict v = freesasa_coord_all(xyz);
-    const double *restrict r = sr.r;
+    const double *restrict v = freesasa_coord_all(sr.xyz);
+    const double *restrict vi = v+3*i;
     const double *restrict tp;
     int n_surface = 0;
-    
     /* testpoints for this atom */
     freesasa_coord* tp_coord_ri = freesasa_coord_copy(sr.srp);
-    freesasa_coord_scale(tp_coord_ri, ri);
+    
+    freesasa_coord_scale(tp_coord_ri, sr.r[i]);
     freesasa_coord_translate(tp_coord_ri, vi);
     tp = freesasa_coord_all(tp_coord_ri);
 
-    memset(spcount,0,n_points);
+    memset(spcount,0,n_points*sizeof(int));
 
     for (int j = 0; j < sr.adj->nn[i]; ++j) {
         const int ja = sr.adj->nb[i][j];
-        const double rj = r[ja];
+        const double rj = sr.r[ja];
         const double xj = v[3*ja+0], yj = v[3*ja+1], zj = v[3*ja+2];
         for (int k = 0; k < n_points; ++k) {
             if (spcount[k]) continue;
