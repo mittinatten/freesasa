@@ -161,6 +161,13 @@ static freesasa_structure* from_pdb_impl(FILE *pdb_file,
     return p;
 }
 
+/**
+    Finds the location of all MODEL entrys in the file pdb, returns the number of models found.
+    *intervals points to a dynamically allocated file intervals for each model.
+   
+    Returns 0 if no MODEL lines were found (for example an X-ray structure with only one model)
+    and sets *intervals to NULL.
+ */
 static int get_models(FILE *pdb, struct file_interval** intervals) {
     size_t len = PDB_LINE_STRL;
     char *line = NULL;
@@ -186,11 +193,8 @@ static int get_models(FILE *pdb, struct file_interval** intervals) {
         last_pos = ftell(pdb);
     }
     if (n == 0) { // when there are no models, the whole file is the model
-        n = 1;
-        it = malloc(sizeof(struct file_interval));
-        it[0].begin = first_pos;
-        it[0].end = last_pos;
-        //error = freesasa_fail("%s: No MODEL entries found in input\n",__func__);
+        free(it);
+        intervals == NULL;
     }
     if (error == FREESASA_FAIL) {
         free(it);
@@ -260,13 +264,23 @@ freesasa_structure** freesasa_structure_array(FILE *pdb,
     assert(n);
 
     struct file_interval *models = NULL;
+    struct file_interval whole_file;
     int n_models = get_models(pdb,&models), n_chains = 0;
     freesasa_structure **ss = NULL;
     int err = 0;
+    rewind(pdb);
+    whole_file.begin = ftell(pdb);
+    fseek(pdb,0,SEEK_END);
+    whole_file.end = ftell(pdb);
+    rewind(pdb);
 
     if (n_models == FREESASA_FAIL) {
         freesasa_fail("%s: problems reading PDB-file.");
         return NULL;
+    } 
+    if (n_models == 0) {
+        models = &whole_file;
+        n_models = 1;
     }
     
     //only keep first model if option not provided
@@ -307,7 +321,7 @@ freesasa_structure** freesasa_structure_array(FILE *pdb,
         freesasa_fail("%s: error: Problems reading input.",__func__);
         ss = NULL;
     } 
-    free(models);
+    if (models != &whole_file) free(models);
     return ss;
 }
 

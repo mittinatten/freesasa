@@ -12,7 +12,7 @@ GCOV_FILES = *.gcda *.gcno *.gcov
 
 if USE_CHECK
 
-static_tests = static-nb static-sasa-lr
+static_tests = static-nb static-sasa-lr static-structure
 
 TESTS += libtest $(static_tests)
 check_PROGRAMS += libtest $(static_tests)
@@ -20,6 +20,7 @@ libtest_SOURCES = libtest.c test_pdb.c test_freesasa.c test_structure.c \
 	test_classify.c test_coord.c test_nb.c
 static_nb_SOURCES = static_nb.c
 static_sasa_lr_SOURCES = static_sasa_lr.c
+static_structure_SOURCES = static_structure.c
 
 CFLAGS = -I$(top_srcdir)/src $(AM_CFLAGS) \
 	-DDATADIR=\"$(top_srcdir)/tests/data/\"

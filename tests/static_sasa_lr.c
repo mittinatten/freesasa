@@ -73,7 +73,7 @@ START_TEST (test_exposed_arc_length)
 END_TEST
 
 int main(int argc, char **argv) {
-    Suite *s = suite_create("SASA LR static functions");
+    Suite *s = suite_create("sasa_lr.c static functions");
 
     TCase *tc = tcase_create("Basic");
     tcase_add_test(tc,test_sort_arcs);
