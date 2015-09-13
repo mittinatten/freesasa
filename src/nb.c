@@ -79,7 +79,6 @@ static void cell_list_bounds(cell_list *c,
     c->n = c->nx*c->ny*c->nz;
 }
 
-//! find the given
 static inline int cell_index(const cell_list *c,
                              int ix, int iy, int iz)
 {
@@ -128,6 +127,7 @@ static void get_nb(cell_list *c)
         }
     }
 }
+
 //! Get the cell index of a given atom
 static int coord2cell_index(const cell_list *c, const double *xyz)
 {
@@ -137,7 +137,11 @@ static int coord2cell_index(const cell_list *c, const double *xyz)
     int iz = (int)((xyz[2] - c->z_min)/d);
     return cell_index(c,ix,iy,iz);
 }
-//! Assigns cells to each coordinate
+
+/**
+   Assigns cells to each coordinate. Returns FREESASA_FAIL if realloc
+   fails, FREESASA_SUCCESS else.
+ */
 static int fill_cells(cell_list *c, const freesasa_coord *coord)
 {
     for (int i = 0; i < c->n; ++i) {
@@ -155,9 +159,7 @@ static int fill_cells(cell_list *c, const freesasa_coord *coord)
     return FREESASA_SUCCESS;
 }
 
-/**
-    Frees an object created by cell_list_new().
-*/
+//! Frees an object created by cell_list_new().
 static void cell_list_free(cell_list *c)
 {
     if (c) {
@@ -171,6 +173,8 @@ static void cell_list_free(cell_list *c)
     Creates a cell list with provided cell-size assigning cells to
     each of the provided coordinates. The created cell list should be
     freed using cell_list_free().
+    
+    Returns NULL if there are malloc fails.
  */
 static cell_list* cell_list_new(double cell_size,
                                 const freesasa_coord *coord)
@@ -201,7 +205,9 @@ static double max_array(const double *a,int n)
     return max;
 }
 
-//! allocate memory for ::freesasa_nb object
+/**
+    Allocate memory for ::freesasa_nb object. Returns NULL if malloc fails.
+ */
 static freesasa_nb *freesasa_nb_alloc(int n)
 {
     assert(n > 0);
@@ -246,7 +252,10 @@ void freesasa_nb_free(freesasa_nb *nb_list)
     }
 }
 
-//! increases sizes of arrays when they cross a threshold
+/**
+    Increases sizes of arrays when they cross a threshold. Returns
+    FREESASA_FAIL if realloc fails, FREESASA_SUCCESS else
+ */
 static int chunk_up(freesasa_nb *nb_list, int i)
 {
     int nni = nb_list->nn[i];
@@ -271,6 +280,9 @@ static int chunk_up(freesasa_nb *nb_list, int i)
     Assumes the coordinates i and j have been determined to be
     neighbors and adds them both to the provided nb lists,
     symmetrically.
+
+    Returns FREESASA_FAIL if can't allocate memory. FREESASA_SUCCESS
+    else.
 */
 static int nb_add_pair(freesasa_nb *nb_list,int i, int j,
                        double dx, double dy)
@@ -372,15 +384,19 @@ freesasa_nb *freesasa_nb_new(const freesasa_coord* coord,
                              const double *radii)
 {
     if (coord == NULL || radii == NULL) return NULL;
+    double cell_size;
+    cell_list *c;
     int n = freesasa_coord_n(coord);
     freesasa_nb *nb_list = freesasa_nb_alloc(n);
+    
     if (!nb_list) {
-        mem_fail(); 
+        mem_fail();
         return NULL;
     }
-    double cell_size = 2*max_array(radii,n);
+    
+    cell_size = 2*max_array(radii,n);
     assert(cell_size > 0);
-    cell_list *c = cell_list_new(cell_size,coord);
+    c = cell_list_new(cell_size,coord);
     if (c == NULL) {
         mem_fail(); 
         freesasa_nb_free(nb_list);
@@ -388,6 +404,8 @@ freesasa_nb *freesasa_nb_new(const freesasa_coord* coord,
     }
     
     nb_fill_list(nb_list,c,coord,radii);
+    
+    // the cell lists are only a tool to generate the neighbor lists
     cell_list_free(c);
     
     return nb_list;
@@ -404,4 +422,3 @@ int freesasa_nb_contact(const freesasa_nb *nb_list,
     }
     return 0;
 }
-
