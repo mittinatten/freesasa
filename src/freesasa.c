@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 #include <assert.h>
 #include <math.h>
 #include <errno.h>
@@ -35,6 +34,7 @@
 #include "freesasa.h"
 #include "srp.h"
 #include "classify.h"
+#include "util.h"
 
 #define NBUF 100
 #define DEF_NTHREADS 1
@@ -64,41 +64,6 @@ const freesasa_parameters freesasa_default_parameters = {
 const char *freesasa_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
 freesasa_strvp* freesasa_strvp_new(int n);
-
-static void freesasa_err_impl(int err, const char *format, va_list arg)
-{
-    fprintf(stderr, "%s: ", freesasa_name);
-    switch (err) {
-    case FREESASA_FAIL: fputs("error: ", stderr); break;
-    case FREESASA_WARN: fputs("warning: ", stderr); break;
-    default: break;
-    }
-    vfprintf(stderr, format, arg);
-    va_end(arg);
-    fputc('\n', stderr);
-    fflush(stderr);
-}
-
-int freesasa_fail(const char *format,...)
-{
-    va_list arg;
-    if (verbosity == FREESASA_V_SILENT) return FREESASA_FAIL;
-    va_start(arg, format);
-    freesasa_err_impl(FREESASA_FAIL,format,arg);
-    va_end(arg);
-    return FREESASA_FAIL;
-}
-
-int freesasa_warn(const char *format,...)
-{
-    va_list arg;
-    if (verbosity == FREESASA_V_NOWARNINGS ||
-        verbosity == FREESASA_V_SILENT) return FREESASA_WARN;
-    va_start(arg, format);
-    freesasa_err_impl(FREESASA_WARN,format,arg);
-    va_end(arg);
-    return FREESASA_WARN;
-}
 
 freesasa_strvp* freesasa_result_classify(const freesasa_result *result, 
                                          const freesasa_structure *structure,

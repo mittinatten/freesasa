@@ -90,7 +90,6 @@ START_TEST (test_get_chains)
         free(jt);
     }
     free(it);
-
 }
 END_TEST
 

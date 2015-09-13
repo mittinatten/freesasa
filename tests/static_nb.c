@@ -17,9 +17,7 @@
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <check.h>
-#include <coord.c>
-#include <nb.c>
-
+#include "whole_lib_one_file.c"
 
 const int n_atoms = 6;
 const int n_coord = 18;
