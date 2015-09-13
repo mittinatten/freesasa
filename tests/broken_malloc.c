@@ -94,7 +94,6 @@ START_TEST (test_structure)
     malloc_fail_freq = 1; n_malloc_fails = 0;
     realloc_fail_freq = 1; n_realloc_fails = 0;
     fclose(file);
-    freesasa_set_verbosity(FREESASA_V_NORMAL);
     
     file = fopen(DATADIR "2jo4.pdb", "r");
     ck_assert_ptr_ne(file,NULL);
@@ -102,12 +101,13 @@ START_TEST (test_structure)
         malloc_fail_freq = i; n_malloc_fails = 0;
         realloc_fail_freq = i; n_realloc_fails = 0;
         rewind(file);
-        fflush(stderr);
         ck_assert_ptr_eq(freesasa_structure_array(file,&n,FREESASA_SEPARATE_MODELS),NULL);
+        ck_assert_ptr_eq(freesasa_structure_array(file,&n,FREESASA_SEPARATE_MODELS | FREESASA_SEPARATE_CHAINS),NULL);
     }
     malloc_fail_freq = 1; n_malloc_fails = 0;
     realloc_fail_freq = 1; n_realloc_fails = 0;
     fclose(file);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 
