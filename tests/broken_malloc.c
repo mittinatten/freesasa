@@ -64,6 +64,11 @@ struct freesasa_structure structure = {
     .res_desc = (char**)str_array
 };
 struct file_interval interval = {.begin = 0, .end = 1};
+struct cell a_cell = {.nb = NULL, .atom = int_array, .n_nb=0, .n_atoms = 0};
+struct cell_list a_cell_list = {.cell = &a_cell, .n = 1, .nx = 1, .ny =1, .nz = 1,
+                                .d = 1, .x_min = 0, .x_max = 1, 
+                                .y_min = 0, .y_max = 1,
+                                .z_min = 0, .z_max = 1};
 
 START_TEST (test_coord) 
 {
@@ -111,12 +116,28 @@ START_TEST (test_structure)
 }
 END_TEST
 
+START_TEST (test_nb) 
+{
+    ck_assert_int_eq(fill_cells(&a_cell_list,&coord),FREESASA_FAIL);
+    ck_assert_ptr_eq(cell_list_new(1,&coord),NULL);
+    ck_assert_ptr_eq(freesasa_nb_alloc(10),NULL);
+    for (int i = 1; i < 50; ++i) {
+        malloc_fail_freq = i; n_malloc_fails = 0;
+        realloc_fail_freq = i; n_realloc_fails = 0;
+        ck_assert_ptr_eq(freesasa_nb_alloc(2*i),NULL);
+    }
+    malloc_fail_freq = 1; n_malloc_fails = 0;
+    realloc_fail_freq = 1; n_realloc_fails = 0;
+}
+END_TEST
+
 int main(int argc, char **argv) {
     Suite *s = suite_create("Test that null-returning malloc breaks program gracefully.");
 
     TCase *tc = tcase_create("Basic");
     tcase_add_test(tc,test_coord);
     tcase_add_test(tc,test_structure);
+    tcase_add_test(tc,test_nb);
 
     suite_add_tcase(s, tc);
     SRunner *sr = srunner_create(s);

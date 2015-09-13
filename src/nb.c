@@ -21,6 +21,7 @@
 #include <math.h>
 #include <assert.h>
 #include "freesasa.h"
+#include "util.h"
 #include "nb.h"
 
 #define NB_CHUNK 32
@@ -137,7 +138,7 @@ static int coord2cell_index(const cell_list *c, const double *xyz)
     return cell_index(c,ix,iy,iz);
 }
 //! Assigns cells to each coordinate
-static void fill_cells(cell_list *c, const freesasa_coord *coord)
+static int fill_cells(cell_list *c, const freesasa_coord *coord)
 {
     for (int i = 0; i < c->n; ++i) {
         c->cell[i].n_atoms = 0;
@@ -148,10 +149,10 @@ static void fill_cells(cell_list *c, const freesasa_coord *coord)
         cell = &c->cell[coord2cell_index(c,v)];
         ++cell->n_atoms;
         cell->atom = realloc(cell->atom,sizeof(int)*cell->n_atoms);
-        assert(cell->atom);
+        if (!cell->atom) return mem_fail();
         cell->atom[cell->n_atoms-1] = i;
-        
     }
+    return FREESASA_SUCCESS;
 }
 
 /**
@@ -178,10 +179,12 @@ static cell_list* cell_list_new(double cell_size,
     assert(coord);
 
     cell_list *c = malloc(sizeof(cell_list));
+    if (!c) {mem_fail(); return NULL;}
 
     c->d = cell_size;
     cell_list_bounds(c,coord);
     c->cell = malloc(sizeof(cell)*c->n);
+    if (!c->cell) {mem_fail(); return NULL;}
     for (int i = 0; i < c->n; ++i) c->cell[i].atom = NULL;
     fill_cells(c,coord);
     get_nb(c);
@@ -202,62 +205,66 @@ static double max_array(const double *a,int n)
 static freesasa_nb *freesasa_nb_alloc(int n)
 {
     assert(n > 0);
-    freesasa_nb *adj = malloc(sizeof(freesasa_nb));
+    freesasa_nb *nb_list = malloc(sizeof(freesasa_nb));
+    if (!nb_list) {mem_fail(); return NULL;}
 
-    adj->n = n;
-    adj->nn = malloc(sizeof(int)*n);
-    adj->nb = malloc(sizeof(int*)*n);
-    adj->nb_xyd = malloc(sizeof(double *)*n);
-    adj->nb_xd = malloc(sizeof(double *)*n);
-    adj->nb_yd = malloc(sizeof(double *)*n);
-    adj->capacity = malloc(sizeof(int *)*n);
+    if (!(nb_list->n = n))                               {mem_fail(); return NULL;}
+    if (!(nb_list->nn = malloc(sizeof(int)*n)))          {mem_fail(); return NULL;}
+    if (!(nb_list->nb = malloc(sizeof(int*)*n)))         {mem_fail(); return NULL;}
+    if (!(nb_list->nb_xyd = malloc(sizeof(double *)*n))) {mem_fail(); return NULL;}
+    if (!(nb_list->nb_xd = malloc(sizeof(double *)*n)))  {mem_fail(); return NULL;}
+    if (!(nb_list->nb_yd = malloc(sizeof(double *)*n)))  {mem_fail(); return NULL;}
+    if (!(nb_list->capacity = malloc(sizeof(int *)*n)))  {mem_fail(); return NULL;}
     
     for (int i=0; i < n; ++i) {
-        adj->nn[i] = 0;
-        adj->capacity[i] = NB_CHUNK;
-        adj->nb[i] = malloc(sizeof(int)*NB_CHUNK);
-        adj->nb_xyd[i] = malloc(sizeof(double)*NB_CHUNK);
-        adj->nb_xd[i] = malloc(sizeof(double)*NB_CHUNK);
-        adj->nb_yd[i] = malloc(sizeof(double)*NB_CHUNK);
+        nb_list->nn[i] = 0;
+        nb_list->capacity[i] = NB_CHUNK;
+        if (!(nb_list->nb[i] = malloc(sizeof(int)*NB_CHUNK)))        {mem_fail(); return NULL;}
+        if (!(nb_list->nb_xyd[i] = malloc(sizeof(double)*NB_CHUNK))) {mem_fail(); return NULL;}
+        if (!(nb_list->nb_xd[i] = malloc(sizeof(double)*NB_CHUNK)))  {mem_fail(); return NULL;}
+        if (!(nb_list->nb_yd[i] = malloc(sizeof(double)*NB_CHUNK)))  {mem_fail(); return NULL;}
     }
-    return adj;
+    return nb_list;
 }
 
-void freesasa_nb_free(freesasa_nb *adj)
+void freesasa_nb_free(freesasa_nb *nb_list)
 {
-    if (adj != NULL) {
-        for (int i = 0; i < adj->n; ++i) {
-            free(adj->nb[i]);
-            free(adj->nb_xyd[i]);
-            free(adj->nb_xd[i]);
-            free(adj->nb_yd[i]);
+    if (nb_list != NULL) {
+        for (int i = 0; i < nb_list->n; ++i) {
+            free(nb_list->nb[i]);
+            free(nb_list->nb_xyd[i]);
+            free(nb_list->nb_xd[i]);
+            free(nb_list->nb_yd[i]);
         }
-        free(adj->nn);
-        free(adj->nb);
-        free(adj->nb_xyd);
-        free(adj->nb_xd);
-        free(adj->nb_yd);
-        free(adj->capacity);
-        free(adj);
+        free(nb_list->nn);
+        free(nb_list->nb);
+        free(nb_list->nb_xyd);
+        free(nb_list->nb_xd);
+        free(nb_list->nb_yd);
+        free(nb_list->capacity);
+        free(nb_list);
     }
 }
 
 //! increases sizes of arrays when they cross a threshold
-static void chunk_up(int *capacity, 
-                     int nni, 
-                     int **nbi, 
-                     double **xydi, 
-                     double **xdi, 
-                     double **ydi) 
+static int chunk_up(freesasa_nb *nb_list, int i)
 {
-    if (nni > *capacity) {
-        *capacity += NB_CHUNK;
-        *nbi = realloc(*nbi,sizeof(int)*(*capacity)); 
-        *xydi = realloc(*xydi,sizeof(double)*(*capacity));
-        *xdi = realloc(*xdi,sizeof(double)*(*capacity));
-        *ydi = realloc(*ydi,sizeof(double)*(*capacity));
-        assert(*nbi); assert(*xydi); assert(*xdi); assert(*ydi);
+    int nni = nb_list->nn[i];
+    int **nbi = &nb_list->nb[i];
+    double **xydi = &nb_list->nb_xyd[i];
+    double **xdi = &nb_list->nb_xd[i];
+    double **ydi = &nb_list->nb_yd[i];
+
+    if (nni > nb_list->capacity[i]) {
+        int new_cap = (nb_list->capacity[i] += NB_CHUNK);
+        *nbi = realloc(*nbi,sizeof(int)*new_cap);
+        *xydi = realloc(*xydi,sizeof(double)*new_cap);
+        *xdi = realloc(*xdi,sizeof(double)*new_cap);
+        *ydi = realloc(*ydi,sizeof(double)*new_cap);
+        if (!(*nbi) || !(*xydi) || !(*xdi) || !(*ydi))
+            return mem_fail();
     }
+    return FREESASA_SUCCESS;
 }
 
 /**
@@ -265,22 +272,22 @@ static void chunk_up(int *capacity,
     neighbors and adds them both to the provided nb lists,
     symmetrically.
 */
-static void nb_add_pair(freesasa_nb *adj,int i, int j,
-                            double dx, double dy)
+static int nb_add_pair(freesasa_nb *nb_list,int i, int j,
+                       double dx, double dy)
 {
     assert(i != j);
 
-    int **nb = adj->nb;
-    int *nn = adj->nn;
-    double **nb_xyd = adj->nb_xyd;
-    double **nb_xd = adj->nb_xd;
-    double **nb_yd = adj->nb_yd;
+    int **nb = nb_list->nb;
+    int *nn = nb_list->nn;
+    double **nb_xyd = nb_list->nb_xyd;
+    double **nb_xd = nb_list->nb_xd;
+    double **nb_yd = nb_list->nb_yd;
     double d;
 
     ++nn[i]; ++nn[j];
 
-    chunk_up(&(adj->capacity[i]), nn[i], &nb[i], &nb_xyd[i], &nb_xd[i], &nb_yd[i]);
-    chunk_up(&(adj->capacity[j]), nn[j], &nb[j], &nb_xyd[j], &nb_xd[j], &nb_yd[j]);
+    if (chunk_up(nb_list,i)) return mem_fail();
+    if (chunk_up(nb_list,j)) return mem_fail();
 
     nb[i][nn[i]-1] = j;
     nb[j][nn[j]-1] = i;
@@ -294,6 +301,8 @@ static void nb_add_pair(freesasa_nb *adj,int i, int j,
     nb_xd[j][nn[j]-1] = -dx;
     nb_yd[i][nn[i]-1] = dy;
     nb_yd[j][nn[j]-1] = -dy;
+    
+    return FREESASA_SUCCESS;
 }
 
 /**
@@ -301,7 +310,7 @@ static void nb_add_pair(freesasa_nb *adj,int i, int j,
     belonging to the cells ci and cj. Handles the case ci == cj
     correctly.
 */
-static void nb_calc_cell_pair(freesasa_nb *adj,
+static int nb_calc_cell_pair(freesasa_nb *nb_list,
                               const freesasa_coord* coord,
                               const double *radii,
                               const cell *ci,
@@ -332,17 +341,19 @@ static void nb_calc_cell_pair(freesasa_nb *adj,
             }
             dx = xj-xi; dy = yj-yi; dz = zj-zi;
             if (dx*dx + dy*dy + dz*dz < cut2) {
-                nb_add_pair(adj,ia,ja,dx,dy);
+                if (nb_add_pair(nb_list,ia,ja,dx,dy))
+                    return mem_fail();
             }
         }
     }
+    return FREESASA_SUCCESS;
 }
                              
 /**
     Iterates through the cells and records all contacts in the
     provided nb list
  */
-static void nb_fill_list(freesasa_nb *adj,
+static void nb_fill_list(freesasa_nb *nb_list,
                          cell_list *c,
                          const freesasa_coord *coord,
                          const double *radii)
@@ -352,7 +363,7 @@ static void nb_fill_list(freesasa_nb *adj,
         const cell *ci = &c->cell[ic];
         for (int jc = 0; jc < ci->n_nb; ++jc) {
             const cell *cj = ci->nb[jc];
-            nb_calc_cell_pair(adj,coord,radii,ci,cj);
+            nb_calc_cell_pair(nb_list,coord,radii,ci,cj);
         }
     }
 }
@@ -362,27 +373,34 @@ freesasa_nb *freesasa_nb_new(const freesasa_coord* coord,
 {
     if (coord == NULL || radii == NULL) return NULL;
     int n = freesasa_coord_n(coord);
-    freesasa_nb *adj = freesasa_nb_alloc(n);
-    if (!adj) return NULL;
+    freesasa_nb *nb_list = freesasa_nb_alloc(n);
+    if (!nb_list) {
+        mem_fail(); 
+        return NULL;
+    }
     double cell_size = 2*max_array(radii,n);
     assert(cell_size > 0);
     cell_list *c = cell_list_new(cell_size,coord);
-    assert(c);
+    if (c == NULL) {
+        mem_fail(); 
+        freesasa_nb_free(nb_list);
+        return NULL;
+    }
     
-    nb_fill_list(adj,c,coord,radii);
+    nb_fill_list(nb_list,c,coord,radii);
     cell_list_free(c);
     
-    return adj;
+    return nb_list;
 }
 
-int freesasa_nb_contact(const freesasa_nb *adj,
+int freesasa_nb_contact(const freesasa_nb *nb_list,
                         int i, int j)
 {
-    assert(adj != NULL);
-    assert(i < adj->n && i >= 0);
-    assert(j < adj->n && j >= 0);
-    for (int k = 0; k < adj->nn[i]; ++k) {
-        if (adj->nb[i][k] == j) return 1;
+    assert(nb_list != NULL);
+    assert(i < nb_list->n && i >= 0);
+    assert(j < nb_list->n && j >= 0);
+    for (int k = 0; k < nb_list->nn[i]; ++k) {
+        if (nb_list->nb[i][k] == j) return 1;
     }
     return 0;
 }

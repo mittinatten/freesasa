@@ -117,6 +117,11 @@ freesasa_structure_get_pdb_atom(struct atom *a,
     return freesasa_pdb_get_alt_coord_label(line);
 }
 
+/**
+    Handles the reading of pdb-files, returns NULL if problems reading
+    or input or malloc failure. Error-messages should explain what
+    went wrong.
+ */
 static freesasa_structure*
 from_pdb_impl(FILE *pdb_file,
               struct file_interval it,
@@ -198,6 +203,8 @@ get_whole_file(FILE* file)
     Returns 0 if no MODEL lines were found (for example an X-ray structure with
     only one model) and sets *intervals to NULL. That means that a return value
     of 0 doesn't have to mean the file is empty.
+
+    Return FREESASA_FAIL if malloc-failure.
 */
 static int
 get_models(FILE *pdb,
@@ -279,8 +286,8 @@ get_chains(FILE *pdb,
         last_pos = ftell(pdb);
     }
     if (n_chains > 0) {
-        chains[0].end = last_pos;
-        chains[n_chains-1].begin = model.begin; //preserve model info
+        chains[n_chains-1].end = last_pos;
+        chains[0].begin = model.begin; //preserve model info
         *intervals = chains;
     } else {
         *intervals = NULL;
@@ -410,6 +417,7 @@ structure_set_atom(struct atom* a,
     a->chain_label = chain_label;
     a->line[0] = '\0';
 }
+
 int
 freesasa_structure_add_atom(freesasa_structure *p,
                             const char *atom_name,
