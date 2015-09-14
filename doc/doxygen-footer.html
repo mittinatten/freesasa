@@ -25,7 +25,13 @@ $generatedby &#160;<a href="http://www.doxygen.org/index.html">
 
   ga('create', 'UA-66397346-1', 'auto');
   ga('send', 'pageview');
-
+  
+  var GitHubLink = document.getElementById('github');
+  addListener(GitHubLink, 'click', function() {ga('send', 'event', 'doxygen-github', 'click');});
+  function addListener(element, type, callback) {
+    if (element.addEventListener) element.addEventListener(type, callback);
+    else if (element.attachEvent) element.attachEvent('on' + type, callback);
+  }
 </script>
 </body>
 </html>
