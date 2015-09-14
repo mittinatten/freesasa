@@ -47,6 +47,10 @@ typedef struct user_config {
     double **atom_radius; // radius of each atom in each residue
 } user_config;
 
+/**
+    Allocate an empty config. All pointer initialized to NULL, to
+    allow cleanup if building the configuration fails.
+ */
 static user_config* user_config_new()
 {
     user_config *config = malloc(sizeof(user_config));
@@ -68,6 +72,13 @@ static user_config* user_config_new()
     config->atom_radius = NULL;
     return config;
 }
+
+/**
+    Free memory of a user config. Takes void-pointer to be able to use
+    at as function pointer. Checks all array pointers before freeing
+    their contents in an attempt to avoid seg-faults if the building
+    the configuration fails before all arrays are populated.
+ */
 static void user_config_free(void *p)
 {
     user_config *config;
@@ -118,7 +129,9 @@ static int find_string(char **array, const char *key, int array_size)
 
 /**
     Checks that input file has the required fields and locates the
-    'types' and 'atoms' sections. No syntax checking.
+    'types' and 'atoms' sections. No syntax checking. Return
+    FREESASA_SUCCESS if file seems ok, FREESASA_FILE if either/both of
+    the sections are missing.
  */
 static int check_file(FILE *input,
                       struct file_interval *types, 
@@ -160,8 +173,13 @@ static int check_file(FILE *input,
     return FREESASA_SUCCESS;
 }
 
-// removes comments and strips leading and trailing whitespace
-int strip_line(char **line, const char *input) {
+/**
+   Removes comments and strips leading and trailing
+   whitespace. Returns the length of the stripped line on success,
+   FREESASA_FAIL if malloc/realloc fails.
+ */
+int strip_line(char **line, const char *input) 
+{
     char *linebuf = malloc(strlen(input)+1),
         *comment, *first, *last;
     if (linebuf == NULL) return mem_fail();
@@ -177,6 +195,7 @@ int strip_line(char **line, const char *input) {
     if (last > first) 
         while (*last == ' ' || *last == '\t' || *last == '\n') --last;
     *line = realloc(*line,strlen(first)+1);
+    if (*line == NULL) return mem_fail();
     
     if (first >= last) {
         **line = '\0';
@@ -191,7 +210,13 @@ int strip_line(char **line, const char *input) {
     return strlen(*line);
 }
 
-static int next_line(char **line, FILE *fp) {
+/**
+    Stores a line stripped of comments in the provided string. Returns
+    the length of the line on success, FREESASA_FAIL if malloc/realloc
+    errors.
+ */
+static int next_line(char **line, FILE *fp) 
+{
     char *linebuf = NULL;
     size_t len = 0;
     int ret;
@@ -202,7 +227,56 @@ static int next_line(char **line, FILE *fp) {
     
     return ret;
 }
+/**
+    Add class to config. Returns the index of the new class on
+    success, FREESASA_FAILURE if realloc/strdup fails.
+ */
+static int add_new_class(user_config *config,
+                         const char *name)
+{
+    config->n_classes++;
+    if (!(config->classes = realloc(config->classes, sizeof(char*)*config->n_classes))){
+        config->n_classes--;
+        return mem_fail();
+    }
+    if (!(config->classes[config->n_classes-1] = strdup(name))) {
+        config->n_classes--;
+        return mem_fail();
+    }
+    return config->n_classes - 1;
+}
 
+/**
+    Add type to config. Returns the index of the new type on
+    success, FREESASA_FAILURE if realloc/strdup fails.
+ */
+static int add_new_type(user_config *config,
+                        const char *name,
+                        int areac, 
+                        double r)
+{
+    config->n_types++;
+    config->types = realloc(config->types,sizeof(char*)*config->n_types);
+    config->type_radius = realloc(config->type_radius,sizeof(double)*config->n_types);
+    config->type_class = realloc(config->type_class,sizeof(int) * config->n_types);
+    if (!config->types || !config->type_radius || !config->type_class) {
+        config->n_types--;
+        return mem_fail();
+    }
+    if (!(config->types[config->n_types-1] = strdup(name))) {
+        config->n_types--;
+        return mem_fail();
+    }
+    config->type_radius[config->n_types-1] = r;
+    config->type_class[config->n_types-1] = areac;
+    return config->n_types-1;
+}
+
+/**
+    Read a line specifying a type, store it in the config. Returns
+    warning for duplicates, failures for syntax errors or memory
+    allocation errors.
+ */
 static int read_types_line(user_config *config,
                            const char* line) 
 {
@@ -211,44 +285,27 @@ static int read_types_line(user_config *config,
     int areac;
     double r;
     if (sscanf(line,"%s %lf %s",buf1,&r,buf2) == 3) {
-        if (find_string(config->types, buf1, config->n_types) >= 0) {
+        if (find_string(config->types, buf1, config->n_types) >= 0)
             return freesasa_warn("Ignoring duplicate entry for '%s'.", buf1);
-        }
         areac = find_string(config->classes, buf2, config->n_classes);
-        if (areac < 0) {
-            config->n_classes++;
-            if (!(config->classes = realloc(config->classes, sizeof(char*)*config->n_classes)))
-                return mem_fail();
-            if (!(config->classes[config->n_classes-1] = strdup(buf2))) 
-                return mem_fail();
-            areac = config->n_classes - 1;
-        }
-        --config->n_types;
-        config->types = realloc(config->types,sizeof(char*)*config->n_types);
-        config->type_radius = realloc(config->type_radius,sizeof(double)*config->n_types);
-        config->type_class = realloc(config->type_class,sizeof(int) * config->n_types);
-        if (!config->types || !config->type_radius || !config->type_class ||
-            !(config->types[config->n_types-1] = strdup(buf1))) {
-            --config->n_types;
-            return mem_fail();
-        }
-        config->type_radius[config->n_types-1] = r;
-        config->type_class[config->n_types-1] = areac;
-            return mem_fail();
+        if (areac < 0) areac = add_new_class(config, buf2);
+        if (areac == FREESASA_FAIL) return freesasa_fail(__func__);
+        if (add_new_type(config, buf1, areac, r) == FREESASA_FAIL)
+            return freesasa_fail(__func__);
     } else {
-        return freesasa_fail("%s: Could not parse line '%s', "
-                         "expecting triplet of type "
-                         "'TYPE [RADIUS] CLASS' for example "
-                         "'C_ALI 2.00 apolar'",
-                         __func__, line);
+        return freesasa_fail("%s: Could not parse line '%s', expecting triplet of type "
+                             "'TYPE [RADIUS] CLASS' for example 'C_ALI 2.00 apolar'",
+                             __func__, line);
     }
     return FREESASA_SUCCESS;
 }
 
 /**
-    Reads info about types from the user config. Assoicates each type
-    with a class and a radius in the config struct..
-*/
+    Reads info about types from the user config. Associates each type
+    with a class and a radius in the config struct. Returns
+    FREESASA_SUCCESS on success, FREESASA_FAIL on syntax or memory
+    allocation errors.
+ */
 static int read_types(user_config *config,
                       FILE *input,
                       struct file_interval fi)
@@ -264,7 +321,7 @@ static int read_types(user_config *config,
     while (ftell(input) < fi.end) { 
         nl = next_line(&line,input);
         if (nl == 0) continue;
-        if (nl == FREESASA_FAIL) return mem_fail();
+        if (nl == FREESASA_FAIL) return FREESASA_FAIL;
         ret = read_types_line(config,line);
         if (ret == FREESASA_FAIL) break;
     }
@@ -272,6 +329,10 @@ static int read_types(user_config *config,
     return ret;
 }
 
+/**
+    Add residue to config. Returns the index of the new residue on
+    success, FREESASA_FAILURE if realloc/strdup fails.
+ */
 static int add_new_residue(user_config *config,
                            const char* residue)
 {
@@ -294,6 +355,10 @@ static int add_new_residue(user_config *config,
     return res-1;
 }
 
+/**
+    Add atom to config. Returns FREESASA_SUCCESS on success,
+    FREESASA_FAILURE if realloc/strdup fails.
+*/
 static int add_new_atom(user_config *config,
                         const char *atom,
                         int res,
@@ -304,16 +369,24 @@ static int add_new_atom(user_config *config,
     config->atoms[res] = realloc(config->atoms[res],sizeof(char*)*n);
     config->atom_class[res] = realloc(config->atom_class[res],sizeof(int)*n);
     config->atom_radius[res] = realloc(config->atom_radius[res],sizeof(double)*n);
-    if (!config->atoms || !config->atom_class || !config->atom_radius ||
-        !(config->atoms[res][n-1] = strdup(atom))) {
+    if (!config->atoms[res] || !config->atom_class[res] || !config->atom_radius[res]) {
         --config->n_atoms[res];
         return mem_fail();
     }
+    if (!(config->atoms[res][n-1] = strdup(atom))) {
+        --config->n_atoms[res];
+        return mem_fail();
+    }    
     config->atom_class[res][n-1] = config->type_class[type];
     config->atom_radius[res][n-1] = config->type_radius[type];
     return FREESASA_SUCCESS;
 }
 
+/**
+    Read a line specifying an atom, store it in the config. Returns
+    warning for duplicates, failures for syntax errors or memory
+    allocation errors.
+ */
 static int read_atoms_line(user_config *config,
                            const char* line)
 {
@@ -324,14 +397,14 @@ static int read_atoms_line(user_config *config,
         int type = find_string(config->types, buf3, config->n_types);
         if (type < 0) 
             return freesasa_fail("Unknown atom type '%s'",buf3);
-        if (res < 0) 
+        if (res < 0)
             res = add_new_residue(config,buf1);
         if (res == FREESASA_FAIL)
-            return mem_fail();
+            return freesasa_fail(__func__);
         if (find_string(config->atoms[res], buf2, config->n_atoms[res]) >= 0)
             freesasa_warn("Ignoring duplicate entry '%s %s %s'", buf1, buf2, buf3);
         if (add_new_atom(config,buf2,res,type) == FREESASA_FAIL) 
-            return mem_fail();
+            return freesasa_fail(__func__);
     } else {
         return freesasa_fail("%s: Could not parse line '%s', expecting triplet of type "
                              "'RESIDUE ATOM CLASS', for example 'ALA CB C_ALI'.",
@@ -359,12 +432,12 @@ static int read_atoms(user_config *config,
     while (ftell(input) < fi.end) { 
         nl = next_line(&line,input);
         if (nl == 0) continue;
-        if (nl == FREESASA_FAIL) return mem_fail();
+        if (nl == FREESASA_FAIL) return freesasa_fail(__func__);
         ret = read_atoms_line(config,line);
         if (ret == FREESASA_FAIL) break;
     }
     free(line);
-    return FREESASA_SUCCESS;
+    return ret;
 }
 
 static user_config* read_config(FILE *input) 
@@ -374,9 +447,10 @@ static user_config* read_config(FILE *input)
     int ret1, ret2;
     user_config *config;
     
-    if (check_file(input,&types, &atoms) != FREESASA_SUCCESS) 
+    if (check_file(input,&types, &atoms) != FREESASA_SUCCESS)
         return NULL;
-    config = user_config_new();
+    if (!(config = user_config_new()))
+        return NULL;
 
     if (read_types(config, input, types) == FREESASA_FAIL ||
         read_atoms(config, input, atoms) == FREESASA_FAIL) {
