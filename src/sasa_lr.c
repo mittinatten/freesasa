@@ -32,12 +32,8 @@
 
 #include "freesasa.h"
 #include "sasa.h"
-#include "srp.h"
 #include "nb.h"
-
-extern const char *freesasa_name;
-extern int freesasa_fail(const char *format, ...);
-extern int freesasa_warn(const char *format, ...);
+#include "util.h"
 
 const double TWOPI = 2*M_PI;
 
@@ -83,8 +79,8 @@ static lr_data* init_lr(double *sasa,
     const double *v = freesasa_coord_all(xyz);
     lr_data* lr = malloc(sizeof(lr_data));
     double *radii = malloc(sizeof(double)*n_atoms);
-    assert(lr);
-    assert(radii);
+    if (!lr || !radii) { free(lr); free(radii); mem_fail(); return NULL;}
+
     //find bounds of protein along z-axis and init radii
     for (int i = 0; i < n_atoms; ++i) {
         double z, r;
@@ -139,9 +135,11 @@ int freesasa_lee_richards(double *sasa,
 
     // determine slice range and init radii and sasa arrays
     lr = init_lr(sasa, xyz, atom_radii, probe_radius, delta);
+    if (lr == NULL) { mem_fail(); return FREESASA_FAIL; }
 
     // determine which atoms are neighbours
     lr->adj = freesasa_nb_new(xyz,lr->radii);
+    if (lr->adj == NULL) { mem_fail(); return FREESASA_FAIL; } 
 
     if (n_threads > 1) {
 #if HAVE_LIBPTHREAD
@@ -160,7 +158,6 @@ int freesasa_lee_richards(double *sasa,
         }        
     }
     free_lr(lr);
-
     return return_value;
 }
 

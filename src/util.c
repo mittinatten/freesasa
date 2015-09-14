@@ -3,7 +3,11 @@
 #include "freesasa.h"
 #include "util.h"
 
-extern const char* freesasa_name;
+#ifdef PACKAGE_NAME
+const char *freesasa_name = PACKAGE_NAME;
+#else
+const char *freesasa_name = "freesasa";
+#endif
 
 static void freesasa_err_impl(int err, const char *format, va_list arg)
 {

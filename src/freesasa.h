@@ -447,7 +447,7 @@ int freesasa_write_pdb(FILE *output,
     output. ::FREESASA_SUCCESS else.
     
     @ingroup API
-*/
+ */
 int freesasa_per_residue_type(FILE *output, 
                               freesasa_result *result,
                               const freesasa_structure *structure);

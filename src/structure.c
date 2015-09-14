@@ -31,11 +31,6 @@
 #include "coord.h"
 #include "util.h"
 
-extern int freesasa_fail(const char *format, ...);
-extern int freesasa_warn(const char *format, ...);
-
-struct file_interval {long begin; long end;};
-
 struct atom {
     char res_name[PDB_ATOM_RES_NAME_STRL+1];
     char res_number[PDB_ATOM_RES_NUMBER_STRL+1];

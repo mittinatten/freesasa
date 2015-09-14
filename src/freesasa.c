@@ -39,11 +39,6 @@
 #define NBUF 100
 #define DEF_NTHREADS 1
 
-#ifdef PACKAGE_NAME
-const char *freesasa_name = PACKAGE_NAME;
-#else
-const char *freesasa_name = "freesasa";
-#endif
 #ifdef PACKAGE_VERSION
 const char *freesasa_version = PACKAGE_VERSION;
 #else
@@ -69,6 +64,7 @@ freesasa_strvp* freesasa_result_classify(const freesasa_result *result,
                                          const freesasa_structure *structure,
                                          const freesasa_classifier *c) 
 {
+    assert(result);
     assert(structure);
 
     int n_atoms;
@@ -80,17 +76,21 @@ freesasa_strvp* freesasa_result_classify(const freesasa_result *result,
     n_atoms = freesasa_structure_n(structure);
     n_classes = classifier->n_classes;
     strvp = freesasa_strvp_new(n_classes);
-    assert(strvp);
+    if (strvp == NULL) {mem_fail(); return NULL;}
+
     for(int i = 0; i < n_classes; ++i) {
         strvp->string[i] = strdup(classifier->class2str(i,classifier));
         strvp->value[i] = 0;
+        
     }
+
     for (int i = 0; i < n_atoms; ++i) {
         const char *res_name = freesasa_structure_atom_res_name(structure,i);
         const char *atom_name = freesasa_structure_atom_name(structure,i);
         int c = classifier->sasa_class(res_name,atom_name,classifier);
         strvp->value[c] += result->sasa[i];
     }
+
     return strvp;
 }
 
@@ -113,15 +113,13 @@ static freesasa_result* freesasa_calc(const freesasa_coord *c,
     freesasa_result *result = malloc(sizeof(freesasa_result));
     int ret;
     const freesasa_parameters *p = parameters;
+    
+    if (result == NULL) { mem_fail(); return NULL; }    
     if (p == NULL) p = &freesasa_default_parameters;
 
-    //struct timeval t1, t2;
-    //gettimeofday(&t1,NULL);
-    
-    
-    result->sasa = malloc(sizeof(double)*freesasa_coord_n(c));
-    assert(result->sasa);
     result->n_atoms = freesasa_coord_n(c);
+    result->sasa = malloc(sizeof(double)*result->n_atoms);
+    if(result->sasa == NULL) { mem_fail(); freesasa_result_free(result); return NULL; }
 
     switch(p->alg) {
     case FREESASA_SHRAKE_RUPLEY:
@@ -140,18 +138,14 @@ static freesasa_result* freesasa_calc(const freesasa_coord *c,
         assert(0); //should never get here
         break;
     }
-    result->total = 0;
-    for (int i = 0; i < freesasa_coord_n(c); ++i) {
-        result->total += result->sasa[i];
-    }
-
-    //gettimeofday(&t2,NULL);
-    //s->elapsed_time = (t2.tv_sec-t1.tv_sec);
-    //s->elapsed_time += (t2.tv_usec-t1.tv_usec) / 1e6; // s
-
     if (ret == FREESASA_FAIL) {
         freesasa_result_free(result);
         return NULL;
+    }
+
+    result->total = 0;
+    for (int i = 0; i < freesasa_coord_n(c); ++i) {
+        result->total += result->sasa[i];
     }
 
     return result;
@@ -164,11 +158,19 @@ freesasa_result* freesasa_calc_coord(const double *xyz,
 {
     assert(xyz);
     assert(radii);
-    // We don't want to store the supplied parameters (to allow const-ness),
-    // and want to make sure user doesn't access outdated parameters
-    freesasa_coord *c = freesasa_coord_new_linked(xyz,n);
-    freesasa_result *result = freesasa_calc(c,radii,parameters);
-    freesasa_coord_free(c);
+    assert(n > 0);
+
+    freesasa_coord *coord = NULL;
+    freesasa_result *result = NULL;
+
+    coord = freesasa_coord_new_linked(xyz,n);
+    if (coord) result = freesasa_calc(coord,radii,parameters);
+    if (coord == NULL || result == NULL) {
+        freesasa_result_free(result);
+        mem_fail();
+        result = NULL;
+    }
+    freesasa_coord_free(coord);
 
     return result;
 }
@@ -191,7 +193,8 @@ double* freesasa_structure_radius(const freesasa_structure *structure,
     int n = freesasa_structure_n(structure);
     double *r = malloc(sizeof(double)*n);
     const freesasa_classifier *c = classifier;
-
+    
+    if (r == NULL) {mem_fail(); return NULL;}
     if (c == NULL) c = &freesasa_default_classifier;
 
     for (int i = 0; i < n; ++i) {
@@ -343,11 +346,18 @@ int freesasa_per_residue(FILE *output,
 freesasa_strvp* freesasa_strvp_new(int n)
 {
     freesasa_strvp* svp = malloc(sizeof(freesasa_strvp));
-    assert(svp);
+    if (svp == NULL) {mem_fail(); return NULL;}
     svp->value = malloc(sizeof(double)*n);
     svp->string = malloc(sizeof(char*)*n);
-    assert(svp->value && svp->string);
+    if (!svp->value || !svp->string) {
+        free(svp->value);  svp->value = NULL;
+        free(svp->string); svp->string = NULL;
+        freesasa_strvp_free(svp);
+        mem_fail();
+        return NULL;
+    }
     svp->n = n;
+    for (int i = 0; i < n; ++i) svp->string[i] = NULL;
     return svp;
 }
 

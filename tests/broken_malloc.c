@@ -51,7 +51,8 @@ broken_realloc(void * ptr, size_t s)
 int int_array[6] = {0,1,2,3,4,5};
 char str_array[][2] = {"A","B","C","D","E","F"};
 double v[18] = {0,0,0, 1,1,1, -1,1,-1, 2,0,-2, 2,2,0, -5,5,5};
-double r[6]  = {4,2,2,2,2,2};
+const double r[6]  = {4,2,2,2,2,2};
+double dummy[20];
 struct freesasa_coord coord = {.xyz = v, .n = 6, .is_const = 0};
 struct atom a;
 struct freesasa_structure structure = {
@@ -109,6 +110,7 @@ START_TEST (test_structure)
         realloc_fail_freq = i; n_realloc_fails = 0;
         rewind(file);
         ck_assert_ptr_eq(freesasa_structure_array(file,&n,FREESASA_SEPARATE_MODELS),NULL);
+        rewind(file);
         ck_assert_ptr_eq(freesasa_structure_array(file,&n,FREESASA_SEPARATE_MODELS | FREESASA_SEPARATE_CHAINS),NULL);
     }
     malloc_fail_freq = 1; n_malloc_fails = 0;
@@ -120,6 +122,7 @@ END_TEST
 
 START_TEST (test_nb) 
 {
+    freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_ptr_eq(cell_list_new(1,&coord),NULL);
     ck_assert_int_eq(fill_cells(&a_cell_list,&coord),FREESASA_FAIL);
     ck_assert_ptr_eq(freesasa_nb_alloc(10),NULL);
@@ -132,20 +135,97 @@ START_TEST (test_nb)
     }
     malloc_fail_freq = 1; n_malloc_fails = 0;
     realloc_fail_freq = 1; n_realloc_fails = 0;
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+}
+END_TEST
+
+START_TEST (test_alg)
+{
+    // First check that the input actually gives a valid calculation
+    malloc_fail_freq = 100000; n_malloc_fails = 0;
+    realloc_fail_freq = 100000; n_malloc_fails = 0;
+    ck_assert_int_eq(freesasa_lee_richards(dummy,&coord,r,1.4,0.1,1),FREESASA_SUCCESS);
+    ck_assert_int_eq(freesasa_shrake_rupley(dummy,&coord,r,1.4,100,1),FREESASA_SUCCESS);
+    
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    for (int i = 1; i < 50; ++i) {
+        malloc_fail_freq = i; n_malloc_fails = 0;
+        realloc_fail_freq = i; n_realloc_fails = 0;
+        ck_assert_int_eq(freesasa_lee_richards(dummy,&coord,r,1.4,0.1,1),FREESASA_FAIL);
+        malloc_fail_freq = i; n_malloc_fails = 0;
+        realloc_fail_freq = i; n_realloc_fails = 0;
+        ck_assert_int_eq(freesasa_shrake_rupley(dummy,&coord,r,1.4,100,1),FREESASA_FAIL);
+    }
+    malloc_fail_freq = 1; n_malloc_fails = 0;
+    realloc_fail_freq = 1; n_realloc_fails = 0;
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+}
+END_TEST
+
+START_TEST (test_user_config) 
+{
+    FILE *config = fopen("data/naccess.config","r");
+    for (int i = 1; i < 50; ++i) {
+        malloc_fail_freq = i; n_malloc_fails = 0;
+        realloc_fail_freq = i; n_realloc_fails = 0;
+        ck_assert_ptr_eq(freesasa_classifier_from_file(config),NULL);
+        rewind(config);
+        printf("BLA\n"); fflush(stdout);
+    }
+    fclose(config);
+}
+END_TEST
+
+START_TEST (test_api) 
+{
+    freesasa_parameters p = freesasa_default_parameters;
+
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    for (int i = 1; i < 50; ++i) {
+        p.alg = FREESASA_SHRAKE_RUPLEY;
+        malloc_fail_freq = i; n_malloc_fails = 0;
+        realloc_fail_freq = i; n_realloc_fails = 0;
+        ck_assert_int_eq(freesasa_calc(&coord,r,&p),NULL);
+        p.alg = FREESASA_LEE_RICHARDS; 
+        malloc_fail_freq = i; n_malloc_fails = 0;
+        realloc_fail_freq = i; n_realloc_fails = 0;
+        ck_assert_int_eq(freesasa_calc(&coord,r,&p),NULL);
+    }
+
+    FILE *file = fopen(DATADIR "1ubq.pdb","r");
+    malloc_fail_freq = 1000000; n_malloc_fails = 0;
+    realloc_fail_freq = 1000000; n_realloc_fails = 0;
+    freesasa_structure *s=freesasa_structure_from_pdb(file,0);
+    double *radii = freesasa_structure_radius(s,NULL);
+    ck_assert_ptr_ne(s,NULL);
+    for (int i = 1; i < 256; i *= 2) { //try to spread it out without doing too many calculations
+        malloc_fail_freq = i; n_malloc_fails = 0;
+        realloc_fail_freq = i; n_realloc_fails = 0;
+        ck_assert_ptr_eq(freesasa_calc_structure(s,radii,NULL),NULL);
+        malloc_fail_freq = i; n_malloc_fails = 0;
+        realloc_fail_freq = i; n_realloc_fails = 0;
+        ck_assert_ptr_eq(freesasa_structure_get_chains(s,"A"),NULL);
+    }
+    freesasa_structure_free(s);
+    fclose(file);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 
 int main(int argc, char **argv) {
     Suite *s = suite_create("Test that null-returning malloc breaks program gracefully.");
-
+    
     TCase *tc = tcase_create("Basic");
     tcase_add_test(tc,test_coord);
     tcase_add_test(tc,test_structure);
     tcase_add_test(tc,test_nb);
-
+    tcase_add_test(tc,test_alg);
+    tcase_add_test(tc,test_user_config);
+    tcase_add_test(tc,test_api);
+    
     suite_add_tcase(s, tc);
     SRunner *sr = srunner_create(s);
     srunner_run_all(sr,CK_VERBOSE);
-
+    
     return (srunner_ntests_failed(sr) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
