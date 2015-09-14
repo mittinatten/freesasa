@@ -217,9 +217,9 @@ static double atom_area(lr_data *lr,int i)
     const double * restrict const v = freesasa_coord_all(lr->xyz);
     const double * restrict const r = lr->radii;
     const int * restrict const nbi = lr->adj->nb[i];
-    const double * restrict const xydi = lr->adj->nb_xyd[i];
-    const double * restrict const xdi = lr->adj->nb_xd[i];
-    const double * restrict const ydi = lr->adj->nb_yd[i];
+    const double * restrict const xydi = lr->adj->xyd[i];
+    const double * restrict const xdi = lr->adj->xd[i];
+    const double * restrict const ydi = lr->adj->yd[i];
     const double zi = v[3*i+2], delta = lr->delta, ri = r[i], d_half = delta/2.;
     double arc[nni*4], z_nb[nni], r_nb[nni];
     double z_slice, z0, sasa = 0;

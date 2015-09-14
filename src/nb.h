@@ -37,9 +37,9 @@ typedef struct {
     int n; //!< number of elements
     int **nb; //!< neighbors to each element
     int *nn; //!< number of neighbors to each element
-    double **nb_xyd; //!< distance between neighbors in xy-plane
-    double **nb_xd; //!< signed distance between neighbors along x-axis
-    double **nb_yd; //!< signed distance between neighbors along y-axis
+    double **xyd; //!< distance between neighbors in xy-plane
+    double **xd; //!< signed distance between neighbors along x-axis
+    double **yd; //!< signed distance between neighbors along y-axis
     int *capacity; //!< keeps track of memory chunks (don't change this)
 } freesasa_nb;
 
@@ -54,7 +54,9 @@ typedef struct {
 
     @param coord a set of coordinates
     @param radii radii for the coordinates
-    @return a neigbor list.
+    @return a neigbor list. Returns NULL if either argument is null or
+      if there were any problems constructing the list (see error
+      messages).
  */
 freesasa_nb *freesasa_nb_new(const freesasa_coord *coord,
                              const double *radii);
