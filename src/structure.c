@@ -136,7 +136,6 @@ from_pdb_impl(FILE *pdb_file,
               (strncmp("HETATM",line,6) == 0) )
             ) {
             double v[3];
-            int res;
             struct atom a;
             char alt;
             if (freesasa_pdb_ishydrogen(line) &&

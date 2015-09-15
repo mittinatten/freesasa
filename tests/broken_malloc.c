@@ -164,15 +164,16 @@ END_TEST
 
 START_TEST (test_user_config) 
 {
-    FILE *config = fopen("data/naccess.config","r");
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    FILE *config = fopen(DATADIR "naccess.config","r");
     for (int i = 1; i < 50; ++i) {
         malloc_fail_freq = i; n_malloc_fails = 0;
         realloc_fail_freq = i; n_realloc_fails = 0;
         ck_assert_ptr_eq(freesasa_classifier_from_file(config),NULL);
         rewind(config);
-        printf("BLA\n"); fflush(stdout);
     }
     fclose(config);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 

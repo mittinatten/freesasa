@@ -88,7 +88,6 @@ int freesasa_coord_append(freesasa_coord *c, const double *xyz, int n)
 {
     assert(c); assert(xyz); assert(!c->is_const);
 
-    double *dest;
     int n_old = c->n;
 
     if (n == 0) return FREESASA_SUCCESS;
@@ -97,7 +96,7 @@ int freesasa_coord_append(freesasa_coord *c, const double *xyz, int n)
     c->xyz = (double*) realloc(c->xyz, sizeof(double)*3*c->n);
     if (c->xyz == NULL) return mem_fail();
 
-    dest = memcpy(&(c->xyz[3*n_old]), xyz, sizeof(double)*n*3);
+    memcpy(&(c->xyz[3*n_old]), xyz, sizeof(double)*n*3);
     return FREESASA_SUCCESS;
 }
 

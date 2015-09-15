@@ -187,7 +187,6 @@ static void sr_do_threads(int n_threads, sr_data sr)
 static void *sr_thread(void* arg)
 {
     sr_data sr = *((sr_data*) arg);
-    int n = sr.i2-sr.i1;
     for (int i = sr.i1; i < sr.i2; ++i) {
         // mutex should not be necessary, writes to non-overlapping regions
         sr.sasa[i] = sr_atom_area(i,sr);

@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include "pdb.h"
 #include "classify.h"
+#include "util.h"
 
 // Residue types, make sure this always matches the corresponding enum.
 static const char *residue_names[] = {
