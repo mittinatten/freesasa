@@ -12,15 +12,11 @@ GCOV_FILES = *.gcda *.gcno *.gcov
 
 if USE_CHECK
 
-static_tests = static-nb static-sasa-lr static-structure 
-
-TESTS += libtest $(static_tests) broken-malloc
-check_PROGRAMS += libtest $(static_tests) broken-malloc
+TESTS += libtest static-test broken-malloc
+check_PROGRAMS += libtest static-test broken-malloc
 libtest_SOURCES = libtest.c test_pdb.c test_freesasa.c test_structure.c \
 	test_classify.c test_coord.c test_nb.c
-static_nb_SOURCES = static_nb.c
-static_sasa_lr_SOURCES = static_sasa_lr.c
-static_structure_SOURCES = static_structure.c
+static_test_SOURCES = test_static.c
 broken_malloc_SOURCES = broken_malloc.c
 
 CFLAGS = -I$(top_srcdir)/src $(AM_CFLAGS) \

@@ -537,6 +537,10 @@ read_config(FILE *input)
     return config;
 }
 
+/**
+    See if an atom_name has been defined for the residue ANY (writes
+    indices to the provided pointers).
+ */
 static void 
 find_any(const struct user_config *config,
          const char *atom_name,
@@ -544,11 +548,14 @@ find_any(const struct user_config *config,
 {
     *res = find_string(config->residue_name,"ANY",config->n_residues);
     if (*res >= 0) {
-        const struct user_residue *residue = config->residue[*res];
-        *atom = find_string(residue->atom_name,atom_name,residue->n_atoms); 
+        *atom = find_string(config->residue[*res]->atom_name,atom_name,config->residue[*res]->n_atoms); 
     }
 }
-
+/**
+    Find the residue and atom index of an atom in the supplied
+    configuration. Prints error and returns FREESASA_FAIL if not
+    found.
+ */
 static int 
 find_atom(const struct user_config *config, 
           const char *res_name,
@@ -574,6 +581,7 @@ find_atom(const struct user_config *config,
     return FREESASA_SUCCESS;
 }
 
+/** To be linked to a Classifier struct */
 static double
 user_radius(const char *res_name,
             const char *atom_name,
@@ -592,6 +600,7 @@ user_radius(const char *res_name,
     return -1.0;
 }
 
+/** To be linked to a Classifier struct */
 static int
 user_class(const char *res_name, 
            const char *atom_name,
@@ -607,6 +616,7 @@ user_class(const char *res_name,
                          __func__, res_name, atom_name);
 }
 
+/** To be linked to a Classifier struct */
 static const char*
 user_class2str(int the_class,
                const freesasa_classifier *classifier)
