@@ -38,11 +38,13 @@
 //! Struct to store coordinates
 typedef struct freesasa_coord freesasa_coord;
 
-//! Initialize new ::freesasa_coord object
-freesasa_coord* freesasa_coord_new(void);
+//! Initialize new ::freesasa_coord object (NULL if malloc fails)
+freesasa_coord * 
+freesasa_coord_new(void);
 
 //! Free resources allocated by ::freesasa_coord object
-void freesasa_coord_free(freesasa_coord*);
+void
+freesasa_coord_free(freesasa_coord*);
 
 /**
    Copy coordinates.
@@ -51,13 +53,14 @@ void freesasa_coord_free(freesasa_coord*);
    argument `src`.
 
    @param src Coordinates to be copied.
-   @return Copy of coordinates
-*/
-freesasa_coord* freesasa_coord_copy(const freesasa_coord *src);
+   @return Copy of coordinates.
+ */
+freesasa_coord *
+freesasa_coord_copy(const freesasa_coord *src);
 
 /**
     Creates a `const` ::freesasa_coord-object that is linked to an array of
-    coordinates owned by callee. 
+    coordinates owned by callee.
 
     This allows repeated calculations on a changing object without
     reinitialization. The returned ::freesasa_coord-pointer is not
@@ -67,9 +70,10 @@ freesasa_coord* freesasa_coord_copy(const freesasa_coord *src);
 
     @param xyz Array of coordinates x1,y1,z1,x2,y2,z2,...
     @param n Number of coordinates (array has size 3*n).
-    @return New linked ::freesasa_coord object
-*/
-freesasa_coord* freesasa_coord_new_linked(const double *xyz, int n);
+    @return New linked ::freesasa_coord object (NULL if malloc fails).
+ */
+freesasa_coord *
+freesasa_coord_new_linked(const double *xyz, int n);
 
 /**
     Append coordinates to ::freesasa_coord object from one array.
@@ -77,8 +81,10 @@ freesasa_coord* freesasa_coord_new_linked(const double *xyz, int n);
     @param s a ::freesasa_coord object
     @param xyz Array of coordinates x1,y1,z1,x2,y2,z2,...
     @param n Number of coordinates (array has size 3*n).
+    @return FREESASA_SUCCESS if successful, FREESASA_FAIL if malloc fails.
  */
-void freesasa_coord_append(freesasa_coord *s,const double *xyz,int n);
+int
+freesasa_coord_append(freesasa_coord *s,const double *xyz,int n);
 
 /**
     Append coordinates to ::freesasa_coord object from three
@@ -89,10 +95,11 @@ void freesasa_coord_append(freesasa_coord *s,const double *xyz,int n);
     @param y Array of x-coordinates
     @param z Array of x-coordinates
     @param n Size of arrays x, y and z.
+    @return FREESASA_SUCCESS if successful, FREESASA_FAIL if malloc fails.
  */
-void freesasa_coord_append_xyz(freesasa_coord *s,
-                               const double *x, const double *y,
-                               const double *z, int n);
+int freesasa_coord_append_xyz(freesasa_coord *s,
+                              const double *x, const double *y,
+                              const double *z, int n);
 
 /**
     Set given coordinate.

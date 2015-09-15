@@ -24,13 +24,18 @@ const double r[6]  = {4,2,2,2,2,2};
 
 START_TEST (test_nb) {
     freesasa_coord *coord = freesasa_coord_new();
+    freesasa_nb *nb;
     freesasa_coord_append(coord,v,6);
-    freesasa_nb *adj = freesasa_nb_new(coord,r);
-    ck_assert(adj != NULL);
-    ck_assert(freesasa_nb_contact(adj,0,1));
-    ck_assert(freesasa_nb_contact(adj,1,0));
-    ck_assert(freesasa_nb_contact(adj,0,5) == 0);
-    freesasa_nb_free(adj);
+    ck_assert_ptr_eq(freesasa_nb_new(NULL,NULL),NULL);
+    ck_assert_ptr_eq(freesasa_nb_new(NULL,r),NULL);
+    ck_assert_ptr_eq(freesasa_nb_new(coord,NULL),NULL);
+
+    nb = freesasa_nb_new(coord,r);
+    ck_assert(nb != NULL);
+    ck_assert(freesasa_nb_contact(nb,0,1));
+    ck_assert(freesasa_nb_contact(nb,1,0));
+    ck_assert(freesasa_nb_contact(nb,0,5) == 0);
+    freesasa_nb_free(nb);
     freesasa_coord_free(coord);
 }
 END_TEST

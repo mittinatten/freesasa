@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <check.h>
+#include <freesasa.h>
 #include <coord.h>
 
 freesasa_coord *coord;
@@ -38,9 +39,9 @@ static void teardown(void)
 
 START_TEST (test_coord)
 {
-    ck_assert(coord != NULL);
+    ck_assert_ptr_ne(coord,NULL);
     double xyz[9] = {0,0,0, 1,0,0, 0,1,0};
-    freesasa_coord_append(coord,(double*)xyz,3);
+    ck_assert_int_eq(freesasa_coord_append(coord,(double*)xyz,3),FREESASA_SUCCESS);
     ck_assert(fabs(freesasa_coord_dist(coord,0,2)-1) < 1e-10);
     ck_assert(fabs(freesasa_coord_dist(coord,1,2)-sqrt(2)) < 1e-10);
     ck_assert(fabs(freesasa_coord_dist(coord,1,0)-1) < 1e-10);
@@ -68,7 +69,7 @@ START_TEST (test_coord)
     ck_assert(fabs(freesasa_coord_dist2(coord,0,1)-2) < 1e-10);
 
     double x[2] = {2,2}, y[2] = {1,2}, z[2] = {0,1};
-    freesasa_coord_append_xyz(coord,(double*)x,(double*)y,(double*)z,2);
+    ck_assert_int_eq(freesasa_coord_append_xyz(coord,(double*)x,(double*)y,(double*)z,2),FREESASA_SUCCESS);
     ck_assert(fabs(freesasa_coord_dist2(coord,0,2)-2) < 1e-10);
     ck_assert(fabs(freesasa_coord_dist2(coord,1,2)-4) < 1e-10);
     ck_assert(fabs(freesasa_coord_dist2(coord,0,3)-6) < 1e-10);
@@ -87,7 +88,7 @@ START_TEST (test_coord)
 
     freesasa_coord *c2 = freesasa_coord_new();
     ck_assert(c2 != NULL);
-    freesasa_coord_append(c2,xyz2,1);
+    ck_assert_int_eq(freesasa_coord_append(c2,xyz2,1),FREESASA_SUCCESS);
     ck_assert(fabs(freesasa_coord_dist2_12(coord,c2,0,0) - 2));
     freesasa_coord_free(c2);
 }

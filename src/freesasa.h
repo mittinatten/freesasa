@@ -211,6 +211,7 @@ typedef enum {
 #define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R @ingroup API
 #define FREESASA_DEF_LR_D 0.25 //!< Default slice width in L&R (in Ångström) @ingroup API
 
+// Important that success is 0 and failure is non-zero, don't change
 #define FREESASA_SUCCESS 0 //!< All is ok @ingroup API
 #define FREESASA_FAIL -1 //!< Something went seriously wrong. @ingroup API
 #define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful @ingroup API
@@ -446,7 +447,7 @@ int freesasa_write_pdb(FILE *output,
     output. ::FREESASA_SUCCESS else.
     
     @ingroup API
-*/
+ */
 int freesasa_per_residue_type(FILE *output, 
                               freesasa_result *result,
                               const freesasa_structure *structure);

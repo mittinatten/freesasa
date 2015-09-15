@@ -34,16 +34,13 @@
 #include "sasa.h"
 #include "srp.h"
 #include "nb.h"
+#include "util.h"
 
 #ifdef __GNUC__
 #define __attrib_pure__ __attribute__((pure))
 #else
 #define __attrib_pure__
 #endif
-
-extern const char *freesasa_name;
-extern int freesasa_fail(const char *format, ...);
-extern int freesasa_warn(const char *format, ...);
 
 // calculation parameters (results stored in *sasa)
 typedef struct {
@@ -52,9 +49,9 @@ typedef struct {
     int n_points;
     double probe_radius;
     const freesasa_coord *xyz;
-    const freesasa_coord *srp; // test-points
+    freesasa_coord *srp; // test-points
     double *r;
-    freesasa_nb *adj;
+    freesasa_nb *nb;
     double *sasa;
 } sr_data;
 
@@ -64,6 +61,53 @@ static void *sr_thread(void *arg);
 #endif
 
 static double sr_atom_area(int i,const sr_data) __attrib_pure__;
+
+int init_sr(sr_data* sr_p,
+            double *sasa,
+            const freesasa_coord *xyz,
+            const double *r,
+            double probe_radius,
+            int n_points)
+{
+    int n_atoms = freesasa_coord_n(xyz);
+    const double *srp_p;
+    freesasa_coord *srp;
+
+    // Initialize test-points
+    srp_p = freesasa_srp_get_points(n_points);
+    if (srp_p == NULL) return FREESASA_FAIL;
+    srp = freesasa_coord_new_linked(srp_p,n_points);
+    if (srp == NULL) return mem_fail();
+    
+    //store parameters and reference arrays
+    sr_data sr = {.n_atoms = n_atoms, .n_points = n_points,
+                  .probe_radius = probe_radius,
+                  .xyz = xyz, .srp = srp,
+                  .sasa = sasa};
+    
+    sr.r = malloc(sizeof(double)*n_atoms);
+    if (sr.r == NULL) {freesasa_coord_free(srp); return mem_fail(); }
+
+    for (int i = 0; i < n_atoms; ++i) sr.r[i] = r[i] + probe_radius;
+    
+    //calculate distances
+    sr.nb = freesasa_nb_new(xyz,sr.r);
+    if (sr.nb == NULL) { 
+        freesasa_coord_free(srp); 
+        free(sr.r); 
+        return mem_fail();
+    }
+    *sr_p = sr;
+    return FREESASA_SUCCESS;
+}
+
+// free contents
+void release_sr(sr_data sr) 
+{
+    freesasa_coord_free(sr.srp);
+    freesasa_nb_free(sr.nb);
+    free(sr.r);
+}
 
 int freesasa_shrake_rupley(double *sasa,
                            const freesasa_coord *xyz,
@@ -75,33 +119,15 @@ int freesasa_shrake_rupley(double *sasa,
     assert(sasa);
     assert(xyz);
     assert(r);
+    assert(n_threads > 0);
 
     int n_atoms = freesasa_coord_n(xyz);
     int return_value = FREESASA_SUCCESS;
-    const double *srp_p;
-    freesasa_coord *srp;
+    sr_data sr;
 
-    if (n_atoms == 0) {
-        return freesasa_warn("%s: empty coordinates", __func__);
-    }
+    if (n_atoms == 0) return freesasa_warn("%s: empty coordinates", __func__);
 
-    // Initialize test-points
-    srp_p = freesasa_srp_get_points(n_points);
-    if (srp_p == NULL) return FREESASA_FAIL;
-    srp = freesasa_coord_new_linked(srp_p,n_points);
-
-    //store parameters and reference arrays
-    sr_data sr = {.n_atoms = n_atoms, .n_points = n_points,
-                  .probe_radius = probe_radius,
-                  .xyz = xyz, .srp = srp,
-                  .sasa = sasa};
-
-    sr.r = malloc(sizeof(double)*n_atoms);
-    assert(sr.r);
-    for (int i = 0; i < n_atoms; ++i) sr.r[i] = r[i] + probe_radius;
-
-    //calculate distances
-    sr.adj = freesasa_nb_new(xyz,sr.r);
+    if (init_sr(&sr,sasa,xyz,r,probe_radius,n_points)) return mem_fail();
 
     //calculate SASA
     if (n_threads > 1) {
@@ -121,9 +147,7 @@ int freesasa_shrake_rupley(double *sasa,
             sasa[i] = sr_atom_area(i,sr);
         }
     }
-    freesasa_coord_free(srp);
-    freesasa_nb_free(sr.adj);
-    free(sr.r);
+    release_sr(sr);
     return return_value;
 }
 
@@ -164,14 +188,10 @@ static void *sr_thread(void* arg)
 {
     sr_data sr = *((sr_data*) arg);
     int n = sr.i2-sr.i1;
-    double *sasa = malloc(sizeof(double)*n);
-    assert(sasa);
-    for (int i = 0; i < n; ++i) {
-        sasa[i] = sr_atom_area(i+sr.i1,sr);
+    for (int i = sr.i1; i < sr.i2; ++i) {
+        // mutex should not be necessary, writes to non-overlapping regions
+        sr.sasa[i] = sr_atom_area(i,sr);
     }
-    // mutex should not be necessary, writes to non-overlapping regions
-    memcpy(&sr.sasa[sr.i1],sasa,sizeof(double)*n);
-    free(sasa);
     pthread_exit(NULL);
 }
 #endif
@@ -195,8 +215,8 @@ static double sr_atom_area(int i, const sr_data sr) {
 
     memset(spcount,0,n_points*sizeof(int));
 
-    for (int j = 0; j < sr.adj->nn[i]; ++j) {
-        const int ja = sr.adj->nb[i][j];
+    for (int j = 0; j < sr.nb->nn[i]; ++j) {
+        const int ja = sr.nb->nb[i][j];
         const double rj = sr.r[ja];
         const double xj = v[3*ja+0], yj = v[3*ja+1], zj = v[3*ja+2];
         for (int k = 0; k < n_points; ++k) {
