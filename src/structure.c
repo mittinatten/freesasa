@@ -381,7 +381,8 @@ structure_alloc_one(freesasa_structure *p)
 }
 
 static int
-structure_add_chain(freesasa_structure *p, char chain_label)
+structure_add_chain(freesasa_structure *p,
+                    char chain_label)
 {
     if (strchr(p->chains,chain_label) == NULL) {
         int n = ++p->number_chains;
@@ -585,7 +586,7 @@ freesasa_structure_residue_atoms(const freesasa_structure *s,
 
 const char*
 freesasa_structure_residue_descriptor(const freesasa_structure *s,
-                                                  int r_i)
+                                      int r_i)
 {
     assert(s);
     assert(r_i < s->number_residues);
@@ -594,9 +595,9 @@ freesasa_structure_residue_descriptor(const freesasa_structure *s,
 
 int
 freesasa_write_pdb(FILE *output,
-                       freesasa_result *result,
-                       const freesasa_structure *p,
-                       const double *radii)
+                   freesasa_result *result,
+                   const freesasa_structure *p,
+                   const double *radii)
 {
     assert(p);
     assert(output);

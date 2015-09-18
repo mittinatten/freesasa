@@ -135,11 +135,11 @@ int freesasa_lee_richards(double *sasa,
 
     // determine slice range and init radii and sasa arrays
     lr = init_lr(sasa, xyz, atom_radii, probe_radius, delta);
-    if (lr == NULL) { mem_fail(); return FREESASA_FAIL; }
+    if (lr == NULL) return mem_fail();
 
     // determine which atoms are neighbours
     lr->adj = freesasa_nb_new(xyz,lr->radii);
-    if (lr->adj == NULL) { mem_fail(); return FREESASA_FAIL; } 
+    if (lr->adj == NULL) return mem_fail();
 
     if (n_threads > 1) {
 #if HAVE_LIBPTHREAD

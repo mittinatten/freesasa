@@ -195,6 +195,125 @@ START_TEST (test_exposed_arc_length)
 }
 END_TEST
 
+START_TEST (test_user_config) 
+{
+    const char *strarr[] = {"A","B","C"};
+    const char *line[] = {"# Bla"," # Bla","Bla # Bla"," Bla # Bla","#Bla #Alb"};
+    char *dummy_str = NULL;
+    struct user_types *user_types = user_types_new();
+    struct user_residue *user_residue = user_residue_new("ALA");
+    struct user_config *user_config = user_config_new();
+
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+
+    ck_assert_int_eq(find_string((char**)strarr,"A",3),0);
+    ck_assert_int_eq(find_string((char**)strarr,"B",3),1);
+    ck_assert_int_eq(find_string((char**)strarr,"C",3),2);
+    ck_assert_int_eq(find_string((char**)strarr,"D",3),-1);
+    ck_assert_int_eq(find_string((char**)strarr," C ",3),2);
+    ck_assert_int_eq(find_string((char**)strarr,"CC",3),-1);
+    
+    ck_assert_int_eq(strip_line(&dummy_str,line[0]),0);
+    ck_assert_int_eq(strip_line(&dummy_str,line[1]),0);
+    ck_assert_int_eq(strip_line(&dummy_str,line[2]),3);
+    ck_assert_str_eq(dummy_str,"Bla");
+    ck_assert_int_eq(strip_line(&dummy_str,line[3]),3);
+    ck_assert_str_eq(dummy_str,"Bla");
+    ck_assert_int_eq(strip_line(&dummy_str,line[4]),0);
+
+    ck_assert_int_eq(user_types->n_classes, 0);
+    ck_assert_int_eq(add_class(user_types,"A"),0);
+    ck_assert_int_eq(user_types->n_classes, 1);
+    ck_assert_str_eq(user_types->class_name[0], "A");
+    ck_assert_int_eq(add_class(user_types,"A"),0);
+    ck_assert_int_eq(user_types->n_classes, 1);
+    ck_assert_int_eq(add_class(user_types,"B"),1);
+    ck_assert_int_eq(user_types->n_classes, 2);
+    ck_assert_str_eq(user_types->class_name[1], "B");
+
+    free(user_types);
+    user_types = user_types_new();
+
+    ck_assert_int_eq(user_types->n_types, 0);
+    ck_assert_int_eq(add_type(user_types,"a","A",1.0),0);
+    ck_assert_int_eq(add_type(user_types,"b","B",2.0),1);
+    ck_assert_int_eq(add_type(user_types,"b","B",1.0),FREESASA_WARN);
+    ck_assert_int_eq(add_type(user_types,"c","C",3.0),2);
+    ck_assert_int_eq(user_types->n_types,3);
+    ck_assert_int_eq(user_types->n_classes,3);
+    ck_assert_str_eq(user_types->name[0],"a");
+    ck_assert_str_eq(user_types->name[1],"b");
+    ck_assert_str_eq(user_types->name[2],"c");
+    ck_assert_str_eq(user_types->class_name[0],"A");
+    ck_assert_str_eq(user_types->class_name[1],"B");
+    ck_assert_str_eq(user_types->class_name[2],"C");
+    ck_assert(fabs(user_types->type_radius[0]-1.0) < 1e-10);
+    ck_assert(fabs(user_types->type_radius[1]-2.0) < 1e-10);
+    ck_assert(fabs(user_types->type_radius[2]-3.0) < 1e-10);
+
+    free(user_types);
+    user_types = user_types_new();
+
+    ck_assert_int_eq(read_types_line(user_types,""),FREESASA_FAIL);
+    ck_assert_int_eq(read_types_line(user_types,"a"),FREESASA_FAIL);
+    ck_assert_int_eq(read_types_line(user_types,"a 1.0"),FREESASA_FAIL);
+    ck_assert_int_eq(read_types_line(user_types,"a b C"),FREESASA_FAIL);
+    ck_assert_int_eq(read_types_line(user_types,"a 1.0 C"),FREESASA_SUCCESS);
+    ck_assert_int_eq(read_types_line(user_types,"b 2.0 D"),FREESASA_SUCCESS);
+    ck_assert_int_eq(user_types->n_types,2);
+    ck_assert_int_eq(user_types->n_classes,2);
+    ck_assert_str_eq(user_types->name[0],"a");
+    ck_assert_str_eq(user_types->class_name[0],"C");
+    ck_assert(fabs(user_types->type_radius[0]-1.0) < 1e-10);
+
+    ck_assert_int_eq(add_atom(user_residue,"C",1.0,0),0);
+    ck_assert_int_eq(add_atom(user_residue,"CB",2.0,0),1);
+    ck_assert_int_eq(add_atom(user_residue,"CB",2.0,0),FREESASA_WARN);
+    ck_assert_str_eq(user_residue->atom_name[0],"C");
+    ck_assert_str_eq(user_residue->atom_name[1],"CB");
+    ck_assert(fabs(user_residue->atom_radius[0]-1.0) < 1e-10);
+    ck_assert(fabs(user_residue->atom_radius[1]-2.0) < 1e-10);
+    user_residue_free(user_residue);
+
+    ck_assert_int_eq(add_residue(user_config,"A"),0);
+    ck_assert_int_eq(add_residue(user_config,"B"),1);
+    ck_assert_int_eq(add_residue(user_config,"B"),1);
+    ck_assert_int_eq(user_config->n_residues,2);
+    ck_assert_str_eq(user_config->residue_name[0],"A");
+    ck_assert_str_eq(user_config->residue_name[1],"B");
+    ck_assert_str_eq(user_config->residue[0]->name,"A");
+
+    user_config_free(user_config);
+    user_config = user_config_new();
+    
+    ck_assert_int_eq(read_atoms_line(user_config,user_types,"A A"),FREESASA_FAIL);
+    ck_assert_int_eq(read_atoms_line(user_config,user_types,"A A A"),FREESASA_FAIL);
+    ck_assert_int_eq(read_atoms_line(user_config,user_types,"ALA CA a"),FREESASA_SUCCESS);
+    ck_assert_int_eq(read_atoms_line(user_config,user_types,"ALA CB b"),FREESASA_SUCCESS);
+    ck_assert_int_eq(read_atoms_line(user_config,user_types,"ARG CA a"),FREESASA_SUCCESS);
+    ck_assert_int_eq(read_atoms_line(user_config,user_types,"ARG CB b"),FREESASA_SUCCESS);
+    ck_assert_int_eq(read_atoms_line(user_config,user_types,"ARG CG c"),FREESASA_FAIL);
+    user_config_copy_classes(user_config, user_types);
+    ck_assert_int_eq(user_config->n_residues,2);
+    ck_assert_int_eq(user_config->n_classes,2);
+    ck_assert_str_eq(user_config->residue_name[0],"ALA");
+    ck_assert_str_eq(user_config->residue_name[1],"ARG");
+    ck_assert_str_eq(user_config->class_name[0],"C");
+    ck_assert_str_eq(user_config->class_name[1],"D");
+    ck_assert_int_eq(user_config->residue[0]->n_atoms,2);
+    ck_assert_str_eq(user_config->residue[0]->atom_name[0],"CA");
+    ck_assert_str_eq(user_config->residue[0]->atom_name[1],"CB");
+    ck_assert(fabs(user_config->residue[0]->atom_radius[0]-1.0) < 1e-5);
+    ck_assert(fabs(user_config->residue[0]->atom_radius[1]-2.0) < 1e-5);
+    
+    user_config_free(user_config);
+    user_types_free(user_types);
+
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+
+    free(dummy_str);
+}
+END_TEST
 
 int main(int argc, char **argv) {
     Suite *s = suite_create("Tests of static functions");
@@ -211,6 +330,10 @@ int main(int argc, char **argv) {
     tcase_add_test(lr,test_sort_arcs);
     tcase_add_test(lr,test_exposed_arc_length);
     suite_add_tcase(s, lr);
+
+    TCase *user_config = tcase_create("user_config.c");
+    tcase_add_test(user_config,test_user_config);
+    suite_add_tcase(s, user_config);
 
     SRunner *sr = srunner_create(s);
     srunner_run_all(sr,CK_VERBOSE);

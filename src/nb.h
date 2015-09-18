@@ -32,7 +32,7 @@
    struct (as demonstrated by the
  */
 
-//! neigbor list
+//! Neighbor list
 typedef struct {
     int n; //!< number of elements
     int **nb; //!< neighbors to each element

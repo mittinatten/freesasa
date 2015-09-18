@@ -18,10 +18,8 @@
 */
 #include <stdlib.h>
 #include <check.h>
-int n_malloc_fails = 0;
-int n_realloc_fails = 0;
-int malloc_fail_freq = 1;
-int realloc_fail_freq = 1;
+int n_fails = 0;
+int fail_freq = 1;
 
 // use these to test what happens when malloc and realloc fail,
 // the global variables malloc_fail_freq and realloc_fail_freq
@@ -29,21 +27,38 @@ int realloc_fail_freq = 1;
 void*
 broken_malloc(size_t s)
 {
-    ++n_malloc_fails;
-    if (n_malloc_fails % malloc_fail_freq == 0) return NULL;
+    ++n_fails;
+    if (n_fails % fail_freq == 0) return NULL;
     return malloc(s);
 }
 
 void*
 broken_realloc(void * ptr, size_t s)
 {
-    ++n_realloc_fails;
-    if (n_realloc_fails % realloc_fail_freq == 0) return NULL;
+    ++n_fails;
+    if (n_fails % fail_freq == 0) return NULL;
     return realloc(ptr,s);
+}
+
+void*
+broken_strdup(const char *s)
+{
+    ++n_fails;
+    if (n_fails % fail_freq == 0) return NULL;
+    return strdup(s);
+}
+
+void
+set_fail_freq(int freq) {
+    if (freq < 1) freq = 1;
+    fail_freq = freq;
+    n_fails = 0;
 }
 
 #define malloc(m) broken_malloc(m)
 #define realloc(m,n) broken_realloc(m,n)
+#define strdup(s) broken_strdup(s)
+
 
 #define NB_CHUNK 1 // to force som reallocs to take place
 #include "whole_lib_one_file.c"
@@ -53,7 +68,7 @@ char str_array[][2] = {"A","B","C","D","E","F"};
 double v[18] = {0,0,0, 1,1,1, -1,1,-1, 2,0,-2, 2,2,0, -5,5,5};
 const double r[6]  = {4,2,2,2,2,2};
 double dummy[20];
-struct freesasa_coord coord = {.xyz = v, .n = 6, .is_const = 0};
+struct freesasa_coord coord = {.xyz = v, .n = 6, .is_linked = 0};
 struct atom a;
 struct freesasa_structure structure = {
     .a = &a,
@@ -94,27 +109,23 @@ START_TEST (test_structure)
     ck_assert_ptr_eq(freesasa_structure_new(),NULL);
     ck_assert_ptr_eq(from_pdb_impl(file,interval,0),NULL);
     for (int i = 1; i < 50; ++i) {
-        malloc_fail_freq = i; n_malloc_fails = 0;
-        realloc_fail_freq = i; n_realloc_fails = 0;
+        set_fail_freq(i);
         rewind(file);
         ck_assert_ptr_eq(freesasa_structure_from_pdb(file,0),NULL);
     }
-    malloc_fail_freq = 1; n_malloc_fails = 0;
-    realloc_fail_freq = 1; n_realloc_fails = 0;
+    set_fail_freq(1);
     fclose(file);
     
     file = fopen(DATADIR "2jo4.pdb", "r");
     ck_assert_ptr_ne(file,NULL);
     for (int i = 1; i < 50; ++i) {
-        malloc_fail_freq = i; n_malloc_fails = 0;
-        realloc_fail_freq = i; n_realloc_fails = 0;
+        set_fail_freq(i);
         rewind(file);
         ck_assert_ptr_eq(freesasa_structure_array(file,&n,FREESASA_SEPARATE_MODELS),NULL);
         rewind(file);
         ck_assert_ptr_eq(freesasa_structure_array(file,&n,FREESASA_SEPARATE_MODELS | FREESASA_SEPARATE_CHAINS),NULL);
     }
-    malloc_fail_freq = 1; n_malloc_fails = 0;
-    realloc_fail_freq = 1; n_realloc_fails = 0;
+    set_fail_freq(1);
     fclose(file);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
@@ -127,14 +138,12 @@ START_TEST (test_nb)
     ck_assert_int_eq(fill_cells(&a_cell_list,&coord),FREESASA_FAIL);
     ck_assert_ptr_eq(freesasa_nb_alloc(10),NULL);
     for (int i = 1; i < 50; ++i) {
-        malloc_fail_freq = i; n_malloc_fails = 0;
-        realloc_fail_freq = i; n_realloc_fails = 0;
+        set_fail_freq(i);
         ck_assert_ptr_eq(freesasa_nb_alloc(2*i),NULL);
-        n_malloc_fails = 0; n_realloc_fails = 0;
+        set_fail_freq(i);
         ck_assert_ptr_eq(freesasa_nb_new(&coord,r),NULL);
     }
-    malloc_fail_freq = 1; n_malloc_fails = 0;
-    realloc_fail_freq = 1; n_realloc_fails = 0;
+    set_fail_freq(1);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
@@ -142,22 +151,18 @@ END_TEST
 START_TEST (test_alg)
 {
     // First check that the input actually gives a valid calculation
-    malloc_fail_freq = 100000; n_malloc_fails = 0;
-    realloc_fail_freq = 100000; n_malloc_fails = 0;
+    set_fail_freq(10000);
     ck_assert_int_eq(freesasa_lee_richards(dummy,&coord,r,1.4,0.1,1),FREESASA_SUCCESS);
     ck_assert_int_eq(freesasa_shrake_rupley(dummy,&coord,r,1.4,100,1),FREESASA_SUCCESS);
     
     freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 1; i < 50; ++i) {
-        malloc_fail_freq = i; n_malloc_fails = 0;
-        realloc_fail_freq = i; n_realloc_fails = 0;
+        set_fail_freq(i);
         ck_assert_int_eq(freesasa_lee_richards(dummy,&coord,r,1.4,0.1,1),FREESASA_FAIL);
-        malloc_fail_freq = i; n_malloc_fails = 0;
-        realloc_fail_freq = i; n_realloc_fails = 0;
+        set_fail_freq(i);
         ck_assert_int_eq(freesasa_shrake_rupley(dummy,&coord,r,1.4,100,1),FREESASA_FAIL);
     }
-    malloc_fail_freq = 1; n_malloc_fails = 0;
-    realloc_fail_freq = 1; n_realloc_fails = 0;
+    set_fail_freq(1);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
@@ -165,10 +170,34 @@ END_TEST
 START_TEST (test_user_config) 
 {
     freesasa_set_verbosity(FREESASA_V_SILENT);
+
+    struct user_types types = empty_types;
+    struct user_residue res = empty_residue;
+    struct user_config cfg = empty_config;
+
+    set_fail_freq(1);
+    ck_assert_ptr_eq(user_types_new(),NULL);
+    ck_assert_ptr_eq(user_residue_new("A"),NULL);
+    ck_assert_ptr_eq(user_config_new(),NULL);
+
+    for (int i = 1; i < 4; ++i) {
+        if (i < 3) {
+            set_fail_freq(i);
+            ck_assert_int_eq(add_class(&types,"A"),FREESASA_FAIL);        
+            set_fail_freq(i);
+            ck_assert_int_eq(add_type(&types,"a","A",1.0),FREESASA_FAIL);
+        }
+        set_fail_freq(i);
+        ck_assert_int_eq(add_atom(&res,"A",1.0,0),FREESASA_FAIL);
+        set_fail_freq(i);
+        ck_assert_int_eq(add_residue(&cfg,"A"),FREESASA_FAIL);
+    }
+    // don't test all levels, but make sure errors in low level
+    // allocation propagates to the interface
     FILE *config = fopen(DATADIR "naccess.config","r");
+    ck_assert_ptr_ne(config, NULL);
     for (int i = 1; i < 50; ++i) {
-        malloc_fail_freq = i; n_malloc_fails = 0;
-        realloc_fail_freq = i; n_realloc_fails = 0;
+        set_fail_freq(i);
         ck_assert_ptr_eq(freesasa_classifier_from_file(config),NULL);
         rewind(config);
     }
@@ -184,29 +213,26 @@ START_TEST (test_api)
     freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 1; i < 50; ++i) {
         p.alg = FREESASA_SHRAKE_RUPLEY;
-        malloc_fail_freq = i; n_malloc_fails = 0;
-        realloc_fail_freq = i; n_realloc_fails = 0;
+        set_fail_freq(i);
         ck_assert_int_eq(freesasa_calc(&coord,r,&p),NULL);
         p.alg = FREESASA_LEE_RICHARDS; 
-        malloc_fail_freq = i; n_malloc_fails = 0;
-        realloc_fail_freq = i; n_realloc_fails = 0;
+        set_fail_freq(i);
         ck_assert_int_eq(freesasa_calc(&coord,r,&p),NULL);
     }
 
     FILE *file = fopen(DATADIR "1ubq.pdb","r");
-    malloc_fail_freq = 1000000; n_malloc_fails = 0;
-    realloc_fail_freq = 1000000; n_realloc_fails = 0;
+    set_fail_freq(10000);
     freesasa_structure *s=freesasa_structure_from_pdb(file,0);
     double *radii = freesasa_structure_radius(s,NULL);
     ck_assert_ptr_ne(s,NULL);
+    ck_assert_ptr_ne(radii,NULL);
     for (int i = 1; i < 256; i *= 2) { //try to spread it out without doing too many calculations
-        malloc_fail_freq = i; n_malloc_fails = 0;
-        realloc_fail_freq = i; n_realloc_fails = 0;
+        set_fail_freq(i);
         ck_assert_ptr_eq(freesasa_calc_structure(s,radii,NULL),NULL);
-        malloc_fail_freq = i; n_malloc_fails = 0;
-        realloc_fail_freq = i; n_realloc_fails = 0;
+        set_fail_freq(i);
         ck_assert_ptr_eq(freesasa_structure_get_chains(s,"A"),NULL);
     }
+    set_fail_freq(1);
     freesasa_structure_free(s);
     fclose(file);
     freesasa_set_verbosity(FREESASA_V_NORMAL);

@@ -102,7 +102,9 @@ enum freesasa_oons_class {
     @param atom_name The atom name in the format `" CA "`, `" OXT"`, etc.
     @return Atom radius in Ångström.
 */
-double freesasa_classify_radius(const char *res_name, const char *atom_name);
+double
+freesasa_classify_radius(const char *res_name,
+                         const char *atom_name);
 
 //////////////////////
 // Polar/Apolar/etc //
@@ -115,7 +117,9 @@ double freesasa_classify_radius(const char *res_name, const char *atom_name);
     @param atom_name The atom name in the format `" CA "`, `" OXT"`, etc.
     @return Atom class (::freesasa_class).
 */
-int freesasa_classify_class(const char *res_name, const char *atom_name);
+int
+freesasa_classify_class(const char *res_name,
+                        const char *atom_name);
 
 /**
     Class name. 
@@ -123,7 +127,8 @@ int freesasa_classify_class(const char *res_name, const char *atom_name);
     @param class Class as returned by freesasa_classify_class().
     @return Class name, `NULL` if argument invalid.
  */
-const char* freesasa_classify_class2str(int class);
+const char*
+freesasa_classify_class2str(int class);
 
 /**
     The number of different classes. 
@@ -154,7 +159,8 @@ int freesasa_classify_nclasses(void);
     @param res_name The residue name in the format `"ALA"`, `"PHE"`, etc.
     @return Residue type (::freesasa_residue).
 */
-int freesasa_classify_residue(const char *res_name);
+int
+freesasa_classify_residue(const char *res_name);
 
 /**
     Residue name.
@@ -164,7 +170,8 @@ int freesasa_classify_residue(const char *res_name);
     
     @param res Residue type.
     @return Residue name, `NULL` if argument invalid. */
-const char* freesasa_classify_residue2str(int res);
+const char*
+freesasa_classify_residue2str(int res);
 
 /**
     The number of different residue types.
@@ -174,7 +181,8 @@ const char* freesasa_classify_residue2str(int res);
     
     @return Number of residue types.
 */
-int freesasa_classify_nresiduetypes();
+int
+freesasa_classify_nresiduetypes(void);
 
 
 //////////////
@@ -190,7 +198,8 @@ int freesasa_classify_nresiduetypes();
     @param atom_name The atom name in the format `" CA "`, `" OXT"`, etc.
     @return The element (::freesasa_element).
 */
-int freesasa_classify_element(const char *atom_name);
+int
+freesasa_classify_element(const char *atom_name);
 
 /**
     Element name.
@@ -201,7 +210,8 @@ int freesasa_classify_element(const char *atom_name);
     @param element The element.
     @return Element name, `NULL` if argument invalid.
 */
-const char* freesasa_classify_element2str(int element);
+const char*
+freesasa_classify_element2str(int element);
 
 /**
     The vdW-radius of a given element, according to
@@ -211,7 +221,8 @@ const char* freesasa_classify_element2str(int element);
     @return Radius in Ångström. Unknown
     elements are assigned radius 0.
  */
-double freesasa_classify_element_radius(int element);
+double
+freesasa_classify_element_radius(int element);
 
 /**
     The number of element types.
@@ -221,7 +232,8 @@ double freesasa_classify_element_radius(int element);
 
     @return Number of element types.
 */
-int freesasa_classify_nelements(void);
+int
+freesasa_classify_nelements(void);
 
 
 //////////////////
@@ -240,7 +252,9 @@ int freesasa_classify_nelements(void);
     @param atom_name The atom name in the format `" CA "`, `" OXT"`, etc.
     @return OONS type (::freesasa_oons_class).
 */
-int freesasa_classify_oons(const char *res_name, const char *atom_name);
+int
+freesasa_classify_oons(const char *res_name,
+                       const char *atom_name);
 
 /**
     OONS type name. 
@@ -248,7 +262,8 @@ int freesasa_classify_oons(const char *res_name, const char *atom_name);
     @param oons_type The OONS type.
     @return Name of the OONS type, `NULL` if argument invalid.
 */
-const char* freesasa_classify_oons2str(int oons_type);
+const char*
+freesasa_classify_oons2str(int oons_type);
 
 /**
     Class (polar/apolar/etc) for an OONS type. 
@@ -259,7 +274,8 @@ const char* freesasa_classify_oons2str(int oons_type);
     @param oons_type The OONS type.
     @return The class (::freesasa_class).
 */
-int freesasa_classify_oons2class(int oons_type);
+int
+freesasa_classify_oons2class(int oons_type);
 
 /**
     Radius of an OONS atom type. 
@@ -267,7 +283,8 @@ int freesasa_classify_oons2class(int oons_type);
     @param oons_type The OONS type.
     @return Radius in Ångström. 0.0 Å for hydrogens and unknown
     atoms. */
-double freesasa_classify_oons_radius(int oons_type);
+double
+freesasa_classify_oons_radius(int oons_type);
 
 /**
     The number of OONS types
@@ -277,7 +294,8 @@ double freesasa_classify_oons_radius(int oons_type);
   
    @return The number of OONS types.
 */
-int freesasa_classify_noons(void);
+int
+freesasa_classify_noons(void);
 
 
 ///////////////////
@@ -293,7 +311,8 @@ int freesasa_classify_noons(void);
     @param res The residue type.
     @return 1 means amino acid, 0 not, ::FREESASA_FAIL illegal input. 
 */
-int freesasa_classify_is_aminoacid(int res);
+int
+freesasa_classify_is_aminoacid(int res);
 
 /**
     Is residue a nucleic acid?
@@ -304,7 +323,8 @@ int freesasa_classify_is_aminoacid(int res);
     @param res The residue type.
     @return 1 means nucleic acid, 0 not, ::FREESASA_FAIL illegal input. 
 */
-int freesasa_classify_is_nucleicacid(int res);
+int
+freesasa_classify_is_nucleicacid(int res);
 
 
 //////////////
@@ -322,8 +342,9 @@ int freesasa_classify_is_nucleicacid(int res);
     @return ::FREESASA_SUCCESS if fully recognized, ::FREESASA_WARN
     if not, and ::FREESASA_FAIL if illegal input. 
 */
-int freesasa_classify_validate_atom(const char *res_name, 
-                                    const char *atom_name);
+int
+freesasa_classify_validate_atom(const char *res_name, 
+                                const char *atom_name);
 
 
-#endif
+#endif /* FREESASA_CLASSIFY_H */

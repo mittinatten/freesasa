@@ -35,6 +35,7 @@
 #if STDC_HEADERS
 extern int getopt(int, char * const *, const char *);
 extern int optind;
+extern char *optarg;
 #endif
 
 #ifdef PACKAGE_VERSION
@@ -84,7 +85,8 @@ void help() {
 #ifdef HAVE_LIBPTHREAD
     fprintf(stderr,
             "  -t <value>  --n-threads=<value>\n"
-            "                        Number of threads to use in calculation.\n");
+            "                        Number of threads to use in calculation. [default %d]\n",
+            FREESASA_DEF_NUMBER_THREADS);
 #endif
     fprintf(stderr,
             "  -c <file> (--config-file=<file>)\n"

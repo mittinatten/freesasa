@@ -627,9 +627,8 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = @top_srcdir@/src
+INPUT                  = @top_srcdir@/src/freesasa.h
 INPUT                  += doxy_main.md
-# INPUT                  += @top_srcdir@/COPYING
 INPUT                  += GPL.md README.md
 USE_MDFILE_AS_MAINPAGE = doxy_main.md
 

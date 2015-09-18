@@ -7,6 +7,7 @@
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.                                                                                                                 
+
   FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -15,6 +16,8 @@
   You should have received a copy of the GNU General Public License
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -100,6 +103,7 @@ user_types_free(struct user_types* t)
 static struct user_residue*
 user_residue_new(const char* name)
 {
+    assert(strlen(name) > 0);
     struct user_residue *res = malloc(sizeof(struct user_residue));
     if (res == NULL) { mem_fail(); return NULL; }
     *res = empty_residue;
@@ -140,7 +144,7 @@ user_config_free(void *p)
     free(c);
 }
 
-//! check if array of strings has a string that matches key
+//! check if array of strings has a string that matches key, ignores trailing and leading whitespace
 static int 
 find_string(char **array,
             const char *key,
@@ -297,12 +301,16 @@ add_class(struct user_types *types,
  */
 static int
 add_type(struct user_types *types,
-         const char *name,
-         int the_class, 
+         const char *type_name,
+         const char *class_name, 
          double r)
 {
-    if (find_string(types->name, name, types->n_types) >= 0)
-        return freesasa_warn("Ignoring duplicate entry for '%s'.", name);
+    int the_class;
+    if (find_string(types->name, type_name, types->n_types) >= 0)
+        return freesasa_warn("Ignoring duplicate entry for '%s'.", type_name);
+    the_class = add_class(types,class_name);
+    if (the_class == FREESASA_FAIL) return freesasa_fail(__func__);
+
     types->n_types++;
     types->name = realloc(types->name,sizeof(char*)*types->n_types);
     types->type_radius = realloc(types->type_radius,sizeof(double)*types->n_types);
@@ -311,7 +319,7 @@ add_type(struct user_types *types,
         types->n_types--;
         return mem_fail();
     }
-    if (!(types->name[types->n_types-1] = strdup(name))) {
+    if (!(types->name[types->n_types-1] = strdup(type_name))) {
         types->n_types--;
         return mem_fail();
     }
@@ -331,12 +339,10 @@ read_types_line(struct user_types *types,
 {
     size_t blen=101;
     char buf1[blen], buf2[blen];
-    int the_class, the_type;
+    int the_type;
     double r;
     if (sscanf(line,"%s %lf %s",buf1,&r,buf2) == 3) {
-        the_class = add_class(types,buf2);
-        if (the_class == FREESASA_FAIL) return freesasa_fail(__func__);
-        the_type = add_type(types, buf1, the_class, r);
+        the_type = add_type(types, buf1, buf2, r);
         if (the_type == FREESASA_FAIL) return freesasa_fail(__func__);
         if (the_type == FREESASA_WARN) return FREESASA_WARN;
     } else {
@@ -388,10 +394,11 @@ add_atom(struct user_residue *res,
          double radius,
          int the_class)
 {
+    int n;
     if (find_string(res->atom_name, name, res->n_atoms) >= 0)
         return freesasa_warn("%s: Ignoring duplicate entry for atom '%s %s'", 
                              __func__, res->name, name);
-    int n = ++res->n_atoms;
+    n = ++res->n_atoms;
     res->atom_name = realloc(res->atom_name,sizeof(char*)*n);
     res->atom_radius = realloc(res->atom_radius,sizeof(double)*n);
     res->atom_class = realloc(res->atom_class,sizeof(int)*n);
@@ -409,14 +416,17 @@ add_atom(struct user_residue *res,
 }
 
 /**
-    Add residue to config. Returns the index of the new residue on
-    success, FREESASA_FAILURE if realloc/strdup fails.
+    Add residue to config. If the residue already exists, it returns
+    the index of that residue, else it returns the index of the new
+    residue. Returns FREESASA_FAILURE if realloc/strdup fails.
  */
 static int
 add_residue(struct user_config *config,
             const char* name)
 {
-    int res = ++config->n_residues;
+    int res = find_string(config->residue_name, name, config->n_residues);
+    if (res >= 0) return res;
+    res = ++config->n_residues;
     config->residue_name = realloc(config->residue_name, sizeof(char*) * res);
     config->residue = realloc(config->residue, sizeof(struct user_residue) * res);
     if (!config->residue_name || !config->residue) {
@@ -447,9 +457,8 @@ read_atoms_line(struct user_config *config,
     int res, type, atom;
     if (sscanf(line,"%s %s %s",buf1,buf2,buf3) == 3) {
         type = find_string(types->name, buf3, types->n_types);
-        res = find_string(config->residue_name, buf1, config->n_residues);
         if (type < 0) return freesasa_fail("Unknown atom type '%s' in line '%s'",buf3,line);
-        if (res < 0)  res = add_residue(config,buf1);
+        res = add_residue(config,buf1);
         if (res == FREESASA_FAIL) return freesasa_fail(__func__);
         atom = add_atom(config->residue[res], buf2, types->type_radius[type], types->type_class[type]);
         if (atom == FREESASA_FAIL) return freesasa_fail(__func__);
@@ -633,7 +642,6 @@ freesasa_classifier_from_file(FILE *file)
     assert(file);
     struct user_config *config;
     freesasa_classifier* c = malloc(sizeof(freesasa_classifier));
-    
     if (c == NULL) { mem_fail(); return NULL; }
     config = read_config(file);
     if (config == NULL) return NULL;

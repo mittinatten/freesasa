@@ -37,7 +37,6 @@
 #include "util.h"
 
 #define NBUF 100
-#define DEF_NTHREADS 1
 
 #ifdef PACKAGE_VERSION
 const char *freesasa_version = PACKAGE_VERSION;
@@ -53,7 +52,7 @@ const freesasa_parameters freesasa_default_parameters = {
     .probe_radius = FREESASA_DEF_PROBE_RADIUS,
     .shrake_rupley_n_points = FREESASA_DEF_SR_N,
     .lee_richards_delta = FREESASA_DEF_LR_D,
-    .n_threads = DEF_NTHREADS,
+    .n_threads = FREESASA_DEF_NUMBER_THREADS,
 };
 
 const char *freesasa_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
@@ -164,9 +163,10 @@ freesasa_result* freesasa_calc_coord(const double *xyz,
     freesasa_result *result = NULL;
 
     coord = freesasa_coord_new_linked(xyz,n);
-    if (coord) result = freesasa_calc(coord,radii,parameters);
+    if (coord != NULL) result = freesasa_calc(coord,radii,parameters);
     if (coord == NULL || result == NULL) {
         freesasa_result_free(result);
+        freesasa_coord_free(coord);
         mem_fail();
         result = NULL;
     }

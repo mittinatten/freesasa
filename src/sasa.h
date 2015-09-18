@@ -34,7 +34,7 @@
     Calculate SASA using S&R algorithm.
     
     @param sasa The results are written to this array, the user has to
-    make sure it has the correct size.
+    make sure it is large enough.
     @param c Coordinates of the object to calculate SASA for.
     @param radii Array of radii for each sphere.
     @param probe_radius Probe radius to be used.
@@ -44,16 +44,18 @@
     (only leads to performance improvement for largish objects, see 
     manual). Program has to be compiled with `-DPTHREADS` for this option
     to have any effect.
-    @return ::FREESASA_SUCCESS on success, ::FREESASA_WARN if
-    multiple threads are requested when compiled in single-threaded
-    mode (with error message). 
+    
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_WARN if multiple
+    threads are requested when compiled in single-threaded mode (with
+    error message). ::FREESASA_FAIL if memory allocation failure.
 */
-int freesasa_shrake_rupley(double *sasa,
-                           const freesasa_coord *c,
-                           const double *radii,
-                           double probe_radius,
-                           int n_points,
-                           int n_threads);
+int
+freesasa_shrake_rupley(double *sasa,
+                       const freesasa_coord *c,
+                       const double *radii,
+                       double probe_radius,
+                       int n_points,
+                       int n_threads);
 
 /**
     Calculate SASA using L&R algorithm.
@@ -64,8 +66,9 @@ int freesasa_shrake_rupley(double *sasa,
     points in Å. Returns FREESASA_SUCCESS on success, FREESASA_WARN if
     multiple threads are requested when compiled in single-threaded
     mode (with error message). 
+    
     @param sasa The results are written to this array, the user has to
-    make sure it has the correct size.
+    make sure it is large enough.
     @param c Coordinates of the object to calculate SASA for.
     @param radii Array of radii for each sphere.
     @param probe_radius Probe radius to be used.
@@ -74,9 +77,11 @@ int freesasa_shrake_rupley(double *sasa,
     (only leads to performance improvement for largish objects, see 
     manual). Program has to be compiled with `-DPTHREADS` for this option
     to have any effect.
+    
     @return ::FREESASA_SUCCESS on success, ::FREESASA_WARN if
     multiple threads are requested when compiled in single-threaded
-    mode (with error message). 
+    mode (with error message). ::FREESASA_FAIL if memory allocation 
+    failure.
 */
 int freesasa_lee_richards(double* sasa,
                           const freesasa_coord *c,

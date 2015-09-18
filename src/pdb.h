@@ -51,7 +51,9 @@
     @param line Line from a PDB file.
     @return ::FREESASA_SUCCESS if input is readable, else ::FREESASA_FAIL.
 */
-int freesasa_pdb_get_atom_name(char *name, const char *line);
+int
+freesasa_pdb_get_atom_name(char *name,
+                           const char *line);
 
 /**
     Get residue name from a PDB line.
@@ -65,7 +67,9 @@ int freesasa_pdb_get_atom_name(char *name, const char *line);
     @param line Line from a PDB file.
     @return ::FREESASA_SUCCESS if input is readable, else ::FREESASA_FAIL.
 */
-int freesasa_pdb_get_res_name(char *name, const char *line);
+int
+freesasa_pdb_get_res_name(char *name,
+                          const char *line);
 
 /**
     Get atom coordinates from a PDB line.
@@ -78,7 +82,9 @@ int freesasa_pdb_get_res_name(char *name, const char *line);
     @param line Line from a PDB file.
     @return ::FREESASA_SUCCESS if input is readable, else ::FREESASA_FAIL.
 */
-int freesasa_pdb_get_coord(double *coord, const char *line);
+int
+freesasa_pdb_get_coord(double *coord,
+                       const char *line);
 
 /**
     Get residue number from a PDB line.
@@ -93,7 +99,9 @@ int freesasa_pdb_get_coord(double *coord, const char *line);
     @param line Line from a PDB file.
     @return ::FREESASA_SUCCESS if input is readable, else ::FREESASA_FAIL.
 */
-int freesasa_pdb_get_res_number(char *number, const char* line);
+int
+freesasa_pdb_get_res_number(char *number,
+                            const char* line);
 
 /**
     Get chain label from PDB line.
@@ -105,7 +113,8 @@ int freesasa_pdb_get_res_number(char *number, const char* line);
     @return The chain label. If the line is invalid, the function
     returns '\0'. 
 */
-char freesasa_pdb_get_chain_label(const char* line);
+char
+freesasa_pdb_get_chain_label(const char* line);
 
 /**
     Get alternate coordinate label from PDB line.
@@ -118,7 +127,8 @@ char freesasa_pdb_get_chain_label(const char* line);
     @return The label. If line is invalid, the function returns
     '\0'.
 */
-char freesasa_pdb_get_alt_coord_label(const char* line);
+char
+freesasa_pdb_get_alt_coord_label(const char* line);
 
 /**
     Is atom Hydrogen?
@@ -129,6 +139,7 @@ char freesasa_pdb_get_alt_coord_label(const char* line);
     @return 1 if Hydrogen (or deuterium). 0 otherwise. If line is
     invalid, the function returns ::FREESASA_FAIL. 
 */
-int freesasa_pdb_ishydrogen(const char* line);
+int
+freesasa_pdb_ishydrogen(const char* line);
 
-#endif
+#endif /* FREESASA_PDB_H */
