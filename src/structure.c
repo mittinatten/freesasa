@@ -29,23 +29,19 @@
 #include "pdb.h"
 #include "classify.h"
 #include "coord.h"
+#include "util.h"
 
-extern int freesasa_fail(const char *format, ...);
-extern int freesasa_warn(const char *format, ...);
-
-struct file_interval {long begin; long end;};
-
-typedef struct {
+struct atom {
     char res_name[PDB_ATOM_RES_NAME_STRL+1];
     char res_number[PDB_ATOM_RES_NUMBER_STRL+1];
     char atom_name[PDB_ATOM_NAME_STRL+1];
     char descriptor[FREESASA_STRUCTURE_DESCRIPTOR_STRL];
     char line[PDB_LINE_STRL+1];
     char chain_label;
-} atom_t;
+};
 
 struct freesasa_structure {
-    atom_t *a;
+    struct atom *a;
     freesasa_coord *xyz;
     int number_atoms;
     int number_residues;
@@ -56,27 +52,36 @@ struct freesasa_structure {
     char **res_desc;
 };
 
-freesasa_structure* freesasa_structure_new()
+freesasa_structure*
+freesasa_structure_new(void)
 {
     freesasa_structure *p = malloc(sizeof(freesasa_structure));
-    assert(p);
-    p->number_atoms = 0;
-    p->number_residues = 0;
-    p->number_chains = 0;
-    p->model = 0;
-    p->chains = malloc(1);
-    p->chains[0] = '\0';
-    p->a = malloc(sizeof(atom_t));
-    assert(p->a);
-    p->xyz = freesasa_coord_new();
-    p->res_first_atom = malloc(sizeof(int));
-    assert(p->res_first_atom);
-    p->res_desc = malloc(sizeof(char*));
-    assert(p->res_desc);
+    if (p) {
+        p->number_atoms = 0;
+        p->number_residues = 0;
+        p->number_chains = 0;
+        p->model = 0;
+        p->chains = NULL;
+        p->a = NULL;
+        p->xyz = NULL;
+        p->res_first_atom = NULL;
+        p->res_desc = NULL;
+        if ((p->chains = malloc(1)) == NULL ||
+            (p->a = malloc(sizeof(struct atom))) == NULL ||
+            (p->xyz = freesasa_coord_new()) == NULL ||
+            (p->res_first_atom = malloc(sizeof(int))) == NULL ||
+            (p->res_desc = malloc(sizeof(char*))) == NULL) {
+            freesasa_structure_free(p);
+            p = NULL;
+        } else {
+            p->chains[0] = '\0';
+        }
+    }
     return p;
 }
 
-void freesasa_structure_free(freesasa_structure *p)
+void
+freesasa_structure_free(freesasa_structure *p)
 {
     if (p == NULL) return;
     if (p->a) free(p->a);
@@ -93,7 +98,10 @@ void freesasa_structure_free(freesasa_structure *p)
 }
 
 /* returns alt_label if there is any */
-char freesasa_structure_get_pdb_atom(atom_t *a, double *xyz, const char *line)
+char
+freesasa_structure_get_pdb_atom(struct atom *a,
+                                double *xyz,
+                                const char *line)
 {
     assert(a); assert(xyz); assert(line);
     a->chain_label = freesasa_pdb_get_chain_label(line);
@@ -104,40 +112,47 @@ char freesasa_structure_get_pdb_atom(atom_t *a, double *xyz, const char *line)
     return freesasa_pdb_get_alt_coord_label(line);
 }
 
-static freesasa_structure* from_pdb_impl(FILE *pdb_file,
-                                         struct file_interval it,
-                                         int options)
+/**
+    Handles the reading of pdb-files, returns NULL if problems reading
+    or input or malloc failure. Error-messages should explain what
+    went wrong.
+ */
+static freesasa_structure*
+from_pdb_impl(FILE *pdb_file,
+              struct file_interval it,
+              int options)
 {
     assert(pdb_file);
     freesasa_structure *p = freesasa_structure_new();
+    if (p == NULL) { mem_fail(); return NULL; }
     size_t len = PDB_LINE_STRL;
     char *line = NULL;
     char the_alt = ' ';
     fseek(pdb_file,it.begin,SEEK_SET);
-    assert(p);
-
+    
     while (getline(&line, &len, pdb_file) != -1 && ftell(pdb_file) <= it.end) {
         if (strncmp("ATOM",line,4)==0 ||
             ( (options & FREESASA_INCLUDE_HETATM) &&
               (strncmp("HETATM",line,6) == 0) )
             ) {
             double v[3];
-            atom_t a;
+            struct atom a;
             char alt;
-            if (freesasa_pdb_ishydrogen(line) && 
+            if (freesasa_pdb_ishydrogen(line) &&
                 !(options & FREESASA_INCLUDE_HYDROGEN)) continue;
             alt = freesasa_structure_get_pdb_atom(&a,v,line);
-            if ((alt != ' ' && the_alt == ' ') || (alt == ' ')) {
-                the_alt = alt;
-            } else if (alt != ' ' && alt != the_alt) {
-                continue;
+            if ((alt != ' ' && the_alt == ' ') || (alt == ' ')) the_alt = alt;
+            else if (alt != ' ' && alt != the_alt)              continue;
+            if (freesasa_structure_add_atom(p,a.atom_name,a.res_name,a.res_number,
+                                            a.chain_label, v[0], v[1], v[2])
+                != FREESASA_SUCCESS) { 
+                freesasa_structure_free(p);
+                p = NULL; 
+                break;
             }
-
-            freesasa_structure_add_atom(p,a.atom_name,a.res_name,a.res_number,
-                                        a.chain_label, v[0], v[1], v[2]);
             strncpy(p->a[p->number_atoms-1].line,line,PDB_LINE_STRL);
         }
-        
+
         if (! (options & FREESASA_JOIN_MODELS)) {
             if (strncmp("MODEL",line,5)==0) {
                 sscanf(line+10,"%d",&p->model);
@@ -161,24 +176,53 @@ static freesasa_structure* from_pdb_impl(FILE *pdb_file,
     return p;
 }
 
-static int get_models(FILE *pdb, struct file_interval** intervals) {
+static struct file_interval
+get_whole_file(FILE* file)
+{
+    assert(file != NULL);
+    struct file_interval interval;
+    rewind(file);
+    interval.begin = ftell(file);
+    fseek(file,0,SEEK_END);
+    interval.end = ftell(file);
+    rewind(file);
+    assert(interval.begin <= interval.end);
+    return interval;
+}
+/**
+    Finds the location of all MODEL entries in the file pdb, returns the number
+    of models found. *intervals points to a dynamically allocated file intervals
+    for each model.
+
+    Returns 0 if no MODEL lines were found (for example an X-ray structure with
+    only one model) and sets *intervals to NULL. That means that a return value
+    of 0 doesn't have to mean the file is empty.
+
+    Return FREESASA_FAIL if malloc-failure.
+*/
+static int
+get_models(FILE *pdb,
+           struct file_interval** intervals)
+{
+    assert(pdb != NULL);
     size_t len = PDB_LINE_STRL;
     char *line = NULL;
     int n = 0, n_end = 0, error = 0;
     long last_pos = ftell(pdb);
-    long first_pos = last_pos;
     struct file_interval *it = NULL;
-    
+
     while (getline(&line, &len, pdb) != -1) {
-        if (strncmp("MODEL",line,5)==0) { 
+        if (strncmp("MODEL",line,5)==0) {
             ++n;
             it = realloc(it,sizeof(struct file_interval)*n);
+            if (!it) return mem_fail();
             it[n-1].begin = last_pos;
         }
-        if (strncmp("ENDMDL",line,6)==0) { 
+        if (strncmp("ENDMDL",line,6)==0) {
             ++n_end;
             if (n != n_end) {
-                error = freesasa_fail("%s: Mismatch between MODEL and ENDMDL in input\n",__func__);
+                error = freesasa_fail("%s: Mismatch between MODEL and ENDMDL "
+                                      "in input\n",__func__);
                 break;
             }
             it[n-1].end = ftell(pdb);
@@ -186,11 +230,8 @@ static int get_models(FILE *pdb, struct file_interval** intervals) {
         last_pos = ftell(pdb);
     }
     if (n == 0) { // when there are no models, the whole file is the model
-        n = 1;
-        it = malloc(sizeof(struct file_interval));
-        it[0].begin = first_pos;
-        it[0].end = last_pos;
-        //error = freesasa_fail("%s: No MODEL entries found in input\n",__func__);
+        free(it);
+        it = NULL;
     }
     if (error == FREESASA_FAIL) {
         free(it);
@@ -201,92 +242,106 @@ static int get_models(FILE *pdb, struct file_interval** intervals) {
     return n;
 }
 
-int get_chains(FILE *pdb, struct file_interval model, struct file_interval **intervals, int options) 
+static int
+get_chains(FILE *pdb,
+           struct file_interval model,
+           struct file_interval **intervals,
+           int options)
 {
     assert(pdb);
     assert(intervals);
-    
+    // it is assumed that 'model' is valid for 'pdb'
+
     int n_chains = 0;
     size_t len = PDB_LINE_STRL;
     char *line = NULL;
     struct file_interval *chains = NULL;
+    char last_chain = '\0';
+    long last_pos = model.begin;
+    *intervals = NULL;
+
     // for each model, find file intervals for each chain, store them
     // in the dynamically growing array chains
     fseek(pdb,model.begin,SEEK_SET);
-    char last_chain = '\0';
-    long last_pos = ftell(pdb);
     while (getline(&line, &len, pdb) != -1 &&
            ftell(pdb) <= model.end ) {
-        if (strncmp("ATOM",line,4)==0 ||
-            ( (options & FREESASA_INCLUDE_HETATM) &&
-              (strncmp("HETATM",line,6) == 0) )
-            ) {
+        if (strncmp("ATOM",line,4)==0 ||( (options & FREESASA_INCLUDE_HETATM) &&
+                                          (strncmp("HETATM",line,6) == 0) ) ) {
             char chain = freesasa_pdb_get_chain_label(line);
             if (chain != last_chain) {
                 if (n_chains > 0) chains[n_chains-1].end = last_pos;
                 ++n_chains;
                 chains = realloc(chains,sizeof(struct file_interval)*n_chains);
+                if (!chains) return mem_fail();
                 chains[n_chains-1].begin = last_pos;
                 last_chain = chain;
             }
         }
         last_pos = ftell(pdb);
     }
-    if (chains != NULL) {
+    if (n_chains > 0) {
         chains[n_chains-1].end = last_pos;
         chains[0].begin = model.begin; //preserve model info
         *intervals = chains;
+    } else {
+        *intervals = NULL;
     }
     return n_chains;
 }
 
-freesasa_structure* freesasa_structure_from_pdb(FILE *pdb_file,
-                                                int options)
+freesasa_structure*
+freesasa_structure_from_pdb(FILE *pdb_file,
+                            int options)
 {
     assert(pdb_file);
-    struct file_interval it;
-    it.begin = ftell(pdb_file);
-    fseek(pdb_file,0,SEEK_END);
-    it.end = ftell(pdb_file);
-    return from_pdb_impl(pdb_file,it,options);
+    return from_pdb_impl(pdb_file, get_whole_file(pdb_file), options);
 }
 
-freesasa_structure** freesasa_structure_array(FILE *pdb,
-                                              int *n,
-                                              int options)
+freesasa_structure**
+freesasa_structure_array(FILE *pdb,
+                         int *n,
+                         int options)
 {
-    assert( (options & FREESASA_SEPARATE_MODELS) || (options & FREESASA_SEPARATE_CHAINS) );
+    assert( (options & FREESASA_SEPARATE_MODELS) ||
+            (options & FREESASA_SEPARATE_CHAINS) );
     assert(pdb);
     assert(n);
 
     struct file_interval *models = NULL;
+    struct file_interval whole_file = get_whole_file(pdb);
     int n_models = get_models(pdb,&models), n_chains = 0;
     freesasa_structure **ss = NULL;
     int err = 0;
 
     if (n_models == FREESASA_FAIL) {
-        freesasa_fail("%s: problems reading PDB-file.");
+        freesasa_fail("%s: problems reading PDB-file.",__func__);
         return NULL;
+    } else if (n_models == 0) {
+        models = &whole_file;
+        n_models = 1;
     }
-    
+
     //only keep first model if option not provided
     if (! (options & FREESASA_SEPARATE_MODELS) ) n_models = 1;
-    
+
     //for each model read chains if requested
     if (options & FREESASA_SEPARATE_CHAINS) {
         for (int i = 0; i < n_models; ++i) {
             struct file_interval* chains = NULL;
             int new_chains = get_chains(pdb,models[i],&chains,options);
-            if (new_chains == 0) freesasa_warn("%s: warning: No chains found (in model %d).",__func__,i+1);
+            if (new_chains == FREESASA_FAIL) { mem_fail(); ++err; break; }
+            if (new_chains == 0) {
+                freesasa_warn("%s: warning: No chains found (in model %d).",__func__,i+1);
+                continue;
+            }
             ss = realloc(ss,sizeof(freesasa_structure*)*(n_chains+new_chains));
+            if (!ss) { mem_fail(); return NULL; } // now way of cleaning up, might as well exit
             for (int j = 0; j < new_chains; ++j) {
                 freesasa_structure *s = from_pdb_impl(pdb,chains[j],options);
-                if (s != NULL) { 
+                if (s != NULL) {
                     ss[n_chains+j] = s;
                     ss[n_chains+j]->model = ss[n_chains]->model; // all have the same model number
-                } else {
-                    ++err;
-                }
+                } else { ++err; break; }
             }
             n_chains += new_chains;
             free(chains);
@@ -294,10 +349,14 @@ freesasa_structure** freesasa_structure_array(FILE *pdb,
         *n = n_chains;
     } else {
         ss = malloc(sizeof(freesasa_structure*)*n_models);
+        if (!ss) { mem_fail(); return NULL; }
         for (int i = 0; i < n_models; ++i) {
             freesasa_structure *s = from_pdb_impl(pdb,models[i],options);
             if (s != NULL) ss[i] = s;
-            else ++err;
+            else {
+                ++err; 
+                break;
+            }
         }
         *n = n_models;
     }
@@ -306,60 +365,80 @@ freesasa_structure** freesasa_structure_array(FILE *pdb,
         free(ss);
         freesasa_fail("%s: error: Problems reading input.",__func__);
         ss = NULL;
-    } 
-    free(models);
+    }
+    if (models != &whole_file) free(models);
     return ss;
 }
 
-static void freesasa_structure_alloc_one(freesasa_structure *p)
+static int
+structure_alloc_one(freesasa_structure *p)
 {
     assert(p);
     int na = ++p->number_atoms;
-    p->a = realloc(p->a,sizeof(atom_t)*na);
-    assert(p->a);
+    p->a = realloc(p->a,sizeof(struct atom)*na);
+    if (p->a != NULL) return FREESASA_SUCCESS;
+    return mem_fail();
 }
 
-int freesasa_structure_add_atom(freesasa_structure *p,
-                                const char *atom_name,
-                                const char *residue_name,
-                                const char *residue_number,
-                                char chain_label,
-                                double x, double y, double z)
+static int
+structure_add_chain(freesasa_structure *p,
+                    char chain_label)
 {
-    assert(p);
-    assert(atom_name); assert(residue_name); assert(residue_number);
-
-    // check input for consistency
-    int na;
-    atom_t *a;
-    int validity = freesasa_classify_validate_atom(residue_name,atom_name);
-
-    if (validity != FREESASA_SUCCESS) {
-        return freesasa_warn("Skipping atom '%s' in residue '%s'",
-                             atom_name,residue_name);
+    if (strchr(p->chains,chain_label) == NULL) {
+        int n = ++p->number_chains;
+        p->chains = realloc(p->chains,n + 1);
+        if (p->chains) {
+            p->chains[n-1] = chain_label;
+            p->chains[n] = '\0';
+                assert (strlen(p->chains) == p->number_chains);
+        } else {
+            return mem_fail();
+        }
     }
+    return FREESASA_SUCCESS;
+}
 
-    // allocate memory, increase number of atoms counter
-    freesasa_structure_alloc_one(p);
-    na = p->number_atoms;
-    assert(na > 0);
-    freesasa_coord_append_xyz(p->xyz,&x,&y,&z,1);
-    a = &p->a[na-1];
+static inline void
+structure_set_atom(struct atom* a, 
+                   const char *atom_name,
+                   const char *residue_name,
+                   const char *residue_number,
+                   char chain_label)
+{
     strcpy(a->atom_name,atom_name);
     strcpy(a->res_name,residue_name);
     strcpy(a->res_number,residue_number);
     sprintf(a->descriptor,"%c %s %s %s",chain_label,residue_number,residue_name,atom_name);
     a->chain_label = chain_label;
     a->line[0] = '\0';
+}
 
-    // register new chain
-    if (strchr(p->chains,chain_label) == NULL) {
-        int n = ++p->number_chains;
-        p->chains = realloc(p->chains,n + 1);
-        p->chains[n-1] = chain_label;
-        p->chains[n] = '\0';
-        assert (strlen(p->chains) == p->number_chains);
-    }
+int
+freesasa_structure_add_atom(freesasa_structure *p,
+                            const char *atom_name,
+                            const char *residue_name,
+                            const char *residue_number,
+                            char chain_label,
+                            double x, double y, double z)
+{
+    assert(p);
+    assert(atom_name); assert(residue_name); assert(residue_number);
+
+    int na;
+
+    // check input for consistency
+    if (freesasa_classify_validate_atom(residue_name,atom_name) != FREESASA_SUCCESS)
+        return freesasa_warn("%s: Skipping atom '%s' in residue '%s'",
+                             __func__,atom_name,residue_name);
+
+    // allocate memory, increase number of atoms counter, add chain
+    if (structure_alloc_one(p)) return mem_fail();
+    if (freesasa_coord_append_xyz(p->xyz, &x, &y, &z, 1)) return mem_fail();
+    if (structure_add_chain(p, chain_label)) return mem_fail();
+
+    na = p->number_atoms;
+    assert(na > 0);
+    structure_set_atom(p->a + na-1,atom_name,residue_name,residue_number,chain_label);
 
     /* here we assume atoms are ordered sequentially, i.e. residues are
        not mixed in input: if two sequential atoms have different
@@ -367,42 +446,45 @@ int freesasa_structure_add_atom(freesasa_structure *p,
     if (p->number_residues == 0) {
         ++p->number_residues;
         p->res_first_atom[0] = 0;
-        p->res_desc[0] = malloc(FREESASA_STRUCTURE_DESCRIPTOR_STRL);
-        assert(p->res_desc[0]);
-        sprintf(p->res_desc[0],"%c %s %s",
-                chain_label,residue_number,residue_name);
+        if (!(p->res_desc[0] = malloc(FREESASA_STRUCTURE_DESCRIPTOR_STRL)))
+            return mem_fail();
+        sprintf(p->res_desc[0],"%c %s %s", chain_label,residue_number,residue_name);
     }
     if (na > 1 && strcmp(residue_number,p->a[na-2].res_number)) {
-        int naa = ++p->number_residues;
-        p->res_first_atom = realloc(p->res_first_atom, sizeof(int)*naa);
-        assert(p->res_first_atom);
+        int naa = p->number_residues+1;
+        if (!(p->res_first_atom = realloc(p->res_first_atom, sizeof(int)*naa)))
+            return mem_fail();
         p->res_first_atom[naa-1] = na-1;
-        p->res_desc = realloc(p->res_desc, sizeof(char*)*naa);
-        assert(p->res_desc);
-        p->res_desc[naa-1] = malloc(FREESASA_STRUCTURE_DESCRIPTOR_STRL);
-        assert(p->res_desc[naa-1]);
-        sprintf(p->res_desc[naa-1],"%c %s %s",
-                chain_label,residue_number,residue_name);
+        if (!(p->res_desc = realloc(p->res_desc, sizeof(char*)*naa)))
+            return mem_fail(); 
+        if (!(p->res_desc[naa-1] = malloc(FREESASA_STRUCTURE_DESCRIPTOR_STRL)))
+            return mem_fail();
+        sprintf(p->res_desc[naa-1], "%c %s %s", chain_label, residue_number, residue_name);
+        ++p->number_residues;
     }
     return FREESASA_SUCCESS;
 }
 
-freesasa_structure* freesasa_structure_get_chains(const freesasa_structure *p, const char* chains)
+freesasa_structure*
+freesasa_structure_get_chains(const freesasa_structure *p,
+                              const char* chains)
 {
     assert(p);
     if (strlen(chains) == 0) return NULL;
-    
+
     freesasa_structure *new_p = freesasa_structure_new();
+    if (!new_p) { mem_fail(); return NULL; }
     new_p->model = p->model;
 
     for (int i = 0; i < p->number_atoms; ++i) {
-        atom_t *ai = &(p->a[i]);
+        struct atom *ai = &(p->a[i]);
         char c = ai->chain_label;
         if (strchr(chains,c) != NULL) {
             const double *v = freesasa_coord_i(p->xyz,i);
-            freesasa_structure_add_atom(new_p, ai->atom_name, 
-                                        ai->res_name, ai->res_number,
-                                        c, v[0], v[1], v[2]);
+            int res = freesasa_structure_add_atom(new_p, ai->atom_name,
+                                                  ai->res_name, ai->res_number,
+                                                  c, v[0], v[1], v[2]);
+            if (res != FREESASA_SUCCESS) { mem_fail(); return NULL; }
         }
     }
     if (new_p->number_atoms == 0) {
@@ -412,74 +494,89 @@ freesasa_structure* freesasa_structure_get_chains(const freesasa_structure *p, c
     return new_p;
 }
 
-const char* freesasa_structure_chain_labels(const freesasa_structure *structure) {
+const char*
+freesasa_structure_chain_labels(const freesasa_structure *structure)
+{
     assert(structure);
     return structure->chains;
 }
 
-const freesasa_coord* freesasa_structure_xyz(const freesasa_structure *p)
+const freesasa_coord*
+freesasa_structure_xyz(const freesasa_structure *p)
 {
     assert(p);
     return p->xyz;
 }
 
-int freesasa_structure_n(const freesasa_structure *p)
+int
+freesasa_structure_n(const freesasa_structure *p)
 {
     assert(p);
     return p->number_atoms;
 }
 
-int freesasa_structure_n_residues(const freesasa_structure *p)
+int
+freesasa_structure_n_residues(const freesasa_structure *p)
 {
     assert(p);
     return p->number_residues;
 }
 
-const char* freesasa_structure_atom_name(const freesasa_structure *p,
-                                         int i)
+const char*
+freesasa_structure_atom_name(const freesasa_structure *p,
+                             int i)
 {
     assert(p);
     assert(i < p->number_atoms && i >= 0);
     return p->a[i].atom_name;
 }
 
-const char* freesasa_structure_atom_res_name(const freesasa_structure *p,
-                                             int i)
+const char*
+freesasa_structure_atom_res_name(const freesasa_structure *p,
+                                 int i)
 {
     assert(p);
     assert(i < p->number_atoms && i >= 0);
     return p->a[i].res_name;
 }
 
-const char* freesasa_structure_atom_res_number(const freesasa_structure *p,
-                                               int i)
+const char*
+freesasa_structure_atom_res_number(const freesasa_structure *p,
+                                   int i)
 {
     assert(p);
     assert(i < p->number_atoms && i >= 0);
     return p->a[i].res_number;
 }
 
-char freesasa_structure_atom_chain(const freesasa_structure *p,
-                                   int i)
+char
+freesasa_structure_atom_chain(const freesasa_structure *p,
+                              int i)
 {
     assert(p);
     assert(i < p->number_atoms && i >= 0);
     return p->a[i].chain_label;
 }
 
-const char* freesasa_structure_atom_descriptor(const freesasa_structure *p, int i)
+const char*
+freesasa_structure_atom_descriptor(const freesasa_structure *p,
+                                   int i)
 {
     assert(p);
     assert(i < p->number_atoms && i >= 0);
     return p->a[i].descriptor;
 }
 
-int freesasa_structure_residue_atoms(const freesasa_structure *s, int r_i, int *first, int *last)
+int
+freesasa_structure_residue_atoms(const freesasa_structure *s,
+                                 int r_i,
+                                 int *first,
+                                 int *last)
 {
     assert(s); assert(first); assert(last);
     const int naa = s->number_residues;
     assert(r_i >= 0 && r_i < naa);
-    
+
     *first = s->res_first_atom[r_i];
     if (r_i == naa-1) *last = s->number_atoms-1;
     else *last = s->res_first_atom[r_i+1]-1;
@@ -487,17 +584,20 @@ int freesasa_structure_residue_atoms(const freesasa_structure *s, int r_i, int *
     return FREESASA_SUCCESS;
 }
 
-const char* freesasa_structure_residue_descriptor(const freesasa_structure *s, int r_i)
+const char*
+freesasa_structure_residue_descriptor(const freesasa_structure *s,
+                                      int r_i)
 {
     assert(s);
     assert(r_i < s->number_residues);
     return s->res_desc[r_i];
 }
 
-int freesasa_write_pdb(FILE *output,
-                       freesasa_result *result,
-                       const freesasa_structure *p,
-                       const double *radii)
+int
+freesasa_write_pdb(FILE *output,
+                   freesasa_result *result,
+                   const freesasa_structure *p,
+                   const double *radii)
 {
     assert(p);
     assert(output);
@@ -536,7 +636,8 @@ int freesasa_write_pdb(FILE *output,
 
 }
 
-int freesasa_structure_model(const freesasa_structure *structure)
+int
+freesasa_structure_model(const freesasa_structure *structure)
 {
     return structure->model;
 }

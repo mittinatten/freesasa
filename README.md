@@ -24,7 +24,7 @@ the total SASA and the area of the four classes.
 Users can also provide their own atomic radii and classes, either via
 configuration files or via the API. The input format for configuration
 files is described in the [online
-documentation](http://mittinatten.github.io/freesasa/doxygen/group__API.html#Config-file),
+documentation](http://mittinatten.github.io/freesasa/doxygen/Config-file.html   ),
 and the `share/` directory contains two sample configurations, one for
 the NACCESS parameters ([Hubbard & Thornton
 1993](http://www.bioinf.manchester.ac.uk/naccess/)) and one for OONS.

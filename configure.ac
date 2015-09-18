@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([FreeSASA], [0.4.0])
+AC_INIT([FreeSASA], [0.4.1])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([src/freesasa.c])
 AC_CONFIG_HEADERS([config.h])
@@ -26,6 +26,7 @@ AC_C_RESTRICT
 
 # use C99
 AC_PROG_CC_C99
+AC_C_INLINE
 
 # Checks for library functions.
 AC_FUNC_MALLOC
@@ -35,7 +36,7 @@ AC_CHECK_FUNCS([mkdir])
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile
                  doc/fig/Makefile tests/Makefile bindings/Makefile
-                 tests/test-cli.sh])
+                 tests/test-cli])
 
 # Python-bindings
 AC_ARG_WITH([python],

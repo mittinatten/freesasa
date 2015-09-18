@@ -1,0 +1,4 @@
+static-*
+test-cli
+libtest
+broken-malloc

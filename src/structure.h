@@ -42,7 +42,8 @@
     @param s Self.
     @return The coordinates of the structure as a ::freesasa_coord struct.
  */
-const freesasa_coord* freesasa_structure_xyz(const freesasa_structure *s);
+const freesasa_coord*
+freesasa_structure_xyz(const freesasa_structure *s);
 
 /**
     Get number of residues.
@@ -56,7 +57,8 @@ const freesasa_coord* freesasa_structure_xyz(const freesasa_structure *s);
     @param s Self.
     @return Number of residues.
  */
-int freesasa_structure_n_residues(const freesasa_structure *s);
+int
+freesasa_structure_n_residues(const freesasa_structure *s);
 
 /**
     Get a string describing an atom. 
@@ -67,7 +69,9 @@ int freesasa_structure_n_residues(const freesasa_structure *s);
     @param i Atom index
     @return Descriptor string. 
  */
-const char* freesasa_structure_atom_descriptor(const freesasa_structure *s, int i);
+const char*
+freesasa_structure_atom_descriptor(const freesasa_structure *s,
+                                   int i);
 
 /**
     Get indices of first and last atoms of a residue
@@ -78,8 +82,11 @@ const char* freesasa_structure_atom_descriptor(const freesasa_structure *s, int 
     @param last Last atom of residue `r_i` will be stored here.
     @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if index `r_i` is invalid.
  */
-int freesasa_structure_residue_atoms(const freesasa_structure *s, int r_i, 
-                                     int *first, int *last);
+int
+freesasa_structure_residue_atoms(const freesasa_structure *s,
+                                 int r_i, 
+                                 int *first,
+                                 int *last);
 
 /**
     Get a string describin a residue.
@@ -89,7 +96,9 @@ int freesasa_structure_residue_atoms(const freesasa_structure *s, int r_i,
     @param r_i atom index
     @return Descriptor string
  */
-const char* freesasa_structure_residue_descriptor(const freesasa_structure *s, int r_i);
+const char*
+freesasa_structure_residue_descriptor(const freesasa_structure *s,
+                                      int r_i);
 
 
 #endif

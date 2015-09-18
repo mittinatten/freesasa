@@ -1,5 +1,5 @@
 
-EXTRA_DIST = data test-cli.sh.in run-test-cli.sh
+EXTRA_DIST = data test-cli.in run-test-cli whole_lib_one_file.c
 check_PROGRAMS =
 TESTS = 
 
@@ -12,20 +12,23 @@ GCOV_FILES = *.gcda *.gcno *.gcov
 
 if USE_CHECK
 
-TESTS += libtest
-check_PROGRAMS += libtest
+TESTS += libtest static-test broken-malloc
+check_PROGRAMS += libtest static-test broken-malloc
 libtest_SOURCES = libtest.c test_pdb.c test_freesasa.c test_structure.c \
-	test_classify.c test_coord.c test_verlet.c
+	test_classify.c test_coord.c test_nb.c
+static_test_SOURCES = test_static.c
+broken_malloc_SOURCES = broken_malloc.c
 
-libtest_CFLAGS = -I$(top_srcdir)/src $(AM_CFLAGS) \
+CFLAGS = -I$(top_srcdir)/src $(AM_CFLAGS) \
 	-DDATADIR=\"$(top_srcdir)/tests/data/\"
 
+LDADD = -lcheck
 libtest_LDADD = ../src/libfreesasa.a -lcheck
 
 endif 
 
 if RUN_CLI_TESTS # on by default
-TESTS += run-test-cli.sh
+TESTS += run-test-cli
 endif
 
 CLEANFILES = tmp/*  $(GCOV_FILES) *~

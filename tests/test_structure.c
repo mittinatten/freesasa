@@ -38,8 +38,8 @@ static void setup(void)
 {
     s = freesasa_structure_new();
     for (int i = 0; i < N; ++i) {
-        freesasa_structure_add_atom(s,an[i],rna[i],rnu[i],cl[i],
-                                    i,i,i);
+        ck_assert_int_eq(freesasa_structure_add_atom(s,an[i],rna[i],rnu[i],cl[i],i,i,i),
+                         FREESASA_SUCCESS);
     }
 }
 static void teardown(void)
@@ -144,9 +144,7 @@ START_TEST (test_hydrogen)
     ck_assert(freesasa_structure_n(s) == 602);
     freesasa_structure_free(s);
     rewind(pdb);
-    freesasa_set_verbosity(FREESASA_V_SILENT);
     s = freesasa_structure_from_pdb(pdb,FREESASA_INCLUDE_HYDROGEN);
-    freesasa_set_verbosity(FREESASA_V_NORMAL);
     ck_assert(s != NULL);
     ck_assert(freesasa_structure_n(s) == 1231);
     freesasa_structure_free(s);
@@ -252,7 +250,9 @@ START_TEST (test_structure_array)
     fclose(pdb);
 
     pdb = fopen(DATADIR "err.config","r");
+    freesasa_set_verbosity(FREESASA_V_SILENT);
     ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_CHAINS);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
     ck_assert(ss == NULL);
 }
 END_TEST

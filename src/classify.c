@@ -23,9 +23,7 @@
 #include <stdio.h>
 #include "pdb.h"
 #include "classify.h"
-
-extern int freesasa_fail(const char *format, ...);
-extern int freesasa_warn(const char *format, ...);
+#include "util.h"
 
 // Residue types, make sure this always matches the corresponding enum.
 static const char *residue_names[] = {

@@ -32,12 +32,8 @@
 
 #include "freesasa.h"
 #include "sasa.h"
-#include "srp.h"
-#include "verlet.h"
-
-extern const char *freesasa_name;
-extern int freesasa_fail(const char *format, ...);
-extern int freesasa_warn(const char *format, ...);
+#include "nb.h"
+#include "util.h"
 
 const double TWOPI = 2*M_PI;
 
@@ -46,7 +42,7 @@ typedef struct {
     int n_atoms;
     double *radii; //including probe
     const freesasa_coord *xyz;
-    freesasa_verlet *adj;
+    freesasa_nb *adj;
     double delta; // slice width
     double min_z; // bounds of the molecule
     double max_z;
@@ -69,7 +65,7 @@ static double atom_area(lr_data *lr,int i);
 
 /** Sum of exposed arcs based on buried arc intervals arc, assumes no
     intervals cross zero */
-static double sum_arcs(int n_buried, double *restrict arc);
+static double exposed_arc_length(double *restrict arc, int n);
 
 /** Initialize object to be used for L&R calculation */
 static lr_data* init_lr(double *sasa,
@@ -83,8 +79,8 @@ static lr_data* init_lr(double *sasa,
     const double *v = freesasa_coord_all(xyz);
     lr_data* lr = malloc(sizeof(lr_data));
     double *radii = malloc(sizeof(double)*n_atoms);
-    assert(lr);
-    assert(radii);
+    if (!lr || !radii) { free(lr); free(radii); mem_fail(); return NULL;}
+
     //find bounds of protein along z-axis and init radii
     for (int i = 0; i < n_atoms; ++i) {
         double z, r;
@@ -113,7 +109,7 @@ static lr_data* init_lr(double *sasa,
 static void free_lr(lr_data *lr)
 {
     free(lr->radii);
-    freesasa_verlet_free(lr->adj);
+    freesasa_nb_free(lr->adj);
     free(lr);
 }
 
@@ -139,9 +135,11 @@ int freesasa_lee_richards(double *sasa,
 
     // determine slice range and init radii and sasa arrays
     lr = init_lr(sasa, xyz, atom_radii, probe_radius, delta);
+    if (lr == NULL) return mem_fail();
 
     // determine which atoms are neighbours
-    lr->adj = freesasa_verlet_new(xyz,lr->radii);
+    lr->adj = freesasa_nb_new(xyz,lr->radii);
+    if (lr->adj == NULL) return mem_fail();
 
     if (n_threads > 1) {
 #if HAVE_LIBPTHREAD
@@ -160,7 +158,6 @@ int freesasa_lee_richards(double *sasa,
         }        
     }
     free_lr(lr);
-
     return return_value;
 }
 
@@ -184,14 +181,14 @@ static void lr_do_threads(int n_threads, lr_data *lr)
                                  (void *) &t_data[t]);
         if (res) {
             perror(freesasa_name);
-            exit(EXIT_FAILURE);
+            abort();
         }
     }
     for (int t = 0; t < n_threads; ++t) {
         res = pthread_join(thread[t],&thread_result);
         if (res) {
             perror(freesasa_name);
-            exit(EXIT_FAILURE);
+            abort();
         }
     }
 }
@@ -217,9 +214,9 @@ static double atom_area(lr_data *lr,int i)
     const double * restrict const v = freesasa_coord_all(lr->xyz);
     const double * restrict const r = lr->radii;
     const int * restrict const nbi = lr->adj->nb[i];
-    const double * restrict const xydi = lr->adj->nb_xyd[i];
-    const double * restrict const xdi = lr->adj->nb_xd[i];
-    const double * restrict const ydi = lr->adj->nb_yd[i];
+    const double * restrict const xydi = lr->adj->xyd[i];
+    const double * restrict const xdi = lr->adj->xd[i];
+    const double * restrict const ydi = lr->adj->yd[i];
     const double zi = v[3*i+2], delta = lr->delta, ri = r[i], d_half = delta/2.;
     double arc[nni*4], z_nb[nni], r_nb[nni];
     double z_slice, z0, sasa = 0;
@@ -286,7 +283,7 @@ static double atom_area(lr_data *lr,int i)
             }
         }
         if (is_buried == 0) {
-            sasa += ri_slice*DR*sum_arcs(n_arcs,arc);
+            sasa += ri_slice*DR*exposed_arc_length(arc,n_arcs);
         }
 #ifdef DEBUG
         if (completely_buried == 0) {
@@ -314,7 +311,7 @@ static double atom_area(lr_data *lr,int i)
 }
 
 //insertion sort (faster than qsort for these short lists)
-inline static void sort_arcs(int n, double *restrict arc) 
+inline static void sort_arcs(double *restrict arc, int n) 
 {
     double tmp[2];
     double *end = arc+2*n, *arcj, *arci;
@@ -331,13 +328,14 @@ inline static void sort_arcs(int n, double *restrict arc)
 
 // sort arcs by start-point, loop through them to sum parts of circle
 // not covered by any of the arcs
-inline static double sum_arcs(int n, double *arc)
+inline static double exposed_arc_length(double * restrict arc, int n)
 {
     if (n == 0) return TWOPI;
     double sum, sup, tmp;
-    sort_arcs(n,arc);
+    sort_arcs(arc,n);
     sum = arc[0];
     sup = arc[1];
+    // in the following it is assumed that the arc[i2] <= arc[i2+1]
     for (int i2 = 2; i2 < 2*n; i2 += 2) {
         if (sup < arc[i2]) sum += arc[i2] - sup;
         tmp = arc[i2+1];
