@@ -60,14 +60,16 @@ static void sr_do_threads(int n_threads, sr_data sr);
 static void *sr_thread(void *arg);
 #endif
 
-static double sr_atom_area(int i,const sr_data) __attrib_pure__;
+static double
+sr_atom_area(int i,const sr_data) __attrib_pure__;
 
-int init_sr(sr_data* sr_p,
-            double *sasa,
-            const freesasa_coord *xyz,
-            const double *r,
-            double probe_radius,
-            int n_points)
+int
+init_sr(sr_data* sr_p,
+        double *sasa,
+        const freesasa_coord *xyz,
+        const double *r,
+        double probe_radius,
+        int n_points)
 {
     int n_atoms = freesasa_coord_n(xyz);
     const double *srp_p;
@@ -102,19 +104,21 @@ int init_sr(sr_data* sr_p,
 }
 
 // free contents
-void release_sr(sr_data sr) 
+void
+release_sr(sr_data sr) 
 {
     freesasa_coord_free(sr.srp);
     freesasa_nb_free(sr.nb);
     free(sr.r);
 }
 
-int freesasa_shrake_rupley(double *sasa,
-                           const freesasa_coord *xyz,
-                           const double *r,
-                           double probe_radius,
-                           int n_points,
-                           int n_threads)
+int
+freesasa_shrake_rupley(double *sasa,
+                       const freesasa_coord *xyz,
+                       const double *r,
+                       double probe_radius,
+                       int n_points,
+                       int n_threads)
 {
     assert(sasa);
     assert(xyz);
@@ -152,7 +156,9 @@ int freesasa_shrake_rupley(double *sasa,
 }
 
 #if HAVE_LIBPTHREAD
-static void sr_do_threads(int n_threads, sr_data sr)
+static void
+sr_do_threads(int n_threads,
+              sr_data sr)
 {
     pthread_t thread[n_threads];
     sr_data srt[n_threads];
@@ -184,7 +190,8 @@ static void sr_do_threads(int n_threads, sr_data sr)
     }
 }
 
-static void *sr_thread(void* arg)
+static void*
+sr_thread(void* arg)
 {
     sr_data sr = *((sr_data*) arg);
     for (int i = sr.i1; i < sr.i2; ++i) {
@@ -195,7 +202,10 @@ static void *sr_thread(void* arg)
 }
 #endif
 
-static double sr_atom_area(int i, const sr_data sr) {
+static double
+sr_atom_area(int i,
+             const sr_data sr)
+{
     const int n_points = sr.n_points;
     /* this array keeps track of which testpoints belonging to
        a certain atom are inside other atoms */

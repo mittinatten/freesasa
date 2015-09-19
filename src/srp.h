@@ -42,7 +42,8 @@
 
     @param output File to write the list to.
  */
-void freesasa_srp_print_n_opt(FILE *output);
+void
+freesasa_srp_print_n_opt(FILE *output);
 
 /**
    Test if a given number of test-points is available.
@@ -51,7 +52,8 @@ void freesasa_srp_print_n_opt(FILE *output);
    @return 1 if n is allowed, 0 if not. 
 
  */
-int freesasa_srp_n_is_valid(int n);
+int
+freesasa_srp_n_is_valid(int n);
 
 /**
     Returns an array of n test points. 
@@ -60,6 +62,7 @@ int freesasa_srp_n_is_valid(int n);
     @return Array of coordinates of size 3*n, coordinates are stored as
     x1,y1,z1,x2,y2,z2,... Returns NULL if the argument n is invalid.
 */
-const double* freesasa_srp_get_points(int n);
+const double*
+freesasa_srp_get_points(int n);
 
 #endif

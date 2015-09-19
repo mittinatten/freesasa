@@ -22,7 +22,9 @@
 #include <assert.h>
 #include "pdb.h"
 
-static inline int pdb_line_check(const char *line,int len) {
+static inline int
+pdb_line_check(const char *line,int len)
+{
     assert(line);
     if (! strncmp(line,"ATOM",4) &&
         ! strncmp(line,"HETATM",6)) {
@@ -34,7 +36,9 @@ static inline int pdb_line_check(const char *line,int len) {
     return FREESASA_SUCCESS;
 }
 
-int freesasa_pdb_get_atom_name(char *name, const char *line)
+int
+freesasa_pdb_get_atom_name(char *name,
+                           const char *line)
 {
     assert(name);
     assert(line);
@@ -47,7 +51,9 @@ int freesasa_pdb_get_atom_name(char *name, const char *line)
     return FREESASA_SUCCESS;
 }
 
-int freesasa_pdb_get_res_name(char *name, const char *line)
+int
+freesasa_pdb_get_res_name(char *name,
+                          const char *line)
 {
     assert(name);
     assert(line);
@@ -59,7 +65,10 @@ int freesasa_pdb_get_res_name(char *name, const char *line)
     name[PDB_ATOM_RES_NAME_STRL] = '\0';
     return FREESASA_SUCCESS;
 }
-int freesasa_pdb_get_coord(double *xyz, const char *line)
+
+int
+freesasa_pdb_get_coord(double *xyz,
+                       const char *line)
 {
     assert(xyz);
     assert(line);
@@ -69,7 +78,10 @@ int freesasa_pdb_get_coord(double *xyz, const char *line)
     sscanf(line+30, "%lf%lf%lf", &xyz[0], &xyz[1], &xyz[2]);
     return FREESASA_SUCCESS;
 }
-int freesasa_pdb_get_res_number(char *number, const char* line)
+
+int
+freesasa_pdb_get_res_number(char *number,
+                            const char* line)
 {
     assert(number);
     assert(line);
@@ -81,21 +93,24 @@ int freesasa_pdb_get_res_number(char *number, const char* line)
     number[PDB_ATOM_RES_NUMBER_STRL] = '\0';
     return FREESASA_SUCCESS;
 }
-char freesasa_pdb_get_chain_label(const char* line)
+char
+freesasa_pdb_get_chain_label(const char* line)
 {
     assert(line);
     if (pdb_line_check(line,21) == FREESASA_FAIL) return '\0';
     return line[21];
 }
 
-char freesasa_pdb_get_alt_coord_label(const char* line)
+char 
+freesasa_pdb_get_alt_coord_label(const char* line)
 {
     assert(line);
     if (pdb_line_check(line,16) == FREESASA_FAIL) return '\0';
     return line[16];
 }
 
-int freesasa_pdb_ishydrogen(const char* line)
+int
+freesasa_pdb_ishydrogen(const char* line)
 {
     assert(line);
     if (pdb_line_check(line,13) == FREESASA_FAIL) return FREESASA_FAIL;

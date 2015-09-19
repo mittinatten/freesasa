@@ -57,11 +57,13 @@ const freesasa_parameters freesasa_default_parameters = {
 
 const char *freesasa_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
-freesasa_strvp* freesasa_strvp_new(int n);
+freesasa_strvp*
+freesasa_strvp_new(int n);
 
-freesasa_strvp* freesasa_result_classify(const freesasa_result *result, 
-                                         const freesasa_structure *structure,
-                                         const freesasa_classifier *c) 
+freesasa_strvp*
+freesasa_result_classify(const freesasa_result *result, 
+                         const freesasa_structure *structure,
+                         const freesasa_classifier *c) 
 {
     assert(result);
     assert(structure);
@@ -93,7 +95,8 @@ freesasa_strvp* freesasa_result_classify(const freesasa_result *result,
     return strvp;
 }
 
-void freesasa_result_free(freesasa_result *r)
+void
+freesasa_result_free(freesasa_result *r)
 {
     if (r) {
         free(r->sasa);
@@ -101,9 +104,10 @@ void freesasa_result_free(freesasa_result *r)
     }
 }
 
-static freesasa_result* freesasa_calc(const freesasa_coord *c, 
-                                      const double *radii,
-                                      const freesasa_parameters *parameters)
+static freesasa_result*
+freesasa_calc(const freesasa_coord *c, 
+              const double *radii,
+              const freesasa_parameters *parameters)
 
 {
     assert(c);
@@ -150,10 +154,11 @@ static freesasa_result* freesasa_calc(const freesasa_coord *c,
     return result;
 }
 
-freesasa_result* freesasa_calc_coord(const double *xyz, 
-                                     const double *radii,
-                                     int n,
-                                     const freesasa_parameters *parameters)
+freesasa_result*
+freesasa_calc_coord(const double *xyz, 
+                    const double *radii,
+                    int n,
+                    const freesasa_parameters *parameters)
 {
     assert(xyz);
     assert(radii);
@@ -174,9 +179,11 @@ freesasa_result* freesasa_calc_coord(const double *xyz,
 
     return result;
 }
-freesasa_result* freesasa_calc_structure(const freesasa_structure* structure,
-                                         const double *radii,
-                                         const freesasa_parameters* parameters)
+
+freesasa_result*
+freesasa_calc_structure(const freesasa_structure* structure,
+                        const double *radii,
+                        const freesasa_parameters* parameters)
 {
     assert(structure);
     assert(radii);
@@ -185,8 +192,9 @@ freesasa_result* freesasa_calc_structure(const freesasa_structure* structure,
                          radii,parameters);
 }
 
-double* freesasa_structure_radius(const freesasa_structure *structure,
-                                  const freesasa_classifier *classifier)
+double*
+freesasa_structure_radius(const freesasa_structure *structure,
+                          const freesasa_classifier *classifier)
 {
     assert(structure);
 
@@ -211,11 +219,12 @@ double* freesasa_structure_radius(const freesasa_structure *structure,
     return r;
 }
 
-int freesasa_log(FILE *log, 
-                 freesasa_result *result,
-                 const char *name,
-                 const freesasa_parameters *parameters,
-                 const freesasa_strvp* class_area)
+int
+freesasa_log(FILE *log, 
+             freesasa_result *result,
+             const char *name,
+             const freesasa_parameters *parameters,
+             const freesasa_strvp* class_area)
 {
     assert(log);
 
@@ -273,10 +282,10 @@ int freesasa_log(FILE *log,
     return FREESASA_SUCCESS;
 }
 
-
-int freesasa_per_residue_type(FILE *output, 
-                              freesasa_result *result,
-                              const freesasa_structure *structure)
+int
+freesasa_per_residue_type(FILE *output, 
+                          freesasa_result *result,
+                          const freesasa_structure *structure)
 {
     assert(output);
     assert(structure);
@@ -303,9 +312,10 @@ int freesasa_per_residue_type(FILE *output,
 }
 
 
-static double freesasa_single_residue_sasa(const freesasa_result *r,
-                                           const freesasa_structure *s, 
-                                           int r_i)
+static double
+freesasa_single_residue_sasa(const freesasa_result *r,
+                             const freesasa_structure *s, 
+                             int r_i)
 {
     assert(r);
     assert(s);
@@ -323,9 +333,10 @@ static double freesasa_single_residue_sasa(const freesasa_result *r,
 }
 
 
-int freesasa_per_residue(FILE *output,
-                         freesasa_result *result,
-                         const freesasa_structure *structure)
+int
+freesasa_per_residue(FILE *output,
+                     freesasa_result *result,
+                     const freesasa_structure *structure)
 {
     assert(output);
     assert(structure);
@@ -343,7 +354,8 @@ int freesasa_per_residue(FILE *output,
     return FREESASA_SUCCESS;
 }
 
-freesasa_strvp* freesasa_strvp_new(int n)
+freesasa_strvp*
+freesasa_strvp_new(int n)
 {
     freesasa_strvp* svp = malloc(sizeof(freesasa_strvp));
     if (svp == NULL) {mem_fail(); return NULL;}
@@ -361,7 +373,8 @@ freesasa_strvp* freesasa_strvp_new(int n)
     return svp;
 }
 
-void freesasa_strvp_free(freesasa_strvp *svp)
+void
+freesasa_strvp_free(freesasa_strvp *svp)
 {
     if (svp) {
         if (svp->value) free(svp->value);
@@ -375,7 +388,9 @@ void freesasa_strvp_free(freesasa_strvp *svp)
     }
 }
 
-int freesasa_set_verbosity(freesasa_verbosity s) {
+int
+freesasa_set_verbosity(freesasa_verbosity s) 
+{
     if (s == FREESASA_V_NORMAL ||
         s == FREESASA_V_NOWARNINGS ||
         s == FREESASA_V_SILENT) {
@@ -385,7 +400,9 @@ int freesasa_set_verbosity(freesasa_verbosity s) {
     return FREESASA_WARN;
 }
 
-freesasa_verbosity freesasa_get_verbosity(void) {
+freesasa_verbosity
+freesasa_get_verbosity(void) 
+{
     return verbosity;
 }
 

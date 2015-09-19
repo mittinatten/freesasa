@@ -40,7 +40,9 @@ static const double* srp_p[SRP_N_SIZES] = { srp_20, srp_50, srp_100, srp_200,
                                             srp_500, srp_1000, srp_2000, srp_5000 };
 extern int freesasa_warn(const char *format, ...);
 
-void freesasa_srp_print_n_opt(FILE* f) {
+void
+freesasa_srp_print_n_opt(FILE* f)
+{
     assert(f);
     int res;
     for (int i = 0; i < SRP_N_SIZES-1; ++i) {
@@ -51,14 +53,18 @@ void freesasa_srp_print_n_opt(FILE* f) {
     fprintf(f,"%d\n",srp_N[SRP_N_SIZES-1]);
 }
 
-int freesasa_srp_n_is_valid(int n) {
+int
+freesasa_srp_n_is_valid(int n)
+{
     for (int i = 0; i < SRP_N_SIZES; ++i) {
         if (n == srp_N[i]) return 1;
     }
     return 0;
 }
 
-const double* freesasa_srp_get_points(int n) {
+const double*
+freesasa_srp_get_points(int n)
+{
     for (int i = 0; i < SRP_N_SIZES; ++i) {
         if (n == srp_N[i]) return srp_p[i];
     }

@@ -28,7 +28,10 @@ const char *freesasa_name = PACKAGE_NAME;
 const char *freesasa_name = "freesasa";
 #endif
 
-static void freesasa_err_impl(int err, const char *format, va_list arg)
+static void
+freesasa_err_impl(int err,
+                  const char *format,
+                  va_list arg)
 {
     fprintf(stderr, "%s: ", freesasa_name);
     switch (err) {
@@ -42,7 +45,8 @@ static void freesasa_err_impl(int err, const char *format, va_list arg)
     fflush(stderr);
 }
 
-int freesasa_fail(const char *format,...)
+int
+freesasa_fail(const char *format,...)
 {
     va_list arg;
     if (freesasa_get_verbosity() == FREESASA_V_SILENT) return FREESASA_FAIL;
@@ -63,7 +67,8 @@ int freesasa_warn(const char *format,...)
     return FREESASA_WARN;
 }
 
-int freesasa_mem_fail(const char* func, const char* file, int line)
+int
+freesasa_mem_fail(const char* func, const char* file, int line)
 {
     return freesasa_fail("%s (%s:%d): memory allocation failure.",func,file,line);
 }

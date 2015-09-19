@@ -60,7 +60,9 @@ int printpdb = 0;
 int n_chain_groups = 0;
 const char** chain_groups;
 
-void help() {
+void
+help(void)
+{
     fprintf(stderr,"\nUsage: %s [%s] pdb-file(s)\n",
             program_name,options_string);
     fprintf(stderr,"\n"
@@ -126,12 +128,16 @@ void help() {
             program_name,program_name);
 }
 
-void short_help() {
+void
+short_help(void)
+{
     fprintf(stderr,"Run '%s -h' for usage instructions.\n",
             program_name);
 }
 
-void abort_msg(const char *format, ...)
+void
+abort_msg(const char *format,
+          ...)
 {
     va_list arg;
     va_start(arg, format);
@@ -146,7 +152,10 @@ void abort_msg(const char *format, ...)
 }
 
 
-void run_analysis(FILE *input, const char *name) {
+void
+run_analysis(FILE *input,
+const char *name) 
+{
     double *radii;
     int several_structures = 0, name_len = strlen(name);
     freesasa_result *result;
@@ -154,6 +163,7 @@ void run_analysis(FILE *input, const char *name) {
     freesasa_structure *single_structure[1];
     freesasa_structure **structures;
     int n = 0;
+
     if ((structure_options & FREESASA_SEPARATE_CHAINS) ||
         (structure_options & FREESASA_SEPARATE_MODELS)) {
         structures = freesasa_structure_array(input,&n,structure_options);
@@ -225,7 +235,10 @@ void run_analysis(FILE *input, const char *name) {
     if (structures != single_structure) free(structures);
 }
 
-FILE* fopen_werr(const char* filename,const char* mode) {
+FILE*
+fopen_werr(const char* filename,
+           const char* mode) 
+{
     errno = 0;
     FILE *f = fopen(filename,mode);
     if (f == NULL) {
@@ -250,7 +263,8 @@ void add_chain_groups(const char* cmd)
     free(str);
 }
 
-int main (int argc, char **argv) {
+int main (int argc, char **argv) 
+{
     int alg_set = 0;
     FILE *input = NULL;
     char opt;
