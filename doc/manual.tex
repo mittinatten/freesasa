@@ -13,8 +13,7 @@
 \usepackage{pstricks}
 \usepackage{hyperref}
 %\usepackage{pslatex}
-
-\usepackage{fancyvrb}
+%\usepackage{fancyvrb}
 
 \author{Simon Mitternacht} 
 \date{\today} 
@@ -80,9 +79,9 @@ providing arbitrary coordinates and atomic radii. Both Lee \&
 Richards' \cite{LnR} and Shrake \& Rupley's \cite{SnR} approximations
 can be used. They will be referred to as L\&R and S\&R throughout this
 document. In the current implementation S\&R is the more efficient,
-and therefore recommended for most applications. It only relies on
-standard C libraries, and should therefore be straightforward to
-compile and install on most platforms.
+and therefore recommended for most applications. The library only
+relies on standard C libraries, and should therefore be
+straightforward to compile and install on most platforms.
 
 In constructing the library three possible use cases were considered. 
 \begin{enumerate}
@@ -90,8 +89,9 @@ In constructing the library three possible use cases were considered.
   or the SASA for certain groups or types of atoms.
 \item The user has a set of spheres (typically a molecule), and wants
   to calculate the total SASA for this object.
-\item The user is simulating different conformations of a molecule and
-  wants to measure the SASA at certain intervals during the simulation.
+\item The user is running a simulation or other calculation with it's
+  own internal protein representation and wants to calculate SASA at
+  certain intervals without writing a PDB-file to disk.
 \end{enumerate}
 For case 1 both the command-line interface (CLI) and the application
 programming interface (API) can be used. Using the API gives more
@@ -101,7 +101,7 @@ CLI allow the user to set all parameters.
 
 \section{Command-line interface}\label{sec:cli}
 
-Compilation creates the binary \verb|freesasa| from
+Building the the library creates the binary \verb|freesasa| from
 \verb|main.c|, which can be used to calculate the SASA of a
 PDB-file. The simplest program call, with default parameters would be
 \begin{verbatim}
@@ -135,20 +135,23 @@ As an illustration of a few of the configuration options, the command
    $ freesasa -L -d 0.1 -B -l PDB-file
 \end{verbatim}
 calculates the SASA of the supplied PDB-file using Lee \& Richards
-(-L), with a slice width of 0.1 Å (-d). The option -l suppresses the
-regular log message. Output will instead, because of the flag -B, be
-the provided PDB-file with the SASA of each atom replacing the
-temperature factors, and the atomic radii stored in the occupancy
-factor field, written to \verb|stdout|. The program can thus be used
-as a PDB-file filter. If a file-name is provided after -B the output
-will be written to that file instead. The command \verb|freesasa -h|
-prints a help message listing all available options.
+(\verb|-L|), with a slice width of 0.1 Å (\verb|-d 0.1|). The flag
+\verb|-l| suppresses the regular log message. The output will instead,
+because of the flag \verb|-B|, be the provided PDB-file with the SASA of each
+atom replacing the temperature factors, and the atomic radii stored in
+the occupancy factor field. The program can thus be used as a PDB-file
+filter. If a file-name is provided by the option \verb|--B-value-file|
+the output will be written to that file instead. The command
+\verb|freesasa -h| prints a help message listing all available
+options.
 
 The program classifies each atom and assigns it an atomic radius
 accordingly, based on the PDB input, but users can also provide their
-own configuration files to customize classification (via -c). Several
-PDB-files can be analyzed in one call, the results will be printed
-consecutively for each input file:
+own configuration files to customize classification (via the option
+\verb|-c|).
+
+Several PDB-files can be analyzed in one call, the results will be
+printed consecutively for each input file:
 \begin{verbatim}
    $ freesasa 1abc.pdb 2abc.pdb ...
 \end{verbatim}
@@ -156,6 +159,11 @@ If several threads are requested each calculation is parallelized
 individually, if the user wants to analyze several proteins
 simultaneously this will have to be done by calling several instances
 of the program.
+
+The CLI also provides facilities to analyze individual chains or
+groups of chains in a structure separately. If a PDB file has several
+models, they can either be joined into one structure or analyzed one
+by one (the default is to only use the first model).
 
 \section{Application programming interface}\label{sec:api}
 
@@ -167,10 +175,13 @@ user-defined parameters and atomic classifiers could have been
 provided. The source code for the CLI, in the file \verb|main.c|,
 illustrates full-fledged use of most parts of the API including error
 checking and customization. The example here is meant to illustrate
-the most basic mechanics of the library.
+the most basic mechanics of the library. See the reference manual at
+\url{http://mittinatten.github.io/freesasa/doxygen/} for information
+about error-reporting and customization.
 
 \begin{figure}
-  \begin{Verbatim}[frame=single,fontsize=\footnotesize,framesep=5mm]
+  \begin{small}
+  \begin{verbatim}
 #include <stdlib.h>
 #include <stdio.h>
 #include "freesasa.h"
@@ -211,18 +222,11 @@ int main(int argc, char **argv) {
 
     return EXIT_SUCCESS;
 }
-
-  \end{Verbatim}
+  \end{verbatim}
+  \end{small}
   \caption{An example program demonstrating basic use of the
     library. No error checks are done here. \label{fig:example_c}}
 \end{figure}
-
-This program generates output similar to that of the last three output
-lines in the previous section.
-
-\appendix
-
-\begin{small}
 
 \section{Algorithms}\label{sec:algorithm}
 
@@ -287,7 +291,6 @@ These circles are either completely buried, completely exposed, or
 partially exposed.
 
 \begin{figure}
-%\begin{center}
 \includegraphics{fig/lnr_slice}
 \includegraphics{fig/lnr_circles}
 \caption{Geometry of slice in L\&R.\label{fig:slice}}
@@ -447,6 +450,7 @@ test-points, with the same calculation time.
   \end{center}
 \end{figure}
 
+\begin{small}
 
 \begin{thebibliography}{50}
 

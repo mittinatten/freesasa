@@ -40,14 +40,33 @@ ps-local: manual.ps
 pdf-local: manual.pdf
 ALLFILES += manual.dvi manual.ps manual.pdf
 
-else
+if BUILD_HTML_MANUAL
+
+html/manual.html: $(srcdir)/$(manual) $(fig_eps)
+	latexml --quiet $< > manual.xml
+	latexmlpost manual.xml --format=html5 --destination=html/manual.html
+
+html-local: html/manual.html
+
+ALLFILES += html/manual.html
+CLEANFILES += manual.xml
+
+else # BUILD_HTML_MANUAL
+
+html-local:
+	@echo latexml not available, html manual will not be built.
+
+endif # BUILD_HTML_MANUAL
+
+else # HAVE_LATEX
 nolatex:
-	@echo LaTex disabled, run configure script with option --enable-latex to enable
+	@echo LaTeX disabled, run configure script with option --enable-latex to enable
 dvi-local: nolatex
 ps-local: nolatex
 pdf-local: nolatex
 
-endif
+
+endif # HAVE_LATEX
 
 if HAVE_DOXYGEN
 
@@ -75,4 +94,5 @@ endif
 clean-local:
 	rm -f *.ps *.dvi *.aux *.log *.pdf *.toc *~ 
 	rm -rf html/doxygen
+	rm -rf html/fig
 
