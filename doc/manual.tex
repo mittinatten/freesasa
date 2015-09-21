@@ -26,13 +26,12 @@
 %\hrule
 \subsection*{Abstract}
 FreeSASA is a C library, and command line tool, for calculating
-Solvent Accessible Surface Area (SASA), released under the GNU General
-Public License 3\footnote{See
-  \url{http://www.gnu.org/licenses/gpl.html}}. It implements the
-classic algorithms by Lee and Richards and by Shrake and Rupley. The
-source code is freely available at
-\url{http://mittinatten.github.io/freesasa/}. The functionality is not
-new, but to the author's knowledge this is the only available
+Solvent Accessible Surface Area (SASA), released under the
+\href{http://www.gnu.org/licenses/gpl.html}{GNU General Public License
+  3}~\cite{GPL}. It implements the classic algorithms by Lee and
+Richards and by Shrake and Rupley. The source code is freely available
+at \url{http://mittinatten.github.io/freesasa/}. The functionality is
+not new, but to the author's knowledge this is the only available
 freestanding tool released under an open source license.
 
 \section{Introduction}
@@ -49,19 +48,21 @@ represents a solvent molecule (i.e.\ water). Cavities smaller than the
 solvent molecule do not contribute to $A$.
 
 Calculating SASA is a run-of-the-mill calculation in protein structure
-studies. A popular program for doing this is NACCESS~\cite{NACCESS},
+studies. A popular program for doing this is
+\href{http://www.bioinf.manchester.ac.uk/naccess/}{NACCESS}~\cite{NACCESS},
 which is a Fortran implementation of the approximation algorithm by
 Lee \& Richards~\cite{LnR} (freely available to academic
-users). Another well-known program is DSSP which calculates accessible
-surface areas in addition to its secondary structure
+users). Another well-known program is
+\href{http://swift.cmbi.ru.nl/gv/dssp/}{DSSP} which calculates
+accessible surface areas in addition to its secondary structure
 assignments~\cite{DSSP} (using the approximation algorithm by Shrake
 \& Rupley~\cite{SnR}, available as open source). Some simulation
 packages also include tools to calculate SASA. Gromacs for example has
 an efficient implementation of the Shrake \& Rupley
 algorithm~\cite{DCLM} (open source). In addition, there are some web
 services available, for example
-Getarea\footnote{\url{http://curie.utmb.edu/getarea.html}}, which
-calculates the surface analytically~\cite{Getarea}. But, to the
+\href{http://curie.utmb.edu/getarea.html}{Getarea}~\cite{GetAreaURL}
+which calculates the surface analytically~\cite{Getarea}. But, to the
 author's knowledge there are no fully open source, standalone
 programs, nor any libraries designed to be easily integrated into
 other programs. FreeSASA is an attempt to resolve both these issues,
@@ -167,7 +168,7 @@ by one (the default is to only use the first model).
 
 \section{Application programming interface}\label{sec:api}
 
-Figure~\ref{fig:example_c} shows the minimal program \verb|example.c|,
+The code-listing below shows the minimal program \verb|example.c|,
 which performs a SASA-calculation using a PDB-file as input, but
 without error handling and using default parameters. The three points
 were null pointers are passed as arguments are places were
@@ -179,9 +180,7 @@ the most basic mechanics of the library. See the reference manual at
 \url{http://mittinatten.github.io/freesasa/doxygen/} for information
 about error-reporting and customization.
 
-\begin{figure}
-  \begin{small}
-  \begin{verbatim}
+\begin{verbatim}
 #include <stdlib.h>
 #include <stdio.h>
 #include "freesasa.h"
@@ -222,11 +221,7 @@ int main(int argc, char **argv) {
 
     return EXIT_SUCCESS;
 }
-  \end{verbatim}
-  \end{small}
-  \caption{An example program demonstrating basic use of the
-    library. No error checks are done here. \label{fig:example_c}}
-\end{figure}
+\end{verbatim}
 
 \section{Algorithms}\label{sec:algorithm}
 
@@ -391,10 +386,7 @@ in figure~\ref{fig:threads}. Since the generation of Verlet lists is
 not parallelized, using more than one thread only gives a significant
 performance benefit at the limit of high precision. For the cases
 studied here, using more than two threads only gives a limited
-improvement.\footnote{The tests were run on a computer with four
-  cores, so there was probably some performance lost due to
-  interference from background process in the measurement with four
-  threads.}
+improvement~\cite{4cores}.
 \begin{figure}
   \begin{center}
   \includegraphics{fig/scaling}
@@ -429,13 +421,9 @@ results of these calculations for the 88 proteins described above.  It
 is clear from this picture that S\&R is on average an order of
 magnitude more accurate than L\&R given the same computational effort.
 The value $0.25\,\mathrm{\AA}$ for example is close to the default
-accuracy of NACCESS\footnote{The parameter $z$ in NACCESS is
-  multiplied by the atomic diameter to get the slice width. The
-  default $z=0.05$ thus gives a slice width of $0.28 -
-  0.32\,\mathrm{\AA}$ depending on the atom type.}~\cite{NACCESS}, but
-order of magnitude better accuracy can be achieved using S\&R with 500
+accuracy of NACCESS~\cite{NACCESS,NACCESSParam}, but order of
+magnitude better accuracy can be achieved using S\&R with 500
 test-points, with the same calculation time.
-
 
 \begin{figure}
   \begin{center}
@@ -453,6 +441,9 @@ test-points, with the same calculation time.
 \begin{small}
 
 \begin{thebibliography}{50}
+
+\bibitem{GPL}
+  See  \url{http://www.gnu.org/licenses/gpl.html}
 
 \bibitem{LnR} 
   Lee B, Richards FM (1971) The interpretation of protein
@@ -474,16 +465,14 @@ test-points, with the same calculation time.
   solvent of protein atoms. Lysozyme and insulin. Journal of Molecular
   Biology 79: 351–-371.
 
-\bibitem{Gromacs}
-  Pronk S, Páll S, Schulz R, et al. (2013) GROMACS 4.5: A high-
-  throughput and highly parallel open source molecular simulation
-  toolkit. Bioinformatics 29: 845--854.
-
 \bibitem{DCLM}
   Eisenhaber F, Lijnzaad P, Argos P, Sander C, Scharf M (1994)
   The double cubic lattice method: efficient approaches to numerical
   integration of surface area and volume and to dot surface contouring
   molecular assemblies. Journal of Computational Chemistry 16: 273--284.
+
+\bibitem{GetareaURL}
+  See \url{http://curie.utmb.edu/getarea.html}.
 
 \bibitem{Getarea}
   Fraczkiewicz R, and Braun W, (1998) Exact and Efficient Analytical
@@ -505,6 +494,16 @@ test-points, with the same calculation time.
   Wang G, Dunbrack RL (2003) PISCES: a protein sequence culling server. 
   Bioinformatics 19:1589--1591.
 
+\bibitem{4cores}
+  The tests were run on a computer with four
+  cores, so there was probably some performance lost due to
+  interference from background process in the measurement with four
+  threads.
+
+\bibitem{NACCESSParam} The parameter $z$ in NACCESS is multiplied by
+  the atomic diameter to get the slice width. The default $z=0.05$
+  thus gives a slice width of $0.28 - 0.32\,\mathrm{\AA}$ depending on
+  the atom type.
 \end{thebibliography}
 
 \end{small}
