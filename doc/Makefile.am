@@ -46,8 +46,8 @@ manual.xml: $(srcdir)/$(manual) $(fig_eps)
 	latexml --quiet $< > manual.xml
 
 html/manual.html: manual.xml
-	cd html; latexmlpost ../manual.xml  --format=html5 --destination=tmp.html --nodefaultresources
-	perl decorateHTML.pl html/tmp.html > $@
+	cd html; latexmlpost ../manual.xml  --format=html5 --destination=tmp.html --nodefaultresources --navigationtoc=context 
+	perl prepareHTML.pl html/tmp.html > $@
 	rm html/tmp.html html/LaTeXML.*
 
 html-local: html/manual.html
