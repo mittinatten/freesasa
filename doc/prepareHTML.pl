@@ -32,18 +32,28 @@ MathJax.Hub.Config({
 
      ga('create', 'UA-66397346-1', 'auto');
      ga('send', 'pageview');
+     var manualLink = document.getElementById('manual');
+     addListener(manualLink, 'click', function() {ga('send', 'event', 'manual', 'click');});
+     function addListener(element, type, callback) {
+         if (element.addEventListener) element.addEventListener(type, callback);
+         else if (element.attachEvent) element.attachEvent('on' + type, callback);
+     }
 </script>
 HERE
 
+my $style = <<HERE;
+  <link href="stylesheets/styles.css" rel="stylesheet" type="text/css">
+  <link href="stylesheets/github-light.css" rel="stylesheet" type="text/css">
+  <link href="stylesheets/article.css" rel="stylesheet" type="text/css">
+HERE
+
+my $pdf = '<p>[ <a href="manual.pdf" id="manual">Download PDF</a> ]</p>';
+
 while (<>) {
-    if (/<\/head>/) {
-        print '<link href="stylesheets/styles.css" rel="stylesheet" type="text/css">'."\n";
-        print '<link href="stylesheets/github-light.css" rel="stylesheet" type="text/css">'."\n";
-        print '<link href="stylesheets/article.css" rel="stylesheet" type="text/css">'."\n";
-    }
+    print $style if (/<\/head>/);
     print $tracking if (/<\/body>/);
     $_ =~ s/<nav .*>/<header>/;
-    $_ =~ s/<\/nav>/<\/header>/;
+    $_ =~ s/<\/nav>/$pdf\n<\/header>/;
     $_ =~ s/style=".*"/style=""/;
     $_ =~ s/ltx_page_main/ltx_page_main wrapper/;
     print;
