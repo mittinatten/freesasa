@@ -304,28 +304,20 @@ $i$ that is buried due to circle $j$ is
   \bigl[({R_i^\prime}^2_{\,} + d_{ij}^2 - {R_{j}^\prime}^2_{\,})/(2R_i^\prime
   d_{ij})\bigr].
 \end{equation}
-The middle point of the arc on the circle is at an
-angle $\beta$ in circle $i$, and thus the arc spans the interval
+The middle point of the arc on the circle is at an angle $\beta$ in
+circle $i$, and thus the arc spans the interval
 $[\beta-\alpha/2,\beta+\alpha/2]$ on the circle. By adding up these
 arcs and taking into account any overlap between them we get the total
-buried angle $\gamma_i$ of circle $i$. The exposed arc length in this
-slice is thus $L_i = R_i^\prime(2\pi-\gamma_i)$.
-
-The contribution to the SASA from each slice is 
+buried angle $\gamma_i$ of circle $i$. The exposed arc angle for atom
+$i$ in this slice is thus $2\pi-\gamma_i$ and the contribution to the
+total SASA
 \begin{equation}\label{eq:LR_SASA}
-  S_\delta =
-  \sum_{i \in \text{slice}}L_i\Delta_i 
+  A_z =\!\!  \sum_{i \in \text{slice}(z)} \!\! 
+    \left[2\pi-\gamma_i(z)\right]\delta R_i\,.
 \end{equation}
-where
-\begin{equation}\label{eq:Delta_i}
-  \Delta_i = \frac{R_i}{R_i^\prime} \biggl[\frac{\delta}{2} 
-    + \min\biggl(\frac{\delta}{2},R_i -
-    \lvert z - z_i \rvert\biggr)\biggr]. 
-\end{equation}
-The factor $R_i/R_i^\prime$ comes from approximating the area of the
-slice by a conical segment of the sphere, instead of a cylinder.
-Finally, the total SASA is obtained by adding up the contribution from
-all the slices, either for the whole protein, or atom by atom.
+The angle is multiplied by $R_i$ (not $R_i^\prime$) to give the area
+of a conical frustum circumscribing the sphere at the slice. Finally,
+the total area $A$ is the sum of all $A_z$.
 
 In FreeSASA, the L\&R SASA calculation begins by finding overlapping
 spheres and storing the contacts in an adjacency list. It then
@@ -472,7 +464,7 @@ test-points, with the same calculation time.
   integration of surface area and volume and to dot surface contouring
   molecular assemblies. Journal of Computational Chemistry 16: 273--284.
 
-\bibitem{GetareaURL}
+\bibitem{GetAreaURL}
   See \url{http://curie.utmb.edu/getarea.html}.
 
 \bibitem{Getarea}

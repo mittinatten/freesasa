@@ -232,7 +232,7 @@ atom_area(lr_data *lr,
     double arc[nni*4], z_nb[nni], r_nb[nni];
     double z_slice, z0, sasa = 0;
     const int bottom = ((zi-ri)-lr->min_z)/delta + 1;
-
+    
     z0 = lr->min_z+bottom*delta;
     
     for (int j = 0; j < nni; ++j) {
@@ -246,7 +246,6 @@ atom_area(lr_data *lr,
         if (ri_slice2 < 0 ) continue; // handle round-off errors
         const double ri_slice = sqrt(ri_slice2);
         if (ri_slice <= 0) continue; // more round-off errors
-        const double DR = ri/ri_slice*(d_half + fmin(d_half,ri-di));
         int n_arcs = 0, is_buried = 0;
         for (int j = 0; j < nni; ++j) {
             const double zj = z_nb[j];
@@ -294,7 +293,7 @@ atom_area(lr_data *lr,
             }
         }
         if (is_buried == 0) {
-            sasa += ri_slice*DR*exposed_arc_length(arc,n_arcs);
+            sasa += delta*ri*exposed_arc_length(arc,n_arcs);
         }
 #ifdef DEBUG
         if (completely_buried == 0) {
