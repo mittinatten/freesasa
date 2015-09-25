@@ -32,7 +32,6 @@
 
 #include "freesasa.h"
 #include "sasa.h"
-#include "srp.h"
 #include "nb.h"
 #include "util.h"
 
@@ -63,6 +62,30 @@ static void *sr_thread(void *arg);
 static double
 sr_atom_area(int i,const sr_data) __attrib_pure__;
 
+static freesasa_coord*
+test_points(int N) 
+{
+    // Golden section spiral on a sphere
+    // from http://web.archive.org/web/20120421191837/http://www.cgafaq.info/wiki/Evenly_distributed_points_on_sphere
+    double dlong = M_PI*(3-sqrt(5)), dz = 2.0/N, longitude = 0, z = 1-dz/2, r;
+    freesasa_coord *coord = freesasa_coord_new();
+    double *tp = malloc(3*N*sizeof(double));
+    if (tp == NULL || coord == NULL) {mem_fail(); return NULL;}
+
+    for (double *p = tp; p-tp < 3*N; p += 3) {
+        r = sqrt(1-z*z);
+        p[0] = cos(longitude)*r;
+        p[1] = sin(longitude)*r;
+        p[2] = z;
+        z -= dz;
+        longitude += dlong;
+    }
+
+    if (freesasa_coord_append(coord,tp,N) == FREESASA_FAIL) {freesasa_fail(__func__); return NULL; }
+
+    return coord;
+}
+
 int
 init_sr(sr_data* sr_p,
         double *sasa,
@@ -72,14 +95,10 @@ init_sr(sr_data* sr_p,
         int n_points)
 {
     int n_atoms = freesasa_coord_n(xyz);
-    const double *srp_p;
-    freesasa_coord *srp;
+    const double *tp;
+    freesasa_coord *srp = test_points(n_points);
 
-    // Initialize test-points
-    srp_p = freesasa_srp_get_points(n_points);
-    if (srp_p == NULL) return FREESASA_FAIL;
-    srp = freesasa_coord_new_linked(srp_p,n_points);
-    if (srp == NULL) return mem_fail();
+    if (srp == NULL) return freesasa_fail(__func__);
     
     //store parameters and reference arrays
     sr_data sr = {.n_atoms = n_atoms, .n_points = n_points,

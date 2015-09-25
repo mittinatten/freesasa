@@ -182,9 +182,9 @@ void setup_sr (void)
     parameters = freesasa_default_parameters;
     parameters.alg = FREESASA_SHRAKE_RUPLEY;
     parameters.shrake_rupley_n_points = 100;
-    total_ref = 4759.86096;
-    polar_ref = 2232.23039;
-    apolar_ref = 2527.63057;
+    total_ref = 4779.5109924;
+    polar_ref = 2236.9298941;
+    apolar_ref = 2542.5810983;
 }
 void teardown_sr(void)
 {
@@ -196,9 +196,9 @@ void setup_lr (void)
     parameters = freesasa_default_parameters;
     parameters.alg = FREESASA_LEE_RICHARDS;
     parameters.lee_richards_delta = 0.25;
-    total_ref = 4728.26159;
-    polar_ref = 2211.41649;
-    apolar_ref = 2516.84510;
+    total_ref = 4773.0047745;
+    polar_ref = 2239.7107336;
+    apolar_ref = 2533.2940409;
 }
 void teardown_lr(void)
 {
@@ -281,9 +281,9 @@ END_TEST
 START_TEST (test_trimmed_pdb) 
 {
     // This test is due to suggestion from João Rodrigues (issue #6 on Github)
-    double total_ref = 15955.547786749;
-    double polar_ref = 6543.356616946;
-    double apolar_ref = 9412.191169803;
+    double total_ref = 15964.2723037;
+    double polar_ref = 6545.4595991;
+    double apolar_ref = 9418.8127046;
     freesasa_result *result;
     freesasa_structure *st;
     FILE *pdb;
@@ -393,12 +393,12 @@ START_TEST (test_multi_calc)
     p.n_threads = 2;
     p.alg = FREESASA_SHRAKE_RUPLEY;
     ck_assert((res = freesasa_calc_structure(st,radii,&p)) != NULL);
-    ck_assert(fabs(res->total - 4759.86096) < 1e-5);
+    ck_assert(fabs(res->total - 4779.5109924) < 1e-5);
     // L&R
     p.alg = FREESASA_LEE_RICHARDS;
     p.lee_richards_delta = 0.25;
     ck_assert((res = freesasa_calc_structure(st,radii,&p)) != NULL);
-    ck_assert(fabs(res->total - 4728.26159) < 1e-5);
+    ck_assert(fabs(res->total - 4773.0047745) < 1e-5);
     
     freesasa_structure_free(st);
     freesasa_result_free(res);
@@ -416,7 +416,7 @@ START_TEST (test_1d3z)
     double *radii = freesasa_structure_radius(st,NULL);
     freesasa_result *result = freesasa_calc_structure(st,radii,NULL);
     ck_assert(freesasa_structure_n(st) == 602);
-    ck_assert(fabs(result->total - 4895.902916) < 1e-5);
+    ck_assert(fabs(result->total - 4945.8705756) < 1e-5);
     free(radii);
     rewind(pdb);
     
@@ -425,7 +425,7 @@ START_TEST (test_1d3z)
     result = freesasa_calc_structure(st,radii,NULL);
     ck_assert(freesasa_structure_n(st) == 1231);
     // Hydrogens too small to affect total area
-    ck_assert(fabs(result->total - 4895.902916) < 1e-5);
+    ck_assert(fabs(result->total - 4945.8705756) < 1e-5);
     free(radii);
     rewind(pdb);
 
@@ -434,7 +434,7 @@ START_TEST (test_1d3z)
     radii = freesasa_structure_radius(ss[0],NULL);
     result = freesasa_calc_structure(ss[0],radii,NULL);
     ck_assert(freesasa_structure_n(ss[0]) == 602);
-    ck_assert(fabs(result->total - 4895.902916) < 1e-5);
+    ck_assert(fabs(result->total - 4945.8705756) < 1e-5);
     for (int i = 0; i < n; ++i) {
         double *r2 = freesasa_structure_radius(ss[i],NULL);
         ck_assert(r2 != NULL);

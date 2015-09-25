@@ -32,7 +32,6 @@
 #include "sasa.h"
 #include "pdb.h"
 #include "freesasa.h"
-#include "srp.h"
 #include "classify.h"
 #include "util.h"
 
@@ -267,7 +266,7 @@ freesasa_log(FILE *log,
             int l = strlen(class_area->string[i]);
             m = (l > m) ? l : m;
         }
-        sprintf(fmt," %%%ds: %%10.2f A2\n",m);
+        sprintf(fmt," %%%ds: %%9.2f A2\n",m);
         fprintf(log,"\n");
         fprintf(log,fmt,"Total",result->total);
         for (int i = 0; i < class_area->n; ++i) {
@@ -325,9 +324,9 @@ freesasa_single_residue_sasa(const freesasa_result *r,
     double a = 0;
     
     freesasa_structure_residue_atoms(s,r_i,&first,&last);
-    
+
     for (int j = first; j <= last; ++j) {
-        a += sasa[r_i];
+        a += sasa[j];
     }        
     return a;
 }

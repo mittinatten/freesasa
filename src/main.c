@@ -30,7 +30,6 @@
 #endif
 
 #include "freesasa.h"
-#include "srp.h"
 
 #if STDC_HEADERS
 extern int getopt(int, char * const *, const char *);
@@ -73,17 +72,14 @@ help(void)
             "  -L (--lee-richards)   Use Lee & Richards algorithm\n");
     fprintf(stderr,
             "  -p <value>  --probe-radius=<value>\n"
-            "                        Probe radius [default %4.2f Å]\n"
-            "  -d <value>  --lr-slice=<value>\n"
-            "                        Slice spacing in Lee & Richards algorithm \n"
-            "                        [default %4.2f Å].\n",
-            FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_LR_D);
-    fprintf(stderr,
+            "                        Probe radius [default: %4.2f Å]\n"
             "  -n <value>  --sr-points=<value>\n"
             "                        Number of test points in Shrake & Rupley algorithm.\n"
-            "                        Default is %d, allowed values are:\n"
-            "                          ", FREESASA_DEF_SR_N);
-    freesasa_srp_print_n_opt(stderr);
+            "                        [default: %d]\n"
+            "  -d <value>  --lr-slice=<value>\n"
+            "                        Slice spacing in Lee & Richards algorithm \n"
+            "                        [default: %4.2f Å].\n",
+            FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_LR_D);
 #ifdef HAVE_LIBPTHREAD
     fprintf(stderr,
             "  -t <value>  --n-threads=<value>\n"
@@ -201,9 +197,9 @@ const char *name)
         radii = freesasa_structure_radius(structures[i],classifier);
         if (radii == NULL)         abort_msg("Can't calculate atomic radii.\n");
         result = freesasa_calc_structure(structures[i],radii,&parameters);
-        if (result == NULL)       abort_msg("Can't calculate SASA.\n");
+        if (result == NULL)        abort_msg("Can't calculate SASA.\n");
         classes = freesasa_result_classify(result,structures[i],classifier);
-        if (classes == NULL)      abort_msg("Can't determine atom classes. Aborting.\n");
+        if (classes == NULL)       abort_msg("Can't determine atom classes. Aborting.\n");
         if (printlog) {
             char name_i[name_len+10];
             strcpy(name_i,name);
