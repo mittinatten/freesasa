@@ -186,9 +186,9 @@ typedef enum {
 } freesasa_class;
 
 // Default parameters
-#define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångström) @ingroup API
-#define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R @ingroup API
-#define FREESASA_DEF_LR_D 0.25 //!< Default slice width in L&R (in Ångström) @ingroup API
+#define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångström)
+#define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R
+#define FREESASA_DEF_LR_N 20 //!< Default number of slices per atom  in L&R
 #ifdef HAVE_LIBPTHREAD
 #define FREESASA_DEF_NUMBER_THREADS 2 //!< Default number of threads
 #else
@@ -196,9 +196,9 @@ typedef enum {
 #endif
 
 // Important that success is 0 and failure is non-zero, don't change
-#define FREESASA_SUCCESS 0 //!< All is ok @ingroup API
-#define FREESASA_FAIL -1 //!< Something went seriously wrong. @ingroup API
-#define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful @ingroup API
+#define FREESASA_SUCCESS 0 //!< All is ok
+#define FREESASA_FAIL -1 //!< Something went seriously wrong. 
+#define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful.
 
 // Parameters for reading structure from PDB
 #define FREESASA_INCLUDE_HETATM 1 //!< Include HETATM entries
@@ -209,11 +209,11 @@ typedef enum {
 
 //! Struct to store parameters for SASA calculation @ingroup API
 typedef struct {
-    freesasa_algorithm alg;     //!< Algorithm
-    double probe_radius;        //!< Probe radius (in Ångström)
-    int shrake_rupley_n_points; //!< Number of test points in S&R calculation
-    double lee_richards_delta;  //!< Slice width in L&R calculation (in Ångström)
-    int n_threads;              //!< Number of threads to use, if compiled with thread-support
+    freesasa_algorithm alg;       //!< Algorithm
+    double probe_radius;          //!< Probe radius (in Ångström)
+    int shrake_rupley_n_points;   //!< Number of test points in S&R calculation
+    double lee_richards_n_slices; //!< Number of slices per atom in L&R calculation
+    int n_threads;                //!< Number of threads to use, if compiled with thread-support
 } freesasa_parameters;
 
 //! Struct to store results of SASA calculation @ingroup API

@@ -73,13 +73,11 @@ help(void)
     fprintf(stderr,
             "  -p <value>  --probe-radius=<value>\n"
             "                        Probe radius [default: %4.2f Å]\n"
-            "  -n <value>  --sr-points=<value>\n"
-            "                        Number of test points in Shrake & Rupley algorithm.\n"
-            "                        [default: %d]\n"
-            "  -d <value>  --lr-slice=<value>\n"
-            "                        Slice spacing in Lee & Richards algorithm \n"
-            "                        [default: %4.2f Å].\n",
-            FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_LR_D);
+            "  -n <value>  --resolution=<value>\n"
+            "                        Number of test points in Shrake & Rupley algorithm, [default: %d] or\n"
+            "                        number of slices per atom in Lee & Richards algorithm. [default: %d]"
+            "                        Depending on which is selected.\n",
+            FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_SR_N,FREESASA_DEF_LR_N);
 #ifdef HAVE_LIBPTHREAD
     fprintf(stderr,
             "  -t <value>  --n-threads=<value>\n"
@@ -277,8 +275,7 @@ int main (int argc, char **argv)
         {"lee-richards", no_argument, 0, 'L'},
         {"shrake-rupley", no_argument, 0, 'S'},
         {"probe-radius", required_argument, 0, 'p'},
-        {"lr-slice", required_argument, 0, 'd'},
-        {"sr-points", required_argument, 0, 'n'},
+        {"resolution", required_argument, 0, 'n'},
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'v'},
         {"no-log", no_argument, 0, 'l'},
@@ -298,7 +295,7 @@ int main (int argc, char **argv)
         {"per-sequence-file",required_argument,&option_flag,SEQ_FILE},
         {"B-value-file",required_argument,&option_flag,B_FILE}
     };
-    options_string = ":hvlwLSHYCMmBrRc:n:d:t:p:g:";
+    options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:";
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
         opt_set[(int)opt] = 1;
@@ -350,6 +347,9 @@ int main (int argc, char **argv)
         }
         case 'n':
             parameters.shrake_rupley_n_points = atoi(optarg);
+            parameters.lee_richards_n_slices = atoi(optarg);
+            if (parameters.shrake_rupley_n_points <= 0)
+                abort_msg("error: Resolution needs to be at least 1 (20 recommended minum for S&R, 5 for L&R).\n");
             break;
         case 'S':
             parameters.alg = FREESASA_SHRAKE_RUPLEY;
@@ -359,12 +359,10 @@ int main (int argc, char **argv)
             parameters.alg = FREESASA_LEE_RICHARDS;
             ++alg_set;
             break;
-        case 'd':
-            parameters.lee_richards_delta = atof(optarg);
-            break;
         case 'p':
             parameters.probe_radius = atof(optarg);
-            if (parameters.probe_radius < 0) abort_msg("error: probe radius must be 0 or larger.\n");
+            if (parameters.probe_radius <= 0)
+                abort_msg("error: probe radius must be 0 or larger.\n");
             break;
         case 'H':
             structure_options |= FREESASA_INCLUDE_HETATM;
@@ -415,11 +413,6 @@ int main (int argc, char **argv)
         }
     }
     if (alg_set > 1) abort_msg("Multiple algorithms specified.\n");
-    if ((opt_set['L'] && opt_set['n']) ||
-        (!opt_set['L'] && opt_set['d']) ) {
-        abort_msg("The program was given parameters not compatible with the selected "
-                  "algorithm. These will be ignored.\n");
-    }
     if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.\n");
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.\n");
     if (printlog) printf("## %s %s ##\n",program_name,version);

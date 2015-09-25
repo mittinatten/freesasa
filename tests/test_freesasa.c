@@ -84,7 +84,7 @@ void setup_lr_precision(void)
 {
     parameters = freesasa_default_parameters;
     parameters.alg = FREESASA_LEE_RICHARDS;
-    parameters.lee_richards_delta = 1e-4;
+    parameters.lee_richards_n_slices = 20000;
     tolerance = 1e-5;
 }
 void teardown_lr_precision(void)
@@ -195,10 +195,10 @@ void setup_lr (void)
 {
     parameters = freesasa_default_parameters;
     parameters.alg = FREESASA_LEE_RICHARDS;
-    parameters.lee_richards_delta = 0.25;
-    total_ref = 4773.0047745;
-    polar_ref = 2239.7107336;
-    apolar_ref = 2533.2940409;
+    parameters.lee_richards_n_slices = 20;
+    total_ref = 4759.46651;
+    polar_ref = 2226.83182;
+    apolar_ref = 2532.63469;
 }
 void teardown_lr(void)
 {
@@ -396,9 +396,9 @@ START_TEST (test_multi_calc)
     ck_assert(fabs(res->total - 4779.5109924) < 1e-5);
     // L&R
     p.alg = FREESASA_LEE_RICHARDS;
-    p.lee_richards_delta = 0.25;
+    p.lee_richards_n_slices = 20;
     ck_assert((res = freesasa_calc_structure(st,radii,&p)) != NULL);
-    ck_assert(fabs(res->total - 4773.0047745) < 1e-5);
+    ck_assert(fabs(res->total - 4759.46651) < 1e-5);
     
     freesasa_structure_free(st);
     freesasa_result_free(res);

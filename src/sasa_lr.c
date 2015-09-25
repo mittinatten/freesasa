@@ -43,9 +43,7 @@ typedef struct {
     double *radii; //including probe
     const freesasa_coord *xyz;
     freesasa_nb *adj;
-    double delta; // slice width
-    double min_z; // bounds of the molecule
-    double max_z;
+    int n_slices_per_atom;
     double *sasa; // results
 } lr_data;
 
@@ -75,35 +73,24 @@ init_lr(double *sasa,
         const freesasa_coord *xyz,
         const double *atom_radii,
         double probe_radius,
-        double delta)
+        int n_slices_per_atom)
 {
     const int n_atoms = freesasa_coord_n(xyz);
-    double max_z=-1e50, min_z=1e50;
-    double max_r = 0;
     const double *v = freesasa_coord_all(xyz);
     lr_data* lr = malloc(sizeof(lr_data));
     double *radii = malloc(sizeof(double)*n_atoms);
     if (!lr || !radii) { free(lr); free(radii); mem_fail(); return NULL;}
 
-    //find bounds of protein along z-axis and init radii
+    //init some arrays
     for (int i = 0; i < n_atoms; ++i) {
-        double z, r;
         radii[i] = atom_radii[i] + probe_radius;
-        z = v[3*i+2];
-        r = radii[i];
-        max_z = fmax(z,max_z);
-        min_z = fmin(z,min_z);
-        max_r = fmax(r, max_r);
         sasa[i] = 0.;
     }
-    min_z -= max_r;
-    max_z += max_r;
-    min_z += 0.5*delta;
+
 
     //copy parameters
     lr->n_atoms = n_atoms; lr->radii = radii; lr->xyz = xyz;
-    lr->delta = delta;
-    lr->min_z = min_z; lr->max_z = max_z;
+    lr->n_slices_per_atom = n_slices_per_atom;
     lr->sasa = sasa;
     lr->adj = NULL;
 
@@ -123,14 +110,15 @@ freesasa_lee_richards(double *sasa,
                       const freesasa_coord *xyz,
                       const double *atom_radii,
                       double probe_radius,
-                      double delta,
+                      int n_slices_per_atom,
                       int n_threads)
 {
     assert(sasa);
     assert(xyz);
     assert(atom_radii);
-    if (delta <= 0) return freesasa_fail("%s: delta = %f is invalid, must be > 0\n",
-                                         __func__,delta);
+    if (n_slices_per_atom <= 0) 
+        return freesasa_fail("%s: n_slices_per_atom = %f is invalid, must be > 0\n",
+                             __func__,n_slices_per_atom);
 
     int return_value = FREESASA_SUCCESS;
     lr_data *lr;
@@ -140,7 +128,7 @@ freesasa_lee_richards(double *sasa,
     }
 
     // determine slice range and init radii and sasa arrays
-    lr = init_lr(sasa, xyz, atom_radii, probe_radius, delta);
+    lr = init_lr(sasa, xyz, atom_radii, probe_radius, n_slices_per_atom);
     if (lr == NULL) return mem_fail();
 
     // determine which atoms are neighbours
@@ -228,19 +216,20 @@ atom_area(lr_data *lr,
     const double * restrict const xydi = lr->adj->xyd[i];
     const double * restrict const xdi = lr->adj->xd[i];
     const double * restrict const ydi = lr->adj->yd[i];
-    const double zi = v[3*i+2], delta = lr->delta, ri = r[i], d_half = delta/2.;
+    const double zi = v[3*i+2], ri = r[i];
+    const int ns = lr->n_slices_per_atom;
     double arc[nni*4], z_nb[nni], r_nb[nni];
-    double z_slice, z0, sasa = 0;
-    const int bottom = ((zi-ri)-lr->min_z)/delta + 1;
-    
-    z0 = lr->min_z+bottom*delta;
+    double z_slice, delta, sasa = 0;
     
     for (int j = 0; j < nni; ++j) {
         z_nb[j] = v[3*nbi[j]+2];
         r_nb[j] = r[nbi[j]];
     }
     
-    for (z_slice = z0; z_slice < zi+ri; z_slice += delta) {
+    delta = 2*ri/ns;
+    z_slice = zi-ri-0.5*delta;
+    for (int islice = 0; islice < ns; ++islice) {
+        z_slice += delta;
         const double di = fabs(zi - z_slice);
         const double ri_slice2 = ri*ri-di*di;
         if (ri_slice2 < 0 ) continue; // handle round-off errors

@@ -50,7 +50,7 @@ const freesasa_parameters freesasa_default_parameters = {
     .alg = FREESASA_SHRAKE_RUPLEY,
     .probe_radius = FREESASA_DEF_PROBE_RADIUS,
     .shrake_rupley_n_points = FREESASA_DEF_SR_N,
-    .lee_richards_delta = FREESASA_DEF_LR_D,
+    .lee_richards_n_slices = FREESASA_DEF_LR_N,
     .n_threads = FREESASA_DEF_NUMBER_THREADS,
 };
 
@@ -133,7 +133,7 @@ freesasa_calc(const freesasa_coord *c,
     case FREESASA_LEE_RICHARDS:
         ret = freesasa_lee_richards(result->sasa, c, radii,
                                     p->probe_radius,
-                                    p->lee_richards_delta, 
+                                    p->lee_richards_n_slices, 
                                     p->n_threads);
         break;
     default:
@@ -251,7 +251,7 @@ freesasa_log(FILE *log,
         fprintf(log,"n_testpoint: %d\n",p->shrake_rupley_n_points);
         break;
     case FREESASA_LEE_RICHARDS:
-        fprintf(log,"d_slice: %f Å\n",p->lee_richards_delta);
+        fprintf(log,"n_slices_per_atom: %d\n",p->lee_richards_n_slices);
         break;
     default:
         assert(0);

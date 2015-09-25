@@ -72,7 +72,7 @@ freesasa_shrake_rupley(double *sasa,
     @param c Coordinates of the object to calculate SASA for.
     @param radii Array of radii for each sphere.
     @param probe_radius Probe radius to be used.
-    @param grid Slice thickness in Ångström.
+    @param n_slices_per_atom Number of slices per atom (resolution).
     @param n_threads Number of threads to use for parallel computations 
     (only leads to performance improvement for largish objects, see 
     manual). Program has to be compiled with `-DPTHREADS` for this option
@@ -87,7 +87,7 @@ int freesasa_lee_richards(double* sasa,
                           const freesasa_coord *c,
                           const double *radii,
                           double probe_radius,
-                          double grid,
+                          int n_slices_per_atom,
                           int n_threads);
 
 
