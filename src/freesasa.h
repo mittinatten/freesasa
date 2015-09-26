@@ -212,7 +212,7 @@ typedef struct {
     freesasa_algorithm alg;       //!< Algorithm
     double probe_radius;          //!< Probe radius (in Ångström)
     int shrake_rupley_n_points;   //!< Number of test points in S&R calculation
-    double lee_richards_n_slices; //!< Number of slices per atom in L&R calculation
+    int lee_richards_n_slices;    //!< Number of slices per atom in L&R calculation
     int n_threads;                //!< Number of threads to use, if compiled with thread-support
 } freesasa_parameters;
 

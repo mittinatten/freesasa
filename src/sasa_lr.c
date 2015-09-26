@@ -76,7 +76,6 @@ init_lr(double *sasa,
         int n_slices_per_atom)
 {
     const int n_atoms = freesasa_coord_n(xyz);
-    const double *v = freesasa_coord_all(xyz);
     lr_data* lr = malloc(sizeof(lr_data));
     double *radii = malloc(sizeof(double)*n_atoms);
     if (!lr || !radii) { free(lr); free(radii); mem_fail(); return NULL;}

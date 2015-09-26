@@ -95,7 +95,6 @@ init_sr(sr_data* sr_p,
         int n_points)
 {
     int n_atoms = freesasa_coord_n(xyz);
-    const double *tp;
     freesasa_coord *srp = test_points(n_points);
 
     if (srp == NULL) return freesasa_fail(__func__);
