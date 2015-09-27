@@ -25,14 +25,15 @@
 
 %\hrule
 \begin{abstract}
-FreeSASA is a C library and command line tool for calculating
-Solvent Accessible Surface Area (SASA), released under the
-\href{http://www.gnu.org/licenses/gpl.html}{GNU General Public License
-  3}~\cite{GPL}. It implements the classic algorithms by Lee and
-Richards and by Shrake and Rupley. The source code is freely available
-at \url{http://mittinatten.github.io/freesasa/}. The functionality is
-not new, but to the author's knowledge this is the only available
-freestanding tool released under an open source license.
+FreeSASA is a C library and command line tool for calculating the
+solvent accessible surface area (SASA) of protein structures, released
+under the \href{http://www.gnu.org/licenses/gpl.html}{GNU General
+  Public License 3}~\cite{GPL}. It implements the approximations by
+Lee and Richards and by Shrake and Rupley. The source code is freely
+available at \url{http://mittinatten.github.io/freesasa/}. The
+functionality is not new, but to the author's knowledge this is the
+only available freestanding tool released under an open source
+license.
 \end{abstract}
 
 \section{Introduction}
@@ -56,12 +57,11 @@ Lee \& Richards~\cite{LnR} (freely available to academic
 users). Another well-known program is
 \href{http://swift.cmbi.ru.nl/gv/dssp/}{DSSP} which calculates
 accessible surface areas in addition to its secondary structure
-assignments~\cite{DSSP} (using the approximation algorithm by Shrake
-\& Rupley~\cite{SnR}, available as open source). Some simulation
-packages also include tools to calculate SASA. Gromacs for example has
-an efficient implementation of the Shrake \& Rupley
-algorithm~\cite{DCLM} (open source). In addition, there are some web
-services available, for example
+assignments~\cite{DSSP} (using Shrake \& Rupley~\cite{SnR} algorithm,
+available as open source). Some simulation packages also include tools
+to calculate SASA. Gromacs for example has an efficient implementation
+of the Shrake \& Rupley algorithm~\cite{DCLM} (open source). In
+addition, there are some web services available, for example
 \href{http://curie.utmb.edu/getarea.html}{Getarea}~\cite{GetAreaURL}
 which calculates the surface analytically~\cite{Getarea}. But, to the
 author's knowledge there are no fully open source, standalone
@@ -80,10 +80,8 @@ calculation as a purely mathematical operation on a set of spheres, by
 providing arbitrary coordinates and atomic radii. Both Lee \&
 Richards' \cite{LnR} and Shrake \& Rupley's \cite{SnR} approximations
 can be used. They will be referred to as L\&R and S\&R throughout this
-document. In the current implementation S\&R is the more efficient,
-and therefore recommended for most applications. The library only
-relies on standard C libraries, and should therefore be
-straightforward to compile and install on most platforms.
+document. The library only relies on standard C libraries, and should
+therefore be straightforward to compile and install on most platforms.
 
 In constructing the library three possible use cases were considered. 
 \begin{enumerate}
@@ -114,38 +112,22 @@ Or, from \verb|stdin|:
     $ freesasa < PDB-file    
 \end{verbatim}
 \verb|stdin| is only read if no file is specified. By default the
-Shrake \& Rupley algorithm is used, with 100 test points. Running the
-program using the default parameters on the PDB structure 1UBQ gives
-the following output
-\begin{verbatim}
-   name: 1ubq.pdb
-   n_atoms: 602
-   algorithm: Shrake & Rupley
-   probe-radius: 1.400000 A
-   n_thread: 1
-   n_testpoint: 100
-   
-   Total:    4756.12 A2
-   Polar:    1968.06 A2
-   Apolar:   2788.07 A2
-\end{verbatim}
-The first 5 lines contain info about input and parameters. Finally the
-result of the calculation is printed, with SASA values in Å$^2$.
+Shrake \& Rupley algorithm is used, with 100 test points. 
 
 As an illustration of a few of the configuration options, the command
 \begin{verbatim}
    $ freesasa -L -d 0.1 -B -l PDB-file
 \end{verbatim}
 calculates the SASA of the supplied PDB-file using Lee \& Richards
-(\verb|-L|), with a slice width of 0.1 Å (\verb|-d 0.1|). The flag
+(\verb|-L|), with a slice width of 0.1\,Å (\verb|-d 0.1|). The flag
 \verb|-l| suppresses the regular log message. The output will instead,
-because of the flag \verb|-B|, be the provided PDB-file with the SASA of each
-atom replacing the temperature factors, and the atomic radii stored in
-the occupancy factor field. The program can thus be used as a PDB-file
-filter. If a file-name is provided by the option \verb|--B-value-file|
-the output will be written to that file instead. The command
-\verb|freesasa -h| prints a help message listing all available
-options.
+because of the flag \verb|-B|, be the provided PDB-file with the SASA
+of each atom replacing the temperature factors, and the atomic radii
+stored in the occupancy factor field. The program can thus be used as
+a PDB-file filter. If a file-name is provided by the option
+\verb|--B-value-file| the output will be written to that file
+instead. The command \verb|freesasa -h| prints a help message listing
+all available options.
 
 The program classifies each atom and assigns it an atomic radius
 accordingly, based on the PDB input, but users can also provide their
@@ -169,60 +151,44 @@ by one (the default is to only use the first model).
 
 \section{Application programming interface}\label{sec:api}
 
-The code-listing below shows the minimal program \verb|example.c|,
-which performs a SASA-calculation using a PDB-file as input, but
-without error handling and using default parameters. The three points
-were null pointers are passed as arguments are places were
-user-defined parameters and atomic classifiers could have been
-provided. The source code for the CLI, in the file \verb|main.c|,
-illustrates full-fledged use of most parts of the API including error
-checking and customization. The example here is meant to illustrate
-the most basic mechanics of the library. See the reference manual at
-\url{http://mittinatten.github.io/freesasa/doxygen/} for information
-about error-reporting and customization.
-
+The code-snippet below performs a SASA-calculation using a PDB-file as
+input using default parameters (it is included in the repository as
+\verb|example.c|).
+\begin{small}
 \begin{verbatim}
-#include <stdlib.h>
-#include <stdio.h>
-#include "freesasa.h"
-
-int main(int argc, char **argv) {
     freesasa_result* result;
     freesasa_strvp *class_area;
     freesasa_structure *structure;
     double *radii;
 
-    /* Read structure from stdin */
+    // Read PDB structure from stdin
     structure = freesasa_structure_from_pdb(stdin,0);
 
-    /* Calculate radii for the atoms based on structure.  NULL means
-       default classifier. */
-    radii = freesasa_structure_radius(structure,NULL);
+    // Calculate radii for the atoms based on structure using default classifier
+    radii = freesasa_structure_radius(structure, NULL);
 
-    /* Calculate SASA using structure and radii, store in
-       'result'. NULL means default parameters. */
-    result = freesasa_calc_structure(structure,radii,NULL);
+    // Calculate SASA using structure and radii using default parameters
+    result = freesasa_calc_structure(structure, radii, NULL);
     
-    /* Calculate area of classes (Polar/Apolar/..) using default
-       classifier */
-    class_area = freesasa_result_classify(result,structure,NULL);
+    // Calculate area of classes (Polar/Apolar/..) using default classifier
+    class_area = freesasa_result_classify(result, structure, NULL);
 
-    /* Print results */
     printf("Total area: %f A2\n",result->total);
-    for (int i = 0; i < class_area->n; ++i)
-        printf("%s: %f A2\n",class_area->string[i],
+    for (int i = 0; i < class_area->n; ++i) {
+        printf("%s: %f A2\n", class_area->string[i],
                class_area->value[i]);
-
-    /* Free allocated resources, not strictly necessary in this
-       context */
-    freesasa_strvp_free(class_area);
-    freesasa_result_free(result);
-    free(radii);
-    freesasa_structure_free(structure);
-
-    return EXIT_SUCCESS;
-}
+    }
 \end{verbatim}
+\end{small}
+The three points were null pointers are passed as arguments are places
+were user-defined parameters and atomic classifiers could have been
+provided. In all the above function calls, if there had been an error,
+an error message would have been printed and a null pointer
+returned. The source code for the CLI, in the file \verb|main.c|,
+illustrates full-fledged use of most parts of the API including error
+checking and customization.  See the reference manual at
+\url{http://mittinatten.github.io/freesasa/doxygen/} for more
+information.
 
 \section{Algorithms}\label{sec:algorithm}
 
@@ -236,29 +202,18 @@ precision by refining the resolution of both.
 Both algorithms are pretty straightforward to implement, and both
 require determining which atoms are in contact. Finding contacts can
 be done efficiently using Verlet lists~\cite{Verlet}, which means the
-calculation time of adjacency lists is $O(N)$. There is a slight
-overhead in generating the lists, which means that for small proteins
-the calculations are slower than in a na\"{i}ve $O(N^2)$
-implementation. The gains are however significant for large
-proteins. Both algorithms then treat each atom independently, making
-also the second part of the calculation $O(N)$. In addition, this
-second part is trivially parallelizable.
+calculation time of adjacency lists is $O(N)$. Both algorithms then
+treat each atom independently, making also the second part of the
+calculation $O(N)$. In addition, this second part is trivially
+parallelizable.
 
-The correctness of the implementations was tested by comparing with
-analytical results for the two atom case, and by performing high
-precision SASA calculations using the two independent algorithms for a
-number of proteins (see section \ref{sec:performance}) and comparing
-the results. In addition, the calculated surface test points and slice
-contours were inspected visually.
-
-As will be clear from this section and the analysis in section
-\ref{sec:performance}, S\&R is the simpler and faster of the
-two. Therefore the casual user is recommended to use S\&R. L\&R is
-mainly included for reference, and for the fact that the precision is
-only limited by floating point precision. In the current
-implementation S\&R can only be used with a predefined set of levels
-of precision. However, it is not obvious what applications would
-require very high precision SASA values.
+The correctness of the implementations was tested by first inspecting
+the surfaces visually and comparing with analytical results for the
+two atom case. Another verification came from comparing the results of
+high precision SASA calculations using the two independent algorithms
+(see section \ref{sec:performance}. In addition, using the L\&R
+algorithm gives identical results to NACCESS when the same resolution
+and atomic radii are used.
 
 In describing the details of the algorithms we will use the following
 notation: An atom $i$ has a van der Waals radius $r_i$, the rolling
@@ -274,17 +229,16 @@ of the extended spheres.
 Lee \& Richards' algorithm calculates the surface area by slicing the
 protein, calculating the length of the solvent exposed contours in
 each slice and then adding up the length multiplied by the slice
-thickness. Precision is increased by making the slices thinner and the
-calculation time scales approximately as the number of slices.
+thickness. 
 
-Divide the protein into slices of thickness $\delta$ along an
-arbitrary axis. The position of the middle of the slice along that
-axis is denoted $z$, as in figure~\ref{fig:slice}. The center of atom
-$i$, along the same axis, is at $z_i$. In the slice, each atom is thus
-a circle of radius 
+Divide atom $i$ into $n$ slices, orthogonal to an arbitrary axis, of
+thickness $\delta = 2R_i/n$. The position of the middle of the slice
+along that axis is denoted $z$, as in figure~\ref{fig:slice}, and the
+center of atom $i$, along the same axis, is at $z_i$. In each slice,
+the atom is thus a circle of radius
 \begin{equation}R_i^\prime = \sqrt{R_i^2-(z-z_i)^2}\,.\end{equation}
-These circles are either completely buried, completely exposed, or
-partially exposed.
+These circles are either completely buried inside neighboring atoms,
+completely exposed, or partially exposed.
 
 \begin{figure}
 \includegraphics{fig/lnr_slice}
@@ -304,61 +258,46 @@ $i$ that is buried due to circle $j$ is
   \bigl[({R_i^\prime}^2_{\,} + d_{ij}^2 - {R_{j}^\prime}^2_{\,})/(2R_i^\prime
   d_{ij})\bigr].
 \end{equation}
-The middle point of the arc on the circle is at an angle $\beta$ in
-circle $i$, and thus the arc spans the interval
-$[\beta-\alpha/2,\beta+\alpha/2]$ on the circle. By adding up these
-arcs and taking into account any overlap between them we get the total
-buried angle $\gamma_i$ of circle $i$. The exposed arc angle for atom
-$i$ in this slice is thus $2\pi-\gamma_i$ and the contribution to the
-total SASA
+If the middle point of this arc on the circle is at an angle $\beta$,
+the arc spans the interval $[\beta-\alpha/2,\beta+\alpha/2]$. By
+adding up these arcs and taking into account any overlap between them
+we get the total buried angle $\gamma$ in this slices. The exposed
+arc angle for this atom and slice is thus $2\pi-\gamma$ and the
+total SASA of that atom
 \begin{equation}\label{eq:LR_SASA}
-  A_z =\!\!  \sum_{i \in \text{slice}(z)} \!\! 
-    \left[2\pi-\gamma_i(z)\right]\delta R_i\,.
+  A_i =R_i \delta \sum_{s\in\text{slices}}
+    \left[2\pi-\gamma_s\right]\,.
 \end{equation}
 The angle is multiplied by $R_i$ (not $R_i^\prime$) to give the area
 of a conical frustum circumscribing the sphere at the slice. Finally,
-the total area $A$ is the sum of all $A_z$.
+the total area $A$ is the sum of all $A_i$.
 
 In FreeSASA, the L\&R SASA calculation begins by finding overlapping
 spheres and storing the contacts in an adjacency list. It then
 iterates through all the slices of each atom and checks for overlap
 with adjacent atoms in each slice, and adds up the exposed arcs to
-calculate the atom's contribution to the SASA of the slice.
-
-As we will see in section \ref{sec:performance}, this algorithm is
-significantly slower than S\&R. Calculation times are very close to
-those of the program NACCESS~\cite{NACCESS}, indicating that it will
-be challenging to implement L\&R much faster. The calculations of each
-slice are completely independent and the current implementation allows
-division of labor to an arbitrary number of threads, whereas the
+calculate the atom's contribution to the SASA of the slice. The
+calculations for each atom are completely independent and can thus be
+parallelized over an arbitrary number of threads, whereas the
 calculation of adjacency lists has not been parallelized.
 
 \subsection{S\&R}
 
 Shrake \& Rupley's algorithm uses test points on a sphere to estimate
-what parts of an atom are exposed. For each atom $i$, use a set of
-test points evenly distributed (approximately) over the sphere of
-radius $R_i$, and count how many of the test points are not inside any
-other sphere. The number of exposed test points divided by the total
-number of test points gives the exposed solid angle of that atom. The
-precision of the algorithm is increased by increasing the number of
-test points, and calculation time scales approximately linearly with
-the number of test points.
-
-Test points in FreeSASA were generated by placing a given number of
-equally charged particles on the surface of a sphere and then
-minimizing the potential energy of the set of particles using a simple
-Monte Carlo simulation. The obtained sets of test-points are then
-stored as static arrays in a dedicated source file (\texttt{srp.c}),
-to make the program independent of any auxiliary input files. Sets
-containing 20, 50, 100, 200, 500, 1000, 2000 and 5000 test points are
-included in the program. This set should cover most users' need for
-speed and accuracy. One potential speed-up of this implementation, at
-least in the high accuracy limit, would be to include a grid for the
-test points as well, as in the double cubic lattice
-method~\cite{DCLM}.
+what parts of an atom are exposed. Test points are generated on the
+fly as a fibonacci grid~\cite{FibonacciGrid}.  For each atom $i$, use
+a set of test points evenly distributed (approximately) over the
+sphere of radius $R_i$, and count how many of the test points are not
+inside any other sphere. The number of exposed test points divided by
+the total number of test points gives the exposed solid angle of that
+atom. The precision of the algorithm is increased by increasing the
+number of test points, and calculation time scales approximately
+linearly with the number of test points.  One potential speed-up of
+this implementation, at least in the high accuracy limit, would be to
+include a grid for the test points as well, as in the double cubic
+lattice method~\cite{DCLM}.
  
-\section{Performance}\label{sec:performance}
+\section{Performance and precision}\label{sec:performance}
 
 To compare the computational efficiency of the two algorithms, the
 most restrictive set of PDB files was downloaded from
@@ -382,19 +321,6 @@ studied here, using more than two threads only gives a limited
 improvement~\cite{4cores}.
 \begin{figure}
   \begin{center}
-  \includegraphics{fig/scaling}
-  \caption{Calculation time as function of number of atoms for
-    different levels of precision. In all cases, calculation time
-    scales linearly ($O(N)$) with the number of atoms. The reason for
-    the deviation for the smallest structure in some cases is unknown,
-    but it is probably due to some discrete effect such as the program
-    becoming small enough to fit into a cache of the specific
-    processor used.
-    \label{fig:scaling}}
-  \end{center}
-\end{figure}
-\begin{figure}
-  \begin{center}
   \includegraphics{fig/threads} 
   \caption{Comparison of calculation time with one, two and four
     threads, the histograms shows the distribution of the calculation
@@ -410,29 +336,38 @@ $S_\text{ref}$ was calculated using L\&R with slice thickness
 $0.001\,\mathrm{\AA}$. The error of a given SASA-value, $S$ is then
 $\epsilon = \lvert S - S_\text{ref} \rvert / N$, where $N$ is the
 number of atoms in the protein. Figure~\ref{fig:precision} shows the
-results of these calculations for the 88 proteins described above.  It
-is clear from this picture that S\&R is on average an order of
-magnitude more accurate than L\&R given the same computational effort.
-The value $0.25\,\mathrm{\AA}$ for example is close to the default
-accuracy of NACCESS~\cite{NACCESS,NACCESSParam}, but order of
-magnitude better accuracy can be achieved using S\&R with 500
-test-points, with the same calculation time.
+results of these calculations for the 88 proteins described above.
 
 \begin{figure}
   \begin{center}
-  \includegraphics{fig/precision}
-  \caption{The error $\epsilon$ in calculated SASA vs calculation time
-    $t$ for the two algorithms. For the different S\&R calculations
-    20, 50, 100, 200, 500, 1000, 2000 and 5000 test points were
-    used. For L\&R slice thicknesses 0.01, 0.025, 0.5, 0.1, 0.25, and
-    0.5~Å. The error bars indicate the 10th and 90th percentiles,
-    i.e.\ $80\,\%$ of the values are within the error bars along both axes.
+    \includegraphics{fig/precision}
+    \caption{The error $\epsilon$ in calculated SASA vs calculation
+      time $t$ for the two algorithms and the programs POPS, NACCESS
+      and DSSP. Labels indicate the precision used for each set of
+      calculations (when available). The error bars indicate the 10th
+      and 90th percentiles, i.e.\ $80\,\%$ of the values are within
+      the error bars along both axes.  For the different S\&R
+      calculations 20, 50, 100, 200, 500, 1000, 2000 and 5000 test
+      points were used. For L\&R 5, 10, 20, 50, 100 and 200 slices per
+      atom. A L\&R run with 1000 slices was used as reference to
+      calculate the errors for both. The two points for POPS
+      correspond to POPS-A and POPS-R, the large variation in
+      computation time is because this algorithm is $O(N^2)$ in the
+      number of atoms. NACCESS uses L\&R and was run with the three
+      values of the z-parameter (0.1, 0.05 and 0.01, corresponding to
+      10, 20 and 100 slices per atom~\cite{NACCESSParam}). A NACCESS
+      run with z-parameter 0.005 was used as reference for both POPS
+      and NACCESS. DSSP uses L\&R with 200 test points. SASA is only
+      one of several calculations done by this program, explaining why
+      it is significantly slower than FreeSASA with the same
+      settings. FreeSASA L\&R with 1000 slices and the atomic radii
+      taken from DSSP was used as reference to calculate errors here.
     \label{fig:precision}}
   \end{center}
 \end{figure}
 
 \begin{small}
-
+  
 \begin{thebibliography}{50}
 
 \bibitem{GPL}
@@ -483,6 +418,10 @@ test-points, with the same calculation time.
   Fluids. I. Thermodynamical Properties of Lennard-Jones
   Molecules. Physical Review 159: 98--103.
 
+\bibitem{FibonacciGrid} Swinbank R, Purser JR (2006) Fibonacci grids:
+  A novel approach to global modelling. Quarterly Journal of the Royal
+  Meteorological Society 132: 1769--1793.
+
 \bibitem{PISCES}
   Wang G, Dunbrack RL (2003) PISCES: a protein sequence culling server. 
   Bioinformatics 19:1589--1591.
@@ -494,9 +433,9 @@ test-points, with the same calculation time.
   threads.
 
 \bibitem{NACCESSParam} The parameter $z$ in NACCESS is multiplied by
-  the atomic diameter to get the slice width. The default $z=0.05$
-  thus gives a slice width of $0.28 - 0.32\,\mathrm{\AA}$ depending on
-  the atom type.
+  the atomic diameter to get the slice width (i.e. $1/z$ gives the
+  number of slices). The default $z=0.05$ thus gives a slice width of
+  $0.28 - 0.32\,\mathrm{\AA}$ depending on the atom type.
 
 \end{thebibliography}
 
