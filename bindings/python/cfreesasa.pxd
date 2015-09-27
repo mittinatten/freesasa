@@ -31,7 +31,7 @@ cdef extern from "freesasa.h":
         freesasa_algorithm alg
         double probe_radius
         int shrake_rupley_n_points
-        double lee_richards_delta
+        int lee_richards_n_slices
         int n_threads
 
     ctypedef struct freesasa_result:

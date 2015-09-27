@@ -423,6 +423,7 @@ int main (int argc, char **argv)
             if (input != NULL) {
                 run_analysis(input,argv[i]);
                 fclose(input);
+                printf("\n");
             } else {
                 abort_msg("Opening file '%s'; %s\n",argv[i],strerror(errno));
             }
