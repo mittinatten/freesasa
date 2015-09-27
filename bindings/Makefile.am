@@ -14,6 +14,10 @@ pylib: $(cython_src) $(top_srcdir)/src/freesasa.h $(top_srcdir)/src/libfreesasa.
 	@cd $(top_srcdir)/bindings/python/; \
 		@PYTHON@ setup.py build_ext --inplace 
 
+install-exec-hook:
+	@cd $(top_srcdir)/bindings/python/; \
+		@PYTHON@ setup.py install
+
 $(python_bindings): pylib
 
 all-local: $(python_bindings)
