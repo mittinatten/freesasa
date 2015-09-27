@@ -74,9 +74,10 @@ help(void)
             "  -p <value>  --probe-radius=<value>\n"
             "                        Probe radius [default: %4.2f Å]\n"
             "  -n <value>  --resolution=<value>\n"
-            "                        Number of test points in Shrake & Rupley algorithm, [default: %d] or\n"
-            "                        number of slices per atom in Lee & Richards algorithm. [default: %d]"
-            "                        Depending on which is selected.\n",
+            "                        Either: \n"
+            "                        - Number of test points in Shrake & Rupley algorithm, [default: %d] or\n"
+            "                        - number of slices per atom in Lee & Richards algorithm. [default: %d]\n"
+            "                        depending on which is selected.\n",
             FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_SR_N,FREESASA_DEF_LR_N);
 #ifdef HAVE_LIBPTHREAD
     fprintf(stderr,
@@ -105,8 +106,8 @@ help(void)
             "  -l (--no-log)         Don't print log message (useful with -r -R and -B)\n"
             "  -w (--no-warnings)    Don't print warnings (will still print warnings due to invalid command\n"
             "                        line options)\n\n"
-            "  -r  --per-residue-type --per-residue-type-file <output-file>\n"
-            "  -R  --per-sequence --per-sequence-file <output-file>\n"
+            "  -r  --foreach-residue-type --residue-type-file <output-file>\n"
+            "  -R  --foreach-residue --residue-file <output-file>\n"
             "                        Print SASA for each residue, either grouped by type or sequentially.\n"
             "                        Use the -file variant to specify an output file.\n\n"
             "  -B  --print-as-B-values --B-value-file <output-file>\n"
@@ -190,6 +191,7 @@ const char *name)
         }
         n = n2;
     }
+
     for (int i = 0; i < n; ++i) {
         if (structures[i] == NULL) abort_msg("Invalid input.\n");
         radii = freesasa_structure_radius(structures[i],classifier);
@@ -252,7 +254,7 @@ void add_chain_groups(const char* cmd)
         ++n_chain_groups;
         chain_groups = realloc(chain_groups,sizeof(char*)*n_chain_groups);
         chain_groups[n_chain_groups-1] = strdup(token);
-        token = strtok(0,",");
+        token = strtok(0,"+");
     }
     free(str);
 }
@@ -287,8 +289,8 @@ int main (int argc, char **argv)
         {"separate-models",no_argument, 0, 'M'},
         {"join-models",no_argument, 0, 'm'},
         {"config-file",required_argument,0,'c'},
-        {"per-residue-type",no_argument,0,'r'},
-        {"per-sequence",no_argument,0,'R'},
+        {"foreach-residue-type",no_argument,0,'r'},
+        {"foreach-residue",no_argument,0,'R'},
         {"print-as-B-values",no_argument,0,'B'},
         {"chain-groups",required_argument,0,'g'},
         {"per-residue-type-file",required_argument,&option_flag,RES_FILE},
