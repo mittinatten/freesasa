@@ -1,6 +1,8 @@
 FreeSASA
 =======
 
+[![DOI](https://zenodo.org/badge/18467/mittinatten/freesasa.svg)](https://zenodo.org/badge/latestdoi/18467/mittinatten/freesasa)
+
 C-library for calculating Solvent Accessible Surface Areas.
 
 License: GPLv3 (see file COPYING). Copyright: Simon Mitternacht 2013-2015.
