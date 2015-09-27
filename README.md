@@ -75,13 +75,10 @@ The configuration script can be customized with
 Documentation
 -------------
 
-A regular build generates a manual (in 
-[doc/manual.pdf](http://mittinatten.github.io/freesasa/manual.pdf)) with 
-examples and explanation of how to use the commandline tool and the API, 
-and a
-[full reference manual](http://mittinatten.github.io/freesasa/doxygen/)
-can be built using Doxygen (if available). Both are also available from 
-the GitHub-pages at http://mittinatten.github.io/freesasa/. 
+Enabling Doxygen builds a [full reference
+manual](http://mittinatten.github.io/freesasa/doxygen/), documenting
+both CLI and API, also available from the GitHub-pages at
+http://mittinatten.github.io/freesasa/.
 
 After building the package, calling
 
