@@ -6,7 +6,9 @@ fig_pdf = $(subst .eps,.pdf,$(fig_eps))
 CLEANFILES =
 ALLFILES =
 
-EXTRA_DIST = $(manual) doxy_main.md GPL.md README.md doxygen-footer.html doxygen-header.html
+EXTRA_DIST = $(manual) doxy_main.md GPL.md README.md \
+	doxygen-footer.html doxygen-header.html \
+	prepareHTML.pl HOWTO_BUILD_WEBPAGES
 
 if HAVE_LATEX
 
