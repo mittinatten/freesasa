@@ -22,7 +22,7 @@
 #include "freesasa.h"
 
 int main(int argc, char **argv) {
-    freesasa_result* result;
+    freesasa_result *result;
     freesasa_strvp *class_area;
     freesasa_structure *structure;
     double *radii;
