@@ -23,7 +23,7 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(p.algorithm() == d['algorithm'])
         self.assertTrue(p.probeRadius() == d['probe-radius'])
         self.assertTrue(p.nPoints() == d['n-points'])
-        self.assertTrue(p.delta() == d['delta'])
+        self.assertTrue(p.nSlices() == d['n-slices'])
         self.assertTrue(p.nThreads() == d['n-threads'])
 
         p.setAlgorithm(ShrakeRupley)
@@ -38,11 +38,11 @@ class FreeSASATestCase(unittest.TestCase):
 
         p.setNPoints(20)
         self.assertTrue(p.nPoints() == 20)
-        self.assertRaises(AssertionError,lambda: p.setNPoints(21))
+        self.assertRaises(AssertionError,lambda: p.setNPoints(0))
 
-        p.setDelta(0.5)
-        self.assertTrue(p.delta() == 0.5)
-        self.assertRaises(AssertionError,lambda: p.setDelta(-0.5))
+        p.setNSlices(10)
+        self.assertTrue(p.nSlices() == 10)
+        self.assertRaises(AssertionError,lambda: p.setNSlices(0))
 
         p.setNThreads(2)
         self.assertTrue(p.nThreads() == 2)
@@ -184,7 +184,7 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(len(ss) == 1)
         self.assertTrue(ss[0].nAtoms() == 602)
         result = calc(ss[0])
-        self.assertTrue(math.fabs(result.totalArea() - 4759.86096) < 1e-5)
+        self.assertTrue(math.fabs(result.totalArea() - 4779.5109924) < 1e-5)
 
         # Test exceptions
         setVerbosity(silent)
@@ -197,31 +197,31 @@ class FreeSASATestCase(unittest.TestCase):
         # test default settings
         structure = Structure("data/1ubq.pdb")
         result = calc(structure)
-        self.assertTrue(math.fabs(result.totalArea() - 4759.86096) < 1e-5)
+        self.assertTrue(math.fabs(result.totalArea() - 4779.5109924) < 1e-5)
         sasa_classes = classifyResults(result,structure)
-        self.assertTrue(math.fabs(sasa_classes['Polar'] - 2232.23039) < 1e-5)
-        self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2527.63057) < 1e-5)
+        self.assertTrue(math.fabs(sasa_classes['Polar'] - 2236.9298941) < 1e-5)
+        self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2542.5810983) < 1e-5)
 
         # test L&R
         result = calc(structure,Parameters({'algorithm' : LeeRichards, 'delta' : 0.25}))
         sasa_classes = classifyResults(result,structure)
-        self.assertTrue(math.fabs(result.totalArea() - 4728.26159) < 1e-5)
-        self.assertTrue(math.fabs(sasa_classes['Polar'] - 2211.41649) < 1e-5)
-        self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2516.84510) < 1e-5)
+        self.assertTrue(math.fabs(result.totalArea() - 4759.46651) < 1e-5)
+        self.assertTrue(math.fabs(sasa_classes['Polar'] - 2226.83182) < 1e-5)
+        self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2532.63469) < 1e-5)
 
         # test extending Classifier with derived class
         sasa_classes = classifyResults(result,structure,DerivedClassifier())
-        self.assertTrue(math.fabs(sasa_classes['bla'] - 4728.26159) < 1e-5)
+        self.assertTrue(math.fabs(sasa_classes['bla'] - 4759.46651) < 1e-5)
         
         ## test calculating with user-defined classifier ##
         classifier = Classifier("data/naccess.config")
         # classifier passed to assign user-defined radii, could also have used setRadiiWithClassifier()
         structure = Structure("data/1ubq.pdb",classifier) 
         result = calc(structure)
-        self.assertTrue(math.fabs(result.totalArea() - 4777.39) < 0.1)
+        self.assertTrue(math.fabs(result.totalArea() - 4823.29) < 0.1)
         sasa_classes = classifyResults(result,structure,classifier) # classifier passed to get user-classes
-        self.assertTrue(math.fabs(sasa_classes['polar'] - 2361.92) < 0.1)
-        self.assertTrue(math.fabs(sasa_classes['apolar'] - 2415.47) < 0.1)
+        self.assertTrue(math.fabs(sasa_classes['polar'] - 2360.52) < 0.1)
+        self.assertTrue(math.fabs(sasa_classes['apolar'] - 2462.77) < 0.1)
         
 
 if __name__ == '__main__':

@@ -1,12 +1,315 @@
 freesasa
 ========
 
-These pages document the public API of FreeSASA found in the header
-[freesasa.h](freesasa_8h.html). This is the only header installed by
-`make install`. The other source-files and headers in the repository
-are for internal use, but are also thoroughly documented in the source
-itself.
+These pages document the 
+    
+  - @ref CLI
+  - @ref API
+  - @ref Config-file.
 
 The library is licensed under [GPLv3](GPL.md).
 
 Installation instructions can be found in the [README](README.md) file.
+
+@page CLI Command-line Interface
+
+Building FreeSASA creates the binary `freesasa`, which is installed by
+`make install`. Calling
+
+    $ freesasa -h
+
+displays a help message listing all options. The following text
+explains how to use most of them.
+
+@section Default Run using defaults
+
+In the following we will use the PDB structure 1UBQ as
+an example. To run a simple SASA calculation using default parameters,
+simply type:
+
+    $ freesasa 1ubq.pdb
+
+This generates the following output
+
+    name: 1ubq.pdb
+    n_atoms: 602
+    algorithm: Shrake & Rupley
+    probe-radius: 1.400000 A
+    n_thread: 2
+    n_testpoint: 100
+
+       Total:   4779.51 A2
+       Polar:   2236.93 A2
+      Apolar:   2542.58 A2
+     Nucleic:      0.00 A2
+     Unknown:      0.00 A2
+
+The results are all in the unit Ångström-squared. 
+
+@section parameters Changing parameters
+
+If higher precision is needed, the command
+
+    $ freesasa -n 1000 1ubq.pdb
+
+specifies that the calculation should use 1000 test points instead of
+the default 100. The command
+
+    $ freesasa --lee-richards -n 200 --probe-radius 1.2 --n-threads 4 1ubq.pdb
+
+instead calculates the SASA using Lee & Richards algorithm with 200
+slices per atom, a probe radius of 1.2 Å, using 4 parallel threads to
+speed things up.
+
+If the user wants to use their own atomic radii the command 
+
+    $ freesasa --config-file file
+
+Reads a configuration from a file and uses it to assign atomic
+radii. The program will halt if it encounters atoms in the PDB input
+that are not present in the configuration. See @ref Config-file for
+instructions how to write a configuration.
+
+@section Output Other output types
+
+If one wants to calculate the SASA of each residue in
+the sequence, or each residue type
+    
+    $ freesasa --foreach-residue --no-log 1ubq.pdb
+    $ freesasa --foreach-residue-type --no-log 1ubq.pdb
+
+prints 
+
+    SEQ: A    1 MET   55.99
+    SEQ: A    2 GLN   72.16
+    SEQ: A    3 ILE    0.00
+    ...
+
+and
+
+    RES: ALA    122.87
+    RES: ARG    531.77
+    RES: ASN    160.57
+    ...
+
+to stdout respectively (`--no-log` suppresses the standard log
+message). If one prefers writing each to separate files, the options
+`--residue-file` and `--residue-type-file` can be used to specify
+this.
+
+@section PDB-filter Run as PDB filter
+
+The command-line interface can also be used as a PDB filter:
+
+    $ cat 1ubq.pdb | freesasa --no-log --print-as-B-values 
+
+prints a PDB-file where the temperature factors have been replaced by
+SASA values, and occupancy numbers by the radius of each atom:
+
+    ATOM      1  N   MET A   1      27.340  24.430   2.614  1.55 15.31
+    ATOM      2  CA  MET A   1      26.266  25.413   2.842  2.00 20.34
+    ATOM      3  C   MET A   1      26.913  26.639   3.531  1.55  0.00
+    ...
+
+Only the atoms and models used in the calculation will be present in
+the output (see @ref Input for how to modify this).
+
+@section Input PDB input
+
+@subsection Hetatom-hydrogen Including extra atoms
+
+The user can ask to include hydrogen atoms and HETATM entries in the
+calculation using the options `--hydrogen` and `--hetatm`. The default
+radius of a hydrogen atom is 0, so including hydrogens will only make
+sense if the user has also provided a config-file to specify a
+hydrogen radius. By default the program tries to guess the radius of a
+HETATM entry, but will halt if the element is not recognized. 
+
+@subsection Chains-models Separating and joining chains and models
+
+If a PDB file has several chains and/or models, by default all chains
+of the first model are used, and the rest of the file is ignored. This
+behavior can be modified using the following options 
+
+  - `--join-models`: Joins all models in the input into one large
+    structure. Useful for biological assembly files were different
+    locations of the same chain in the oligomer are represented by
+    different MODEL entries.
+
+  - `--separate-models`: Calculate SASA separately for each model in
+    the input. Useful when the same file contains several
+    conformations of the same molecule.
+
+  - `--separate-chains`: Calculate SASA separately for each chain in
+    the input. Can be joined with `--separate-models` to calculate
+    SASA of each chain in each model.
+
+  - `--chain-groups`: Define groups of chains that should be treated
+    as separate entities, can be repeated. If we for example have a
+    tetramer with chains ABCD and want to know how much surface was
+    buried when the dimers AB and CD was joined, we can use the option
+    `--chain-groups=AB+CD`. The output will contain the SASA for the
+    full molecule and one entry for each of the pairs of chains AB and
+    CD. Can not be combined with `--separate-chains`.
+
+@page API FreeSASA API
+
+@section Basic-API Basics
+
+The API is found in the header [freesasa.h](freesasa_8h.html) and is
+the only header installed by `make install`. The other source-files
+and headers in the repository are for internal use, but are also
+thoroughly documented in the source itself.
+
+To calculate the SASA of a structure, there are two options:
+
+1. Initialize a structure from a PDB-file, calculate a radius for each atom 
+    and then run the calculation.
+
+2. Provide an array of cartesian coordinates and an array containing
+   the radii of the corresponding atoms to freesasa_calc_coord().
+
+@subsection API-PDB Calculate SASA for a PDB file
+
+~~~{.c}
+    freesasa_result *result;
+    freesasa_strvp *class_area;
+    freesasa_structure *structure;
+    double *radii;
+
+     /* Read structure from stdin */
+    structure = freesasa_structure_from_pdb(stdin,0);
+
+    /* Calculate radii for the atoms based on structure. NULL means
+       default classifier. */
+    radii = freesasa_structure_radius(structure,NULL);
+
+    /* Calculate SASA using structure and radii, store in
+       'result'. NULL means default parameters. */
+    result = freesasa_calc_structure(structure,radii,NULL);
+    
+    /* Calculate area of classes (Polar/Apolar/..) using default
+       classifier */
+    class_area = freesasa_result_classify(result,structure,NULL);
+
+    /* Print results */
+    printf("Total area: %f A2\n",result->total);
+    for (int i = 0; i < class_area->n; ++i)
+        printf("%s: %f A2\n",class_area->string[i],
+               class_area->value[i]);
+~~~
+
+@subsection Coordinates
+
+If users wish to supply their own coordinates and radii, these are
+accepted as arrays of doubles passed to the function
+freesasa_calc_coord(). The coordinate-array should have size 3*n with
+coordinates in the order `x1,y1,z1,x2,y2,z2,...,xn,yn,zn`.
+
+@subsection Error-reporting 
+
+Errors due to user or system errors, such as malformatted
+config-files, I/O errors or memory allocation errors are reported
+through return values, either ::FREESASA_FAIL or ::FREESASA_WARN, or
+by NULL pointers, depending on the context. See the documentation for
+the individual functions.
+
+Errors that are attributable to programmers using the library, such as
+passing null pointers are checked by asserts.
+
+@subsection Thread-safety 
+
+The only global state the library stores is the verbosity level (set
+by freesasa_set_verbosity()). It should be clear from the
+documentation when the other functions have side effects such as
+memory allocation and I/O, and thread-safety should generally not be
+an issue (to the extent that your C library has threadsafe I/O and
+dynamic memory allocation). The SASA calculation itself can be
+parallelized by passing a ::freesasa_parameters struct with
+::freesasa_parameters.n_threads set to a value > 1 to
+freesasa_calc_pdb() or freesasa_calc_coord(). This only gives a
+significant effect on performance for large proteins, and because not
+all steps are parallelized it is not worth it to go beyond 2 threads.
+
+@section Customizing Customizing behavior
+
+The types ::freesasa_parameters and ::freesasa_classifier can be used
+to change the parameters of the calculations. Users who wish to use
+the defaults can pass NULL wherever pointers to these are requested.
+
+@subsection Parameters Parameters
+
+Changing parameters is done by passing a ::freesasa_parameters object
+with the desired values. It can be initialized to default by
+
+~~~{.c}
+freesasa_parameters p = freesasa_default_parameters;
+~~~
+
+To allow the user to only change the parameters that are non-default.
+
+@subsection Classification Specifying atomic radii and classes
+
+The type ::freesasa_classifier has function pointers to functions that
+take residue and atom names as argument (pairs such as "ALA"," CA "),
+and returns a radius or a class (polar, apolar, etc). The classifier
+can be passed to freesasa_structure_radius() to generate an array of
+atomic radii, which can then be used to calculate the SASA of the
+structure. It can also be used in freesasa_result_classify() to get
+the SASA integrated over the different classes of atoms, i.e. the SASA
+of all polar atoms, etc.
+
+Users of the API can provide their own classification by writing their
+own functions and providing them via a ::freesasa_classifier object. A
+classifier-configuration can also be read from a file using
+freesasa_classifier_from_file() (see @ref Config-file).
+
+The default classifier is available as a global const variable
+::freesasa_default_classifier. This uses the classes and radii,
+defined in the paper by Ooi et al.  ([PNAS 1987, 84:
+3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/)) for the
+standard amino acids and also for some capping groups (ACE/NH2) if
+HETATM fields are included when the PDB input is read. For other
+residues such as Nucleic Acids or nonstandard amino acids, or
+unrecognized HETATM entries the VdW radius of the element is
+used. Warnings are emitted in this case.
+
+
+@page Config-file Classifier configuration files
+
+The configuration files read by freesasa_classifier_from_file() should
+have two sections: `types:` and `atoms:`. A few example configurations 
+are available in the directory `share/`.
+
+The types-section defines what types of atoms are available
+(aliphatic, aromatic, hydroxyl, ...), what the radius of that type is
+and what class a type belongs to (polar, apolar, ...). The types are
+just shorthands to associate an atom with a given combination of class
+and radius. The user is free to define as many types and classes as
+necessary.
+
+The atoms-section consists of triplets of residue-name, atom-name (as
+in the corresponding PDB entries) and type. A prototype file would be
+
+~~~
+types:
+C_ALIPHATIC 2.00 apolar
+C_AROMATIC  1.75 apolar
+N 1.55 polar
+
+atoms:
+ANY N  N             
+ANY CA C_ALIPHATIC
+ANY CB C_ALIPHATIC
+
+ARG CG C_ALIPHATIC
+
+PRO CB C_AROMATIC  # overrides ANY CB
+~~~
+
+The residue type `ANY` can be used for atoms that are the same in all
+or most residues (such as backbone atoms). If there is an exception
+for a given amino acid this can be overridden as is shown for `PRO CB`
+in the example.
+
+

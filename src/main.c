@@ -30,7 +30,6 @@
 #endif
 
 #include "freesasa.h"
-#include "srp.h"
 
 #if STDC_HEADERS
 extern int getopt(int, char * const *, const char *);
@@ -60,7 +59,9 @@ int printpdb = 0;
 int n_chain_groups = 0;
 const char** chain_groups;
 
-void help() {
+void
+help(void)
+{
     fprintf(stderr,"\nUsage: %s [%s] pdb-file(s)\n",
             program_name,options_string);
     fprintf(stderr,"\n"
@@ -71,17 +72,13 @@ void help() {
             "  -L (--lee-richards)   Use Lee & Richards algorithm\n");
     fprintf(stderr,
             "  -p <value>  --probe-radius=<value>\n"
-            "                        Probe radius [default %4.2f Å]\n"
-            "  -d <value>  --lr-slice=<value>\n"
-            "                        Slice spacing in Lee & Richards algorithm \n"
-            "                        [default %4.2f Å].\n",
-            FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_LR_D);
-    fprintf(stderr,
-            "  -n <value>  --sr-points=<value>\n"
-            "                        Number of test points in Shrake & Rupley algorithm.\n"
-            "                        Default is %d, allowed values are:\n"
-            "                          ", FREESASA_DEF_SR_N);
-    freesasa_srp_print_n_opt(stderr);
+            "                        Probe radius [default: %4.2f Å]\n"
+            "  -n <value>  --resolution=<value>\n"
+            "                        Either: \n"
+            "                        - Number of test points in Shrake & Rupley algorithm, [default: %d] or\n"
+            "                        - number of slices per atom in Lee & Richards algorithm. [default: %d]\n"
+            "                        depending on which is selected.\n",
+            FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_SR_N,FREESASA_DEF_LR_N);
 #ifdef HAVE_LIBPTHREAD
     fprintf(stderr,
             "  -t <value>  --n-threads=<value>\n"
@@ -109,8 +106,8 @@ void help() {
             "  -l (--no-log)         Don't print log message (useful with -r -R and -B)\n"
             "  -w (--no-warnings)    Don't print warnings (will still print warnings due to invalid command\n"
             "                        line options)\n\n"
-            "  -r  --per-residue-type --per-residue-type-file <output-file>\n"
-            "  -R  --per-sequence --per-sequence-file <output-file>\n"
+            "  -r  --foreach-residue-type --residue-type-file <output-file>\n"
+            "  -R  --foreach-residue --residue-file <output-file>\n"
             "                        Print SASA for each residue, either grouped by type or sequentially.\n"
             "                        Use the -file variant to specify an output file.\n\n"
             "  -B  --print-as-B-values --B-value-file <output-file>\n"
@@ -126,12 +123,16 @@ void help() {
             program_name,program_name);
 }
 
-void short_help() {
+void
+short_help(void)
+{
     fprintf(stderr,"Run '%s -h' for usage instructions.\n",
             program_name);
 }
 
-void abort_msg(const char *format, ...)
+void
+abort_msg(const char *format,
+          ...)
 {
     va_list arg;
     va_start(arg, format);
@@ -146,7 +147,10 @@ void abort_msg(const char *format, ...)
 }
 
 
-void run_analysis(FILE *input, const char *name) {
+void
+run_analysis(FILE *input,
+const char *name) 
+{
     double *radii;
     int several_structures = 0, name_len = strlen(name);
     freesasa_result *result;
@@ -154,6 +158,7 @@ void run_analysis(FILE *input, const char *name) {
     freesasa_structure *single_structure[1];
     freesasa_structure **structures;
     int n = 0;
+
     if ((structure_options & FREESASA_SEPARATE_CHAINS) ||
         (structure_options & FREESASA_SEPARATE_MODELS)) {
         structures = freesasa_structure_array(input,&n,structure_options);
@@ -186,14 +191,15 @@ void run_analysis(FILE *input, const char *name) {
         }
         n = n2;
     }
+
     for (int i = 0; i < n; ++i) {
         if (structures[i] == NULL) abort_msg("Invalid input.\n");
         radii = freesasa_structure_radius(structures[i],classifier);
         if (radii == NULL)         abort_msg("Can't calculate atomic radii.\n");
         result = freesasa_calc_structure(structures[i],radii,&parameters);
-        if (result == NULL)       abort_msg("Can't calculate SASA.\n");
+        if (result == NULL)        abort_msg("Can't calculate SASA.\n");
         classes = freesasa_result_classify(result,structures[i],classifier);
-        if (classes == NULL)      abort_msg("Can't determine atom classes. Aborting.\n");
+        if (classes == NULL)       abort_msg("Can't determine atom classes. Aborting.\n");
         if (printlog) {
             char name_i[name_len+10];
             strcpy(name_i,name);
@@ -225,7 +231,10 @@ void run_analysis(FILE *input, const char *name) {
     if (structures != single_structure) free(structures);
 }
 
-FILE* fopen_werr(const char* filename,const char* mode) {
+FILE*
+fopen_werr(const char* filename,
+           const char* mode) 
+{
     errno = 0;
     FILE *f = fopen(filename,mode);
     if (f == NULL) {
@@ -245,12 +254,13 @@ void add_chain_groups(const char* cmd)
         ++n_chain_groups;
         chain_groups = realloc(chain_groups,sizeof(char*)*n_chain_groups);
         chain_groups[n_chain_groups-1] = strdup(token);
-        token = strtok(0,",");
+        token = strtok(0,"+");
     }
     free(str);
 }
 
-int main (int argc, char **argv) {
+int main (int argc, char **argv) 
+{
     int alg_set = 0;
     FILE *input = NULL;
     char opt;
@@ -267,8 +277,7 @@ int main (int argc, char **argv) {
         {"lee-richards", no_argument, 0, 'L'},
         {"shrake-rupley", no_argument, 0, 'S'},
         {"probe-radius", required_argument, 0, 'p'},
-        {"lr-slice", required_argument, 0, 'd'},
-        {"sr-points", required_argument, 0, 'n'},
+        {"resolution", required_argument, 0, 'n'},
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'v'},
         {"no-log", no_argument, 0, 'l'},
@@ -280,15 +289,15 @@ int main (int argc, char **argv) {
         {"separate-models",no_argument, 0, 'M'},
         {"join-models",no_argument, 0, 'm'},
         {"config-file",required_argument,0,'c'},
-        {"per-residue-type",no_argument,0,'r'},
-        {"per-sequence",no_argument,0,'R'},
+        {"foreach-residue-type",no_argument,0,'r'},
+        {"foreach-residue",no_argument,0,'R'},
         {"print-as-B-values",no_argument,0,'B'},
         {"chain-groups",required_argument,0,'g'},
         {"per-residue-type-file",required_argument,&option_flag,RES_FILE},
         {"per-sequence-file",required_argument,&option_flag,SEQ_FILE},
         {"B-value-file",required_argument,&option_flag,B_FILE}
     };
-    options_string = ":hvlwLSHYCMmBrRc:n:d:t:p:g:";
+    options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:";
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
         opt_set[(int)opt] = 1;
@@ -340,6 +349,9 @@ int main (int argc, char **argv) {
         }
         case 'n':
             parameters.shrake_rupley_n_points = atoi(optarg);
+            parameters.lee_richards_n_slices = atoi(optarg);
+            if (parameters.shrake_rupley_n_points <= 0)
+                abort_msg("error: Resolution needs to be at least 1 (20 recommended minum for S&R, 5 for L&R).\n");
             break;
         case 'S':
             parameters.alg = FREESASA_SHRAKE_RUPLEY;
@@ -349,12 +361,10 @@ int main (int argc, char **argv) {
             parameters.alg = FREESASA_LEE_RICHARDS;
             ++alg_set;
             break;
-        case 'd':
-            parameters.lee_richards_delta = atof(optarg);
-            break;
         case 'p':
             parameters.probe_radius = atof(optarg);
-            if (parameters.probe_radius < 0) abort_msg("error: probe radius must be 0 or larger.\n");
+            if (parameters.probe_radius <= 0)
+                abort_msg("error: probe radius must be 0 or larger.\n");
             break;
         case 'H':
             structure_options |= FREESASA_INCLUDE_HETATM;
@@ -405,11 +415,6 @@ int main (int argc, char **argv) {
         }
     }
     if (alg_set > 1) abort_msg("Multiple algorithms specified.\n");
-    if ((opt_set['L'] && opt_set['n']) ||
-        (!opt_set['L'] && opt_set['d']) ) {
-        abort_msg("The program was given parameters not compatible with the selected "
-                  "algorithm. These will be ignored.\n");
-    }
     if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.\n");
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.\n");
     if (printlog) printf("## %s %s ##\n",program_name,version);
@@ -420,6 +425,7 @@ int main (int argc, char **argv) {
             if (input != NULL) {
                 run_analysis(input,argv[i]);
                 fclose(input);
+                printf("\n");
             } else {
                 abort_msg("Opening file '%s'; %s\n",argv[i],strerror(errno));
             }

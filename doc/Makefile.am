@@ -1,12 +1,14 @@
 SUBDIRS = fig
 manual = manual.tex
-fig_eps = fig/lnr_circles.eps fig/lnr_slice.eps fig/scaling.eps fig/precision.eps fig/threads.eps
+fig_eps = fig/lnr_circles.eps fig/lnr_slice.eps fig/precision.eps fig/threads.eps
 fig_pdf = $(subst .eps,.pdf,$(fig_eps))
 
 CLEANFILES =
 ALLFILES =
 
-EXTRA_DIST = $(manual) doxy_main.md GPL.md README.md doxygen-footer.html doxygen-header.html
+EXTRA_DIST = $(manual) doxy_main.md GPL.md README.md \
+	doxygen-footer.html doxygen-header.html \
+	prepareHTML.pl HOWTO_BUILD_WEBPAGES
 
 if HAVE_LATEX
 
@@ -40,18 +42,41 @@ ps-local: manual.ps
 pdf-local: manual.pdf
 ALLFILES += manual.dvi manual.ps manual.pdf
 
-else
+if BUILD_HTML_MANUAL
+
+manual.xml: $(srcdir)/$(manual) $(fig_eps)
+	latexml --quiet $< > manual.xml
+
+html/manual.html: manual.xml
+	cd html; latexmlpost ../manual.xml  --format=html5 --destination=tmp.html --nodefaultresources --navigationtoc=context 
+	perl prepareHTML.pl html/tmp.html > $@
+	rm html/tmp.html html/LaTeXML.*
+
+html-local: html/manual.html
+
+ALLFILES += html/manual.html
+CLEANFILES += manual.xml
+
+else # BUILD_HTML_MANUAL
+
+html-local:
+	@echo latexml not available, html manual will not be built.
+
+endif # BUILD_HTML_MANUAL
+
+else # HAVE_LATEX
 nolatex:
-	@echo LaTex disabled, run configure script with option --enable-latex to enable
+	@echo LaTeX disabled, run configure script with option --enable-latex to enable
 dvi-local: nolatex
 ps-local: nolatex
 pdf-local: nolatex
 
-endif
+
+endif # HAVE_LATEX
 
 if HAVE_DOXYGEN
 
-doxyfile.stamp: $(top_srcdir)/src/*.h doxy_main.md $(top_srcdir)/README.md Doxyfile \
+doxyfile.stamp: $(top_srcdir)/src/freesasa.h doxy_main.md $(top_srcdir)/README.md Doxyfile \
 	doxygen-footer.html doxygen-header.html
 	@if [ ! -d "html/" ]; then mkdir html; fi
 	$(DOXYGEN) Doxyfile
@@ -75,4 +100,5 @@ endif
 clean-local:
 	rm -f *.ps *.dvi *.aux *.log *.pdf *.toc *~ 
 	rm -rf html/doxygen
+	rm -rf html/fig
 

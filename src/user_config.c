@@ -365,7 +365,7 @@ read_types(struct user_types *types,
            struct file_interval fi)
 {
     char *line = NULL;
-    int ret, nl = FREESASA_SUCCESS;
+    int ret = FREESASA_SUCCESS, nl;
     size_t blen=101;
     char buf[blen];
     fseek(input,fi.begin,SEEK_SET);
@@ -485,7 +485,7 @@ read_atoms(struct user_config *config,
 {
     size_t blen=100;
     char *line = NULL, buf[blen];
-    int ret, nl;
+    int ret = FREESASA_SUCCESS, nl;
     fseek(input, fi.begin, SEEK_SET);
     // read command (and discard)
     fscanf(input, "%s", buf);

@@ -5,7 +5,6 @@
 #include <classify.c>
 #include <sasa_lr.c>
 #include <sasa_sr.c>
-#include <srp.c>
 #include <coord.c>
 #include <pdb.c>
 #include <util.c>

@@ -29,132 +29,11 @@
 
     @section The FreeSASA API
 
-    The header @ref freesasa.h contains the public API of FreeSASA and
-    is the only header installed by the `make install` target. It
-    provides the functions and data types necessary to perfrom and
-    analyze a SASA calculation, including facilities to customize
-    assignment of radii to, and classification of atoms. There are
-    also functions to access properties of a structure, to allow
-    refined analysis of the results.
-
-    @subsection Customizing Customizing behavior
-
-    The types ::freesasa_parameters and ::freesasa_classifier can be
-    used to change the parameters of the calculations. Users who wish
-    to use the defaults can pass NULL wherever pointers to these are
-    requested.
-
-    @subsubsection Parameters Parameters
-
-    Changing parameters is done by passing a ::freesasa_parameters
-    object with the desired values. It can be initialized to default
-    by
-
-    ~~~{.c}
-    freesasa_parameters p = freesasa_default_parameters;
-    ~~~
-
-    To allow the user to only change the parameters that are
-    non-default.
-
-    @subsubsection Classification Specifying atomic radii and classes
-
-    The type ::freesasa_classifier has function pointers to functions
-    that take residue and atom names as argument (pairs such as
-    "ALA"," CA "), and returns a radius or a class (polar, apolar,
-    etc). The classifier can be passed to freesasa_structure_radius()
-    to generate an array of atomic radii, which can then be used to
-    calculate the SASA of the structure. It can also be used in
-    freesasa_result_classify() to get the SASA integrated over the
-    different classes of atoms, i.e. the SASA of all polar atoms, etc.
-
-    Users of the API can provide their own classification by writing
-    their own functions and providing them via a ::freesasa_classifier
-    object. A classifier-configuration can also be read from a file
-    using freesasa_classifier_from_file() (see @ref Config-file).
-
-    The default classifier is available as a global const variable
-    ::freesasa_default_classifier. This uses the classes and radii,
-    defined in the paper by Ooi et al.  ([PNAS 1987, 84:
-    3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/)) for
-    the standard amino acids and also for some capping groups
-    (ACE/NH2) if HETATM fields are included when the PDB input is
-    read. For other residues such as Nucleic Acids or nonstandard
-    amino acids, or unrecognized HETATM entries the VdW radius of
-    the element is used. Warnings are emitted in this case.
-
-    @subsection Coordinates
-
-    If users wish to supply their own coordinates and radii, these are
-    accepted as arrays of doubles passed to the function
-    freesasa_calc_coord(). The coordinate-array should have size 3*n
-    with coordinates in the order `x1,y1,z1,x2,y2,z2,...,xn,yn,zn`.
-
-    @subsection Error-reporting 
-
-    Errors due to user or system errors, such as malformatted
-    config-files, I/O errors or memory allocation errors are reported
-    through return values, either ::FREESASA_FAIL or ::FREESASA_WARN,
-    or by NULL pointers, depending on the context. See the
-    documentation for the individual functions.
-
-    Errors that are attributable to programmers using the library,
-    such as passing null pointers are checked by asserts.
-
-    @subsection Thread-safety 
-    
-    The only global state the library stores is the verbosity level
-    (set by freesasa_set_verbosity()). It should be clear from the
-    documentation when the other functions have side effects such as
-    memory allocation and I/O, and thread-safety should generally not
-    be an issue (to the extent that your C library has threadsafe I/O
-    and dynamic memory allocation). The SASA calculation itself can be
-    parallelized by passing a ::freesasa_parameters struct with
-    ::freesasa_parameters.n_threads set to a value > 1 to
-    freesasa_calc_pdb() or freesasa_calc_coord(). This only gives a
-    significant effect on performance for large proteins, and because
-    not all steps are parallelized it is not worth it going beyond 2
-    threads.
- */
-
-/**
-    @page Config-file Classifier configuration files
-
-    The configuration files read by freesasa_classifier_from_file()
-    should have two sections: `types:` and `atoms:`.
-
-    The types-section defines what types of atoms are available
-    (aliphatic, aromatic, hydroxyl, ...), what the radius of that type
-    is and what class a type belongs to (polar, apolar, ...). The
-    types are just shorthands to associate an atom with a given
-    combination of class and radius. The user is free to define as
-    many types and classes as necessary.
-
-    The atoms-section consists of triplets of residue-name, atom-name
-    (as in the corresponding PDB entries) and type. A prototype file
-    would be
-
-       ~~~
-       types:
-       C_ALIPHATIC 2.00 apolar
-       C_AROMATIC  1.75 apolar
-       N 1.55 polar
-
-       # this is a comment
-
-       atoms:
-       ANY N  N             # this is also a comment
-       ANY CB C_ALIPHATIC
-
-       ARG CG C_ALIPHATIC
-
-       PRO CB C_AROMATIC
-       ~~~
-
-    The residue type `ANY` can be used for atoms that are the same in
-    all or most residues (such as backbone atoms). If there is an
-    exception for a given amino acid this can be overridden as is
-    shown for `PRO CB` in the example.
+    This header provides the functions and data types necessary to
+    perfrom and analyze a SASA calculation using FreeSASA, including
+    facilities to customize assignment of radii to, and classification
+    of, atoms. There are also functions to access properties of a
+    structure, to allow refined analysis of the results.
  */
 
 #include <stdio.h>
@@ -186,9 +65,9 @@ typedef enum {
 } freesasa_class;
 
 // Default parameters
-#define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångström) @ingroup API
-#define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R @ingroup API
-#define FREESASA_DEF_LR_D 0.25 //!< Default slice width in L&R (in Ångström) @ingroup API
+#define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångström)
+#define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R
+#define FREESASA_DEF_LR_N 20 //!< Default number of slices per atom  in L&R
 #ifdef HAVE_LIBPTHREAD
 #define FREESASA_DEF_NUMBER_THREADS 2 //!< Default number of threads
 #else
@@ -196,9 +75,9 @@ typedef enum {
 #endif
 
 // Important that success is 0 and failure is non-zero, don't change
-#define FREESASA_SUCCESS 0 //!< All is ok @ingroup API
-#define FREESASA_FAIL -1 //!< Something went seriously wrong. @ingroup API
-#define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful @ingroup API
+#define FREESASA_SUCCESS 0 //!< All is ok
+#define FREESASA_FAIL -1 //!< Something went seriously wrong. 
+#define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful.
 
 // Parameters for reading structure from PDB
 #define FREESASA_INCLUDE_HETATM 1 //!< Include HETATM entries
@@ -209,11 +88,11 @@ typedef enum {
 
 //! Struct to store parameters for SASA calculation @ingroup API
 typedef struct {
-    freesasa_algorithm alg;     //!< Algorithm
-    double probe_radius;        //!< Probe radius (in Ångström)
-    int shrake_rupley_n_points; //!< Number of test points in S&R calculation
-    double lee_richards_delta;  //!< Slice width in L&R calculation (in Ångström)
-    int n_threads;              //!< Number of threads to use, if compiled with thread-support
+    freesasa_algorithm alg;       //!< Algorithm
+    double probe_radius;          //!< Probe radius (in Ångström)
+    int shrake_rupley_n_points;   //!< Number of test points in S&R calculation
+    int lee_richards_n_slices;    //!< Number of slices per atom in L&R calculation
+    int n_threads;                //!< Number of threads to use, if compiled with thread-support
 } freesasa_parameters;
 
 //! Struct to store results of SASA calculation @ingroup API

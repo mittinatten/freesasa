@@ -13,7 +13,7 @@ A minimal program would be something like
 See documentation of the classes and functions for how to customize behavior
 
 
-The private methods _assign_ptr allow access to the C structs that
+The private methods _get_address allow access to the C structs that
 these classes are wrapping, which are necessary in the functions
 calc() and classifyResults(). They are not intended to be used outside
 of this module.
@@ -44,8 +44,8 @@ defaultParameters = {'algorithm' : ShrakeRupley, #freesasa_default_parameters.al
                      'probe-radius' : freesasa_default_parameters.probe_radius,
                      'n-points' :
                        freesasa_default_parameters.shrake_rupley_n_points,
-                     'delta' :
-                       freesasa_default_parameters.lee_richards_delta,
+                     'n-slices' :
+                       freesasa_default_parameters.lee_richards_n_slices,
                      'n-threads' : freesasa_default_parameters.n_threads }
 """The default values for calculation parameters"""
 
@@ -72,7 +72,7 @@ cdef class Parameters:
                   if 'algorithm' in param:    self.setAlgorithm(param['algorithm'])
                   if 'probe-radius' in param: self.setProbeRadius(param['probe-radius'])
                   if 'n-points' in param:     self.setNPoints(param['n-points'])
-                  if 'delta' in param:        self.setDelta(param['delta'])
+                  if 'n-slices' in param:     self.setNSlices(param['n-slices'])
                   if 'n-threads' in param:    self.setNThreads(param['n-threads'])
 
       def setAlgorithm(self,alg):
@@ -130,12 +130,11 @@ cdef class Parameters:
             Set number of test points in Shrake & Rupley algorithm.
 
             Args:
-                n (int): Number of points. Must be one of 20, 50, 100, 200, 
-                  500, 1000, 2000 or 5000.
+                n (int): Number of points (> 0). 
             Raises:
-                AssertionError: n invalid.
+                AssertionError: n <= 0.
             """
-            assert(n in [20,50,100,200,500,1000,2000,5000])
+            assert(n > 0)
             self._c_param.shrake_rupley_n_points = n
 
       def nPoints(self):
@@ -147,26 +146,26 @@ cdef class Parameters:
             """
             return self._c_param.shrake_rupley_n_points
 
-      def setDelta(self,delta):
+      def setNSlices(self,n):
             """
-            Set the value of delta in Lee & Richards algorithm.
+            Set the number of slices per atom in Lee & Richards algorithm.
 
             Args:
-                delta: Value of delta
+                n: Number of slices (> 0)
             Raises:
-                AssertionError: delta must be > 0
+                AssertionError: n <= 0
             """
-            assert(delta > 0)
-            self._c_param.lee_richards_delta = delta
+            assert(n> 0)
+            self._c_param.lee_richards_n_slices = n
 
-      def delta(self):
+      def nSlices(self):
             """
-            Get the value of delta in Lee & Richards algorithm.
+            Get the number of slices per atom in Lee & Richards algorithm.
 
             Returns:
-                Value of delta.
+                Number of slices.
             """
-            return self._c_param.lee_richards_delta
+            return self._c_param.lee_richards_n_slices
 
       def setNThreads(self,n):
             """

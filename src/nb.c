@@ -28,8 +28,6 @@
 #define NB_CHUNK 32
 #endif
 
-typedef struct freesasa_nb_element freesasa_nb_element;
-
 typedef struct cell cell;
 struct cell {
     cell *nb[17]; //! includes self, only forward neighbors
@@ -53,8 +51,9 @@ extern int freesasa_fail(const char *format, ...);
 extern int freesasa_warn(const char *format, ...);
 
 //! Finds the bounds of the cell list and writes them to the provided cell list
-static void cell_list_bounds(cell_list *c, 
-                             const freesasa_coord *coord)
+static void
+cell_list_bounds(cell_list *c, 
+                 const freesasa_coord *coord)
 {
     const int n = freesasa_coord_n(coord);
     double d = c->d;
@@ -81,8 +80,11 @@ static void cell_list_bounds(cell_list *c,
     c->n = c->nx*c->ny*c->nz;
 }
 
-static inline int cell_index(const cell_list *c,
-                             int ix, int iy, int iz)
+static inline int
+cell_index(const cell_list *c,
+           int ix,
+           int iy,
+           int iz)
 {
     assert(ix >= 0 && ix < c->nx);
     assert(iy >= 0 && iy < c->ny);
@@ -90,8 +92,11 @@ static inline int cell_index(const cell_list *c,
 }
 
 //! Fill the neighbor list for a given cell, only "forward" neighbors considered
-static void fill_nb(cell_list *c,
-                    int ix, int iy, int iz)
+static void
+fill_nb(cell_list *c,
+        int ix,
+        int iy,
+        int iz)
 {
     cell *cell = &c->cell[cell_index(c,ix,iy,iz)];
     int n = 0;
@@ -119,7 +124,8 @@ static void fill_nb(cell_list *c,
 }
 
 //! find neighbors to all cells
-static void get_nb(cell_list *c)
+static void
+get_nb(cell_list *c)
 {
     for (int ix = 0; ix < c->nx; ++ix) {
         for (int iy = 0; iy < c->ny; ++iy) {
@@ -131,7 +137,9 @@ static void get_nb(cell_list *c)
 }
 
 //! Get the cell index of a given atom
-static int coord2cell_index(const cell_list *c, const double *xyz)
+static int
+coord2cell_index(const cell_list *c,
+                 const double *xyz)
 {
     double d = c->d;
     int ix = (int)((xyz[0] - c->x_min)/d);
@@ -144,7 +152,9 @@ static int coord2cell_index(const cell_list *c, const double *xyz)
    Assigns cells to each coordinate. Returns FREESASA_FAIL if realloc
    fails, FREESASA_SUCCESS else.
  */
-static int fill_cells(cell_list *c, const freesasa_coord *coord)
+static int
+fill_cells(cell_list *c,
+           const freesasa_coord *coord)
 {
     for (int i = 0; i < c->n; ++i) {
         c->cell[i].n_atoms = 0;
@@ -162,7 +172,8 @@ static int fill_cells(cell_list *c, const freesasa_coord *coord)
 }
 
 //! Frees an object created by cell_list_new().
-static void cell_list_free(cell_list *c)
+static void
+cell_list_free(cell_list *c)
 {
     if (c) {
         for (int i = 0; i < c->n; ++i) free(c->cell[i].atom);
@@ -178,8 +189,9 @@ static void cell_list_free(cell_list *c)
     
     Returns NULL if there are malloc fails.
  */
-static cell_list* cell_list_new(double cell_size,
-                                const freesasa_coord *coord)
+static cell_list*
+cell_list_new(double cell_size,
+              const freesasa_coord *coord)
 {
     assert(cell_size > 0);
     assert(coord);
@@ -208,7 +220,9 @@ static cell_list* cell_list_new(double cell_size,
 }
 
 //! assumes max value in a is positive
-static double max_array(const double *a,int n)
+static double
+max_array(const double *a,
+          int n)
 {
     double max = 0;
     for (int i = 0; i < n; ++i) {
@@ -221,7 +235,8 @@ static double max_array(const double *a,int n)
     Allocate memory for ::freesasa_nb object. Tries to free everything
     and returns NULL if malloc somewhere along the way.
  */
-static freesasa_nb *freesasa_nb_alloc(int n)
+static freesasa_nb*
+freesasa_nb_alloc(int n)
 {
     assert(n > 0);
     freesasa_nb *nb = malloc(sizeof(freesasa_nb));
@@ -272,7 +287,8 @@ static freesasa_nb *freesasa_nb_alloc(int n)
     return nb;
 }
 
-void freesasa_nb_free(freesasa_nb *nb)
+void
+freesasa_nb_free(freesasa_nb *nb)
 {
     int n;
     if (nb != NULL) {
@@ -295,7 +311,9 @@ void freesasa_nb_free(freesasa_nb *nb)
     Increases sizes of arrays when they cross a threshold. Returns
     FREESASA_FAIL if realloc fails, FREESASA_SUCCESS else
  */
-static int chunk_up(freesasa_nb *nb_list, int i)
+static int
+chunk_up(freesasa_nb *nb_list,
+         int i)
 {
     int nni = nb_list->nn[i];
     int **nbi = &nb_list->nb[i];
@@ -324,8 +342,12 @@ static int chunk_up(freesasa_nb *nb_list, int i)
     Returns FREESASA_FAIL if can't allocate memory. FREESASA_SUCCESS
     else.
 */
-static int nb_add_pair(freesasa_nb *nb_list,int i, int j,
-                       double dx, double dy)
+static int
+nb_add_pair(freesasa_nb *nb_list,
+            int i,
+            int j,
+            double dx,
+            double dy)
 {
     assert(i != j);
 
@@ -362,11 +384,12 @@ static int nb_add_pair(freesasa_nb *nb_list,int i, int j,
     belonging to the cells ci and cj. Handles the case ci == cj
     correctly.
 */
-static int nb_calc_cell_pair(freesasa_nb *nb_list,
-                              const freesasa_coord* coord,
-                              const double *radii,
-                              const cell *ci,
-                              const cell *cj)
+static int 
+nb_calc_cell_pair(freesasa_nb *nb_list,
+                  const freesasa_coord* coord,
+                  const double *radii,
+                  const cell *ci,
+                  const cell *cj)
 {
     const double *v = freesasa_coord_all(coord);
     double ri, rj, xi, yi, zi, xj, yj, zj,
@@ -405,10 +428,11 @@ static int nb_calc_cell_pair(freesasa_nb *nb_list,
     Iterates through the cells and records all contacts in the
     provided nb list
  */
-static int nb_fill_list(freesasa_nb *nb_list,
-                         cell_list *c,
-                         const freesasa_coord *coord,
-                         const double *radii)
+static int
+nb_fill_list(freesasa_nb *nb_list,
+             cell_list *c,
+             const freesasa_coord *coord,
+             const double *radii)
 {
     int nc = c->n;
     for (int ic = 0; ic < nc; ++ic) {
@@ -422,8 +446,9 @@ static int nb_fill_list(freesasa_nb *nb_list,
     return FREESASA_SUCCESS;
 }
 
-freesasa_nb *freesasa_nb_new(const freesasa_coord* coord,
-                             const double *radii)
+freesasa_nb*
+freesasa_nb_new(const freesasa_coord* coord,
+                const double *radii)
 {
     if (coord == NULL || radii == NULL) return NULL;
     double cell_size;
@@ -456,8 +481,10 @@ freesasa_nb *freesasa_nb_new(const freesasa_coord* coord,
     return nb;
 }
 
-int freesasa_nb_contact(const freesasa_nb *nb,
-                        int i, int j)
+int 
+freesasa_nb_contact(const freesasa_nb *nb,
+                    int i,
+                    int j)
 {
     assert(nb != NULL);
     assert(i < nb->n && i >= 0);

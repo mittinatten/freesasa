@@ -2,9 +2,10 @@
 EXTRA_DIST = data test-cli.in run-test-cli whole_lib_one_file.c
 check_PROGRAMS =
 TESTS = 
+AM_CFLAGS =
 
 if COND_GCOV
-AM_CFLAGS = --coverage
+AM_CFLAGS += --coverage
 AM_LDFLAGS = -lgcov
 endif
 
@@ -19,8 +20,7 @@ libtest_SOURCES = libtest.c test_pdb.c test_freesasa.c test_structure.c \
 static_test_SOURCES = test_static.c
 broken_malloc_SOURCES = broken_malloc.c
 
-CFLAGS = -I$(top_srcdir)/src $(AM_CFLAGS) \
-	-DDATADIR=\"$(top_srcdir)/tests/data/\"
+AM_CFLAGS += -I$(top_srcdir)/src -DDATADIR=\"$(top_srcdir)/tests/data/\"
 
 LDADD = -lcheck
 libtest_LDADD = ../src/libfreesasa.a -lcheck

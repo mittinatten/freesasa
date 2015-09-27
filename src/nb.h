@@ -26,10 +26,10 @@
    @file
    @author Simon Mitternacht
    
-   Functions to compute neigbor lists. The function
+   Functions to compute neighbor lists. The function
    freesasa_nb_contact() is mainly intended for checking
    consitency, in performance-critical code it is advisible to use the
-   struct (as demonstrated by the
+   struct (as demonstrated in sasa_lr.c and sasa_sr.c).
  */
 
 //! Neighbor list
@@ -47,7 +47,7 @@ typedef struct {
     Creates a neigbor list based on a set of coordinates with
     corresponding sphere radii. 
 
-    Implemented using neigbor lists, giving O(N) performance. Should be
+    Implemented using Verlet lists, giving O(N) performance. Should be
     freed with freesasa_nb_free(). For efficient calculations
     using this list the members of the returned struct should be used
     directly and not freesasa_nb_contact().
@@ -58,25 +58,29 @@ typedef struct {
       if there were any problems constructing the list (see error
       messages).
  */
-freesasa_nb *freesasa_nb_new(const freesasa_coord *coord,
-                             const double *radii);
+freesasa_nb *
+freesasa_nb_new(const freesasa_coord *coord,
+                const double *radii);
 
 /**
     Frees a neigbor list created by freesasa_nb_new().
 
-    @param adj the neigbor list to free
+    @param nb The neigbor list to free
  */
-void freesasa_nb_free(freesasa_nb *adj);
+void
+freesasa_nb_free(freesasa_nb *nb);
 
 /**
     Checks if two atoms are in contact. Only included for reference.
 
-    @param adj the neigbor list
-    @param i index of first coordinate
-    @param j index of second coordinate
+    @param nb The neigbor list
+    @param i Index of first coordinate
+    @param j Index of second coordinate
     @return 1 if contact, 0 else.
  */
-int freesasa_nb_contact(const freesasa_nb *adj,
-                        int i, int j);
+int
+freesasa_nb_contact(const freesasa_nb *nb,
+                    int i,
+                    int j);
 
 #endif /* FREESASA_NB_H*/

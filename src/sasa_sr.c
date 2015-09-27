@@ -32,7 +32,6 @@
 
 #include "freesasa.h"
 #include "sasa.h"
-#include "srp.h"
 #include "nb.h"
 #include "util.h"
 
@@ -60,24 +59,45 @@ static void sr_do_threads(int n_threads, sr_data sr);
 static void *sr_thread(void *arg);
 #endif
 
-static double sr_atom_area(int i,const sr_data) __attrib_pure__;
+static double
+sr_atom_area(int i,const sr_data) __attrib_pure__;
 
-int init_sr(sr_data* sr_p,
-            double *sasa,
-            const freesasa_coord *xyz,
-            const double *r,
-            double probe_radius,
-            int n_points)
+static freesasa_coord*
+test_points(int N) 
+{
+    // Golden section spiral on a sphere
+    // from http://web.archive.org/web/20120421191837/http://www.cgafaq.info/wiki/Evenly_distributed_points_on_sphere
+    double dlong = M_PI*(3-sqrt(5)), dz = 2.0/N, longitude = 0, z = 1-dz/2, r;
+    freesasa_coord *coord = freesasa_coord_new();
+    double *tp = malloc(3*N*sizeof(double));
+    if (tp == NULL || coord == NULL) {mem_fail(); return NULL;}
+
+    for (double *p = tp; p-tp < 3*N; p += 3) {
+        r = sqrt(1-z*z);
+        p[0] = cos(longitude)*r;
+        p[1] = sin(longitude)*r;
+        p[2] = z;
+        z -= dz;
+        longitude += dlong;
+    }
+
+    if (freesasa_coord_append(coord,tp,N) == FREESASA_FAIL) {freesasa_fail(__func__); return NULL; }
+
+    return coord;
+}
+
+int
+init_sr(sr_data* sr_p,
+        double *sasa,
+        const freesasa_coord *xyz,
+        const double *r,
+        double probe_radius,
+        int n_points)
 {
     int n_atoms = freesasa_coord_n(xyz);
-    const double *srp_p;
-    freesasa_coord *srp;
+    freesasa_coord *srp = test_points(n_points);
 
-    // Initialize test-points
-    srp_p = freesasa_srp_get_points(n_points);
-    if (srp_p == NULL) return FREESASA_FAIL;
-    srp = freesasa_coord_new_linked(srp_p,n_points);
-    if (srp == NULL) return mem_fail();
+    if (srp == NULL) return freesasa_fail(__func__);
     
     //store parameters and reference arrays
     sr_data sr = {.n_atoms = n_atoms, .n_points = n_points,
@@ -102,19 +122,21 @@ int init_sr(sr_data* sr_p,
 }
 
 // free contents
-void release_sr(sr_data sr) 
+void
+release_sr(sr_data sr) 
 {
     freesasa_coord_free(sr.srp);
     freesasa_nb_free(sr.nb);
     free(sr.r);
 }
 
-int freesasa_shrake_rupley(double *sasa,
-                           const freesasa_coord *xyz,
-                           const double *r,
-                           double probe_radius,
-                           int n_points,
-                           int n_threads)
+int
+freesasa_shrake_rupley(double *sasa,
+                       const freesasa_coord *xyz,
+                       const double *r,
+                       double probe_radius,
+                       int n_points,
+                       int n_threads)
 {
     assert(sasa);
     assert(xyz);
@@ -152,7 +174,9 @@ int freesasa_shrake_rupley(double *sasa,
 }
 
 #if HAVE_LIBPTHREAD
-static void sr_do_threads(int n_threads, sr_data sr)
+static void
+sr_do_threads(int n_threads,
+              sr_data sr)
 {
     pthread_t thread[n_threads];
     sr_data srt[n_threads];
@@ -184,7 +208,8 @@ static void sr_do_threads(int n_threads, sr_data sr)
     }
 }
 
-static void *sr_thread(void* arg)
+static void*
+sr_thread(void* arg)
 {
     sr_data sr = *((sr_data*) arg);
     for (int i = sr.i1; i < sr.i2; ++i) {
@@ -195,7 +220,10 @@ static void *sr_thread(void* arg)
 }
 #endif
 
-static double sr_atom_area(int i, const sr_data sr) {
+static double
+sr_atom_area(int i,
+             const sr_data sr)
+{
     const int n_points = sr.n_points;
     /* this array keeps track of which testpoints belonging to
        a certain atom are inside other atoms */
