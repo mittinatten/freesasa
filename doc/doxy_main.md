@@ -4,9 +4,9 @@ FreeSASA
 These pages document the 
     
   - @ref CLI
-  - @ref API
+  - @ref API "FreeSASA C API"
+  - @ref Python "FreeSASA Python interface"
   - @ref Config-file
-  - @ref Python
 
 The library is licensed under [GPLv3](GPL.md).
 
@@ -172,29 +172,45 @@ To calculate the SASA of a structure, there are two options:
 
 @subsection API-PDB Calculate SASA for a PDB file
 
+The following explains how to use FreeSASA to calculate the SASA of a
+fictive PDB file (1abc.pdb). Possible errors are ignored for
+brevity. Default parameters are used at every step, the section @ref
+Customizing explains how to configure the calculations.
+
+Begin by opening a file and read a structure from it. The second
+argument, 0, indicates use default when selecting atoms, i.e. ignore
+Hydrogens and HETATMs, and only include the first MODEL if there are
+several.
+
 ~~~{.c}
-    freesasa_result *result;
-    freesasa_strvp *class_area;
-    freesasa_structure *structure;
-    double *radii;
+    FILE *fp = fopen("1abc.pdb");
+    freesasa_structure *structure = freesasa_structure_from_pdb(fp,0);
+~~~
 
-     /* Read structure from stdin */
-    structure = freesasa_structure_from_pdb(stdin,0);
+Calculate the atomic radii of that structure using the default classifier.
+The argument `NULL` here means use the default classifier. A custom classifier
+can be passed as a pointer to freesasa_classifier.
 
-    /* Calculate radii for the atoms based on structure. NULL means
-       default classifier. */
-    radii = freesasa_structure_radius(structure,NULL);
+~~~{.c}
+    double *radii = freesasa_structure_radius(structure,NULL);
+~~~
 
-    /* Calculate SASA using structure and radii, store in
-       'result'. NULL means default parameters. */
-    result = freesasa_calc_structure(structure,radii,NULL);
-    
-    /* Calculate area of classes (Polar/Apolar/..) using default
-       classifier */
-    class_area = freesasa_result_classify(result,structure,NULL);
+Calculate SASA using the structure and radii and print the total area. The
+argument `NULL` means use default parameters. User-defined parameters can be
+defined by passing a pointer to freesasa_parameters.
 
-    /* Print results */
+~~~{.c}
+    freesasa_result *result = freesasa_calc_structure(structure,radii,NULL);
     printf("Total area: %f A2\n",result->total);
+~~~
+
+Calculate area of classes (Polar/Apolar/..) and print their
+values. The argument `NULL` again means use the default classifier. The
+type freesasa_strvp stores pairs of strings and values, as
+demonstrated below.
+
+~~~{.c}
+    freesasa_strvp *class_area = freesasa_result_classify(result,structure,NULL);
     for (int i = 0; i < class_area->n; ++i)
         printf("%s: %f A2\n",class_area->string[i],
                class_area->value[i]);
@@ -228,7 +244,7 @@ an issue (to the extent that your C library has threadsafe I/O and
 dynamic memory allocation). The SASA calculation itself can be
 parallelized by passing a ::freesasa_parameters struct with
 ::freesasa_parameters.n_threads set to a value > 1 to
-freesasa_calc_pdb() or freesasa_calc_coord(). This only gives a
+freesasa_calc_structure() or freesasa_calc_coord(). This only gives a
 significant effect on performance for large proteins, and because not
 all steps are parallelized it is not worth it to go beyond 2 threads.
 
@@ -244,10 +260,19 @@ Changing parameters is done by passing a ::freesasa_parameters object
 with the desired values. It can be initialized to default by
 
 ~~~{.c}
-freesasa_parameters p = freesasa_default_parameters;
+freesasa_parameters param = freesasa_default_parameters;
 ~~~
 
 To allow the user to only change the parameters that are non-default.
+
+The following call would run a Lee & Richards calculation with 200
+slices per atom
+
+~~~{.c}
+param.alg = FREESASA_LEE_RICHARDS;
+param.lee_richards_n_slices = 200;
+freesasa_result *result = freesasa_calc_structure(structure,radii,param);
+~~~
 
 @subsection Classification Specifying atomic radii and classes
 
@@ -273,8 +298,9 @@ standard amino acids and also for some capping groups (ACE/NH2) if
 HETATM fields are included when the PDB input is read. For other
 residues such as Nucleic Acids or nonstandard amino acids, or
 unrecognized HETATM entries the VdW radius of the element is
-used. Warnings are emitted in this case.
-
+used. Warnings are emitted in the latter case. If the element can't be
+determined or is unknown, a negative radius is returned (this will
+make freesasa_structure_radius() return a NULL pointer).
 
 @page Config-file Classifier configuration files
 
@@ -373,18 +399,18 @@ import re
 
 class DerivedClassifier(Classifier):
     def classify(self,residueName,atomName):
-    if re.match('\s*N',atomName):
+        if re.match('\s*N',atomName):
             return 'Nitrogen'
         return 'Not-nitrogen'
 
     def radius(self,residueName,atomName):
-    if re.match('\s*N',atomName): # Nitrogen 
+        if re.match('\s*N',atomName): # Nitrogen 
             return 1.6
-    if re.match('\s*C',atomName): # Carbon
+        if re.match('\s*C',atomName): # Carbon
             return 1.7
-    if re.match('\s*O',atomName): # Oxygen
+        if re.match('\s*O',atomName): # Oxygen
             return 1.4
-    if re.match('\s*S',atomName): # Sulfur
+        if re.match('\s*S',atomName): # Sulfur
             return 1.8    
     return 0;                     # everything else (Hydrogen, etc)
 
