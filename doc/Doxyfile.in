@@ -238,7 +238,7 @@ OPTIMIZE_OUTPUT_VHDL   = NO
 # (default is Fortran), use: inc=Fortran f=C. Note that for custom extensions
 # you also need to set FILE_PATTERNS otherwise the files are not read by doxygen.
 
-EXTENSION_MAPPING      =
+EXTENSION_MAPPING      = pyx=Python
 
 # If you use STL classes (i.e. std::string, std::vector, etc.) but do not want
 # to include (a tag file for) the STL sources as input, then you should
@@ -630,6 +630,7 @@ WARN_LOGFILE           =
 INPUT                  = @top_srcdir@/src/freesasa.h
 INPUT                  += doxy_main.md
 INPUT                  += GPL.md README.md
+INPUT                  += @top_srcdir@/bindings/python/freesasa.pyx
 USE_MDFILE_AS_MAINPAGE = doxy_main.md
 
 # This tag can be used to specify the character encoding of the source files
@@ -648,7 +649,7 @@ INPUT_ENCODING         = UTF-8
 # *.hxx *.hpp *.h++ *.idl *.odl *.cs *.php *.php3 *.inc *.m *.mm *.dox *.py
 # *.f90 *.f *.for *.vhd *.vhdl
 
-FILE_PATTERNS          = *.h
+FILE_PATTERNS          = 
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories
 # should be searched for input files as well. Possible values are YES and NO.

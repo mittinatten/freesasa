@@ -1,11 +1,12 @@
-freesasa
+FreeSASA
 ========
 
 These pages document the 
     
   - @ref CLI
   - @ref API
-  - @ref Config-file.
+  - @ref Config-file
+  - @ref Python
 
 The library is licensed under [GPLv3](GPL.md).
 
@@ -313,3 +314,86 @@ for a given amino acid this can be overridden as is shown for `PRO CB`
 in the example.
 
 
+@page Python Python bindings
+
+If Python is enabled using 
+    
+    $ ./configure --enable-python-bindings`
+
+Cython is used to build Python bindings for FreeSASA, and `make
+install` will install them.
+
+Below follow some illustrations of how to use the package, see the
+@ref freesasa "package documentation" for details.
+
+@section Python-basics Basic calculations
+
+Using defaults everywhere a simple calculation can be carried out as
+follows (assuming the PDB structure 1UBQ is available)
+
+~~~{.py} 
+import freesasa
+
+structure = freesasa.Structure("1ubq.pdb")
+result = freesasa.calc(structure)
+area_classes = freesasa.classifyResults(result,structure)
+
+print "Total : %.2f A2" % result.totalArea()
+for key in area_classes:
+    print key, ": %.2f A2" % area_classes[key]
+~~~
+
+The following does a high precision L&R calculation
+
+~~~{.py}
+result = freesasa.calc(structure,
+                       freesasa.Parameters({'algorithm' : freesasa.LeeRichards,
+                                            'n-slices' : 100}))
+~~~
+
+@section Python-classification Customizing atom classification
+
+This uses the NACCESS parameters (the file 'naccess.config' is
+available in the share/ directory of the repository).
+
+~~~{.py}
+classifier = Classifier("naccess.config")
+structure = Structure("1ubq.pdb",classifier) 
+result = calc(structure)
+area_classes = freesasa.classifyResults(result,structure,classifier)
+~~~
+
+Classification can be customized also by extending the Classifier
+interface. The code below is an illustration of a classifier that
+classes Nitrogens separately, and assigns radii based on element only
+(and crudely).
+
+~~~{.py}
+import re
+
+class DerivedClassifier(Classifier):
+    def classify(self,residueName,atomName):
+    if re.match('\s*N',atomName):
+            return 'Nitrogen'
+        return 'Not-nitrogen'
+
+    def radius(self,residueName,atomName):
+    if re.match('\s*N',atomName): # Nitrogen                                                                                                          
+            return 1.6
+    if re.match('\s*C',atomName): # Carbon                                                                                                            
+            return 1.7
+    if re.match('\s*O',atomName): # Oxygen                                                                                                            
+            return 1.4
+    if re.match('\s*S',atomName): # Sulfur                                                                                                            
+            return 1.8
+        return 0; # everything else (Hydrogen, etc)                                                                                                       
+
+classifier = DerivedClassifier()
+
+# use the DerivedClassifier to calculate atom radii (will give same result as the default)
+structure = freesasa.Structure("1ubq.pdb",classifier)
+result = freesasa.calc(structure)
+
+# use the DerivedClassifier to classify atoms
+area_classes = freesasa.classifyResults(result,structure,classifier)
+~~~

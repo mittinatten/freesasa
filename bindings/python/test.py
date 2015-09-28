@@ -192,6 +192,10 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertRaises(AssertionError,lambda: structureArray(None))
         self.assertRaises(IOError,lambda: structureArray(""))
         self.assertRaises(Exception,lambda: structureArray("data/err.config"))
+        self.assertRaises(AssertionError,lambda: structureArray("data/2jo4.pdb",{'not-an-option' : True}))
+        self.assertRaises(AssertionError,
+                          lambda: structureArray("data/2jo4.pdb",
+                                                 {'not-an-option' : True, 'hydrogen' : True}))
         setVerbosity(normal)
 
     def testCalc(self):
