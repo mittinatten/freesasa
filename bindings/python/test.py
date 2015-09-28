@@ -7,13 +7,10 @@ from exceptions import Exception
 # this class tests using derived classes to create custom Classifiers
 class DerivedClassifier(Classifier):
     def classify(self,residueName,atomName):
-        return 0
+        return 'bla'
 
     def radius(self,residueName,atomName):
         return 10
-
-    def class2str(self,classIndex):
-        return "bla"
 
 class FreeSASATestCase(unittest.TestCase):
     def testParameters(self):
@@ -25,6 +22,9 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(p.nPoints() == d['n-points'])
         self.assertTrue(p.nSlices() == d['n-slices'])
         self.assertTrue(p.nThreads() == d['n-threads'])
+        self.assertRaises(AssertionError,lambda: Parameters({'not-an-option' : 1}));
+        self.assertRaises(AssertionError,lambda: Parameters({'n-slices' : 50, 'not-an-option' : 1}));
+        self.assertRaises(AssertionError,lambda: Parameters({'not-an-option' : 50, 'also-not-an-option' : 1}));
 
         p.setAlgorithm(ShrakeRupley)
         self.assertTrue(p.algorithm() == ShrakeRupley)
@@ -65,8 +65,8 @@ class FreeSASATestCase(unittest.TestCase):
         setVerbosity(normal)
 
         c = Classifier("data/test.config")
-        self.assertTrue(c.class2str(c.classify("AA","aa")) == "a")
-        self.assertTrue(c.class2str(c.classify("BB","bb")) == "b")
+        self.assertTrue(c.classify("AA","aa") == "a")
+        self.assertTrue(c.classify("BB","bb") == "b")
         self.assertTrue(c.radius("AA","aa") == 1.0)
         self.assertTrue(c.radius("BB","bb") == 2.0)
 
@@ -76,6 +76,7 @@ class FreeSASATestCase(unittest.TestCase):
         c = DerivedClassifier()
         self.assertTrue(c.radius("ALA"," CB ") == 10)
         self.assertTrue(c.radius("ABCDEFG","HIJKLMNO") == 10)
+        self.assertTrue(c.classify("ABCDEFG","HIJKLMNO") == "bla")
 
     def testStructure(self):
         self.assertRaises(IOError,lambda: Structure("xyz#$%"))
@@ -203,7 +204,7 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2542.5810983) < 1e-5)
 
         # test L&R
-        result = calc(structure,Parameters({'algorithm' : LeeRichards, 'delta' : 0.25}))
+        result = calc(structure,Parameters({'algorithm' : LeeRichards, 'n-slices' : 20}))
         sasa_classes = classifyResults(result,structure)
         self.assertTrue(math.fabs(result.totalArea() - 4759.46651) < 1e-5)
         self.assertTrue(math.fabs(sasa_classes['Polar'] - 2226.83182) < 1e-5)

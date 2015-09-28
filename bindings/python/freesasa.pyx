@@ -30,9 +30,9 @@ ShrakeRupley = 'ShrakeRupley'
 LeeRichards = 'LeeRichards'
 """string: Used to specify the algorithm by Lee & Richards"""
 
-polar = FREESASA_POLAR
+polar = 'Polar'
 
-apolar = FREESASA_APOLAR
+apolar = 'Apolar'
 
 silent = FREESASA_V_SILENT
 """int: Suppress all warnings and errors (used by setVerbosity*())"""
@@ -74,6 +74,12 @@ cdef class Parameters:
                   if 'n-points' in param:     self.setNPoints(param['n-points'])
                   if 'n-slices' in param:     self.setNSlices(param['n-slices'])
                   if 'n-threads' in param:    self.setNThreads(param['n-threads'])
+                  unknownKeys = []
+                  for key in param:
+                        if not key in defaultParameters:
+                              unknownKeys.append(key)
+                  if len(unknownKeys) > 0:
+                        raise AssertionError('Key(s): ',unknownKeys,', unknown');
 
       def setAlgorithm(self,alg):
             """
@@ -82,7 +88,7 @@ cdef class Parameters:
             Args:
                 alg (str): algorithm name, only allowed values are ShrakeRupley and LeeRichards
             Raises:
-                AssertionError: unknwon algorithm specified
+                AssertionError: unknown algorithm specified
             """
             if alg == ShrakeRupley:
                   self._c_param.alg = FREESASA_SHRAKE_RUPLEY
@@ -308,19 +314,19 @@ cdef class Classifier:
             Class of atom.
 
             Depending on the configuration these classes can be
-            anything, but typically they will be polar/apolar. The
-            return values are integers, to turn them into strings, use
-            class2str().
+            anything, but typically they will be 'polar' and 'apolar'.
 
             Args:
                 residueName (str): Residue name ("ALA","ARG",...).
                 atomName (str): Atom name (" CA "," C  ",...).
             Returns:
-                An integer representing the class.
+                A string describing the class
             """
             if self._c_classifier is not NULL:
-                  return self._c_classifier.sasa_class(residueName,atomName,self._c_classifier)
-            return freesasa_default_classifier.sasa_class(residueName,atomName,&freesasa_default_classifier)
+                  classIndex = self._c_classifier.sasa_class(residueName,atomName,self._c_classifier)
+                  return self._c_classifier.class2str(classIndex,self._c_classifier)
+            classIndex = freesasa_default_classifier.sasa_class(residueName,atomName,self._c_classifier)
+            return freesasa_default_classifier.class2str(classIndex,&freesasa_default_classifier)
 
       def radius(self,residueName,atomName):
             """
@@ -338,23 +344,6 @@ cdef class Classifier:
             if self._c_classifier is not NULL:
                   return self._c_classifier.radius(residueName,atomName,self._c_classifier)
             return freesasa_default_classifier.radius(residueName,atomName,&freesasa_default_classifier)
-
-      def class2str(self,classIndex):
-            """
-            Name of atom class.
-
-            Args:
-                classIndex: An integer representing a class, as returned 
-                    by classify().
-            Returns (str):
-                The name of the class
-            """
-            assert(classIndex >= 0)
-            if self._c_classifier is not NULL:
-                  assert(classIndex < self._c_classifier.n_classes)
-                  return self._c_classifier.class2str(classIndex,self._c_classifier)
-            assert(classIndex < freesasa_default_classifier.n_classes)
-            return freesasa_default_classifier.class2str(classIndex,&freesasa_default_classifier)
 
       def _get_address(self, size_t ptr2ptr):
             cdef freesasa_classifier **p = <freesasa_classifier**> ptr2ptr
@@ -699,7 +688,7 @@ def classifyResults(result,structure,classifier=None):
             classifier = Classifier()
       ret = dict()
       for i in range(0,structure.nAtoms()):
-            name = classifier.class2str(classifier.classify(structure.residueName(i),structure.atomName(i))) 
+            name = classifier.classify(structure.residueName(i),structure.atomName(i))
             if name not in ret:
                   ret[name] = 0
             ret[name] += result.atomArea(i)
