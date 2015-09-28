@@ -285,7 +285,7 @@ calculation of adjacency lists has not been parallelized.
 
 Shrake \& Rupley's algorithm uses test points on a sphere to estimate
 what parts of an atom are exposed. Test points are generated on the
-fly as a fibonacci grid~\cite{FibonacciGrid}.  For each atom $i$, use
+fly as a fibonacci grid~\cite{FibonacciGrid}. For each atom $i$, use
 a set of test points evenly distributed (approximately) over the
 sphere of radius $R_i$, and count how many of the test points are not
 inside any other sphere. The number of exposed test points divided by
@@ -311,14 +311,12 @@ out some variation in the running time in these rather short
 calculations (in some cases 10's of milliseconds), each calculation was
 run three times.
 
-The calculation time of both algorithms scales linearly with the
-number of atoms as can be seen from figure~\ref{fig:scaling}. The
-effect of spreading the calculation over several threads can be seen
-in figure~\ref{fig:threads}. Since the generation of Verlet lists is
-not parallelized, using more than one thread only gives a significant
-performance benefit at the limit of high precision. For the cases
-studied here, using more than two threads only gives a limited
-improvement~\cite{4cores}.
+The effect of spreading the calculation over several threads can be
+seen in figure~\ref{fig:threads}. Since the generation of Verlet lists
+is not parallelized, using more than one thread only gives a
+significant performance benefit at the limit of high precision. For
+the cases studied here, using more than two threads only gives a
+limited improvement~\cite{4cores}.
 \begin{figure}
   \begin{center}
   \includegraphics{fig/threads} 
@@ -418,9 +416,10 @@ results of these calculations for the 88 proteins described above.
   Fluids. I. Thermodynamical Properties of Lennard-Jones
   Molecules. Physical Review 159: 98--103.
 
-\bibitem{FibonacciGrid} Swinbank R, Purser JR (2006) Fibonacci grids:
-  A novel approach to global modelling. Quarterly Journal of the Royal
-  Meteorological Society 132: 1769--1793.
+\bibitem{FibonacciGrid} 
+  Swinbank R, Purser JR (2006) Fibonacci grids: A novel approach to
+  global modelling. Quarterly Journal of the Royal Meteorological
+  Society 132: 1769--1793.
 
 \bibitem{PISCES}
   Wang G, Dunbrack RL (2003) PISCES: a protein sequence culling server. 
