@@ -318,7 +318,7 @@ in the example.
 
 If Python is enabled using 
     
-    $ ./configure --enable-python-bindings`
+    $ ./configure --enable-python-bindings
 
 Cython is used to build Python bindings for FreeSASA, and `make
 install` will install them.
@@ -378,15 +378,15 @@ class DerivedClassifier(Classifier):
         return 'Not-nitrogen'
 
     def radius(self,residueName,atomName):
-    if re.match('\s*N',atomName): # Nitrogen                                                                                                          
+    if re.match('\s*N',atomName): # Nitrogen 
             return 1.6
-    if re.match('\s*C',atomName): # Carbon                                                                                                            
+    if re.match('\s*C',atomName): # Carbon
             return 1.7
-    if re.match('\s*O',atomName): # Oxygen                                                                                                            
+    if re.match('\s*O',atomName): # Oxygen
             return 1.4
-    if re.match('\s*S',atomName): # Sulfur                                                                                                            
-            return 1.8
-        return 0; # everything else (Hydrogen, etc)                                                                                                       
+    if re.match('\s*S',atomName): # Sulfur
+            return 1.8    
+    return 0;                     # everything else (Hydrogen, etc)
 
 classifier = DerivedClassifier()
 
