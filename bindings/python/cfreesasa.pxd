@@ -1,9 +1,20 @@
+# Copyright Simon Mitternacht 2013-2015.
+#
+# This file is part of FreeSASA.
+#
+# FreeSASA is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# (at your option) any later version.
+#
+# FreeSASA is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
+
 from libc.stdio cimport FILE
-
-#cdef extern from "stdint.h" nogil:
-#    ctypedef size_t uintptr_t:
-#        pass
-
 
 cdef extern from "freesasa.h":
     ctypedef enum freesasa_algorithm:

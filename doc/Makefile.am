@@ -77,7 +77,7 @@ endif # HAVE_LATEX
 if HAVE_DOXYGEN
 
 doxyfile.stamp: $(top_srcdir)/src/freesasa.h doxy_main.md $(top_srcdir)/README.md Doxyfile \
-	doxygen-footer.html doxygen-header.html
+	doxygen-footer.html doxygen-header.html $(top_srcdir)/bindings/python/freesasa.pyx
 	@if [ ! -d "html/" ]; then mkdir html; fi
 	$(DOXYGEN) Doxyfile
 	echo Timestamp > doxyfile.stamp

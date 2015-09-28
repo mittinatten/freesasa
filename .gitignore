@@ -37,6 +37,7 @@ autom4te.cache
 aclocal.m4
 tmp*
 bindings/python/*.c
+bindings/python/setup.py
 doc/doxygen
 doc/html/
 doc/fig/lnr_*.eps

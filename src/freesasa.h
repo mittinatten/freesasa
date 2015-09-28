@@ -27,6 +27,8 @@
     @brief Functions and datatypes for performing and analyzing SASA
     calculations.
 
+    @copyright GPLv3
+
     @section The FreeSASA API
 
     This header provides the functions and data types necessary to
