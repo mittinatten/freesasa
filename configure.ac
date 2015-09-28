@@ -43,12 +43,11 @@ AC_ARG_WITH([python],
   AS_HELP_STRING([--with-python=<python-binary>], [Specify which python to use.]),
     [python_bin=$withval],[python_bin=python])
 
-AC_ARG_ENABLE([python-binding],
-  [AS_HELP_STRING([--enable-python-binding],
-    [build Python bindings using Cython])],
-  [enable_python_binding=yes], [enable_python_binding=no])
+AC_ARG_ENABLE([python-bindings],
+  [AS_HELP_STRING([--enable-python-bindings],
+    [build Python bindings using Cython])])
 
-if test x$enable_python_binding = xyes ; then
+if test x$enable_python_bindings = xyes ; then
   AC_CHECK_PROG(PYTHON, python, $python_bin)
   AC_CHECK_PROG(CYTHON, cython, cython) 
   AM_CONDITIONAL([HAVE_CYTHON], [test -n "$CYTHON" && test -n "$PYTHON"])

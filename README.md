@@ -64,7 +64,7 @@ measurable effect on Lee & Richards.
 
 The configuration script can be customized with
 
-* `--enable-python-binding` builds Python bindings, requires Cython
+* `--enable-python-bindings` builds Python bindings, requires Cython
 * `--with-python=<python>` specifies which python binary to use
 * `--enable-check` enables unit-testing using the Check framework
 * `--enable-gcov` adds compiler flags for measuring coverage of tests using gcov
