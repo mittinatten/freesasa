@@ -267,13 +267,13 @@ int main (int argc, char **argv)
     int n_opt = 'z'+1;
     char opt_set[n_opt];
     int option_index = 0;
-    static int option_flag;
+    int option_flag;
     enum {B_FILE,RES_FILE,SEQ_FILE};
     parameters = freesasa_default_parameters;
     memset(opt_set,0,n_opt);
     // errors from this file will be prepended with freesasa, library errors with FreeSASA
     program_name = "freesasa";
-    static struct option long_options[] = {
+    struct option long_options[] = {
         {"lee-richards", no_argument, 0, 'L'},
         {"shrake-rupley", no_argument, 0, 'S'},
         {"probe-radius", required_argument, 0, 'p'},
@@ -293,8 +293,8 @@ int main (int argc, char **argv)
         {"foreach-residue",no_argument,0,'R'},
         {"print-as-B-values",no_argument,0,'B'},
         {"chain-groups",required_argument,0,'g'},
-        {"per-residue-type-file",required_argument,&option_flag,RES_FILE},
-        {"per-sequence-file",required_argument,&option_flag,SEQ_FILE},
+        {"residue-type-file",required_argument,&option_flag,RES_FILE},
+        {"residue-file",required_argument,&option_flag,SEQ_FILE},
         {"B-value-file",required_argument,&option_flag,B_FILE}
     };
     options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:";
