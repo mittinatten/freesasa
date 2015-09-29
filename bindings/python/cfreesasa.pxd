@@ -23,7 +23,7 @@ cdef extern from "freesasa.h":
         FREESASA_POLAR, FREESASA_APOLAR,
         FREESASA_NUCLEICACID, FREESASA_CLASS_UNKNOWN
     ctypedef enum freesasa_verbosity:
-        FREESASA_V_NORMAL, FREESASA_V_SILENT
+        FREESASA_V_NORMAL, FREESASA_V_NOWARNINGS, FREESASA_V_SILENT
 
     cdef double FREESASA_DEF_PROBE_RADIUS
     cdef int FREESASA_DEF_SR_N

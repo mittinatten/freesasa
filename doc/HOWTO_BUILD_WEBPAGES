@@ -1,4 +1,0 @@
-The makefile in this directory writes to the directory html, if that
-directory in turn has a clone of the branch 'gh-pages', the
-automatically generated HTML from doxygen will be put
-in the right place and can be committed in the gh-pages branch.

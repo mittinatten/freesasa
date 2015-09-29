@@ -55,6 +55,9 @@ apolar = 'Apolar'
 ## int: Suppress all warnings and errors (used by setVerbosity())
 silent = FREESASA_V_SILENT
 
+## int: Suppress all warnings but not errors (used by setVerbosity())
+nowarnings = FREESASA_V_NOWARNINGS
+
 ## int: Normal verbosity (used by setVerbosity())
 normal = FREESASA_V_NORMAL
 
@@ -584,15 +587,15 @@ def classifyResults(result,structure,classifier=None):
 
 
 ## Set global verbosity
-# @param verbosity Can have values freesasa.silent or freesasa.normal
+# @param verbosity Can have values freesasa.silent, freesasa.nowarnings or freesasa.normal
 # @exception AssertionError if verbosity has illegal value
 def setVerbosity(verbosity):
-      assert(verbosity in [silent, normal])
+      assert(verbosity in [silent, nowarnings, normal])
       freesasa_set_verbosity(verbosity)
 
 
 ## Get global verbosity
-# @return Verbosity (freesasa.silent or freesasa.normal)
+# @return Verbosity (freesasa.silent, freesasa.nowarnings or freesasa.normal)
 def getVerbosity():
       return freesasa_get_verbosity()
 
