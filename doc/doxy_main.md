@@ -368,6 +368,13 @@ for key in area_classes:
     print key, ": %.2f A2" % area_classes[key]
 ~~~
 
+Which would give the following output
+
+    Total : 4779.51 A2
+    Polar : 2236.93 A2
+    Apolar : 2542.58 A2
+
+
 The following does a high precision L&R calculation
 
 ~~~{.py}
@@ -382,9 +389,9 @@ This uses the NACCESS parameters (the file 'naccess.config' is
 available in the share/ directory of the repository).
 
 ~~~{.py}
-classifier = Classifier("naccess.config")
-structure = Structure("1ubq.pdb",classifier) 
-result = calc(structure)
+classifier = freesasa.Classifier("naccess.config")
+structure = freesasa.Structure("1ubq.pdb",classifier) 
+result = freesasa.calc(structure)
 area_classes = freesasa.classifyResults(result,structure,classifier)
 ~~~
 
