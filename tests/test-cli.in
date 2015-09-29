@@ -149,13 +149,13 @@ echo
 echo "== Testing option -r =="
 assert_pass "$cli -l -r < $datadir/1ubq.pdb > tmp/restype"
 assert_pass "diff tmp/restype $datadir/restype.reference"
-assert_pass "$cli -l --per-residue-type-file tmp/restype < $datadir/1ubq.pdb"
+assert_pass "$cli -l --residue-type-file tmp/restype < $datadir/1ubq.pdb"
 assert_pass "diff tmp/restype $datadir/restype.reference"
 echo
 echo "== Testing option -R =="
 assert_pass "$cli -l -R < $datadir/1ubq.pdb > tmp/seq"
 assert_pass "diff tmp/seq $datadir/seq.reference"
-assert_pass "$cli -l --per-sequence-file tmp/seq < $datadir/1ubq.pdb"
+assert_pass "$cli -l --residue-file tmp/seq < $datadir/1ubq.pdb"
 assert_pass "diff tmp/seq $datadir/seq.reference"
 echo
 echo "== Testing user-configurations =="

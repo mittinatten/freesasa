@@ -22,7 +22,7 @@ Building FreeSASA creates the binary `freesasa`, which is installed by
 displays a help message listing all options. The following text
 explains how to use most of them.
 
-@section Default Run using defaults
+@section CLI-Default Run using defaults
 
 In the following we will use the PDB structure 1UBQ as
 an example. To run a simple SASA calculation using default parameters,
@@ -44,7 +44,7 @@ This generates the following output
       Apolar:   2542.58 A2
      Nucleic:      0.00 A2
      Unknown:      0.00 A2
-
+    
 The results are all in the unit Ångström-squared. 
 
 @section parameters Changing parameters
@@ -64,7 +64,7 @@ speed things up.
 
 If the user wants to use their own atomic radii the command 
 
-    $ freesasa --config-file file
+    $ freesasa --config-file <file> 1ubq.pdb
 
 Reads a configuration from a file and uses it to assign atomic
 radii. The program will halt if it encounters atoms in the PDB input
@@ -73,14 +73,10 @@ instructions how to write a configuration.
 
 @section Output Other output types
 
-If one wants to calculate the SASA of each residue in
-the sequence, or each residue type
-    
+To calculate the SASA of each residue in
+the sequence, or each residue type, the commands
+
     $ freesasa --foreach-residue --no-log 1ubq.pdb
-    $ freesasa --foreach-residue-type --no-log 1ubq.pdb
-
-prints 
-
     SEQ: A    1 MET   55.99
     SEQ: A    2 GLN   72.16
     SEQ: A    3 ILE    0.00
@@ -88,32 +84,34 @@ prints
 
 and
 
+    $ freesasa --foreach-residue-type --no-log 1ubq.pdb
     RES: ALA    122.87
     RES: ARG    531.77
     RES: ASN    160.57
     ...
 
 to stdout respectively (`--no-log` suppresses the standard log
-message). If one prefers writing each to separate files, the options
-`--residue-file` and `--residue-type-file` can be used to specify
-this.
-
-@section PDB-filter Run as PDB filter
+message). 
 
 The command-line interface can also be used as a PDB filter:
 
     $ cat 1ubq.pdb | freesasa --no-log --print-as-B-values 
-
-prints a PDB-file where the temperature factors have been replaced by
-SASA values, and occupancy numbers by the radius of each atom:
-
     ATOM      1  N   MET A   1      27.340  24.430   2.614  1.55 15.31
     ATOM      2  CA  MET A   1      26.266  25.413   2.842  2.00 20.34
     ATOM      3  C   MET A   1      26.913  26.639   3.531  1.55  0.00
     ...
 
+The output is PDB-file where the temperature factors have been replaced by
+SASA values, and occupancy numbers by the radius of each atom:
+
 Only the atoms and models used in the calculation will be present in
 the output (see @ref Input for how to modify this).
+
+To generate all three results at the same time and write them to
+separate files, run
+
+    $ freesasa --residue-file=1ubq.seq --residue-type-file=1ubq.res --B-value-file=1ubq.b 1ubq.pdb
+
 
 @section Input PDB input
 
