@@ -35,7 +35,7 @@ AC_CHECK_FUNCS([gettimeofday sqrt strerror])
 AC_CHECK_FUNCS([mkdir])
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile
-                 doc/fig/Makefile tests/Makefile bindings/Makefile
+                 tests/Makefile bindings/Makefile
                  bindings/python/setup.py  tests/test-cli])
 
 # Python-bindings
@@ -54,33 +54,6 @@ if test x$enable_python_bindings = xyes ; then
   AM_COND_IF([HAVE_CYTHON],[],[echo "Cython not available, will not build Python bindings"])
 else
   AM_CONDITIONAL([HAVE_CYTHON],FALSE)
-fi
-
-# Enable LaTeX
-AC_ARG_ENABLE([latex],
- [AS_HELP_STRING([--enable-latex],
-   [build documentation from latex sources])])
-
-if test x$enable_latex = xyes ; then
-  AC_CHECK_PROG(LATEX, latex, latex)
-  AC_CHECK_PROG(DVIPS, dvips, dvips)
-  AC_CHECK_PROG(PDFLATEX, pdflatex, pdflatex)
-  AC_CHECK_PROG(EPSTOPDF, epstopdf, epstopdf)
-  AC_CHECK_PROG(PDFTOCAIRO, pdftocairo, pdftocairo)
-  AC_CHECK_PROG(LATEXML,latexml,latexml)
-  AC_CHECK_PROG(LATEXMLPOST,latexmlpost,latexmlpost)
-  AM_CONDITIONAL([HAVE_LATEX], [test -n "$LATEX" && test -n "$DVIPS" \
-                                && test -n "$EPSTOPDF" && test -n "$PDFLATEX"])
-  AM_CONDITIONAL([HAVE_CAIRO], [test -n "$LATEX" && test -n "$DVIPS"])
-  AM_CONDITIONAL([BUILD_HTML_MANUAL], [test -n "$LATEXML" && test -n "$LATEXMLPOST" && test -n "$PDFTOCAIRO"])
-  AM_COND_IF([HAVE_LATEX],[],
-    [echo "LaTeX not available, option '--enable-latex' ignored"])
-  AM_COND_IF([HAVE_LATEX],[build_doc=yes])
-  AM_COND_IF([BUILD_HTML_MANUAL],[],[echo "pdftocairo and/or latexml not available, HTML version of manual will not be built"])
-else
-  AM_CONDITIONAL([HAVE_LATEX],FALSE)
-  AM_CONDITIONAL([HAVE_CAIRO],FALSE)
-  AM_CONDITIONAL([BUILD_HTML_MANUAL],FALSE)
 fi
 
 # Enable Doxygen
