@@ -24,6 +24,8 @@ AM_CFLAGS += -I$(top_srcdir)/src -DDATADIR=\"$(top_srcdir)/tests/data/\"
 
 LDADD = -lcheck
 libtest_LDADD = ../src/libfreesasa.a -lcheck
+static_test_LDADD = ../src/parser.o ../src/lexer.o -lcheck 
+broken_malloc_LDADD = ../src/parser.o ../src/lexer.o -lcheck 
 
 endif 
 

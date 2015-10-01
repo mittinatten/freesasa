@@ -1,7 +1,13 @@
 %{
+
+#include "util.h"
 #include "selector.h"
 #include "parser.h"
 #include "lexer.h"
+    
+    int yyerror(expression **expression, yyscan_t scanner, const char *msg) {
+        return freesasa_fail(msg);
+    }
 
 %}
 
@@ -17,13 +23,13 @@
 %output "parser.c"
 %defines "parser.h"
 
-%define api.pure
+%define api.pure full
 %lex-param { yyscan_t scanner }
 %parse-param {expression **expression }
 %parse-param {yyscan_t scanner }
 
 %union {
-    int value;
+    const char *value;
     expression *expression;
 }
 
@@ -45,35 +51,35 @@
 %token T_SYMBOL
 %token T_NAME
 
-%type <expression> selector
-%type <expression> selection
-%type <expression> list
-%type <expression> i_list
-%type <expression> atom
-
 %left T_DASH
 %left T_PLUS
 %left T_AND
 %left T_OR
 %right T_NOT
 
+%type <expression> selector
+%type <expression> selection
+%type <expression> list
+%type <expression> i_list
+%type <expression> atom
+
 %%
 
 input: selector ;
 
 selector:
-  T_ID[ID] T_COMMA selection[S]  { $$ = create_selector($S,$ID); } 
+T_ID[ID] T_COMMA selection[S]  { *expression = create_selector($S,$ID); } 
 
 list:
-  atom                           { $$ = $1}
+  atom                      { $$ = $1; } 
 | atom[L] T_PLUS list[R]    { $$ = create_operation(E_PLUS, $L, $R); }
 ;
 
 i_list:
-  atom                           { $$ = $1}
-| atom[L] T_DASH i_list[R]    { $$ = create_operation(E_RANGE, $L, $R); }
-| atom[L] T_PLUS i_list[R]    { $$ = create_operation(E_PLUS, $L, $R); }
-
+  atom                      { $$ = $1; }  
+| atom[L] T_DASH i_list[R]  { $$ = create_operation(E_RANGE, $L, $R); }
+| atom[L] T_PLUS i_list[R]  { $$ = create_operation(E_PLUS, $L, $R); }
+;
 
 selection: 
   T_RESN list[L]            { $$ = create_selection(E_RESN, $L); }

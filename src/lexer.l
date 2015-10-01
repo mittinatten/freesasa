@@ -9,6 +9,8 @@
 %}
 
 %option outfile="lexer.c" header-file="lexer.h"
+
+%option reentrant noyywrap never-interactive nounistd
 %option bison-bridge
 
 LPAREN  "("
@@ -26,8 +28,8 @@ RESI    (?i:resi)
 SYMBOL  (?i:symbol)
 NAME    (?i:name)
 
-NUMBER  \-*[0-9]+
-ID      [a-zA-Z][a-zA-Z0-9]*
+NUMBER  \-*[[:digit:]]+
+ID      [[:alpha:]][[:alnum:]]*
 WS      [ \t\n\r]*
 
 %%
@@ -48,12 +50,9 @@ WS      [ \t\n\r]*
 {NOT}     { return T_NOT; }
 
 {WS}      {}
-{NUMBER}  { sscanf(yytext, "%d", &yylval->value); return T_NUMBER; }
-{ID}      { sscanf(yytext, "%s", &yylval->value); return T_ID; }
+{NUMBER}  { yylval->value = strdup(yytext); return T_NUMBER; }
+{ID}      { yylval->value = strdup(yytext); return T_ID; }
 
-%%
 
-int yyerror(const char *msg) {
-    return freesasa_fail(msg);
-}
+
 
