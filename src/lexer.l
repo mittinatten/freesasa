@@ -27,6 +27,7 @@ RESN    (?i:resn)
 RESI    (?i:resi)
 SYMBOL  (?i:symbol)
 NAME    (?i:name)
+CHAIN   (?i:chain)
 
 NUMBER  \-*[[:digit:]]+
 ID      [[:alpha:]][[:alnum:]]*
@@ -44,6 +45,7 @@ WS      [ \t\n\r]*
 {RESI}    { return T_RESI; }
 {SYMBOL}  { return T_SYMBOL; }
 {NAME}    { return T_NAME; }
+{CHAIN}   { return T_CHAIN; }
 
 {AND}     { return T_AND; }
 {OR}      { return T_OR; }

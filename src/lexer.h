@@ -332,7 +332,7 @@ extern int yylex \
 #undef YY_DECL
 #endif
 
-#line 59 "lexer.l"
+#line 61 "lexer.l"
 
 #line 338 "lexer.h"
 #undef yyIN_HEADER

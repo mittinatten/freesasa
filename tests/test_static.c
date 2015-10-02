@@ -315,18 +315,18 @@ START_TEST (test_user_config)
 }
 END_TEST
 
-static const expression empty_expression = {
-    .right = NULL, .left = NULL, .value = NULL, .type = E_SELECTOR
-};
-
 START_TEST (test_selection) 
 {
+    static const expression empty_expression = {
+        .right = NULL, .left = NULL, .value = NULL, .type = E_SELECTOR
+    };
     freesasa_structure *structure = freesasa_structure_new();
     freesasa_structure_add_atom(structure," CA ","ALA","   1",'A',0,0,0);
     freesasa_structure_add_atom(structure," O  ","ALA","   1",'A',10,10,10);
     struct selection *s1 = selection_new(freesasa_structure_n(structure));
     struct selection *s2 = selection_new(freesasa_structure_n(structure));
     struct selection *s3 = selection_new(freesasa_structure_n(structure));
+    struct selection *s4 = selection_new(freesasa_structure_n(structure));
     expression r,l,e,e_symbol;
     r = l = e = e_symbol = empty_expression;
     e.type = E_PLUS;
@@ -338,34 +338,19 @@ START_TEST (test_selection)
     e_symbol.left = &e;
 
     // select_symbol
-    select_symbol(s1,structure,&r);
+    select_list(E_SYMBOL,s1,structure,&r);
     ck_assert_int_eq(s1->atom[0],1);
     ck_assert_int_eq(s1->atom[1],0);
-    select_symbol(s2,structure,&l);
+    select_list(E_SYMBOL,s2,structure,&l);
     ck_assert_int_eq(s2->atom[0],0);
     ck_assert_int_eq(s2->atom[1],1);
-    select_atoms(s3,&e_symbol,structure);
+    select_list(E_SYMBOL,s3,structure,&e);
     ck_assert_int_eq(s3->atom[0],1);
     ck_assert_int_eq(s3->atom[1],1);
+    select_atoms(s4,&e_symbol,structure);
+    ck_assert_int_eq(s4->atom[0],1);
+    ck_assert_int_eq(s4->atom[1],1);
 
-    // these tests should be in libtest
-    double radii[2] = {1,1};
-    freesasa_result *result = freesasa_calc_structure(structure, radii, NULL);
-    const char *commands[] = {"c1, symbol O+C","c2, symbol O","c3, symbol C",
-                              "c4, symbol O AND symbol C"};
-    //"c5, symbol O OR symbol C"}; doesn't work for now
-    freesasa_strvp *svp = select_area(commands,5,structure,result);
-    ck_assert_ptr_ne(svp,NULL);
-    ck_assert_ptr_ne(svp->value,NULL);
-    ck_assert_ptr_ne(svp->string,NULL);
-    ck_assert_int_eq(svp->n,4);
-    ck_assert(fabs(svp->value[0] - result->total) < 1e-10);
-    ck_assert(fabs(svp->value[0] - (svp->value[1] + svp->value[2])) < 1e-10);
-    //ck_assert(fabs(svp->value[0] - svp->value[4]) < 1e-10);
-    ck_assert(fabs(svp->value[3]) < 1e-10);
-    ck_assert_ptr_ne(svp->string[0], NULL);
-    ck_assert_str_eq(svp->string[0], "c1");
-    
     // selection_join
     selection_join(s3,s1,s2,E_AND);
     ck_assert_int_eq(s3->atom[0],0);

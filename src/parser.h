@@ -69,7 +69,8 @@ extern int yydebug;
     T_RESN = 268,
     T_RESI = 269,
     T_SYMBOL = 270,
-    T_NAME = 271
+    T_NAME = 271,
+    T_CHAIN = 272
   };
 #endif
 
@@ -83,7 +84,7 @@ union YYSTYPE
     const char *value;
     expression *expression;
 
-#line 87 "parser.h" /* yacc.c:1909  */
+#line 88 "parser.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

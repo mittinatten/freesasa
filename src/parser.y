@@ -50,6 +50,7 @@
 %token T_RESI
 %token T_SYMBOL
 %token T_NAME
+%token T_CHAIN
 
 %left T_DASH
 %left T_PLUS
@@ -86,6 +87,7 @@ selection:
 | T_RESI i_list[L]          { $$ = create_selection(E_RESI, $L); }
 | T_SYMBOL list[L]          { $$ = create_selection(E_SYMBOL, $L); }
 | T_NAME list[L]            { $$ = create_selection(E_NAME, $L); }
+| T_CHAIN list[L]            { $$ = create_selection(E_CHAIN, $L); }
 | T_LPAREN selection[S] T_RPAREN 
                             { $$ = $S; }
 | selection[L] T_AND selection[R]

@@ -1,4 +1,5 @@
 #include <string.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <assert.h>
 #include "selector.h"
@@ -52,12 +53,14 @@ create_atom(expression_type type, const char* val)
 
     e->type = type;
     e->value = strdup(val);
-    
+
     if (e->value == NULL) {
         mem_fail();
         expression_free(e);
         return NULL;
     }
+
+    for (int i = 0; i < strlen(val); ++i) e->value[i] = toupper(val[i]);
     
     return e;
 }
@@ -161,22 +164,77 @@ selection_free(struct selection *selection)
     }
 }
 
+/** Looks for exact match between the atom-name and expr->value*/
+static int
+match_name(const freesasa_structure *structure,
+           const expression *expr, 
+           int i)
+{
+    char atom[5];
+    assert(expr->value);
+    sscanf(freesasa_structure_atom_name(structure,i),"%s",atom);
+    if (strcmp(atom,expr->value) == 0) 
+        return 1;
+    return 0;
+}
+
+/** Looks for match of strlen(expr->value) first characters of atom-name and expr->value */
+static int
+match_symbol(const freesasa_structure *structure,
+             const expression *expr, 
+             int i)
+{
+    char atom[5];
+    assert(expr->value);
+    sscanf(freesasa_structure_atom_name(structure,i),"%s",atom);
+    if (strncmp(atom,expr->value,strlen(expr->value)) == 0)
+        return 1;
+    return 0;
+}
+
+static int
+match_resn(const freesasa_structure *structure,
+           const expression *expr, 
+           int i)
+{
+    char resn[4];
+    sscanf(freesasa_structure_atom_res_name(structure,i),"%s",resn);
+    if (strncmp(resn,expr->value,strlen(expr->value)) == 0)
+        return 1;
+    return 0;
+}
+
 static void
-select_symbol(struct selection *selection,
-              const freesasa_structure *structure,
-              const expression *expr)
+select_list(expression_type parent_type,
+            struct selection *selection,
+            const freesasa_structure *structure,
+            const expression *expr)
 {
     assert(expr);
-    if (expr->type == E_PLUS) { 
-        select_symbol(selection,structure,expr->right);
-        select_symbol(selection,structure,expr->left);
-    } else {
-        assert(expr->type == E_ID);
-        for (int i = 0; i < freesasa_structure_n(structure); ++i) {
-            char atom[5];
-            sscanf(freesasa_structure_atom_name(structure,i),"%s",atom);
-            if (strncmp(atom,expr->value,strlen(expr->value)) == 0)
-                selection->atom[i] = 1;
+    if (expr->type == E_PLUS) {
+        select_list(parent_type,selection,structure,expr->right);
+        select_list(parent_type,selection,structure,expr->left);
+    } else if (expr->type == E_RANGE) {
+        assert(parent_type == E_RESI);
+        // ...
+    } else if (expr->type == E_ID) {
+        //assert(expr->type == E_ID);
+        for (int i = 0; i < selection->size; ++i) {
+            int match = 0;
+            switch(parent_type) {
+            case E_NAME: 
+                match = match_name(structure,expr,i);
+                break;
+            case E_SYMBOL: 
+                match = match_symbol(structure,expr,i);
+                break;
+            case E_RESN:
+                match = match_resn(structure,expr,i);
+                break;
+            default:
+                assert(0);
+            }
+            if (match) selection->atom[i] = 1;
         }
     }
 }
@@ -198,14 +256,12 @@ selection_join(struct selection *target,
 
     switch (type) {
     case E_AND:
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; ++i)
             target->atom[i] = s1->atom[i] && s2->atom[i];
-        }
         break;
     case E_OR:
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; ++i)
             target->atom[i] = s1->atom[i] || s2->atom[i];
-        }
         break;
     default: 
         assert(0);
@@ -225,7 +281,7 @@ selection_not(struct selection *s)
 }
 
 /* Called recursively, the selection is built as we cover the expression tree */
-int
+static int
 select_atoms(struct selection* selection,
              const expression *expr,
              const freesasa_structure *structure)
@@ -237,25 +293,19 @@ select_atoms(struct selection* selection,
         select_atoms(selection,expr->left,structure);
         break;
     case E_SYMBOL:
-        select_symbol(selection,structure,expr->left);
-        break;
     case E_NAME:
-        break;
     case E_RESN:
-        break;
     case E_RESI:
-        break;
     case E_CHAIN:
-        break;
-    case E_ID:
-        break;
-    case E_NUMBER:
+        select_list(expr->type,selection,structure,expr->left);
         break;
     case E_AND:
     case E_OR: {
         int n = selection->size;
         struct selection *sl = selection_new(n),*sr = selection_new(n);
         if (sl && sr) {
+            select_atoms(sl,expr->left,structure);
+            select_atoms(sl,expr->right,structure);
             selection_join(selection,sl,sr,expr->type);
         } else {
             return freesasa_fail(__func__);
@@ -265,10 +315,14 @@ select_atoms(struct selection* selection,
         break;
     }
     case E_NOT:
+        select_atoms(selection,expr->left,structure);
+        selection_not(selection);
         break;
+    case E_ID:
+    case E_NUMBER:
     case E_PLUS:
     case E_RANGE:
-        // these two are handled by the RESN,SYMBOL,ETC
+        // these four are handled by the RESN,SYMBOL,ETC
     default:
         assert(0);
         return FREESASA_FAIL;
@@ -277,10 +331,10 @@ select_atoms(struct selection* selection,
 }
 
 freesasa_strvp*
-select_area(const char **selector,
-            int n_selector,
-            const freesasa_structure *structure,
-            const freesasa_result *result)
+freesasa_select_area(const char **selector,
+                     int n_selector,
+                     const freesasa_structure *structure,
+                     const freesasa_result *result)
 {
     assert(selector); assert(structure); assert(result);
     assert(freesasa_structure_n(structure) == result->n_atoms);
@@ -296,20 +350,20 @@ select_area(const char **selector,
         assert(selector[i]);
         expression = get_expression(selector[i]);
         selection = selection_new(result->n_atoms);
-        
-        if (expression == NULL || selection == NULL) { ++err; break; }
-        
+
+        if (expression == NULL || selection == NULL) 
+            { ++err; break; }
         if (select_atoms(selection, expression, structure))
             { ++err; break; }
-        
-        assert(selection->atom); assert(selection->name);
-        for (int j = 0; j < selection->size; ++j) {
-            if (selection->atom[j] == 1) sasa += result->sasa[j];
-        }
+        for (int j = 0; j < selection->size; ++j)
+            sasa += selection->atom[j]*result->sasa[j];
+
         strvp->value[i] = sasa;
         strvp->string[i] = strdup(selection->name);
 
-        if (strvp->string[i] == NULL) {++err; break; }
+        if (strvp->string[i] == NULL) 
+            {++err; break; }
+        
         selection_free(selection);
         expression_free(expression);
     }
