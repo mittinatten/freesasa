@@ -137,7 +137,7 @@ freesasa_pdb_get_alt_coord_label(const char* line);
 
     @param line Line from a PDB file.  
     @return 1 if Hydrogen (or deuterium). 0 otherwise. If line is
-    invalid, the function returns ::FREESASA_FAIL. 
+    invalid, the function returns ::FREESASA_FAIL.
 */
 int
 freesasa_pdb_ishydrogen(const char* line);

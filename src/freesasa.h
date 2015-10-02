@@ -444,10 +444,7 @@ freesasa_structure_array(FILE *pdb,
     are excluded if necessesary).
 
     The three string arguments all have specific lengths, specified by
-    the corresponding PDB ATOM fields. It is important to use the same
-    padding as in the PDB specification (i.e. `" CA "` instead of
-    `"CA"` or `" CA"`). (This might be more flexible in future
-    versions of the library).
+    the corresponding PDB ATOM fields. 
 
     @param structure The structure to add to.
     @param atom_name String of 4 characters, of the format `" CA "`, `" OXT"`, etc.
@@ -458,9 +455,8 @@ freesasa_structure_array(FILE *pdb,
     @param y y-coordinate of atom.
     @param z z-coordinate of atom.
 
-    @return ::FREESASA_SUCCESS if input valid. ::FREESASA_FAIL if any
-    of the strings are malformatted or if memoray allocation
-    fails. ::FREESASA_WARN if the atom type is unknown.
+    @return ::FREESASA_SUCCESS on normal execution. ::FREESASA_FAIL if
+    if memory allocation fails.
  */
 int
 freesasa_structure_add_atom(freesasa_structure *structure,
@@ -591,6 +587,12 @@ freesasa_structure_atom_chain(const freesasa_structure *structure,
  */
 int
 freesasa_structure_model(const freesasa_structure *structure);
+
+freesasa_strvp*
+freesasa_select_area(const char **selector,
+                     int n_selector,
+                     const freesasa_structure *structure,
+                     const freesasa_result *result);
 
 #ifdef __cplusplus
 }
