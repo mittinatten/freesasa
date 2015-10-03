@@ -45,8 +45,17 @@ const int resn_V[N] = {      0,      0,      0,      0,      1,     0,       0, 
 const int resn_Q[N] = {      0,      0,      0,      0,      0,     1,       0,      0};
 const int resn_U[N] = {      0,      0,      0,      0,      0,     0,       1,      0};
 const int resn_DC[N]= {      0,      0,      0,      0,      0,     0,       0,      1};
-const int name_CA[N]= {      1,      0,      0,      0,      0,     0,       0,      1};
-const int name_O[N] = {      0,      1,      0,      0,      0,     0,       0,      1};
+const int name_CA[N]= {      1,      0,      0,      0,      0,     0,       0,      0};
+const int name_O[N] = {      0,      1,      0,      0,      0,     0,       0,      0};
+const int name_OXT[N]={      0,      0,      0,      0,      0,     1,       0,      0};
+
+int float_eq(double a, double b, double tolerance) {
+    if (fabs(a-b) < tolerance) return 1;
+    printf("floats not equal: a = %f, b = %f, diff = %f, tolerance = %f\n",
+           a, b, fabs(a-b), tolerance);
+    fflush(stdout);
+    return 0;
+}
 
 static void setup(void) 
 {
@@ -77,7 +86,7 @@ START_TEST (test_name)
 {
     const char *commands[] = {"c1, name ca+o",
                               "c2, name ca",
-                              "c3, name o",
+                              "c3, name oxt",
                               "c4, name ca AND name o",
                               "c5, name ca OR  name o"};
     svp = freesasa_select_area(commands,5,structure,result);
@@ -85,12 +94,12 @@ START_TEST (test_name)
     ck_assert_ptr_ne(svp->value,NULL);
     ck_assert_ptr_ne(svp->string,NULL);
     ck_assert_int_eq(svp->n,5);
-    ck_assert(svp->value[0] > 5);
-    ck_assert(fabs(svp->value[0] - (addup(name_CA,result) + addup(name_O,result)) < 1e-10));
-    ck_assert(fabs(svp->value[0] - svp->value[4]) < 1e-10);
-    ck_assert(fabs(svp->value[1] - addup(name_CA,result)) < 1e-10);
-    ck_assert(fabs(svp->value[2] - addup(name_O,result)) < 1e-10);
-    ck_assert(fabs(svp->value[3]) < 1e-10);
+    ck_assert(svp->value[0] > 5); // check that it's non-zero
+    ck_assert(float_eq(svp->value[0], addup(name_CA,result) + addup(name_O,result), 1e-10));
+    ck_assert(float_eq(svp->value[0], svp->value[4], 1e-10));
+    ck_assert(float_eq(svp->value[1], addup(name_CA,result), 1e-10));
+    ck_assert(float_eq(svp->value[2], addup(name_OXT,result), 1e-10));
+    ck_assert(float_eq(svp->value[3], 0, 1e-10));
 }
 END_TEST
 
@@ -107,11 +116,11 @@ START_TEST (test_symbol)
     ck_assert_ptr_ne(svp->string,NULL);
     ck_assert_int_eq(svp->n,5);
     ck_assert(svp->value[0] > 5); //just to check that it's non-zero
-    ck_assert(fabs(svp->value[0] - (addup(symb_O,result) + addup(symb_C,result)) < 1e-10));
-    ck_assert(fabs(svp->value[0] - svp->value[4]) < 1e-10);
-    ck_assert(fabs(svp->value[1] - addup(symb_O,result)) < 1e-10);
-    ck_assert(fabs(svp->value[2] - addup(symb_C,result)) < 1e-10);
-    ck_assert(fabs(svp->value[3]) < 1e-10);
+    ck_assert(float_eq(svp->value[0], addup(symb_O,result) + addup(symb_C,result), 1e-10));
+    ck_assert(float_eq(svp->value[0], svp->value[4], 1e-10));
+    ck_assert(float_eq(svp->value[1], addup(symb_O,result), 1e-10));
+    ck_assert(float_eq(svp->value[2], addup(symb_C,result), 1e-10));
+    ck_assert(float_eq(svp->value[3], 0, 1e-10));
     ck_assert_ptr_ne(svp->string[0], NULL);
     ck_assert_str_eq(svp->string[0], "c1");
     ck_assert_str_eq(svp->string[1], "c2");
@@ -132,11 +141,11 @@ START_TEST (test_resn)
     ck_assert_ptr_ne(svp->string,NULL);
     ck_assert_int_eq(svp->n,5);
     ck_assert(svp->value[0] > 5);
-    ck_assert(fabs(svp->value[0] - (addup(resn_A,result) + addup(resn_R,result)) < 1e-10));
-    ck_assert(fabs(svp->value[0] - svp->value[4]) < 1e-10);
-    ck_assert(fabs(svp->value[1] - addup(resn_A,result)) < 1e-10);
-    ck_assert(fabs(svp->value[2] - addup(resn_R,result)) < 1e-10);
-    ck_assert(fabs(svp->value[3]) < 1e-10);
+    ck_assert(float_eq(svp->value[0], addup(resn_A,result) + addup(resn_R,result), 1e-10));
+    ck_assert(float_eq(svp->value[0], svp->value[4], 1e-10));
+    ck_assert(float_eq(svp->value[1], addup(resn_A,result), 1e-10));
+    ck_assert(float_eq(svp->value[2], addup(resn_R,result), 1e-10));
+    ck_assert(float_eq(svp->value[3], 0, 1e-10));
 }
 END_TEST
 
