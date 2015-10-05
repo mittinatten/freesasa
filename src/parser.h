@@ -40,7 +40,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 14 "parser.y" /* yacc.c:1909  */
+#line 13 "parser.y" /* yacc.c:1909  */
 
 
 #ifndef YY_TYPEDEF_YY_SCANNER_T
@@ -56,21 +56,17 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    T_LPAREN = 258,
-    T_RPAREN = 259,
-    T_PLUS = 260,
-    T_DASH = 261,
-    T_COMMA = 262,
-    T_AND = 263,
-    T_OR = 264,
-    T_NOT = 265,
-    T_NUMBER = 266,
-    T_ID = 267,
-    T_RESN = 268,
-    T_RESI = 269,
-    T_SYMBOL = 270,
-    T_NAME = 271,
-    T_CHAIN = 272
+    T_NUMBER = 258,
+    T_ID = 259,
+    T_AND = 260,
+    T_OR = 261,
+    T_NOT = 262,
+    T_RESN = 263,
+    T_RESI = 264,
+    T_SYMBOL = 265,
+    T_NAME = 266,
+    T_CHAIN = 267,
+    ATOM = 268
   };
 #endif
 
@@ -79,12 +75,12 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 31 "parser.y" /* yacc.c:1909  */
+#line 30 "parser.y" /* yacc.c:1909  */
 
     const char *value;
     expression *expression;
 
-#line 88 "parser.h" /* yacc.c:1909  */
+#line 84 "parser.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

@@ -7,6 +7,7 @@
 #include "lexer.h"
 #include "util.h"
 #include "freesasa.h"
+#include "pdb.h"
 
 struct selection {
     const char* name;
@@ -167,13 +168,12 @@ selection_free(struct selection *selection)
 /** Looks for exact match between the atom-name and expr->value*/
 static int
 match_name(const freesasa_structure *structure,
-           const expression *expr, 
+           const char *id, 
            int i)
 {
-    char atom[5];
-    assert(expr->value);
-    sscanf(freesasa_structure_atom_name(structure,i),"%s",atom);
-    if (strcmp(atom,expr->value) == 0) 
+    char atom[PDB_ATOM_NAME_STRL+1];
+    sscanf(freesasa_structure_atom_name(structure,i), "%s", atom);
+    if (strcmp(atom, id) == 0)
         return 1;
     return 0;
 }
@@ -181,27 +181,77 @@ match_name(const freesasa_structure *structure,
 /** Looks for match of strlen(expr->value) first characters of atom-name and expr->value */
 static int
 match_symbol(const freesasa_structure *structure,
-             const expression *expr, 
+             const char *id, 
              int i)
 {
-    char atom[5];
-    assert(expr->value);
-    sscanf(freesasa_structure_atom_name(structure,i),"%s",atom);
-    if (strncmp(atom,expr->value,strlen(expr->value)) == 0)
-        return 1;
+    const char *atom = freesasa_structure_atom_name(structure,i);
+    char padded[PDB_ATOM_NAME_STRL+1];
+    if (strlen(atom) < 4) {
+        //For example " C  ", " CA "," OXT"
+        if (strlen(id) == 1) sprintf(padded," %c",id[0]);
+        //For example "SE  ", "NHH1"
+        if (strlen(id) == 2) strcpy(padded,id);
+        if (strncmp(atom, padded,strlen(id)) == 0)
+            return 1;
+    }
+    else {
+        if (strncmp(atom, id, strlen(id)) == 0)
+            return 1;
+    }
+    
     return 0;
 }
 
 static int
 match_resn(const freesasa_structure *structure,
-           const expression *expr, 
+           const char *id,
            int i)
 {
-    char resn[4];
-    sscanf(freesasa_structure_atom_res_name(structure,i),"%s",resn);
-    if (strncmp(resn,expr->value,strlen(expr->value)) == 0)
+    char resn[PDB_ATOM_RES_NAME_STRL+1];
+    sscanf(freesasa_structure_atom_res_name(structure,i), "%s", resn);
+    if (strncmp(resn, id, strlen(id)) == 0)
         return 1;
     return 0;
+}
+
+static int
+match_resi(const freesasa_structure *structure,
+           const char *id, 
+           int i)
+{
+    int resi = atoi(freesasa_structure_atom_res_number(structure,i));
+    int e_resi = atoi(id);
+    return resi == e_resi;
+}
+
+static void
+select_id(expression_type parent_type,
+          struct selection *selection,
+          const freesasa_structure *structure,
+          const char *id)
+{
+    assert(id);
+    for (int i = 0; i < selection->size; ++i) {
+        int match = 0;
+        switch(parent_type) {
+        case E_NAME: 
+            match = match_name(structure, id, i);
+            break;
+        case E_SYMBOL: 
+            match = match_symbol(structure, id, i);
+            break;
+        case E_RESN:
+            match = match_resn(structure, id, i);
+            break;
+        case E_RESI:
+            match = match_resi(structure, id, i);
+            break;
+        default:
+            assert(0);
+            break;
+        }
+        if (match) selection->atom[i] = 1;
+    }
 }
 
 static void
@@ -211,31 +261,29 @@ select_list(expression_type parent_type,
             const expression *expr)
 {
     assert(expr);
-    if (expr->type == E_PLUS) {
+    int lower, upper;
+    switch(expr->type) {
+    case E_PLUS: 
         select_list(parent_type,selection,structure,expr->right);
         select_list(parent_type,selection,structure,expr->left);
-    } else if (expr->type == E_RANGE) {
+        break;
+    case E_RANGE:
         assert(parent_type == E_RESI);
-        // ...
-    } else if (expr->type == E_ID) {
-        //assert(expr->type == E_ID);
+        lower = atoi(expr->left->value);
+        upper = atoi(expr->right->value);
         for (int i = 0; i < selection->size; ++i) {
-            int match = 0;
-            switch(parent_type) {
-            case E_NAME: 
-                match = match_name(structure,expr,i);
-                break;
-            case E_SYMBOL: 
-                match = match_symbol(structure,expr,i);
-                break;
-            case E_RESN:
-                match = match_resn(structure,expr,i);
-                break;
-            default:
-                assert(0);
-            }
-            if (match) selection->atom[i] = 1;
+            int resi = atoi(freesasa_structure_atom_res_number(structure,i));
+            if (resi >= lower && resi <= upper) 
+                selection->atom[i] = 1;
         }
+        break;
+    case E_ID: case E_NUMBER:
+        select_id(parent_type,selection,structure,expr->value);
+        break;
+    default:
+        freesasa_fail("%s: %s %s",__func__,e_str[parent_type],e_str[expr->type]);
+        assert(0);
+        break;
     }
 }
 
@@ -330,6 +378,23 @@ select_atoms(struct selection* selection,
     return FREESASA_SUCCESS;
 }
 
+//for debugging
+static void
+print_expr(const expression *e,int level)
+{
+    fprintf(stderr,"\n");
+    for (int i = 0; i < level; ++i) fprintf(stderr,"  ");
+    if (e == NULL) fprintf(stderr,"()");
+    else {
+        fprintf(stderr,"(%s ",e_str[e->type]);
+        if (e->value) fprintf(stderr,": %s ",e->value);
+        print_expr(e->left,level+1);
+        print_expr(e->right,level+1);
+        fprintf(stderr,")");
+    }
+    fflush(stderr);
+}
+
 freesasa_strvp*
 freesasa_select_area(const char **selector,
                      int n_selector,
@@ -351,13 +416,15 @@ freesasa_select_area(const char **selector,
         expression = get_expression(selector[i]);
         selection = selection_new(result->n_atoms);
 
+        //print_expr(expression,0);
+
         if (expression == NULL || selection == NULL) 
             { ++err; break; }
         if (select_atoms(selection, expression, structure))
             { ++err; break; }
+
         for (int j = 0; j < selection->size; ++j)
             sasa += selection->atom[j]*result->sasa[j];
-
         strvp->value[i] = sasa;
         strvp->string[i] = strdup(selection->name);
 
@@ -375,3 +442,15 @@ freesasa_select_area(const char **selector,
     }
     return strvp;
 }
+
+int selector_parse_error(expression *e,
+                         yyscan_t scanner,
+                         const char *msg)
+{
+    print_expr(e,0);
+    fprintf(stderr,"\n");
+    return freesasa_fail("%s: %s: %s %s",__func__,msg,e_str[e->type],e->value);
+    
+}
+
+

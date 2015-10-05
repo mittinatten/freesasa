@@ -1,12 +1,11 @@
 %{
 
-#include "util.h"
 #include "selector.h"
 #include "parser.h"
 #include "lexer.h"
     
     int yyerror(expression **expression, yyscan_t scanner, const char *msg) {
-        return freesasa_fail(msg);
+        return selector_parse_error(*expression,scanner,msg);
     }
 
 %}
@@ -33,18 +32,12 @@
     expression *expression;
 }
 
-%token T_LPAREN
-%token T_RPAREN
-%token T_PLUS
-%token T_DASH
-%token T_COMMA
+%token <value> T_NUMBER
+%token <value> T_ID
 
 %token T_AND
 %token T_OR
 %token T_NOT
-
-%token <value> T_NUMBER
-%token <value> T_ID
 
 %token T_RESN
 %token T_RESI
@@ -52,52 +45,43 @@
 %token T_NAME
 %token T_CHAIN
 
-%left T_DASH
-%left T_PLUS
-%left T_AND
+%precedence ATOM
 %left T_OR
-%right T_NOT
+%left T_AND
+%precedence T_NOT
+%left '+'
+%left '-'
 
-%type <expression> selector
-%type <expression> selection
+%type <expression> stmt
+%type <expression> expr
 %type <expression> list
-%type <expression> i_list
 %type <expression> atom
 
 %%
 
-input: selector ;
+stmt:
+  T_ID ',' expr          { *expression = create_selector($expr,$T_ID); } 
+;
 
-selector:
-T_ID[ID] T_COMMA selection[S]  { *expression = create_selector($S,$ID); } 
+expr:
+  '(' expr ')'           { $$ = $2; }
+| expr T_AND expr        { $$ = create_operation(E_AND, $1, $3); }
+| expr T_OR expr         { $$ = create_operation(E_OR, $1, $3); }
+| T_NOT expr             { $$ = create_operation(E_NOT, NULL, $2); }
+| T_RESN list            { $$ = create_selection(E_RESN, $list); }
+| T_RESI list            { $$ = create_selection(E_RESI, $list); }
+| T_SYMBOL list          { $$ = create_selection(E_SYMBOL, $list); }
+| T_NAME list            { $$ = create_selection(E_NAME, $list); }
+;
 
 list:
-  atom                      { $$ = $1; } 
-| atom[L] T_PLUS list[R]    { $$ = create_operation(E_PLUS, $L, $R); }
-;
-
-i_list:
-  atom                      { $$ = $1; }  
-| atom[L] T_DASH i_list[R]  { $$ = create_operation(E_RANGE, $L, $R); }
-| atom[L] T_PLUS i_list[R]  { $$ = create_operation(E_PLUS, $L, $R); }
-;
-
-selection: 
-  T_RESN list[L]            { $$ = create_selection(E_RESN, $L); }
-| T_RESI i_list[L]          { $$ = create_selection(E_RESI, $L); }
-| T_SYMBOL list[L]          { $$ = create_selection(E_SYMBOL, $L); }
-| T_NAME list[L]            { $$ = create_selection(E_NAME, $L); }
-| T_CHAIN list[L]            { $$ = create_selection(E_CHAIN, $L); }
-| T_LPAREN selection[S] T_RPAREN 
-                            { $$ = $S; }
-| selection[L] T_AND selection[R]
-                            { $$ = create_operation(E_AND, $L, $R); }
-| selection[L] T_OR selection[R]
-                            { $$ = create_operation(E_OR, $L, $R); }
-| T_NOT selection[R]        { $$ = create_operation(E_NOT, NULL, $R); }
+  atom                   { $$ = $1; }
+| atom '-' atom          { $$ = create_operation(E_RANGE, $1, $3); }
+| atom '-' atom '+' list { $$ = create_operation(E_PLUS, create_operation(E_RANGE, $1, $3),$5); }
+| atom '+' list          { $$ = create_operation(E_PLUS, $1, $3); }
 ;
 
 atom:
-  T_ID                      { $$ = create_atom(E_ID,$1); }
-| T_NUMBER                  { $$ = create_atom(E_NUMBER,$1); }
+  T_NUMBER               { $$ = create_atom(E_NUMBER,$1); }
+| T_ID                   { $$ = create_atom(E_ID,$1); }
 ;
