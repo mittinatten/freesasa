@@ -117,12 +117,12 @@ START_TEST (test_symbol)
                               "c3, symbol C",
                               "c4, symbol O AND symbol C",
                               "c5, symbol O OR symbol C",
-                              "c6, symbol O+C+S"};
-    svp = freesasa_select_area(commands,6,structure,result);
+                              "c6, symbol O+C+SE",
+                              "c7, symbol SE"};
+    svp = freesasa_select_area(commands,7,structure,result);
     ck_assert_ptr_ne(svp,NULL);
     ck_assert_ptr_ne(svp->value,NULL);
     ck_assert_ptr_ne(svp->string,NULL);
-    ck_assert_int_eq(svp->n,6);
     ck_assert(svp->value[0] > 5); //just to check that it's non-zero
     ck_assert(float_eq(svp->value[0], addup(symb_O,result) + addup(symb_C,result), 1e-10));
     ck_assert(float_eq(svp->value[0], svp->value[4], 1e-10));
@@ -132,6 +132,7 @@ START_TEST (test_symbol)
     ck_assert(float_eq(svp->value[5], 
                        addup(symb_O,result) + addup(symb_C,result) + addup(symb_SE,result),
                        1e-10));
+    ck_assert(float_eq(svp->value[6], addup(symb_SE,result), 1e-10));
     ck_assert_ptr_ne(svp->string[0], NULL);
     ck_assert_str_eq(svp->string[0], "c1");
     ck_assert_str_eq(svp->string[1], "c2");

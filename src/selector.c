@@ -8,6 +8,7 @@
 #include "util.h"
 #include "freesasa.h"
 #include "pdb.h"
+#include "classify.h"
 
 struct selection {
     const char* name;
@@ -178,27 +179,73 @@ match_name(const freesasa_structure *structure,
     return 0;
 }
 
+static int
+guess_symbol(char *symbol,
+             const char *res, 
+             const char *name) 
+{
+    int oons = freesasa_classify_oons(res,name);
+    char buf[PDB_ATOM_NAME_STRL+1];
+    switch (oons) {
+    case freesasa_carbo_C:
+    case freesasa_aliphatic_C:
+    case freesasa_aromatic_C:
+        strcpy(symbol,"C");
+        break;
+    case freesasa_amide_N:
+        strcpy(symbol,"N");
+        break;
+    case freesasa_carbo_O:
+    case freesasa_hydroxyl_O:
+        strcpy(symbol,"O");
+        break;
+    case freesasa_oons_sulfur:
+        strcpy(symbol,"S");
+        break;
+    case freesasa_oons_selenium:
+        strcpy(symbol,"SE");
+        break;
+    case freesasa_oons_unknown:
+    default:
+        // if the first position is empty, assume that it is a one letter element
+        // e.g. " C  "
+        if (name[0] == ' ') { 
+            symbol[0] = name[1];
+            symbol[1] = '\0';
+        } else { 
+            // if the string has padding to the right, assume it's a
+            // two-letter element, e.g. "FE  "
+            if (strlen(name) < 4) {
+                strncpy(symbol,name,2);
+                symbol[2] = '\0';
+            } else { 
+                // If it's a four-letter string, it's hard to say,
+                // assume only the first letter signifies the element
+                symbol[0] = name[0];
+                symbol[1] = '\0';
+            }
+            return FREESASA_WARN;
+        }
+        break;
+    }
+    return FREESASA_SUCCESS;
+}
 /** Looks for match of strlen(expr->value) first characters of atom-name and expr->value */
 static int
 match_symbol(const freesasa_structure *structure,
              const char *id, 
              int i)
 {
-    const char *atom = freesasa_structure_atom_name(structure,i);
-    char padded[PDB_ATOM_NAME_STRL+1];
-    if (strlen(atom) < 4) {
-        //For example " C  ", " CA "," OXT"
-        if (strlen(id) == 1) sprintf(padded," %c",id[0]);
-        //For example "SE  ", "NHH1"
-        if (strlen(id) == 2) strcpy(padded,id);
-        if (strncmp(atom, padded,strlen(id)) == 0)
-            return 1;
+    const char *res = freesasa_structure_atom_res_name(structure,i),
+        *name = freesasa_structure_atom_name(structure,i);
+    char symbol[3];
+    int status = guess_symbol(symbol,res,name);
+    if (strcmp(id,symbol) == 0) {
+        if (status == FREESASA_WARN) freesasa_warn("Unknown atom '%s : %s', guessing that it "
+                                                   "matches the symbol '%s'", 
+                                                   res, name, symbol);
+        return 1;
     }
-    else {
-        if (strncmp(atom, id, strlen(id)) == 0)
-            return 1;
-    }
-    
     return 0;
 }
 
@@ -425,6 +472,7 @@ freesasa_select_area(const char **selector,
 
         for (int j = 0; j < selection->size; ++j)
             sasa += selection->atom[j]*result->sasa[j];
+            
         strvp->value[i] = sasa;
         strvp->string[i] = strdup(selection->name);
 

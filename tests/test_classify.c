@@ -159,11 +159,11 @@ const struct atom atoms[n_atom_types] = {
     {"GLX"," AE1",unk_P,POL}, {"GLX"," AE2",unk_P,POL}, {"GLX"," Y  ",r_unk,UNK},
 // 211
     {"CSE"," C  ",car_C,POL}, {"CSE"," O  ",car_O,POL}, {"CSE"," CA ",ali_C,APO},
-    {"CSE"," N  ",ami_N,POL}, {"CSE"," CB ",ali_C,APO}, {"CSE"," SE ",sele,POL},
+    {"CSE"," N  ",ami_N,POL}, {"CSE"," CB ",ali_C,APO}, {"CSE","SE  ",sele,POL},
     {"CSE"," X  ",r_unk,UNK},
 // 218
     {"SEC"," C  ",car_C,POL}, {"SEC"," O  ",car_O,POL}, {"SEC"," CA ",ali_C,APO},
-    {"SEC"," N  ",ami_N,POL}, {"SEC"," CB ",ali_C,APO}, {"SEC"," SE ",sele,POL},
+    {"SEC"," N  ",ami_N,POL}, {"SEC"," CB ",ali_C,APO}, {"SEC","SE  ",sele,POL},
     {"SEC"," X  ",r_unk,UNK},
 // 225
     {"ACE"," C  ",car_C,POL}, {"ACE"," O  ",car_O,POL}, {"ACE"," CH3",ali_C,APO},
@@ -194,7 +194,7 @@ START_TEST (test_radius)
     ck_assert(fabs(freesasa_classify_radius("XXX"," O  ") - 1.52)  < 1e-10);
     ck_assert(fabs(freesasa_classify_radius("XXX"," P  ") - 1.8)  < 1e-10);
     ck_assert(fabs(freesasa_classify_radius("XXX"," X  ") - 0.0)  < 1e-10);
-    //ck_assert(fabs(freesasa_classify_radius("XXX"," SE ") - 1.9)  < 1e-10);
+    //ck_assert(fabs(freesasa_classify_radius("XXX","SE  ") - 1.9)  < 1e-10);
     //ck_assert(fabs(freesasa_classify_radius("XXX"," H  ") - 1.2)  < 1e-10);
     freesasa_set_verbosity(0);
 }
@@ -252,7 +252,7 @@ START_TEST (test_oons2str)
     ck_assert_str_eq(freesasa_classify_oons2str(
                          freesasa_classify_oons("CYS"," SG ")),"sulfur");
     ck_assert_str_eq(freesasa_classify_oons2str(
-                         freesasa_classify_oons("CSE"," SE ")),"selenium");
+                         freesasa_classify_oons("SEC","SE  ")),"selenium");
     ck_assert_str_eq(freesasa_classify_oons2str(
                          freesasa_classify_oons("ASX"," XD ")),"unknown_polar");
     freesasa_set_verbosity(FREESASA_V_SILENT);

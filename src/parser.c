@@ -1320,7 +1320,7 @@ yyreduce:
 
   case 13:
 #line 80 "parser.y" /* yacc.c:1646  */
-    { (yyval.expression) = create_operation(E_PLUS,create_operation(E_RANGE, (yyvsp[-4].expression), (yyvsp[-2].expression)),(yyvsp[0].expression)); }
+    { (yyval.expression) = create_operation(E_PLUS, create_operation(E_RANGE, (yyvsp[-4].expression), (yyvsp[-2].expression)),(yyvsp[0].expression)); }
 #line 1325 "parser.c" /* yacc.c:1646  */
     break;
 

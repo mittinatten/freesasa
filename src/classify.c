@@ -347,7 +347,7 @@ classify_oons_CMST(const char* a)
 static int
 classify_oons_cse(const char* a)
 {
-    if (a[1] == 'S' && a[2] == 'E') return freesasa_oons_selenium;
+    if (a[0] == 'S' && a[1] == 'E') return freesasa_oons_selenium;
     return freesasa_oons_unknown;
 }
 
