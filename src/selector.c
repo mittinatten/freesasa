@@ -414,7 +414,8 @@ select_atoms(struct selection* selection,
              const expression *expr,
              const freesasa_structure *structure)
 {
-    int warn = 0;
+    assert(expr);
+    int warn = 0, n = selection->size;
     switch (expr->type) {
     case E_SELECTOR:
         assert(expr->value != NULL);
@@ -430,11 +431,10 @@ select_atoms(struct selection* selection,
         break;
     case E_AND:
     case E_OR: {
-        int n = selection->size;
         struct selection *sl = selection_new(n),*sr = selection_new(n);
         if (sl && sr) {
             if (select_atoms(sl,expr->left,structure)  == FREESASA_WARN) ++warn;
-            if (select_atoms(sl,expr->right,structure) == FREESASA_WARN) ++warn;
+            if (select_atoms(sr,expr->right,structure) == FREESASA_WARN) ++warn;
             selection_join(selection,sl,sr,expr->type);
         } else {
             return freesasa_fail(__func__);
@@ -443,10 +443,11 @@ select_atoms(struct selection* selection,
         selection_free(sr);
         break;
     }
-    case E_NOT:
-        if (select_atoms(selection,expr->left,structure) == FREESASA_WARN) ++warn;
+    case E_NOT: {
+        if (select_atoms(selection,expr->right,structure) == FREESASA_WARN) ++warn;
         selection_not(selection);
         break;
+    }
     case E_ID:
     case E_NUMBER:
     case E_PLUS:

@@ -132,25 +132,27 @@ START_TEST (test_symbol)
                               "c4, symbol O AND symbol C",
                               "c5, symbol O OR symbol C",
                               "c6, symbol O+C+SE",
-                              "c7, symbol SE"};
-    select(commands,7);
+                              "c7, symbol SE",
+                              "c8, symbol O+C+SE and not symbol se"};
+    select(commands,8);
     ck_assert_ptr_ne(svp,NULL);
     ck_assert_ptr_ne(svp->value,NULL);
     ck_assert_ptr_ne(svp->string,NULL);
-    ck_assert(svp->value[0] > 5); //just to check that it's non-zero
-    ck_assert(float_eq(svp->value[0], addup(symb_O,result) + addup(symb_C,result), 1e-10));
-    ck_assert(float_eq(svp->value[0], svp->value[4], 1e-10));
-    ck_assert(float_eq(svp->value[1], addup(symb_O,result), 1e-10));
-    ck_assert(float_eq(svp->value[2], addup(symb_C,result), 1e-10));
-    ck_assert(float_eq(svp->value[3], 0, 1e-10));
-    ck_assert(float_eq(svp->value[5], 
-                       addup(symb_O,result) + addup(symb_C,result) + addup(symb_SE,result),
-                       1e-10));
-    ck_assert(float_eq(svp->value[6], addup(symb_SE,result), 1e-10));
     ck_assert_ptr_ne(svp->string[0], NULL);
     ck_assert_str_eq(svp->string[0], "c1");
     ck_assert_str_eq(svp->string[1], "c2");
     ck_assert_str_eq(svp->string[2], "c3");
+    ck_assert(svp->value[0] > 5); //just to check that it's non-zero
+    ck_assert(float_eq(svp->value[0], addup(symb_O,result) + addup(symb_C,result), 1e-10));
+    ck_assert(float_eq(svp->value[1], addup(symb_O,result), 1e-10));
+    ck_assert(float_eq(svp->value[2], addup(symb_C,result), 1e-10));
+    ck_assert(float_eq(svp->value[3], 0, 1e-10));
+    ck_assert(float_eq(svp->value[4], svp->value[0], 1e-10));
+    ck_assert(float_eq(svp->value[5], 
+                       addup(symb_O,result) + addup(symb_C,result) + addup(symb_SE,result),
+                       1e-10));
+    ck_assert(float_eq(svp->value[6], addup(symb_SE,result), 1e-10));
+    ck_assert(float_eq(svp->value[7], svp->value[0], 1e-10));
 }
 END_TEST
 
@@ -160,18 +162,19 @@ START_TEST (test_resn)
                               "c2, resn ala",
                               "c3, resn arg",
                               "c4, resn ala AND resn arg",
-                              "c5, resn ala OR  resn arg"};
-    select(commands,5);
+                              "c5, resn ala OR  resn arg",
+                              "c6, resn ala+arg AND NOT resn arg"};
+    select(commands,6);
     ck_assert_ptr_ne(svp,NULL);
     ck_assert_ptr_ne(svp->value,NULL);
     ck_assert_ptr_ne(svp->string,NULL);
-    ck_assert_int_eq(svp->n,5);
     ck_assert(svp->value[0] > 5);
     ck_assert(float_eq(svp->value[0], addup(resn_A,result) + addup(resn_R,result), 1e-10));
-    ck_assert(float_eq(svp->value[0], svp->value[4], 1e-10));
     ck_assert(float_eq(svp->value[1], addup(resn_A,result), 1e-10));
     ck_assert(float_eq(svp->value[2], addup(resn_R,result), 1e-10));
     ck_assert(float_eq(svp->value[3], 0, 1e-10));
+    ck_assert(float_eq(svp->value[4], svp->value[0], 1e-10));
+    ck_assert(float_eq(svp->value[5], svp->value[1], 1e-10));
 }
 END_TEST
 
@@ -180,21 +183,23 @@ START_TEST (test_resi)
     const char *commands[] = {"c1, resi 1+2-4",
                               "c2, resi 2-4",
                               "c3, resi 1",
-                              "c4, resi 1 AND resi 2 - 4",
-                              "c5, resi 1 OR  resi 2 - 4",
+                              "c4, resi 1 AND resi 2-4",
+                              "c5, resi 1 OR  resi 2-4",
                               "c6, resi 1-2+2-4",
                               "c7, resi 1+2-4+3",
-                              "c8, resi 1-2+7+9+3-5+100"};
-    select(commands,8);
+                              "c8, resi 1-2+7+9+3-5+100",
+                              "c9, resi 1-4 AND NOT resi 2-4"};
+    select(commands,9);
     ck_assert(svp->value[0] > 5);
     ck_assert(float_eq(svp->value[0], addup(resi_1,result) + addup(resi_2r4,result), 1e-10));
-    ck_assert(float_eq(svp->value[0], svp->value[4], 1e-10));
     ck_assert(float_eq(svp->value[1], addup(resi_2r4,result), 1e-10));
     ck_assert(float_eq(svp->value[2], addup(resi_1,result), 1e-10));
     ck_assert(float_eq(svp->value[3], 0, 1e-10));
-    ck_assert(float_eq(svp->value[0], svp->value[5], 1e-10));
-    ck_assert(float_eq(svp->value[0], svp->value[6], 1e-10));
-    ck_assert(float_eq(svp->value[0], svp->value[7], 1e-10));
+    ck_assert(float_eq(svp->value[4], svp->value[0], 1e-10));
+    ck_assert(float_eq(svp->value[5], svp->value[0], 1e-10));
+    ck_assert(float_eq(svp->value[6], svp->value[0], 1e-10));
+    ck_assert(float_eq(svp->value[7], svp->value[0], 1e-10));
+    ck_assert(float_eq(svp->value[8], svp->value[2], 1e-10));
 }
 END_TEST
 
@@ -203,18 +208,52 @@ START_TEST (test_chain)
     const char *commands[] = {"c1, chain A+B",
                               "c2, chain A",
                               "c3, chain B",
-                              "c4, chain A AND chain A",
+                              "c4, chain A AND chain B",
                               "c5, chain A OR chain B",
-                              "c6, chain A-B"};
-    select(commands,6);
+                              "c6, chain A-B",
+                              "c7, chain A-B AND NOT chain A"};
+    select(commands,7);
     ck_assert(svp->value[0] > 5);
     ck_assert(float_eq(svp->value[0], addup(chain_A,result) + addup(chain_B,result), 1e-10));
     ck_assert(float_eq(svp->value[0], svp->value[4], 1e-10));
+    ck_assert(float_eq(svp->value[0], svp->value[5], 1e-10));
     ck_assert(float_eq(svp->value[1], addup(chain_A,result), 1e-10));
     ck_assert(float_eq(svp->value[2], addup(chain_B,result), 1e-10));
     ck_assert(float_eq(svp->value[3], 0, 1e-10));
+    ck_assert(float_eq(svp->value[6], addup(chain_B,result), 1e-10));
+
 }
 END_TEST
+
+START_TEST (test_syntax_error)
+{
+    double a;
+    char *s;
+    const char *err[] = {"","a","a,","a,b",
+                         // no selection arg
+                         "a,resi","a,resn","a,name","a,symbol","a,chain",
+                         // no name of selection
+                         ",resn ala",",resi 1",",name ca",", symbol c",",chain a",
+                         "resn ala","resi 1","name ca","symbol c","chain a",
+                         // comma wrong place, no name
+                         "resn, ala","resi, 1","name, ca","symbol, c","chain, a",
+                         // ranges (-) used where not allowed
+                         "a, resn ala-arg", "a, name ca-cb","a, symbol c-o"
+                         // trailing +-
+                         "a, resn ala+", "a, resn ala+arg+", "a, resi 1-"
+                         "a, resi 1-", "a, resi 1-2+","a, resi 1+2-5+"
+                         // boolean operators
+                         "a, (resn ala) AND","a,(resn ala) OR","a,(resn ala) OR NOT"
+                         "a, (resn ala) AND arg","a,(resn ala) OR arg",
+                         "a, (resn ala) OR NOT arg",
+    };
+    int n = sizeof(err)/sizeof(char*);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    for (int i = 0; i < n; ++i) {
+        ck_assert_int_eq(freesasa_select_area(err[i],&s,&a,structure,result),FREESASA_FAIL);
+    }
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+} END_TEST
 
 Suite *selector_suite() {
     Suite *s = suite_create("Selector");
@@ -226,8 +265,14 @@ Suite *selector_suite() {
     tcase_add_test(tc_core, test_resn);
     tcase_add_test(tc_core, test_resi);
     tcase_add_test(tc_core, test_chain);
+    
+    TCase *tc_syntax = tcase_create("Syntax");
+    // just to avoid passing NULL pointers
+    tcase_add_checked_fixture(tc_syntax,setup,teardown);
+    tcase_add_test(tc_syntax, test_syntax_error);
 
     suite_add_tcase(s, tc_core);
+    suite_add_tcase(s, tc_syntax);
 
     return s;
 }
