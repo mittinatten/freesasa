@@ -284,18 +284,18 @@ atom_area(lr_data *lr,
             sasa += delta*ri*exposed_arc_length(arc,n_arcs);
         }
 #ifdef DEBUG
-        if (completely_buried == 0) {
+        if (is_buried == 0) {
             //exposed_arc[i] = 0;
             double xi = v[3*i], yi = v[3*i+1];
             for (double c = 0; c < 2*M_PI; c += M_PI/30.0) {
                 int is_exp = 1;
-                for (int j = 0; j < n_buried; ++j) {
+                for (int j = 0; j < n_arcs; ++j) {
                     double inf = arc[2*j], sup = arc[2*j+1];
                     if (c >= inf && c <= sup) {
                         is_exp = 0; break;
                     }
                 }
-                double d = c-M_PI;
+                double d = c+M_PI;
                 // print the arcs used in calculation
                 if (is_exp) printf("%6.2f %6.2f %6.2f %7.5f\n",
                                    xi+ri_slice*cos(d),yi+ri_slice*sin(d),z_slice,d);
