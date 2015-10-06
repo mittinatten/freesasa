@@ -1,7 +1,7 @@
 if COND_GCOV
 AM_CFLAGS = --coverage
 AM_LDFLAGS = -lgcov
-endif
+endif # COND_GCOV
 GCOV_FILES = *.gcda *.gcno *.gcov
 
 bin_PROGRAMS = freesasa
@@ -21,8 +21,10 @@ example_LDADD = libfreesasa.a
 
 lp_output = lexer.c lexer.h parser.c parser.h
 
+if GENERATE_PARSER
 $(lp_output): lexer.l parser.y
 	flex lexer.l
 	bison parser.y
+endif # GENERATE_PARSER
 
 CLEANFILES = $(GCOV_FILES) *~
