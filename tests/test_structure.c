@@ -25,12 +25,13 @@
 #include <structure.h>
 #include <pdb.h>
 
-#define N 5
-const char an[N][PDB_ATOM_NAME_STRL+1] =  {" C  "," CA "," O  "," CB "," SD "};
-const char rna[N][PDB_ATOM_RES_NAME_STRL+1] = {"MET", "MET", "MET", "MET", "MET"};
-const char rnu[N][PDB_ATOM_RES_NUMBER_STRL+1] = {"   1","   1","   1","   1","   1"};
-const char cl[N] = {'A','A','A','A','A'};
-const double bfactors[N] = {1., 1., 1., 1., 1.};
+#define N 6
+const char an[N][PDB_ATOM_NAME_STRL+1] =  {" C  "," CA "," O  "," CB "," SD ", "SE  "};
+const char rna[N][PDB_ATOM_RES_NAME_STRL+1] = {"MET", "MET", "MET", "MET", "MET", "SEC",};
+const char rnu[N][PDB_ATOM_RES_NUMBER_STRL+1] = {"   1","   1","   1","   1","   1","   1"};
+const char symbol[N][PDB_ATOM_SYMBOL_STRL+1] = {" C"," C"," O"," C"," S","SE"};
+const char cl[N] = {'A','A','A','A','A','A'};
+const double bfactors[N] = {1., 1., 1., 1., 1., 1.};
 
 freesasa_structure *s;
 
@@ -57,6 +58,7 @@ START_TEST (test_structure_api)
         ck_assert_str_eq(freesasa_structure_atom_name(s,i),an[i]);
         ck_assert_str_eq(freesasa_structure_atom_res_name(s,i),rna[i]);
         ck_assert_str_eq(freesasa_structure_atom_res_number(s,i),rnu[i]);
+        ck_assert_str_eq(freesasa_structure_atom_symbol(s,i),symbol[i]);
         ck_assert_int_eq(freesasa_structure_atom_chain(s,i),cl[i]);
         sprintf(buf,"%c %s %s %s",cl[i],rnu[i],rna[i],an[i]);
         ck_assert_str_eq(freesasa_structure_atom_descriptor(s,i),buf);
@@ -105,6 +107,7 @@ START_TEST (test_structure_1ubq)
     ck_assert_str_eq(freesasa_structure_atom_name(s,8)," N  ");
     ck_assert_str_eq(freesasa_structure_atom_res_number(s,8),"   2");
     ck_assert_int_eq(freesasa_structure_atom_chain(s,8),'A');
+    ck_assert_str_eq(freesasa_structure_atom_symbol(s,8)," N");
 
     // check coordinates of that random atom
     const freesasa_coord *c = freesasa_structure_xyz(s);
