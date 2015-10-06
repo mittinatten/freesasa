@@ -23,7 +23,10 @@
 #include <freesasa.h>
 #include <check.h>
 
+extern freesasa_strvp* freesasa_strvp_new(int n);
+
 #define N 8
+
 freesasa_structure *structure;
 freesasa_result *result;
 freesasa_strvp *svp;
@@ -52,12 +55,22 @@ const int resi_1r4[N]={      1,      1,      1,      1,      1,      1,      1, 
 const int resi_1[N] = {      1,      1,      0,      0,      0,      1,      0,      0};
 const int resi_2r4[N]={      0,      0,      1,      1,      1,      0,      1,      1};
 
-int float_eq(double a, double b, double tolerance) {
+static int 
+float_eq(double a, double b, double tolerance) 
+{
     if (fabs(a-b) < tolerance) return 1;
     printf("floats not equal: a = %f, b = %f, diff = %f, tolerance = %f\n",
            a, b, fabs(a-b), tolerance);
     fflush(stdout);
     return 0;
+}
+
+static int
+select(const char **command,int n_commands) 
+{
+    svp = freesasa_strvp_new(n_commands);
+    for (int i = 0; i < n_commands; ++i) 
+        freesasa_select_area(command[i],&svp->string[i],&svp->value[i],structure,result);
 }
 
 static void setup(void) 
@@ -93,7 +106,7 @@ START_TEST (test_name)
                               "c4, name ca AND name o",
                               "c5, name ca OR  name o",
                               "c6, name ca+o+oxt"};
-    svp = freesasa_select_area(commands,6,structure,result);
+    select(commands,6);
     ck_assert_ptr_ne(svp,NULL);
     ck_assert_ptr_ne(svp->value,NULL);
     ck_assert_ptr_ne(svp->string,NULL);
@@ -119,7 +132,7 @@ START_TEST (test_symbol)
                               "c5, symbol O OR symbol C",
                               "c6, symbol O+C+SE",
                               "c7, symbol SE"};
-    svp = freesasa_select_area(commands,7,structure,result);
+    select(commands,7);
     ck_assert_ptr_ne(svp,NULL);
     ck_assert_ptr_ne(svp->value,NULL);
     ck_assert_ptr_ne(svp->string,NULL);
@@ -147,7 +160,7 @@ START_TEST (test_resn)
                               "c3, resn arg",
                               "c4, resn ala AND resn arg",
                               "c5, resn ala OR  resn arg"};
-    svp = freesasa_select_area(commands,5,structure,result);
+    select(commands,5);
     ck_assert_ptr_ne(svp,NULL);
     ck_assert_ptr_ne(svp->value,NULL);
     ck_assert_ptr_ne(svp->string,NULL);
@@ -171,10 +184,7 @@ START_TEST (test_resi)
                               "c6, resi 1-2+2-4",
                               "c7, resi 1+2-4+3",
                               "c8, resi 1-2+7+9+3-5+100"};
-    svp = freesasa_select_area(commands,8,structure,result);
-    ck_assert_ptr_ne(svp,NULL);
-    ck_assert_ptr_ne(svp->value,NULL);
-    ck_assert_ptr_ne(svp->string,NULL);
+    select(commands,8);
     ck_assert(svp->value[0] > 5);
     ck_assert(float_eq(svp->value[0], addup(resi_1,result) + addup(resi_2r4,result), 1e-10));
     ck_assert(float_eq(svp->value[0], svp->value[4], 1e-10));

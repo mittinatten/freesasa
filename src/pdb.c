@@ -110,6 +110,20 @@ freesasa_pdb_get_alt_coord_label(const char* line)
 }
 
 int
+freesasa_pdb_get_symbol(char *symbol,
+                        const char* line)
+{
+    assert(line);
+    if (pdb_line_check(line,76+PDB_ATOM_SYMBOL_STRL) == FREESASA_FAIL) {
+        symbol[0] = '\0';
+        return FREESASA_FAIL;
+    }
+    strncpy(symbol,line+76,2);
+    symbol[2] = '\0';
+    return FREESASA_SUCCESS;
+}
+
+int
 freesasa_pdb_ishydrogen(const char* line)
 {
     assert(line);

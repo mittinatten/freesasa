@@ -578,6 +578,22 @@ freesasa_structure_atom_chain(const freesasa_structure *structure,
                               int i);
 
 /**
+    Get atom symbol.
+
+    If the structure was initialized from a PDB file the symbol field
+    of that file is used. Otherwise the symbol is guess from atom and
+    residue name.
+
+    Asserts that index i is within bounds. 
+
+    @param structure The structure.
+    @param i Atom index.
+    @return Atom symbol (" C", " N", "SE",etc); 
+ */
+const char*
+freesasa_structure_atom_symbol(const freesasa_structure *structure,
+                               int i);
+/**
     Get model number for structure.
 
     Useful if structure was generated with freesasa_structure_array().
@@ -588,9 +604,10 @@ freesasa_structure_atom_chain(const freesasa_structure *structure,
 int
 freesasa_structure_model(const freesasa_structure *structure);
 
-freesasa_strvp*
-freesasa_select_area(const char **selector,
-                     int n_selector,
+int
+freesasa_select_area(const char *command,
+                     char **name,
+                     double *area,
                      const freesasa_structure *structure,
                      const freesasa_result *result);
 
