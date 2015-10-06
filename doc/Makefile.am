@@ -3,7 +3,7 @@ ALLFILES =
 
 EXTRA_DIST = doxy_main.md GPL.md README.md \
 	doxygen-footer.html doxygen-header.html \
-	HOWTO_BUILD_WEBPAGES fig/
+	fig/
 
 if HAVE_DOXYGEN
 
@@ -19,12 +19,13 @@ CLEANFILES += doxyfile.stamp
 ALLFILES += doxyfile.stamp
 
 doxygen: doxyfile.stamp
+
+all-local: doxyfile.stamp
+
 else
 doxygen:
 	@echo Doxygen disabled, run configure-script with option --enable-doxygen to enable
 endif
-
-all-local: doxyfile.stamp
 
 clean-local:
 	rm -f *.log *~ 
