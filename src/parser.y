@@ -55,6 +55,7 @@
 %type <expression> stmt
 %type <expression> expr
 %type <expression> list
+%type <expression> range
 %type <expression> atom
 
 %%
@@ -69,16 +70,21 @@ expr:
 | expr T_OR expr         { $$ = create_operation(E_OR, $1, $3); }
 | T_NOT expr             { $$ = create_operation(E_NOT, NULL, $2); }
 | T_RESN list            { $$ = create_selection(E_RESN, $list); }
-| T_RESI list            { $$ = create_selection(E_RESI, $list); }
+| T_RESI range           { $$ = create_selection(E_RESI, $range); }
 | T_SYMBOL list          { $$ = create_selection(E_SYMBOL, $list); }
 | T_NAME list            { $$ = create_selection(E_NAME, $list); }
+| T_CHAIN range          { $$ = create_selection(E_CHAIN, $range); }
 ;
 
 list:
   atom                   { $$ = $1; }
-| atom '-' atom          { $$ = create_operation(E_RANGE, $1, $3); }
-| atom '-' atom '+' list { $$ = create_operation(E_PLUS, create_operation(E_RANGE, $1, $3),$5); }
 | atom '+' list          { $$ = create_operation(E_PLUS, $1, $3); }
+
+range:
+  atom                   { $$ = $1; }
+| atom '-' atom          { $$ = create_operation(E_RANGE, $1, $3); }
+| atom '-' atom '+' range{ $$ = create_operation(E_PLUS, create_operation(E_RANGE, $1, $3),$5); }
+| atom '+' range         { $$ = create_operation(E_PLUS, $1, $3); }
 ;
 
 atom:

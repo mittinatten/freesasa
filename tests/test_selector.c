@@ -54,7 +54,8 @@ const int name_OXT[N]={      0,      0,      0,      0,      0,      1,      0, 
 const int resi_1r4[N]={      1,      1,      1,      1,      1,      1,      1,      1};
 const int resi_1[N] = {      1,      1,      0,      0,      0,      1,      0,      0};
 const int resi_2r4[N]={      0,      0,      1,      1,      1,      0,      1,      1};
-
+const int chain_A[N]= {      1,      1,      1,      1,      1,      0,      0,      0};
+const int chain_B[N]= {      0,      0,      0,      0,      0,      1,      1,      1};
 static int 
 float_eq(double a, double b, double tolerance) 
 {
@@ -197,6 +198,24 @@ START_TEST (test_resi)
 }
 END_TEST
 
+START_TEST (test_chain)
+{
+    const char *commands[] = {"c1, chain A+B",
+                              "c2, chain A",
+                              "c3, chain B",
+                              "c4, chain A AND chain A",
+                              "c5, chain A OR chain B",
+                              "c6, chain A-B"};
+    select(commands,6);
+    ck_assert(svp->value[0] > 5);
+    ck_assert(float_eq(svp->value[0], addup(chain_A,result) + addup(chain_B,result), 1e-10));
+    ck_assert(float_eq(svp->value[0], svp->value[4], 1e-10));
+    ck_assert(float_eq(svp->value[1], addup(chain_A,result), 1e-10));
+    ck_assert(float_eq(svp->value[2], addup(chain_B,result), 1e-10));
+    ck_assert(float_eq(svp->value[3], 0, 1e-10));
+}
+END_TEST
+
 Suite *selector_suite() {
     Suite *s = suite_create("Selector");
 
@@ -206,6 +225,7 @@ Suite *selector_suite() {
     tcase_add_test(tc_core, test_symbol);
     tcase_add_test(tc_core, test_resn);
     tcase_add_test(tc_core, test_resi);
+    tcase_add_test(tc_core, test_chain);
 
     suite_add_tcase(s, tc_core);
 

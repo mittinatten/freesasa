@@ -245,6 +245,9 @@ select_id(expression_type parent_type,
         case E_RESI:
             match = match_resi(structure, id, i);
             break;
+        case E_CHAIN:
+            match = match_chain(structure, id, i);
+            break;
         default:
             assert(0);
             break;
@@ -267,6 +270,9 @@ is_valid_id(int parent_type,
                                  "Will be ignored",val);
         break;
     case E_SYMBOL:
+        if (type != E_ID)
+            return freesasa_warn("select: Symbol '%s' invalid (should be 1 or 2 letters, 'C', 'N', 'SE', etc). "
+                                 "Will be ignored.",val);
         if (strlen(val) > 2)
             return freesasa_warn("select: Symbol '%s' invalid (element names have 1 or 2 characters). "
                                  "Will be ignored.",val);
@@ -281,12 +287,55 @@ is_valid_id(int parent_type,
             return freesasa_warn("select: Residue number '%s' invalid (not a number). "
                                  "Will be ignored.",val);
         break;
+    case E_CHAIN:
+        if (strlen(val) > 1)
+            return freesasa_warn("select: Chain label '%s' invalid (string too long). "
+                                 "Will be ignored.",val);
+        break;
     default:
         assert(0);
         break;
     }
     return FREESASA_SUCCESS;
 }
+
+static int
+select_range(expression_type parent_type,
+             struct selection *selection,
+             const freesasa_structure *structure,
+             const expression *left,
+             const expression *right)
+{
+    assert(parent_type == E_RESI || parent_type == E_CHAIN);
+    int lower, upper;
+    if (parent_type == E_RESI) { // residues have integer numbering
+        if (left->type != E_NUMBER || right->type != E_NUMBER) {
+            return freesasa_warn("select: Range '%s-%s' invalid, needs to be two numbers (1-5). "
+                                 "Will be ignored.",left->value,right->value);
+        }
+    } else { // chains can be numbered by both letters (common) and numbers (uncommon)
+        if (left->type != right->type ||
+            (left->type == E_ID && (strlen(left->value) > 1 || strlen(right->value) > 1)))
+            return freesasa_warn("select: Chain range '%s-%s' invalid, needs to be two letters (A-C) or two numbers (1-5). "
+                                 "Will be ignored.",left->value,right->value);
+    }
+    if (left->type == E_NUMBER) {
+        lower = atoi(left->value);
+        upper = atoi(right->value);
+    } else {
+        lower = (int)left->value[0];
+        upper = (int)right->value[0];
+    }
+    for (int i = 0; i < selection->size; ++i) {
+        int j;
+        if (parent_type == E_RESI) j = atoi(freesasa_structure_atom_res_number(structure,i));
+        else j = (int)freesasa_structure_atom_chain(structure,i);
+        if (j >= lower && j <= upper) 
+            selection->atom[i] = 1;
+    }
+    return FREESASA_SUCCESS;
+}
+
 static int
 select_list(expression_type parent_type,
             struct selection *selection,
@@ -294,7 +343,7 @@ select_list(expression_type parent_type,
             const expression *expr)
 {
     assert(expr);
-    int lower, upper, resr, resl;
+    int resr, resl;
     expression *left = expr->left, *right = expr->right;
     switch(expr->type) {
     case E_PLUS: 
@@ -304,18 +353,7 @@ select_list(expression_type parent_type,
             return FREESASA_WARN;
         break;
     case E_RANGE:
-        assert(parent_type == E_RESI);
-        if (left->type != E_NUMBER || right->type != E_NUMBER) {
-            return freesasa_warn("select: Range '%s-%s' invalid, needs to be two numbers. "
-                                 "Will be ignored.",left->value,right->value);
-        }
-        lower = atoi(left->value);
-        upper = atoi(right->value);
-        for (int i = 0; i < selection->size; ++i) {
-            int resi = atoi(freesasa_structure_atom_res_number(structure,i));
-            if (resi >= lower && resi <= upper) 
-                selection->atom[i] = 1;
-        }
+        select_range(parent_type,selection,structure,left,right);
         break;
     case E_ID: case E_NUMBER:
         if (is_valid_id(parent_type,expr) == FREESASA_SUCCESS)
@@ -425,17 +463,19 @@ select_atoms(struct selection* selection,
 static void
 print_expr(const expression *e,int level)
 {
-    fprintf(stderr,"\n");
-    for (int i = 0; i < level; ++i) fprintf(stderr,"  ");
-    if (e == NULL) fprintf(stderr,"()");
-    else {
-        fprintf(stderr,"(%s ",e_str[e->type]);
-        if (e->value) fprintf(stderr,": %s ",e->value);
-        print_expr(e->left,level+1);
-        print_expr(e->right,level+1);
-        fprintf(stderr,")");
+    if (freesasa_get_verbosity() != FREESASA_V_SILENT) {
+        fprintf(stderr,"\n");
+        for (int i = 0; i < level; ++i) fprintf(stderr,"  ");
+        if (e == NULL) fprintf(stderr,"()");
+        else {
+            fprintf(stderr,"(%s ",e_str[e->type]);
+            if (e->value) fprintf(stderr,": %s ",e->value);
+            print_expr(e->left,level+1);
+            print_expr(e->right,level+1);
+            fprintf(stderr,")");
+        }
+        fflush(stderr);
     }
-    fflush(stderr);
 }
 
 int
@@ -451,7 +491,7 @@ freesasa_select_area(const char *command,
     struct selection *selection = NULL;
     struct expression *expression = NULL;
     double sasa = 0;
-    int err = 0, warn = 0, flag;
+    int err = 0, warn = 0;
     *area = 0;
     *name = "";
 
@@ -459,10 +499,13 @@ freesasa_select_area(const char *command,
     selection = selection_new(result->n_atoms);
     //print_expr(expression,0);
     if (expression != NULL && selection != NULL) {
-        flag = select_atoms(selection, expression, structure);
-        if (flag == FREESASA_FAIL) err = 1;
-        if (flag == FREESASA_WARN) warn = 1;
-        if (flag == FREESASA_SUCCESS || flag == FREESASA_WARN) {
+        switch (select_atoms(selection, expression, structure)) {
+        case FREESASA_FAIL: 
+            err = 1;
+            break;
+        case FREESASA_WARN: 
+            warn = 1; // proceed with calculation, print warning later
+        case FREESASA_SUCCESS:
             //int count = 0;
             for (int j = 0; j < selection->size; ++j) {
                 sasa += selection->atom[j]*result->sasa[j];
@@ -477,6 +520,9 @@ freesasa_select_area(const char *command,
                 err = 1; 
                 mem_fail();
             }
+            break;
+        default:
+            assert(0);
         }
     } else {
         err = 1;
@@ -494,7 +540,7 @@ int selector_parse_error(expression *e,
                          const char *msg)
 {
     print_expr(e,0);
-    fprintf(stderr,"\n");
+    if (freesasa_get_verbosity() != FREESASA_V_SILENT) fprintf(stderr,"\n");
     return freesasa_fail("%s: %s: %s %s",__func__,msg,e_str[e->type],e->value);
 }
 
