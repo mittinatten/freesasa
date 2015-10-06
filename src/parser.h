@@ -30,22 +30,22 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-#ifndef YY_YY_PARSER_H_INCLUDED
-# define YY_YY_PARSER_H_INCLUDED
+#ifndef YY_FREESASA_YY_PARSER_H_INCLUDED
+# define YY_FREESASA_YY_PARSER_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
 #endif
 #if YYDEBUG
-extern int yydebug;
+extern int freesasa_yydebug;
 #endif
 /* "%code requires" blocks.  */
 #line 13 "parser.y" /* yacc.c:1909  */
 
 
-#ifndef YY_TYPEDEF_YY_SCANNER_T
-#define YY_TYPEDEF_YY_SCANNER_T
-    typedef void* yyscan_t;
+#ifndef FREESASA_TYPEDEF_YY_SCANNER_T
+#define FREESASA_TYPEDEF_YY_SCANNER_T
+    typedef void* freesasa_yyscan_t;
 #endif
 
 
@@ -90,6 +90,6 @@ typedef union YYSTYPE YYSTYPE;
 
 
 
-int yyparse (expression **expression, yyscan_t scanner);
+int freesasa_yyparse (expression **expression, freesasa_yyscan_t scanner);
 
-#endif /* !YY_YY_PARSER_H_INCLUDED  */
+#endif /* !YY_FREESASA_YY_PARSER_H_INCLUDED  */

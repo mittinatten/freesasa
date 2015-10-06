@@ -59,6 +59,12 @@
 #define YYPULL 1
 
 
+/* Substitute the variable and function names.  */
+#define yyparse         freesasa_yyparse
+#define yylex           freesasa_yylex
+#define yyerror         freesasa_yyerror
+#define yydebug         freesasa_yydebug
+#define yynerrs         freesasa_yynerrs
 
 
 /* Copy the first part of user declarations.  */
@@ -68,13 +74,13 @@
 #include "selector.h"
 #include "parser.h"
 #include "lexer.h"
-    
-    int yyerror(expression **expression, yyscan_t scanner, const char *msg) {
+
+    int freesasa_yyerror(expression **expression, yyscan_t scanner, const char *msg) {
         return selector_parse_error(*expression,scanner,msg);
     }
 
 
-#line 78 "parser.c" /* yacc.c:339  */
+#line 84 "parser.c" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -94,26 +100,26 @@
 
 /* In a future release of Bison, this section will be replaced
    by #include "parser.h".  */
-#ifndef YY_YY_PARSER_H_INCLUDED
-# define YY_YY_PARSER_H_INCLUDED
+#ifndef YY_FREESASA_YY_PARSER_H_INCLUDED
+# define YY_FREESASA_YY_PARSER_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
 #endif
 #if YYDEBUG
-extern int yydebug;
+extern int freesasa_yydebug;
 #endif
 /* "%code requires" blocks.  */
 #line 13 "parser.y" /* yacc.c:355  */
 
 
-#ifndef YY_TYPEDEF_YY_SCANNER_T
-#define YY_TYPEDEF_YY_SCANNER_T
-    typedef void* yyscan_t;
+#ifndef FREESASA_TYPEDEF_YY_SCANNER_T
+#define FREESASA_TYPEDEF_YY_SCANNER_T
+    typedef void* freesasa_yyscan_t;
 #endif
 
 
-#line 117 "parser.c" /* yacc.c:355  */
+#line 123 "parser.c" /* yacc.c:355  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -144,7 +150,7 @@ union YYSTYPE
     const char *value;
     expression *expression;
 
-#line 148 "parser.c" /* yacc.c:355  */
+#line 154 "parser.c" /* yacc.c:355  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -154,13 +160,13 @@ typedef union YYSTYPE YYSTYPE;
 
 
 
-int yyparse (expression **expression, yyscan_t scanner);
+int freesasa_yyparse (expression **expression, freesasa_yyscan_t scanner);
 
-#endif /* !YY_YY_PARSER_H_INCLUDED  */
+#endif /* !YY_FREESASA_YY_PARSER_H_INCLUDED  */
 
 /* Copy the second part of user declarations.  */
 
-#line 164 "parser.c" /* yacc.c:358  */
+#line 170 "parser.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -646,7 +652,7 @@ do {                                                                      \
 `----------------------------------------*/
 
 static void
-yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, expression **expression, yyscan_t scanner)
+yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, expression **expression, freesasa_yyscan_t scanner)
 {
   FILE *yyo = yyoutput;
   YYUSE (yyo);
@@ -667,7 +673,7 @@ yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvalue
 `--------------------------------*/
 
 static void
-yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, expression **expression, yyscan_t scanner)
+yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, expression **expression, freesasa_yyscan_t scanner)
 {
   YYFPRINTF (yyoutput, "%s %s (",
              yytype < YYNTOKENS ? "token" : "nterm", yytname[yytype]);
@@ -705,7 +711,7 @@ do {                                                            \
 `------------------------------------------------*/
 
 static void
-yy_reduce_print (yytype_int16 *yyssp, YYSTYPE *yyvsp, int yyrule, expression **expression, yyscan_t scanner)
+yy_reduce_print (yytype_int16 *yyssp, YYSTYPE *yyvsp, int yyrule, expression **expression, freesasa_yyscan_t scanner)
 {
   unsigned long int yylno = yyrline[yyrule];
   int yynrhs = yyr2[yyrule];
@@ -985,7 +991,7 @@ yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
 `-----------------------------------------------*/
 
 static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, expression **expression, yyscan_t scanner)
+yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, expression **expression, freesasa_yyscan_t scanner)
 {
   YYUSE (yyvaluep);
   YYUSE (expression);
@@ -1007,7 +1013,7 @@ yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, expression **expre
 `----------*/
 
 int
-yyparse (expression **expression, yyscan_t scanner)
+yyparse (expression **expression, freesasa_yyscan_t scanner)
 {
 /* The lookahead symbol.  */
 int yychar;
@@ -1257,113 +1263,113 @@ yyreduce:
         case 2:
 #line 64 "parser.y" /* yacc.c:1646  */
     { *expression = create_selector((yyvsp[0].expression),(yyvsp[-2].value)); }
-#line 1261 "parser.c" /* yacc.c:1646  */
+#line 1267 "parser.c" /* yacc.c:1646  */
     break;
 
   case 3:
 #line 68 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = (yyvsp[-1].expression); }
-#line 1267 "parser.c" /* yacc.c:1646  */
+#line 1273 "parser.c" /* yacc.c:1646  */
     break;
 
   case 4:
 #line 69 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = create_operation(E_AND, (yyvsp[-2].expression), (yyvsp[0].expression)); }
-#line 1273 "parser.c" /* yacc.c:1646  */
+#line 1279 "parser.c" /* yacc.c:1646  */
     break;
 
   case 5:
 #line 70 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = create_operation(E_OR, (yyvsp[-2].expression), (yyvsp[0].expression)); }
-#line 1279 "parser.c" /* yacc.c:1646  */
+#line 1285 "parser.c" /* yacc.c:1646  */
     break;
 
   case 6:
 #line 71 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = create_operation(E_NOT, NULL, (yyvsp[0].expression)); }
-#line 1285 "parser.c" /* yacc.c:1646  */
+#line 1291 "parser.c" /* yacc.c:1646  */
     break;
 
   case 7:
 #line 72 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = create_selection(E_RESN, (yyvsp[0].expression)); }
-#line 1291 "parser.c" /* yacc.c:1646  */
+#line 1297 "parser.c" /* yacc.c:1646  */
     break;
 
   case 8:
 #line 73 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = create_selection(E_RESI, (yyvsp[0].expression)); }
-#line 1297 "parser.c" /* yacc.c:1646  */
+#line 1303 "parser.c" /* yacc.c:1646  */
     break;
 
   case 9:
 #line 74 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = create_selection(E_SYMBOL, (yyvsp[0].expression)); }
-#line 1303 "parser.c" /* yacc.c:1646  */
+#line 1309 "parser.c" /* yacc.c:1646  */
     break;
 
   case 10:
 #line 75 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = create_selection(E_NAME, (yyvsp[0].expression)); }
-#line 1309 "parser.c" /* yacc.c:1646  */
+#line 1315 "parser.c" /* yacc.c:1646  */
     break;
 
   case 11:
 #line 76 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = create_selection(E_CHAIN, (yyvsp[0].expression)); }
-#line 1315 "parser.c" /* yacc.c:1646  */
+#line 1321 "parser.c" /* yacc.c:1646  */
     break;
 
   case 12:
 #line 80 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = (yyvsp[0].expression); }
-#line 1321 "parser.c" /* yacc.c:1646  */
+#line 1327 "parser.c" /* yacc.c:1646  */
     break;
 
   case 13:
 #line 81 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = create_operation(E_PLUS, (yyvsp[-2].expression), (yyvsp[0].expression)); }
-#line 1327 "parser.c" /* yacc.c:1646  */
+#line 1333 "parser.c" /* yacc.c:1646  */
     break;
 
   case 14:
 #line 84 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = (yyvsp[0].expression); }
-#line 1333 "parser.c" /* yacc.c:1646  */
+#line 1339 "parser.c" /* yacc.c:1646  */
     break;
 
   case 15:
 #line 85 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = create_operation(E_RANGE, (yyvsp[-2].expression), (yyvsp[0].expression)); }
-#line 1339 "parser.c" /* yacc.c:1646  */
+#line 1345 "parser.c" /* yacc.c:1646  */
     break;
 
   case 16:
 #line 86 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = create_operation(E_PLUS, create_operation(E_RANGE, (yyvsp[-4].expression), (yyvsp[-2].expression)),(yyvsp[0].expression)); }
-#line 1345 "parser.c" /* yacc.c:1646  */
+#line 1351 "parser.c" /* yacc.c:1646  */
     break;
 
   case 17:
 #line 87 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = create_operation(E_PLUS, (yyvsp[-2].expression), (yyvsp[0].expression)); }
-#line 1351 "parser.c" /* yacc.c:1646  */
+#line 1357 "parser.c" /* yacc.c:1646  */
     break;
 
   case 18:
 #line 91 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = create_atom(E_NUMBER,(yyvsp[0].value)); }
-#line 1357 "parser.c" /* yacc.c:1646  */
+#line 1363 "parser.c" /* yacc.c:1646  */
     break;
 
   case 19:
 #line 92 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = create_atom(E_ID,(yyvsp[0].value)); }
-#line 1363 "parser.c" /* yacc.c:1646  */
+#line 1369 "parser.c" /* yacc.c:1646  */
     break;
 
 
-#line 1367 "parser.c" /* yacc.c:1646  */
+#line 1373 "parser.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires

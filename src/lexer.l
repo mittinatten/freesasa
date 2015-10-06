@@ -9,7 +9,7 @@
 %}
 
 %option outfile="lexer.c" header-file="lexer.h"
-
+%option prefix="freesasa_yy"
 %option reentrant noyywrap never-interactive nounistd
 %option bison-bridge
 

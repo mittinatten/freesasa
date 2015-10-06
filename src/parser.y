@@ -3,8 +3,8 @@
 #include "selector.h"
 #include "parser.h"
 #include "lexer.h"
-    
-    int yyerror(expression **expression, yyscan_t scanner, const char *msg) {
+
+    int freesasa_yyerror(expression **expression, yyscan_t scanner, const char *msg) {
         return selector_parse_error(*expression,scanner,msg);
     }
 
@@ -12,20 +12,20 @@
 
 %code requires {
 
-#ifndef YY_TYPEDEF_YY_SCANNER_T
-#define YY_TYPEDEF_YY_SCANNER_T
-    typedef void* yyscan_t;
+#ifndef FREESASA_TYPEDEF_YY_SCANNER_T
+#define FREESASA_TYPEDEF_YY_SCANNER_T
+    typedef void* freesasa_yyscan_t;
 #endif
 
 }
 
 %output "parser.c"
 %defines "parser.h"
-
+%name-prefix "freesasa_yy"
 %define api.pure full
-%lex-param { yyscan_t scanner }
+%lex-param { freesasa_yyscan_t scanner }
 %parse-param {expression **expression }
-%parse-param {yyscan_t scanner }
+%parse-param {freesasa_yyscan_t scanner }
 
 %union {
     const char *value;

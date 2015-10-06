@@ -238,19 +238,37 @@ START_TEST (test_syntax_error)
                          // comma wrong place, no name
                          "resn, ala","resi, 1","name, ca","symbol, c","chain, a",
                          // ranges (-) used where not allowed
-                         "a, resn ala-arg", "a, name ca-cb","a, symbol c-o"
+                         "a, resn ala-arg", "a, name ca-cb","a, symbol c-o",
+                         "a, resi 1-2-3",
                          // trailing +-
-                         "a, resn ala+", "a, resn ala+arg+", "a, resi 1-"
-                         "a, resi 1-", "a, resi 1-2+","a, resi 1+2-5+"
+                         "a, resn ala+", "a, resn ala+arg+", "a, resi 1-",
+                         "a, resi 1-", "a, resi 1-2+","a, resi 1+2-5+",
                          // boolean operators
-                         "a, (resn ala) AND","a,(resn ala) OR","a,(resn ala) OR NOT"
+                         "a, (resn ala) AND","a,(resn ala) OR","a,(resn ala) OR NOT",
                          "a, (resn ala) AND arg","a,(resn ala) OR arg",
                          "a, (resn ala) OR NOT arg",
+                         "a, ala OR resn arg",
     };
     int n = sizeof(err)/sizeof(char*);
     freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 0; i < n; ++i) {
         ck_assert_int_eq(freesasa_select_area(err[i],&s,&a,structure,result),FREESASA_FAIL);
+    }
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+} END_TEST
+
+  // check that some complex constructs don't cause errors, but no checks for valid selection
+START_TEST (test_complex_syntax)
+{
+    double a;
+    char *s;
+    const char *stmt[] = {"a, (resn ala AND resi 1-3) OR (NOT chain A+B AND (symbol C OR symbol O))",
+                          "a, NOT symbol SE+C AND NOT resi 5-7+1+6-8+100+200+10-11"
+    };
+    int n = sizeof(stmt)/sizeof(char*);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    for (int i = 0; i < n; ++i) {
+        ck_assert_int_eq(freesasa_select_area(stmt[i],&s,&a,structure,result),FREESASA_SUCCESS);
     }
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 } END_TEST
@@ -270,6 +288,7 @@ Suite *selector_suite() {
     // just to avoid passing NULL pointers
     tcase_add_checked_fixture(tc_syntax,setup,teardown);
     tcase_add_test(tc_syntax, test_syntax_error);
+    tcase_add_test(tc_syntax, test_complex_syntax);
 
     suite_add_tcase(s, tc_core);
     suite_add_tcase(s, tc_syntax);

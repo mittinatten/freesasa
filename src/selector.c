@@ -119,24 +119,24 @@ create_operation(expression_type type,
 static expression *
 get_expression(const char *selector) 
 {
-   yyscan_t scanner;
+   freesasa_yyscan_t scanner;
    YY_BUFFER_STATE state;
    int err;
    expression *expression = expression_new();
-   if (yylex_init(&scanner) || expression == NULL) {
+   if (freesasa_yylex_init(&scanner) || expression == NULL) {
        freesasa_fail(__func__);
        return NULL;
    }
-   state = yy_scan_string(selector, scanner);
-   err = yyparse(&expression, scanner);
+   state = freesasa_yy_scan_string(selector, scanner);
+   err = freesasa_yyparse(&expression, scanner);
    if (err) {
        if (err == 1) freesasa_fail(__func__);
        if (err == 2) mem_fail();
        return NULL;
    }
-   yy_delete_buffer(state, scanner);
+   freesasa_yy_delete_buffer(state, scanner);
 
-   yylex_destroy(scanner);
+   freesasa_yylex_destroy(scanner);
 
    return expression;
 }
