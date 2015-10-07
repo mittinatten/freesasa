@@ -230,6 +230,7 @@ select_id(expression_type parent_type,
           const char *id)
 {
     assert(id);
+    int count = 0;
     for (int i = 0; i < selection->size; ++i) {
         int match = 0;
         switch(parent_type) {
@@ -253,7 +254,10 @@ select_id(expression_type parent_type,
             break;
         }
         if (match) selection->atom[i] = 1;
+        count += match;
     }
+    if (count == 0) freesasa_warn("Found no matches to %s '%s', typo?",
+                                  e_str[parent_type],id);
 }
 
 static int
@@ -464,7 +468,7 @@ select_atoms(struct selection* selection,
 static void
 print_expr(const expression *e,int level)
 {
-    if (freesasa_get_verbosity() != FREESASA_V_SILENT) {
+    if (freesasa_get_verbosity() == FREESASA_V_NORMAL) {
         fprintf(stderr,"\n");
         for (int i = 0; i < level; ++i) fprintf(stderr,"  ");
         if (e == NULL) fprintf(stderr,"()");
@@ -531,8 +535,10 @@ freesasa_select_area(const char *command,
     selection_free(selection);
     expression_free(expression);
     
-    if (err) return freesasa_fail(__func__);
-    if (warn) return freesasa_warn("%s: there were warnings.",__func__);
+    if (err)
+        return freesasa_fail("%s: Problems parsing expression '%s'.",__func__,command);
+    if (warn)
+        return freesasa_warn("%s: there were warnings.",__func__);
     return FREESASA_SUCCESS;
 }
 
@@ -541,8 +547,8 @@ int freesasa_selector_parse_error(expression *e,
                                   const char *msg)
 {
     print_expr(e,0);
-    if (freesasa_get_verbosity() != FREESASA_V_SILENT) fprintf(stderr,"\n");
-    return freesasa_fail("%s: %s: %s %s",__func__,msg,e_str[e->type],e->value);
+    if (freesasa_get_verbosity() == FREESASA_V_NORMAL) fprintf(stderr,"\n");
+    return freesasa_fail("%s",msg);
 }
 
 

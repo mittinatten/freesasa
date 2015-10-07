@@ -6,8 +6,8 @@ typedef enum
 expression_type;
 
 static const char *e_str[] = 
-    {"E_SELECTOR","E_SYMBOL","E_NAME","E_RESN","E_RESI","E_CHAIN",
-     "E_ID","E_NUMBER","E_AND","E_OR","E_NOT","E_PLUS","E_RANGE"};
+    {"selector","symbol","name","resn","resi","chain",
+     "id","number","and","or","not","plus","range"};
 
 typedef struct expression {
     struct expression *left;
