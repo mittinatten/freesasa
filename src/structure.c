@@ -43,7 +43,7 @@ struct atom {
 
 struct freesasa_structure {
     struct atom **a;
-    freesasa_coord *xyz;
+    coord_t *xyz;
     int number_atoms;
     int number_residues;
     int number_chains;
@@ -629,7 +629,7 @@ freesasa_structure_chain_labels(const freesasa_structure *structure)
     return structure->chains;
 }
 
-const freesasa_coord*
+const coord_t *
 freesasa_structure_xyz(const freesasa_structure *p)
 {
     assert(p);

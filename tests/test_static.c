@@ -27,7 +27,7 @@ static const double r[]  = {4,2,2,2,2,2};
 START_TEST (test_cell) {
     double r_max;
     cell_list *c;
-    freesasa_coord *coord = freesasa_coord_new();
+    coord_t *coord = freesasa_coord_new();
     freesasa_coord_append(coord,v,n_atoms);
     r_max = max_array(r,n_atoms);
     ck_assert(fabs(r_max-4) < 1e-10);

@@ -68,7 +68,7 @@ char str_array[][2] = {"A","B","C","D","E","F"};
 double v[18] = {0,0,0, 1,1,1, -1,1,-1, 2,0,-2, 2,2,0, -5,5,5};
 const double r[6]  = {4,2,2,2,2,2};
 double dummy[20];
-struct freesasa_coord coord = {.xyz = v, .n = 6, .is_linked = 0};
+struct coord_t coord = {.xyz = v, .n = 6, .is_linked = 0};
 struct atom *a;
 struct freesasa_structure structure = {
     .a = &a,

@@ -51,7 +51,7 @@
 */
 int
 freesasa_shrake_rupley(double *sasa,
-                       const freesasa_coord *c,
+                       const coord_t *c,
                        const double *radii,
                        double probe_radius,
                        int n_points,
@@ -84,7 +84,7 @@ freesasa_shrake_rupley(double *sasa,
     failure.
 */
 int freesasa_lee_richards(double* sasa,
-                          const freesasa_coord *c,
+                          const coord_t *c,
                           const double *radii,
                           double probe_radius,
                           int n_slices_per_atom,

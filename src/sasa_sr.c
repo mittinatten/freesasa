@@ -47,10 +47,10 @@ typedef struct {
     int n_atoms;
     int n_points;
     double probe_radius;
-    const freesasa_coord *xyz;
-    freesasa_coord *srp; // test-points
+    const coord_t *xyz;
+    coord_t *srp; // test-points
     double *r;
-    freesasa_nb *nb;
+    nb_list *nb;
     double *sasa;
 } sr_data;
 
@@ -62,13 +62,13 @@ static void *sr_thread(void *arg);
 static double
 sr_atom_area(int i,const sr_data) __attrib_pure__;
 
-static freesasa_coord*
+static coord_t *
 test_points(int N) 
 {
     // Golden section spiral on a sphere
     // from http://web.archive.org/web/20120421191837/http://www.cgafaq.info/wiki/Evenly_distributed_points_on_sphere
     double dlong = M_PI*(3-sqrt(5)), dz = 2.0/N, longitude = 0, z = 1-dz/2, r;
-    freesasa_coord *coord = freesasa_coord_new();
+    coord_t *coord = freesasa_coord_new();
     double *tp = malloc(3*N*sizeof(double));
     if (tp == NULL || coord == NULL) {mem_fail(); return NULL;}
 
@@ -89,13 +89,13 @@ test_points(int N)
 int
 init_sr(sr_data* sr_p,
         double *sasa,
-        const freesasa_coord *xyz,
+        const coord_t *xyz,
         const double *r,
         double probe_radius,
         int n_points)
 {
     int n_atoms = freesasa_coord_n(xyz);
-    freesasa_coord *srp = test_points(n_points);
+    coord_t *srp = test_points(n_points);
 
     if (srp == NULL) return freesasa_fail(__func__);
     
@@ -132,7 +132,7 @@ release_sr(sr_data sr)
 
 int
 freesasa_shrake_rupley(double *sasa,
-                       const freesasa_coord *xyz,
+                       const coord_t *xyz,
                        const double *r,
                        double probe_radius,
                        int n_points,
@@ -234,7 +234,7 @@ sr_atom_area(int i,
     const double *restrict tp;
     int n_surface = 0;
     /* testpoints for this atom */
-    freesasa_coord* tp_coord_ri = freesasa_coord_copy(sr.srp);
+    coord_t *tp_coord_ri = freesasa_coord_copy(sr.srp);
     
     freesasa_coord_scale(tp_coord_ri, sr.r[i]);
     freesasa_coord_translate(tp_coord_ri, vi);

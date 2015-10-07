@@ -23,8 +23,8 @@ const double v[18] = {0,0,0, 1,1,1, -1,1,-1, 2,0,-2, 2,2,0, -5,5,5};
 const double r[6]  = {4,2,2,2,2,2};
 
 START_TEST (test_nb) {
-    freesasa_coord *coord = freesasa_coord_new();
-    freesasa_nb *nb;
+    coord_t *coord = freesasa_coord_new();
+    nb_list *nb;
     freesasa_coord_append(coord,v,6);
     ck_assert_ptr_eq(freesasa_nb_new(NULL,NULL),NULL);
     ck_assert_ptr_eq(freesasa_nb_new(NULL,r),NULL);

@@ -26,7 +26,7 @@
 #include <freesasa.h>
 #include <coord.h>
 
-freesasa_coord *coord;
+coord_t *coord;
 
 static void setup(void)
 {
@@ -86,7 +86,7 @@ START_TEST (test_coord)
     freesasa_coord_set_length_all(coord,3);
     ck_assert(ci[0] == 2 && ci[1] == 2 && ci[2] == 1);
 
-    freesasa_coord *c2 = freesasa_coord_new();
+    coord_t *c2 = freesasa_coord_new();
     ck_assert(c2 != NULL);
     ck_assert_int_eq(freesasa_coord_append(c2,xyz2,1),FREESASA_SUCCESS);
     ck_assert(fabs(freesasa_coord_dist2_12(coord,c2,0,0) - 2));

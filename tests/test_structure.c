@@ -63,7 +63,7 @@ START_TEST (test_structure_api)
         sprintf(buf,"%c %s %s %s",cl[i],rnu[i],rna[i],an[i]);
         ck_assert_str_eq(freesasa_structure_atom_descriptor(s,i),buf);
     }
-    const freesasa_coord *c = freesasa_structure_xyz(s);
+    const coord_t *c = freesasa_structure_xyz(s);
     for (int i = 0; i < N; ++i) {
         const double *xyz = freesasa_coord_i(c, i);
         ck_assert(fabs(xyz[0]+xyz[1]+xyz[2]-3*i) < 1e-10);
@@ -110,7 +110,7 @@ START_TEST (test_structure_1ubq)
     ck_assert_str_eq(freesasa_structure_atom_symbol(s,8)," N");
 
     // check coordinates of that random atom
-    const freesasa_coord *c = freesasa_structure_xyz(s);
+    const coord_t *c = freesasa_structure_xyz(s);
     ck_assert(c != NULL);
     const double *x = freesasa_coord_i(c,8);
     ck_assert(x != NULL);

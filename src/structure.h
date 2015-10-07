@@ -40,9 +40,9 @@
     Get coordinates.
     
     @param s Self.
-    @return The coordinates of the structure as a ::freesasa_coord struct.
+    @return The coordinates of the structure as a ::coord_t struct.
  */
-const freesasa_coord*
+const coord_t *
 freesasa_structure_xyz(const freesasa_structure *s);
 
 /**

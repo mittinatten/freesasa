@@ -41,8 +41,8 @@ const double TWOPI = 2*M_PI;
 typedef struct {
     int n_atoms;
     double *radii; //including probe
-    const freesasa_coord *xyz;
-    freesasa_nb *adj;
+    const coord_t *xyz;
+    nb_list *adj;
     int n_slices_per_atom;
     double *sasa; // results
 } lr_data;
@@ -70,7 +70,7 @@ exposed_arc_length(double *restrict arc, int n);
 /** Initialize object to be used for L&R calculation */
 static lr_data*
 init_lr(double *sasa,
-        const freesasa_coord *xyz,
+        const coord_t *xyz,
         const double *atom_radii,
         double probe_radius,
         int n_slices_per_atom)
@@ -106,7 +106,7 @@ free_lr(lr_data *lr)
 
 int
 freesasa_lee_richards(double *sasa,
-                      const freesasa_coord *xyz,
+                      const coord_t *xyz,
                       const double *atom_radii,
                       double probe_radius,
                       int n_slices_per_atom,

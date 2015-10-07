@@ -104,7 +104,7 @@ freesasa_result_free(freesasa_result *r)
 }
 
 static freesasa_result*
-freesasa_calc(const freesasa_coord *c, 
+freesasa_calc(const coord_t *c, 
               const double *radii,
               const freesasa_parameters *parameters)
 
@@ -163,7 +163,7 @@ freesasa_calc_coord(const double *xyz,
     assert(radii);
     assert(n > 0);
 
-    freesasa_coord *coord = NULL;
+    coord_t *coord = NULL;
     freesasa_result *result = NULL;
 
     coord = freesasa_coord_new_linked(xyz,n);
