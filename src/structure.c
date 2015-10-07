@@ -777,3 +777,9 @@ freesasa_structure_model(const freesasa_structure *structure)
 {
     return structure->model;
 }
+
+const double*
+freesasa_structure_coord_array(const freesasa_structure *structure)
+{
+    return freesasa_coord_all(structure->xyz);
+}

@@ -64,6 +64,7 @@ START_TEST (test_structure_api)
         ck_assert_str_eq(freesasa_structure_atom_descriptor(s,i),buf);
     }
     const coord_t *c = freesasa_structure_xyz(s);
+    ck_assert_ptr_eq(freesasa_structure_coord_array(s),freesasa_coord_all(c));
     for (int i = 0; i < N; ++i) {
         const double *xyz = freesasa_coord_i(c, i);
         ck_assert(fabs(xyz[0]+xyz[1]+xyz[2]-3*i) < 1e-10);

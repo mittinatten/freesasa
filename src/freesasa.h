@@ -655,6 +655,18 @@ freesasa_structure_atom_symbol(const freesasa_structure *structure,
 int
 freesasa_structure_model(const freesasa_structure *structure);
 
+/**
+    Get array of coordinates.
+
+    Size of array is 3*N, order of coordinates `x1, y1, z1, ...`.
+
+    @param structure The structure.
+    @return Array of coordinates. NULL if structure empty. Size can be
+      accessed through freesasa_structure_n() (multiply by three).
+ */
+const double*
+freesasa_structure_coord_array(const freesasa_structure *structure);
+
 #ifdef __cplusplus
 }
 #endif
