@@ -3,9 +3,9 @@
 #include "selector.h"
 #include "parser.h"
 #include "lexer.h"
-
+    extern int freesasa_selector_parse_error(expression *e, yyscan_t scanner, const char *msg);
     int freesasa_yyerror(expression **expression, yyscan_t scanner, const char *msg) {
-        return selector_parse_error(*expression,scanner,msg);
+        return freesasa_selector_parse_error(*expression,scanner,msg);
     }
 
 %}
@@ -61,33 +61,33 @@
 %%
 
 stmt:
-  T_ID ',' expr          { *expression = create_selector($expr,$T_ID); } 
+  T_ID ',' expr          { *expression = freesasa_selector_create($expr,$T_ID); } 
 ;
 
 expr:
   '(' expr ')'           { $$ = $2; }
-| expr T_AND expr        { $$ = create_operation(E_AND, $1, $3); }
-| expr T_OR expr         { $$ = create_operation(E_OR, $1, $3); }
-| T_NOT expr             { $$ = create_operation(E_NOT, NULL, $2); }
-| T_RESN list            { $$ = create_selection(E_RESN, $list); }
-| T_RESI range           { $$ = create_selection(E_RESI, $range); }
-| T_SYMBOL list          { $$ = create_selection(E_SYMBOL, $list); }
-| T_NAME list            { $$ = create_selection(E_NAME, $list); }
-| T_CHAIN range          { $$ = create_selection(E_CHAIN, $range); }
+| expr T_AND expr        { $$ = freesasa_selector_operation(E_AND, $1, $3); }
+| expr T_OR expr         { $$ = freesasa_selector_operation(E_OR, $1, $3); }
+| T_NOT expr             { $$ = freesasa_selector_operation(E_NOT, NULL, $2); }
+| T_RESN list            { $$ = freesasa_selector_selection(E_RESN, $list); }
+| T_RESI range           { $$ = freesasa_selector_selection(E_RESI, $range); }
+| T_SYMBOL list          { $$ = freesasa_selector_selection(E_SYMBOL, $list); }
+| T_NAME list            { $$ = freesasa_selector_selection(E_NAME, $list); }
+| T_CHAIN range          { $$ = freesasa_selector_selection(E_CHAIN, $range); }
 ;
 
 list:
   atom                   { $$ = $1; }
-| atom '+' list          { $$ = create_operation(E_PLUS, $1, $3); }
+| atom '+' list          { $$ = freesasa_selector_operation(E_PLUS, $1, $3); }
 
 range:
   atom                   { $$ = $1; }
-| atom '-' atom          { $$ = create_operation(E_RANGE, $1, $3); }
-| atom '-' atom '+' range{ $$ = create_operation(E_PLUS, create_operation(E_RANGE, $1, $3),$5); }
-| atom '+' range         { $$ = create_operation(E_PLUS, $1, $3); }
+| atom '-' atom          { $$ = freesasa_selector_operation(E_RANGE, $1, $3); }
+| atom '-' atom '+' range{ $$ = freesasa_selector_operation(E_PLUS, freesasa_selector_operation(E_RANGE, $1, $3),$5); }
+| atom '+' range         { $$ = freesasa_selector_operation(E_PLUS, $1, $3); }
 ;
 
 atom:
-  T_NUMBER               { $$ = create_atom(E_NUMBER,$1); }
-| T_ID                   { $$ = create_atom(E_ID,$1); }
+  T_NUMBER               { $$ = freesasa_selector_atom(E_NUMBER,$1); }
+| T_ID                   { $$ = freesasa_selector_atom(E_ID,$1); }
 ;

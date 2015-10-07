@@ -16,9 +16,7 @@ struct selection {
     int size;
 };
 
-extern freesasa_strvp* freesasa_strvp_new(int n);
-extern void freesasa_strvp_free(freesasa_strvp *svp);
-extern int yyparse(expression **expression, yyscan_t scanner);
+extern int freesasa_yyparse(expression **expression, yyscan_t scanner);
 
 static expression *
 expression_new() 
@@ -47,7 +45,8 @@ expression_free(expression *expression)
 }
 
 expression *
-create_atom(expression_type type, const char* val)
+freesasa_selector_atom(expression_type type,
+                       const char* val)
 {
     assert(val);
     expression *e = expression_new();
@@ -68,7 +67,8 @@ create_atom(expression_type type, const char* val)
 }
 
 expression *
-create_selector(expression *selection, const char* id)
+freesasa_selector_create(expression *selection,
+                         const char* id)
 {
     assert(id);
     expression *e = expression_new();
@@ -88,8 +88,8 @@ create_selector(expression *selection, const char* id)
 }
 
 expression *
-create_selection(expression_type type,
-                 expression *list)
+freesasa_selector_selection(expression_type type,
+                            expression *list)
 {
     expression *e = expression_new();
     if (e == NULL) return NULL;
@@ -101,9 +101,9 @@ create_selection(expression_type type,
 }
 
 expression *
-create_operation(expression_type type, 
-                 expression *left, 
-                 expression *right)
+freesasa_selector_operation(expression_type type, 
+                            expression *left, 
+                            expression *right)
 {
     expression *e = expression_new();
     if (e == NULL) return NULL;
@@ -536,9 +536,9 @@ freesasa_select_area(const char *command,
     return FREESASA_SUCCESS;
 }
 
-int selector_parse_error(expression *e,
-                         yyscan_t scanner,
-                         const char *msg)
+int freesasa_selector_parse_error(expression *e,
+                                  yyscan_t scanner,
+                                  const char *msg)
 {
     print_expr(e,0);
     if (freesasa_get_verbosity() != FREESASA_V_SILENT) fprintf(stderr,"\n");
