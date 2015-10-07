@@ -250,6 +250,57 @@ freesasa_result_classify(const freesasa_result *result,
                          const freesasa_structure *structure,
                          const freesasa_classifier *classifier);
 
+
+/**
+    Get area of a selection (experimental feature).
+
+    Uses subset of the select syntax from Pymol (name, symbol, resn,
+    resi and chain), the keyword "select" is implicit. All commands
+    are case insensitive. Valid selections would be, for example,
+
+        selection-name, resn ala+arg 
+        selection-name, chain a and resi 1+3-20 and not resn gly
+
+    The selection name is obligatory. The range operator '-' has
+    precendence over '+', i.e.  
+    
+         resi 1+3-20
+         
+    is equivalent to
+
+         resi 1 or resi 3-20
+
+    The boolean operators `and`, `or` and `not` are supported. 
+    The `and` operator has precedence over `or`. Parantheses can be
+    used to surround expressions `(chain a)` and group boolean
+    expressions `(chain a or chain b)`, but *not* arguments as in
+
+        chain a+(c-f)  # syntax error
+        chain a+c-f    # ok
+
+
+    After selecting the atoms from the ::freesasa_structure pointer
+    specified by the command the area of those atoms is summed up
+    using the ::freesasa_result pointer.
+
+    @param command The selection
+    @param name The name of the selection is stored here
+    @param area The area of the selection is stored here
+    @param structure The structure to select from
+    @param result The results to integrate
+    
+    @return ::FREESASA_SUCCESS upon successful selection.
+       ::FREESASA_WARN if some illegal selections that could be
+       ignored were encountered (see printed
+       warnings). ::FREESASA_FAIL if syntax error or memory failure.
+ */
+int
+freesasa_select_area(const char *command,
+                     char **name,
+                     double *area,
+                     const freesasa_structure *structure,
+                     const freesasa_result *result);
+
 /**
     Frees a ::freesasa_strvp object
 
@@ -603,13 +654,6 @@ freesasa_structure_atom_symbol(const freesasa_structure *structure,
  */
 int
 freesasa_structure_model(const freesasa_structure *structure);
-
-int
-freesasa_select_area(const char *command,
-                     char **name,
-                     double *area,
-                     const freesasa_structure *structure,
-                     const freesasa_result *result);
 
 #ifdef __cplusplus
 }
