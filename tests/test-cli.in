@@ -22,8 +22,8 @@ function assert_pass
     if [[ $? -ne 0 ]]; then 
         echo Error: \"$1\" failed
         let errors=errors+1
-    else 
-        echo \"$1\" successful
+    #else 
+    #    echo \"$1\" successful
     fi
 }
 
@@ -33,8 +33,8 @@ function assert_fail
     if [[ $? -eq 0 ]]; then 
         echo Error: \"$1\" did not fail as expected
         let errors=errors+1
-    else 
-        echo \"$1\" failed as expected;
+    #else 
+    #    echo \"$1\" failed as expected;
     fi
 }
 
@@ -48,8 +48,8 @@ function assert_equal_opt
     if [[ $? -ne 0 ]]; then
         echo Error: \"$1\" gives different results with arguments \"$2\" and \"$3\"
         let errors=errors+1
-    else
-        echo \"$1\" gives same result with arguments \"$2\" and \"$3\". Success.
+    #else
+    #    echo \"$1\" gives same result with arguments \"$2\" and \"$3\". Success.
     fi
 }
 
@@ -157,6 +157,30 @@ assert_pass "$cli -l -R < $datadir/1ubq.pdb > tmp/seq"
 assert_pass "diff tmp/seq $datadir/seq.reference"
 assert_pass "$cli -l --residue-file tmp/seq < $datadir/1ubq.pdb"
 assert_pass "diff tmp/seq $datadir/seq.reference"
+echo
+echo "== Testing option --select =="
+assert_pass "$cli --select \"s1, resn ala\" --select \"s2, resn arg\" --select \"s3, resi 1\" $datadir/1ubq.pdb > tmp/select"
+sel_ala=$(grep s1: tmp/select | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2//)
+res_ala=$(grep ALA tmp/restype | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2// | sed s/ALA//)
+if [ "$res_ala" != "$sel_ala" ]; 
+then 
+    let errors=errors+1
+    echo "Error: options -r and --select don't give same result for ALA ('$res_ala' and '$sel_ala')"
+fi
+sel_arg=$(grep s2: tmp/select | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2//)
+res_arg=$(grep ARG tmp/restype | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2// | sed s/ARG//)
+if [ "$res_arg" != "$sel_arg" ]
+then 
+    let errors=errors+1
+    echo "Error: options -r and --select don't give same result for ARG ($res_arg and $sel_arg)"
+fi
+sel_res1=$(grep s3: tmp/select | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2//)
+seq_res1=$(grep " 1 " tmp/seq | cut -f 2 -d ':' | cut -f 2 -d 'T' | sed 's/ //g')
+if [ "$seq_res1" != "$sel_res1" ]
+then 
+    let errors=errors+1
+    echo "Error: options -R and --select don't give same result for first residue in 1ubq.pdb ($seq_res1 and $sel_res1)"
+fi
 echo
 echo "== Testing user-configurations =="
 assert_pass "$cli -c $sharedir/naccess.config < $datadir/1ubq.pdb > $dump"

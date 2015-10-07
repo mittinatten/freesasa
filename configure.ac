@@ -57,8 +57,8 @@ else
 fi
 
 # Enable parser generation with Flex/Bison
-AC_ARG_ENABLE([bison-flex],
-  [AS_HELP_STRING([--enable-bison-flex],
+AC_ARG_ENABLE([flex-bison],
+  [AS_HELP_STRING([--enable-flex-bison],
     [Regenerate parser/lexer using Flex and Bison (for developers)])])
 if test x$enable_bison_flex = xyes ; then
   AC_CHECK_PROG(FLEX, flex, flex)
