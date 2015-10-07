@@ -188,25 +188,25 @@ guess_symbol(char *symbol,
     int oons = freesasa_classify_oons(res,name);
     char buf[PDB_ATOM_NAME_STRL+1];
     switch (oons) {
-    case freesasa_carbo_C:
-    case freesasa_aliphatic_C:
-    case freesasa_aromatic_C:
+    case oons_carbo_C:
+    case oons_aliphatic_C:
+    case oons_aromatic_C:
         strcpy(symbol," C");
         break;
-    case freesasa_amide_N:
+    case oons_amide_N:
         strcpy(symbol," N");
         break;
-    case freesasa_carbo_O:
-    case freesasa_hydroxyl_O:
+    case oons_carbo_O:
+    case oons_hydroxyl_O:
         strcpy(symbol," O");
         break;
-    case freesasa_oons_sulfur:
+    case oons_sulfur:
         strcpy(symbol," S");
         break;
-    case freesasa_oons_selenium:
+    case oons_selenium:
         strcpy(symbol,"SE");
         break;
-    case freesasa_oons_unknown:
+    case oons_unknown:
     default:
         // if the first position is empty, assume that it is a one letter element
         // e.g. " C  "
