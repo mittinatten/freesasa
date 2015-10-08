@@ -200,7 +200,7 @@ match_resn(const freesasa_structure *structure,
 {
     char resn[PDB_ATOM_RES_NAME_STRL+1];
     sscanf(freesasa_structure_atom_res_name(structure,i), "%s", resn);
-    if (strncmp(resn, id, strlen(id)) == 0)
+    if (strcmp(resn, id) == 0)
         return 1;
     return 0;
 }
