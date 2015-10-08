@@ -60,7 +60,7 @@ fi
 AC_ARG_ENABLE([flex-bison],
   [AS_HELP_STRING([--enable-flex-bison],
     [Regenerate parser/lexer using Flex and Bison (for developers)])])
-if test x$enable_bison_flex = xyes ; then
+if test x$enable_flex_bison = xyes ; then
   AC_CHECK_PROG(FLEX, flex, flex)
   AC_CHECK_PROG(BISON, bison, bison)
   AM_CONDITIONAL([GENERATE_PARSER], [test -n "$FLEX" && test -n "$BISON"])
