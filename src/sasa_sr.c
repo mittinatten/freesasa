@@ -82,6 +82,7 @@ test_points(int N)
     }
 
     if (freesasa_coord_append(coord,tp,N) == FREESASA_FAIL) {freesasa_fail(__func__); return NULL; }
+    free(tp);
 
     return coord;
 }
@@ -183,7 +184,6 @@ sr_do_threads(int n_threads,
     int n_atoms = sr.n_atoms;
     int thread_block_size = n_atoms/n_threads;
     int res;
-    void *thread_result;
 
     // divide atoms evenly over threads
     for (int t = 0; t < n_threads; ++t) {
@@ -200,7 +200,7 @@ sr_do_threads(int n_threads,
     }
     for (int t = 0; t < n_threads; ++t) {
         errno = 0;
-        int res = pthread_join(thread[t],&thread_result);
+        int res = pthread_join(thread[t],NULL);
         if (res) {
             perror(freesasa_name);
             abort();
@@ -208,8 +208,8 @@ sr_do_threads(int n_threads,
     }
 }
 
-static void*
-sr_thread(void* arg)
+static void *
+sr_thread(void *arg)
 {
     sr_data sr = *((sr_data*) arg);
     for (int i = sr.i1; i < sr.i2; ++i) {
