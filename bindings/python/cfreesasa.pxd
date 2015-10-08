@@ -94,6 +94,12 @@ cdef extern from "freesasa.h":
                                              const freesasa_structure *structure,
                                              const freesasa_classifier *classifier)
 
+    int freesasa_select_area(const char *command,
+                             char **name,
+                             double *area,
+                             const freesasa_structure *structure,
+                             const freesasa_result *result)
+
     void freesasa_strvp_free(freesasa_strvp *strvp)
 
     int freesasa_write_pdb(FILE *output,

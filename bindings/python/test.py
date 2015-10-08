@@ -227,7 +227,15 @@ class FreeSASATestCase(unittest.TestCase):
         sasa_classes = classifyResults(result,structure,classifier) # classifier passed to get user-classes
         self.assertTrue(math.fabs(sasa_classes['polar'] - 2360.52) < 0.1)
         self.assertTrue(math.fabs(sasa_classes['apolar'] - 2462.77) < 0.1)
-        
+
+    def testSelectArea(self):
+        structure = Structure("data/1ubq.pdb")
+        result = calc(structure)
+        # will only test that this gets through to the C interface,
+        # extensive checking of the parser is done in the C unit tests
+        selections = selectArea(('s1, resn ala','s2, resi 1'),structure,result)
+        self.assertTrue(math.fabs(selections['s1'] - 122.87) < 0.1)
+        self.assertTrue(math.fabs(selections['s2'] - 55.99) < 0.1)
 
 if __name__ == '__main__':
     # make sure we're in the right directory (if script is called from
