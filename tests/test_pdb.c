@@ -54,7 +54,7 @@ START_TEST (test_pdb_lines)
 {
     char buf[80];
     double x[3];
-    const char lines[][80] = {
+    const char *lines[] = {
         "ATOM    585  C   ARG A  74      41.765  34.829  30.944  0.45 36.22           C",
         "ATOM    573  NH1AARG A  72      34.110  28.437  27.768  1.00 35.02           N  ",
         "HETATM  610  O   HOH A  83      27.707  15.908   4.653  1.00 20.30           O  ",

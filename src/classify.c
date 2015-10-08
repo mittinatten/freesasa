@@ -397,9 +397,13 @@ int
 freesasa_classify_oons(const char *res_name,
                        const char *a)
 {
-    assert(strlen(a) == PDB_ATOM_NAME_STRL);
-    assert(strlen(res_name) == PDB_ATOM_RES_NAME_STRL);
-    
+    if (strlen(a) != PDB_ATOM_NAME_STRL ||
+        strlen(res_name) != PDB_ATOM_RES_NAME_STRL) {
+        freesasa_warn("%s: OONS classification only works for strings of proper length. "
+                      "'%s' '%s' invalid.",__func__,res_name,a);
+        return oons_unknown;
+    }    
+
     int res;
 
     /* Hydrogens and deuteriums (important to do them here, so they

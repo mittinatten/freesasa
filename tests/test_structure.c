@@ -35,23 +35,14 @@ const double bfactors[N] = {1., 1., 1., 1., 1., 1.};
 
 freesasa_structure *s;
 
-static void setup(void)
+START_TEST (test_structure_api)
 {
+    char buf[20];
     s = freesasa_structure_new();
     for (int i = 0; i < N; ++i) {
         ck_assert_int_eq(freesasa_structure_add_atom(s,an[i],rna[i],rnu[i],cl[i],i,i,i),
                          FREESASA_SUCCESS);
     }
-}
-static void teardown(void)
-{
-    freesasa_structure_free(s);
-    s = NULL;
-}
-
-START_TEST (test_structure_api)
-{
-    char buf[20];
     sprintf(buf,"%c %s %s",cl[0],rnu[0],rna[0]);
     ck_assert_str_eq(freesasa_structure_residue_descriptor(s,0),buf);
     for (int i = 0; i < N; ++i) {
@@ -71,10 +62,30 @@ START_TEST (test_structure_api)
     }
     ck_assert(freesasa_structure_n(s) == N);
     ck_assert(freesasa_structure_n_residues(s) == 1);
-    
+
     int first, last;
     ck_assert(freesasa_structure_residue_atoms(s,0,&first,&last) == FREESASA_SUCCESS);
     ck_assert(first == 0 && last == N-1);
+    freesasa_structure_free(s);
+    s = NULL;
+}
+END_TEST
+
+START_TEST (test_add_atom)
+{
+    freesasa_structure *s = freesasa_structure_new();
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    freesasa_structure_add_atom(s,"HABC","ALA","   1",'A',0,0,0);
+    freesasa_structure_add_atom(s,"SE  ","SEC","   1",'A',0,0,0);
+    freesasa_structure_add_atom(s,"FE  ","ABC","   1",'A',0,0,0);
+    ck_assert_str_eq(freesasa_structure_atom_symbol(s,0)," H");
+    ck_assert_str_eq(freesasa_structure_atom_symbol(s,1),"SE");
+    ck_assert_str_eq(freesasa_structure_atom_symbol(s,2),"FE");
+
+    ck_assert_int_eq(freesasa_structure_add_atom(s,"A","ALA","   1",'A',0,0,0),FREESASA_WARN);
+    ck_assert_int_eq(freesasa_structure_add_atom(s," C  ","AL","   1",'A',0,0,0),FREESASA_WARN);
+    ck_assert_int_eq(freesasa_structure_add_atom(s," C  ","ALA"," 1",'A',0,0,0),FREESASA_WARN);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 
@@ -193,8 +204,8 @@ START_TEST (test_structure_array)
     ck_assert(n == 1);
     ck_assert(ss[0] != NULL);
     ck_assert(freesasa_structure_n(ss[0]) == 602);
-    free(ss);
     free(ss[0]);
+    free(ss);
     
     rewind(pdb);
     ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_CHAINS | FREESASA_SEPARATE_MODELS |
@@ -297,8 +308,8 @@ Suite* structure_suite() {
     // what goes in what Case is kind of arbitrary
     Suite *s = suite_create("Structure");
     TCase *tc_core = tcase_create("Core");
-    tcase_add_checked_fixture(tc_core,setup,teardown);
     tcase_add_test(tc_core, test_structure_api);
+    tcase_add_test(tc_core, test_add_atom);
 
     TCase *tc_pdb = tcase_create("PDB");
     tcase_add_test(tc_pdb,test_pdb);

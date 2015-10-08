@@ -26,6 +26,7 @@ static inline int
 pdb_line_check(const char *line,int len)
 {
     assert(line);
+    if (strlen(line) < 6) return FREESASA_FAIL;
     if (! strncmp(line,"ATOM",4) &&
         ! strncmp(line,"HETATM",6)) {
         return FREESASA_FAIL;

@@ -189,7 +189,9 @@ START_TEST (test_resi)
                               "c7, resi 1+2-4+3",
                               "c8, resi 1-2+7+9+3-5+100",
                               "c9, resi 1-4 AND NOT resi 2-4"};
+    freesasa_set_verbosity(FREESASA_V_SILENT);
     select(commands,9);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
     ck_assert(svp->value[0] > 5);
     ck_assert(float_eq(svp->value[0], addup(resi_1,result) + addup(resi_2r4,result), 1e-10));
     ck_assert(float_eq(svp->value[1], addup(resi_2r4,result), 1e-10));

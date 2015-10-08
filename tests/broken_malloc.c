@@ -206,6 +206,26 @@ START_TEST (test_user_config)
 }
 END_TEST
 
+START_TEST (test_selector) 
+{
+    set_fail_freq(1000000);
+    FILE *file = fopen(DATADIR "1ubq.pdb","r");
+    freesasa_structure *s = freesasa_structure_from_pdb(file,0);
+    double *radii = freesasa_structure_radius(s,NULL);
+    freesasa_result *result = freesasa_calc_structure(s,radii,NULL);
+    double area;
+    char *name;
+    
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    for (int i = 1; i < 15; ++i) {
+        set_fail_freq(i);
+        ck_assert_int_eq(freesasa_select_area("s, resn ALA and chain A",&name,&area,s,result),
+                         FREESASA_FAIL);
+    }
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+} 
+END_TEST
+
 START_TEST (test_api) 
 {
     freesasa_parameters p = freesasa_default_parameters;
@@ -248,6 +268,7 @@ int main(int argc, char **argv) {
     tcase_add_test(tc,test_nb);
     tcase_add_test(tc,test_alg);
     tcase_add_test(tc,test_user_config);
+    tcase_add_test(tc,test_selector);
     tcase_add_test(tc,test_api);
     
     suite_add_tcase(s, tc);

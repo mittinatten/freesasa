@@ -217,7 +217,7 @@ guess_symbol(char *symbol,
         } else { 
             // if the string has padding to the right, assume it's a
             // two-letter element, e.g. "FE  "
-            if (strlen(name) < 4) {
+            if (name[3] == ' ') {
                 strncpy(symbol,name,2);
                 symbol[2] = '\0';
             } else { 
@@ -237,13 +237,17 @@ static int
 structure_add_chain(freesasa_structure *p,
                     char chain_label)
 {
+    if (p->chains == NULL) {
+        p->chains = strdup("");
+        if (p->chains == NULL) return mem_fail();
+    }
     if (strchr(p->chains,chain_label) == NULL) {
         int n = ++p->number_chains;
         p->chains = realloc(p->chains,n + 1);
         if (p->chains) {
             p->chains[n-1] = chain_label;
             p->chains[n] = '\0';
-                assert (strlen(p->chains) == p->number_chains);
+            assert (strlen(p->chains) == p->number_chains);
         } else {
             return mem_fail();
         }
@@ -258,16 +262,14 @@ structure_add_atom(freesasa_structure *p,
                    double *xyz)
 {
     assert(p); assert(a); assert(xyz);
-    int na = p->number_atoms;
+    int na = ++p->number_atoms;
     
     // allocate memory, increase number of atoms counter, add chain
-    if ((p->a = realloc(p->a,sizeof(struct atom*)*na+1)) == NULL) return mem_fail();
+    if ((p->a = realloc(p->a,sizeof(struct atom*)*na)) == NULL) return mem_fail();
+    p->a[na-1] = a;
     if (freesasa_coord_append(p->xyz, xyz, 1)) return mem_fail();
     if (structure_add_chain(p, a->chain_label)) return mem_fail();
-    na = ++p->number_atoms;
-    p->a[na-1] = a;
-    //printf("%s: %s\n",__func__,p->a[na-1]->atom_name); fflush(stdout);
-
+    
     /* here we assume atoms are ordered sequentially, i.e. residues are
        not mixed in input: if two sequential atoms have different
        residue numbers, a new residue is assumed to begin */
@@ -278,6 +280,7 @@ structure_add_atom(freesasa_structure *p,
             return mem_fail();
         sprintf(p->res_desc[0], "%c %s %s", a->chain_label, a->res_number, a->res_name);
     }
+
     if (na > 1 && strcmp(a->res_number,p->a[na-2]->res_number)) {
         int naa = p->number_residues+1;
         if (!(p->res_first_atom = realloc(p->res_first_atom, sizeof(int)*naa)))
@@ -483,31 +486,31 @@ freesasa_structure_add_atom(freesasa_structure *p,
     struct atom *a;
     char symbol[PDB_ATOM_SYMBOL_STRL+1];
     double v[3] = {x,y,z};
-    int err = 0, res = 0;
+    int warn = 0, res = 0;
     
     // check input for consistency
-    if (strlen(atom_name) > PDB_ATOM_NAME_STRL) {
-        freesasa_warn("%s: atom name '%s' is too long, might cause problems with classification.",
+    if (strlen(atom_name) != PDB_ATOM_NAME_STRL) {
+        freesasa_warn("%s: atom name '%s' has wrong length, might cause problems with classification.",
                       __func__, atom_name);
-        ++err;
+        ++warn;
     }
-    if (strlen(residue_name) > PDB_ATOM_RES_NAME_STRL) {
-        freesasa_warn("%s: residue name '%s' is too long, might cause problems with classification.",
+    if (strlen(residue_name) != PDB_ATOM_RES_NAME_STRL) {
+        freesasa_warn("%s: residue name '%s' has wrong length, might cause problems with classification.",
                       __func__, residue_name);
-        ++err;
+        ++warn;
     }
-    if (strlen(residue_number) > PDB_ATOM_RES_NUMBER_STRL) {
-        freesasa_warn("%s: residue number '%s' is too long, might cause problems later.",
+    if (strlen(residue_number) != PDB_ATOM_RES_NUMBER_STRL) {
+        freesasa_warn("%s: residue number '%s' has wrong length, might cause problems later.",
                       __func__, residue_number);
-        ++err;
+        ++warn;
     }
-    guess_symbol(symbol,residue_name,atom_name);
+    if (guess_symbol(symbol,residue_name,atom_name) == FREESASA_WARN) ++warn;
     a = atom_new(residue_name,residue_number,atom_name,symbol,chain_label);
     if (a == NULL) return mem_fail();
     
     res = structure_add_atom(p,a,v);
     if (res == FREESASA_FAIL) return res;
-    else if (err) return FREESASA_WARN;
+    else if (warn) return FREESASA_WARN;
     
     return FREESASA_SUCCESS;
 }

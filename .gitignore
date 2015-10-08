@@ -13,6 +13,7 @@
 *.gcov
 *.trs
 *.tar.gz
+*.dSYM
 freesasa
 example
 test

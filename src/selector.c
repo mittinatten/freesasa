@@ -346,17 +346,22 @@ select_list(expression_type parent_type,
             const freesasa_structure *structure,
             const expression *expr)
 {
-    assert(expr);
+    if (expr == NULL)
+        return freesasa_fail("%s: NULL expression.",__func__);
     int resr, resl;
     expression *left = expr->left, *right = expr->right;
     switch(expr->type) {
     case E_PLUS: 
+        if (left == NULL || right == NULL) 
+            return freesasa_fail("%s: NULL expression.",__func__);
         resl = select_list(parent_type,selection,structure,left);
         resr = select_list(parent_type,selection,structure,right);
         if (resl == FREESASA_WARN || resr == FREESASA_WARN)
             return FREESASA_WARN;
         break;
     case E_RANGE:
+        if (left == NULL || right == NULL) 
+            return freesasa_fail("%s: NULL expression.",__func__);
         select_range(parent_type,selection,structure,left,right);
         break;
     case E_ID: case E_NUMBER:
@@ -364,8 +369,8 @@ select_list(expression_type parent_type,
             select_id(parent_type,selection,structure,expr->value);
         break;
     default:
-        freesasa_fail("%s: %s %s",__func__,e_str[parent_type],e_str[expr->type]);
-        assert(0);
+        freesasa_fail("%s: parse error, illegal expression: '%s %s'",
+                      __func__,e_str[parent_type],e_str[expr->type]);
         break;
     }
     return FREESASA_SUCCESS;
@@ -418,8 +423,11 @@ select_atoms(struct selection* selection,
              const expression *expr,
              const freesasa_structure *structure)
 {
-    assert(expr);
     int warn = 0, n = selection->size;
+
+    // this should only happen if memory allocation failed during parsing
+    if (expr == NULL) return freesasa_fail("%s: NULL expression.",__func__);
+
     switch (expr->type) {
     case E_SELECTOR:
         assert(expr->value != NULL);
@@ -441,6 +449,8 @@ select_atoms(struct selection* selection,
             if (select_atoms(sr,expr->right,structure) == FREESASA_WARN) ++warn;
             selection_join(selection,sl,sr,expr->type);
         } else {
+            selection_free(sl);
+            selection_free(sr);
             return freesasa_fail(__func__);
         }
         selection_free(sl);
@@ -448,7 +458,9 @@ select_atoms(struct selection* selection,
         break;
     }
     case E_NOT: {
-        if (select_atoms(selection,expr->right,structure) == FREESASA_WARN) ++warn;
+        int ret = select_atoms(selection,expr->right,structure);
+        if (ret == FREESASA_WARN) ++warn;
+        if (ret == FREESASA_FAIL) return FREESASA_FAIL;
         selection_not(selection);
         break;
     }
