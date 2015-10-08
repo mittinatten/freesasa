@@ -23,8 +23,6 @@
 #include <freesasa.h>
 #include <check.h>
 
-extern freesasa_strvp* freesasa_strvp_new(int n);
-
 #define N 8
 
 freesasa_structure *structure;
@@ -56,6 +54,9 @@ const int resi_1[N] = {      1,      1,      0,      0,      0,      1,      0, 
 const int resi_2r4[N]={      0,      0,      1,      1,      1,      0,      1,      1};
 const int chain_A[N]= {      1,      1,      1,      1,      1,      0,      0,      0};
 const int chain_B[N]= {      0,      0,      0,      0,      0,      1,      1,      1};
+char selection_name[100][FREESASA_MAX_SELECTION_NAME+1];
+double value[100];
+
 static int 
 float_eq(double a, double b, double tolerance) 
 {
@@ -69,9 +70,9 @@ float_eq(double a, double b, double tolerance)
 static int
 select(const char **command,int n_commands) 
 {
-    svp = freesasa_strvp_new(n_commands);
     for (int i = 0; i < n_commands; ++i) 
-        freesasa_select_area(command[i],&svp->string[i],&svp->value[i],structure,result);
+        ck_assert_int_eq(freesasa_select_area(command[i],selection_name[i],value+i,structure,result),
+                         FREESASA_SUCCESS);
 }
 
 static void setup(void) 
@@ -108,17 +109,13 @@ START_TEST (test_name)
                               "c5, name ca OR  name o",
                               "c6, name ca+o+oxt"};
     select(commands,6);
-    ck_assert_ptr_ne(svp,NULL);
-    ck_assert_ptr_ne(svp->value,NULL);
-    ck_assert_ptr_ne(svp->string,NULL);
-    ck_assert_int_eq(svp->n,6);
-    ck_assert(svp->value[0] > 5); // check that it's non-zero
-    ck_assert(float_eq(svp->value[0], addup(name_CA,result) + addup(name_O,result), 1e-10));
-    ck_assert(float_eq(svp->value[0], svp->value[4], 1e-10));
-    ck_assert(float_eq(svp->value[1], addup(name_CA,result), 1e-10));
-    ck_assert(float_eq(svp->value[2], addup(name_OXT,result), 1e-10));
-    ck_assert(float_eq(svp->value[3], 0, 1e-10));
-    ck_assert(float_eq(svp->value[5], 
+    ck_assert(value[0] > 5); // check that it's non-zero
+    ck_assert(float_eq(value[0], addup(name_CA,result) + addup(name_O,result), 1e-10));
+    ck_assert(float_eq(value[0], value[4], 1e-10));
+    ck_assert(float_eq(value[1], addup(name_CA,result), 1e-10));
+    ck_assert(float_eq(value[2], addup(name_OXT,result), 1e-10));
+    ck_assert(float_eq(value[3], 0, 1e-10));
+    ck_assert(float_eq(value[5], 
                        addup(name_CA,result) + addup(name_O,result) + addup(name_OXT,result),
                        1e-10));
 }
@@ -135,24 +132,20 @@ START_TEST (test_symbol)
                               "c7, symbol SE",
                               "c8, symbol O+C+SE and not symbol se"};
     select(commands,8);
-    ck_assert_ptr_ne(svp,NULL);
-    ck_assert_ptr_ne(svp->value,NULL);
-    ck_assert_ptr_ne(svp->string,NULL);
-    ck_assert_ptr_ne(svp->string[0], NULL);
-    ck_assert_str_eq(svp->string[0], "c1");
-    ck_assert_str_eq(svp->string[1], "c2");
-    ck_assert_str_eq(svp->string[2], "c3");
-    ck_assert(svp->value[0] > 5); //just to check that it's non-zero
-    ck_assert(float_eq(svp->value[0], addup(symb_O,result) + addup(symb_C,result), 1e-10));
-    ck_assert(float_eq(svp->value[1], addup(symb_O,result), 1e-10));
-    ck_assert(float_eq(svp->value[2], addup(symb_C,result), 1e-10));
-    ck_assert(float_eq(svp->value[3], 0, 1e-10));
-    ck_assert(float_eq(svp->value[4], svp->value[0], 1e-10));
-    ck_assert(float_eq(svp->value[5], 
+    ck_assert_str_eq(selection_name[0], "c1");
+    ck_assert_str_eq(selection_name[1], "c2");
+    ck_assert_str_eq(selection_name[2], "c3");
+    ck_assert(value[0] > 5); //just to check that it's non-zero
+    ck_assert(float_eq(value[0], addup(symb_O,result) + addup(symb_C,result), 1e-10));
+    ck_assert(float_eq(value[1], addup(symb_O,result), 1e-10));
+    ck_assert(float_eq(value[2], addup(symb_C,result), 1e-10));
+    ck_assert(float_eq(value[3], 0, 1e-10));
+    ck_assert(float_eq(value[4], value[0], 1e-10));
+    ck_assert(float_eq(value[5], 
                        addup(symb_O,result) + addup(symb_C,result) + addup(symb_SE,result),
                        1e-10));
-    ck_assert(float_eq(svp->value[6], addup(symb_SE,result), 1e-10));
-    ck_assert(float_eq(svp->value[7], svp->value[0], 1e-10));
+    ck_assert(float_eq(value[6], addup(symb_SE,result), 1e-10));
+    ck_assert(float_eq(value[7], value[0], 1e-10));
 }
 END_TEST
 
@@ -165,16 +158,13 @@ START_TEST (test_resn)
                               "c5, resn ala OR  resn arg",
                               "c6, resn ala+arg AND NOT resn arg"};
     select(commands,6);
-    ck_assert_ptr_ne(svp,NULL);
-    ck_assert_ptr_ne(svp->value,NULL);
-    ck_assert_ptr_ne(svp->string,NULL);
-    ck_assert(svp->value[0] > 5);
-    ck_assert(float_eq(svp->value[0], addup(resn_A,result) + addup(resn_R,result), 1e-10));
-    ck_assert(float_eq(svp->value[1], addup(resn_A,result), 1e-10));
-    ck_assert(float_eq(svp->value[2], addup(resn_R,result), 1e-10));
-    ck_assert(float_eq(svp->value[3], 0, 1e-10));
-    ck_assert(float_eq(svp->value[4], svp->value[0], 1e-10));
-    ck_assert(float_eq(svp->value[5], svp->value[1], 1e-10));
+    ck_assert(value[0] > 5);
+    ck_assert(float_eq(value[0], addup(resn_A,result) + addup(resn_R,result), 1e-10));
+    ck_assert(float_eq(value[1], addup(resn_A,result), 1e-10));
+    ck_assert(float_eq(value[2], addup(resn_R,result), 1e-10));
+    ck_assert(float_eq(value[3], 0, 1e-10));
+    ck_assert(float_eq(value[4], value[0], 1e-10));
+    ck_assert(float_eq(value[5], value[1], 1e-10));
 }
 END_TEST
 
@@ -192,16 +182,16 @@ START_TEST (test_resi)
     freesasa_set_verbosity(FREESASA_V_SILENT);
     select(commands,9);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
-    ck_assert(svp->value[0] > 5);
-    ck_assert(float_eq(svp->value[0], addup(resi_1,result) + addup(resi_2r4,result), 1e-10));
-    ck_assert(float_eq(svp->value[1], addup(resi_2r4,result), 1e-10));
-    ck_assert(float_eq(svp->value[2], addup(resi_1,result), 1e-10));
-    ck_assert(float_eq(svp->value[3], 0, 1e-10));
-    ck_assert(float_eq(svp->value[4], svp->value[0], 1e-10));
-    ck_assert(float_eq(svp->value[5], svp->value[0], 1e-10));
-    ck_assert(float_eq(svp->value[6], svp->value[0], 1e-10));
-    ck_assert(float_eq(svp->value[7], svp->value[0], 1e-10));
-    ck_assert(float_eq(svp->value[8], svp->value[2], 1e-10));
+    ck_assert(value[0] > 5);
+    ck_assert(float_eq(value[0], addup(resi_1,result) + addup(resi_2r4,result), 1e-10));
+    ck_assert(float_eq(value[1], addup(resi_2r4,result), 1e-10));
+    ck_assert(float_eq(value[2], addup(resi_1,result), 1e-10));
+    ck_assert(float_eq(value[3], 0, 1e-10));
+    ck_assert(float_eq(value[4], value[0], 1e-10));
+    ck_assert(float_eq(value[5], value[0], 1e-10));
+    ck_assert(float_eq(value[6], value[0], 1e-10));
+    ck_assert(float_eq(value[7], value[0], 1e-10));
+    ck_assert(float_eq(value[8], value[2], 1e-10));
 }
 END_TEST
 
@@ -215,14 +205,14 @@ START_TEST (test_chain)
                               "c6, chain A-B",
                               "c7, chain A-B AND NOT chain A"};
     select(commands,7);
-    ck_assert(svp->value[0] > 5);
-    ck_assert(float_eq(svp->value[0], addup(chain_A,result) + addup(chain_B,result), 1e-10));
-    ck_assert(float_eq(svp->value[0], svp->value[4], 1e-10));
-    ck_assert(float_eq(svp->value[0], svp->value[5], 1e-10));
-    ck_assert(float_eq(svp->value[1], addup(chain_A,result), 1e-10));
-    ck_assert(float_eq(svp->value[2], addup(chain_B,result), 1e-10));
-    ck_assert(float_eq(svp->value[3], 0, 1e-10));
-    ck_assert(float_eq(svp->value[6], addup(chain_B,result), 1e-10));
+    ck_assert(value[0] > 5);
+    ck_assert(float_eq(value[0], addup(chain_A,result) + addup(chain_B,result), 1e-10));
+    ck_assert(float_eq(value[0], value[4], 1e-10));
+    ck_assert(float_eq(value[0], value[5], 1e-10));
+    ck_assert(float_eq(value[1], addup(chain_A,result), 1e-10));
+    ck_assert(float_eq(value[2], addup(chain_B,result), 1e-10));
+    ck_assert(float_eq(value[3], 0, 1e-10));
+    ck_assert(float_eq(value[6], addup(chain_B,result), 1e-10));
 
 }
 END_TEST
@@ -230,7 +220,7 @@ END_TEST
 START_TEST (test_syntax_error)
 {
     double a;
-    char *s;
+    char s[FREESASA_MAX_SELECTION_NAME+1];
     const char *err[] = {"","a","a,","a,b",
                          // no selection arg
                          "a,resi","a,resn","a,name","a,symbol","a,chain",
@@ -254,7 +244,7 @@ START_TEST (test_syntax_error)
     int n = sizeof(err)/sizeof(char*);
     freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 0; i < n; ++i) {
-        ck_assert_int_eq(freesasa_select_area(err[i],&s,&a,structure,result),FREESASA_FAIL);
+        ck_assert_int_eq(freesasa_select_area(err[i],s,&a,structure,result),FREESASA_FAIL);
     }
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 } END_TEST
@@ -263,14 +253,14 @@ START_TEST (test_syntax_error)
 START_TEST (test_complex_syntax)
 {
     double a;
-    char *s;
+    char s[FREESASA_MAX_SELECTION_NAME+1];
     const char *stmt[] = {"a, (resn ala AND resi 1-3) OR (NOT chain A+B AND (symbol C OR symbol O))",
                           "a, NOT symbol SE+C AND NOT resi 5-7+1+6-8+100+200+10-11"
     };
     int n = sizeof(stmt)/sizeof(char*);
     freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 0; i < n; ++i) {
-        ck_assert_int_eq(freesasa_select_area(stmt[i],&s,&a,structure,result),FREESASA_SUCCESS);
+        ck_assert_int_eq(freesasa_select_area(stmt[i],s,&a,structure,result),FREESASA_SUCCESS);
     }
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 } END_TEST

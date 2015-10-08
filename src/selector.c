@@ -37,8 +37,8 @@ static void
 expression_free(expression *expression)
 {
     if (expression) {
-        free(expression->left);
-        free(expression->right);
+        expression_free(expression->left);
+        expression_free(expression->right);
         free(expression->value);
         free(expression);
     }
@@ -122,8 +122,8 @@ get_expression(const char *selector)
    freesasa_yyscan_t scanner;
    YY_BUFFER_STATE state;
    int err;
-   expression *expression = expression_new();
-   if (freesasa_yylex_init(&scanner) || expression == NULL) {
+   expression *expression = NULL;
+   if (freesasa_yylex_init(&scanner)) {
        freesasa_fail(__func__);
        return NULL;
    }
@@ -132,11 +132,13 @@ get_expression(const char *selector)
    if (err) {
        if (err == 1) freesasa_fail(__func__);
        if (err == 2) mem_fail();
-       return NULL;
+       expression_free(expression);
    }
    freesasa_yy_delete_buffer(state, scanner);
 
    freesasa_yylex_destroy(scanner);
+
+   if (err) return NULL;
 
    return expression;
 }
@@ -443,7 +445,7 @@ select_atoms(struct selection* selection,
         break;
     case E_AND:
     case E_OR: {
-        struct selection *sl = selection_new(n),*sr = selection_new(n);
+        struct selection *sl = selection_new(n), *sr = selection_new(n);
         if (sl && sr) {
             if (select_atoms(sl,expr->left,structure)  == FREESASA_WARN) ++warn;
             if (select_atoms(sr,expr->right,structure) == FREESASA_WARN) ++warn;
@@ -497,7 +499,7 @@ print_expr(const expression *e,int level)
 
 int
 freesasa_select_area(const char *command,
-                     char **name,
+                     char *name,
                      double *area,
                      const freesasa_structure *structure,
                      const freesasa_result *result)
@@ -507,11 +509,12 @@ freesasa_select_area(const char *command,
     assert(freesasa_structure_n(structure) == result->n_atoms);
     struct selection *selection = NULL;
     struct expression *expression = NULL;
+    const int maxlen = FREESASA_MAX_SELECTION_NAME;
     double sasa = 0;
     int err = 0, warn = 0;
     *area = 0;
-    *name = "";
-
+    name[0] = '\0';
+    
     expression = get_expression(command);
     selection = selection_new(result->n_atoms);
     //print_expr(expression,0);
@@ -530,13 +533,16 @@ freesasa_select_area(const char *command,
             }
             
             *area = sasa;
-            *name = strdup(selection->name);
-            //printf(">> %s %f %d\n",*name,*area,count); fflush(stdout);
-            
-            if (*name == NULL) {
-                err = 1; 
-                mem_fail();
+            int len = strlen(selection->name);
+            if (len > maxlen) {
+                strncpy(name,selection->name,maxlen);
+                name[maxlen+1] = '\0';
             }
+            else {
+                strcpy(name,selection->name);
+            }
+            //printf(">> %s %f %d\n",name,*area,count); fflush(stdout);
+            
             break;
         default:
             assert(0);

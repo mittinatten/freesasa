@@ -209,21 +209,30 @@ END_TEST
 START_TEST (test_selector) 
 {
     set_fail_freq(1000000);
+    freesasa_parameters p = freesasa_default_parameters;
+    p.shrake_rupley_n_points = 10;
     FILE *file = fopen(DATADIR "1ubq.pdb","r");
     freesasa_structure *s = freesasa_structure_from_pdb(file,0);
     double *radii = freesasa_structure_radius(s,NULL);
     freesasa_result *result = freesasa_calc_structure(s,radii,NULL);
     double area;
-    char *name;
-    
+    char name[FREESASA_MAX_SELECTION_NAME];
+
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    for (int i = 1; i < 15; ++i) {
+    for (int i = 1; i < 13; ++i) { 
+        /* This is a pretty short expression. Have not verified that
+           it's actually exactly 13 memory allocations, but we have
+           success with a frequencey of 14, and 13 seems about right. */
         set_fail_freq(i);
-        ck_assert_int_eq(freesasa_select_area("s, resn ALA and chain A",&name,&area,s,result),
+        ck_assert_int_eq(freesasa_select_area("s, resn ALA and chain A",name,&area,s,result),
                          FREESASA_FAIL);
     }
     freesasa_set_verbosity(FREESASA_V_NORMAL);
-} 
+    fclose(file);
+    free(radii);
+    freesasa_result_free(result);
+    freesasa_structure_free(s);
+}
 END_TEST
 
 START_TEST (test_api) 

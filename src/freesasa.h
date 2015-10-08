@@ -88,6 +88,9 @@ typedef enum {
 #define FREESASA_SEPARATE_CHAINS 8 //!< Read separate chains as separate structures
 #define FREESASA_JOIN_MODELS 16 //!< Read MODELs as part of one big structure
 
+/// The maximum length of a selection name (@see freesasa_select_area()) 
+#define FREESASA_MAX_SELECTION_NAME 20
+
 //! Struct to store parameters for SASA calculation @ingroup API
 typedef struct {
     freesasa_algorithm alg;       //!< Algorithm
@@ -284,7 +287,8 @@ freesasa_result_classify(const freesasa_result *result,
     using the ::freesasa_result pointer.
 
     @param command The selection
-    @param name The name of the selection is stored here
+    @param name The name of the selection is stored here, it should be
+      able to store a string of length ::FREESASA_MAX_SELECTION_NAME.
     @param area The area of the selection is stored here
     @param structure The structure to select from
     @param result The results to integrate
@@ -296,7 +300,7 @@ freesasa_result_classify(const freesasa_result *result,
  */
 int
 freesasa_select_area(const char *command,
-                     char **name,
+                     char *name,
                      double *area,
                      const freesasa_structure *structure,
                      const freesasa_result *result);

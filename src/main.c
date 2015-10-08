@@ -234,8 +234,8 @@ const char *name)
             printf("\nSelections:\n");
             for (int c = 0; c < n_select; ++c) {
                 double a;
-                char *name;
-                if (freesasa_select_area(select_cmd[c],&name,&a,structures[i],result)
+                char name[FREESASA_MAX_SELECTION_NAME+1];
+                if (freesasa_select_area(select_cmd[c],name,&a,structures[i],result)
                     == FREESASA_SUCCESS) {
                     printf("%s: %9.2f A2\n",name,a);
                 } else {

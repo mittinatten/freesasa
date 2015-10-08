@@ -35,7 +35,7 @@
 # calc(). They are not intended to be used outside of this module.
 
 from libc.stdio cimport FILE, fopen, fclose
-from libc.stdlib cimport free, realloc
+from libc.stdlib cimport free, realloc, malloc
 from libc.string cimport memcpy
 from cpython cimport array
 from cfreesasa cimport *
@@ -599,15 +599,16 @@ def selectArea(commands,structure,result):
       cdef freesasa_structure *s
       cdef freesasa_result *r
       cdef double area
-      cdef char *name
+      cdef char *name = <char*>malloc(FREESASA_MAX_SELECTION_NAME+1);
       structure._get_address(<size_t> &s)
       result._get_address(<size_t> &r)
       value = dict()
       for cmd in commands:
-            ret = freesasa_select_area(cmd,&name,&area,s,r)
+            ret = freesasa_select_area(cmd,name,&area,s,r)
             if ret == FREESASA_FAIL:
                   raise Exception("Error parsing '%s'" % cmd)
             value[name] = area
+      free(name)
       return value
 
 ## Set global verbosity

@@ -38,6 +38,8 @@ cdef extern from "freesasa.h":
     cdef int FREESASA_SEPARATE_MODELS
     cdef int FREESASA_JOIN_MODELS
 
+    cdef int FREESASA_MAX_SELECTION_NAME
+
     ctypedef struct freesasa_parameters:
         freesasa_algorithm alg
         double probe_radius
@@ -95,7 +97,7 @@ cdef extern from "freesasa.h":
                                              const freesasa_classifier *classifier)
 
     int freesasa_select_area(const char *command,
-                             char **name,
+                             char *name,
                              double *area,
                              const freesasa_structure *structure,
                              const freesasa_result *result)
