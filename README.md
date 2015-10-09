@@ -97,8 +97,8 @@ The program has been tested successfully with several versions of GNU
 C Compiler and Clang/LLVM. Building the library only requires standard
 C and GNU libraries. Developers who want to do testing need to install
 the Check unit testing framework. Building the full reference manual
-requires Doxygen (version > 1.8.8), and the 'regular' manual requires
-LaTeX. Building the Python bindings requires Cython. All these build
-options are disabled by default to reduce the dependencies to a
-minimum.
+requires Doxygen (version > 1.8.8). Building the Python bindings
+requires Cython. These build options, which add extra dependencies,
+are disabled by default to simplify installation for users only
+interested in the command line tool and and/or C Library.
 
