@@ -219,13 +219,13 @@ START_TEST (test_selector)
     char name[FREESASA_MAX_SELECTION_NAME];
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    for (int i = 1; i < 13; ++i) { 
+    for (int i = 1; i < 17; ++i) { 
         /* This is a pretty short expression. Have not verified that
-           it's actually exactly 13 memory allocations, but we have
-           success with a frequencey of 14, and 13 seems about right. */
+           it's actually exactly 17 memory allocations, but we have
+           success with a frequencey of 18, and 17 seems about right. */
         set_fail_freq(i);
-        ck_assert_int_eq(freesasa_select_area("s, resn ALA and chain A",name,&area,s,result),
-                         FREESASA_FAIL);
+        ck_assert_int_eq(freesasa_select_area("s, resn ALA and not resi 1-20",name,&area,s,result),
+                         FREESASA_FAIL); // this expression should come across most allocations
     }
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     fclose(file);

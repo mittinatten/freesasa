@@ -425,7 +425,7 @@ select_atoms(struct selection* selection,
              const expression *expr,
              const freesasa_structure *structure)
 {
-    int warn = 0, n = selection->size;
+    int warn = 0, err = 0, n = selection->size, ret;
 
     // this should only happen if memory allocation failed during parsing
     if (expr == NULL) return freesasa_fail("%s: NULL expression.",__func__);
@@ -447,23 +447,28 @@ select_atoms(struct selection* selection,
     case E_OR: {
         struct selection *sl = selection_new(n), *sr = selection_new(n);
         if (sl && sr) {
-            if (select_atoms(sl,expr->left,structure)  == FREESASA_WARN) ++warn;
-            if (select_atoms(sr,expr->right,structure) == FREESASA_WARN) ++warn;
+            if ((ret = select_atoms(sl,expr->left,structure))) {
+                if (ret == FREESASA_WARN) ++warn;
+                if (ret == FREESASA_FAIL) ++err;
+            }
+            if ((ret = select_atoms(sr,expr->right,structure))) {
+                if (ret == FREESASA_WARN) ++warn;
+                if (ret == FREESASA_FAIL) ++err;
+            }
             selection_join(selection,sl,sr,expr->type);
         } else {
-            selection_free(sl);
-            selection_free(sr);
-            return freesasa_fail(__func__);
+            ++err;
         }
         selection_free(sl);
         selection_free(sr);
+        if (err) return freesasa_fail(__func__);
         break;
     }
     case E_NOT: {
-        int ret = select_atoms(selection,expr->right,structure);
+        ret = select_atoms(selection,expr->right,structure);
         if (ret == FREESASA_WARN) ++warn;
         if (ret == FREESASA_FAIL) return FREESASA_FAIL;
-        selection_not(selection);
+        if (selection_not(selection)) return FREESASA_FAIL;
         break;
     }
     case E_ID:
