@@ -113,6 +113,25 @@ separate files, run
 
     $ freesasa --residue-file=1ubq.seq --residue-type-file=1ubq.res --B-value-file=1ubq.b 1ubq.pdb
 
+@section CLI-select Selecting groups of atoms
+
+The option `--select` can be used to define groups of atoms whose
+integrated SASA we are interested in. It uses a subset of the Pymol
+`select` command syntax, see @ref Selection for full
+documentation. The following example shows how to calculate the sum of
+exposed surface areas of all aromatic residues and of ASP and ASN
+
+    $ freesasa --select "aromatic, resn phe+tyr+trp+his+pro" --select "asx, resn asp+asn" resn 1ubq.pdb
+    ...
+    Selections:
+    freesasa: warning: Found no matches to resn 'TRP', typo?
+    aromatic:    348.32 A2
+    asx:    549.25 A2
+
+This command adds a 'Selection:' section at the end of the
+output. This particular protein did not have any TRP residues, hence
+the warning (written to stderr). The warning can be supressed with the
+flag `-w`.
 
 @section Input PDB input
 
@@ -176,6 +195,8 @@ fictive PDB file (1abc.pdb). Possible errors are ignored for
 brevity. Default parameters are used at every step, the section @ref
 Customizing explains how to configure the calculations.
 
+@subsubsection API-Read-PDB Open PDB file
+
 Begin by opening a file and read a structure from it. The second
 argument, 0, indicates use default when selecting atoms, i.e. ignore
 Hydrogens and HETATMs, and only include the first MODEL if there are
@@ -186,6 +207,8 @@ several.
     freesasa_structure *structure = freesasa_structure_from_pdb(fp,0);
 ~~~
 
+@subsubsection API-Radii Calculate atomic radii
+
 Calculate the atomic radii of that structure using the default classifier.
 The argument `NULL` here means use the default classifier. A custom classifier
 can be passed as a pointer to freesasa_classifier.
@@ -193,6 +216,8 @@ can be passed as a pointer to freesasa_classifier.
 ~~~{.c}
     double *radii = freesasa_structure_radius(structure,NULL);
 ~~~
+
+@subsubsection API-Calc Perform calculation
 
 Calculate SASA using the structure and radii and print the total area. The
 argument `NULL` means use default parameters. User-defined parameters can be
@@ -202,6 +227,8 @@ defined by passing a pointer to freesasa_parameters.
     freesasa_result *result = freesasa_calc_structure(structure,radii,NULL);
     printf("Total area: %f A2\n",result->total);
 ~~~
+
+@subsubsection API-Classes Get area of classes of atoms
 
 Calculate area of classes (Polar/Apolar/..) and print their
 values. The argument `NULL` again means use the default classifier. The
@@ -214,6 +241,22 @@ demonstrated below.
         printf("%s: %f A2\n",class_area->string[i],
                class_area->value[i]);
 ~~~
+
+@subsubsection API-Select Get area of custom groups of atoms
+
+Groups of atoms can be defined using freesasa_select_area(), which
+takes a selection definition uses a subset of the Pymol select syntax
+(@ref Selection).
+
+~~~{.c}
+    double area;
+    char name[FREESASA_MAX_SELECTION_NAME+1];
+    freesasa_select_area("aromatic, resn phe+tyr+trp+his+pro",
+                         name,&area,structure,result);
+~~~
+
+The last statement stores the string "aromatic" in `name` and the SASA
+integrated over the atoms defined by the selection.
 
 @subsection Coordinates
 
@@ -338,6 +381,57 @@ or most residues (such as backbone atoms). If there is an exception
 for a given amino acid this can be overridden as is shown for `PRO CB`
 in the example.
 
+@page Selection Selection syntax
+
+FreeSASA uses a subset of the Pymol select commands to give users an
+easy way of summing up the SASA of groups of atoms. This is done by
+the function freesasa_select_area() in the C API, selectArea() in the
+Python interface and the option `--select` for the command line
+tool. All commands are case insensitive. A basic selection has a
+selection name, a property selector and a list of arguments
+
+    <selection-name>, <selector> <list>
+
+For example
+
+    aromatic, resn phe+tyr+trp+his+pro
+
+Several selectors can be joined using boolean logic and parentheses,
+
+    <selection-name>, (<s1> <l1>) and not (<s2> <l2> or <s3> <l3>)
+
+where s1, s2 and s3 are selectors and l1, l2 and l3 are lists. The
+operator `and` has precedence over `or`, so the second parentheses is
+necessary but not the first, in the example above.
+
+The following property selectors are supported
+
+- `resn` Residue names like "ala", "arg", "du", etc 
+- `resi` Residue index (positive integers)
+- `chain` Chain labels (single characters)
+- `name` Atom names, such as "ca", "c", "oxt", etc
+- `symbol` Element symbols, such as "C", "O", "Se", "Fe", etc.
+
+A list of residues can be selected using
+
+    resn ala+val+leu+ile+met
+
+and similarly for the other four selectors. In addition `resi` and
+`chain` support ranges
+
+    resi 1-10
+    resi 1-10+20-30+35
+    chain A+C-E
+
+Combining ranges with plus signs, as in the two last lines, is not
+allowed in Pymol but supported by FreeSASA.
+
+If a selection list contains elements not found in the molecule that
+is analyzed, a warning is printed and that part of the list does not
+contribute to the selection. Not finding an a list element can be
+because it specifies a residue that does not exist in the particular
+molecule, or because of typos. The selector does not keep a list of
+valid elements, residue names, etc.
 
 @page Python Python bindings
 

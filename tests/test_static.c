@@ -318,7 +318,7 @@ END_TEST
 START_TEST (test_selection) 
 {
     static const expression empty_expression = {
-        .right = NULL, .left = NULL, .value = NULL, .type = E_SELECTOR
+        .right = NULL, .left = NULL, .value = NULL, .type = E_SELECTION
     };
     freesasa_structure *structure = freesasa_structure_new();
     freesasa_structure_add_atom(structure," CA ","ALA","   1",'A',0,0,0);
@@ -375,7 +375,7 @@ START_TEST (test_expression)
 {
     expression *e = get_expression("c1, symbol O+C");
     ck_assert_ptr_ne(e,NULL);
-    ck_assert_int_eq(e->type, E_SELECTOR);
+    ck_assert_int_eq(e->type, E_SELECTION);
     ck_assert_ptr_ne(e->left, NULL);
     ck_assert_ptr_eq(e->right, NULL);
     ck_assert_str_eq(e->value, "c1");

@@ -16,7 +16,7 @@ if USE_CHECK
 TESTS += libtest static-test broken-malloc
 check_PROGRAMS += libtest static-test broken-malloc
 libtest_SOURCES = libtest.c test_pdb.c test_freesasa.c test_structure.c \
-	test_classify.c test_coord.c test_nb.c test_selector.c
+	test_classify.c test_coord.c test_nb.c test_selection.c
 static_test_SOURCES = test_static.c
 broken_malloc_SOURCES = broken_malloc.c
 

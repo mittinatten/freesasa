@@ -119,7 +119,9 @@ help(void)
             "                        radius. Use the -file variant to specify an output file.\n"
             "                        This option might at moment give confusing output when used in conjuction\n"
             "                        with the options -C and -g.\n"
-            "  --select <command>    Select atoms using Pymol select syntax (experimental). Command examples: \n"
+            "  --select <command>    Select atoms using Pymol select syntax.\n"
+            "                        The option can be repeated to define several selections.\n"
+            "                        Command examples: \n"
             "                                      'AR, resn ala+arg', 'chain_A, chain A'\n"
             "                        AR and chain_A are just the names of the selections, which will be reused\n"
             "                        in output. See documentation for full syntax specification.\n");

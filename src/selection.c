@@ -2,7 +2,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "selector.h"
+#include "selection.h"
 #include "parser.h"
 #include "lexer.h"
 #include "util.h"
@@ -25,7 +25,7 @@ expression_new()
 
     if (e == NULL) {mem_fail(); return NULL; }
     
-    e->type = E_SELECTOR;
+    e->type = E_SELECTION;
     e->left = NULL;
     e->right = NULL;
     e->value = NULL;
@@ -45,8 +45,8 @@ expression_free(expression *expression)
 }
 
 expression *
-freesasa_selector_atom(expression_type type,
-                       const char* val)
+freesasa_selection_atom(expression_type type,
+                        const char* val)
 {
     assert(val);
     expression *e = expression_new();
@@ -67,14 +67,14 @@ freesasa_selector_atom(expression_type type,
 }
 
 expression *
-freesasa_selector_create(expression *selection,
-                         const char* id)
+freesasa_selection_create(expression *selection,
+                          const char* id)
 {
     assert(id);
     expression *e = expression_new();
     if (e == NULL) return NULL;
 
-    e->type = E_SELECTOR;
+    e->type = E_SELECTION;
     e->left = selection;
     e->value = strdup(id);
     
@@ -88,7 +88,7 @@ freesasa_selector_create(expression *selection,
 }
 
 expression *
-freesasa_selector_selection(expression_type type,
+freesasa_selection_selector(expression_type type,
                             expression *list)
 {
     expression *e = expression_new();
@@ -101,9 +101,9 @@ freesasa_selector_selection(expression_type type,
 }
 
 expression *
-freesasa_selector_operation(expression_type type, 
-                            expression *left, 
-                            expression *right)
+freesasa_selection_operation(expression_type type,
+                             expression *left,
+                             expression *right)
 {
     expression *e = expression_new();
     if (e == NULL) return NULL;
@@ -437,7 +437,7 @@ select_atoms(struct selection* selection,
     if (expr == NULL) return fail_msg("NULL expression.");
 
     switch (expr->type) {
-    case E_SELECTOR:
+    case E_SELECTION:
         assert(expr->value != NULL);
         selection->name = expr->value;
         return select_atoms(selection,expr->left,structure);
@@ -571,9 +571,9 @@ freesasa_select_area(const char *command,
     return FREESASA_SUCCESS;
 }
 
-int freesasa_selector_parse_error(expression *e,
-                                  yyscan_t scanner,
-                                  const char *msg)
+int freesasa_selection_parse_error(expression *e,
+                                   yyscan_t scanner,
+                                   const char *msg)
 {
     print_expr(e,0);
     if (freesasa_get_verbosity() == FREESASA_V_NORMAL) fprintf(stderr,"\n");

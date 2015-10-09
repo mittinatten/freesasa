@@ -475,7 +475,7 @@ static yyconst flex_int16_t yy_chk[142] =
 #line 1 "lexer.l"
 #line 2 "lexer.l"
 
-#include "selector.h"
+#include "selection.h"
 #include "parser.h"
 #include "util.h"
 
