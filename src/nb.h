@@ -41,7 +41,7 @@ typedef struct {
     double **xd; //!< signed distance between neighbors along x-axis
     double **yd; //!< signed distance between neighbors along y-axis
     int *capacity; //!< keeps track of memory chunks (don't change this)
-} freesasa_nb;
+} nb_list;
 
 /**
     Creates a neigbor list based on a set of coordinates with
@@ -58,8 +58,8 @@ typedef struct {
       if there were any problems constructing the list (see error
       messages).
  */
-freesasa_nb *
-freesasa_nb_new(const freesasa_coord *coord,
+nb_list *
+freesasa_nb_new(const coord_t *coord,
                 const double *radii);
 
 /**
@@ -68,7 +68,7 @@ freesasa_nb_new(const freesasa_coord *coord,
     @param nb The neigbor list to free
  */
 void
-freesasa_nb_free(freesasa_nb *nb);
+freesasa_nb_free(nb_list *nb);
 
 /**
     Checks if two atoms are in contact. Only included for reference.
@@ -79,7 +79,7 @@ freesasa_nb_free(freesasa_nb *nb);
     @return 1 if contact, 0 else.
  */
 int
-freesasa_nb_contact(const freesasa_nb *nb,
+freesasa_nb_contact(const nb_list *nb,
                     int i,
                     int j);
 

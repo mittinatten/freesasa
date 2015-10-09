@@ -47,13 +47,10 @@ typedef struct cell_list {
     double z_max, z_min;
 } cell_list;
 
-extern int freesasa_fail(const char *format, ...);
-extern int freesasa_warn(const char *format, ...);
-
 //! Finds the bounds of the cell list and writes them to the provided cell list
 static void
 cell_list_bounds(cell_list *c, 
-                 const freesasa_coord *coord)
+                 const coord_t *coord)
 {
     const int n = freesasa_coord_n(coord);
     double d = c->d;
@@ -154,7 +151,7 @@ coord2cell_index(const cell_list *c,
  */
 static int
 fill_cells(cell_list *c,
-           const freesasa_coord *coord)
+           const coord_t *coord)
 {
     for (int i = 0; i < c->n; ++i) {
         c->cell[i].n_atoms = 0;
@@ -191,7 +188,7 @@ cell_list_free(cell_list *c)
  */
 static cell_list*
 cell_list_new(double cell_size,
-              const freesasa_coord *coord)
+              const coord_t *coord)
 {
     assert(cell_size > 0);
     assert(coord);
@@ -232,14 +229,14 @@ max_array(const double *a,
 }
 
 /**
-    Allocate memory for ::freesasa_nb object. Tries to free everything
+    Allocate memory for ::nb_list object. Tries to free everything
     and returns NULL if malloc somewhere along the way.
  */
-static freesasa_nb*
+static nb_list*
 freesasa_nb_alloc(int n)
 {
     assert(n > 0);
-    freesasa_nb *nb = malloc(sizeof(freesasa_nb));
+    nb_list *nb = malloc(sizeof(nb_list));
     if (!nb) {mem_fail(); return NULL;}
 
     nb->n = n;
@@ -288,7 +285,7 @@ freesasa_nb_alloc(int n)
 }
 
 void
-freesasa_nb_free(freesasa_nb *nb)
+freesasa_nb_free(nb_list *nb)
 {
     int n;
     if (nb != NULL) {
@@ -312,7 +309,7 @@ freesasa_nb_free(freesasa_nb *nb)
     FREESASA_FAIL if realloc fails, FREESASA_SUCCESS else
  */
 static int
-chunk_up(freesasa_nb *nb_list,
+chunk_up(nb_list *nb_list,
          int i)
 {
     int nni = nb_list->nn[i];
@@ -343,7 +340,7 @@ chunk_up(freesasa_nb *nb_list,
     else.
 */
 static int
-nb_add_pair(freesasa_nb *nb_list,
+nb_add_pair(nb_list *nb_list,
             int i,
             int j,
             double dx,
@@ -385,8 +382,8 @@ nb_add_pair(freesasa_nb *nb_list,
     correctly.
 */
 static int 
-nb_calc_cell_pair(freesasa_nb *nb_list,
-                  const freesasa_coord* coord,
+nb_calc_cell_pair(nb_list *nb_list,
+                  const coord_t *coord,
                   const double *radii,
                   const cell *ci,
                   const cell *cj)
@@ -429,9 +426,9 @@ nb_calc_cell_pair(freesasa_nb *nb_list,
     provided nb list
  */
 static int
-nb_fill_list(freesasa_nb *nb_list,
+nb_fill_list(nb_list *nb_list,
              cell_list *c,
-             const freesasa_coord *coord,
+             const coord_t *coord,
              const double *radii)
 {
     int nc = c->n;
@@ -446,15 +443,15 @@ nb_fill_list(freesasa_nb *nb_list,
     return FREESASA_SUCCESS;
 }
 
-freesasa_nb*
-freesasa_nb_new(const freesasa_coord* coord,
+nb_list*
+freesasa_nb_new(const coord_t *coord,
                 const double *radii)
 {
     if (coord == NULL || radii == NULL) return NULL;
     double cell_size;
     cell_list *c;
     int n = freesasa_coord_n(coord);
-    freesasa_nb *nb = freesasa_nb_alloc(n);
+    nb_list *nb = freesasa_nb_alloc(n);
     
     if (!nb) {
         mem_fail();
@@ -482,7 +479,7 @@ freesasa_nb_new(const freesasa_coord* coord,
 }
 
 int 
-freesasa_nb_contact(const freesasa_nb *nb,
+freesasa_nb_contact(const nb_list *nb,
                     int i,
                     int j)
 {

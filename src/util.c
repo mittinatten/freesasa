@@ -17,6 +17,7 @@
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include "freesasa.h"
@@ -68,8 +69,17 @@ int freesasa_warn(const char *format,...)
 }
 
 int
+freesasa_fail_wloc(const char* func,
+                   const char* file,
+                   int line,
+                   const char *msg) 
+{
+    return freesasa_fail("in %s() (%s:%d): %s",func,file,line,msg);
+}
+
+int
 freesasa_mem_fail(const char* func, const char* file, int line)
 {
-    return freesasa_fail("%s (%s:%d): memory allocation failure.",func,file,line);
+    return freesasa_fail_wloc(func,file,line,"Out of memory.");
 }
 

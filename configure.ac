@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([FreeSASA], [0.5.0.2])
+AC_INIT([FreeSASA], [0.5.1])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([src/freesasa.c])
 AC_CONFIG_HEADERS([config.h])
@@ -45,7 +45,7 @@ AC_ARG_WITH([python],
 
 AC_ARG_ENABLE([python-bindings],
   [AS_HELP_STRING([--enable-python-bindings],
-    [build Python bindings using Cython])])
+    [Build Python bindings using Cython])])
 
 if test x$enable_python_bindings = xyes ; then
   AC_CHECK_PROG(PYTHON, python, $python_bin)
@@ -56,10 +56,23 @@ else
   AM_CONDITIONAL([HAVE_CYTHON],FALSE)
 fi
 
+# Enable parser generation with Flex/Bison
+AC_ARG_ENABLE([flex-bison],
+  [AS_HELP_STRING([--enable-flex-bison],
+    [Regenerate parser/lexer using Flex and Bison (for developers)])])
+if test x$enable_flex_bison = xyes ; then
+  AC_CHECK_PROG(FLEX, flex, flex)
+  AC_CHECK_PROG(BISON, bison, bison)
+  AM_CONDITIONAL([GENERATE_PARSER], [test -n "$FLEX" && test -n "$BISON"])
+  AM_COND_IF([GENERATE_PARSER],[],[echo "Flex and/or Bison missing, won't generate parser source (but parser can still be built from the provided sources)."])
+else
+  AM_CONDITIONAL([GENERATE_PARSER],FALSE)
+fi
+
 # Enable Doxygen
 AC_ARG_ENABLE([doxygen],
   [AS_HELP_STRING([--enable-doxygen],
-    [build doxygen html-documentation])])
+    [Build Doxygen html-documentation])])
 
 if test x$enable_doxygen = xyes ; then
   AC_CHECK_PROG(DOXYGEN, doxygen, doxygen)
@@ -81,7 +94,7 @@ AM_CONDITIONAL([BUILD_DOC],[test -n "$build_doc"])
 # Enable testing
 AC_ARG_ENABLE([check],
   [AS_HELP_STRING([--enable-check],
-    [enable the Check unit testing framework])])
+    [Enable the Check unit testing framework])])
 
 if test x$enable_check = xyes ; then
   AC_CHECK_LIB([check],[suite_create],
@@ -95,7 +108,7 @@ fi
 # Enable gcov
 AC_ARG_ENABLE([gcov],
   [AS_HELP_STRING([--enable-gcov],
-    [compile with Gcov to measure coverage])])
+    [Compile with Gcov to measure coverage])])
 AM_CONDITIONAL([COND_GCOV],[test "x$enable_gcov" = xyes])
 
 # Disable test for CLI

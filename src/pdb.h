@@ -36,7 +36,9 @@
 #define PDB_ATOM_NAME_STRL 4 //!< Length of strings with atom names, such as `" CA "`.
 #define PDB_ATOM_RES_NAME_STRL 3 //!< Length of string with residue names, such as `"ALA"`.
 #define PDB_ATOM_RES_NUMBER_STRL 4 //!< Length of string with residue number, such as `" 123"`.
+#define PDB_ATOM_SYMBOL_STRL 2 //!< Length for string with element symbol, such "FE"
 #define PDB_LINE_STRL 80 //!< Length of a line in PDB file.
+
 
 /**
     Get atom name from a PDB line.
@@ -50,7 +52,7 @@
     @param name The name is written to this string.
     @param line Line from a PDB file.
     @return ::FREESASA_SUCCESS if input is readable, else ::FREESASA_FAIL.
-*/
+ */
 int
 freesasa_pdb_get_atom_name(char *name,
                            const char *line);
@@ -66,7 +68,7 @@ freesasa_pdb_get_atom_name(char *name,
     @param name The name is written to this string.
     @param line Line from a PDB file.
     @return ::FREESASA_SUCCESS if input is readable, else ::FREESASA_FAIL.
-*/
+ */
 int
 freesasa_pdb_get_res_name(char *name,
                           const char *line);
@@ -81,7 +83,7 @@ freesasa_pdb_get_res_name(char *name,
     @param coord The coordiantes are written to this array as x,y,z.
     @param line Line from a PDB file.
     @return ::FREESASA_SUCCESS if input is readable, else ::FREESASA_FAIL.
-*/
+ */
 int
 freesasa_pdb_get_coord(double *coord,
                        const char *line);
@@ -98,7 +100,7 @@ freesasa_pdb_get_coord(double *coord,
     @param number The residue number will be saved to this string.
     @param line Line from a PDB file.
     @return ::FREESASA_SUCCESS if input is readable, else ::FREESASA_FAIL.
-*/
+ */
 int
 freesasa_pdb_get_res_number(char *number,
                             const char* line);
@@ -112,7 +114,7 @@ freesasa_pdb_get_res_number(char *number,
     @param line Line from a PDB file.
     @return The chain label. If the line is invalid, the function
     returns '\0'. 
-*/
+ */
 char
 freesasa_pdb_get_chain_label(const char* line);
 
@@ -126,9 +128,23 @@ freesasa_pdb_get_chain_label(const char* line);
     @param line Line from a PDB file.
     @return The label. If line is invalid, the function returns
     '\0'.
-*/
+ */
 char
 freesasa_pdb_get_alt_coord_label(const char* line);
+
+/**
+    Get element symbol from PDB line.
+
+    Writes padded string to argument symbol, i.e. " C", "SE", etc.
+
+    @param symbol The symbol will be written to this string.
+    @param line Line from a PDB file.
+    @return ::FREESASA_SUCCESS line has more 78 or more characters. ::FREESASA_FAIL if
+      line too short.
+ */
+int
+freesasa_pdb_get_symbol(char *symbol,
+                        const char* line);
 
 /**
     Is atom Hydrogen?
@@ -137,8 +153,8 @@ freesasa_pdb_get_alt_coord_label(const char* line);
 
     @param line Line from a PDB file.  
     @return 1 if Hydrogen (or deuterium). 0 otherwise. If line is
-    invalid, the function returns ::FREESASA_FAIL. 
-*/
+    invalid, the function returns ::FREESASA_FAIL.
+ */
 int
 freesasa_pdb_ishydrogen(const char* line);
 

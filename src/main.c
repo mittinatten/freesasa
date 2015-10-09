@@ -30,6 +30,7 @@
 #endif
 
 #include "freesasa.h"
+#include "util.h"
 
 #if STDC_HEADERS
 extern int getopt(int, char * const *, const char *);
@@ -58,6 +59,8 @@ int structure_options = 0;
 int printpdb = 0;
 int n_chain_groups = 0;
 const char** chain_groups;
+int n_select = 0;
+const char** select_cmd;
 
 void
 help(void)
@@ -115,7 +118,13 @@ help(void)
             "                        been replaced by its SASA, and the occupancy number by the atomic\n"
             "                        radius. Use the -file variant to specify an output file.\n"
             "                        This option might at moment give confusing output when used in conjuction\n"
-            "                        with the options -C and -g.\n");
+            "                        with the options -C and -g.\n"
+            "  --select <command>    Select atoms using Pymol select syntax.\n"
+            "                        The option can be repeated to define several selections.\n"
+            "                        Command examples: \n"
+            "                                      'AR, resn ala+arg', 'chain_A, chain A'\n"
+            "                        AR and chain_A are just the names of the selections, which will be reused\n"
+            "                        in output. See documentation for full syntax specification.\n");
     fprintf(stderr,
             "\nIf no pdb-file is specified STDIN is used for input.\n\n"
             "To calculate SASA of one or several PDB file using default parameters simply type:\n\n"
@@ -223,6 +232,18 @@ const char *name)
         if (printpdb) {
             freesasa_write_pdb(output_pdb,result,structures[i],radii);
         }
+        if (n_select > 0) {
+            printf("\nSelections:\n");
+            for (int c = 0; c < n_select; ++c) {
+                double a;
+                char name[FREESASA_MAX_SELECTION_NAME+1];
+                if (freesasa_select_area(select_cmd[c],name,&a,structures[i],result)
+                    == FREESASA_SUCCESS) {
+                    printf("%s: %9.2f A2\n",name,a);
+                } else {
+                }
+            }
+        }
         freesasa_result_free(result);
         freesasa_strvp_free(classes);
         freesasa_structure_free(structures[i]);
@@ -246,20 +267,33 @@ fopen_werr(const char* filename,
     return f;
 }
 
-void add_chain_groups(const char* cmd) 
+void
+add_chain_groups(const char* cmd) 
 {
     char *str = strdup(cmd);
     const char *token = strtok(str,"+");
     while (token) {
         ++n_chain_groups;
         chain_groups = realloc(chain_groups,sizeof(char*)*n_chain_groups);
+        if (chain_groups == NULL) {mem_fail(); abort();}
         chain_groups[n_chain_groups-1] = strdup(token);
         token = strtok(0,"+");
     }
     free(str);
 }
 
-int main (int argc, char **argv) 
+void
+add_select(const char* cmd) 
+{
+    ++n_select;
+    select_cmd = realloc(select_cmd,sizeof(char*)*n_select);
+    if (select_cmd == NULL) { mem_fail(); abort(); }
+    select_cmd[n_select-1] = cmd;
+}
+
+int
+main(int argc,
+     char **argv) 
 {
     int alg_set = 0;
     FILE *input = NULL;
@@ -268,7 +302,7 @@ int main (int argc, char **argv)
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
-    enum {B_FILE,RES_FILE,SEQ_FILE};
+    enum {B_FILE,RES_FILE,SEQ_FILE,SELECT};
     parameters = freesasa_default_parameters;
     memset(opt_set,0,n_opt);
     // errors from this file will be prepended with freesasa, library errors with FreeSASA
@@ -295,7 +329,9 @@ int main (int argc, char **argv)
         {"chain-groups",required_argument,0,'g'},
         {"residue-type-file",required_argument,&option_flag,RES_FILE},
         {"residue-file",required_argument,&option_flag,SEQ_FILE},
-        {"B-value-file",required_argument,&option_flag,B_FILE}
+        {"B-value-file",required_argument,&option_flag,B_FILE},
+        {"select",required_argument,&option_flag,SELECT}
+
     };
     options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:";
     while ((opt = getopt_long(argc, argv, options_string,
@@ -323,6 +359,9 @@ int main (int argc, char **argv)
             case B_FILE:
                 printpdb = 1;
                 output_pdb = fopen_werr(optarg,"w");
+                break;
+            case SELECT:
+                add_select(optarg);
                 break;
             default:
                 abort(); // what does this even mean?

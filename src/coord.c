@@ -26,7 +26,7 @@
 #include "util.h"
 
 /** Store a set of 3-dimensional coordinates in a contiguous array */
-struct freesasa_coord {
+struct coord_t {
     /** number of 3-vectors */
     int n; 
 
@@ -40,10 +40,10 @@ struct freesasa_coord {
     double *xyz; 
 };
 
-freesasa_coord*
+coord_t *
 freesasa_coord_new()
 {
-    freesasa_coord* c = malloc(sizeof(freesasa_coord));
+    coord_t *c = malloc(sizeof(coord_t));
     if (c != NULL) {
         c->xyz = NULL;
         c->n = 0;
@@ -55,14 +55,14 @@ freesasa_coord_new()
 }
 
 void
-freesasa_coord_free(freesasa_coord *c)
+freesasa_coord_free(coord_t *c)
 {
     assert(c);
     if (c->xyz && !c->is_linked) free(c->xyz);
     free(c);
 }
 static void
-coord_clear(freesasa_coord *c)
+coord_clear(coord_t *c)
 {
     assert(c);
     assert(!c->is_linked);
@@ -73,23 +73,23 @@ coord_clear(freesasa_coord *c)
     c->n = 0;
 }
 
-freesasa_coord*
-freesasa_coord_copy(const freesasa_coord *src)
+coord_t *
+freesasa_coord_copy(const coord_t *src)
 {
     assert(src);
-    freesasa_coord *c = freesasa_coord_new();
+    coord_t *c = freesasa_coord_new();
     if (c != NULL) freesasa_coord_set_all(c,src->xyz,src->n);
     else mem_fail();
     return c;
 }
 
-freesasa_coord*
+coord_t *
 freesasa_coord_new_linked(const double *xyz,
                           int n)
 {
     assert(xyz);
     assert(n > 0);
-    freesasa_coord *c = freesasa_coord_new();
+    coord_t *c = freesasa_coord_new();
     if (c != NULL) {
         c->xyz = (double*)xyz;
         c->n = n;
@@ -99,7 +99,7 @@ freesasa_coord_new_linked(const double *xyz,
 }
 
 int
-freesasa_coord_append(freesasa_coord *c,
+freesasa_coord_append(coord_t *c,
                       const double *xyz,
                       int n)
 {
@@ -118,7 +118,7 @@ freesasa_coord_append(freesasa_coord *c,
 }
 
 int
-freesasa_coord_append_xyz(freesasa_coord *c,
+freesasa_coord_append_xyz(coord_t *c,
                           const double *x,
                           const double *y,
                           const double *z, int n)
@@ -145,7 +145,7 @@ freesasa_coord_append_xyz(freesasa_coord *c,
 }
 
 void
-freesasa_coord_set_i(freesasa_coord *c,
+freesasa_coord_set_i(coord_t *c,
                      int i,
                      const double* xyz)
 {
@@ -157,7 +157,7 @@ freesasa_coord_set_i(freesasa_coord *c,
 }
 
 void 
-freesasa_coord_set_i_xyz(freesasa_coord *c,
+freesasa_coord_set_i_xyz(coord_t *c,
                          int i,
                          double x,
                          double y,
@@ -173,7 +173,7 @@ freesasa_coord_set_i_xyz(freesasa_coord *c,
 }
 
 int
-freesasa_coord_set_all(freesasa_coord *c,
+freesasa_coord_set_all(coord_t *c,
                        const double* xyz,
                        int n)
 {
@@ -183,7 +183,7 @@ freesasa_coord_set_all(freesasa_coord *c,
 }
 
 int
-freesasa_coord_set_all_xyz(freesasa_coord *c,
+freesasa_coord_set_all_xyz(coord_t *c,
                            const double *x,
                            const double *y,
                            const double *z,
@@ -195,7 +195,7 @@ freesasa_coord_set_all_xyz(freesasa_coord *c,
 }
 
 void
-freesasa_coord_set_length_i(freesasa_coord *c,
+freesasa_coord_set_length_i(coord_t *c,
                             int i,
                             double l)
 {
@@ -212,7 +212,7 @@ freesasa_coord_set_length_i(freesasa_coord *c,
 }
 
 void
-freesasa_coord_set_length_all(freesasa_coord *c,
+freesasa_coord_set_length_all(coord_t *c,
                               double l)
 {
     assert(c);
@@ -221,7 +221,7 @@ freesasa_coord_set_length_all(freesasa_coord *c,
 }
 
 const double*
-freesasa_coord_i(const freesasa_coord *c,
+freesasa_coord_i(const coord_t *c,
                  int i)
 {
     assert(c);
@@ -231,7 +231,7 @@ freesasa_coord_i(const freesasa_coord *c,
 }
 
 double
-freesasa_coord_dist(const freesasa_coord *c,
+freesasa_coord_dist(const coord_t *c,
                     int i,
                     int j)
 {
@@ -247,7 +247,7 @@ dist2(const double *v1,
 }
 
 double 
-freesasa_coord_dist2(const freesasa_coord *c,
+freesasa_coord_dist2(const coord_t *c,
                      int i,
                      int j)
 {
@@ -257,8 +257,8 @@ freesasa_coord_dist2(const freesasa_coord *c,
 }
 
 double
-freesasa_coord_dist2_12(const freesasa_coord* c1,
-                        const freesasa_coord* c2,
+freesasa_coord_dist2_12(const coord_t *c1,
+                        const coord_t *c2,
                         int i1,
                         int i2)
 {
@@ -268,21 +268,21 @@ freesasa_coord_dist2_12(const freesasa_coord* c1,
 }
 
 const double*
-freesasa_coord_all(const freesasa_coord *c)
+freesasa_coord_all(const coord_t *c)
 {
     assert(c);
     return c->xyz;
 }
 
 int
-freesasa_coord_n(const freesasa_coord* c)
+freesasa_coord_n(const coord_t *c)
 {
     assert(c);
     return c->n;
 }
 
 void
-freesasa_coord_translate(freesasa_coord *c,
+freesasa_coord_translate(coord_t *c,
                          const double *xyz)
 {
     assert(!c->is_linked);
@@ -291,7 +291,7 @@ freesasa_coord_translate(freesasa_coord *c,
 }
 
 void
-freesasa_coord_translate_xyz(freesasa_coord *c,
+freesasa_coord_translate_xyz(coord_t *c,
                              double x,
                              double y,
                              double z)
@@ -307,7 +307,7 @@ freesasa_coord_translate_xyz(freesasa_coord *c,
 }
 
 void
-freesasa_coord_scale(freesasa_coord *c,
+freesasa_coord_scale(coord_t *c,
                      double s)
 {
     assert(c);

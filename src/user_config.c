@@ -82,7 +82,10 @@ static struct user_types*
 user_types_new()
 {
     struct user_types *t = malloc(sizeof(struct user_types));
-    if (t == NULL) { mem_fail(); return NULL; }
+    if (t == NULL) {
+        mem_fail();
+        return NULL;
+    }
     *t = empty_types;
     return t;
 }
@@ -93,10 +96,17 @@ user_types_free(struct user_types* t)
     if (t == NULL) return;
     free(t->type_radius);
     free(t->type_class);
-    if (t->name) for (int i = 0; i < t->n_types; ++i) free(t->name[i]);
-    if (t->class_name) for (int i = 0; i < t->n_classes; ++i) free(t->class_name[i]);
+
+    if (t->name)
+        for (int i = 0; i < t->n_types; ++i)
+            free(t->name[i]);
     free(t->name);
+
+    if (t->class_name)
+        for (int i = 0; i < t->n_classes; ++i)
+            free(t->class_name[i]);
     free(t->class_name);
+
     free(t);
 }
 
@@ -105,7 +115,10 @@ user_residue_new(const char* name)
 {
     assert(strlen(name) > 0);
     struct user_residue *res = malloc(sizeof(struct user_residue));
-    if (res == NULL) { mem_fail(); return NULL; }
+    if (res == NULL) {
+        mem_fail();
+        return NULL;
+    }
     *res = empty_residue;
     res->name = strdup(name);
     return res;
@@ -116,10 +129,15 @@ user_residue_free(struct user_residue* res)
 {
     if (res == NULL) return;
     free(res->name);
-    if (res->atom_name) for (int i = 0; i < res->n_atoms; ++i)  free(res->atom_name[i]);
+
+    if (res->atom_name)
+        for (int i = 0; i < res->n_atoms; ++i)
+            free(res->atom_name[i]);
     free(res->atom_name);
+
     free(res->atom_radius);
     free(res->atom_class);
+
     free(res);
 }
 
@@ -127,7 +145,10 @@ static struct user_config*
 user_config_new()
 {
     struct user_config *cfg = malloc(sizeof(struct user_config));
-    if (cfg == NULL) { mem_fail(); return NULL; }
+    if (cfg == NULL) {
+        mem_fail();
+        return NULL;
+    }
     *cfg = empty_config;
     return cfg;
 }
@@ -137,10 +158,17 @@ user_config_free(void *p)
 {
     if (p == NULL) return;
     struct user_config *c = p;
-    if (c->class_name) for (int i = 0; i < c->n_classes; ++i) free(c->class_name[i]);
-    if (c->residue) for (int i = 0; i < c->n_residues; ++i) user_residue_free(c->residue[i]);
-    free(c->residue_name);
+
+    if (c->class_name)
+        for (int i = 0; i < c->n_classes; ++i)
+            free(c->class_name[i]);
     free(c->class_name);
+
+    if (c->residue)
+        for (int i = 0; i < c->n_residues; ++i)
+            user_residue_free(c->residue[i]);
+    free(c->residue_name);
+
     free(c);
 }
 
@@ -204,7 +232,7 @@ check_file(FILE *input,
 
     if ((types->begin == -1) || 
         (atoms->begin == -1)) {
-        return freesasa_fail("%s: Input configuration lacks (at least) one of "
+        return freesasa_fail("in %s(): Input configuration lacks (at least) one of "
                              "the entries 'types:' or "
                              "'atoms:'.", __func__);
     }
@@ -296,7 +324,7 @@ add_class(struct user_types *types,
 
 /**
     Add type. Returns the index of the new type on success,
-    FREESASA_FAILURE if realloc/strdup fails, FREESASA_WARN if type
+    FREESASA_FAIL if realloc/strdup fails, FREESASA_WARN if type
     already known (ignore duplicates).
  */
 static int
@@ -309,7 +337,7 @@ add_type(struct user_types *types,
     if (find_string(types->name, type_name, types->n_types) >= 0)
         return freesasa_warn("Ignoring duplicate entry for '%s'.", type_name);
     the_class = add_class(types,class_name);
-    if (the_class == FREESASA_FAIL) return freesasa_fail(__func__);
+    if (the_class == FREESASA_FAIL) return fail_msg("");
 
     types->n_types++;
     types->name = realloc(types->name,sizeof(char*)*types->n_types);
@@ -343,10 +371,10 @@ read_types_line(struct user_types *types,
     double r;
     if (sscanf(line,"%s %lf %s",buf1,&r,buf2) == 3) {
         the_type = add_type(types, buf1, buf2, r);
-        if (the_type == FREESASA_FAIL) return freesasa_fail(__func__);
+        if (the_type == FREESASA_FAIL) return fail_msg("");
         if (the_type == FREESASA_WARN) return FREESASA_WARN;
     } else {
-        return freesasa_fail("%s: Could not parse line '%s', expecting triplet of type "
+        return freesasa_fail("in %s(): Could not parse line '%s', expecting triplet of type "
                              "'TYPE [RADIUS] CLASS' for example 'C_ALI 2.00 apolar'",
                              __func__, line);
     }
@@ -396,7 +424,7 @@ add_atom(struct user_residue *res,
 {
     int n;
     if (find_string(res->atom_name, name, res->n_atoms) >= 0)
-        return freesasa_warn("%s: Ignoring duplicate entry for atom '%s %s'", 
+        return freesasa_warn("in %s(): Ignoring duplicate entry for atom '%s %s'", 
                              __func__, res->name, name);
     n = ++res->n_atoms;
     res->atom_name = realloc(res->atom_name,sizeof(char*)*n);
@@ -459,13 +487,13 @@ read_atoms_line(struct user_config *config,
         type = find_string(types->name, buf3, types->n_types);
         if (type < 0) return freesasa_fail("Unknown atom type '%s' in line '%s'",buf3,line);
         res = add_residue(config,buf1);
-        if (res == FREESASA_FAIL) return freesasa_fail(__func__);
+        if (res == FREESASA_FAIL) return fail_msg("");
         atom = add_atom(config->residue[res], buf2, types->type_radius[type], types->type_class[type]);
-        if (atom == FREESASA_FAIL) return freesasa_fail(__func__);
+        if (atom == FREESASA_FAIL) return fail_msg("");
         if (atom == FREESASA_WARN) return FREESASA_WARN;
         
     } else {
-        return freesasa_fail("%s: Could not parse line '%s', expecting triplet of type "
+        return freesasa_fail("in %s(): Could not parse line '%s', expecting triplet of type "
                              "'RESIDUE ATOM CLASS', for example 'ALA CB C_ALI'.",
                              __func__, line);
     }
@@ -493,7 +521,7 @@ read_atoms(struct user_config *config,
     while (ftell(input) < fi.end) { 
         nl = next_line(&line, input);
         if (nl == 0) continue;
-        if (nl == FREESASA_FAIL) return freesasa_fail(__func__);
+        if (nl == FREESASA_FAIL) return fail_msg("");
         ret = read_atoms_line(config, types, line);
         if (ret == FREESASA_FAIL) break;
     }
@@ -584,7 +612,7 @@ find_atom(const struct user_config *config,
         }
     }
     if (*atom < 0) {
-        return freesasa_fail("%s: Unknown residue '%s' and/or atom '%s'.",
+        return freesasa_fail("in %s(): Unknown residue '%s' and/or atom '%s'.",
                              __func__, res_name, atom_name);
     }
     return FREESASA_SUCCESS;
@@ -604,7 +632,7 @@ user_radius(const char *res_name,
     status = find_atom(config,res_name,atom_name,&res,&atom);
     if (status == FREESASA_SUCCESS)
         return config->residue[res]->atom_radius[atom];
-    freesasa_fail("%s: couldn't find radius of atom '%s %s'.",
+    freesasa_fail("in %s(): couldn't find radius of atom '%s %s'.",
                   __func__, res_name, atom_name);
     return -1.0;
 }
@@ -621,7 +649,7 @@ user_class(const char *res_name,
     status = find_atom(config,res_name,atom_name,&res,&atom);
     if (status == FREESASA_SUCCESS)
         return config->residue[res]->atom_class[atom];
-    return freesasa_fail("%s: couldn't find classification of atom '%s %s'.",
+    return freesasa_fail("in %s(): couldn't find classification of atom '%s %s'.",
                          __func__, res_name, atom_name);
 }
 
@@ -642,7 +670,10 @@ freesasa_classifier_from_file(FILE *file)
     assert(file);
     struct user_config *config;
     freesasa_classifier* c = malloc(sizeof(freesasa_classifier));
-    if (c == NULL) { mem_fail(); return NULL; }
+    if (c == NULL) {
+        mem_fail();
+        return NULL;
+    }
     config = read_config(file);
     if (config == NULL) return NULL;
 

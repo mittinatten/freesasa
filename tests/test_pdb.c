@@ -35,6 +35,8 @@ START_TEST (test_pdb_empty_lines)
     ck_assert_str_eq(buf,"");
     ck_assert_int_eq(freesasa_pdb_get_res_number(buf,""),FREESASA_FAIL);
     ck_assert_str_eq(buf,"");
+    ck_assert_int_eq(freesasa_pdb_get_symbol(buf,""),FREESASA_FAIL);
+    ck_assert_str_eq(buf,"");
 
     // check coordinate parsing
     ck_assert_int_eq(freesasa_pdb_get_coord(x,""),FREESASA_FAIL);
@@ -52,11 +54,11 @@ START_TEST (test_pdb_lines)
 {
     char buf[80];
     double x[3];
-    const char lines[][80] = {
+    const char *lines[] = {
         "ATOM    585  C   ARG A  74      41.765  34.829  30.944  0.45 36.22           C",
-        "ATOM    573  NH1AARG A  72      34.110  28.437  27.768  1.00 35.02           N",
-        "HETATM  610  O   HOH A  83      27.707  15.908   4.653  1.00 20.30           O",
-        "ATOM    573  H   ARG A  72      34.110  28.437  27.768  1.00 35.02           H",};
+        "ATOM    573  NH1AARG A  72      34.110  28.437  27.768  1.00 35.02           N  ",
+        "HETATM  610  O   HOH A  83      27.707  15.908   4.653  1.00 20.30           O  ",
+        "ATOM    573  H   ARG A  72      34.110  28.437  27.768  1.00 35.02           H  ",};
     //Atom-name
     freesasa_pdb_get_atom_name(buf,lines[0]);
     ck_assert_str_eq(buf," C  ");
@@ -95,6 +97,11 @@ START_TEST (test_pdb_lines)
     ck_assert(!freesasa_pdb_ishydrogen(lines[0]));
     ck_assert(freesasa_pdb_ishydrogen(lines[3]));
 
+    // symbol
+    ck_assert_int_eq(freesasa_pdb_get_symbol(buf,lines[0]),FREESASA_SUCCESS);
+    ck_assert_str_eq(buf," C");
+    ck_assert_int_eq(freesasa_pdb_get_symbol(buf,lines[1]),FREESASA_SUCCESS);
+    ck_assert_str_eq(buf," N");
 }
 END_TEST
 

@@ -68,8 +68,8 @@ char str_array[][2] = {"A","B","C","D","E","F"};
 double v[18] = {0,0,0, 1,1,1, -1,1,-1, 2,0,-2, 2,2,0, -5,5,5};
 const double r[6]  = {4,2,2,2,2,2};
 double dummy[20];
-struct freesasa_coord coord = {.xyz = v, .n = 6, .is_linked = 0};
-struct atom a;
+struct coord_t coord = {.xyz = v, .n = 6, .is_linked = 0};
+struct atom *a;
 struct freesasa_structure structure = {
     .a = &a,
     .xyz = &coord,
@@ -206,6 +206,35 @@ START_TEST (test_user_config)
 }
 END_TEST
 
+START_TEST (test_selector) 
+{
+    set_fail_freq(1000000);
+    freesasa_parameters p = freesasa_default_parameters;
+    p.shrake_rupley_n_points = 10;
+    FILE *file = fopen(DATADIR "1ubq.pdb","r");
+    freesasa_structure *s = freesasa_structure_from_pdb(file,0);
+    double *radii = freesasa_structure_radius(s,NULL);
+    freesasa_result *result = freesasa_calc_structure(s,radii,NULL);
+    double area;
+    char name[FREESASA_MAX_SELECTION_NAME];
+
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    for (int i = 1; i < 17; ++i) { 
+        /* This is a pretty short expression. Have not verified that
+           it's actually exactly 17 memory allocations, but we have
+           success with a frequencey of 18, and 17 seems about right. */
+        set_fail_freq(i);
+        ck_assert_int_eq(freesasa_select_area("s, resn ALA and not resi 1-20",name,&area,s,result),
+                         FREESASA_FAIL); // this expression should come across most allocations
+    }
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+    fclose(file);
+    free(radii);
+    freesasa_result_free(result);
+    freesasa_structure_free(s);
+}
+END_TEST
+
 START_TEST (test_api) 
 {
     freesasa_parameters p = freesasa_default_parameters;
@@ -248,6 +277,7 @@ int main(int argc, char **argv) {
     tcase_add_test(tc,test_nb);
     tcase_add_test(tc,test_alg);
     tcase_add_test(tc,test_user_config);
+    tcase_add_test(tc,test_selector);
     tcase_add_test(tc,test_api);
     
     suite_add_tcase(s, tc);

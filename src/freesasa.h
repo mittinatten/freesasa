@@ -53,10 +53,12 @@ typedef enum {FREESASA_LEE_RICHARDS, FREESASA_SHRAKE_RUPLEY}
     - FREESASA_V_NORMAL: print all errors and warnings.
     - FREESASA_V_NOWARNINGS: print only errors.
     - FREESASA_V_SILENT: print no errors and warnings.
+    - FREESASA_V_DEBUG: print all errors, warnigns and debug messages.
 */    
 typedef enum {FREESASA_V_NORMAL,
               FREESASA_V_NOWARNINGS,
-              FREESASA_V_SILENT} freesasa_verbosity;
+              FREESASA_V_SILENT,
+              FREESASA_V_DEBUG} freesasa_verbosity;
 /**
     4 classes of atoms/chemical groups 
     (classes in freesasa_default_classifier)
@@ -87,6 +89,9 @@ typedef enum {
 #define FREESASA_SEPARATE_MODELS 4 //!< Read MODELs as separate structures
 #define FREESASA_SEPARATE_CHAINS 8 //!< Read separate chains as separate structures
 #define FREESASA_JOIN_MODELS 16 //!< Read MODELs as part of one big structure
+
+/// The maximum length of a selection name (@see freesasa_select_area()) 
+#define FREESASA_MAX_SELECTION_NAME 20
 
 //! Struct to store parameters for SASA calculation @ingroup API
 typedef struct {
@@ -250,6 +255,58 @@ freesasa_result_classify(const freesasa_result *result,
                          const freesasa_structure *structure,
                          const freesasa_classifier *classifier);
 
+
+/**
+    Get area of a selection (experimental feature).
+
+    Uses subset of the select syntax from Pymol (name, symbol, resn,
+    resi and chain), the keyword "select" is implicit. All commands
+    are case insensitive. Valid selections would be, for example,
+
+        selection-name, resn ala+arg 
+        selection-name, chain a and resi 1+3-20 and not resn gly
+
+    The selection name is obligatory. The range operator '-' has
+    precendence over '+', i.e.  
+    
+         resi 1+3-20
+         
+    is equivalent to
+
+         resi 1 or resi 3-20
+
+    The boolean operators `and`, `or` and `not` are supported. 
+    The `and` operator has precedence over `or`. Parantheses can be
+    used to surround expressions `(chain a)` and group boolean
+    expressions `(chain a or chain b)`, but *not* arguments as in
+
+        chain a+(c-f)  # syntax error
+        chain a+c-f    # ok
+
+
+    After selecting the atoms from the ::freesasa_structure pointer
+    specified by the command the area of those atoms is summed up
+    using the ::freesasa_result pointer.
+
+    @param command The selection
+    @param name The name of the selection is stored here, it should be
+      able to store a string of length ::FREESASA_MAX_SELECTION_NAME.
+    @param area The area of the selection is stored here
+    @param structure The structure to select from
+    @param result The results to integrate
+    
+    @return ::FREESASA_SUCCESS upon successful selection.
+       ::FREESASA_WARN if some illegal selections that could be
+       ignored were encountered (see printed
+       warnings). ::FREESASA_FAIL if syntax error or memory failure.
+ */
+int
+freesasa_select_area(const char *command,
+                     char *name,
+                     double *area,
+                     const freesasa_structure *structure,
+                     const freesasa_result *result);
+
 /**
     Frees a ::freesasa_strvp object
 
@@ -343,7 +400,7 @@ freesasa_log(FILE *log,
 /**
     Set the global verbosity level.
 
-    @arg v the verbosity level
+    @param v the verbosity level
     @return ::FREESASA_SUCCESS. If v is invalid ::FREESASA_FAIL.
     @see freesasa_verbosity
  */
@@ -444,10 +501,7 @@ freesasa_structure_array(FILE *pdb,
     are excluded if necessesary).
 
     The three string arguments all have specific lengths, specified by
-    the corresponding PDB ATOM fields. It is important to use the same
-    padding as in the PDB specification (i.e. `" CA "` instead of
-    `"CA"` or `" CA"`). (This might be more flexible in future
-    versions of the library).
+    the corresponding PDB ATOM fields. 
 
     @param structure The structure to add to.
     @param atom_name String of 4 characters, of the format `" CA "`, `" OXT"`, etc.
@@ -458,9 +512,8 @@ freesasa_structure_array(FILE *pdb,
     @param y y-coordinate of atom.
     @param z z-coordinate of atom.
 
-    @return ::FREESASA_SUCCESS if input valid. ::FREESASA_FAIL if any
-    of the strings are malformatted or if memoray allocation
-    fails. ::FREESASA_WARN if the atom type is unknown.
+    @return ::FREESASA_SUCCESS on normal execution. ::FREESASA_FAIL if
+    if memory allocation fails.
  */
 int
 freesasa_structure_add_atom(freesasa_structure *structure,
@@ -582,6 +635,22 @@ freesasa_structure_atom_chain(const freesasa_structure *structure,
                               int i);
 
 /**
+    Get atom symbol.
+
+    If the structure was initialized from a PDB file the symbol field
+    of that file is used. Otherwise the symbol is guess from atom and
+    residue name.
+
+    Asserts that index i is within bounds. 
+
+    @param structure The structure.
+    @param i Atom index.
+    @return Atom symbol (" C", " N", "SE",etc); 
+ */
+const char*
+freesasa_structure_atom_symbol(const freesasa_structure *structure,
+                               int i);
+/**
     Get model number for structure.
 
     Useful if structure was generated with freesasa_structure_array().
@@ -591,6 +660,18 @@ freesasa_structure_atom_chain(const freesasa_structure *structure,
  */
 int
 freesasa_structure_model(const freesasa_structure *structure);
+
+/**
+    Get array of coordinates.
+
+    Size of array is 3*N, order of coordinates `x1, y1, z1, ...`.
+
+    @param structure The structure.
+    @return Array of coordinates. NULL if structure empty. Size can be
+      accessed through freesasa_structure_n() (multiply by three).
+ */
+const double*
+freesasa_structure_coord_array(const freesasa_structure *structure);
 
 #ifdef __cplusplus
 }

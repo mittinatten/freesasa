@@ -35,7 +35,7 @@
 # calc(). They are not intended to be used outside of this module.
 
 from libc.stdio cimport FILE, fopen, fclose
-from libc.stdlib cimport free, realloc
+from libc.stdlib cimport free, realloc, malloc
 from libc.string cimport memcpy
 from cpython cimport array
 from cfreesasa cimport *
@@ -186,10 +186,10 @@ cdef class Result:
       def __cinit__ (self):
             self._c_result = NULL
 
+      ## The destructor (free internal C objects)
       def __dealloc__(self):
             if self._c_result is not NULL:
                   freesasa_result_free(self._c_result)
-
             
       ## Number of atoms in the results
       #  @return Number of atoms
@@ -259,7 +259,8 @@ cdef class Classifier:
                   fclose(config)
                   if self._c_classifier is NULL:
                         raise Exception("Error parsing configuration in '%s'." % fileName)
-
+      
+      ## The destructor (free internal C objects)
       def __dealloc__(self):
             if self._c_classifier is not NULL:
                   freesasa_classifier_free(self._c_classifier)
@@ -496,7 +497,8 @@ cdef class Structure:
       def _set_address(self, size_t ptr2ptr):
             cdef freesasa_structure **p = <freesasa_structure**> ptr2ptr
             self._c_structure = p[0]
-      
+
+      ## The destructor (free internal C objects)
       def __dealloc__(self):
             if self._c_structure is not NULL:
                   freesasa_structure_free(self._c_structure)
@@ -584,7 +586,31 @@ def classifyResults(result,structure,classifier=None):
                   ret[name] = 0
             ret[name] += result.atomArea(i)
       return ret
-
+## Sum SASA result over a selection of atoms
+# @param commands A list of commands with selections using Pymol
+#   syntax, e.g. "s1, resn ala+arg" or "s2, chain A and resi 1-5" 
+#   (see @ref Selection).
+# @param structure A Structure.  
+# @param result Result from sasa calculation on structure.
+# @return Dictionary with names of selections ("s1","s2",...) as 
+#   keys, and the corresponding SASA values as values.
+# @exception Exception: Parser failed (typically syntax error), see
+#   library error messages.
+def selectArea(commands,structure,result):
+      cdef freesasa_structure *s
+      cdef freesasa_result *r
+      cdef double area
+      cdef char *name = <char*>malloc(FREESASA_MAX_SELECTION_NAME+1);
+      structure._get_address(<size_t> &s)
+      result._get_address(<size_t> &r)
+      value = dict()
+      for cmd in commands:
+            ret = freesasa_select_area(cmd,name,&area,s,r)
+            if ret == FREESASA_FAIL:
+                  raise Exception("Error parsing '%s'" % cmd)
+            value[name] = area
+      free(name)
+      return value
 
 ## Set global verbosity
 # @param verbosity Can have values freesasa.silent, freesasa.nowarnings or freesasa.normal

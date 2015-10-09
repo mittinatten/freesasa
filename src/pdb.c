@@ -26,6 +26,7 @@ static inline int
 pdb_line_check(const char *line,int len)
 {
     assert(line);
+    if (strlen(line) < 6) return FREESASA_FAIL;
     if (! strncmp(line,"ATOM",4) &&
         ! strncmp(line,"HETATM",6)) {
         return FREESASA_FAIL;
@@ -107,6 +108,20 @@ freesasa_pdb_get_alt_coord_label(const char* line)
     assert(line);
     if (pdb_line_check(line,16) == FREESASA_FAIL) return '\0';
     return line[16];
+}
+
+int
+freesasa_pdb_get_symbol(char *symbol,
+                        const char* line)
+{
+    assert(line);
+    if (pdb_line_check(line,76+PDB_ATOM_SYMBOL_STRL) == FREESASA_FAIL) {
+        symbol[0] = '\0';
+        return FREESASA_FAIL;
+    }
+    strncpy(symbol,line+76,2);
+    symbol[2] = '\0';
+    return FREESASA_SUCCESS;
 }
 
 int

@@ -47,45 +47,15 @@
     - ::freesasa_oons_class (OONS class, plus some specific to FreeSASA):
  */
 
-//! The residue types that are returned by freesasa_classify_residue()
-enum freesasa_residue {
-    //Regular amino acids
-    freesasa_ALA=0, freesasa_ARG, freesasa_ASN, freesasa_ASP,
-    freesasa_CYS, freesasa_GLN, freesasa_GLU, freesasa_GLY,
-    freesasa_HIS, freesasa_ILE, freesasa_LEU, freesasa_LYS,
-    freesasa_MET, freesasa_PHE, freesasa_PRO, freesasa_SER,
-    freesasa_THR, freesasa_TRP, freesasa_TYR, freesasa_VAL,
-    //some non-standard ones
-    freesasa_CSE, freesasa_SEC, freesasa_ASX, freesasa_GLX,
-    //capping N- and C-terminal groups (usually HETATM)
-    freesasa_ACE, freesasa_NH2,
-    //residue unknown
-    freesasa_UNK,
-    //DNA
-    freesasa_DA, freesasa_DC, freesasa_DG, freesasa_DT,
-    freesasa_DU, freesasa_DI,
-    //RNA
-    freesasa_A, freesasa_C, freesasa_G, freesasa_U, freesasa_I, freesasa_T,
-    //generic nucleotide
-    freesasa_NN
-};
-
-//! The element types that are returned by freesasa_classify_element()
-enum freesasa_element {
-    freesasa_carbon=0, freesasa_oxygen, freesasa_nitrogen,
-    freesasa_sulfur, freesasa_phosphorus, freesasa_selenium,
-    freesasa_hydrogen, freesasa_element_unknown
-};
-
 //! The OONS classes that are returned by freesasa_classify_oons()
-enum freesasa_oons_class {
-    freesasa_aliphatic_C=0, freesasa_aromatic_C,
-    freesasa_carbo_C, freesasa_amide_N,
-    freesasa_carbo_O, freesasa_hydroxyl_O,
-    freesasa_oons_sulfur,
-    freesasa_oons_selenium,
-    freesasa_oons_unknown_polar,
-    freesasa_oons_unknown
+enum oons_class {
+    oons_aliphatic_C=0, oons_aromatic_C,
+    oons_carbo_C, oons_amide_N,
+    oons_carbo_O, oons_hydroxyl_O,
+    oons_sulfur,
+    oons_selenium,
+    oons_unknown_polar,
+    oons_unknown
 };
 
 /**

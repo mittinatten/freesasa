@@ -41,8 +41,8 @@ const double TWOPI = 2*M_PI;
 typedef struct {
     int n_atoms;
     double *radii; //including probe
-    const freesasa_coord *xyz;
-    freesasa_nb *adj;
+    const coord_t *xyz;
+    nb_list *adj;
     int n_slices_per_atom;
     double *sasa; // results
 } lr_data;
@@ -70,7 +70,7 @@ exposed_arc_length(double *restrict arc, int n);
 /** Initialize object to be used for L&R calculation */
 static lr_data*
 init_lr(double *sasa,
-        const freesasa_coord *xyz,
+        const coord_t *xyz,
         const double *atom_radii,
         double probe_radius,
         int n_slices_per_atom)
@@ -106,7 +106,7 @@ free_lr(lr_data *lr)
 
 int
 freesasa_lee_richards(double *sasa,
-                      const freesasa_coord *xyz,
+                      const coord_t *xyz,
                       const double *atom_radii,
                       double probe_radius,
                       int n_slices_per_atom,
@@ -116,14 +116,14 @@ freesasa_lee_richards(double *sasa,
     assert(xyz);
     assert(atom_radii);
     if (n_slices_per_atom <= 0) 
-        return freesasa_fail("%s: n_slices_per_atom = %f is invalid, must be > 0\n",
+        return freesasa_fail("in %s(): n_slices_per_atom = %f is invalid, must be > 0\n",
                              __func__,n_slices_per_atom);
 
     int return_value = FREESASA_SUCCESS;
     lr_data *lr;
 
     if (freesasa_coord_n(xyz) == 0) {
-        return freesasa_warn("%s: empty coordinates",__func__);
+        return freesasa_warn("in %s(): Empty coordinates",__func__);
     }
 
     // determine slice range and init radii and sasa arrays
@@ -138,7 +138,7 @@ freesasa_lee_richards(double *sasa,
 #if HAVE_LIBPTHREAD
         lr_do_threads(n_threads, lr);
 #else
-        return_value = freesasa_warn("%s: program compiled for single-threaded use, "
+        return_value = freesasa_warn("in %s(): program compiled for single-threaded use, "
                                      "but multiple threads were requested. Will "
                                      "proceed in single-threaded mode.\n",
                                      __func__);
@@ -284,18 +284,18 @@ atom_area(lr_data *lr,
             sasa += delta*ri*exposed_arc_length(arc,n_arcs);
         }
 #ifdef DEBUG
-        if (completely_buried == 0) {
+        if (is_buried == 0) {
             //exposed_arc[i] = 0;
             double xi = v[3*i], yi = v[3*i+1];
             for (double c = 0; c < 2*M_PI; c += M_PI/30.0) {
                 int is_exp = 1;
-                for (int j = 0; j < n_buried; ++j) {
+                for (int j = 0; j < n_arcs; ++j) {
                     double inf = arc[2*j], sup = arc[2*j+1];
                     if (c >= inf && c <= sup) {
                         is_exp = 0; break;
                     }
                 }
-                double d = c-M_PI;
+                double d = c+M_PI;
                 // print the arcs used in calculation
                 if (is_exp) printf("%6.2f %6.2f %6.2f %7.5f\n",
                                    xi+ri_slice*cos(d),yi+ri_slice*sin(d),z_slice,d);
