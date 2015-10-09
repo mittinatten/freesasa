@@ -276,7 +276,7 @@ freesasa_log(FILE *log,
         }
     } 
     if (errno != 0) { 
-        return freesasa_fail("%s: %s",__func__,strerror(errno));
+        return fail_msg(strerror(errno));
     }
     return FREESASA_SUCCESS;
 }
@@ -303,7 +303,7 @@ freesasa_per_residue_type(FILE *output,
         }
         if (result < 0) {
             freesasa_strvp_free(residue_area);
-            return freesasa_fail("%s: %s", __func__,strerror(errno));
+            return fail_msg(strerror(errno));
         }
     }
     freesasa_strvp_free(residue_area);
@@ -348,7 +348,7 @@ freesasa_per_residue(FILE *output,
                     freesasa_structure_residue_descriptor(structure,i),
                     freesasa_single_residue_sasa(result,structure,i));
         if (area < 0)
-            return freesasa_fail("%s: %s", __func__,strerror(errno));
+            return fail_msg(strerror(errno));
     }
     return FREESASA_SUCCESS;
 }

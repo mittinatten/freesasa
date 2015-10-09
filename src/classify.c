@@ -153,9 +153,9 @@ freesasa_classify_radius(const char *res_name,
         return freesasa_classify_oons_radius(freesasa_classify_oons(res_name,
                                                                     atom_name));
     } else if (res == RES_UNK) {
-        freesasa_warn("Residue of type '%s', atom '%s' is unknown."
+        freesasa_warn("in %s(): Residue of type '%s', atom '%s' is unknown."
                       " Atom will be classified only according to element.",
-                      res_name,atom_name);
+                      __func__,res_name,atom_name);
     }
     return freesasa_classify_element_radius(freesasa_classify_element(atom_name));
 }
@@ -187,10 +187,8 @@ freesasa_classify_class2str(int class)
     case FREESASA_NUCLEICACID: return "Nucleic";
     case FREESASA_CLASS_UNKNOWN: return "Unknown";
     default:
-        freesasa_warn("Illegal class index '%d' in"
-                      "freesasa_classify_class2str(). "
-                      "Range is [0,%d].",
-                      class,freesasa_classify_nclasses()-1);
+        freesasa_warn("in %s(): Illegal class index '%d'. Range is [0,%d].",
+                      __func__,class,freesasa_classify_nclasses()-1);
         return NULL;
     }
     
@@ -207,7 +205,7 @@ freesasa_classify_residue(const char *res_name)
 {
     char cpy[PDB_ATOM_RES_NAME_STRL+1];
     if (strlen(res_name) > PDB_ATOM_RES_NAME_STRL) {
-        freesasa_warn("%s: unknown residue name '%s' (string too long)",
+        freesasa_warn("in %s:() unknown residue name '%s' (string too long)",
                       __func__,res_name);
         return RES_UNK;
     }
@@ -221,7 +219,7 @@ freesasa_classify_residue(const char *res_name)
         if (! strcmp(cpy,residue_names[i])) return i;
     }
 
-    freesasa_warn("%s: residue '%s' unknown.",__func__,res_name);
+    freesasa_warn("in %s(): residue '%s' unknown.",__func__,res_name);
     return RES_UNK;
 }
 
@@ -229,10 +227,8 @@ const char*
 freesasa_classify_residue2str(int res) 
 {
     if (res < 0 || res > NN) {
-        freesasa_warn("%s: Illegal residue index '%d' passed to "
-                      "freesasa_classify_residue2str(1). "
-                      "Range is [0,%d]",__func__,res,
-                      freesasa_classify_nresiduetypes()-1);
+        freesasa_warn("in %s(): Illegal residue index '%d'. Range is [0,%d]",
+                      __func__,res, freesasa_classify_nresiduetypes()-1);
         return NULL;
     }
     return residue_names[res];
@@ -250,7 +246,7 @@ freesasa_classify_element(const char *atom_name)
     //strip whitespace to simplify switch below
     char a[PDB_ATOM_NAME_STRL+1];
     if (strlen(atom_name) > PDB_ATOM_NAME_STRL) {
-        freesasa_warn("%s: atom '%s' unknown (string too long).\n",
+        freesasa_warn("in %s(): atom '%s' unknown (string too long).\n",
                       __func__,atom_name);
         return element_unknown;
     }
@@ -265,7 +261,7 @@ freesasa_classify_element(const char *atom_name)
         case 'H': return hydrogen;
             // what about Se?
         default:
-            freesasa_warn("%s: atom '%s' unknown.\n",__func__,atom_name);
+            freesasa_warn("in %s(): atom '%s' unknown.\n",__func__,atom_name);
             return element_unknown;
         }
     }
@@ -276,10 +272,8 @@ const char*
 freesasa_classify_element2str(int element)
 {
     if (element < 0 || element > element_unknown) {
-        freesasa_warn("%s: Illegal element index '%d' passed to "
-                      "freesasa_classify_element2str(). "
-                      "Range is [0,%d]",__func__,element,
-                      freesasa_classify_nelements()-1);
+        freesasa_warn("in %s(): Illegal element index '%d'. Range is [0,%d]",
+                      __func__,element, freesasa_classify_nelements()-1);
         return NULL;
     }
     return element_names[element];
@@ -399,8 +393,8 @@ freesasa_classify_oons(const char *res_name,
 {
     if (strlen(a) != PDB_ATOM_NAME_STRL ||
         strlen(res_name) != PDB_ATOM_RES_NAME_STRL) {
-        freesasa_warn("%s: OONS classification only works for strings of proper length. "
-                      "'%s' '%s' invalid.",__func__,res_name,a);
+        freesasa_warn("in %s(): OONS classification only works for strings of proper length. "
+                      "atom '%s' and/or residue '%s' invalid.",__func__,res_name,a);
         return oons_unknown;
     }    
 
@@ -467,10 +461,8 @@ const char*
 freesasa_classify_oons2str(int oons_type)
 {
     if (oons_type < 0 || oons_type > oons_unknown) {
-        freesasa_warn("%s: Illegal OONS type index '%d' passed to "
-                      "freesasa_classify_oons2str(1). "
-                      "Range is [0,%d]",__func__,oons_type,
-                      freesasa_classify_noons()-1);        
+        freesasa_warn("in %s: Illegal OONS type index '%d'. Range is [0,%d]",
+                      __func__,oons_type,freesasa_classify_noons()-1);        
         return NULL;
     }
     return oons_names[oons_type];
@@ -541,11 +533,11 @@ freesasa_classify_validate_atom(const char *residue_name,
                                 const char *atom_name)
 {
     if (strlen(atom_name) != PDB_ATOM_NAME_STRL) {
-        return freesasa_fail("%s: Atom name '%s' not valid.",
+        return freesasa_fail("in %s(): Atom name '%s' not valid.",
                              __func__,atom_name);
     }
     if (strlen(residue_name) != PDB_ATOM_RES_NAME_STRL) {
-        return freesasa_fail("%s: Residue name '%s' not valid.",
+        return freesasa_fail("in %s(): Residue name '%s' not valid.",
                              __func__,residue_name);
     }
     if (freesasa_classify_class(residue_name,atom_name) != FREESASA_CLASS_UNKNOWN) 
@@ -553,6 +545,6 @@ freesasa_classify_validate_atom(const char *residue_name,
     if (freesasa_classify_element(atom_name) != element_unknown) {
         return FREESASA_SUCCESS;
     } 
-    return freesasa_warn("%s: Atom '%s' in '%s' unknown.",
+    return freesasa_warn("in %s(): Atom '%s' in '%s' unknown.",
                          __func__,atom_name,residue_name);
 }

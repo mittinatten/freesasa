@@ -116,14 +116,14 @@ freesasa_lee_richards(double *sasa,
     assert(xyz);
     assert(atom_radii);
     if (n_slices_per_atom <= 0) 
-        return freesasa_fail("%s: n_slices_per_atom = %f is invalid, must be > 0\n",
+        return freesasa_fail("in %s(): n_slices_per_atom = %f is invalid, must be > 0\n",
                              __func__,n_slices_per_atom);
 
     int return_value = FREESASA_SUCCESS;
     lr_data *lr;
 
     if (freesasa_coord_n(xyz) == 0) {
-        return freesasa_warn("%s: empty coordinates",__func__);
+        return freesasa_warn("in %s(): Empty coordinates",__func__);
     }
 
     // determine slice range and init radii and sasa arrays
@@ -138,7 +138,7 @@ freesasa_lee_richards(double *sasa,
 #if HAVE_LIBPTHREAD
         lr_do_threads(n_threads, lr);
 #else
-        return_value = freesasa_warn("%s: program compiled for single-threaded use, "
+        return_value = freesasa_warn("in %s(): program compiled for single-threaded use, "
                                      "but multiple threads were requested. Will "
                                      "proceed in single-threaded mode.\n",
                                      __func__);

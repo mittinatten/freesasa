@@ -31,6 +31,8 @@
 //! Shortcut for memory error generation
 #define mem_fail() freesasa_mem_fail(__func__,__FILE__,__LINE__) 
 
+#define fail_msg(msg) freesasa_fail_wloc(__func__,__FILE__,__LINE__,msg)
+
 /**
     Holds interval in a file, to be initalized with ftell() and used
     with fseek().
@@ -75,5 +77,12 @@ int
 freesasa_mem_fail(const char* func,
                   const char* file,
                   int line);
+
+int
+freesasa_fail_wloc(const char* func,
+                   const char* file,
+                   int line,
+                   const char *msg);
+                
 
 #endif /* FREESASA_UTIL_H */

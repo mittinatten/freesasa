@@ -70,7 +70,10 @@ test_points(int N)
     double dlong = M_PI*(3-sqrt(5)), dz = 2.0/N, longitude = 0, z = 1-dz/2, r;
     coord_t *coord = freesasa_coord_new();
     double *tp = malloc(3*N*sizeof(double));
-    if (tp == NULL || coord == NULL) {mem_fail(); return NULL;}
+    if (tp == NULL || coord == NULL) {
+        mem_fail();
+        return NULL;
+    }
 
     for (double *p = tp; p-tp < 3*N; p += 3) {
         r = sqrt(1-z*z);
@@ -81,7 +84,10 @@ test_points(int N)
         longitude += dlong;
     }
 
-    if (freesasa_coord_append(coord,tp,N) == FREESASA_FAIL) {freesasa_fail(__func__); return NULL; }
+    if (freesasa_coord_append(coord,tp,N) == FREESASA_FAIL) {
+        fail_msg("");
+        return NULL;
+    }
     free(tp);
 
     return coord;
@@ -98,7 +104,7 @@ init_sr(sr_data* sr_p,
     int n_atoms = freesasa_coord_n(xyz);
     coord_t *srp = test_points(n_points);
 
-    if (srp == NULL) return freesasa_fail(__func__);
+    if (srp == NULL) return fail_msg("Failed to initialize test points.");
     
     //store parameters and reference arrays
     sr_data sr = {.n_atoms = n_atoms, .n_points = n_points,
@@ -148,7 +154,7 @@ freesasa_shrake_rupley(double *sasa,
     int return_value = FREESASA_SUCCESS;
     sr_data sr;
 
-    if (n_atoms == 0) return freesasa_warn("%s: empty coordinates", __func__);
+    if (n_atoms == 0) return freesasa_warn("%s(): empty coordinates", __func__);
 
     if (init_sr(&sr,sasa,xyz,r,probe_radius,n_points)) return mem_fail();
 

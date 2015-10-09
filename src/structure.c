@@ -91,14 +91,15 @@ atom_new(const char *residue_name,
     a->atom_name = strdup(atom_name);
     a->symbol = strdup(symbol);
     a->descriptor = malloc(FREESASA_STRUCTURE_DESCRIPTOR_STRL);
+
     if (!a->res_name || !a->res_number || !a->atom_name || !a->descriptor) {
         mem_fail();
         atom_free(a);
         return NULL;
     }
-    
+
     sprintf(a->descriptor,"%c %s %s %s",chain_label,residue_number,residue_name,atom_name);
-    
+
     return a;
 }
 
@@ -265,8 +266,10 @@ structure_add_atom(freesasa_structure *p,
     int na = ++p->number_atoms;
     
     // allocate memory, increase number of atoms counter, add chain
-    if ((p->a = realloc(p->a,sizeof(struct atom*)*na)) == NULL) return mem_fail();
+    if ((p->a = realloc(p->a,sizeof(struct atom*)*na)) == NULL) 
+        return mem_fail();
     p->a[na-1] = a;
+
     if (freesasa_coord_append(p->xyz, xyz, 1)) return mem_fail();
     if (structure_add_chain(p, a->chain_label)) return mem_fail();
     
@@ -307,28 +310,42 @@ from_pdb_impl(FILE *pdb_file,
               int options)
 {
     assert(pdb_file);
-    freesasa_structure *p = freesasa_structure_new();
-    if (p == NULL) { mem_fail(); return NULL; }
     size_t len = PDB_LINE_STRL;
     char *line = NULL;
-    char the_alt = ' ';
+    char alt, the_alt = ' ';
+    double v[3];
+    struct atom *a;
+    freesasa_structure *p = freesasa_structure_new();
+ 
+    if (p == NULL) { 
+        mem_fail();
+        return NULL;
+    }
+    
     fseek(pdb_file,it.begin,SEEK_SET);
     
     while (getline(&line, &len, pdb_file) != -1 && ftell(pdb_file) <= it.end) {
-        if (strncmp("ATOM",line,4)==0 ||
-            ( (options & FREESASA_INCLUDE_HETATM) &&
-              (strncmp("HETATM",line,6) == 0) )
-            ) {
-            double v[3];
-            struct atom *a;
-            char alt;
+        
+        if (strncmp("ATOM",line,4)==0 || ( (options & FREESASA_INCLUDE_HETATM) &&
+                                           (strncmp("HETATM",line,6) == 0) )) {
+            
             if (freesasa_pdb_ishydrogen(line) &&
-                !(options & FREESASA_INCLUDE_HYDROGEN)) continue;
+                !(options & FREESASA_INCLUDE_HYDROGEN))
+                continue;
+ 
             a = atom_new_from_line(line,&alt);
-            if (a == NULL) {mem_fail(); return NULL;}
+            
+            if (a == NULL) {
+                mem_fail();
+                return NULL;
+            }
+            
             freesasa_pdb_get_coord(v,line);
-            if ((alt != ' ' && the_alt == ' ') || (alt == ' ')) the_alt = alt;
-            else if (alt != ' ' && alt != the_alt) continue;
+            if ((alt != ' ' && the_alt == ' ') || (alt == ' '))
+                the_alt = alt;
+            else if (alt != ' ' && alt != the_alt)
+                continue;
+            
             if (structure_add_atom(p,a,v) != FREESASA_SUCCESS) { 
                 freesasa_structure_free(p);
                 p = NULL; 
@@ -342,7 +359,7 @@ from_pdb_impl(FILE *pdb_file,
             }
             if (strncmp("ENDMDL",line,6)==0) {
                 if (p->number_atoms == 0) {
-                    freesasa_fail("input had ENDMDL before first ATOM entry.");
+                    freesasa_fail("Input had ENDMDL before first ATOM entry.");
                     freesasa_structure_free(p);
                     p = NULL;
                 }
@@ -352,7 +369,7 @@ from_pdb_impl(FILE *pdb_file,
     }
     free(line);
     if (p != NULL && p->number_atoms == 0) {
-        freesasa_fail("input had no ATOM entries.");
+        freesasa_fail("Input had no ATOM entries.");
         freesasa_structure_free(p);
         return NULL;
     }
@@ -372,6 +389,7 @@ get_whole_file(FILE* file)
     assert(interval.begin <= interval.end);
     return interval;
 }
+
 /**
     Finds the location of all MODEL entries in the file pdb, returns the number
     of models found. *intervals points to a dynamically allocated file intervals
@@ -404,7 +422,7 @@ get_models(FILE *pdb,
         if (strncmp("ENDMDL",line,6)==0) {
             ++n_end;
             if (n != n_end) {
-                error = freesasa_fail("%s: Mismatch between MODEL and ENDMDL "
+                error = freesasa_fail("in %s(): Mismatch between MODEL and ENDMDL "
                                       "in input\n",__func__);
                 break;
             }
@@ -490,17 +508,17 @@ freesasa_structure_add_atom(freesasa_structure *p,
     
     // check input for consistency
     if (strlen(atom_name) != PDB_ATOM_NAME_STRL) {
-        freesasa_warn("%s: atom name '%s' has wrong length, might cause problems with classification.",
+        freesasa_warn("in %s(): atom name '%s' has wrong length, might cause problems with classification.",
                       __func__, atom_name);
         ++warn;
     }
     if (strlen(residue_name) != PDB_ATOM_RES_NAME_STRL) {
-        freesasa_warn("%s: residue name '%s' has wrong length, might cause problems with classification.",
+        freesasa_warn("in %s(): residue name '%s' has wrong length, might cause problems with classification.",
                       __func__, residue_name);
         ++warn;
     }
     if (strlen(residue_number) != PDB_ATOM_RES_NUMBER_STRL) {
-        freesasa_warn("%s: residue number '%s' has wrong length, might cause problems later.",
+        freesasa_warn("in %s(): residue number '%s' has wrong length, might cause problems later.",
                       __func__, residue_number);
         ++warn;
     }
@@ -540,7 +558,7 @@ freesasa_structure_array(FILE *pdb,
     int err = 0;
 
     if (n_models == FREESASA_FAIL) {
-        freesasa_fail("%s: problems reading PDB-file.",__func__);
+        fail_msg("Problems reading PDB-file.");
         return NULL;
     } else if (n_models == 0) {
         models = &whole_file;
@@ -557,7 +575,7 @@ freesasa_structure_array(FILE *pdb,
             int new_chains = get_chains(pdb,models[i],&chains,options);
             if (new_chains == FREESASA_FAIL) { mem_fail(); ++err; break; }
             if (new_chains == 0) {
-                freesasa_warn("%s: warning: No chains found (in model %d).",__func__,i+1);
+                freesasa_warn("in %s(): No chains found (in model %d).",__func__,i+1);
                 continue;
             }
             ss = realloc(ss,sizeof(freesasa_structure*)*(n_chains+new_chains));
@@ -589,7 +607,7 @@ freesasa_structure_array(FILE *pdb,
     if (err || *n == 0) {
         *n = 0;
         free(ss);
-        freesasa_fail("%s: error: Problems reading input.",__func__);
+        freesasa_fail("in %s(): Problems reading input.",__func__);
         ss = NULL;
     }
     if (models != &whole_file) free(models);
@@ -604,7 +622,12 @@ freesasa_structure_get_chains(const freesasa_structure *p,
     if (strlen(chains) == 0) return NULL;
 
     freesasa_structure *new_p = freesasa_structure_new();
-    if (!new_p) { mem_fail(); return NULL; }
+    
+    if (!new_p) {
+        mem_fail();
+        return NULL;
+    }
+    
     new_p->model = p->model;
 
     for (int i = 0; i < p->number_atoms; ++i) {
@@ -615,7 +638,10 @@ freesasa_structure_get_chains(const freesasa_structure *p,
             int res = freesasa_structure_add_atom(new_p, ai->atom_name,
                                                   ai->res_name, ai->res_number,
                                                   c, v[0], v[1], v[2]);
-            if (res != FREESASA_SUCCESS) { mem_fail(); return NULL; }
+            if (res != FREESASA_SUCCESS) {
+                mem_fail();
+                return NULL;
+            }
         }
     }
     if (new_p->number_atoms == 0) {
@@ -752,14 +778,14 @@ freesasa_write_pdb(FILE *output,
     // Write ATOM entries
     for (int i = 0; i < n; ++i) {
         if (p->a[i]->line == NULL) {
-            return freesasa_fail("%s: PDB input not valid or not present.",
+            return freesasa_fail("in %s(): PDB input not valid or not present.",
                                  __func__);
         }
         strncpy(buf,p->a[i]->line,PDB_LINE_STRL);
         sprintf(&buf[54],"%6.2f%6.2f",radii[i],values[i]);
         errno = 0;
         if (fprintf(output,"%s\n",buf) < 0)
-            return freesasa_fail("%s: %s", __func__, strerror(errno));
+            return fail_msg(strerror(errno));
     }
     // Write TER  and ENDMDL lines
     errno = 0;
@@ -768,11 +794,9 @@ freesasa_write_pdb(FILE *output,
     if (fprintf(output,"TER   %5d     %4s %c%4s\nENDMDL\n",
                 atoi(buf2)+1, p->a[n-1]->res_name,
                 p->a[n-1]->chain_label, p->a[n-1]->res_number) < 0) {
-        freesasa_fail("%s: %s", __func__, strerror(errno));
-        return FREESASA_FAIL;
+        return fail_msg(strerror(errno));
     }
     return FREESASA_SUCCESS;
-
 }
 
 int

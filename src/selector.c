@@ -124,13 +124,13 @@ get_expression(const char *selector)
    int err;
    expression *expression = NULL;
    if (freesasa_yylex_init(&scanner)) {
-       freesasa_fail(__func__);
+       fail_msg("Lexer failed");
        return NULL;
    }
    state = freesasa_yy_scan_string(selector, scanner);
    err = freesasa_yyparse(&expression, scanner);
    if (err) {
-       if (err == 1) freesasa_fail(__func__);
+       if (err == 1) fail_msg("Parser failed");
        if (err == 2) mem_fail();
        expression_free(expression);
    }
@@ -147,9 +147,15 @@ static struct selection *
 selection_new(int n)
 {
     struct selection *selection = malloc(sizeof(struct selection));
-    if (selection == NULL) { mem_fail(); return NULL; }
+    
+    if (selection == NULL) { 
+        mem_fail(); 
+        return NULL; 
+    }
+    
     selection->size = n;
     selection->atom = calloc(n,sizeof(int));
+    
     if (selection->atom == NULL) {
         free(selection);
         mem_fail();
@@ -349,13 +355,13 @@ select_list(expression_type parent_type,
             const expression *expr)
 {
     if (expr == NULL)
-        return freesasa_fail("%s: NULL expression.",__func__);
+        return fail_msg("NULL expression.");
     int resr, resl;
     expression *left = expr->left, *right = expr->right;
     switch(expr->type) {
     case E_PLUS: 
         if (left == NULL || right == NULL) 
-            return freesasa_fail("%s: NULL expression.",__func__);
+            return fail_msg("NULL expression.");
         resl = select_list(parent_type,selection,structure,left);
         resr = select_list(parent_type,selection,structure,right);
         if (resl == FREESASA_WARN || resr == FREESASA_WARN)
@@ -363,7 +369,7 @@ select_list(expression_type parent_type,
         break;
     case E_RANGE:
         if (left == NULL || right == NULL) 
-            return freesasa_fail("%s: NULL expression.",__func__);
+            return fail_msg("NULL expression.");
         select_range(parent_type,selection,structure,left,right);
         break;
     case E_ID: case E_NUMBER:
@@ -371,7 +377,7 @@ select_list(expression_type parent_type,
             select_id(parent_type,selection,structure,expr->value);
         break;
     default:
-        freesasa_fail("%s: parse error, illegal expression: '%s %s'",
+        freesasa_fail("in %s(): parse error (expression: '%s %s')",
                       __func__,e_str[parent_type],e_str[expr->type]);
         break;
     }
@@ -386,7 +392,7 @@ selection_join(struct selection *target,
 {
     int n;
     if (s1 == NULL || s2 == NULL || target == NULL)
-        return freesasa_fail("%s: trying to join NULL selections",__func__);
+        return fail_msg("Trying to join NULL selections");
     
     assert(s1->size == s2->size);
     assert(s1->size == target->size);
@@ -412,7 +418,7 @@ selection_join(struct selection *target,
 static int
 selection_not(struct selection *s)
 {
-    if (s == NULL) return FREESASA_FAIL;
+    if (s == NULL) return fail_msg("NULL selection");
     for (int i = 0; i < s->size; ++i) {
         s->atom[i] = ! s->atom[i];
     }
@@ -428,7 +434,7 @@ select_atoms(struct selection* selection,
     int warn = 0, err = 0, n = selection->size, ret;
 
     // this should only happen if memory allocation failed during parsing
-    if (expr == NULL) return freesasa_fail("%s: NULL expression.",__func__);
+    if (expr == NULL) return fail_msg("NULL expression.");
 
     switch (expr->type) {
     case E_SELECTOR:
@@ -461,7 +467,7 @@ select_atoms(struct selection* selection,
         }
         selection_free(sl);
         selection_free(sr);
-        if (err) return freesasa_fail(__func__);
+        if (err) return fail_msg("Error joining selections");
         break;
     }
     case E_NOT: {
@@ -477,7 +483,7 @@ select_atoms(struct selection* selection,
     case E_RANGE:
         // these four are handled by the RESN,SYMBOL,ETC
     default:
-        return freesasa_fail("%s: parser error.",__func__);
+        return fail_msg("parser error");
     }
     if (warn) return FREESASA_WARN;
     return FREESASA_SUCCESS;
@@ -487,7 +493,7 @@ select_atoms(struct selection* selection,
 static void
 print_expr(const expression *e,int level)
 {
-    if (freesasa_get_verbosity() == FREESASA_V_NORMAL) {
+    if (freesasa_get_verbosity() == FREESASA_V_DEBUG) {
         fprintf(stderr,"\n");
         for (int i = 0; i < level; ++i) fprintf(stderr,"  ");
         if (e == NULL) fprintf(stderr,"()");
@@ -559,9 +565,9 @@ freesasa_select_area(const char *command,
     expression_free(expression);
     
     if (err)
-        return freesasa_fail("%s: Problems parsing expression '%s'.",__func__,command);
+        return freesasa_fail("in %s(): Problems parsing expression '%s'.",__func__,command);
     if (warn)
-        return freesasa_warn("%s: there were warnings.",__func__);
+        return freesasa_warn("in %s(): There were warnings.",__func__);
     return FREESASA_SUCCESS;
 }
 
@@ -571,7 +577,7 @@ int freesasa_selector_parse_error(expression *e,
 {
     print_expr(e,0);
     if (freesasa_get_verbosity() == FREESASA_V_NORMAL) fprintf(stderr,"\n");
-    return freesasa_fail("%s",msg);
+    return freesasa_fail(msg);
 }
 
 

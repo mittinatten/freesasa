@@ -47,9 +47,6 @@ typedef struct cell_list {
     double z_max, z_min;
 } cell_list;
 
-extern int freesasa_fail(const char *format, ...);
-extern int freesasa_warn(const char *format, ...);
-
 //! Finds the bounds of the cell list and writes them to the provided cell list
 static void
 cell_list_bounds(cell_list *c, 

@@ -53,10 +53,12 @@ typedef enum {FREESASA_LEE_RICHARDS, FREESASA_SHRAKE_RUPLEY}
     - FREESASA_V_NORMAL: print all errors and warnings.
     - FREESASA_V_NOWARNINGS: print only errors.
     - FREESASA_V_SILENT: print no errors and warnings.
+    - FREESASA_V_DEBUG: print all errors, warnigns and debug messages.
 */    
 typedef enum {FREESASA_V_NORMAL,
               FREESASA_V_NOWARNINGS,
-              FREESASA_V_SILENT} freesasa_verbosity;
+              FREESASA_V_SILENT,
+              FREESASA_V_DEBUG} freesasa_verbosity;
 /**
     4 classes of atoms/chemical groups 
     (classes in freesasa_default_classifier)
@@ -398,7 +400,7 @@ freesasa_log(FILE *log,
 /**
     Set the global verbosity level.
 
-    @arg v the verbosity level
+    @param v the verbosity level
     @return ::FREESASA_SUCCESS. If v is invalid ::FREESASA_FAIL.
     @see freesasa_verbosity
  */
