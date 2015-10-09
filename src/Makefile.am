@@ -4,6 +4,7 @@ AM_LDFLAGS = -lgcov
 endif # COND_GCOV
 GCOV_FILES = *.gcda *.gcno *.gcov
 CLEANFILES = $(GCOV_FILES) *~
+EXTRA_DIST = lexer.l parser.y
 
 bin_PROGRAMS = freesasa
 lib_LIBRARIES = libfreesasa.a
