@@ -385,10 +385,11 @@ in the example.
 
 FreeSASA uses a subset of the Pymol select commands to give users an
 easy way of summing up the SASA of groups of atoms. This is done by
-the function freesasa_select_area() in the C API, selectArea() in the
-Python interface and the option `--select` for the command line
-tool. All commands are case insensitive. A basic selection has a
-selection name, a property selector and a list of arguments
+the function freesasa_select_area() in the C API,
+freesasa.selectArea() in the Python interface and the option
+`--select` for the command line tool. All commands are case
+insensitive. A basic selection has a selection name, a property
+selector and a list of arguments
 
     <selection-name>, <selector> <list>
 
@@ -433,7 +434,7 @@ because it specifies a residue that does not exist in the particular
 molecule, or because of typos. The selector does not keep a list of
 valid elements, residue names, etc.
 
-@page Python Python bindings
+@page Python Python interface
 
 If Python is enabled using 
     
@@ -468,7 +469,6 @@ Which would give the following output
     Polar : 2236.93 A2
     Apolar : 2542.58 A2
 
-
 The following does a high precision L&R calculation
 
 ~~~{.py}
@@ -476,6 +476,21 @@ result = freesasa.calc(structure,
                        freesasa.Parameters({'algorithm' : freesasa.LeeRichards,
                                             'n-slices' : 100}))
 ~~~
+
+Using the results from a calculation we can also integrate SASA over a selection of
+atoms, using a subset of the Pymol selection syntax (see @ref Selection):
+
+~~~{.py}
+selections = freesasa.selectArea(('alanine, resn ala','r1_10, resi 1-10'), 
+                                 structure, result)
+for key in selections:
+    print key, ": %.2f A2" % selections[key]
+~~~
+which gives the output
+
+    alanine : 122.03 A2
+    r1_10 : 655.48 A2
+
 
 @section Python-classification Customizing atom classification
 

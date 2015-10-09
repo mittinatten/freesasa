@@ -588,7 +588,8 @@ def classifyResults(result,structure,classifier=None):
       return ret
 ## Sum SASA result over a selection of atoms
 # @param commands A list of commands with selections using Pymol
-#   syntax, e.g. "s1, resn ala+arg" or "s2, chain A and resi 1-5".
+#   syntax, e.g. "s1, resn ala+arg" or "s2, chain A and resi 1-5" 
+#   (see @ref Selection).
 # @param structure A Structure.  
 # @param result Result from sasa calculation on structure.
 # @return Dictionary with names of selections ("s1","s2",...) as 
