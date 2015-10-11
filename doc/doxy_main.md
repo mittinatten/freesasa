@@ -531,7 +531,7 @@ class DerivedClassifier(Classifier):
 
 classifier = DerivedClassifier()
 
-# use the DerivedClassifier to calculate atom radii (will give same result as the default)
+# use the DerivedClassifier to calculate atom radii
 structure = freesasa.Structure("1ubq.pdb",classifier)
 result = freesasa.calc(structure)
 
