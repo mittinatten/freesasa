@@ -51,14 +51,17 @@ struct atom {
 const char *aa[naa] = {"ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU",
                        "GLY", "HIS", "ILE", "LEU", "LYS", "MET", "PHE",
                        "PRO", "SER", "THR", "TRP", "TYR", "VAL"};
-#define n_other 3
-const char *other_aa[n_other] = {"GLX", "ASX", "CSE"};
+#define n_other 6
+const char *other_aa[n_other] = {"GLX", "SEC", "PYL", "PYH", "ASX", "CSE"};
+
+#define n_capping 2
+const char *capping[n_capping] = {"ACE","NH2"};
 
 #define n_nuc 13
 const char *nuc[n_nuc] = {"DA","DC","DG","DT","DU","DI","A","C","G","T","U","I","N"};
 
 
-#define n_atom_types 229
+#define n_atom_types 247
 const struct atom atoms[n_atom_types] = {
     {"ALA"," C  ",car_C,POL}, {"ALA"," O  ",car_O,POL}, {"ALA"," CA ",ali_C,APO},
     {"ALA"," N  ",ami_N,POL}, {"ALA"," CB ",ali_C,APO}, {"ALA"," X  ",r_unk,UNK},
@@ -166,9 +169,16 @@ const struct atom atoms[n_atom_types] = {
     {"SEC"," N  ",ami_N,POL}, {"SEC"," CB ",ali_C,APO}, {"SEC","SE  ",sele,POL},
     {"SEC"," X  ",r_unk,UNK},
 // 225
+    {"PYL"," C  ",car_C,POL}, {"PYL"," O  ",car_O,POL}, {"PYL"," CA ",ali_C,APO},
+    {"PYL"," N  ",ami_N,POL}, {"PYL"," CB ",ali_C,APO}, {"PYL"," CG ",ali_C,APO},
+    {"PYL"," CG ",ali_C,APO}, {"PYL"," CD ",ali_C,APO}, {"PYL"," CE ",ali_C,APO},
+    {"PYL"," NZ ",ami_N,POL}, {"PYL"," O2 ",car_O,POL}, {"PYL"," C2 ",car_C,POL}, 
+    {"PYL"," CA2",aro_C,APO}, {"PYL"," CB2",ali_C,APO}, {"PYL"," CG2",aro_C,APO},
+    {"PYL"," CD2",aro_C,APO}, {"PYL"," CE2",aro_C,APO}, {"PYL"," N2 ",ami_N,POL},
+// 243
     {"ACE"," C  ",car_C,POL}, {"ACE"," O  ",car_O,POL}, {"ACE"," CH3",ali_C,APO},
     {"NH2"," NH2",ami_N,POL}
-// 229
+// 247
 };
 
 // tests freesasa_classify_radius() and freesasa_classify_oons_radius()
@@ -305,6 +315,13 @@ START_TEST (test_residue)
     for (int i = 0; i < n_other; ++i) {
         ck_assert((c = freesasa_classify_residue(other_aa[i])) >= naa);
         ck_assert(freesasa_classify_is_aminoacid(c));
+        ck_assert(!freesasa_classify_is_capping_group(c));
+        ck_assert(!freesasa_classify_is_nucleicacid(c));
+    }
+    for (int i = 0; i < n_capping; ++i) {
+        ck_assert((c = freesasa_classify_residue(capping[i])) >= naa);
+        ck_assert(!freesasa_classify_is_aminoacid(c));
+        ck_assert(freesasa_classify_is_capping_group(c));
         ck_assert(!freesasa_classify_is_nucleicacid(c));
     }
 
@@ -312,6 +329,7 @@ START_TEST (test_residue)
     for (int i = 0; i < n_nuc; ++i) {
         ck_assert((c = freesasa_classify_residue(nuc[i])) >= naa);
         ck_assert(!freesasa_classify_is_aminoacid(c));
+        ck_assert(!freesasa_classify_is_capping_group(c));
         ck_assert(freesasa_classify_is_nucleicacid(c));
     }
 }

@@ -285,6 +285,18 @@ int
 freesasa_classify_is_aminoacid(int res);
 
 /**
+    Is residue a capping group?
+    
+    Takes the values produced by freesasa_classify_residue() and
+    determines if it's a capping group or not. 
+
+    @param res The residue type.
+    @return 1 means capping group, 0 not, ::FREESASA_FAIL illegal input. 
+ */
+int
+freesasa_classify_is_capping_group(int res);
+
+/**
     Is residue a nucleic acid?
     
     Takes the values produced by freesasa_classify_residue() and

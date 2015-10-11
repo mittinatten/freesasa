@@ -28,14 +28,18 @@
 //! The residue types that are returned by freesasa_classify_residue()
 enum residue {
     //Regular amino acids
-    ALA=0, ARG, ASN, ASP, CYS, GLN, GLU, GLY, HIS, ILE, LEU, LYS, 
-    MET, PHE, PRO, SER, THR, TRP, TYR, VAL,
+    ALA=0, ARG, ASN, ASP,
+    CYS, GLN, GLU, GLY,
+    HIS, ILE, LEU, LYS, 
+    MET, PHE, PRO, SER,
+    THR, TRP, TYR, VAL,
     //some non-standard ones
-    CSE, SEC, ASX, GLX,
-    //capping N- and C-terminal groups (usually HETATM)
-    ACE, NH2,
+    CSE, SEC, PYL, PYH,
+    ASX, GLX,
     //residue unknown
     RES_UNK,
+    //capping N- and C-terminal groups (usually HETATM)
+    ACE, NH2,
     //DNA
     DA, DC, DG, DT,
     DU, DI,
@@ -53,16 +57,18 @@ static const char *residue_names[] = {
     "HIS","ILE","LEU","LYS",
     "MET","PHE","PRO","SER",
     "THR","TRP","TYR","VAL",
-    "CSE","SEC","ASX","GLX",
-    "ACE","NH2",
+    // non-standard amino acids
+    "CSE","SEC","PYL","PYH", // SEC and PYL are standard names, CSE and PYH are found in some early files
+    "ASX","GLX",
     "UNK",
+    // capping groups
+    "ACE","NH2",
     //DNA
     "DA","DC","DG","DT","DU","DI",
     //RNA
     "A","C","G","U","I","T",
     //General nuceleotide
     "N"
-        
 };
 
 //! The element types that are returned by freesasa_classify_element()
@@ -149,7 +155,8 @@ freesasa_classify_radius(const char *res_name,
     if (freesasa_classify_element(atom_name) == hydrogen) 
         return freesasa_classify_element_radius(hydrogen);
     int res = freesasa_classify_residue(res_name);
-    if (freesasa_classify_is_aminoacid(res)) {
+    if (freesasa_classify_is_aminoacid(res) || 
+        freesasa_classify_is_capping_group(res)) {
         return freesasa_classify_oons_radius(freesasa_classify_oons(res_name,
                                                                     atom_name));
     } else if (res == RES_UNK) {
@@ -211,10 +218,9 @@ freesasa_classify_residue(const char *res_name)
     }
     sscanf(res_name,"%s",cpy);
     for (int i = ALA; i <= NN; ++i) {
-        if (! strcmp(res_name,residue_names[i])) return i;
+        if (! strcmp(cpy,residue_names[i])) return i;
     }
 
-    //for nucleotides we need to deal with whitespace..
     for (int i = DA; i <= NN; ++i) {
         if (! strcmp(cpy,residue_names[i])) return i;
     }
@@ -366,9 +372,31 @@ oons_CMST(const char* a)
 }
 
 static int
-oons_cse(const char* a)
+oons_U(const char* a)
 {
     if (a[0] == 'S' && a[1] == 'E') return oons_selenium;
+    return oons_unknown;
+}
+
+static int
+oons_O(const char* a) 
+{
+    if ((! strcmp(a," CG ")) ||
+        (! strcmp(a," CE ")) ||
+        (! strcmp(a," CD ")) ||
+        (! strcmp(a," CB2")))
+        return oons_aliphatic_C;
+    if ((! strcmp(a," CA2")) ||
+        (! strcmp(a," CG2")) ||
+        (! strcmp(a," CE2")) ||
+        (! strcmp(a," CD2")))
+        return oons_aromatic_C;
+    if (! strcmp(a," C2 "))
+        return oons_carbo_C;
+    if (a[1] == 'N')
+        return oons_amide_N;
+    if (a[1] == 'O')
+        return oons_carbo_O;
     return oons_unknown;
 }
 
@@ -407,7 +435,8 @@ freesasa_classify_oons(const char *res_name,
 
     res = freesasa_classify_residue(res_name);
 
-    if (freesasa_classify_is_aminoacid(res)) {
+    if (freesasa_classify_is_aminoacid(res) ||
+        freesasa_classify_is_capping_group(res)) {
         // backbone
         if (! strcmp(a, " C  ")) return oons_carbo_C;
         if (! strcmp(a, " N  ")) return oons_amide_N;
@@ -421,7 +450,6 @@ freesasa_classify_oons(const char *res_name,
             else return oons_aliphatic_C;
         }
     }
-
 
     /* Amino acids are sorted by frequency of occurence for
        optimization (probably has minimal effect, but easy to do) */
@@ -448,8 +476,10 @@ freesasa_classify_oons(const char *res_name,
     case RES_UNK: return oons_unknown;
     case ASX: return oons_ND(a);
     case GLX: return oons_QE(a);
-    case CSE: return oons_cse(a);
-    case SEC: return oons_cse(a);
+    case CSE: 
+    case SEC: return oons_U(a);
+    case PYH:
+    case PYL: return oons_O(a);
     case ACE: return oons_ace(a);
     case NH2: return oons_nh2(a);
     default:
@@ -521,9 +551,17 @@ freesasa_classify_is_aminoacid(int res)
 }
 
 int
+freesasa_classify_is_capping_group(int res)
+{
+    if (res == ACE || res == NH2) return 1;
+    if (res < 0 || res > NN) return FREESASA_FAIL;
+    return 0;
+}
+
+int
 freesasa_classify_is_nucleicacid(int res)
 {
-    if (res >= ALA && res <= RES_UNK) return 0;
+    if (res >= ALA && res < DA) return 0;
     if (res >= DA && res <= NN) return 1;
     return FREESASA_FAIL;
 }
