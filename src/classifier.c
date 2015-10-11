@@ -31,10 +31,117 @@
     aliphatic/aromatic/etc. See the example configurations in share/.
  */
 
+static const char *default_type_input[] = {
+    "C_ALI 2.00 apolar ",
+    "C_ARO 1.75 apolar",
+    "C_CAR 1.55 polar",
+    "N 1.55 polar ",
+    "O 1.40 polar ", // carbo- and hydroxyl oxygen have the same radius in OONS
+    "S 2.00 polar ",
+};
+
+static const char *default_atom_input[] = {
+    "ANY C   C_CAR",
+    "ANY O   O",
+    "ANY CA  C_ALI",
+    "ANY N   N",
+    "ANY CB  C_ALI",
+
+    "ANY OXT O",
+    "ARG CG C_ALI",
+    "ARG CD C_ALI",
+    "ARG NE N",
+    "ARG CZ C_ALI",
+    "ARG NH1 N",
+    "ARG NH2 N",
+
+    "ASN CG  C_CAR",
+    "ASN OD1 O",
+    "ASN ND2 N",
+
+    "ASP CG  C_CAR",
+    "ASP OD1 O",
+    "ASP OD2 O",
+
+    "CYS SG  S",
+
+    "GLN CG  C_ALI",
+    "GLN CD  C_CAR",
+    "GLN OE1 O",
+    "GLN NE2 N",
+
+    "GLU CG  C_ALI",
+    "GLU CD  C_CAR",
+    "GLU OE1 O",
+    "GLU OE2 O",
+
+    "HIS CG  C_ARO",
+    "HIS ND1 N",
+    "HIS CD2 C_ARO",
+    "HIS NE2 N",
+    "HIS CE1 C_ARO",
+
+    "ILE CG1 C_ALI",
+    "ILE CG2 C_ALI",
+    "ILE CD1 C_ALI",
+
+    "LEU CG  C_ALI",
+    "LEU CD1 C_ALI",
+    "LEU CD2 C_ALI",
+
+    "LYS CG  C_ALI",
+    "LYS CD  C_ALI",
+    "LYS CE  C_ALI",
+    "LYS NZ  N",
+
+    "MET CG  C_ALI",
+    "MET SD  S",
+    "MET CE  C_ALI",
+
+    "PHE CG  C_ARO",
+    "PHE CD1 C_ARO",
+    "PHE CD2 C_ARO",
+    "PHE CE1 C_ARO",
+    "PHE CE2 C_ARO",
+    "PHE CZ  C_ARO",
+
+    "PRO CB  C_ARO",
+    "PRO CG  C_ARO",
+    "PRO CD  C_ARO",
+
+    "SER OG  O",
+
+    "THR OG1 O",
+    "THR CG2 C_ALI",
+
+    "TRP CG  C_ARO",
+    "TRP CD1 C_ARO",
+    "TRP CD2 C_ARO",
+    "TRP NE1 N",
+    "TRP CE2 C_ARO",
+    "TRP CE3 C_ARO",
+    "TRP CZ2 C_ARO",
+    "TRP CZ3 C_ARO",
+    "TRP CH2 C_ARO",
+
+    "TYR CG  C_ARO",
+    "TYR CD1 C_ARO",
+    "TYR CD2 C_ARO",
+    "TYR CE1 C_ARO",
+    "TYR CE2 C_ARO",
+    "TYR CZ  C_ARO",
+    "TYR OH  O",
+
+    "VAL CG1 C_ALI",
+    "VAL CG2 C_ALI"
+
+    // add more here
+};
+
 /**
     Struct to store information about the types-section in a user-config.
  */
-struct user_types {
+struct types {
     int n_classes; //!< number of classes
     int n_types; //!< number of types
     char **name; //!< names of types
@@ -43,12 +150,12 @@ struct user_types {
     char **class_name; //!< name of each type
 };
 
-static const struct user_types empty_types = {0, 0, NULL, NULL, NULL, NULL};
+static const struct types empty_types = {0, 0, NULL, NULL, NULL, NULL};
 
 /**
      Configuration info for each residue type.
  */
-struct user_residue {
+struct residue_cfg {
     int n_atoms; //!< Number of atoms
     char *name; //!< Name of residue
     char **atom_name; //!< Names of atoms
@@ -56,7 +163,7 @@ struct user_residue {
     int *atom_class; //!< Classe of atoms
 };
 
-static const struct user_residue empty_residue = {0,NULL,NULL,NULL,NULL};
+static const struct residue_cfg empty_residue = {0,NULL,NULL,NULL,NULL};
 
 /**
     Stores a user-configuration as extracted from a configuration
@@ -65,23 +172,23 @@ static const struct user_residue empty_residue = {0,NULL,NULL,NULL,NULL};
     
     An array of the names of residues is stored directly in the struct
     to facilitate searching for residues. The class_name array should
-    be a clone of that found in user_types (can be done bye
-    user_config_copy_classes()).
+    be a clone of that found in types (can be done bye
+    config_t_copy_classes()).
  */
-struct user_config {
+struct config {
     int n_residues; //!< Number of residues
     int n_classes; //!< Number of classes
     char **residue_name; //!< Names of residues
     char **class_name; //!< Names of classes
-    struct user_residue **residue;
+    struct residue_cfg **residue;
 };
 
-static const struct user_config empty_config = {0, 0, NULL, NULL, NULL};
+static const struct config empty_config = {0, 0, NULL, NULL, NULL};
 
-static struct user_types*
-user_types_new()
+static struct types*
+types_new()
 {
-    struct user_types *t = malloc(sizeof(struct user_types));
+    struct types *t = malloc(sizeof(struct types));
     if (t == NULL) {
         mem_fail();
         return NULL;
@@ -91,7 +198,7 @@ user_types_new()
 }
 
 static void
-user_types_free(struct user_types* t)
+types_free(struct types* t)
 {
     if (t == NULL) return;
     free(t->type_radius);
@@ -110,11 +217,11 @@ user_types_free(struct user_types* t)
     free(t);
 }
 
-static struct user_residue*
-user_residue_new(const char* name)
+static struct residue_cfg*
+residue_cfg_new(const char* name)
 {
     assert(strlen(name) > 0);
-    struct user_residue *res = malloc(sizeof(struct user_residue));
+    struct residue_cfg *res = malloc(sizeof(struct residue_cfg));
     if (res == NULL) {
         mem_fail();
         return NULL;
@@ -125,7 +232,7 @@ user_residue_new(const char* name)
 }
 
 static void
-user_residue_free(struct user_residue* res)
+residue_cfg_free(struct residue_cfg* res)
 {
     if (res == NULL) return;
     free(res->name);
@@ -141,10 +248,10 @@ user_residue_free(struct user_residue* res)
     free(res);
 }
 
-static struct user_config* 
-user_config_new()
+static struct config* 
+config_new()
 {
-    struct user_config *cfg = malloc(sizeof(struct user_config));
+    struct config *cfg = malloc(sizeof(struct config));
     if (cfg == NULL) {
         mem_fail();
         return NULL;
@@ -154,10 +261,10 @@ user_config_new()
 }
 
 static void
-user_config_free(void *p)
+config_free(void *p)
 {
     if (p == NULL) return;
-    struct user_config *c = p;
+    struct config *c = p;
 
     if (c->class_name)
         for (int i = 0; i < c->n_classes; ++i)
@@ -166,7 +273,8 @@ user_config_free(void *p)
 
     if (c->residue)
         for (int i = 0; i < c->n_residues; ++i)
-            user_residue_free(c->residue[i]);
+            residue_cfg_free(c->residue[i]);
+    free(c->residue);
     free(c->residue_name);
 
     free(c);
@@ -303,7 +411,7 @@ next_line(char **line,
     success, FREESASA_FAILURE if realloc/strdup fails.
  */
 static int
-add_class(struct user_types *types,
+add_class(struct types *types,
           const char *name)
 {
     int the_class = find_string(types->class_name, name, types->n_classes);
@@ -328,7 +436,7 @@ add_class(struct user_types *types,
     already known (ignore duplicates).
  */
 static int
-add_type(struct user_types *types,
+add_type(struct types *types,
          const char *type_name,
          const char *class_name, 
          double r)
@@ -362,7 +470,7 @@ add_type(struct user_types *types,
     allocation errors.
  */
 static int
-read_types_line(struct user_types *types,
+read_types_line(struct types *types,
                 const char* line) 
 {
     size_t blen=101;
@@ -388,7 +496,7 @@ read_types_line(struct user_types *types,
     allocation errors.
  */
 static int
-read_types(struct user_types *types,
+read_types(struct types *types,
            FILE *input,
            struct file_interval fi)
 {
@@ -417,7 +525,7 @@ read_types(struct user_types *types,
     if the atom has already been added.
  */
 static int
-add_atom(struct user_residue *res,
+add_atom(struct residue_cfg *res,
          const char *name,
          double radius,
          int the_class)
@@ -449,19 +557,19 @@ add_atom(struct user_residue *res,
     residue. Returns FREESASA_FAILURE if realloc/strdup fails.
  */
 static int
-add_residue(struct user_config *config,
+add_residue(struct config *config,
             const char* name)
 {
     int res = find_string(config->residue_name, name, config->n_residues);
     if (res >= 0) return res;
     res = ++config->n_residues;
     config->residue_name = realloc(config->residue_name, sizeof(char*) * res);
-    config->residue = realloc(config->residue, sizeof(struct user_residue) * res);
+    config->residue = realloc(config->residue, sizeof(struct residue_cfg) * res);
     if (!config->residue_name || !config->residue) {
         --config->n_residues;
         return mem_fail();
     }
-    if (!(config->residue[res-1] = user_residue_new(name))) {
+    if (!(config->residue[res-1] = residue_cfg_new(name))) {
         --config->n_residues;
         return mem_fail();
     }
@@ -476,8 +584,8 @@ add_residue(struct user_config *config,
     errors or memory allocation errors. FREESASA_SUCCESS else.
  */
 static int
-read_atoms_line(struct user_config *config,
-                const struct user_types *types,
+read_atoms_line(struct config *config,
+                const struct types *types,
                 const char* line)
 {
     size_t blen=100;
@@ -485,10 +593,16 @@ read_atoms_line(struct user_config *config,
     int res, type, atom;
     if (sscanf(line,"%s %s %s",buf1,buf2,buf3) == 3) {
         type = find_string(types->name, buf3, types->n_types);
-        if (type < 0) return freesasa_fail("Unknown atom type '%s' in line '%s'",buf3,line);
+        if (type < 0) 
+            return freesasa_fail("Unknown atom type '%s' in line '%s'",buf3,line);
         res = add_residue(config,buf1);
         if (res == FREESASA_FAIL) return fail_msg("");
-        atom = add_atom(config->residue[res], buf2, types->type_radius[type], types->type_class[type]);
+
+        atom = add_atom(config->residue[res],
+                        buf2,
+                        types->type_radius[type],
+                        types->type_class[type]);
+
         if (atom == FREESASA_FAIL) return fail_msg("");
         if (atom == FREESASA_WARN) return FREESASA_WARN;
         
@@ -506,8 +620,8 @@ read_atoms_line(struct user_config *config,
     been stored in the config struct.
  */
 static int
-read_atoms(struct user_config *config,
-           struct user_types *types,
+read_atoms(struct config *config,
+           struct types *types,
            FILE *input,
            struct file_interval fi)
 {
@@ -531,8 +645,8 @@ read_atoms(struct user_config *config,
 }
 
 static int
-user_config_copy_classes(struct user_config *config,
-                         const struct user_types *types) 
+config_copy_classes(struct config *config,
+                    const struct types *types) 
 {
     char **names = malloc(sizeof(char*)*types->n_classes);
     if (names == NULL) return mem_fail();
@@ -547,29 +661,29 @@ user_config_copy_classes(struct user_config *config,
     return FREESASA_SUCCESS;
 }
 
-static struct user_config*
+static struct config*
 read_config(FILE *input) 
 {
     assert(input);
     struct file_interval types_section, atoms_section; 
-    struct user_config *config;
-    struct user_types *types;
+    struct config *config;
+    struct types *types;
     
-    if (!(types = user_types_new())) 
+    if (!(types = types_new())) 
         return NULL;
-    if (!(config = user_config_new()))
+    if (!(config = config_new()))
         return NULL;
     if (check_file(input, &types_section, &atoms_section) != FREESASA_SUCCESS)
         return NULL;
     
     if (read_types(types, input, types_section)         == FREESASA_FAIL ||
         read_atoms(config, types, input, atoms_section) == FREESASA_FAIL ||
-        user_config_copy_classes(config, types)         == FREESASA_FAIL) {
-        user_types_free(types);
-        user_config_free(config);
+        config_copy_classes(config, types)         == FREESASA_FAIL) {
+        types_free(types);
+        config_free(config);
         return NULL;
     }
-    user_types_free(types);
+    types_free(types);
     
     return config;
 }
@@ -579,13 +693,15 @@ read_config(FILE *input)
     indices to the provided pointers).
  */
 static void 
-find_any(const struct user_config *config,
+find_any(const struct config *config,
          const char *atom_name,
          int *res, int *atom)
 {
     *res = find_string(config->residue_name,"ANY",config->n_residues);
     if (*res >= 0) {
-        *atom = find_string(config->residue[*res]->atom_name,atom_name,config->residue[*res]->n_atoms); 
+        *atom = find_string(config->residue[*res]->atom_name,
+                            atom_name,
+                            config->residue[*res]->n_atoms); 
     }
 }
 /**
@@ -594,7 +710,7 @@ find_any(const struct user_config *config,
     found.
  */
 static int 
-find_atom(const struct user_config *config, 
+find_atom(const struct config *config, 
           const char *res_name,
           const char *atom_name,
           int* res,
@@ -605,7 +721,7 @@ find_atom(const struct user_config *config,
     if (*res < 0) {
         find_any(config,atom_name,res,atom);
     } else {        
-        const struct user_residue *residue = config->residue[*res];
+        const struct residue_cfg *residue = config->residue[*res];
         *atom = find_string(residue->atom_name,atom_name,residue->n_atoms);
         if (*atom < 0) {
             find_any(config,atom_name,res,atom);
@@ -627,7 +743,7 @@ user_radius(const char *res_name,
     assert(classifier); assert(res_name); assert(atom_name);
     
     int res, atom, status;
-    const struct user_config *config = classifier->config;
+    const struct config *config = classifier->config;
     
     status = find_atom(config,res_name,atom_name,&res,&atom);
     if (status == FREESASA_SUCCESS)
@@ -645,7 +761,7 @@ user_class(const char *res_name,
 {
     assert(classifier); assert(res_name); assert(atom_name);
     int res, atom, status;
-    const struct user_config* config = classifier->config;
+    const struct config* config = classifier->config;
     status = find_atom(config,res_name,atom_name,&res,&atom);
     if (status == FREESASA_SUCCESS)
         return config->residue[res]->atom_class[atom];
@@ -659,31 +775,40 @@ user_class2str(int the_class,
                const freesasa_classifier *classifier)
 {
     assert(classifier);
-    const struct user_config* config = classifier->config;
+    const struct config* config = classifier->config;
     if (the_class < 0 && the_class >= config->n_classes) return NULL;
     return config->class_name[the_class];
+}
+static freesasa_classifier*
+init_classifier(struct config *config)
+{
+   freesasa_classifier* c = malloc(sizeof(freesasa_classifier));
+    if (c == NULL) {
+        mem_fail();
+        return NULL;
+    }
+
+    c->config = config;
+    c->n_classes = config->n_classes;
+    c->radius = user_radius;
+    c->sasa_class = user_class;
+    c->class2str = user_class2str;
+    c->free_config = config_free;
+
+    return c;
 }
 
 freesasa_classifier*
 freesasa_classifier_from_file(FILE *file)
 {
     assert(file);
-    struct user_config *config;
-    freesasa_classifier* c = malloc(sizeof(freesasa_classifier));
-    if (c == NULL) {
-        mem_fail();
+
+    struct config *config = read_config(file);
+    if (config == NULL) {
+        fail_msg("");
         return NULL;
     }
-    config = read_config(file);
-    if (config == NULL) return NULL;
-
-    c->radius = user_radius;
-    c->sasa_class = user_class;
-    c->class2str = user_class2str;
-    c->free_config = user_config_free;
-    c->config = config;
-    c->n_classes = config->n_classes;
-    return c;
+    return init_classifier(config);
 }
 
 void
@@ -696,4 +821,59 @@ freesasa_classifier_free(freesasa_classifier *classifier)
         }
         free(classifier);
     }
+}
+
+
+static struct config *
+default_config()
+{
+    struct types *types;
+    struct config *config;
+    const int n_types = sizeof(default_type_input)/sizeof(char *);
+    const int n_atoms = sizeof(default_atom_input)/sizeof(char *);
+
+    types = types_new();
+    if (types == NULL) return NULL;
+    for (int i = 0; i < n_types; ++i) {
+        if (read_types_line(types,default_type_input[i])
+            == FREESASA_FAIL) {
+            // this should never happen
+            fail_msg("Error setting up types for default classifier");
+            types_free(types);
+            return NULL;
+        }
+    }
+
+    config = config_new();
+    if (config == NULL) return NULL;
+    for (int i = 0; i < n_atoms; ++i) {
+        if (read_atoms_line(config,types,default_atom_input[i])
+            == FREESASA_FAIL) {
+            // this should never happen
+            fail_msg("Error setting up atoms for default classifier");
+            config_free(config);
+            types_free(types);
+            return NULL;
+        }
+    }
+    
+    if (config_copy_classes(config, types) == FREESASA_FAIL) {
+        config_free(config);
+        config = NULL;
+    }
+    
+    types_free(types);
+    return config;
+}
+
+freesasa_classifier *
+freesasa_classifier_default()
+{
+    struct config *config = default_config();
+    if (config == NULL) {
+        fail_msg("");
+        return NULL;
+    }
+    
+    return init_classifier(config);
 }

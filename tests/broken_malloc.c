@@ -167,18 +167,18 @@ START_TEST (test_alg)
 }
 END_TEST
 
-START_TEST (test_user_config) 
+START_TEST (test_classifier) 
 {
     freesasa_set_verbosity(FREESASA_V_SILENT);
 
-    struct user_types types = empty_types;
-    struct user_residue res = empty_residue;
-    struct user_config cfg = empty_config;
+    struct types types = empty_types;
+    struct residue_cfg res = empty_residue;
+    struct config cfg = empty_config;
 
     set_fail_freq(1);
-    ck_assert_ptr_eq(user_types_new(),NULL);
-    ck_assert_ptr_eq(user_residue_new("A"),NULL);
-    ck_assert_ptr_eq(user_config_new(),NULL);
+    ck_assert_ptr_eq(types_new(),NULL);
+    ck_assert_ptr_eq(residue_cfg_new("A"),NULL);
+    ck_assert_ptr_eq(config_new(),NULL);
 
     for (int i = 1; i < 4; ++i) {
         if (i < 3) {
@@ -200,6 +200,8 @@ START_TEST (test_user_config)
         set_fail_freq(i);
         ck_assert_ptr_eq(freesasa_classifier_from_file(config),NULL);
         rewind(config);
+        set_fail_freq(i);
+        ck_assert_ptr_eq(freesasa_classifier_default(),NULL);
     }
     fclose(config);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
@@ -213,7 +215,8 @@ START_TEST (test_selector)
     p.shrake_rupley_n_points = 10;
     FILE *file = fopen(DATADIR "1ubq.pdb","r");
     freesasa_structure *s = freesasa_structure_from_pdb(file,0);
-    double *radii = freesasa_structure_radius(s,NULL);
+    freesasa_classifier *c = freesasa_classifier_default();
+    double *radii = freesasa_structure_radius(s,c);
     freesasa_result *result = freesasa_calc_structure(s,radii,NULL);
     double area;
     char name[FREESASA_MAX_SELECTION_NAME];
@@ -232,12 +235,14 @@ START_TEST (test_selector)
     free(radii);
     freesasa_result_free(result);
     freesasa_structure_free(s);
+    freesasa_classifier_free(c);
 }
 END_TEST
 
 START_TEST (test_api) 
 {
     freesasa_parameters p = freesasa_default_parameters;
+    p.shrake_rupley_n_points = 20; // so the loop below will be fast
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 1; i < 50; ++i) {
@@ -251,8 +256,9 @@ START_TEST (test_api)
 
     FILE *file = fopen(DATADIR "1ubq.pdb","r");
     set_fail_freq(10000);
+    freesasa_classifier *c = freesasa_classifier_default();
     freesasa_structure *s=freesasa_structure_from_pdb(file,0);
-    double *radii = freesasa_structure_radius(s,NULL);
+    double *radii = freesasa_structure_radius(s,c);
     ck_assert_ptr_ne(s,NULL);
     ck_assert_ptr_ne(radii,NULL);
     for (int i = 1; i < 256; i *= 2) { //try to spread it out without doing too many calculations
@@ -263,6 +269,7 @@ START_TEST (test_api)
     }
     set_fail_freq(1);
     freesasa_structure_free(s);
+    freesasa_classifier_free(c);
     fclose(file);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
@@ -276,7 +283,7 @@ int main(int argc, char **argv) {
     tcase_add_test(tc,test_structure);
     tcase_add_test(tc,test_nb);
     tcase_add_test(tc,test_alg);
-    tcase_add_test(tc,test_user_config);
+    tcase_add_test(tc,test_classifier);
     tcase_add_test(tc,test_selector);
     tcase_add_test(tc,test_api);
     

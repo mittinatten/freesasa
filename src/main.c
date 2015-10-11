@@ -168,6 +168,11 @@ const char *name)
     freesasa_structure **structures;
     int n = 0;
 
+    if (classifier == NULL) { 
+        classifier = freesasa_classifier_default();
+        if (classifier == NULL) abort_msg("Error initializing default classfier.");
+    }
+
     if ((structure_options & FREESASA_SEPARATE_CHAINS) ||
         (structure_options & FREESASA_SEPARATE_MODELS)) {
         structures = freesasa_structure_array(input,&n,structure_options);

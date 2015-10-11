@@ -161,7 +161,7 @@ typedef struct freesasa_classifier {
 extern const freesasa_parameters freesasa_default_parameters;
 
 //! The default classifier, uses the functions in `classify.h` @ingroup API
-extern const freesasa_classifier freesasa_default_classifier;
+//extern const freesasa_classifier freesasa_default_classifier;
 //! Classifier that classifies each atom according to residue @ingroup API
 extern const freesasa_classifier freesasa_residue_classifier;
 
@@ -211,6 +211,18 @@ freesasa_calc_coord(const double *xyz,
  */
 void
 freesasa_result_free(freesasa_result *result);
+
+/**
+    Returns the default classifier.
+    
+    Return value is dynamically allocated, should be freed with
+    freesasa_classifier_free().
+
+    @return The generated classifier. NULL if there memory allocation
+      problems.
+ */
+freesasa_classifier *
+freesasa_classifier_default();
 
 /**
     Generate a classifier from a config-file.

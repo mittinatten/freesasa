@@ -8,6 +8,6 @@
 #include <coord.c>
 #include <pdb.c>
 #include <util.c>
-#include <user_config.c>
+#include <classifier.c>
 #include <selection.c>
 

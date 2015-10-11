@@ -37,6 +37,7 @@ double total_ref, polar_ref, apolar_ref;
 double tolerance;
 
 freesasa_parameters parameters;
+freesasa_classifier *classifier;
 
 extern int freesasa_fail(const char*);
 extern int freesasa_warn(const char*);
@@ -182,13 +183,14 @@ void setup_sr (void)
     parameters = freesasa_default_parameters;
     parameters.alg = FREESASA_SHRAKE_RUPLEY;
     parameters.shrake_rupley_n_points = 100;
+    classifier = freesasa_classifier_default();
     total_ref = 4779.5109924;
     polar_ref = 2236.9298941;
     apolar_ref = 2542.5810983;
 }
 void teardown_sr(void)
 {
-
+    freesasa_classifier_free(classifier);
 }
 
 void setup_lr (void)
@@ -196,13 +198,14 @@ void setup_lr (void)
     parameters = freesasa_default_parameters;
     parameters.alg = FREESASA_LEE_RICHARDS;
     parameters.lee_richards_n_slices = 20;
+    classifier = freesasa_classifier_default();
     total_ref = 4759.46651;
     polar_ref = 2226.83182;
     apolar_ref = 2532.63469;
 }
 void teardown_lr(void)
 {
-
+    freesasa_classifier_free(classifier);
 }
 
 START_TEST (test_sasa_1ubq)
@@ -212,9 +215,9 @@ START_TEST (test_sasa_1ubq)
     ck_assert(pdb != NULL);
     freesasa_structure *st = freesasa_structure_from_pdb(pdb,0);
     freesasa_result *res;
-    double *radii = freesasa_structure_radius(st,NULL);
+    double *radii = freesasa_structure_radius(st,classifier);
     ck_assert((res = freesasa_calc_structure(st,radii,&parameters)) != NULL);
-    freesasa_strvp* res_class = freesasa_result_classify(res,st,NULL);
+    freesasa_strvp* res_class = freesasa_result_classify(res,st,classifier);
     fclose(pdb);
 
     // The reference values were the output of FreeSASA on 2014-02-10
@@ -289,6 +292,7 @@ START_TEST (test_trimmed_pdb)
     FILE *pdb;
     double *radii;
     freesasa_strvp *res_class;
+    classifier = freesasa_classifier_default();
     
     errno = 0;
     pdb = fopen(DATADIR "3bzd_trimmed.pdb","r");
@@ -296,10 +300,10 @@ START_TEST (test_trimmed_pdb)
     st = freesasa_structure_from_pdb(pdb,0);
     fclose(pdb);
 
-    radii = freesasa_structure_radius(st,NULL);
+    radii = freesasa_structure_radius(st,classifier);
     ck_assert(radii != NULL);
     ck_assert((result = freesasa_calc_structure(st,radii,NULL)) != NULL);
-    res_class = freesasa_result_classify(result,st,NULL);
+    res_class = freesasa_result_classify(result,st,classifier);
     ck_assert(res_class != NULL);
     
     ck_assert(fabs(result->total - total_ref) < 1e-5);
@@ -310,6 +314,7 @@ START_TEST (test_trimmed_pdb)
     freesasa_result_free(result);
     free(radii);
     freesasa_strvp_free(res_class);
+    freesasa_classifier_free(classifier);
 }
 END_TEST
 
@@ -318,30 +323,31 @@ START_TEST (test_user_classes)
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
     FILE *config = fopen(DATADIR "oons.config", "r");
     freesasa_structure *st;
-    freesasa_classifier *classifier;
+    freesasa_classifier *user_classifier;
     double *radii,*radii_ref;
     freesasa_result *res;
     freesasa_strvp *res_class, *res_class_ref;
+    classifier = freesasa_classifier_default();
 
     ck_assert(pdb != NULL);
     ck_assert(config != NULL);
 
-    classifier = freesasa_classifier_from_file(config);
-    ck_assert(classifier != NULL);
+    user_classifier = freesasa_classifier_from_file(config);
+    ck_assert(user_classifier != NULL);
     fclose(config);
 
     st = freesasa_structure_from_pdb(pdb,0);
     ck_assert(st != NULL);
     fclose(pdb);
     
-    radii = freesasa_structure_radius(st,classifier);
-    radii_ref = freesasa_structure_radius(st,NULL);
+    radii = freesasa_structure_radius(st,user_classifier);
+    radii_ref = freesasa_structure_radius(st,classifier);
     for (int i = 0; i < freesasa_structure_n(st); ++i) {
         ck_assert(fabs(radii[i] - radii_ref[i]) < 1e-5);
     }
     ck_assert((res = freesasa_calc_structure(st,radii,NULL)) != NULL);
-    res_class = freesasa_result_classify(res,st,classifier);
-    res_class_ref = freesasa_result_classify(res,st,NULL);
+    res_class = freesasa_result_classify(res,st,user_classifier);
+    res_class_ref = freesasa_result_classify(res,st,classifier);
     ck_assert(res_class->n <= res_class_ref->n);
     for (int i = 0; i < res_class->n; ++i) {
         ck_assert(res_class->value[i] = res_class_ref->value[i]);
@@ -352,7 +358,7 @@ START_TEST (test_user_classes)
     free(radii);
     free(radii_ref);
     freesasa_structure_free(st);
-    freesasa_classifier_free(classifier);
+    freesasa_classifier_free(user_classifier);
     freesasa_result_free(res);
 }
 END_TEST
@@ -386,7 +392,9 @@ START_TEST (test_multi_calc)
     freesasa_structure *st = freesasa_structure_from_pdb(pdb,0);
     freesasa_result *res;
     freesasa_parameters p = freesasa_default_parameters;
-    double *radii = freesasa_structure_radius(st,NULL);
+    classifier = freesasa_classifier_default();
+    double *radii = freesasa_structure_radius(st,classifier);
+
     fclose(pdb);
 
     //S&R
@@ -402,7 +410,9 @@ START_TEST (test_multi_calc)
     
     freesasa_structure_free(st);
     freesasa_result_free(res);
+    freesasa_classifier_free(classifier);
     free(radii);
+    
 #endif
 }
 END_TEST
@@ -413,7 +423,8 @@ START_TEST (test_1d3z)
     FILE *pdb = fopen(DATADIR "1d3z.pdb","r");
     int n = 0;
     freesasa_structure* st = freesasa_structure_from_pdb(pdb,0);
-    double *radii = freesasa_structure_radius(st,NULL);
+    classifier = freesasa_classifier_default();
+    double *radii = freesasa_structure_radius(st,classifier);
     freesasa_result *result = freesasa_calc_structure(st,radii,NULL);
     ck_assert(freesasa_structure_n(st) == 602);
     ck_assert(fabs(result->total - 4945.8705756) < 1e-5);
@@ -421,7 +432,7 @@ START_TEST (test_1d3z)
     rewind(pdb);
     
     st = freesasa_structure_from_pdb(pdb,FREESASA_INCLUDE_HYDROGEN);
-    radii = freesasa_structure_radius(st,NULL);
+    radii = freesasa_structure_radius(st,classifier);
     result = freesasa_calc_structure(st,radii,NULL);
     ck_assert(freesasa_structure_n(st) == 1231);
     // Hydrogens too small to affect total area
@@ -431,7 +442,7 @@ START_TEST (test_1d3z)
 
     freesasa_structure** ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_MODELS);
     ck_assert(n == 10);
-    radii = freesasa_structure_radius(ss[0],NULL);
+    radii = freesasa_structure_radius(ss[0],classifier);
     result = freesasa_calc_structure(ss[0],radii,NULL);
     ck_assert(freesasa_structure_n(ss[0]) == 602);
     ck_assert(fabs(result->total - 4945.8705756) < 1e-5);
@@ -447,6 +458,7 @@ START_TEST (test_1d3z)
     free(ss);
     freesasa_result_free(result);
     freesasa_structure_free(st);
+    freesasa_classifier_free(classifier);
     fclose(pdb);
 }
 END_TEST

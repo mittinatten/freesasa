@@ -62,16 +62,15 @@ freesasa_strvp_new(int n);
 freesasa_strvp*
 freesasa_result_classify(const freesasa_result *result, 
                          const freesasa_structure *structure,
-                         const freesasa_classifier *c) 
+                         const freesasa_classifier *classifier) 
 {
     assert(result);
     assert(structure);
+    assert(classifier);
 
     int n_atoms;
     int n_classes;
     freesasa_strvp *strvp;
-    const freesasa_classifier *classifier = c;
-    if (c == NULL) classifier = &freesasa_default_classifier;
 
     n_atoms = freesasa_structure_n(structure);
     n_classes = classifier->n_classes;
@@ -196,20 +195,19 @@ freesasa_structure_radius(const freesasa_structure *structure,
                           const freesasa_classifier *classifier)
 {
     assert(structure);
+    assert(classifier);
 
     int n = freesasa_structure_n(structure);
     double *r = malloc(sizeof(double)*n);
-    const freesasa_classifier *c = classifier;
     
     if (r == NULL) {mem_fail(); return NULL;}
-    if (c == NULL) c = &freesasa_default_classifier;
 
     for (int i = 0; i < n; ++i) {
         const char *res_name = 
             freesasa_structure_atom_res_name(structure, i);
         const char *atom_name = 
             freesasa_structure_atom_name(structure, i);
-        r[i] = c->radius(res_name,atom_name,c);
+        r[i] = classifier->radius(res_name,atom_name,classifier);
         if (r[i] < 0) {
             free(r);
             return NULL;
