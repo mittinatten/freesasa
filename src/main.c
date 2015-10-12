@@ -160,7 +160,6 @@ void
 run_analysis(FILE *input,
 const char *name) 
 {
-    double *radii;
     int several_structures = 0, name_len = strlen(name);
     freesasa_result *result;
     freesasa_strvp *classes = NULL;
@@ -168,17 +167,12 @@ const char *name)
     freesasa_structure **structures;
     int n = 0;
 
-    if (classifier == NULL) { 
-        classifier = freesasa_classifier_default();
-        if (classifier == NULL) abort_msg("Error initializing default classfier.");
-    }
-
     if ((structure_options & FREESASA_SEPARATE_CHAINS) ||
         (structure_options & FREESASA_SEPARATE_MODELS)) {
-        structures = freesasa_structure_array(input,&n,structure_options);
+        structures = freesasa_structure_array(input,&n,classifier,structure_options);
         several_structures = 1;
     } else {
-        single_structure[0] = freesasa_structure_from_pdb(input,structure_options);
+        single_structure[0] = freesasa_structure_from_pdb(input,classifier,structure_options);
         structures = single_structure;
         n = 1;
     }
@@ -208,9 +202,7 @@ const char *name)
 
     for (int i = 0; i < n; ++i) {
         if (structures[i] == NULL) abort_msg("Invalid input.\n");
-        radii = freesasa_structure_radius(structures[i],classifier);
-        if (radii == NULL)         abort_msg("Can't calculate atomic radii.\n");
-        result = freesasa_calc_structure(structures[i],radii,&parameters);
+        result = freesasa_calc_structure(structures[i],&parameters);
         if (result == NULL)        abort_msg("Can't calculate SASA.\n");
         classes = freesasa_result_classify(result,structures[i],classifier);
         if (classes == NULL)       abort_msg("Can't determine atom classes. Aborting.\n");
@@ -235,7 +227,7 @@ const char *name)
             freesasa_per_residue(per_residue_file,result,structures[i]);
         }
         if (printpdb) {
-            freesasa_write_pdb(output_pdb,result,structures[i],radii);
+            freesasa_write_pdb(output_pdb,result,structures[i]);
         }
         if (n_select > 0) {
             printf("\nSelections:\n");
@@ -252,7 +244,6 @@ const char *name)
         freesasa_result_free(result);
         freesasa_strvp_free(classes);
         freesasa_structure_free(structures[i]);
-        free(radii);
     }
     if (structures != single_structure) free(structures);
 }

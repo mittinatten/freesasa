@@ -6,7 +6,7 @@
   FreeSASA is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.                                                                                                                 
+  (at your option) any later version.
 
   FreeSASA is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -35,9 +35,9 @@ static const char *default_type_input[] = {
     "C_ALI 2.00 apolar ",
     "C_ARO 1.75 apolar",
     "C_CAR 1.55 polar",
-    "N 1.55 polar ",
-    "O 1.40 polar ", // carbo- and hydroxyl oxygen have the same radius in OONS
-    "S 2.00 polar ",
+    "N 1.55 polar",
+    "O 1.40 polar", // carbo- and hydroxyl oxygen have the same radius in OONS
+    "S 2.00 polar",
 };
 
 static const char *default_atom_input[] = {
@@ -46,8 +46,8 @@ static const char *default_atom_input[] = {
     "ANY CA  C_ALI",
     "ANY N   N",
     "ANY CB  C_ALI",
-
     "ANY OXT O",
+
     "ARG CG C_ALI",
     "ARG CD C_ALI",
     "ARG NE N",
@@ -138,6 +138,10 @@ static const char *default_atom_input[] = {
     // add more here
 };
 
+// count references to default classifier
+static unsigned int default_classifier_refcount = 0;
+static freesasa_classifier *default_classifier = NULL;
+
 /**
     Struct to store information about the types-section in a user-config.
  */
@@ -160,7 +164,7 @@ struct residue_cfg {
     char *name; //!< Name of residue
     char **atom_name; //!< Names of atoms
     double *atom_radius; //!< Atomic radii
-    int *atom_class; //!< Classe of atoms
+    int *atom_class; //!< Classes of atoms
 };
 
 static const struct residue_cfg empty_residue = {0,NULL,NULL,NULL,NULL};
@@ -866,8 +870,8 @@ default_config()
     return config;
 }
 
-freesasa_classifier *
-freesasa_classifier_default()
+static freesasa_classifier *
+classifier_default_new()
 {
     struct config *config = default_config();
     if (config == NULL) {
@@ -876,4 +880,52 @@ freesasa_classifier_default()
     }
     
     return init_classifier(config);
+}
+
+const freesasa_classifier *
+freesasa_classifier_default_acquire()
+{
+    if (default_classifier == NULL) {
+        default_classifier = classifier_default_new();
+        if (default_classifier == NULL) {
+            fail_msg("Failed to load default classifier.");
+            return NULL;
+        }
+    }
+    ++default_classifier_refcount;
+    return default_classifier;
+}
+
+void
+freesasa_classifier_default_release() {
+    if (--default_classifier_refcount == 0) 
+        freesasa_classifier_free(default_classifier);
+}
+
+struct symbol_radius {
+    const char *symbol;
+    double radius;
+};
+
+// based on www.periodictable.com
+static const struct symbol_radius symbol_radius[] = {
+    {" H", 0.0},
+    {" C", 1.7},
+    {" N", 1.55},
+    {" O", 1.52},
+    {" P", 1.8},
+    {" S", 1.8},
+    {"Se", 1.9},
+};
+
+double
+freesasa_guess_radius(const char* symbol)
+{
+    assert(symbol);
+    int n_symbol = sizeof(symbol_radius)/sizeof(struct symbol_radius);
+    for (int i = 0; i < n_symbol; ++i) {
+        if (strcmp(symbol,symbol_radius[i].symbol) == 0)
+            return symbol_radius[i].radius;
+    }
+    return -1.0;
 }

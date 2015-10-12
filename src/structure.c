@@ -27,7 +27,7 @@
 #include <errno.h>
 #include "structure.h"
 #include "pdb.h"
-#include "classify.h"
+#include "classifier.h"
 #include "coord.h"
 #include "util.h"
 
@@ -44,6 +44,7 @@ struct atom {
 struct freesasa_structure {
     struct atom **a;
     coord_t *xyz;
+    double *radius;
     int number_atoms;
     int number_residues;
     int number_chains;
@@ -51,11 +52,11 @@ struct freesasa_structure {
     char *chains; //all chain labels found (as string)
     int *res_first_atom; // first atom of each residue
     char **res_desc;
+    const freesasa_classifier *def_classifier;
 };
 
 static int
 guess_symbol(char *symbol,
-             const char *res, 
              const char *name);
 static void
 atom_free(struct atom *a)
@@ -117,7 +118,7 @@ atom_new_from_line(const char *line,
     freesasa_pdb_get_res_name(rname, line);
     freesasa_pdb_get_res_number(rnumber, line);
     flag = freesasa_pdb_get_symbol(symbol,line);
-    if (flag == FREESASA_FAIL) guess_symbol(symbol,rname,aname);
+    if (flag == FREESASA_FAIL) guess_symbol(symbol,aname);
     a = atom_new(rname,rnumber,aname,symbol,freesasa_pdb_get_chain_label(line));
     
     if (a == NULL) return NULL;
@@ -144,14 +145,17 @@ freesasa_structure_new(void)
         p->model = 0;
         p->chains = NULL;
         p->a = NULL;
+        p->radius = NULL;
         p->xyz = NULL;
         p->res_first_atom = NULL;
         p->res_desc = NULL;
+        p->def_classifier = NULL;
         if ((p->chains = malloc(1)) == NULL ||
             (p->a = malloc(sizeof(struct atom*))) == NULL ||
             (p->xyz = freesasa_coord_new()) == NULL ||
             (p->res_first_atom = malloc(sizeof(int))) == NULL ||
-            (p->res_desc = malloc(sizeof(char*))) == NULL) {
+            (p->res_desc = malloc(sizeof(char*))) == NULL ||
+            (p->def_classifier = freesasa_classifier_default_acquire()) == NULL) {
             freesasa_structure_free(p);
             p = NULL;
         } else {
@@ -171,66 +175,43 @@ freesasa_structure_free(freesasa_structure *p)
         free(p->a);
     }
     if (p->xyz) freesasa_coord_free(p->xyz);
-    if (p->res_first_atom) free(p->res_first_atom);
-    if (p->chains) free(p->chains);
     if (p->res_desc) {
         for (int i = 0; i < p->number_residues; ++i)
             if (p->res_desc[i]) free(p->res_desc[i]);
         free(p->res_desc);
     }
+    free(p->radius);
+    free(p->res_first_atom);
+    free(p->chains);
+    if (p->def_classifier) freesasa_classifier_default_release();
     free(p);
 }
 
 static int
 guess_symbol(char *symbol,
-             const char *res, 
              const char *name) 
 {
-    int oons = freesasa_classify_oons(res,name);
-    char buf[PDB_ATOM_NAME_STRL+1];
-    switch (oons) {
-    case oons_carbo_C:
-    case oons_aliphatic_C:
-    case oons_aromatic_C:
-        strcpy(symbol," C");
-        break;
-    case oons_amide_N:
-        strcpy(symbol," N");
-        break;
-    case oons_carbo_O:
-    case oons_hydroxyl_O:
-        strcpy(symbol," O");
-        break;
-    case oons_sulfur:
-        strcpy(symbol," S");
-        break;
-    case oons_selenium:
-        strcpy(symbol,"SE");
-        break;
-    case oons_unknown:
-    default:
-        // if the first position is empty, assume that it is a one letter element
-        // e.g. " C  "
-        if (name[0] == ' ') { 
-            symbol[0] = ' ';
-            symbol[1] = name[1];
+    // if the first position is empty, assume that it is a one letter element
+    // e.g. " C  "
+    if (name[0] == ' ') { 
+        symbol[0] = ' ';
+        symbol[1] = name[1];
+        symbol[2] = '\0';
+    } else { 
+        // if the string has padding to the right, it's a
+        // two-letter element, e.g. "FE  "
+        if (name[3] == ' ') {
+            strncpy(symbol,name,2);
             symbol[2] = '\0';
         } else { 
-            // if the string has padding to the right, assume it's a
-            // two-letter element, e.g. "FE  "
-            if (name[3] == ' ') {
-                strncpy(symbol,name,2);
-                symbol[2] = '\0';
-            } else { 
-                // If it's a four-letter string, it's hard to say,
-                // assume only the first letter signifies the element
-                symbol[0] = ' ';
-                symbol[1] = name[0];
-                symbol[2] = '\0';
-            }
-            return FREESASA_WARN;
+            // If it's a four-letter string, it's hard to say,
+            // assume only the first letter signifies the element
+            symbol[0] = ' ';
+            symbol[1] = name[0];
+            symbol[2] = '\0';
+            return freesasa_warn("Guessing that atom '%s' is symbol '%s'",
+                                 name,symbol);
         }
-        break;
     }
     return FREESASA_SUCCESS;
 }
@@ -256,16 +237,65 @@ structure_add_chain(freesasa_structure *p,
     return FREESASA_SUCCESS;
 }
 
+static int
+structure_check_atom_radius(double *radius,
+                            struct atom *a,
+                            const freesasa_classifier* classifier,
+                            int options)
+{
+    *radius = classifier->radius(a->res_name, a->atom_name, classifier);
+    if (*radius < 0) {
+        if (options & FREESASA_HALT_AT_UNKNOWN) {
+            return freesasa_fail("in %s(): atom '%s %s' unknown.",
+                                 __func__, a->res_name, a->atom_name);
+        } else if (options & FREESASA_SKIP_AT_UNKNOWN) {
+            return freesasa_warn("Skipping unknown atom '%s %s'.",
+                                 a->res_name, a->atom_name, a->symbol, *radius);
+        } else {
+            *radius = freesasa_guess_radius(a->symbol);
+            if (*radius < 0) {
+                return freesasa_warn("Skipping unknown atom '%s %s': "
+                                     "can't guess radius of symbol '%s'.",
+                                     a->res_name, a->atom_name, a->symbol);
+            }
+            freesasa_warn("Atom '%s %s' unknown, guessing element is '%s', "
+                          "and radius %.3f.",
+                          a->res_name, a->atom_name, a->symbol, *radius);
+            // do not return FREESASA_WARN here, because we will keep the atom
+        }
+    }
+    return FREESASA_SUCCESS;
+}
+
 /** adds an atom to the structure */
 static int
 structure_add_atom(freesasa_structure *p,
                    struct atom *a,
-                   double *xyz)
+                   double *xyz,
+                   const freesasa_classifier* classifier,
+                   int options)
 {
     assert(p); assert(a); assert(xyz);
-    int na = ++p->number_atoms;
+    int na, ret;
+    double r;
     
-    // allocate memory, increase number of atoms counter, add chain
+    if (classifier == NULL) {
+        classifier = p->def_classifier;
+    }
+
+    // calculate radius and check if we should keep the atom (based on options)
+    ret = structure_check_atom_radius(&r, a, classifier, options);
+    if (ret == FREESASA_FAIL) return fail_msg("Halting at unknown atom.");
+    if (ret == FREESASA_WARN) return FREESASA_WARN;
+    assert(r >= 0);
+
+    // if it's a keeper store the radius, increase number of atoms counter
+    na = ++p->number_atoms;
+    if ((p->radius = realloc(p->radius,sizeof(double)*na)) == NULL)
+        return mem_fail();
+    p->radius[na-1] = r;
+
+    // allocate memory for atom, add chain
     if ((p->a = realloc(p->a,sizeof(struct atom*)*na)) == NULL) 
         return mem_fail();
     p->a[na-1] = a;
@@ -307,6 +337,7 @@ structure_add_atom(freesasa_structure *p,
 static freesasa_structure*
 from_pdb_impl(FILE *pdb_file,
               struct file_interval it,
+              const freesasa_classifier *classifier,
               int options)
 {
     assert(pdb_file);
@@ -346,7 +377,7 @@ from_pdb_impl(FILE *pdb_file,
             else if (alt != ' ' && alt != the_alt)
                 continue;
             
-            if (structure_add_atom(p,a,v) != FREESASA_SUCCESS) { 
+            if (structure_add_atom(p,a,v,classifier,options) == FREESASA_FAIL) { 
                 freesasa_structure_free(p);
                 p = NULL; 
                 break;
@@ -400,7 +431,7 @@ get_whole_file(FILE* file)
     of 0 doesn't have to mean the file is empty.
 
     Return FREESASA_FAIL if malloc-failure.
-*/
+ */
 static int
 get_models(FILE *pdb,
            struct file_interval** intervals)
@@ -490,7 +521,36 @@ get_chains(FILE *pdb,
     return n_chains;
 }
 
-int
+int 
+freesasa_structure_add_atom_wopt(freesasa_structure *p,
+                                 const char *atom_name,
+                                 const char *residue_name,
+                                 const char *residue_number,
+                                 char chain_label,
+                                 double x, double y, double z,
+                                 const freesasa_classifier *classifier,
+                                 int options)
+{
+    assert(p);
+    assert(atom_name); assert(residue_name); assert(residue_number);
+    struct atom *a;
+    char symbol[PDB_ATOM_SYMBOL_STRL+1];
+    double v[3] = {x,y,z};
+    int ret, warn = 0;
+
+    if (guess_symbol(symbol,atom_name) == FREESASA_WARN) ++warn;
+    
+    a = atom_new(residue_name,residue_number,atom_name,symbol,chain_label);
+    if (a == NULL) return mem_fail();
+    
+    ret = structure_add_atom(p,a,v,classifier,options);
+    if (ret == FREESASA_FAIL) return ret;
+    if (warn) return FREESASA_WARN;
+    return ret;
+
+}
+
+int 
 freesasa_structure_add_atom(freesasa_structure *p,
                             const char *atom_name,
                             const char *residue_name,
@@ -498,52 +558,24 @@ freesasa_structure_add_atom(freesasa_structure *p,
                             char chain_label,
                             double x, double y, double z)
 {
-    assert(p);
-    assert(atom_name); assert(residue_name); assert(residue_number);
-
-    struct atom *a;
-    char symbol[PDB_ATOM_SYMBOL_STRL+1];
-    double v[3] = {x,y,z};
-    int warn = 0, res = 0;
-    
-    // check input for consistency
-    if (strlen(atom_name) != PDB_ATOM_NAME_STRL) {
-        freesasa_warn("in %s(): atom name '%s' has wrong length, might cause problems with classification.",
-                      __func__, atom_name);
-        ++warn;
-    }
-    if (strlen(residue_name) != PDB_ATOM_RES_NAME_STRL) {
-        freesasa_warn("in %s(): residue name '%s' has wrong length, might cause problems with classification.",
-                      __func__, residue_name);
-        ++warn;
-    }
-    if (strlen(residue_number) != PDB_ATOM_RES_NUMBER_STRL) {
-        freesasa_warn("in %s(): residue number '%s' has wrong length, might cause problems later.",
-                      __func__, residue_number);
-        ++warn;
-    }
-    if (guess_symbol(symbol,residue_name,atom_name) == FREESASA_WARN) ++warn;
-    a = atom_new(residue_name,residue_number,atom_name,symbol,chain_label);
-    if (a == NULL) return mem_fail();
-    
-    res = structure_add_atom(p,a,v);
-    if (res == FREESASA_FAIL) return res;
-    else if (warn) return FREESASA_WARN;
-    
-    return FREESASA_SUCCESS;
+    return freesasa_structure_add_atom_wopt(p, atom_name, residue_name, residue_number,
+                                            chain_label, x, y, z, NULL, 0);
 }
 
-freesasa_structure*
+freesasa_structure *
 freesasa_structure_from_pdb(FILE *pdb_file,
+                            const freesasa_classifier* classifier,
                             int options)
 {
     assert(pdb_file);
-    return from_pdb_impl(pdb_file, get_whole_file(pdb_file), options);
+    return from_pdb_impl(pdb_file, get_whole_file(pdb_file),
+                         classifier, options);
 }
 
-freesasa_structure**
+freesasa_structure **
 freesasa_structure_array(FILE *pdb,
                          int *n,
+                         const freesasa_classifier *classifier,
                          int options)
 {
     assert( (options & FREESASA_SEPARATE_MODELS) ||
@@ -581,7 +613,7 @@ freesasa_structure_array(FILE *pdb,
             ss = realloc(ss,sizeof(freesasa_structure*)*(n_chains+new_chains));
             if (!ss) { mem_fail(); return NULL; } // now way of cleaning up, might as well exit
             for (int j = 0; j < new_chains; ++j) {
-                freesasa_structure *s = from_pdb_impl(pdb,chains[j],options);
+                freesasa_structure *s = from_pdb_impl(pdb,chains[j],classifier,options);
                 if (s != NULL) {
                     ss[n_chains+j] = s;
                     ss[n_chains+j]->model = ss[n_chains]->model; // all have the same model number
@@ -595,7 +627,7 @@ freesasa_structure_array(FILE *pdb,
         ss = malloc(sizeof(freesasa_structure*)*n_models);
         if (!ss) { mem_fail(); return NULL; }
         for (int i = 0; i < n_models; ++i) {
-            freesasa_structure *s = from_pdb_impl(pdb,models[i],options);
+            freesasa_structure *s = from_pdb_impl(pdb,models[i],classifier,options);
             if (s != NULL) ss[i] = s;
             else {
                 ++err; 
@@ -638,7 +670,7 @@ freesasa_structure_get_chains(const freesasa_structure *p,
             int res = freesasa_structure_add_atom(new_p, ai->atom_name,
                                                   ai->res_name, ai->res_number,
                                                   c, v[0], v[1], v[2]);
-            if (res != FREESASA_SUCCESS) {
+            if (res == FREESASA_FAIL) {
                 mem_fail();
                 return NULL;
             }
@@ -761,16 +793,15 @@ freesasa_structure_residue_descriptor(const freesasa_structure *s,
 int
 freesasa_write_pdb(FILE *output,
                    freesasa_result *result,
-                   const freesasa_structure *p,
-                   const double *radii)
+                   const freesasa_structure *p)
 {
     assert(p);
     assert(output);
-    assert(radii);
     assert(result);
     assert(result->sasa);
 
     const double* values = result->sasa;
+    const double* radii = p->radius;
     char buf[PDB_LINE_STRL+1], buf2[6];
     int n = freesasa_structure_n(p);
     if (p->model > 0) fprintf(output,"MODEL     %4d\n",p->model);
@@ -810,3 +841,11 @@ freesasa_structure_coord_array(const freesasa_structure *structure)
 {
     return freesasa_coord_all(structure->xyz);
 }
+
+const double*
+freesasa_structure_radius(const freesasa_structure *structure)
+{
+    assert(structure);
+    return structure->radius;
+}
+
