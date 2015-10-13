@@ -10,7 +10,7 @@ bin_PROGRAMS = freesasa
 lib_LIBRARIES = libfreesasa.a
 noinst_PROGRAMS = example
 include_HEADERS = freesasa.h
-libfreesasa_a_SOURCES = classify.c classifier.c classifier.h classify.h \
+libfreesasa_a_SOURCES = classifier.c classifier.h \
 	coord.c coord.h pdb.c pdb.h \
 	sasa_lr.c sasa_sr.c sasa.h \
 	freesasa.c freesasa.h structure.c structure.h \

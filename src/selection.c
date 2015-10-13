@@ -27,7 +27,6 @@
 #include "util.h"
 #include "freesasa.h"
 #include "pdb.h"
-#include "classify.h"
 
 struct selection {
     const char* name;

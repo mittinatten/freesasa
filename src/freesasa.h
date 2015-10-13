@@ -169,9 +169,6 @@ typedef struct freesasa_classifier {
 //! The default parameters for FreeSASA
 extern const freesasa_parameters freesasa_default_parameters;
 
-//! Classifier that classifies each atom according to residue
-extern const freesasa_classifier freesasa_residue_classifier;
-
 /**
     Calculates SASA based on a given structure and atomic radii.
 

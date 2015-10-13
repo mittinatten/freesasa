@@ -39,6 +39,7 @@ static const char *default_type_input[] = {
     "O 1.40 polar", // carbo- and hydroxyl oxygen have the same radius in OONS
     "S 2.00 polar",
     "SE 1.90 polar",
+    "U_POL 1.5 polar", // Unknown polar, as in ASX and GLX
 };
 
 static const char *default_atom_input[] = {
@@ -137,6 +138,36 @@ static const char *default_atom_input[] = {
     "VAL CG2 C_ALI",
 
     "SEC SE SE",
+    "CSE SE SE", // is this really used?
+
+    "PYL CG C_ALI",
+    "PYL CD C_ALI",
+    "PYL CE C_ALI",
+    "PYL NZ N",
+    "PYL O2 O",
+    "PYL C2 C_CAR",
+    "PYL CA2 C_ARO",
+    "PYL CB2 C_ALI",
+    "PYL CG2 C_ARO",
+    "PYL CD2 C_ARO",
+    "PYL CE2 C_ARO",
+    "PYL N2 N",
+
+    "ASX CG C_CAR",
+    "ASX XD1 U_POL",
+    "ASX XD2 U_POL",
+    "ASX AD1 U_POL",
+    "ASX AD2 U_POL",
+
+    "GLX CG C_ALI",
+    "GLX CD C_CAR",
+    "GLX XE1 U_POL",
+    "GLX XE2 U_POL",
+    "GLX AE1 U_POL",
+    "GLX AE2 U_POL",
+
+    "ACE CH3 C_ALI",
+    "NH2 NH2 N",
     // add more here
 };
 
@@ -788,7 +819,7 @@ user_class2str(int the_class,
 {
     assert(classifier);
     const struct config* config = classifier->config;
-    if (the_class < 0 && the_class >= config->n_classes) return NULL;
+    if (the_class < 0 || the_class >= config->n_classes) return NULL;
     return config->class_name[the_class];
 }
 static freesasa_classifier*
@@ -951,3 +982,81 @@ freesasa_guess_radius(const char* symbol)
     }
     return -1.0;
 }
+
+//! The residue types that are returned by freesasa_classify_residue()
+enum residue {
+    //Regular amino acids
+    ALA=0, ARG, ASN, ASP,
+    CYS, GLN, GLU, GLY,
+    HIS, ILE, LEU, LYS, 
+    MET, PHE, PRO, SER,
+    THR, TRP, TYR, VAL,
+    //some non-standard ones
+    CSE, SEC, PYL, PYH,
+    ASX, GLX,
+    //residue unknown
+    RES_UNK,
+    //capping N- and C-terminal groups (usually HETATM)
+    ACE, NH2,
+    //DNA
+    DA, DC, DG, DT,
+    DU, DI,
+    //RNA (avoid one-letter enums)
+    RA, RC, RG, RU, RI, RT,
+    //generic nucleotide
+    NN
+};
+
+// Residue types, make sure this always matches the corresponding enum.
+static const char *residue_names[] = {
+    //amino acids
+    "ALA","ARG","ASN","ASP",
+    "CYS","GLN","GLU","GLY",
+    "HIS","ILE","LEU","LYS",
+    "MET","PHE","PRO","SER",
+    "THR","TRP","TYR","VAL",
+    // non-standard amino acids
+    "CSE","SEC","PYL","PYH", // SEC and PYL are standard names, CSE and PYH are found in some early files
+    "ASX","GLX",
+    "UNK",
+    // capping groups
+    "ACE","NH2",
+    //DNA
+    "DA","DC","DG","DT","DU","DI",
+    //RNA
+    "A","C","G","U","I","T",
+    //General nucleotide
+    "N"
+};
+
+static int
+residue(const char *res_name,
+        const char *atom_name,
+        const freesasa_classifier *c)
+{
+    int len = strlen(res_name);
+    char cpy[len+1];
+
+    sscanf(res_name,"%s",cpy);
+    for (int i = ALA; i <= NN; ++i) {
+        if (! strcmp(cpy,residue_names[i])) return i;
+    }
+    return RES_UNK;
+}
+
+static const char*
+residue2str(int the_residue,
+            const freesasa_classifier *c)
+{
+    assert(the_residue >= ALA && the_residue <= NN);
+    return residue_names[the_residue];
+}
+
+const freesasa_classifier freesasa_residue_classifier = {
+    .radius = NULL,
+    .sasa_class = residue,
+    .class2str = residue2str,
+    .n_classes = NN+1,
+    .free_config = NULL,
+    .config = NULL
+};

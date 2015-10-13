@@ -2,7 +2,6 @@
 #include <freesasa.c>
 #include <structure.c>
 #include <nb.c>
-#include <classify.c>
 #include <sasa_lr.c>
 #include <sasa_sr.c>
 #include <coord.c>
