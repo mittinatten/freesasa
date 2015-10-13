@@ -259,7 +259,7 @@ structure_check_atom_radius(double *radius,
                                      a->res_name, a->atom_name, a->symbol);
             }
             freesasa_warn("Atom '%s %s' unknown, guessing element is '%s', "
-                          "and radius %.3f.",
+                          "and radius %.3f A.",
                           a->res_name, a->atom_name, a->symbol, *radius);
             // do not return FREESASA_WARN here, because we will keep the atom
         }

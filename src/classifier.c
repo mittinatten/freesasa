@@ -32,17 +32,23 @@
  */
 
 static const char *default_type_input[] = {
+    // The original OONS classification
     "C_ALI 2.00 Apolar ",
     "C_ARO 1.75 Apolar",
     "C_CAR 1.55 Polar",
     "N 1.55 Polar",
     "O 1.40 Polar", // carbo- and hydroxyl oxygen have the same radius in OONS
     "S 2.00 Polar",
+
+    // P and SE are not in the OONS paper, and should perhaps not be
+    // smaller than S.
     "P 1.80 Polar",
     "SE 1.90 Polar",
 
-    "U_POL 1.5 Polar", // Unknown polar, as in ASX and GLX
+    // Unknown polar, for ASX and GLX
+    "U_POL 1.5 Polar",
 
+    // Water
     "WATER 1.4 Water",
 };
 
@@ -182,22 +188,6 @@ static const char *default_atom_input[] = {
     "VAL CG1 C_ALI",
     "VAL CG2 C_ALI",
 
-    "SEC SE SE",
-    "CSE SE SE", // is this really used?
-
-    "PYL CG C_ALI",
-    "PYL CD C_ALI",
-    "PYL CE C_ALI",
-    "PYL NZ N",
-    "PYL O2 O",
-    "PYL C2 C_CAR",
-    "PYL CA2 C_ARO",
-    "PYL CB2 C_ALI",
-    "PYL CG2 C_ARO",
-    "PYL CD2 C_ARO",
-    "PYL CE2 C_ARO",
-    "PYL N2 N",
-
     "ASX CG C_CAR",
     "ASX XD1 U_POL",
     "ASX XD2 U_POL",
@@ -210,6 +200,24 @@ static const char *default_atom_input[] = {
     "GLX XE2 U_POL",
     "GLX AE1 U_POL",
     "GLX AE2 U_POL",
+
+    // Seleno-cystein
+    "SEC SE SE",
+    "CSE SE SE", // is this really used?
+
+    // Pyrolysine
+    "PYL CG C_ALI",
+    "PYL CD C_ALI",
+    "PYL CE C_ALI",
+    "PYL NZ N",
+    "PYL O2 O",
+    "PYL C2 C_CAR",
+    "PYL CA2 C_ARO",
+    "PYL CB2 C_ALI",
+    "PYL CG2 C_ARO",
+    "PYL CD2 C_ARO",
+    "PYL CE2 C_ARO",
+    "PYL N2 N",
 
     // capping groups
     "ACE CH3 C_ALI",
@@ -1010,6 +1018,7 @@ struct symbol_radius {
    Many of these elements, if they occur in a PDB file, should
    probably rather be skipped than used in a SASA calculation, and
    ionization will change the effective radius.
+
 */
 static const struct symbol_radius symbol_radius[] = {
     // elements that actually occur in the regular amino acids and nucleotides

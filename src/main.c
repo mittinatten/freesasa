@@ -90,13 +90,14 @@ help(void)
 #endif
     fprintf(stderr,
             "  -c <file> (--config-file=<file>)\n"
-            "                        Use atomic radii and classes provided in file\n");
+            "                        Use atomic radii and classes provided in file, example configuration files\n"
+            "                        can be found in the directory share/.\n");
     fprintf(stderr,
             "\nInput PDB:              (default: ignore HETATM and hydrogens, include all\n"
             "                         chains of the first MODEL)\n"
             "  -H (--hetatm)         Include HETATM entries from input\n"
-            "  -Y (--hydrogen)       Include hydrogen atoms. Only makes sense in concjunction\n"
-            "                        with -c option. Default H radius is 0 Å.\n"
+            "  -Y (--hydrogen)       Include hydrogen atoms. Use with care. To get sensible results, one probably needs\n"
+            "                        to redefine all atomic radii with -c option. Default H radius is 1.10 Å.\n"
             "  -m (--join-models)    Join all MODELs in input into one big structure.\n"
             "  -C (--separate-chains) Calculate SASA for each chain separately.\n"
             "  -M (--separate-models) Calculate SASA for each MODEL separately.\n"
