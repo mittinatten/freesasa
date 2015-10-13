@@ -90,13 +90,14 @@ help(void)
 #endif
     fprintf(stderr,
             "  -c <file> (--config-file=<file>)\n"
-            "                        Use atomic radii and classes provided in file\n");
+            "                        Use atomic radii and classes provided in file, example configuration files\n"
+            "                        can be found in the directory share/.\n");
     fprintf(stderr,
             "\nInput PDB:              (default: ignore HETATM and hydrogens, include all\n"
             "                         chains of the first MODEL)\n"
             "  -H (--hetatm)         Include HETATM entries from input\n"
-            "  -Y (--hydrogen)       Include hydrogen atoms. Only makes sense in concjunction\n"
-            "                        with -c option. Default H radius is 0 Å.\n"
+            "  -Y (--hydrogen)       Include hydrogen atoms. Use with care. To get sensible results, one probably needs\n"
+            "                        to redefine all atomic radii with -c option. Default H radius is 1.10 Å.\n"
             "  -m (--join-models)    Join all MODELs in input into one big structure.\n"
             "  -C (--separate-chains) Calculate SASA for each chain separately.\n"
             "  -M (--separate-models) Calculate SASA for each MODEL separately.\n"
@@ -160,7 +161,6 @@ void
 run_analysis(FILE *input,
 const char *name) 
 {
-    double *radii;
     int several_structures = 0, name_len = strlen(name);
     freesasa_result *result;
     freesasa_strvp *classes = NULL;
@@ -170,10 +170,10 @@ const char *name)
 
     if ((structure_options & FREESASA_SEPARATE_CHAINS) ||
         (structure_options & FREESASA_SEPARATE_MODELS)) {
-        structures = freesasa_structure_array(input,&n,structure_options);
+        structures = freesasa_structure_array(input,&n,classifier,structure_options);
         several_structures = 1;
     } else {
-        single_structure[0] = freesasa_structure_from_pdb(input,structure_options);
+        single_structure[0] = freesasa_structure_from_pdb(input,classifier,structure_options);
         structures = single_structure;
         n = 1;
     }
@@ -203,9 +203,7 @@ const char *name)
 
     for (int i = 0; i < n; ++i) {
         if (structures[i] == NULL) abort_msg("Invalid input.\n");
-        radii = freesasa_structure_radius(structures[i],classifier);
-        if (radii == NULL)         abort_msg("Can't calculate atomic radii.\n");
-        result = freesasa_calc_structure(structures[i],radii,&parameters);
+        result = freesasa_calc_structure(structures[i],&parameters);
         if (result == NULL)        abort_msg("Can't calculate SASA.\n");
         classes = freesasa_result_classify(result,structures[i],classifier);
         if (classes == NULL)       abort_msg("Can't determine atom classes. Aborting.\n");
@@ -230,7 +228,7 @@ const char *name)
             freesasa_per_residue(per_residue_file,result,structures[i]);
         }
         if (printpdb) {
-            freesasa_write_pdb(output_pdb,result,structures[i],radii);
+            freesasa_write_pdb(output_pdb,result,structures[i]);
         }
         if (n_select > 0) {
             printf("\nSelections:\n");
@@ -247,7 +245,6 @@ const char *name)
         freesasa_result_free(result);
         freesasa_strvp_free(classes);
         freesasa_structure_free(structures[i]);
-        free(radii);
     }
     if (structures != single_structure) free(structures);
 }

@@ -24,7 +24,8 @@
 #include <errno.h>
 #include <ctype.h>
 #include <check.h>
-#include <classify.h>
+#include <freesasa.h>
+#include <classifier.h>
 
 struct atom {
     const char *a;
@@ -41,7 +42,7 @@ struct atom {
 #define sulf 2.00
 #define sele 1.90
 #define unk_P 1.5
-#define r_unk 0.0
+#define r_unk -1.0
 #define APO FREESASA_APOLAR
 #define POL FREESASA_POLAR
 #define NUC FREESASA_NUCLEICACID
@@ -60,9 +61,7 @@ const char *capping[n_capping] = {"ACE","NH2"};
 #define n_nuc 13
 const char *nuc[n_nuc] = {"DA","DC","DG","DT","DU","DI","A","C","G","T","U","I","N"};
 
-
-#define n_atom_types 247
-const struct atom atoms[n_atom_types] = {
+const struct atom atoms[] = {
     {"ALA"," C  ",car_C,POL}, {"ALA"," O  ",car_O,POL}, {"ALA"," CA ",ali_C,APO},
     {"ALA"," N  ",ami_N,POL}, {"ALA"," CB ",ali_C,APO}, {"ALA"," X  ",r_unk,UNK},
 // 6
@@ -116,7 +115,7 @@ const struct atom atoms[n_atom_types] = {
 // 108
     {"MET"," C  ",car_C,POL}, {"MET"," O  ",car_O,POL}, {"MET"," CA ",ali_C,APO},
     {"MET"," N  ",ami_N,POL}, {"MET"," CB ",ali_C,APO}, {"MET"," CG ",ali_C,APO},
-    {"MET"," SD ",sulf},  {"MET"," CE ",ali_C,APO}, {"MET"," X  ",r_unk,UNK},
+    {"MET"," SD ",sulf, POL}, {"MET"," CE ",ali_C,APO}, {"MET"," X  ",r_unk,UNK},
 // 117
     {"PHE"," C  ",car_C,POL}, {"PHE"," O  ",car_O,POL}, {"PHE"," CA ",ali_C,APO},
     {"PHE"," N  ",ami_N,POL}, {"PHE"," CB ",ali_C,APO}, {"PHE"," CG ",aro_C,APO},
@@ -181,6 +180,23 @@ const struct atom atoms[n_atom_types] = {
 // 247
 };
 
+const int n_atom_types = sizeof(atoms)/sizeof(struct atom);
+
+static const freesasa_classifier *dc = NULL;
+extern const freesasa_classifier freesasa_residue_classifier;
+
+static void
+setup() 
+{
+    dc = freesasa_classifier_default_acquire();
+}
+
+static void
+teardown()
+{
+    freesasa_classifier_default_release();
+}
+
 // tests freesasa_classify_radius() and freesasa_classify_oons_radius()
 START_TEST (test_radius)
 {
@@ -188,107 +204,59 @@ START_TEST (test_radius)
     freesasa_set_verbosity(FREESASA_V_SILENT); // the X and Y atoms give warnings
     for (int i = 0; i < n_atom_types; ++i) {
         const struct atom a = atoms[i];
-        int oons_type = freesasa_classify_oons(a.a,a.b);
-        double r1 = freesasa_classify_radius(a.a,a.b),
-            r2 = freesasa_classify_oons_radius(oons_type);
+        double r1 = dc->radius(a.a, a.b, dc);
         sprintf(buf,"%s %s ret=%f ref=%f",a.a,a.b,r1,a.radius);
         // make sure correct radius is supplied
         ck_assert_msg(fabs(r1 - a.radius) < 1e-10,buf);
-        // make sure all regular atoms are given OONS-radii
-        ck_assert(fabs(r1-r2) < 1e-10);
     }
-    // non OONS-atoms
-    ck_assert(fabs(freesasa_classify_radius("XXX"," C  ") - 1.7) < 1e-10);
-    ck_assert(fabs(freesasa_classify_radius("XXX"," N  ") - 1.55) < 1e-10 );
-    ck_assert(fabs(freesasa_classify_radius("XXX"," S  ") - 1.8)  < 1e-10);
-    ck_assert(fabs(freesasa_classify_radius("XXX"," O  ") - 1.52)  < 1e-10);
-    ck_assert(fabs(freesasa_classify_radius("XXX"," P  ") - 1.8)  < 1e-10);
-    ck_assert(fabs(freesasa_classify_radius("XXX"," X  ") - 0.0)  < 1e-10);
-    //ck_assert(fabs(freesasa_classify_radius("XXX","SE  ") - 1.9)  < 1e-10);
-    //ck_assert(fabs(freesasa_classify_radius("XXX"," H  ") - 1.2)  < 1e-10);
-    freesasa_set_verbosity(0);
+    //ck_assert(fabs(dc->radius("XXX"," H  ", dc) - 1.1)  < 1e-10);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 
-// tests freesasa_classify_class(), freesasa_classify_class2str(), ...oons2class(),
-// ...noons() and ...nclasses(), ...oons2string()
 START_TEST (test_class)
 {
     char buf[50];
     for (int i = 0; i < n_atom_types; ++i) {
         const struct atom a = atoms[i];
-        int c = freesasa_classify_class(a.a,a.b),
-            o = freesasa_classify_oons(a.a,a.b);
-        sprintf(buf,"%s %s %s",a.a,a.b,freesasa_classify_class2str(c));
-        ck_assert_msg(freesasa_classify_class(a.a,a.b) == a.class, buf);
-        ck_assert_msg(freesasa_classify_oons2class(o) == a.class,buf);
-
+        int c = dc->sasa_class(a.a, a.b, dc);
+        if (c == FREESASA_WARN) { ck_assert(a.class == UNK); continue; }
+        sprintf(buf,"Classification error for %s %s %s %s",
+                a.a,a.b,dc->class2str(c, dc),dc->class2str(a.class, dc));
+        ck_assert_msg(c == a.class, buf);
     }
-    ck_assert(freesasa_classify_class("  C"," C1 ") == FREESASA_NUCLEICACID);
+    //ck_assert(dc->sasa_class("  C", " C1 ", dc) == FREESASA_NUCLEICACID);
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert(freesasa_classify_class("ABC"," X  ") == FREESASA_CLASS_UNKNOWN);
-    freesasa_set_verbosity(0);
-    ck_assert_str_eq(freesasa_classify_class2str(FREESASA_POLAR),"Polar");
-    ck_assert_str_eq(freesasa_classify_class2str(FREESASA_APOLAR),"Apolar");
-    ck_assert_str_eq(freesasa_classify_class2str(FREESASA_NUCLEICACID),"Nucleic");
-    ck_assert_str_eq(freesasa_classify_class2str(FREESASA_CLASS_UNKNOWN),"Unknown");
-
-    freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert(freesasa_classify_class2str(100) == NULL);
-    ck_assert(freesasa_classify_class2str(-1) == NULL);
-    freesasa_set_verbosity(0);
-
-    for (int i = 0; i < freesasa_classify_noons(); ++i) {
-        ck_assert(freesasa_classify_oons2class(i) < freesasa_classify_nclasses());
-    }
+    ck_assert(dc->sasa_class("ABC", " X  ", dc) == FREESASA_WARN);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+    /*ck_assert_str_eq(dc->class2str(FREESASA_POLAR, dc),"Polar");
+    ck_assert_str_eq(dc->class2str(FREESASA_APOLAR, dc),"Apolar");
+    ck_assert_str_eq(dc->class2str(FREESASA_NUCLEICACID, dc),"Nucleic");
+    ck_assert_str_eq(dc->class2str(FREESASA_CLASS_UNKNOWN, dc),"Unknown");
+    */
+    
+    //freesasa_set_verbosity(FREESASA_V_SILENT);
+    ck_assert_ptr_eq(dc->class2str(100, dc), NULL);
+    ck_assert_ptr_eq(dc->class2str(-1, dc), NULL);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 
-START_TEST (test_oons2str)
-{
 
-    ck_assert_str_eq(freesasa_classify_oons2str(
-                         freesasa_classify_oons("ALA"," O  ")),"carbo_O");
-    ck_assert_str_eq(freesasa_classify_oons2str(
-                         freesasa_classify_oons("ALA"," C  ")),"carbo_C");
-    ck_assert_str_eq(freesasa_classify_oons2str(
-                         freesasa_classify_oons("ALA"," N  ")),"amide_N");
-    ck_assert_str_eq(freesasa_classify_oons2str(
-                         freesasa_classify_oons("ALA"," CA ")),"aliphatic_C");
-    ck_assert_str_eq(freesasa_classify_oons2str(
-                         freesasa_classify_oons("PHE"," CG ")),"aromatic_C");
-    ck_assert_str_eq(freesasa_classify_oons2str(
-                         freesasa_classify_oons("THR"," OG1")),"hydroxyl_O");
-    ck_assert_str_eq(freesasa_classify_oons2str(
-                         freesasa_classify_oons("CYS"," SG ")),"sulfur");
-    ck_assert_str_eq(freesasa_classify_oons2str(
-                         freesasa_classify_oons("SEC","SE  ")),"selenium");
-    ck_assert_str_eq(freesasa_classify_oons2str(
-                         freesasa_classify_oons("ASX"," XD ")),"unknown_polar");
-    freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert_str_eq(freesasa_classify_oons2str(
-                         freesasa_classify_oons("ABC"," X  ")),"unknown");
-    ck_assert(freesasa_classify_oons2str(freesasa_classify_noons())==NULL);
-    ck_assert(freesasa_classify_oons2str(-1)==NULL);
-    freesasa_set_verbosity(0);
-
-}
-END_TEST
-
-// tests freesasa_classify_residue2str(), freesasa_classify_residue(),
-// freesasa_is_aminoacid() and freesasa_is_nucleicacid()
 START_TEST (test_residue)
 {
     // check consistency of classification and string output
-    int nrt = freesasa_classify_nresiduetypes();
+    const freesasa_classifier *rc = &freesasa_residue_classifier;
+    int nrt = rc->n_classes;
     const char **res = (const char**) malloc(nrt*sizeof(char*));
     for (int i = 0; i < nrt; ++i) {
-        res[i] = freesasa_classify_residue2str(i);
-        ck_assert_int_eq(freesasa_classify_residue(res[i]),i);
+        res[i] = rc->class2str(i, rc);
+        ck_assert_int_eq(rc->sasa_class(res[i], "", rc),i);
     }
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
     // check erroneous input
+    /*
     ck_assert(freesasa_classify_residue2str(nrt+1) == NULL);
     ck_assert(freesasa_classify_residue2str(-1) == NULL);
     ck_assert(freesasa_classify_is_aminoacid(-1) == FREESASA_FAIL);
@@ -298,79 +266,26 @@ START_TEST (test_residue)
     ck_assert(freesasa_classify_is_nucleicacid(freesasa_classify_nresiduetypes())
               == FREESASA_FAIL);
     ck_assert(freesasa_classify_residue("AAAA") == freesasa_classify_residue("UNK"));
-    freesasa_set_verbosity(0);
+    */
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 
     // check numbering
-    int c;
     for (int i = 0; i < naa; ++i) {
-        ck_assert((c = freesasa_classify_residue(aa[i])) < naa);
-        ck_assert(freesasa_classify_is_aminoacid(c));
-        ck_assert(!freesasa_classify_is_nucleicacid(c));
+        ck_assert_int_lt(rc->sasa_class(aa[i], "", rc), naa);
     }
 
-    // irregular entries
-    ck_assert((c = freesasa_classify_residue("UNK")) >= naa);
-    ck_assert(!freesasa_classify_is_aminoacid(c));
-    ck_assert(!freesasa_classify_is_nucleicacid(c));
+    ck_assert_int_ge(rc->sasa_class("UNK", "", rc), naa);
+    ck_assert_int_ge(rc->sasa_class("XXX", "", rc), naa);
+
     for (int i = 0; i < n_other; ++i) {
-        ck_assert((c = freesasa_classify_residue(other_aa[i])) >= naa);
-        ck_assert(freesasa_classify_is_aminoacid(c));
-        ck_assert(!freesasa_classify_is_capping_group(c));
-        ck_assert(!freesasa_classify_is_nucleicacid(c));
+        ck_assert_int_ge(rc->sasa_class(other_aa[i], "", rc), naa);
     }
     for (int i = 0; i < n_capping; ++i) {
-        ck_assert((c = freesasa_classify_residue(capping[i])) >= naa);
-        ck_assert(!freesasa_classify_is_aminoacid(c));
-        ck_assert(freesasa_classify_is_capping_group(c));
-        ck_assert(!freesasa_classify_is_nucleicacid(c));
+        ck_assert_int_ge(rc->sasa_class(capping[i], "", rc), naa);
     }
-
-    // nucleic acids
     for (int i = 0; i < n_nuc; ++i) {
-        ck_assert((c = freesasa_classify_residue(nuc[i])) >= naa);
-        ck_assert(!freesasa_classify_is_aminoacid(c));
-        ck_assert(!freesasa_classify_is_capping_group(c));
-        ck_assert(freesasa_classify_is_nucleicacid(c));
+        ck_assert_int_ge(rc->sasa_class(nuc[i], "", rc), naa);
     }
-}
-END_TEST
-
-// tests freesasa_classify_element() and freesasa_classify_element2str()
-START_TEST (test_element)
-{
-    int c = freesasa_classify_element(" C ");
-    ck_assert(c >= 0 && c < freesasa_classify_nelements());
-    c = freesasa_classify_element(" N  ");
-    ck_assert(c >= 0 && c < freesasa_classify_nelements());
-    c = freesasa_classify_element(" O  ");
-    ck_assert(c >= 0 && c < freesasa_classify_nelements());
-    c = freesasa_classify_element(" S  ");
-    ck_assert(c >= 0 && c < freesasa_classify_nelements());
-    c = freesasa_classify_element(" P  ");
-    ck_assert(c >= 0 && c < freesasa_classify_nelements());
-
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" C  ")),"C");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" CD ")),"C");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" CE2")),"C");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" N  ")),"N");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" ND ")),"N");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" NE2")),"N");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" O  ")),"O");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" OD ")),"O");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" OE2")),"O");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" S  ")),"S");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" SD ")),"S");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" SE2")),"S");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" P  ")),"P");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" PD ")),"P");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element(" PE2")),"P");
-    freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("XXXX")),"unknown");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("XXXXX")),"unknown");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("   C    ")),"unknown");
-    ck_assert_str_eq(freesasa_classify_element2str(freesasa_classify_element("   CE3  ")),"unknown");
-    ck_assert(freesasa_classify_element2str(-1)==NULL);
-    freesasa_set_verbosity(0);
 }
 END_TEST
 
@@ -390,10 +305,10 @@ START_TEST (test_user)
         const char *res_name = atoms[i].a, *atom_name = atoms[i].b;
         if (strcmp(atom_name," X  ") == 0) continue;
         if (strcmp(atom_name," Y  ") == 0) continue;
-        ck_assert(fabs(c->radius(res_name,atom_name,c) -
-                       freesasa_classify_radius(res_name,atom_name)) < 1e-5);
-        char *c1 = strdup(freesasa_classify_class2str(freesasa_classify_class(res_name,atom_name)));
-        char *c2 = strdup(c->class2str(c->sasa_class(res_name,atom_name,c),c));
+        ck_assert(fabs(c->radius(res_name, atom_name, c) -
+                       dc->radius(res_name, atom_name, dc)) < 1e-5);
+        char *c1 = strdup(dc->class2str(dc->sasa_class(res_name, atom_name, dc), dc));
+        char *c2 = strdup(c->class2str(c->sasa_class(res_name, atom_name, c), c));
         for (int i = 0; c1[i]; ++i) c1[i] = tolower(c1[i]); 
         for (int i = 0; c2[i]; ++i) c2[i] = tolower(c2[i]); 
         ck_assert_str_eq(c1,c2);
@@ -402,9 +317,9 @@ START_TEST (test_user)
     ck_assert(c->radius("ALA","X",c) < 0);
     ck_assert(c->radius("X","CB",c) > 0);
     ck_assert(c->radius("X","X",c) < 0);
-    ck_assert(c->sasa_class("ALA","X",c) == FREESASA_FAIL);
+    ck_assert(c->sasa_class("ALA","X",c) == FREESASA_WARN);
     ck_assert(c->sasa_class("X","CB",c) >= 0);
-    ck_assert(c->sasa_class("X","X",c) == FREESASA_FAIL);
+    ck_assert(c->sasa_class("X","X",c) == FREESASA_WARN);
     freesasa_classifier_free(c);
     
     f = fopen(DATADIR "empty.pdb", "r");
@@ -422,16 +337,17 @@ START_TEST (test_user)
 }
 END_TEST
 
-Suite* classify_suite()
+Suite* classifier_suite()
 {
     Suite *s = suite_create("Classify");
     TCase *tc_core = tcase_create("Core");
     tcase_add_test(tc_core,test_radius);
     tcase_add_test(tc_core,test_class);
-    tcase_add_test(tc_core,test_oons2str);
     tcase_add_test(tc_core,test_residue);
-    tcase_add_test(tc_core,test_element);
     tcase_add_test(tc_core,test_user);
+
+    tcase_add_checked_fixture(tc_core,setup,teardown);
+
     suite_add_tcase(s,tc_core);
 
     return s;

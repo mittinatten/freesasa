@@ -25,18 +25,13 @@ int main(int argc, char **argv) {
     freesasa_result *result;
     freesasa_strvp *class_area;
     freesasa_structure *structure;
-    double *radii;
 
     /* Read structure from stdin */
-    structure = freesasa_structure_from_pdb(stdin,0);
-
-    /* Calculate radii for the atoms based on structure.  NULL means
-       default classifier. */
-    radii = freesasa_structure_radius(structure,NULL);
+    structure = freesasa_structure_from_pdb(stdin,NULL,0);
 
     /* Calculate SASA using structure and radii, store in
        'result'. NULL means default parameters. */
-    result = freesasa_calc_structure(structure,radii,NULL);
+    result = freesasa_calc_structure(structure,NULL);
     
     /* Calculate area of classes (Polar/Apolar/..) using default
        classifier */
@@ -52,7 +47,6 @@ int main(int argc, char **argv) {
        context */
     freesasa_strvp_free(class_area);
     freesasa_result_free(result);
-    free(radii);
     freesasa_structure_free(structure);
 
     return EXIT_SUCCESS;

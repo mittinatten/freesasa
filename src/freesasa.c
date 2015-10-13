@@ -32,7 +32,7 @@
 #include "sasa.h"
 #include "pdb.h"
 #include "freesasa.h"
-#include "classify.h"
+#include "classifier.h"
 #include "util.h"
 
 #define NBUF 100
@@ -56,13 +56,16 @@ const freesasa_parameters freesasa_default_parameters = {
 
 const char *freesasa_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
+// Classifier that classifies each atom according to residue
+extern const freesasa_classifier freesasa_residue_classifier;
+
 freesasa_strvp*
 freesasa_strvp_new(int n);
 
 freesasa_strvp*
 freesasa_result_classify(const freesasa_result *result, 
                          const freesasa_structure *structure,
-                         const freesasa_classifier *c) 
+                         const freesasa_classifier *classifier) 
 {
     assert(result);
     assert(structure);
@@ -70,26 +73,36 @@ freesasa_result_classify(const freesasa_result *result,
     int n_atoms;
     int n_classes;
     freesasa_strvp *strvp;
-    const freesasa_classifier *classifier = c;
-    if (c == NULL) classifier = &freesasa_default_classifier;
+
+    if (classifier == NULL) {
+        classifier = freesasa_classifier_default_acquire();
+        if (classifier == NULL) return NULL;
+    }
+
 
     n_atoms = freesasa_structure_n(structure);
     n_classes = classifier->n_classes;
-    strvp = freesasa_strvp_new(n_classes);
+    strvp = freesasa_strvp_new(n_classes+1);
     if (strvp == NULL) {mem_fail(); return NULL;}
 
     for(int i = 0; i < n_classes; ++i) {
         strvp->string[i] = strdup(classifier->class2str(i,classifier));
+        if (strvp->string[i] == NULL) {mem_fail(); return NULL;}
         strvp->value[i] = 0;
-        
     }
+    strvp->string[n_classes] = strdup("Unknown");
+    if (strvp->string[n_classes] == NULL) {mem_fail(); return NULL;}
+    strvp->value[n_classes] = 0;
 
     for (int i = 0; i < n_atoms; ++i) {
         const char *res_name = freesasa_structure_atom_res_name(structure,i);
         const char *atom_name = freesasa_structure_atom_name(structure,i);
         int c = classifier->sasa_class(res_name,atom_name,classifier);
+        if (c == FREESASA_WARN) c = n_classes; // unknown
         strvp->value[c] += result->sasa[i];
     }
+
+    freesasa_classifier_default_release();
 
     return strvp;
 }
@@ -169,7 +182,7 @@ freesasa_calc_coord(const double *xyz,
     coord = freesasa_coord_new_linked(xyz,n);
     if (coord != NULL) result = freesasa_calc(coord,radii,parameters);
     if (coord == NULL || result == NULL) {
-        freesasa_result_free(result);
+       freesasa_result_free(result);
         freesasa_coord_free(coord);
         mem_fail();
         result = NULL;
@@ -181,41 +194,13 @@ freesasa_calc_coord(const double *xyz,
 
 freesasa_result*
 freesasa_calc_structure(const freesasa_structure* structure,
-                        const double *radii,
                         const freesasa_parameters* parameters)
 {
     assert(structure);
-    assert(radii);
 
     return freesasa_calc(freesasa_structure_xyz(structure),
-                         radii,parameters);
-}
-
-double*
-freesasa_structure_radius(const freesasa_structure *structure,
-                          const freesasa_classifier *classifier)
-{
-    assert(structure);
-
-    int n = freesasa_structure_n(structure);
-    double *r = malloc(sizeof(double)*n);
-    const freesasa_classifier *c = classifier;
-    
-    if (r == NULL) {mem_fail(); return NULL;}
-    if (c == NULL) c = &freesasa_default_classifier;
-
-    for (int i = 0; i < n; ++i) {
-        const char *res_name = 
-            freesasa_structure_atom_res_name(structure, i);
-        const char *atom_name = 
-            freesasa_structure_atom_name(structure, i);
-        r[i] = c->radius(res_name,atom_name,c);
-        if (r[i] < 0) {
-            free(r);
-            return NULL;
-        }
-    }
-    return r;
+                         freesasa_structure_radius(structure),
+                         parameters);
 }
 
 int

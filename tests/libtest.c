@@ -23,7 +23,7 @@
 #include <check.h>
 
 extern Suite* pdb_suite();
-extern Suite* classify_suite();
+extern Suite* classifier_suite();
 extern Suite* coord_suite();
 extern Suite* structure_suite();
 extern Suite* sasa_suite();
@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 
     // Suites added in order of complexity
     SRunner *sr = srunner_create(pdb_suite());
-    srunner_add_suite(sr,classify_suite());
+    srunner_add_suite(sr,classifier_suite());
     srunner_add_suite(sr,coord_suite());
     srunner_add_suite(sr,structure_suite());
     srunner_add_suite(sr,sasa_suite());
