@@ -93,6 +93,7 @@ static const char *default_atom_input[] = {
     "ANY C4 C_ARO",
     "ANY C5 C_ARO",
     "ANY C6 C_ARO",
+    "ANY C7 C_ARO",
     "ANY C8 C_ARO",
     "ANY O2 O",
     "ANY O4 O",
