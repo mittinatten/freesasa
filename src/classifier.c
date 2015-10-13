@@ -32,17 +32,22 @@
  */
 
 static const char *default_type_input[] = {
-    "C_ALI 2.00 apolar ",
-    "C_ARO 1.75 apolar",
-    "C_CAR 1.55 polar",
-    "N 1.55 polar",
-    "O 1.40 polar", // carbo- and hydroxyl oxygen have the same radius in OONS
-    "S 2.00 polar",
-    "SE 1.90 polar",
-    "U_POL 1.5 polar", // Unknown polar, as in ASX and GLX
+    "C_ALI 2.00 Apolar ",
+    "C_ARO 1.75 Apolar",
+    "C_CAR 1.55 Polar",
+    "N 1.55 Polar",
+    "O 1.40 Polar", // carbo- and hydroxyl oxygen have the same radius in OONS
+    "S 2.00 Polar",
+    "P 1.80 Polar",
+    "SE 1.90 Polar",
+
+    "U_POL 1.5 Polar", // Unknown polar, as in ASX and GLX
+
+    "WATER 1.4 Water",
 };
 
 static const char *default_atom_input[] = {
+    // Polypeptide backbone
     "ANY C   C_CAR",
     "ANY O   O",
     "ANY CA  C_ALI",
@@ -50,6 +55,46 @@ static const char *default_atom_input[] = {
     "ANY CB  C_ALI",
     "ANY OXT O",
 
+    /* RNA/DNA, these are treated jointly since they are all rings and
+       have overlapping atom names. The atoms of A, C, G, T, U, in
+       both deoxyribose and ribose forms are included, and also
+       Inosinic acid (I) and N (general nucleotide).
+    */
+    // PO4
+    "ANY P P",
+    "ANY OP1 O",
+    "ANY OP2 O",
+    "ANY OP3 O",
+    "ANY O5' O",
+    // Sugar
+    "ANY C5' C_ALI",
+    "ANY C4' C_ARO", 
+    "ANY O4' O",
+    "ANY C3' C_ARO",
+    "ANY O3' O",
+    "ANY C2' C_ARO",
+    "ANY O2' O",
+    "ANY C1' C_ARO",
+    // Sidechains
+    "ANY N1 N",
+    "ANY N2 N",
+    "ANY N3 N",
+    "ANY N4 N",
+    "ANY N6 N",
+    "ANY N7 N",
+    "ANY N9 N",
+    "ANY C2 C_ARO",
+    "ANY C4 C_ARO",
+    "ANY C5 C_ARO",
+    "ANY C6 C_ARO",
+    "ANY C8 C_ARO",
+    "ANY O2 O",
+    "ANY O4 O",
+    "ANY O6 O",
+    // Methylation
+    "ANY CM2 C_ALI",
+
+    // Amino acids
     "ARG CG C_ALI",
     "ARG CD C_ALI",
     "ARG NE N",
@@ -166,8 +211,14 @@ static const char *default_atom_input[] = {
     "GLX AE1 U_POL",
     "GLX AE2 U_POL",
 
+    // capping groups
     "ACE CH3 C_ALI",
+    
     "NH2 NH2 N",
+
+    //water
+    "HOH O WATER",
+
     // add more here
 };
 
