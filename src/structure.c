@@ -248,7 +248,7 @@ structure_check_atom_radius(double *radius,
         if (options & FREESASA_HALT_AT_UNKNOWN) {
             return freesasa_fail("in %s(): atom '%s %s' unknown.",
                                  __func__, a->res_name, a->atom_name);
-        } else if (options & FREESASA_SKIP_AT_UNKNOWN) {
+        } else if (options & FREESASA_SKIP_UNKNOWN) {
             return freesasa_warn("Skipping unknown atom '%s %s'.",
                                  a->res_name, a->atom_name, a->symbol, *radius);
         } else {
@@ -683,7 +683,7 @@ freesasa_structure_get_chains(const freesasa_structure *p,
     return new_p;
 }
 
-const char*
+const char *
 freesasa_structure_chain_labels(const freesasa_structure *structure)
 {
     assert(structure);
@@ -711,7 +711,7 @@ freesasa_structure_n_residues(const freesasa_structure *p)
     return p->number_residues;
 }
 
-const char*
+const char *
 freesasa_structure_atom_name(const freesasa_structure *p,
                              int i)
 {
@@ -836,16 +836,23 @@ freesasa_structure_model(const freesasa_structure *structure)
     return structure->model;
 }
 
-const double*
+const double *
 freesasa_structure_coord_array(const freesasa_structure *structure)
 {
     return freesasa_coord_all(structure->xyz);
 }
 
-const double*
+const double *
 freesasa_structure_radius(const freesasa_structure *structure)
 {
     assert(structure);
     return structure->radius;
 }
 
+void
+freesasa_structure_set_radius(const freesasa_structure *structure, const double* radii)
+{
+    assert(structure);
+    assert(radii);
+    memcpy(structure->radius, radii, structure->number_atoms*sizeof(double));
+}

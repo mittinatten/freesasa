@@ -79,18 +79,23 @@ freesasa_result_classify(const freesasa_result *result,
 
     n_atoms = freesasa_structure_n(structure);
     n_classes = classifier->n_classes;
-    strvp = freesasa_strvp_new(n_classes);
+    strvp = freesasa_strvp_new(n_classes+1);
     if (strvp == NULL) {mem_fail(); return NULL;}
 
     for(int i = 0; i < n_classes; ++i) {
         strvp->string[i] = strdup(classifier->class2str(i,classifier));
+        if (strvp->string[i] == NULL) {mem_fail(); return NULL;}
         strvp->value[i] = 0;
     }
+    strvp->string[n_classes] = strdup("Unknown");
+    if (strvp->string[n_classes] == NULL) {mem_fail(); return NULL;}
+    strvp->value[n_classes] = 0;
 
     for (int i = 0; i < n_atoms; ++i) {
         const char *res_name = freesasa_structure_atom_res_name(structure,i);
         const char *atom_name = freesasa_structure_atom_name(structure,i);
         int c = classifier->sasa_class(res_name,atom_name,classifier);
+        if (c == FREESASA_WARN) c = n_classes; // unknown
         strvp->value[c] += result->sasa[i];
     }
 

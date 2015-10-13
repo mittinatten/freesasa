@@ -116,7 +116,7 @@ const struct atom atoms[n_atom_types] = {
 // 108
     {"MET"," C  ",car_C,POL}, {"MET"," O  ",car_O,POL}, {"MET"," CA ",ali_C,APO},
     {"MET"," N  ",ami_N,POL}, {"MET"," CB ",ali_C,APO}, {"MET"," CG ",ali_C,APO},
-    {"MET"," SD ",sulf},  {"MET"," CE ",ali_C,APO}, {"MET"," X  ",r_unk,UNK},
+    {"MET"," SD ",sulf, POL}, {"MET"," CE ",ali_C,APO}, {"MET"," X  ",r_unk,UNK},
 // 117
     {"PHE"," C  ",car_C,POL}, {"PHE"," O  ",car_O,POL}, {"PHE"," CA ",ali_C,APO},
     {"PHE"," N  ",ami_N,POL}, {"PHE"," CB ",ali_C,APO}, {"PHE"," CG ",aro_C,APO},
@@ -219,10 +219,10 @@ START_TEST (test_class)
         const struct atom a = atoms[i];
         int c = freesasa_classify_class(a.a,a.b),
             o = freesasa_classify_oons(a.a,a.b);
-        sprintf(buf,"%s %s %s",a.a,a.b,freesasa_classify_class2str(c));
+        sprintf(buf,"Classification error for %s %s %s %s",
+                a.a,a.b,freesasa_classify_class2str(c),freesasa_classify_class2str(a.class));
         ck_assert_msg(freesasa_classify_class(a.a,a.b) == a.class, buf);
         ck_assert_msg(freesasa_classify_oons2class(o) == a.class,buf);
-
     }
     ck_assert(freesasa_classify_class("  C"," C1 ") == FREESASA_NUCLEICACID);
     freesasa_set_verbosity(FREESASA_V_SILENT);
@@ -402,9 +402,9 @@ START_TEST (test_user)
     ck_assert(c->radius("ALA","X",c) < 0);
     ck_assert(c->radius("X","CB",c) > 0);
     ck_assert(c->radius("X","X",c) < 0);
-    ck_assert(c->sasa_class("ALA","X",c) == FREESASA_FAIL);
+    ck_assert(c->sasa_class("ALA","X",c) == FREESASA_WARN);
     ck_assert(c->sasa_class("X","CB",c) >= 0);
-    ck_assert(c->sasa_class("X","X",c) == FREESASA_FAIL);
+    ck_assert(c->sasa_class("X","X",c) == FREESASA_WARN);
     freesasa_classifier_free(c);
     
     f = fopen(DATADIR "empty.pdb", "r");

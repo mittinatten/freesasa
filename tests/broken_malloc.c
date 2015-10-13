@@ -105,13 +105,13 @@ START_TEST (test_structure)
     FILE *file = fopen(DATADIR "1ubq.pdb","r");
     int n;
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert_ptr_ne(file,NULL);
-    ck_assert_ptr_eq(freesasa_structure_new(),NULL);
-    ck_assert_ptr_eq(from_pdb_impl(file,interval,0),NULL);
+    ck_assert_ptr_ne(file, NULL);
+    ck_assert_ptr_eq(freesasa_structure_new(), NULL);
+    ck_assert_ptr_eq(from_pdb_impl(file,interval, NULL, 0), NULL);
     for (int i = 1; i < 50; ++i) {
         set_fail_freq(i);
         rewind(file);
-        ck_assert_ptr_eq(freesasa_structure_from_pdb(file,0),NULL);
+        ck_assert_ptr_eq(freesasa_structure_from_pdb(file, NULL, 0), NULL);
     }
     set_fail_freq(1);
     fclose(file);
@@ -121,9 +121,9 @@ START_TEST (test_structure)
     for (int i = 1; i < 50; ++i) {
         set_fail_freq(i);
         rewind(file);
-        ck_assert_ptr_eq(freesasa_structure_array(file,&n,FREESASA_SEPARATE_MODELS),NULL);
+        ck_assert_ptr_eq(freesasa_structure_array(file, &n, NULL, FREESASA_SEPARATE_MODELS),NULL);
         rewind(file);
-        ck_assert_ptr_eq(freesasa_structure_array(file,&n,FREESASA_SEPARATE_MODELS | FREESASA_SEPARATE_CHAINS),NULL);
+        ck_assert_ptr_eq(freesasa_structure_array(file, &n, NULL, FREESASA_SEPARATE_MODELS | FREESASA_SEPARATE_CHAINS),NULL);
     }
     set_fail_freq(1);
     fclose(file);
@@ -201,7 +201,8 @@ START_TEST (test_classifier)
         ck_assert_ptr_eq(freesasa_classifier_from_file(config),NULL);
         rewind(config);
         set_fail_freq(i);
-        ck_assert_ptr_eq(freesasa_classifier_default(),NULL);
+        ck_assert_ptr_eq(freesasa_classifier_default_acquire(),NULL);
+        freesasa_classifier_default_release();
     }
     fclose(config);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
@@ -213,11 +214,9 @@ START_TEST (test_selector)
     set_fail_freq(1000000);
     freesasa_parameters p = freesasa_default_parameters;
     p.shrake_rupley_n_points = 10;
-    FILE *file = fopen(DATADIR "1ubq.pdb","r");
-    freesasa_structure *s = freesasa_structure_from_pdb(file,0);
-    freesasa_classifier *c = freesasa_classifier_default();
-    double *radii = freesasa_structure_radius(s,c);
-    freesasa_result *result = freesasa_calc_structure(s,radii,NULL);
+    FILE *file = fopen(DATADIR "1ubq.pdb", "r");
+    freesasa_structure *s = freesasa_structure_from_pdb(file, NULL, 0);
+    freesasa_result *result = freesasa_calc_structure(s, NULL);
     double area;
     char name[FREESASA_MAX_SELECTION_NAME];
 
@@ -227,15 +226,13 @@ START_TEST (test_selector)
            it's actually exactly 17 memory allocations, but we have
            success with a frequencey of 18, and 17 seems about right. */
         set_fail_freq(i);
-        ck_assert_int_eq(freesasa_select_area("s, resn ALA and not resi 1-20",name,&area,s,result),
+        ck_assert_int_eq(freesasa_select_area("s, resn ALA and not resi 1-20", name, &area, s, result),
                          FREESASA_FAIL); // this expression should come across most allocations
     }
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     fclose(file);
-    free(radii);
     freesasa_result_free(result);
     freesasa_structure_free(s);
-    freesasa_classifier_free(c);
 }
 END_TEST
 
@@ -248,28 +245,24 @@ START_TEST (test_api)
     for (int i = 1; i < 50; ++i) {
         p.alg = FREESASA_SHRAKE_RUPLEY;
         set_fail_freq(i);
-        ck_assert_int_eq(freesasa_calc(&coord,r,&p),NULL);
+        ck_assert_int_eq(freesasa_calc(&coord, r, &p), NULL);
         p.alg = FREESASA_LEE_RICHARDS; 
         set_fail_freq(i);
-        ck_assert_int_eq(freesasa_calc(&coord,r,&p),NULL);
+        ck_assert_int_eq(freesasa_calc(&coord, r, &p), NULL);
     }
 
     FILE *file = fopen(DATADIR "1ubq.pdb","r");
     set_fail_freq(10000);
-    freesasa_classifier *c = freesasa_classifier_default();
-    freesasa_structure *s=freesasa_structure_from_pdb(file,0);
-    double *radii = freesasa_structure_radius(s,c);
+    freesasa_structure *s=freesasa_structure_from_pdb(file, NULL, 0);
     ck_assert_ptr_ne(s,NULL);
-    ck_assert_ptr_ne(radii,NULL);
     for (int i = 1; i < 256; i *= 2) { //try to spread it out without doing too many calculations
         set_fail_freq(i);
-        ck_assert_ptr_eq(freesasa_calc_structure(s,radii,NULL),NULL);
+        ck_assert_ptr_eq(freesasa_calc_structure(s, NULL), NULL);
         set_fail_freq(i);
-        ck_assert_ptr_eq(freesasa_structure_get_chains(s,"A"),NULL);
+        ck_assert_ptr_eq(freesasa_structure_get_chains(s, "A"), NULL);
     }
     set_fail_freq(1);
     freesasa_structure_free(s);
-    freesasa_classifier_free(c);
     fclose(file);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }

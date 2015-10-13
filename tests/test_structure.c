@@ -75,17 +75,37 @@ START_TEST (test_add_atom)
 {
     freesasa_structure *s = freesasa_structure_new();
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    freesasa_structure_add_atom(s,"HABC","ALA","   1",'A',0,0,0);
-    freesasa_structure_add_atom(s,"SE  ","SEC","   1",'A',0,0,0);
-    freesasa_structure_add_atom(s,"FE  ","ABC","   1",'A',0,0,0);
+    ck_assert_int_eq(freesasa_structure_add_atom(s,"HABC","ALA","   1",'A',0,0,0), FREESASA_WARN);
+    ck_assert_int_eq(freesasa_structure_add_atom(s,"SE  ","SEC","   1",'A',0,0,0), FREESASA_SUCCESS);
+    ck_assert_int_eq(freesasa_structure_add_atom(s,"CL  ","ABC","   1",'A',0,0,0), FREESASA_SUCCESS);
+    ck_assert_int_eq(freesasa_structure_n(s), 3);
     ck_assert_str_eq(freesasa_structure_atom_symbol(s,0)," H");
     ck_assert_str_eq(freesasa_structure_atom_symbol(s,1),"SE");
-    ck_assert_str_eq(freesasa_structure_atom_symbol(s,2),"FE");
+    ck_assert_str_eq(freesasa_structure_atom_symbol(s,2),"CL");
 
-    ck_assert_int_eq(freesasa_structure_add_atom(s,"A","ALA","   1",'A',0,0,0),FREESASA_WARN);
-    ck_assert_int_eq(freesasa_structure_add_atom(s," C  ","AL","   1",'A',0,0,0),FREESASA_WARN);
-    ck_assert_int_eq(freesasa_structure_add_atom(s," C  ","ALA"," 1",'A',0,0,0),FREESASA_WARN);
+    ck_assert_int_eq(freesasa_structure_add_atom(s,"A","ALA","   1",'A',0,0,0),FREESASA_WARN); // Can't guess element of A
+    ck_assert_int_eq(freesasa_structure_add_atom(s," C  ","AL","   1",'A',0,0,0),FREESASA_SUCCESS);
+    ck_assert_int_eq(freesasa_structure_add_atom(s," C  ","ALA"," 1",'A',0,0,0),FREESASA_SUCCESS);
+    ck_assert_int_eq(freesasa_structure_n(s), 5);
+
+    ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"HABC","ALA","   1",'A',0,0,0,NULL,FREESASA_SKIP_UNKNOWN), FREESASA_WARN);
+    ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"SE  ","SEC","   1",'A',0,0,0,NULL,FREESASA_SKIP_UNKNOWN), FREESASA_SUCCESS);
+    ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"CL  ","ABC","   1",'A',0,0,0,NULL,FREESASA_SKIP_UNKNOWN), FREESASA_WARN);
+    ck_assert_int_eq(freesasa_structure_n(s), 6);
+
+    ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"HABC","ALA","   1",'A',0,0,0,NULL,FREESASA_HALT_AT_UNKNOWN), FREESASA_FAIL);
+    ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"SE  ","SEC","   1",'A',0,0,0,NULL,FREESASA_HALT_AT_UNKNOWN), FREESASA_SUCCESS);
+    ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"CL  ","ABC","   1",'A',0,0,0,NULL,FREESASA_HALT_AT_UNKNOWN), FREESASA_FAIL);
+    ck_assert_int_eq(freesasa_structure_n(s), 7);
+
+    ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"HABC","ALA","   1",'A',0,0,0,NULL,FREESASA_HALT_AT_UNKNOWN | FREESASA_SKIP_UNKNOWN), FREESASA_FAIL);
+    ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"SE  ","SEC","   1",'A',0,0,0,NULL,FREESASA_HALT_AT_UNKNOWN | FREESASA_SKIP_UNKNOWN), FREESASA_SUCCESS);
+    ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"CL  ","ABC","   1",'A',0,0,0,NULL,FREESASA_HALT_AT_UNKNOWN | FREESASA_SKIP_UNKNOWN), FREESASA_FAIL);
+    ck_assert_int_eq(freesasa_structure_n(s), 8);
+
     freesasa_set_verbosity(FREESASA_V_NORMAL);
+
+    freesasa_structure_free(s);
 }
 END_TEST
 
@@ -100,7 +120,7 @@ void setup_1ubq(void)
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
     ck_assert(pdb != NULL);
     if (s) freesasa_structure_free(s);
-    s = freesasa_structure_from_pdb(pdb,0);
+    s = freesasa_structure_from_pdb(pdb, NULL, 0);
     fclose(pdb);
 }
 
@@ -140,7 +160,7 @@ START_TEST (test_pdb)
     for (int i = 0; i < 3; ++i) {
         FILE *pdb = fopen(file_names[i],"r");
         ck_assert(pdb != NULL);
-        freesasa_structure *s = freesasa_structure_from_pdb(pdb,0);
+        freesasa_structure *s = freesasa_structure_from_pdb(pdb,NULL,0);
         if (result_null[i]) ck_assert(s == NULL);
         else ck_assert(s != NULL);
         fclose(pdb);
@@ -154,12 +174,14 @@ START_TEST (test_hydrogen)
 {
     FILE *pdb = fopen(DATADIR "1d3z.pdb","r");
     ck_assert(pdb != NULL);
-    freesasa_structure* s = freesasa_structure_from_pdb(pdb,0);
+    freesasa_structure* s = freesasa_structure_from_pdb(pdb,NULL,0);
     ck_assert(s != NULL);
     ck_assert(freesasa_structure_n(s) == 602);
     freesasa_structure_free(s);
     rewind(pdb);
-    s = freesasa_structure_from_pdb(pdb,FREESASA_INCLUDE_HYDROGEN);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    s = freesasa_structure_from_pdb(pdb,NULL,FREESASA_INCLUDE_HYDROGEN);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
     ck_assert(s != NULL);
     ck_assert(freesasa_structure_n(s) == 1231);
     freesasa_structure_free(s);
@@ -172,7 +194,7 @@ START_TEST (test_hetatm)
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
     ck_assert(pdb != NULL);
     freesasa_set_verbosity(FREESASA_V_SILENT); // unknown atoms warnings suppressed
-    freesasa_structure* s = freesasa_structure_from_pdb(pdb,FREESASA_INCLUDE_HETATM);
+    freesasa_structure* s = freesasa_structure_from_pdb(pdb,NULL,FREESASA_INCLUDE_HETATM);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     ck_assert(s != NULL);
     ck_assert(freesasa_structure_n(s) == 660);
@@ -186,7 +208,7 @@ START_TEST (test_structure_array)
     FILE *pdb = fopen(DATADIR "1d3z.pdb","r");
     ck_assert(pdb != NULL);
     int n = 0;
-    freesasa_structure** ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_MODELS);
+    freesasa_structure** ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_MODELS);
         
     ck_assert(ss != NULL);
     ck_assert(n == 10);
@@ -199,7 +221,7 @@ START_TEST (test_structure_array)
     free(ss);
 
     rewind(pdb);
-    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_CHAINS);
+    ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_CHAINS);
     ck_assert(ss != NULL);
     ck_assert(n == 1);
     ck_assert(ss[0] != NULL);
@@ -208,7 +230,8 @@ START_TEST (test_structure_array)
     free(ss);
     
     rewind(pdb);
-    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_CHAINS | FREESASA_SEPARATE_MODELS |
+    freesasa_set_verbosity(FREESASA_V_SILENT); // Silence Hydrogen warnings
+    ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_CHAINS | FREESASA_SEPARATE_MODELS |
                                   FREESASA_INCLUDE_HYDROGEN);
     ck_assert(ss != NULL);
     ck_assert(n == 10);
@@ -221,7 +244,7 @@ START_TEST (test_structure_array)
 
     fclose(pdb);
     pdb = fopen(DATADIR "2jo4.pdb", "r");
-    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_MODELS |
+    ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_MODELS |
                                   FREESASA_INCLUDE_HETATM | FREESASA_INCLUDE_HYDROGEN);
     ck_assert(ss != NULL);
     ck_assert(n == 10);
@@ -234,7 +257,7 @@ START_TEST (test_structure_array)
 
     fclose(pdb);
     pdb = fopen(DATADIR "2jo4.pdb", "r");
-    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_MODELS | FREESASA_SEPARATE_CHAINS |
+    ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_MODELS | FREESASA_SEPARATE_CHAINS |
                                   FREESASA_INCLUDE_HETATM | FREESASA_INCLUDE_HYDROGEN);
     ck_assert(ss != NULL);
     ck_assert(n == 10*4);
@@ -246,7 +269,7 @@ START_TEST (test_structure_array)
     free(ss);
 
     rewind(pdb);
-    freesasa_structure *s = freesasa_structure_from_pdb(pdb,FREESASA_INCLUDE_HETATM | 
+    freesasa_structure *s = freesasa_structure_from_pdb(pdb, NULL, FREESASA_INCLUDE_HETATM | 
                                                         FREESASA_INCLUDE_HYDROGEN |
                                                         FREESASA_JOIN_MODELS);
     ck_assert(s != NULL);
@@ -255,7 +278,7 @@ START_TEST (test_structure_array)
     
     fclose(pdb);
     pdb = fopen(DATADIR "1ubq.pdb","r");
-    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_CHAINS);
+    ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_CHAINS);
     
     ck_assert(ss != NULL);
     ck_assert(n == 1);
@@ -263,10 +286,11 @@ START_TEST (test_structure_array)
     freesasa_structure_free(ss[0]);
     free(ss);
     fclose(pdb);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 
     pdb = fopen(DATADIR "err.config","r");
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ss = freesasa_structure_array(pdb,&n,FREESASA_SEPARATE_CHAINS);
+    ss = freesasa_structure_array(pdb, &n, NULL,  FREESASA_SEPARATE_CHAINS);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     ck_assert(ss == NULL);
 }
@@ -274,7 +298,7 @@ END_TEST
 
 START_TEST (test_get_chains) {
     FILE *pdb = fopen(DATADIR "2jo4.pdb","r");
-    freesasa_structure *s = freesasa_structure_from_pdb(pdb,0);
+    freesasa_structure *s = freesasa_structure_from_pdb(pdb, NULL, 0);
     ck_assert(freesasa_structure_n(s) == 4*129);
     ck_assert_str_eq(freesasa_structure_chain_labels(s),"ABCD");
 

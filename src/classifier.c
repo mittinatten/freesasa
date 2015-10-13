@@ -38,6 +38,7 @@ static const char *default_type_input[] = {
     "N 1.55 polar",
     "O 1.40 polar", // carbo- and hydroxyl oxygen have the same radius in OONS
     "S 2.00 polar",
+    "SE 1.90 polar",
 };
 
 static const char *default_atom_input[] = {
@@ -133,8 +134,9 @@ static const char *default_atom_input[] = {
     "TYR OH  O",
 
     "VAL CG1 C_ALI",
-    "VAL CG2 C_ALI"
+    "VAL CG2 C_ALI",
 
+    "SEC SE SE",
     // add more here
 };
 
@@ -232,6 +234,11 @@ residue_cfg_new(const char* name)
     }
     *res = empty_residue;
     res->name = strdup(name);
+    if (res->name == NULL) {
+        mem_fail();
+        free(res);
+        return NULL;
+    }
     return res;
 }
 
@@ -294,11 +301,12 @@ find_string(char **array,
     if (array == NULL || array_size == 0) return -1;
 
     int n = strlen(key);
-    char key_trimmed[n];
+    char key_trimmed[n+1];
 
     // remove trailing and leading whitespace
     sscanf(key,"%s",key_trimmed);
     for (int i = 0; i < array_size; ++i) {
+        if (array[i] == NULL) {freesasa_fail("%d %d %s %s",i,array_size,key,key_trimmed);}
         assert(array[i]);
         if (strcmp(array[i],key_trimmed) == 0) return i;
     }
@@ -601,7 +609,6 @@ read_atoms_line(struct config *config,
             return freesasa_fail("Unknown atom type '%s' in line '%s'",buf3,line);
         res = add_residue(config,buf1);
         if (res == FREESASA_FAIL) return fail_msg("");
-
         atom = add_atom(config->residue[res],
                         buf2,
                         types->type_radius[type],
@@ -732,8 +739,9 @@ find_atom(const struct config *config,
         }
     }
     if (*atom < 0) {
-        return freesasa_fail("in %s(): Unknown residue '%s' and/or atom '%s'.",
-                             __func__, res_name, atom_name);
+        //return freesasa_warn("in %s(): Unknown residue '%s' and/or atom '%s'.",
+        //                     __func__, res_name, atom_name);
+        return FREESASA_WARN;
     }
     return FREESASA_SUCCESS;
 }
@@ -752,8 +760,8 @@ user_radius(const char *res_name,
     status = find_atom(config,res_name,atom_name,&res,&atom);
     if (status == FREESASA_SUCCESS)
         return config->residue[res]->atom_radius[atom];
-    freesasa_fail("in %s(): couldn't find radius of atom '%s %s'.",
-                  __func__, res_name, atom_name);
+    //freesasa_warn("in %s(): couldn't find radius of atom '%s %s'.",
+    //              __func__, res_name, atom_name);
     return -1.0;
 }
 
@@ -769,8 +777,8 @@ user_class(const char *res_name,
     status = find_atom(config,res_name,atom_name,&res,&atom);
     if (status == FREESASA_SUCCESS)
         return config->residue[res]->atom_class[atom];
-    return freesasa_fail("in %s(): couldn't find classification of atom '%s %s'.",
-                         __func__, res_name, atom_name);
+    return FREESASA_WARN; //freesasa_warn("in %s(): couldn't find classification of atom '%s %s'.",
+    //__func__, res_name, atom_name);
 }
 
 /** To be linked to a Classifier struct */
@@ -839,7 +847,7 @@ default_config()
     types = types_new();
     if (types == NULL) return NULL;
     for (int i = 0; i < n_types; ++i) {
-        if (read_types_line(types,default_type_input[i])
+        if (read_types_line(types, default_type_input[i])
             == FREESASA_FAIL) {
             // this should never happen
             fail_msg("Error setting up types for default classifier");
@@ -851,7 +859,7 @@ default_config()
     config = config_new();
     if (config == NULL) return NULL;
     for (int i = 0; i < n_atoms; ++i) {
-        if (read_atoms_line(config,types,default_atom_input[i])
+        if (read_atoms_line(config, types, default_atom_input[i])
             == FREESASA_FAIL) {
             // this should never happen
             fail_msg("Error setting up atoms for default classifier");
@@ -860,7 +868,7 @@ default_config()
             return NULL;
         }
     }
-    
+
     if (config_copy_classes(config, types) == FREESASA_FAIL) {
         config_free(config);
         config = NULL;
@@ -886,6 +894,7 @@ const freesasa_classifier *
 freesasa_classifier_default_acquire()
 {
     if (default_classifier == NULL) {
+        assert(default_classifier_refcount == 0);
         default_classifier = classifier_default_new();
         if (default_classifier == NULL) {
             fail_msg("Failed to load default classifier.");
@@ -898,24 +907,37 @@ freesasa_classifier_default_acquire()
 
 void
 freesasa_classifier_default_release() {
-    if (--default_classifier_refcount == 0) 
+    if (default_classifier_refcount == 0) return;
+    if (--default_classifier_refcount == 0) {
         freesasa_classifier_free(default_classifier);
+        default_classifier = NULL;
+    }
 }
 
 struct symbol_radius {
-    const char *symbol;
+    const char symbol[3];
     double radius;
 };
 
-// based on www.periodictable.com
+/* Taken from: 
+   
+   Mantina et al. "Consistent van der Waals Radii for
+   the Whole Main Group". J. Phys. Chem. A, 2009, 113 (19), pp
+   5806–5812. 
+   
+   Many of these elements, if they occur in a PDB file, should
+   probably rather be skipped than used in a SASA calculation, and
+   ionization will change the effective radius.
+*/
 static const struct symbol_radius symbol_radius[] = {
-    {" H", 0.0},
-    {" C", 1.7},
-    {" N", 1.55},
-    {" O", 1.52},
-    {" P", 1.8},
-    {" S", 1.8},
-    {"Se", 1.9},
+    // elements that actually occur in the regular amino acids and nucleotides
+    {" H", 1.10}, {" C", 1.70}, {" N", 1.55}, {" O", 1.52}, {" P", 1.80}, {" S", 1.80}, {"SE", 1.90}, 
+    // some others, just because there were readily available values
+    {" F", 1.47}, {"CL", 1.75}, {"BR", 1.83}, {" I", 1.98},
+    {"LI", 1.81}, {"BE", 1.53}, {" B", 1.92}, 
+    {"NA", 2.27}, {"MG", 1.74}, {"AL", 1.84}, {"SI", 2.10}, 
+    {" K", 2.75}, {"CA", 2.31}, {"GA", 1.87}, {"GE", 2.11}, {"AS", 1.85}, 
+    {"RB", 3.03}, {"SR", 2.49}, {"IN", 1.93}, {"SN", 2.17}, {"SB", 2.06}, {"TE", 2.06}, 
 };
 
 double

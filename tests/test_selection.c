@@ -81,7 +81,7 @@ static void setup(void)
     for (int i = 0; i < N; ++i) {
         freesasa_structure_add_atom(structure,name[i],resn[i],resi[i],chain[i],i*10,0,0);
     }
-    result = freesasa_calc_structure(structure, radii, NULL);
+    result = freesasa_calc_structure(structure, NULL);
 }
 
 

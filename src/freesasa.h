@@ -91,7 +91,7 @@ typedef enum {
 #define FREESASA_SEPARATE_CHAINS 8 //!< Read separate chains as separate structures
 #define FREESASA_JOIN_MODELS 16 //!< Read MODELs as part of one big structure
 #define FREESASA_HALT_AT_UNKNOWN 32 //!< Halt reading when unknown atom is encountered.
-#define FREESASA_SKIP_AT_UNKNOWN 64 //!< Skip atom when unknown atom is encountered.
+#define FREESASA_SKIP_UNKNOWN 64 //!< Skip atom when unknown atom is encountered.
 
 //! The maximum length of a selection name (@see freesasa_select_area()) 
 #define FREESASA_MAX_SELECTION_NAME 20
@@ -142,17 +142,23 @@ typedef struct freesasa_classifier {
     int n_classes; //!< Total number of different classes
     void *config;  //!< Optional configuration to allow flexibility
 
-    //! Function that returns an atom radius.
+    /**
+        Function that returns an atom radius. Should return negative
+        value if atom not recognized.
+    */
     double (*radius)(const char* res_name,
                      const char* atom_name,
                      const struct freesasa_classifier*);
 
-    //! Function that returns the class [0,1,...,n_classes-1] of an atom
+    /**
+        Function that returns the class [0,1,...,n_classes-1] of an
+        atom, shoul return ::FREESASA_WARN if atom not recognized.
+    */
     int (*sasa_class)(const char* res_name,
                       const char* atom_name,
                       const struct freesasa_classifier*);
 
-    //! Function that converts a class to its string descriptor
+    //! Function that converts a class to its string descriptor.
     const char* (*class2str)(int the_class,
                              const struct freesasa_classifier*);
 
@@ -180,7 +186,7 @@ extern const freesasa_classifier freesasa_residue_classifier;
 
     @return The result of the calculation, NULL if something went wrong.
  */
-freesasa_result*
+freesasa_result *
 freesasa_calc_structure(const freesasa_structure *structure,
                         const freesasa_parameters *parameters);
 
@@ -198,7 +204,7 @@ freesasa_calc_structure(const freesasa_structure *structure,
 
     @return The result of the calculation, NULL if something went wrong.
  */
-freesasa_result*
+freesasa_result *
 freesasa_calc_coord(const double *xyz, 
                     const double *radii,
                     int n,
@@ -642,19 +648,26 @@ void
 freesasa_structure_free(freesasa_structure* structure);
 
 /**
-    Calculates radii of all atoms in the structure using provided
-    classifier.
-
-    Return value is dynamically allocated, should be freed with
-    standard free().
+    Returns a pointer to an array of the radii of each atom.
 
     @param structure The structure.  
-    @param classifier The classifier. If NULL the default is used.  
-    @return Array of radii. NULL if there are unrecognized atoms or if
-    memory allocation fails.
+    @return Array of radii. If NULL structure has not been properly
+      initialized.
  */
 const double*
 freesasa_structure_radius(const freesasa_structure *structure);
+
+/**
+    Override the radii set when the structure was initialized.
+
+    Makes a copy of the provided array.
+
+    @param structure The structure.
+    @param radii An array of radii, should have same dimension
+      as the number of atoms in the structure.
+ */
+void
+freesasa_structure_set_radius(const freesasa_structure *structure, const double* radii);
 
 /**
     Get atom name.
