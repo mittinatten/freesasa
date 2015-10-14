@@ -21,9 +21,9 @@ cdef extern from "freesasa.h":
         FREESASA_LEE_RICHARDS, FREESASA_SHRAKE_RUPLEY
     ctypedef enum freesasa_class:
         FREESASA_POLAR, FREESASA_APOLAR,
-        FREESASA_NUCLEICACID, FREESASA_CLASS_UNKNOWN
+        FREESASA_CLASS_UNKNOWN
     ctypedef enum freesasa_verbosity:
-        FREESASA_V_NORMAL, FREESASA_V_NOWARNINGS, FREESASA_V_SILENT
+        FREESASA_V_NORMAL, FREESASA_V_NOWARNINGS, FREESASA_V_SILENT, FREESASA_V_DEBUG
 
     cdef double FREESASA_DEF_PROBE_RADIUS
     cdef int FREESASA_DEF_SR_N
@@ -37,6 +37,8 @@ cdef extern from "freesasa.h":
     cdef int FREESASA_SEPARATE_CHAINS
     cdef int FREESASA_SEPARATE_MODELS
     cdef int FREESASA_JOIN_MODELS
+    cdef int FREESASA_HALT_AT_UNKNOWN
+    cdef int FREESASA_SKIP_UNKNOWN
 
     cdef int FREESASA_MAX_SELECTION_NAME
 
@@ -74,11 +76,9 @@ cdef extern from "freesasa.h":
         pass
 
     cdef extern const freesasa_parameters freesasa_default_parameters
-    cdef extern const freesasa_classifier freesasa_default_classifier
     cdef extern const freesasa_classifier freesasa_residue_classifier
 
     freesasa_result* freesasa_calc_structure(const freesasa_structure *structure,
-                                             const double *radii,
                                              const freesasa_parameters *parameters)
 
     freesasa_result* freesasa_calc_coord(const double *xyz,
@@ -87,6 +87,8 @@ cdef extern from "freesasa.h":
                                          const freesasa_parameters *parameters)
 
     void freesasa_result_free(freesasa_result *result)
+
+    freesasa_classifier* freesasa_classifier_default()
 
     freesasa_classifier* freesasa_classifier_from_file(FILE *file)
 
@@ -106,8 +108,7 @@ cdef extern from "freesasa.h":
 
     int freesasa_write_pdb(FILE *output,
                            freesasa_result *result,
-                           const freesasa_structure *structure,
-                           const double *radii)
+                           const freesasa_structure *structure)
 
     int freesasa_per_residue_type(FILE *output,
                                   freesasa_result *result,
@@ -128,10 +129,12 @@ cdef extern from "freesasa.h":
     freesasa_verbosity freesasa_get_verbosity()
 
     freesasa_structure* freesasa_structure_from_pdb(FILE *pdb,
+                                                    const freesasa_classifier* classifier,
                                                     int options)
 
     freesasa_structure** freesasa_structure_array(FILE *pdb,
                                                   int *n,
+                                                  const freesasa_classifier* classifier,
                                                   int options)
 
     freesasa_structure* freesasa_structure_new()
@@ -140,11 +143,12 @@ cdef extern from "freesasa.h":
 
     void freesasa_structure_free(freesasa_structure* structure)
 
-    double* freesasa_structure_radius(freesasa_structure *structure,
-                                      freesasa_classifier *classifier)
+    const double* freesasa_structure_radius(const freesasa_structure *structure)
 
+    void freesasa_structure_set_radius(freesasa_structure *structure,
+                                       const double *radii)
 
-
+    
     int freesasa_structure_add_atom(freesasa_structure *s,
                                     const char* atom_name,
                                     const char* residue_name,
@@ -152,8 +156,14 @@ cdef extern from "freesasa.h":
                                     char chain_label,
                                     double x, double y, double z)
 
-    double* freesasa_structure_radius(const freesasa_structure *structure,
-                                      const freesasa_classifier *classifier)
+    int freesasa_structure_add_atom_wopt(freesasa_structure *s,
+                                         const char* atom_name,
+                                         const char* residue_name,
+                                         const char* residue_number,
+                                         char chain_label,
+                                         double x, double y, double z,
+                                         const freesasa_classifier *classifier,
+                                         int options)
 
     const char* freesasa_structure_atom_name(const freesasa_structure *s,
                                              int i)

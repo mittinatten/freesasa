@@ -61,6 +61,9 @@ nowarnings = FREESASA_V_NOWARNINGS
 ## int: Normal verbosity (used by setVerbosity())
 normal = FREESASA_V_NORMAL
 
+## int: Print debug messages (used by setVerbosity())
+debug = FREESASA_V_DEBUG
+
 ## The default values for calculation parameters
 defaultParameters = {
      'algorithm'    : ShrakeRupley, 
@@ -247,7 +250,8 @@ cdef class Classifier:
       #      
       #  @param fileName Name of file with classifier configuration.
       #  @exception IOError   Problem opening/reading file
-      #  @exception Exception Problem parsing configuration
+      #  @exception Exception Problem parsing provided configuration or 
+      #                       initializing defaults
       def __cinit__ (self,fileName=None):
             cdef FILE *config
             self._c_classifier = NULL
@@ -259,11 +263,14 @@ cdef class Classifier:
                   fclose(config)
                   if self._c_classifier is NULL:
                         raise Exception("Error parsing configuration in '%s'." % fileName)
+            else:
+                  self._c_classifier = freesasa_classifier_default()
+                  if self._c_classifier is NULL:
+                        raise Exception("Error initializing default classifier.") 
       
       ## The destructor (free internal C objects)
       def __dealloc__(self):
-            if self._c_classifier is not NULL:
-                  freesasa_classifier_free(self._c_classifier)
+            freesasa_classifier_free(self._c_classifier)
 
       ## Class of atom.
       #
@@ -274,11 +281,8 @@ cdef class Classifier:
       #  @param atomName (str) Atom name (`" CA "`,`" C  "`,...).
       #  @return A string describing the class
       def classify(self,residueName,atomName):
-            if self._c_classifier is not NULL:
-                  classIndex = self._c_classifier.sasa_class(residueName,atomName,self._c_classifier)
-                  return self._c_classifier.class2str(classIndex,self._c_classifier)
-            classIndex = freesasa_default_classifier.sasa_class(residueName,atomName,self._c_classifier)
-            return freesasa_default_classifier.class2str(classIndex,&freesasa_default_classifier)
+            classIndex = self._c_classifier.sasa_class(residueName,atomName,self._c_classifier)
+            return self._c_classifier.class2str(classIndex,self._c_classifier)
 
       ## Radius of atom.
       #
@@ -289,9 +293,7 @@ cdef class Classifier:
       #  @param atomName (str) Atom name (" CA "," C  ",...).
       #  @return The radius in Å.
       def radius(self,residueName,atomName):
-            if self._c_classifier is not NULL:
-                  return self._c_classifier.radius(residueName,atomName,self._c_classifier)
-            return freesasa_default_classifier.radius(residueName,atomName,&freesasa_default_classifier)
+            return self._c_classifier.radius(residueName,atomName,self._c_classifier)
 
       def _get_address(self, size_t ptr2ptr):
             cdef freesasa_classifier **p = <freesasa_classifier**> ptr2ptr
@@ -305,10 +307,9 @@ cdef class Classifier:
 #  Wraps the C struct freesasa_structure.
 cdef class Structure:
       cdef freesasa_structure* _c_structure
-      cdef array.array _radii
       ## By default ignore HETATM, Hydrogens and only use first model
       defaultOptions = {'hetatm' : False, 'hydrogen' : False, 'join-models' : False}
-      
+
       ## Constructor
       #
       #  If PDB file is provided, the structure will be constructed
@@ -326,7 +327,6 @@ cdef class Structure:
       def __init__(self,fileName=None,classifier=None,
                    options = defaultOptions):
             self._c_structure = NULL
-            self._radii = array.array('d',[])
             if fileName is None:
                   self._c_structure = freesasa_structure_new()
                   return
@@ -335,14 +335,13 @@ cdef class Structure:
             structure_options = Structure._get_structure_options(options)
             if input is NULL:
                   raise IOError("File '%s' could not be opened." % fileName)
-            self._c_structure = freesasa_structure_from_pdb(input,structure_options)
+            self._c_structure = freesasa_structure_from_pdb(input,NULL,structure_options)
+            if (classifier is not None):
+                  self.setRadiiWithClassifier(classifier)
             fclose(input)
             if self._c_structure is NULL:
                   raise Exception("Error reading '%s' as PDB-file." % fileName)
-            
-            self.setRadiiWithClassifier(classifier)
-                        
-            
+
       ## Add atom to structure.
       #
       # This function is meant to be used if the structure was
@@ -377,32 +376,30 @@ cdef class Structure:
 
       ## Assign radii to atoms in structure using a classifier.
       #
-      # If no classifier is specified default will be
-      # used. Over-writes previously assigned radii. Mainly intended
-      # to be used when atoms were added individually using
-      # addAtom(). When structure is initialized from PDB a classifier
-      # can be passed directly to the constructor.
-      #
       # @param classifier A classifier to use to calculate radii
-      def setRadiiWithClassifier(self,classifier=None):
-            if classifier is None:
-                  classifier = Classifier()
+      def setRadiiWithClassifier(self,classifier):
+            assert(self._c_structure is not NULL)
             n = self.nAtoms()
-            array.resize(self._radii,n*sizeof(double))
+            r = []
             for i in range(0,n):
-                  self._radii[i] = classifier.radius(self.residueName(i),self.atomName(i))
-      
+                  r.append(classifier.radius(self.residueName(i), self.atomName(i)))
+            self.setRadii(r)
+
       ## Set atomic radii from an array
       # @param radiusArray: Array of atomic radii in Ångström, should 
       #                     have nAtoms() elements.
-      # @exception AssertionError if radiusArray has wrong dimension 
+      # @exception AssertionError if radiusArray has wrong dimension or structure 
+      #                           not properly initialized
       def setRadii(self,radiusArray):
+            assert(self._c_structure is not NULL)
             n = self.nAtoms()
             assert len(radiusArray) == n
-            array.resize(self._radii,n*sizeof(double))
+            cdef double *r = <double *>malloc(sizeof(double)*n)
+            assert(r is not NULL)
             for i in range(0,n):
-                  self._radii[i] = radiusArray[i]
-            
+                  r[i] = radiusArray[i]
+            freesasa_structure_set_radius(self._c_structure, r)
+
       ## Number of atoms.
       #
       # @return  Number of atoms
@@ -411,15 +408,16 @@ cdef class Structure:
             assert(self._c_structure is not NULL)
             return freesasa_structure_n(self._c_structure)
 
-      
       ## Radius of atom.
       # @param i (int) Index of atom.
       # @return Radius in Å.
       # @exception AssertionError if index out of bounds or object not properly initalized
       def radius(self,i):
             assert(i >= 0 and i < self.nAtoms())
-            assert(self._radii.ob_size > 0)
-            return self._radii[i]
+            assert(self._c_structure is not NULL)
+            cdef const double *r = freesasa_structure_radius(self._c_structure)
+            assert(r is not NULL)
+            return r[i]
       
       ## Get atom name
       # @param i (int) Atom index.
@@ -490,10 +488,6 @@ cdef class Structure:
             cdef freesasa_structure **p = <freesasa_structure**> ptr2ptr
             p[0] = self._c_structure
 
-      def _get_address_radius(self, size_t ptr2ptr):
-            cdef double **p = <double**> ptr2ptr
-            p[0] = self._radii.data.as_doubles
-
       def _set_address(self, size_t ptr2ptr):
             cdef freesasa_structure **p = <freesasa_structure**> ptr2ptr
             self._c_structure = p[0]
@@ -538,7 +532,7 @@ def structureArray(fileName,
       if input is NULL:
             raise IOError("File '%s' could not be opened." % fileName)
       cdef int n;
-      cdef freesasa_structure** sArray = freesasa_structure_array(input,&n,structure_options)
+      cdef freesasa_structure** sArray = freesasa_structure_array(input,&n,NULL,structure_options)
       fclose(input)
       if sArray is NULL:
             raise Exception("Problems reading structures in '%s'." % fileName)
@@ -546,7 +540,8 @@ def structureArray(fileName,
       for i in range(0,n):
             structures.append(Structure())
             structures[-1]._set_address(<size_t> &sArray[i])
-            structures[-1].setRadiiWithClassifier(classifier)
+            if classifier is not None:
+                  structures[-1].setRadiiWithClassifier(classifier)
       free(sArray)
       return structures
 
@@ -559,12 +554,10 @@ def structureArray(fileName,
 def calc(structure,parameters=None):
       cdef const freesasa_parameters *p = NULL
       cdef const freesasa_structure *s = NULL
-      cdef const double *radii = NULL
       if parameters is not None:  parameters._get_address(<size_t>&p)
       structure._get_address(<size_t>&s)
-      structure._get_address_radius(<size_t>&radii)
       result = Result()
-      result._c_result = <freesasa_result*> freesasa_calc_structure(s, radii,p)
+      result._c_result = <freesasa_result*> freesasa_calc_structure(s,p)
       if result._c_result is NULL:
             raise Exception("Error calculating SASA.")
       return result

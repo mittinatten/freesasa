@@ -969,8 +969,8 @@ default_config()
     return config;
 }
 
-static freesasa_classifier *
-classifier_default_new()
+freesasa_classifier *
+freesasa_classifier_default()
 {
     struct config *config = default_config();
     if (config == NULL) {
@@ -986,7 +986,7 @@ freesasa_classifier_default_acquire()
 {
     if (default_classifier == NULL) {
         assert(default_classifier_refcount == 0);
-        default_classifier = classifier_default_new();
+        default_classifier = freesasa_classifier_default();
         if (default_classifier == NULL) {
             fail_msg("Failed to load default classifier.");
             return NULL;

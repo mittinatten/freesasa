@@ -111,7 +111,6 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(s.residueName(0) == 'ALA');
         self.assertTrue(s.residueNumber(0) == '   1');
         self.assertTrue(s.chainLabel(0) == 'A');
-        self.assertRaises(AssertionError,lambda: s.radius(0))
         self.assertRaises(AssertionError,lambda: s.addAtom('CA','ALA','  12','A',1,1,1))
         self.assertRaises(AssertionError,lambda: s.addAtom('CA   ','ALA','  12','A',1,1,1))
         self.assertRaises(AssertionError,lambda: s.addAtom(' CA ',' ALA','  12','A',1,1,1))
@@ -126,7 +125,7 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(s.nAtoms() == 2)
         self.assertTrue(s.residueNumber(1) == '   2')
 
-        s.setRadiiWithClassifier()
+        s.setRadiiWithClassifier(Classifier())
         self.assertTrue(s.radius(0) == 2.0)
         self.assertTrue(s.radius(1) == 2.0)
 
@@ -145,13 +144,13 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertRaises(AssertionError,lambda: s.residueNumber(2))
         self.assertRaises(AssertionError,lambda: s.chainLabel(2))
 
+        setVerbosity(nowarnings)
         s = Structure("data/1d3z.pdb",None,{'hydrogen' : True})
         self.assertTrue(s.nAtoms() == 1231)
 
         s = Structure("data/1d3z.pdb",None,{'hydrogen' : True, 'join-models' : True})
         self.assertTrue(s.nAtoms() == 12310)
 
-        setVerbosity(silent) # waters aren't recognized, should produce warnings, but we don't want to see them here
         s = Structure("data/1ubq.pdb",None,{'hetatm' : True})
         self.assertTrue(s.nAtoms() == 660)
         setVerbosity(normal)
@@ -164,6 +163,7 @@ class FreeSASATestCase(unittest.TestCase):
             self.assertTrue(s.nAtoms() == 129)
 
         # include all models, separate chains, and include hydrogen and hetatm (286 atoms per chain)
+        setVerbosity(nowarnings)
         ss = structureArray("data/2jo4.pdb",{'separate-models' : True,
                                              'hydrogen' : True,
                                              'hetatm' : True,
@@ -179,7 +179,8 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(len(ss) == 10)
         for s in ss:
             self.assertTrue(s.nAtoms() == 286*4)
-        
+        setVerbosity(normal)
+
         # check that the structures initialized this way can be used for calculations
         ss = structureArray("data/1ubq.pdb")
         self.assertTrue(len(ss) == 1)

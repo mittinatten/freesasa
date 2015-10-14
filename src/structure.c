@@ -850,7 +850,7 @@ freesasa_structure_radius(const freesasa_structure *structure)
 }
 
 void
-freesasa_structure_set_radius(const freesasa_structure *structure, const double* radii)
+freesasa_structure_set_radius(freesasa_structure *structure, const double* radii)
 {
     assert(structure);
     assert(radii);

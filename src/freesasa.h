@@ -65,7 +65,7 @@ typedef enum {FREESASA_V_NORMAL,
  */
 typedef enum {
     FREESASA_APOLAR=0, FREESASA_POLAR,
-    FREESASA_NUCLEICACID, FREESASA_CLASS_UNKNOWN
+    FREESASA_CLASS_UNKNOWN
 } freesasa_class;
 
 
@@ -94,7 +94,7 @@ typedef enum {
 #define FREESASA_SKIP_UNKNOWN 64 //!< Skip atom when unknown atom is encountered.
 
 //! The maximum length of a selection name (@see freesasa_select_area()) 
-#define FREESASA_MAX_SELECTION_NAME 20
+#define FREESASA_MAX_SELECTION_NAME 50
 
 //! Struct to store parameters for SASA calculation @ingroup API
 typedef struct {
@@ -216,18 +216,6 @@ void
 freesasa_result_free(freesasa_result *result);
 
 /**
-    Returns the default classifier.
-    
-    Return value is dynamically allocated, should be freed with
-    freesasa_classifier_free().
-
-    @return The generated classifier. NULL if there memory allocation
-      problems.
- */
-freesasa_classifier *
-freesasa_classifier_default();
-
-/**
     Generate a classifier from a config-file.
 
     Input file format described in @ref Config-file
@@ -243,6 +231,17 @@ freesasa_classifier_default();
  */
 freesasa_classifier*
 freesasa_classifier_from_file(FILE *file);
+
+/**
+    The default classifier.
+
+    Return value is dynamically allocated, should be freed with
+    freesasa_classifier_free().
+
+    @return The default classifier.
+ */
+freesasa_classifier*
+freesasa_classifier_default();
 
 /**
     Frees the contents of a classifier object
@@ -664,7 +663,7 @@ freesasa_structure_radius(const freesasa_structure *structure);
       as the number of atoms in the structure.
  */
 void
-freesasa_structure_set_radius(const freesasa_structure *structure, const double* radii);
+freesasa_structure_set_radius(freesasa_structure *structure, const double* radii);
 
 /**
     Get atom name.
