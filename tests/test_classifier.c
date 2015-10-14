@@ -26,6 +26,7 @@
 #include <check.h>
 #include <freesasa.h>
 #include <classifier.h>
+#include "tools.h"
 
 struct atom {
     const char *a;

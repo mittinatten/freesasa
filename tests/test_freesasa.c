@@ -29,6 +29,7 @@
 
 #include <freesasa.h>
 #include <structure.h>
+#include "tools.h"
 
 #define PASS 1
 #define NOPASS 0

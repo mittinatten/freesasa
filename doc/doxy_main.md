@@ -393,7 +393,10 @@ Several selectors can be joined using boolean logic and parentheses,
 
 where s1, s2 and s3 are selectors and l1, l2 and l3 are lists. The
 operator `and` has precedence over `or`, so the second parentheses is
-necessary but not the first, in the example above.
+necessary but not the first, in the example above. The selection name
+has to start with a letter, but it can include numbers and
+underscores. The name can't be longer than
+::FREESASA_MAX_SELECTION_NAME characters.
 
 The following property selectors are supported
 

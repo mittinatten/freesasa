@@ -29,13 +29,12 @@
 
     @copyright GPLv3
 
-    @section The FreeSASA API
-
     This header provides the functions and data types necessary to
     perfrom and analyze a SASA calculation using FreeSASA, including
     facilities to customize assignment of radii to, and classification
     of, atoms. There are also functions to access properties of a
-    structure, to allow refined analysis of the results.
+    structure, to allow refined analysis of the results. The page @ref
+    API shows how to set up and perform a simple SASA calculation.
  */
 
 #include <stdio.h>
@@ -44,56 +43,58 @@
 extern "C"{
 #endif
 
-//! The FreeSASA algorithms. @ingroup API
-typedef enum {FREESASA_LEE_RICHARDS, FREESASA_SHRAKE_RUPLEY}
-    freesasa_algorithm;
-
-/**
-    Verbosity levels. 
-    - FREESASA_V_NORMAL: print all errors and warnings.
-    - FREESASA_V_NOWARNINGS: print only errors.
-    - FREESASA_V_SILENT: print no errors and warnings.
-    - FREESASA_V_DEBUG: print all errors, warnings and debug messages.
-*/    
-typedef enum {FREESASA_V_NORMAL,
-              FREESASA_V_NOWARNINGS,
-              FREESASA_V_SILENT,
-              FREESASA_V_DEBUG} freesasa_verbosity;
-/**
-    4 classes of atoms/chemical groups 
-    (classes in freesasa_default_classifier)
- */
+//! The FreeSASA algorithms. 
 typedef enum {
-    FREESASA_APOLAR=0, FREESASA_POLAR,
-    FREESASA_CLASS_UNKNOWN
-} freesasa_class;
+    FREESASA_LEE_RICHARDS, //!< Lee & Richards' algorithm
+    FREESASA_SHRAKE_RUPLEY //!< Shrake & Rupley's algorithm
+} freesasa_algorithm;
 
+//! Verbosity levels. @see freesasa_set_verbosity() @see freesasa_get_verbosity()
+typedef enum {
+    FREESASA_V_NORMAL, //!< Print all errors and warnings.
+    FREESASA_V_NOWARNINGS, //!< Print only errors.
+    FREESASA_V_SILENT, //!< Print no errors and warnings.
+    FREESASA_V_DEBUG, //!< Print all errors, warnings and debug messages.
+} freesasa_verbosity;
 
 // Default parameters
-#define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångström)
-#define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R
-#define FREESASA_DEF_LR_N 20 //!< Default number of slices per atom  in L&R
+#define FREESASA_DEF_ALGORITHM FREESASA_SHRAKE_RUPLEY //!< Default algorithm
+#define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångström).
+#define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R.
+#define FREESASA_DEF_LR_N 20 //!< Default number of slices per atom  in L&R.
 #ifdef HAVE_LIBPTHREAD
-#define FREESASA_DEF_NUMBER_THREADS 2 //!< Default number of threads
+#define FREESASA_DEF_NUMBER_THREADS 2 //!< Default number of threads.
 #else
-#define FREESASA_DEF_NUMBER_THREADS 1 //!< Default number of threads
+//! Default number of threads. Value will depend on if library was compiled 
+//!  with or without thread support. (2 with threads, 1 without)
+#define FREESASA_DEF_NUMBER_THREADS 1 
 #endif
 
-// Important that success is 0 and failure is non-zero, don't change
-#define FREESASA_SUCCESS 0 //!< All is ok
-#define FREESASA_FAIL -1 //!< Something went seriously wrong. 
-#define FREESASA_WARN -2 //!< Something went wrong, but results might still be meaningful.
+//! Error codes. Can rely upon FREESASA_SUCCESS being 0 and the errors
+//! having negative numbers.
+enum freesasa_error_codes {
+    FREESASA_SUCCESS=0, //!< All is ok (value will always be zero).
+    FREESASA_FAIL=-1, //!< Something went seriously wrong (value will always be negative).
+    FREESASA_WARN=-2, //!< Something went wrong, but results might still be meaningful (value will always be negative).
+};
 
-// Parameters for reading structure from PDB
-#define FREESASA_INCLUDE_HETATM 1 //!< Include HETATM entries
-#define FREESASA_INCLUDE_HYDROGEN 2 //!< Include hydrogen atoms
-#define FREESASA_SEPARATE_MODELS 4 //!< Read MODELs as separate structures
-#define FREESASA_SEPARATE_CHAINS 8 //!< Read separate chains as separate structures
-#define FREESASA_JOIN_MODELS 16 //!< Read MODELs as part of one big structure
-#define FREESASA_HALT_AT_UNKNOWN 32 //!< Halt reading when unknown atom is encountered.
-#define FREESASA_SKIP_UNKNOWN 64 //!< Skip atom when unknown atom is encountered.
+/**
+    Options for reading structure from PDB.  To be combined in options
+    bitfield in freesasa_structure_from_pdb(),
+    freesasa_structure_array() and freesasa_structure_add_atom_wopt(). 
+    See documentation for each function for which options are applicable.
+ */
+enum freesasa_structure_options {
+    FREESASA_INCLUDE_HETATM=1, //!< Include HETATM entries
+    FREESASA_INCLUDE_HYDROGEN=2, //!< Include hydrogen atoms
+    FREESASA_SEPARATE_MODELS=4, //!< Read MODELs as separate structures
+    FREESASA_SEPARATE_CHAINS=8, //!< Read separate chains as separate structures
+    FREESASA_JOIN_MODELS=16, //!< Read MODELs as part of one big structure
+    FREESASA_HALT_AT_UNKNOWN=32, //!< Halt reading when unknown atom is encountered.
+    FREESASA_SKIP_UNKNOWN=64, //!< Skip atom when unknown atom is encountered.
+};
 
-//! The maximum length of a selection name (@see freesasa_select_area()) 
+//! The maximum length of a selection name @see freesasa_select_area()
 #define FREESASA_MAX_SELECTION_NAME 50
 
 //! Struct to store parameters for SASA calculation @ingroup API
@@ -105,6 +106,9 @@ typedef struct {
     int n_threads;                //!< Number of threads to use, if compiled with thread-support
 } freesasa_parameters;
 
+//! The default parameters for FreeSASA
+extern const freesasa_parameters freesasa_default_parameters;
+
 //! Struct to store results of SASA calculation @ingroup API
 typedef struct {
     double total; //!< Total SASA in Ångström^2
@@ -115,10 +119,10 @@ typedef struct {
 /**
     Struct for structure object.
 
-    The struct includes coordinates, and atom names, etc. If it was
-    initiated from a PDB file enough info will be stored so that a
-    PDB-file can be printed using the original one as template (see
-    freesasa_write_pdb()).
+    The struct includes the coordinates and radius of each atom, and
+    its name, residue-name, etc. If it was initiated from a PDB file
+    enough info will be stored so that a PDB-file can be printed using
+    the original one as template (see freesasa_write_pdb()).
  */
 typedef struct freesasa_structure freesasa_structure;
 
@@ -165,9 +169,6 @@ typedef struct freesasa_classifier {
     //! Function that can be called to free the config-pointer
     void (*free_config)(void*);
 } freesasa_classifier;
-
-//! The default parameters for FreeSASA
-extern const freesasa_parameters freesasa_default_parameters;
 
 /**
     Calculates SASA based on a given structure.
@@ -233,11 +234,11 @@ freesasa_classifier_from_file(FILE *file);
 /**
     Generates a default classifier.
 
-    The functions that default to this classifier use their own shared
-    copy of it, i.e. it is not necessary to use this function to
-    simply pass a default classifier to freesasa_structure_from_pdb(),
-    freesasa_structure_array() or freesasa_structure_add_atom_wopt()
-    (pass a NULL pointer there instead). 
+    The functions that use the default classifier if passed a null
+    pointer use their own shared copy of it. It is therefore not
+    necessary to use this function to simply pass a default classifier
+    to freesasa_structure_from_pdb(), freesasa_structure_array() or
+    freesasa_structure_add_atom_wopt().
 
     Return value is dynamically allocated, should be freed with
     freesasa_classifier_free().
@@ -248,7 +249,7 @@ freesasa_classifier*
 freesasa_classifier_default();
 
 /**
-    Frees the contents of a classifier object
+    Frees a classifier object
 
     @param classifier The classifier.
  */
@@ -281,30 +282,14 @@ freesasa_result_classify(const freesasa_result *result,
     resi and chain), the keyword "select" is implicit. All commands
     are case insensitive. Valid selections would be, for example,
 
-        selection-name, resn ala+arg 
-        selection-name, chain a and resi 1+3-20 and not resn gly
-
-    The selection name is obligatory. The range operator '-' has
-    precendence over '+', i.e.  
-    
-         resi 1+3-20
-         
-    is equivalent to
-
-         resi 1 or resi 3-20
-
-    The boolean operators `and`, `or` and `not` are supported. 
-    The `and` operator has precedence over `or`. Parantheses can be
-    used to surround expressions `(chain a)` and group boolean
-    expressions `(chain a or chain b)`, but *not* arguments as in
-
-        chain a+(c-f)  # syntax error
-        chain a+c-f    # ok
-
+        selection_name, resn ala+arg 
+        selection_name, chain a and resi 1+3-20 and not resn gly
 
     After selecting the atoms from the ::freesasa_structure pointer
     specified by the command the area of those atoms is summed up
     using the ::freesasa_result pointer.
+
+    @see @ref Selection
 
     @param command The selection
     @param name The name of the selection is stored here, it should be
@@ -312,7 +297,7 @@ freesasa_result_classify(const freesasa_result *result,
     @param area The area of the selection is stored here
     @param structure The structure to select from
     @param result The results to integrate
-    
+
     @return ::FREESASA_SUCCESS upon successful selection.
        ::FREESASA_WARN if some illegal selections that could be
        ignored were encountered (see printed
@@ -363,7 +348,7 @@ freesasa_write_pdb(FILE *output,
     Prints name/value-pairs with the total SASA of each residue
     type. The standard 20 amino acids are always included in output,
     non-standard ones and nucleotides only if they were present in
-    input. Each line in the output is prefixed by the string 'RES:'.
+    input. Each line in the output is prefixed by the string "`RES:`".
 
     @param output Output file.
     @param result SASA values.
@@ -379,11 +364,11 @@ freesasa_per_residue_type(FILE *output,
 /**
     Print SASA for each residue in the sequence to file.
 
-    Each line in the output is prefixed by the string 'SEQ:'.
+    Each line in the output is prefixed by the string "`SEQ:`".
 
     @param output Output file.
     @param result SASA values.
-    @param structure The structure (includes sequence information).
+    @param structure The structure.
     @return ::FREESASA_FAIL if problems writing to
     output. ::FREESASA_SUCCESS else.
  */
@@ -453,7 +438,28 @@ freesasa_structure_new(void);
     the radius of each atom, if the atom is not recognized the element
     of the atom is guessed, and that element's VdW radius used. If
     this also fails a warning is printed and the atom is skipped. All
-    these behaviors can be modified through the `options` argument.
+    these behaviors can be modified through the `options` bitfield
+    argument:
+
+      - `options == 0`:
+         Default behavior
+
+      - `options & ::FREESASA_INCLUDE_HYDROGEN == 1`:
+         Include hydrogens.
+
+      - `options & ::FREESASA_INCLUDE_HETATM == 1`:
+         Include HETATM.
+
+      - `options & ::FREESASA_JOIN_MODELS == 1`:
+         Join models
+      
+      - `options & ::FREESASA_SKIP_UNKNOWN == 1`:
+         Skip unknown atoms.
+      
+      - `options & ::FREESASA_HALT_AT_UNKNOWN == 1`:
+         Halt at unknown atom and return NULL, overrides
+         ::FREESASA_SKIP_UNKNOWN.
+
 
     If a more fine-grained control over which atoms to include is
     needed, the PDB-file needs to be modified before calling this
@@ -472,25 +478,6 @@ freesasa_structure_new(void);
     @param options A bitfield to determine what atoms to include and what to do
       when atoms are not recognized by classifier.
       
-      - `options == 0`:
-         Default behavior
-
-      - `options & FREESASA_INCLUDE_HYDROGEN == 1`:
-         Include hydrogens.
-
-      - `options & FREESASA_INCLUDE_HETATM == 1`:
-         Include HETATM.
-
-      - `options & FREESASA_JOIN_MODELS == 1`:
-         Join models
-      
-      - `options & FREESASA_SKIP_AT_UNKNOWN == 1`:
-         Skip unknown atoms.
-      
-      - `options & FREESASA_HALT_AT_UNKNOWN == 1`:
-         Halt at unknown atom and return NULL, overrides
-         FREESASA_SKIP_AT_UNKNOWN.
-
     @return The generated structure. Returns `NULL` and prints error
       if input is invalid or  memory allocation failure.
  */
@@ -516,16 +503,17 @@ freesasa_structure_from_pdb(FILE *pdb,
     
     @param classifier A classifier to calculate atomic radii.
 
-    @param options Bitfield. 0 means only use non-hydrogen `ATOM`
-      entries. ::FREESASA_SEPARATE_MODELS and
-      ::FREESASA_SEPARATE_CHAINS can be used to generate one structure
-      per model and one structure per chain, respectively. See
-      freesasa_structure_from_pdb() for documentation on options for
-      deciding what atoms to include (::FREESASA_JOIN_MODELS is not
-      supported here).
+    @param options Bitfield. Either or both of
+      ::FREESASA_SEPARATE_MODELS and ::FREESASA_SEPARATE_CHAINS can be
+      used to generate one structure per model and one structure per
+      chain, respectively (will return NULL if neither is
+      specified). See freesasa_structure_from_pdb() for documentation
+      on options for deciding what atoms to include
+      (::FREESASA_JOIN_MODELS is not supported here).
 
     @return Array of structures. Prints error message(s) and returns
-      NULL if there were problems reading input or a memory allocation
+      NULL if there were problems reading input, if invalid value of
+      `options`, or upon a memory allocation
       failure.
  */
 freesasa_structure **
@@ -567,12 +555,27 @@ freesasa_structure_add_atom(freesasa_structure *structure,
     include hydrogens if added (i.e. up to caller to make sure these
     are excluded if necessesary).
 
-    The three string arguments all have specific lengths, specified by
-    the corresponding PDB ATOM fields. 
+    The atom name, residue name, etc are checked by the classifier,
+    and depending on the value of `options` different things will
+    happen when unknown atoms are encountered. In all cases the user
+    will be alerted of what has happened through warnings or error
+    messages:
+
+      - `options == 0` means guess element of unknown atoms, and use that
+        element's VdW radius, skip atom if this method also fails.  
+      
+      - `options & FREESASA_SKIP_UNKNOWN == 1` skip unknown atoms,
+        return ::FREESASA_WARN
+        
+      - `options & FREESASA_HALT_AT_UNKNOWN == 1` skip unknown atoms, 
+        return ::FREESASA_FAIL, overrides ::FREESASA_SKIP_UNKNOWN.
+
+    @see Because the argument list is so long, freesasa_structure_add_atom()
+         is a shortcut to call this with defaults.
 
     @param structure The structure to add to.
-    @param atom_name String of 4 characters, of the format `" CA "`, `" OXT"`, etc.
-    @param residue_name String of 3 charachters, of the format `"ALA"`, `"PHE"`, etc.
+    @param atom_name The atom name: `" CA "`,`"CA"`, `" OXT"`, etc.
+    @param residue_name The residue name: `"ALA"`, `"PHE"`, etc.
     @param residue_number String of 4 characters, of the format `"   1"`, `" 123"`, etc.
     @param chain_label Any character to label chain, typically `'A'`, `'B'`, etc.
     @param x x-coordinate of atom.
@@ -580,19 +583,8 @@ freesasa_structure_add_atom(freesasa_structure *structure,
     @param z z-coordinate of atom.
     @param classifier A freesasa_classifier to determine radius of atom and to
       decide if to keep atom or not (see options).
-
-    @param options A bitfield to determine what to do with unknown atoms. If the
-      classifier does not recognize an atom, one of three behaviors can be specified
+    @param options A bitfield to determine what to do with unknown atoms (see above).
       
-      - `options == 0` means guess element of atom, and use that
-        element's VdW radius, skip atom if this method also fails.  
-      
-      - `options & FREESASA_SKIP_UNKNOWN == 1` skip unknown atoms,
-        return ::FREESASA_WARN
-        
-      - `options & FREESASA_HALT_AT_UNKNOWN == 1` skip unknown atoms, 
-        return ::FREESASA_FAIL, overrides the ::FREESASA_SKIP_UNKNOWN.
-
     @return ::FREESASA_SUCCESS on normal execution. ::FREESASA_FAIL if
        if memory allocation fails or if halting at unknown
        atom. ::FREESASA_WARN if skipping atom.
@@ -678,7 +670,11 @@ freesasa_structure_set_radius(freesasa_structure *structure, const double* radii
 
     @param structure The structure.
     @param i Atom index.
-    @return Atom name in the form `" CA "`, `" OXT"`, etc.
+
+    @return Atom name in the form `" CA "`, `" OXT"`, etc, if
+       structure was initialized from a PDB file, or in whatever form
+       it was added through freesasa_structure_add_atom() or
+       freesasa_structure_add_atom_wopt().
  */
 const char*
 freesasa_structure_atom_name(const freesasa_structure *structure,
@@ -691,7 +687,10 @@ freesasa_structure_atom_name(const freesasa_structure *structure,
 
     @param structure The structure.
     @param i Atom index.
-    @return Residue name in the form `"ALA"`, `"PHE"`, etc.
+    @return Residue name in the form `"ALA"`, `"PHE"`, etc, if
+       structure was initialized from a PDB file, or in whatever form
+       it was added through freesasa_structure_add_atom() or
+       freesasa_structure_add_atom_wopt().
  */
 const char*
 freesasa_structure_atom_res_name(const freesasa_structure *structure,
@@ -704,7 +703,10 @@ freesasa_structure_atom_res_name(const freesasa_structure *structure,
 
     @param structure The structure.
     @param i Atom index.
-    @return Residue name in the form `"   1"`, `" 123"`, etc.
+    @return Residue name in the form `"   1"`, `" 123"`, etc, if
+       structure was initialized from a PDB file, or in whatever form
+       it was added through freesasa_structure_add_atom() or
+       freesasa_structure_add_atom_wopt().
  */
 const char*
 freesasa_structure_atom_res_number(const freesasa_structure *structure,
@@ -727,14 +729,14 @@ freesasa_structure_atom_chain(const freesasa_structure *structure,
     Get atom symbol.
 
     If the structure was initialized from a PDB file the symbol field
-    of that file is used. Otherwise the symbol is guess from atom and
+    of that file is used. Otherwise the symbol is guessed from atom and
     residue name.
 
     Asserts that index i is within bounds. 
 
     @param structure The structure.
     @param i Atom index.
-    @return Atom symbol (" C", " N", "SE",etc); 
+    @return Atom symbol (`" C"`, `" N"`, `"SE"`,etc); 
  */
 const char*
 freesasa_structure_atom_symbol(const freesasa_structure *structure,

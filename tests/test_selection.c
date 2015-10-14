@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <freesasa.h>
 #include <check.h>
+#include "tools.h"
 
 #define N 8
 
@@ -56,16 +57,6 @@ const int chain_A[N]= {      1,      1,      1,      1,      1,      0,      0, 
 const int chain_B[N]= {      0,      0,      0,      0,      0,      1,      1,      1};
 char selection_name[100][FREESASA_MAX_SELECTION_NAME+1];
 double value[100];
-
-static int 
-float_eq(double a, double b, double tolerance) 
-{
-    if (fabs(a-b) < tolerance) return 1;
-    printf("floats not equal: a = %f, b = %f, diff = %f, tolerance = %f\n",
-           a, b, fabs(a-b), tolerance);
-    fflush(stdout);
-    return 0;
-}
 
 static int
 select(const char **command,int n_commands) 

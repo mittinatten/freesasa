@@ -578,10 +578,15 @@ freesasa_structure_array(FILE *pdb,
                          const freesasa_classifier *classifier,
                          int options)
 {
-    assert( (options & FREESASA_SEPARATE_MODELS) ||
-            (options & FREESASA_SEPARATE_CHAINS) );
     assert(pdb);
     assert(n);
+
+    if( ! (options & FREESASA_SEPARATE_MODELS) ||
+        (options & FREESASA_SEPARATE_CHAINS) ) {
+        fail_msg("Options need to specify at least one of FREESASA_SEPARATE_CHAINS "
+                 "and FREESASA_SEPARATE_MODELS.");
+        return NULL;
+    }
 
     struct file_interval *models = NULL;
     struct file_interval whole_file = get_whole_file(pdb);

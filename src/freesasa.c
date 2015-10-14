@@ -17,6 +17,12 @@
   along with FreeSASA.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/**
+    This source file contains everything that is in freesasa.h
+    interface and did not have a natural home in any of the private
+    submodules.
+ */
+
 #include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,8 +41,6 @@
 #include "classifier.h"
 #include "util.h"
 
-#define NBUF 100
-
 #ifdef PACKAGE_VERSION
 const char *freesasa_version = PACKAGE_VERSION;
 #else
@@ -47,7 +51,7 @@ const char *freesasa_version = "";
 static freesasa_verbosity verbosity;
 
 const freesasa_parameters freesasa_default_parameters = {
-    .alg = FREESASA_SHRAKE_RUPLEY,
+    .alg = FREESASA_DEF_ALGORITHM,
     .probe_radius = FREESASA_DEF_PROBE_RADIUS,
     .shrake_rupley_n_points = FREESASA_DEF_SR_N,
     .lee_richards_n_slices = FREESASA_DEF_LR_N,
