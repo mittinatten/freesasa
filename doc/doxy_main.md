@@ -198,33 +198,24 @@ Customizing explains how to configure the calculations.
 @subsubsection API-Read-PDB Open PDB file
 
 Begin by opening a file and read a structure from it. The second
-argument, 0, indicates use default when selecting atoms, i.e. ignore
-Hydrogens and HETATMs, and only include the first MODEL if there are
-several.
+argument, NULL, indicates use the default classifier to determine
+atomic radii. The third argument, 0, indicates use default when
+selecting atoms, i.e. ignore Hydrogens and HETATMs, and only include
+the first MODEL if there are several.
 
 ~~~{.c}
     FILE *fp = fopen("1abc.pdb");
-    freesasa_structure *structure = freesasa_structure_from_pdb(fp,0);
-~~~
-
-@subsubsection API-Radii Calculate atomic radii
-
-Calculate the atomic radii of that structure using the default classifier.
-The argument `NULL` here means use the default classifier. A custom classifier
-can be passed as a pointer to freesasa_classifier.
-
-~~~{.c}
-    double *radii = freesasa_structure_radius(structure,NULL);
+    freesasa_structure *structure = freesasa_structure_from_pdb(fp, NULL, 0);
 ~~~
 
 @subsubsection API-Calc Perform calculation
 
-Calculate SASA using the structure and radii and print the total area. The
+Calculate SASA using the structure and print the total area. The
 argument `NULL` means use default parameters. User-defined parameters can be
 defined by passing a pointer to freesasa_parameters.
 
 ~~~{.c}
-    freesasa_result *result = freesasa_calc_structure(structure,radii,NULL);
+    freesasa_result *result = freesasa_calc_structure(structure, NULL);
     printf("Total area: %f A2\n",result->total);
 ~~~
 
@@ -332,17 +323,16 @@ own functions and providing them via a ::freesasa_classifier object. A
 classifier-configuration can also be read from a file using
 freesasa_classifier_from_file() (see @ref Config-file).
 
-The default classifier is available as a global const variable
-::freesasa_default_classifier. This uses the classes and radii,
+The default classifier is available throught the function
+freesasa_classifier_default(). This uses the classes and radii,
 defined in the paper by Ooi et al.  ([PNAS 1987, 84:
 3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/)) for the
-standard amino acids and also for some capping groups (ACE/NH2) if
-HETATM fields are included when the PDB input is read. For other
-residues such as Nucleic Acids or nonstandard amino acids, or
-unrecognized HETATM entries the VdW radius of the element is
-used. Warnings are emitted in the latter case. If the element can't be
-determined or is unknown, a negative radius is returned (this will
-make freesasa_structure_radius() return a NULL pointer).
+standard amino acids, for some capping groups (ACE/NH2) and nucleic
+acids. For nonstandard amino acids, or unrecognized HETATM entries the
+VdW radius of the element is used. Warnings are emitted in the latter
+case. If the element can't be determined or is unknown, a negative
+radius is returned. See freesasa_structure_from_pbd() for options for
+how to deal with unknown atoms.
 
 @page Config-file Classifier configuration files
 

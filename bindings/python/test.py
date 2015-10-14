@@ -111,19 +111,10 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(s.residueName(0) == 'ALA');
         self.assertTrue(s.residueNumber(0) == '   1');
         self.assertTrue(s.chainLabel(0) == 'A');
-        self.assertRaises(AssertionError,lambda: s.addAtom('CA','ALA','  12','A',1,1,1))
-        self.assertRaises(AssertionError,lambda: s.addAtom('CA   ','ALA','  12','A',1,1,1))
-        self.assertRaises(AssertionError,lambda: s.addAtom(' CA ',' ALA','  12','A',1,1,1))
-        self.assertRaises(AssertionError,lambda: s.addAtom(' CA ','AL','  12','A',1,1,1))
-        self.assertRaises(AssertionError,lambda: s.addAtom(' CA ','ALA',' 12','A',1,1,1))
-        self.assertRaises(AssertionError,lambda: s.addAtom(' CA ','ALA',' 12  ','A',1,1,1))
-        self.assertRaises(AssertionError,lambda: s.addAtom(' CA ','ALA',12345,'A',1,1,1))
-        self.assertRaises(AssertionError,lambda: s.addAtom(' CA ','ALA','  12','AB',1,1,1))
-        self.assertRaises(AssertionError,lambda: s.addAtom(' CA ','ALA','  12','',1,1,1))
         self.assertTrue(s.nAtoms() == 1)
         s.addAtom(' CB ','ALA',2,'A',2,1,1)
         self.assertTrue(s.nAtoms() == 2)
-        self.assertTrue(s.residueNumber(1) == '   2')
+        self.assertTrue(s.residueNumber(1) == '2')
 
         s.setRadiiWithClassifier(Classifier())
         self.assertTrue(s.radius(0) == 2.0)

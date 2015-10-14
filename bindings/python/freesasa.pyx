@@ -232,9 +232,7 @@ cdef class Result:
 #
 #  Residue names should be of the format `"ALA"`,`"ARG"`, etc.
 #      
-#  Atom names should be of the format `" CA "`, `" N "`, etc. The
-#  default classifier requires these to have length 4, but the
-#  custom classifiers can handle shorter strings like `"CA"`,`"N"`.
+#  Atom names should be of the format `"CA"`, `"N"`, etc. 
 #
 #  In addition to reading configurations from file, subclasses
 #  derived from Classifier can be used to define custom atomic
@@ -278,7 +276,7 @@ cdef class Classifier:
       #  anything, but typically they will be 'polar' and 'apolar'.
       #
       #  @param residueName (str) Residue name (`"ALA"`,`"ARG"`,...).
-      #  @param atomName (str) Atom name (`" CA "`,`" C  "`,...).
+      #  @param atomName (str) Atom name (`"CA"`,`"C"`,...).
       #  @return A string describing the class
       def classify(self,residueName,atomName):
             classIndex = self._c_classifier.sasa_class(residueName,atomName,self._c_classifier)
@@ -290,7 +288,7 @@ cdef class Classifier:
       #  radii used in calculations.
       #
       #  @param residueName (str) Residue name (`"ALA"`,`"ARG"`,...).
-      #  @param atomName (str) Atom name (" CA "," C  ",...).
+      #  @param atomName (str) Atom name ("CA","C",...).
       #  @return The radius in Å.
       def radius(self,residueName,atomName):
             return self._c_classifier.radius(residueName,atomName,self._c_classifier)
@@ -313,7 +311,7 @@ cdef class Structure:
       ## Constructor
       #
       #  If PDB file is provided, the structure will be constructed
-      #  based on the file. If not this simply initializes an empty
+      #  based on the file. If not, this simply initializes an empty
       #  structure and the other arguments are ignored. In this case 
       #  atoms will have to be added manually using addAtom().
       #
@@ -326,53 +324,62 @@ cdef class Structure:
       #                       atomic radii
       def __init__(self,fileName=None,classifier=None,
                    options = defaultOptions):
+
             self._c_structure = NULL
+
             if fileName is None:
                   self._c_structure = freesasa_structure_new()
                   return
             cdef FILE *input
             input = fopen(fileName,'r')
-            structure_options = Structure._get_structure_options(options)
             if input is NULL:
                   raise IOError("File '%s' could not be opened." % fileName)
+            structure_options = Structure._get_structure_options(options)
             self._c_structure = freesasa_structure_from_pdb(input,NULL,structure_options)
-            if (classifier is not None):
-                  self.setRadiiWithClassifier(classifier)
             fclose(input)
+
+            # this means we might be calculating the radii twice, the
+            # advantage of doing it this way is that we can define new
+            # classifiers using a Python interface
+            if (classifier is not None): 
+                  self.setRadiiWithClassifier(classifier)
+
             if self._c_structure is NULL:
                   raise Exception("Error reading '%s' as PDB-file." % fileName)
 
       ## Add atom to structure.
       #
-      # This function is meant to be used if the structure was
-      # not initialized from a PDB
+      # This function is meant to be used if the structure was not
+      # initialized from a PDB. Default radii will be assigned to each
+      # atom. This can be overriden by calling
+      # setRadiiWithClassifier() afterwards.
+      #
+      # There are no restraints on string lengths for the arguments, but
+      # the atom won't be added if the default classifier doesn't
+      # recognize the atom and also cannot deduce its element from the
+      # atom name.
       #      
-      # @param atomName (str) 4-character string with atom name (e.g. `" CA "`)
-      # @param residueName (str) 3-character string with residue name (e.g. `"ALA"`)
-      # @param residueNumber (str or int) 4-character string with residue number (e.g. `'  12'`)
-      #      or integer <= 9999. Some PDBs have residue-numbers that aren't 
+      # @param atomName (str) atom name (e.g. `"CA"`)
+      # @param residueName (str) residue name (e.g. `"ALA"`)
+      # @param residueNumber (str or int) residue number (e.g. `'12'`)
+      #      or integer. Some PDBs have residue-numbers that aren't 
       #      regular numbers. Therefore treated as a string primarily.
       # @param chainLabel (str) 1-character string with chain label (e.g. 'A')
       # @param x,y,z (float) coordinates
       # 
-      # @exception AssertionError string-arguments invalid
       # @exception Exception Residue-number invalid
       def addAtom(self, atomName, residueName, residueNumber, chainLabel, x, y, z):
             if (type(residueNumber) is str):
                   resnum = residueNumber
             elif (type(residueNumber) is int):
-                  assert residueNumber < 10000
-                  resnum = "%4d" % residueNumber
+                  resnum = "%d" % residueNumber
             else:
                   raise Exception("Residue-number invalid, must be either string or number")
-            assert len(atomName) == 4
-            assert len(residueName) == 3
-            assert len(resnum) == 4
-            assert len(chainLabel) == 1
             cdef const char *label = chainLabel
-            freesasa_structure_add_atom(self._c_structure, atomName,
-                                        residueName, resnum, label[0],
-                                        x, y, z)
+            ret = freesasa_structure_add_atom(self._c_structure, atomName,
+                                              residueName, resnum, label[0],
+                                              x, y, z)
+            assert(ret != FREESASA_FAIL)
 
       ## Assign radii to atoms in structure using a classifier.
       #
@@ -388,8 +395,9 @@ cdef class Structure:
       ## Set atomic radii from an array
       # @param radiusArray: Array of atomic radii in Ångström, should 
       #                     have nAtoms() elements.
-      # @exception AssertionError if radiusArray has wrong dimension or structure 
-      #                           not properly initialized
+      # @exception AssertionError if radiusArray has wrong dimension, structure 
+      #                           not properly initialized, or if the array contains
+      #                           negative radii (not properly classified?) 
       def setRadii(self,radiusArray):
             assert(self._c_structure is not NULL)
             n = self.nAtoms()
@@ -398,6 +406,7 @@ cdef class Structure:
             assert(r is not NULL)
             for i in range(0,n):
                   r[i] = radiusArray[i]
+                  assert(r[i] >= 0)
             freesasa_structure_set_radius(self._c_structure, r)
 
       ## Number of atoms.
@@ -410,8 +419,8 @@ cdef class Structure:
 
       ## Radius of atom.
       # @param i (int) Index of atom.
-      # @return Radius in Å.
-      # @exception AssertionError if index out of bounds or object not properly initalized
+      # @return Radius in Å. 
+      # @exception AssertionError if index out of bounds, object not properly initalized.
       def radius(self,i):
             assert(i >= 0 and i < self.nAtoms())
             assert(self._c_structure is not NULL)

@@ -53,7 +53,7 @@ typedef enum {FREESASA_LEE_RICHARDS, FREESASA_SHRAKE_RUPLEY}
     - FREESASA_V_NORMAL: print all errors and warnings.
     - FREESASA_V_NOWARNINGS: print only errors.
     - FREESASA_V_SILENT: print no errors and warnings.
-    - FREESASA_V_DEBUG: print all errors, warnigns and debug messages.
+    - FREESASA_V_DEBUG: print all errors, warnings and debug messages.
 */    
 typedef enum {FREESASA_V_NORMAL,
               FREESASA_V_NOWARNINGS,
@@ -170,14 +170,12 @@ typedef struct freesasa_classifier {
 extern const freesasa_parameters freesasa_default_parameters;
 
 /**
-    Calculates SASA based on a given structure and atomic radii.
+    Calculates SASA based on a given structure.
 
     Return value is dynamically allocated, should be freed with
     freesasa_result_free().
 
     @param structure The structure
-    @param radii Atomic radii, this array should have same number of
-    elements as there are atoms in the structure.
     @param parameters Parameters for the calculation, if NULL
     defaults are used.
 
@@ -233,12 +231,18 @@ freesasa_classifier*
 freesasa_classifier_from_file(FILE *file);
 
 /**
-    The default classifier.
+    Generates a default classifier.
+
+    The functions that default to this classifier use their own shared
+    copy of it, i.e. it is not necessary to use this function to
+    simply pass a default classifier to freesasa_structure_from_pdb(),
+    freesasa_structure_array() or freesasa_structure_add_atom_wopt()
+    (pass a NULL pointer there instead). 
 
     Return value is dynamically allocated, should be freed with
     freesasa_classifier_free().
 
-    @return The default classifier.
+    @return A copy of the default classifier.
  */
 freesasa_classifier*
 freesasa_classifier_default();
@@ -271,7 +275,7 @@ freesasa_result_classify(const freesasa_result *result,
 
 
 /**
-    Get area of a selection (experimental feature).
+    Get area of a selection.
 
     Uses subset of the select syntax from Pymol (name, symbol, resn,
     resi and chain), the keyword "select" is implicit. All commands
@@ -338,12 +342,11 @@ freesasa_strvp_free(freesasa_strvp *strvp);
     factors with the radii.
 
     Will only work if the structure was initialized from a PDB-file, i.e.
-    using freesasa_structure_from_pdb().
+    using freesasa_structure_from_pdb() or freesasa_structure_array().
 
     @param output File to write to.
     @param result SASA values.
     @param structure Structure to use to print PDB.
-    @param radii Radii of atoms.
 
     @return ::FREESASA_SUCCESS if file written successfully.
     ::FREESASA_FAIL if there is no previous PDB input to base output
@@ -369,7 +372,7 @@ freesasa_write_pdb(FILE *output,
     output. ::FREESASA_SUCCESS else.
  */
 int
-freesasa_per_residue_type(FILE *output, 
+freesasa_per_residue_type(FILE *output,
                           freesasa_result *result,
                           const freesasa_structure *structure);
 
@@ -450,7 +453,7 @@ freesasa_structure_new(void);
     the radius of each atom, if the atom is not recognized the element
     of the atom is guessed, and that element's VdW radius used. If
     this also fails a warning is printed and the atom is skipped. All
-    these behaviors can be modified through the ::options argument.
+    these behaviors can be modified through the `options` argument.
 
     If a more fine-grained control over which atoms to include is
     needed, the PDB-file needs to be modified before calling this
@@ -495,6 +498,7 @@ freesasa_structure*
 freesasa_structure_from_pdb(FILE *pdb,
                             const freesasa_classifier *classifier,
                             int options);
+
 /**
     Init array of structures from PDB.
     
@@ -510,6 +514,8 @@ freesasa_structure_from_pdb(FILE *pdb,
     
     @param n Number of structures found are written to this integer.
     
+    @param classifier A classifier to calculate atomic radii.
+
     @param options Bitfield. 0 means only use non-hydrogen `ATOM`
       entries. ::FREESASA_SEPARATE_MODELS and
       ::FREESASA_SEPARATE_CHAINS can be used to generate one structure
@@ -522,7 +528,7 @@ freesasa_structure_from_pdb(FILE *pdb,
       NULL if there were problems reading input or a memory allocation
       failure.
  */
-freesasa_structure**
+freesasa_structure **
 freesasa_structure_array(FILE *pdb,
                          int *n,
                          const freesasa_classifier *classifier,
@@ -581,18 +587,18 @@ freesasa_structure_add_atom(freesasa_structure *structure,
       - `options == 0` means guess element of atom, and use that
         element's VdW radius, skip atom if this method also fails.  
       
-      - `options & FREESASA_SKIP_AT_UNKNOWN == 1` skip unknown atoms,
+      - `options & FREESASA_SKIP_UNKNOWN == 1` skip unknown atoms,
         return ::FREESASA_WARN
         
       - `options & FREESASA_HALT_AT_UNKNOWN == 1` skip unknown atoms, 
-        return ::FREESASA_FAIL, overrides the FREESASA_SKIP_AT_UNKNOWN.
+        return ::FREESASA_FAIL, overrides the ::FREESASA_SKIP_UNKNOWN.
 
     @return ::FREESASA_SUCCESS on normal execution. ::FREESASA_FAIL if
        if memory allocation fails or if halting at unknown
        atom. ::FREESASA_WARN if skipping atom.
  */
 int 
-freesasa_structure_add_atom_wopt(freesasa_structure *p,
+freesasa_structure_add_atom_wopt(freesasa_structure *structure,
                                  const char *atom_name,
                                  const char *residue_name,
                                  const char *residue_number,
