@@ -175,15 +175,16 @@ behavior can be modified using the following options
 
 @section Basic-API Basics
 
-The API is found in the header [freesasa.h](freesasa_8h.html) and is
-the only header installed by `make install`. The other source-files
-and headers in the repository are for internal use, but are also
-thoroughly documented in the source itself.
+The API is found in the header [freesasa.h](freesasa_8h.html) and this
+is the only header installed by `make install`. The other source-files
+and headers in the repository are for internal use, and are not
+present here, but are thoroughly documented in the source itself.
 
-To calculate the SASA of a structure, there are two options:
+To calculate the SASA of a structure, there are two main options:
 
-1. Initialize a structure from a PDB-file, calculate a radius for each atom 
-    and then run the calculation.
+1. Initialize a structure from a PDB-file, using either the default
+   classifier or a custom one to determine the radius of each atom,
+   and then run the calculation.
 
 2. Provide an array of cartesian coordinates and an array containing
    the radii of the corresponding atoms to freesasa_calc_coord().
@@ -191,63 +192,68 @@ To calculate the SASA of a structure, there are two options:
 @subsection API-PDB Calculate SASA for a PDB file
 
 The following explains how to use FreeSASA to calculate the SASA of a
-fictive PDB file (1abc.pdb). Possible errors are ignored for
-brevity. Default parameters are used at every step, the section @ref
+fictive PDB file (1abc.pdb). At each step one or more error checks
+should have been done, but theses are ignored here for brevity. See
+the documentation of each function to see what errors can occur.
+Default parameters are used at every step, the section @ref
 Customizing explains how to configure the calculations.
 
 @subsubsection API-Read-PDB Open PDB file
 
-Begin by opening a file and read a structure from it. The second
-argument, NULL, indicates use the default classifier to determine
-atomic radii. The third argument, 0, indicates use default when
-selecting atoms, i.e. ignore Hydrogens and HETATMs, and only include
-the first MODEL if there are several.
+The function freesasa_structure_from_pdb() reads the atom coordinates
+from a PDB file and assigns a radius to each atom. The second and
+third arguments can be changed to use a custom freesasa_classifier to
+define radii and to specify options for what to include in the PDB
+file, respectively.
 
 ~~~{.c}
     FILE *fp = fopen("1abc.pdb");
     freesasa_structure *structure = freesasa_structure_from_pdb(fp, NULL, 0);
 ~~~
 
-@subsubsection API-Calc Perform calculation
+@subsubsection API-Calc Perform calculation and get total SASA
 
-Calculate SASA using the structure and print the total area. The
-argument `NULL` means use default parameters. User-defined parameters can be
-defined by passing a pointer to freesasa_parameters.
+Next we use freesasa_calc_structure() to calculate SASA using the
+structure we just generated, and then print the total area. The argument
+`NULL` means use default freesasa_parameters.
 
 ~~~{.c}
     freesasa_result *result = freesasa_calc_structure(structure, NULL);
     printf("Total area: %f A2\n",result->total);
 ~~~
 
-@subsubsection API-Classes Get area of classes of atoms
+@subsubsection API-Classes Get polar and apolar area
 
-Calculate area of classes (Polar/Apolar/..) and print their
-values. The argument `NULL` again means use the default classifier. The
-type freesasa_strvp stores pairs of strings and values, as
-demonstrated below.
+We are commonly interested in the polar and apolar areas of a
+molecule, this can be calculated by freesasa_result_classify(). Again,
+passing a NULL freesasa_classifier uses the default. To get other
+classes of atoms we can either define our own classifier, or use
+freesasa_select_area() defined in the next section. The return type
+freesasa_strvp contains arrays of strings and values describing the
+different classes, as illustrated below.
 
 ~~~{.c}
-    freesasa_strvp *class_area = freesasa_result_classify(result,structure,NULL);
+    freesasa_strvp *class_area = freesasa_result_classify(result, structure, NULL);
     for (int i = 0; i < class_area->n; ++i)
-        printf("%s: %f A2\n",class_area->string[i],
-               class_area->value[i]);
+        printf("%s: %f A2\n", class_area->string[i], class_area->value[i]);
 ~~~
+
+@see @ref Classification
 
 @subsubsection API-Select Get area of custom groups of atoms
 
 Groups of atoms can be defined using freesasa_select_area(), which
 takes a selection definition uses a subset of the Pymol select syntax
-(@ref Selection).
 
 ~~~{.c}
     double area;
     char name[FREESASA_MAX_SELECTION_NAME+1];
     freesasa_select_area("aromatic, resn phe+tyr+trp+his+pro",
-                         name,&area,structure,result);
+                         name, &area, structure, result);
+    printf("Area of selection '%s': %f A2\n", name, area);
 ~~~
 
-The last statement stores the string "aromatic" in `name` and the SASA
-integrated over the atoms defined by the selection.
+@see @ref Selection.
 
 @subsection Coordinates
 
@@ -256,16 +262,28 @@ accepted as arrays of doubles passed to the function
 freesasa_calc_coord(). The coordinate-array should have size 3*n with
 coordinates in the order `x1,y1,z1,x2,y2,z2,...,xn,yn,zn`.
 
-@subsection Error-reporting 
+~~~{.c}
+    double coord[] = {/* x */ 1.0, /* y */ 2.0, /* z */ 3.0};
+    double radius[] = {2.0};
+    freesasa_result *result = freesasa_calc_coord(coord, radius, 1, NULL);
+~~~
 
-Errors due to user or system errors, such as malformatted
-config-files, I/O errors or memory allocation errors are reported
-through return values, either ::FREESASA_FAIL or ::FREESASA_WARN, or
-by NULL pointers, depending on the context. See the documentation for
-the individual functions.
+@subsection Error-handling
+
+The principle for error handling is that unpredictable errors should
+not cause a crash, but rather allow the user to exit gracefully or
+make another attempt. Therefore, errors due to user or system
+failures, such as faulty parameters, malformatted config-files, I/O
+errors or out of memory errors, are reported through return values,
+either ::FREESASA_FAIL or ::FREESASA_WARN, or by NULL pointers,
+depending on the context. See the documentation for the individual
+functions. If memory allocation fails as much memory as possible is
+released. To the extent that it's possible to emulate system failures
+like this, they have been verified to not cause aborts or seg-faults
+(see the tests/ directory) in any part of the code.
 
 Errors that are attributable to programmers using the library, such as
-passing null pointers are checked by asserts.
+passing null pointers where not allowed, are checked by asserts.
 
 @subsection Thread-safety 
 
@@ -276,10 +294,11 @@ memory allocation and I/O, and thread-safety should generally not be
 an issue (to the extent that your C library has threadsafe I/O and
 dynamic memory allocation). The SASA calculation itself can be
 parallelized by passing a ::freesasa_parameters struct with
-::freesasa_parameters.n_threads set to a value > 1 to
+::freesasa_parameters.n_threads set to a value > 1 (default is 2) to
 freesasa_calc_structure() or freesasa_calc_coord(). This only gives a
-significant effect on performance for large proteins, and because not
-all steps are parallelized it is not worth it to go beyond 2 threads.
+significant effect on performance for large proteins or at high
+precision, and because not all steps are parallelized it is usually
+not worth it to go beyond 2 threads.
 
 @section Customizing Customizing behavior
 
@@ -298,8 +317,8 @@ freesasa_parameters param = freesasa_default_parameters;
 
 To allow the user to only change the parameters that are non-default.
 
-The following call would run a Lee & Richards calculation with 200
-slices per atom
+The following call would run a high precision Lee & Richards
+calculation with 200 slices per atom
 
 ~~~{.c}
 param.alg = FREESASA_LEE_RICHARDS;
@@ -310,13 +329,14 @@ freesasa_result *result = freesasa_calc_structure(structure,radii,param);
 @subsection Classification Specifying atomic radii and classes
 
 The type ::freesasa_classifier has function pointers to functions that
-take residue and atom names as argument (pairs such as "ALA"," CA "),
+take residue and atom names as argument (pairs such as "ALA","CA"),
 and returns a radius or a class (polar, apolar, etc). The classifier
-can be passed to freesasa_structure_radius() to generate an array of
-atomic radii, which can then be used to calculate the SASA of the
-structure. It can also be used in freesasa_result_classify() to get
-the SASA integrated over the different classes of atoms, i.e. the SASA
-of all polar atoms, etc.
+can be passed to freesasa_structure_from_pdb(),
+freesasa_structure_array() or freesasa_structure_add_atom_wopt() to
+customize the radii assigned to atoms, which can then be used to
+calculate the SASA of the structure. It can also be used in
+freesasa_result_classify() to get the SASA integrated over the
+different classes of atoms, i.e. the SASA of all polar atoms, etc.
 
 Users of the API can provide their own classification by writing their
 own functions and providing them via a ::freesasa_classifier object. A
@@ -325,13 +345,13 @@ freesasa_classifier_from_file() (see @ref Config-file).
 
 The default classifier is available throught the function
 freesasa_classifier_default(). This uses the classes and radii,
-defined in the paper by Ooi et al.  ([PNAS 1987, 84:
+defined in the paper by Ooi et al. ([PNAS 1987, 84:
 3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/)) for the
 standard amino acids, for some capping groups (ACE/NH2) and nucleic
 acids. For nonstandard amino acids, or unrecognized HETATM entries the
 VdW radius of the element is used. Warnings are emitted in the latter
 case. If the element can't be determined or is unknown, a negative
-radius is returned. See freesasa_structure_from_pbd() for options for
+radius is returned. See freesasa_structure_from_pdb() for options for
 how to deal with unknown atoms.
 
 @page Config-file Classifier configuration files
