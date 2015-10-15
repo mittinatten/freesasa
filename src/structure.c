@@ -533,6 +533,7 @@ freesasa_structure_add_atom_wopt(freesasa_structure *p,
 {
     assert(p);
     assert(atom_name); assert(residue_name); assert(residue_number);
+
     struct atom *a;
     char symbol[PDB_ATOM_SYMBOL_STRL+1];
     double v[3] = {x,y,z};
@@ -581,8 +582,8 @@ freesasa_structure_array(FILE *pdb,
     assert(pdb);
     assert(n);
 
-    if( ! (options & FREESASA_SEPARATE_MODELS) ||
-        (options & FREESASA_SEPARATE_CHAINS) ) {
+    if( ! (options & FREESASA_SEPARATE_MODELS ||
+           options & FREESASA_SEPARATE_CHAINS) ) {
         fail_msg("Options need to specify at least one of FREESASA_SEPARATE_CHAINS "
                  "and FREESASA_SEPARATE_MODELS.");
         return NULL;
