@@ -437,9 +437,10 @@ freesasa_structure_new(void);
     first model is used. The provided classifier is used to determine
     the radius of each atom, if the atom is not recognized the element
     of the atom is guessed, and that element's VdW radius used. If
-    this also fails a warning is printed and the atom is skipped. All
-    these behaviors can be modified through the `options` bitfield
-    argument:
+    this fails its radius is set 0, which means that it won't
+    contribute to SASA, but a radius from another source can be set
+    through freesasa_structure_set_radius(). All these behaviors can
+    be modified through the `options` bitfield argument:
 
       - `options == 0`:
          Default behavior
@@ -451,15 +452,13 @@ freesasa_structure_new(void);
          Include HETATM.
 
       - `options & ::FREESASA_JOIN_MODELS == 1`:
-         Join models
-      
-      - `options & ::FREESASA_SKIP_UNKNOWN == 1`:
-         Skip unknown atoms.
-      
-      - `options & ::FREESASA_HALT_AT_UNKNOWN == 1`:
-         Halt at unknown atom and return NULL, overrides
-         ::FREESASA_SKIP_UNKNOWN.
+         Join models.
 
+      - `options & ::FREESASA_SKIP_UNKNOWN == 1`: Skip unknown
+         atoms.
+      
+      - `options & ::FREESASA_HALT_AT_UNKNOWN == 1`: Halt at unknown
+         atom and return NULL. Overrides ::FREESASA_SKIP_UNKNOWN.
 
     If a more fine-grained control over which atoms to include is
     needed, the PDB-file needs to be modified before calling this
@@ -561,14 +560,18 @@ freesasa_structure_add_atom(freesasa_structure *structure,
     will be alerted of what has happened through warnings or error
     messages:
 
-      - `options == 0` means guess element of unknown atoms, and use that
-        element's VdW radius, skip atom if this method also fails.  
-      
+      - `options == 0` means guess element of unknown atoms, and use
+        that element's VdW radius. If this fails, assign radius 0. A 0
+        radius means this atom won't contribute to the SASA, but will
+        still be there if we want to use
+        freesasa_structure_set_radius() to assign a radius from
+        another source.
+
       - `options & FREESASA_SKIP_UNKNOWN == 1` skip unknown atoms,
-        return ::FREESASA_WARN
-        
-      - `options & FREESASA_HALT_AT_UNKNOWN == 1` skip unknown atoms, 
-        return ::FREESASA_FAIL, overrides ::FREESASA_SKIP_UNKNOWN.
+        return ::FREESASA_WARN.
+
+      - `options & FREESASA_HALT_AT_UNKNOWN == 1` skip unknown atoms,
+        return ::FREESASA_FAIL. Overrides ::FREESASA_SKIP_UNKNOWN.
 
     @see Because the argument list is so long, freesasa_structure_add_atom()
          is a shortcut to call this with defaults.

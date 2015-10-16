@@ -254,13 +254,16 @@ structure_check_atom_radius(double *radius,
         } else {
             *radius = freesasa_guess_radius(a->symbol);
             if (*radius < 0) {
-                return freesasa_warn("Skipping unknown atom '%s %s': "
-                                     "can't guess radius of symbol '%s'.",
-                                     a->res_name, a->atom_name, a->symbol);
+                *radius = +0.;
+                freesasa_warn("Atom '%s %s' unknown and ",
+                              "can't guess radius of symbol '%s'. "
+                              "Assigning radius 0 A.",
+                              a->res_name, a->atom_name, a->symbol);
+            } else {
+                freesasa_warn("Atom '%s %s' unknown, guessing element is '%s', "
+                              "and radius %.3f A.",
+                              a->res_name, a->atom_name, a->symbol, *radius);
             }
-            freesasa_warn("Atom '%s %s' unknown, guessing element is '%s', "
-                          "and radius %.3f A.",
-                          a->res_name, a->atom_name, a->symbol, *radius);
             // do not return FREESASA_WARN here, because we will keep the atom
         }
     }
@@ -539,7 +542,8 @@ freesasa_structure_add_atom_wopt(freesasa_structure *p,
     double v[3] = {x,y,z};
     int ret, warn = 0;
 
-    if (guess_symbol(symbol,atom_name) == FREESASA_WARN) ++warn;
+    if (guess_symbol(symbol,atom_name) == FREESASA_WARN &&
+        options & FREESASA_SKIP_UNKNOWN) ++warn;
     
     a = atom_new(residue_name,residue_number,atom_name,symbol,chain_label);
     if (a == NULL) return mem_fail();
