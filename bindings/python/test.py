@@ -144,6 +144,11 @@ class FreeSASATestCase(unittest.TestCase):
 
         s = Structure("data/1ubq.pdb",None,{'hetatm' : True})
         self.assertTrue(s.nAtoms() == 660)
+
+        s = Structure("data/1d3z.pdb",None,{'hydrogen' : True, 'skip-unknown' : True})
+        self.assertTrue(s.nAtoms() == 602)
+
+        self.assertRaises(Exception, lambda : Structure("data/1d3z.pdb",None,{'hydrogen' : True, 'halt-at-unknown' : True}))
         setVerbosity(normal)
 
     def testStructureArray(self):
@@ -188,6 +193,9 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertRaises(AssertionError,
                           lambda: structureArray("data/2jo4.pdb",
                                                  {'not-an-option' : True, 'hydrogen' : True}))
+        self.assertRaises(AssertionError,
+                          lambda: structureArray("data/2jo4.pdb",
+                                                 {'hydrogen' : True}))
         setVerbosity(normal)
 
     def testCalc(self):

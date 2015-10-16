@@ -30,9 +30,6 @@
 #
 # See documentation of the classes and functions for how to customize behavior
 #
-# The private methods named _get_address allow access to the C structs
-# that these classes are wrapping, which are necessary in the function
-# calc(). They are not intended to be used outside of this module.
 
 from libc.stdio cimport FILE, fopen, fclose
 from libc.stdlib cimport free, realloc, malloc
@@ -172,6 +169,7 @@ cdef class Parameters:
       def nThreads(self):
             return self._c_param.n_threads
 
+      # not pretty, but only way I've found to pass pointers around
       def _get_address(self, size_t ptr2ptr):
             cdef freesasa_parameters **p = <freesasa_parameters**> ptr2ptr
             p[0] = &self._c_param
@@ -188,7 +186,7 @@ cdef class Result:
       def __cinit__ (self):
             self._c_result = NULL
 
-      ## The destructor (free internal C objects)
+      ## The destructor
       def __dealloc__(self):
             if self._c_result is not NULL:
                   freesasa_result_free(self._c_result)
@@ -226,24 +224,25 @@ cdef class Result:
       
 ## Assigns class and radius to atom by residue and atom name.
 #
-#  Wraps the C struct freesasa_classifier. If not initialized with
-#  filename the default classification is used.
+#  Subclasses derived from Classifier can be used to define custom
+#  atomic radii and/or classes. Can also be initialized from a @ref
+#  Config-file "configuration file" with a custom classifier.
+#
+#  Wraps a C freesasa_classifier. If initialized without arguments the
+#  default classifier is used.
 #
 #  Residue names should be of the format `"ALA"`,`"ARG"`, etc.
 #      
 #  Atom names should be of the format `"CA"`, `"N"`, etc. 
 #
-#  In addition to reading configurations from file, subclasses
-#  derived from Classifier can be used to define custom atomic
-#  radii and/or classes.
 cdef class Classifier:
       cdef freesasa_classifier* _c_classifier
 
       ## Constructor.
       #
-      #  If no file is provided the default classifier is used. The
-      #  config-file should have the same syntax as described in
-      #  the C-documentation and exemplified in share directory.
+      #  If no file is provided the default classifier is used. 
+      #
+      #  @see @ref Config-file.
       #      
       #  @param fileName Name of file with classifier configuration.
       #  @exception IOError   Problem opening/reading file
@@ -265,29 +264,33 @@ cdef class Classifier:
                   if self._c_classifier is NULL:
                         raise Exception("Error initializing default classifier.") 
       
-      ## The destructor (free internal C objects)
+      ## The destructor
       def __dealloc__(self):
             freesasa_classifier_free(self._c_classifier)
 
       ## Class of atom.
       #
       #  Depending on the configuration these classes can be
-      #  anything, but typically they will be 'polar' and 'apolar'.
+      #  anything, but typically they will be 'Polar' and 'Apolar'. 
+      #  Unrecognized atoms will get the class 'Unknown'. 
       #
       #  @param residueName (str) Residue name (`"ALA"`,`"ARG"`,...).
       #  @param atomName (str) Atom name (`"CA"`,`"C"`,...).
       #  @return A string describing the class
       def classify(self,residueName,atomName):
             classIndex = self._c_classifier.sasa_class(residueName,atomName,self._c_classifier)
+            if classIndex is FREESASA_WARN:
+                  return 'Unknown'
             return self._c_classifier.class2str(classIndex,self._c_classifier)
 
       ## Radius of atom.
       #
       #  This allows the classifier to be used to calculate the atomic
-      #  radii used in calculations.
+      #  radii used in calculations. Unknown atoms will get a negative
+      #  radius.
       #
-      #  @param residueName (str) Residue name (`"ALA"`,`"ARG"`,...).
-      #  @param atomName (str) Atom name ("CA","C",...).
+      #  @param residueName (str) Residue name (`"ALA"`, `"ARG"`, ...).
+      #  @param atomName (str) Atom name (`"CA"`, `"C"`, ...).
       #  @return The radius in Å.
       def radius(self,residueName,atomName):
             return self._c_classifier.radius(residueName,atomName,self._c_classifier)
@@ -304,8 +307,15 @@ cdef class Classifier:
 #  Wraps the C struct freesasa_structure.
 cdef class Structure:
       cdef freesasa_structure* _c_structure
-      ## By default ignore HETATM, Hydrogens and only use first model
-      defaultOptions = {'hetatm' : False, 'hydrogen' : False, 'join-models' : False}
+      ## By default ignore HETATM, Hydrogens, only use first model. For unknown atoms
+      # try to guess the radius, if this fails, assign radius 0 (to
+      # allow changing the radius later).
+      defaultOptions = {         'hetatm' : False,
+            'hydrogen' : False,
+            'join-models' : False,
+            'skip-unknown' : False,
+            'halt-at-unknown' : False
+            }
 
       ## Constructor
       #
@@ -320,7 +330,9 @@ cdef class Structure:
       #  @param options specify which atoms and models to include
       #  @exception IOError Problem opening/reading file.
       #  @exception Exception Problem parsing PDB file or calculating 
-      #                       atomic radii
+      #      atomic radii.
+      #  @exception Exception If option 'halt-at-unknown' selected and
+      #      unknown atom encountered.
       def __init__(self,fileName=None,classifier=None,
                    options = defaultOptions):
 
@@ -337,14 +349,15 @@ cdef class Structure:
             self._c_structure = freesasa_structure_from_pdb(input,NULL,structure_options)
             fclose(input)
 
+            if self._c_structure is NULL:
+                  raise Exception("Error reading '%s'." % fileName)
+
             # this means we might be calculating the radii twice, the
             # advantage of doing it this way is that we can define new
             # classifiers using a Python interface
             if (classifier is not None): 
                   self.setRadiiWithClassifier(classifier)
 
-            if self._c_structure is NULL:
-                  raise Exception("Error reading '%s' as PDB-file." % fileName)
 
       ## Add atom to structure.
       #
@@ -471,7 +484,8 @@ cdef class Structure:
             options = 0
             
             # check validity of options
-            knownOptions = {'hetatm','hydrogen','join-models','separate-models','separate-chains'}
+            knownOptions = {'hetatm','hydrogen','join-models','separate-models',
+                            'separate-chains','skip-unknown','halt-at-unknown'}
             unknownOptions = []
             for key in param:
                   if not key in knownOptions:
@@ -490,6 +504,10 @@ cdef class Structure:
                   options |= FREESASA_SEPARATE_MODELS
             if 'separate-chains' in param and param['separate-chains']:
                   options |= FREESASA_SEPARATE_CHAINS
+            if 'skip-unknown' in param and param['skip-unknown']:
+                  options |= FREESASA_SKIP_UNKNOWN
+            if 'halt-at-unknown' in param and param['halt-at-unknown']:
+                  options |= FREESASA_HALT_AT_UNKNOWN
             return options
 
       def _get_address(self, size_t ptr2ptr):
@@ -500,7 +518,7 @@ cdef class Structure:
             cdef freesasa_structure **p = <freesasa_structure**> ptr2ptr
             self._c_structure = p[0]
 
-      ## The destructor (free internal C objects)
+      ## The destructor
       def __dealloc__(self):
             if self._c_structure is not NULL:
                   freesasa_structure_free(self._c_structure)
@@ -527,6 +545,8 @@ defaultStructureArrayOptions = {
 #   if none specified.
 # @exception AssertionError if fileName is None
 # @exception AssertionError if an option value is not recognized
+# @exception AssertionError if neither of the options 'separate-chains'
+#   and 'separate-models' are specified.
 # @exception IOError if can't open file
 # @exception Exception: if there are problems parsing the input
 # @return An array of Structures
@@ -534,6 +554,9 @@ def structureArray(fileName,
                    options = defaultStructureArrayOptions,
                    classifier = None):
       assert fileName is not None
+      # we need to have at least one of these
+      assert(('separate-chains' in options and options['separate-chains'] is True) 
+             or ('separate-models' in options and options['separate-models'] is True))
       structure_options = Structure._get_structure_options(options)
       cdef FILE *input
       input = fopen(fileName,'r')
@@ -589,11 +612,11 @@ def classifyResults(result,structure,classifier=None):
       return ret
 ## Sum SASA result over a selection of atoms
 # @param commands A list of commands with selections using Pymol
-#   syntax, e.g. "s1, resn ala+arg" or "s2, chain A and resi 1-5" 
+#   syntax, e.g. `"s1, resn ala+arg"` or `"s2, chain A and resi 1-5"` 
 #   (see @ref Selection).
 # @param structure A Structure.  
 # @param result Result from sasa calculation on structure.
-# @return Dictionary with names of selections ("s1","s2",...) as 
+# @return Dictionary with names of selections (`"s1"`,`"s2"`,...) as 
 #   keys, and the corresponding SASA values as values.
 # @exception Exception: Parser failed (typically syntax error), see
 #   library error messages.

@@ -75,7 +75,7 @@ START_TEST (test_add_atom)
 {
     freesasa_structure *s = freesasa_structure_new();
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert_int_eq(freesasa_structure_add_atom(s,"HABC","ALA","   1",'A',0,0,0), FREESASA_WARN);
+    ck_assert_int_eq(freesasa_structure_add_atom(s,"HABC","ALA","   1",'A',0,0,0), FREESASA_SUCCESS);
     ck_assert_int_eq(freesasa_structure_add_atom(s,"SE  ","SEC","   1",'A',0,0,0), FREESASA_SUCCESS);
     ck_assert_int_eq(freesasa_structure_add_atom(s,"CL  ","ABC","   1",'A',0,0,0), FREESASA_SUCCESS);
     ck_assert_int_eq(freesasa_structure_n(s), 3);
@@ -83,25 +83,26 @@ START_TEST (test_add_atom)
     ck_assert_str_eq(freesasa_structure_atom_symbol(s,1),"SE");
     ck_assert_str_eq(freesasa_structure_atom_symbol(s,2),"CL");
 
-    ck_assert_int_eq(freesasa_structure_add_atom(s,"A","ALA","   1",'A',0,0,0),FREESASA_WARN); // Can't guess element of A
+    ck_assert_int_eq(freesasa_structure_add_atom(s,"A","ALA","   1",'A',0,0,0),FREESASA_SUCCESS);
     ck_assert_int_eq(freesasa_structure_add_atom(s," C  ","AL","   1",'A',0,0,0),FREESASA_SUCCESS);
     ck_assert_int_eq(freesasa_structure_add_atom(s," C  ","ALA"," 1",'A',0,0,0),FREESASA_SUCCESS);
-    ck_assert_int_eq(freesasa_structure_n(s), 5);
+    ck_assert_int_eq(freesasa_structure_n(s), 6);
 
+    ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"A","ALA","   1",'A',0,0,0,NULL,FREESASA_SKIP_UNKNOWN),FREESASA_WARN);
     ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"HABC","ALA","   1",'A',0,0,0,NULL,FREESASA_SKIP_UNKNOWN), FREESASA_WARN);
     ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"SE  ","SEC","   1",'A',0,0,0,NULL,FREESASA_SKIP_UNKNOWN), FREESASA_SUCCESS);
     ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"CL  ","ABC","   1",'A',0,0,0,NULL,FREESASA_SKIP_UNKNOWN), FREESASA_WARN);
-    ck_assert_int_eq(freesasa_structure_n(s), 6);
+    ck_assert_int_eq(freesasa_structure_n(s), 7);
 
     ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"HABC","ALA","   1",'A',0,0,0,NULL,FREESASA_HALT_AT_UNKNOWN), FREESASA_FAIL);
     ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"SE  ","SEC","   1",'A',0,0,0,NULL,FREESASA_HALT_AT_UNKNOWN), FREESASA_SUCCESS);
     ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"CL  ","ABC","   1",'A',0,0,0,NULL,FREESASA_HALT_AT_UNKNOWN), FREESASA_FAIL);
-    ck_assert_int_eq(freesasa_structure_n(s), 7);
+    ck_assert_int_eq(freesasa_structure_n(s), 8);
 
     ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"HABC","ALA","   1",'A',0,0,0,NULL,FREESASA_HALT_AT_UNKNOWN | FREESASA_SKIP_UNKNOWN), FREESASA_FAIL);
     ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"SE  ","SEC","   1",'A',0,0,0,NULL,FREESASA_HALT_AT_UNKNOWN | FREESASA_SKIP_UNKNOWN), FREESASA_SUCCESS);
     ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"CL  ","ABC","   1",'A',0,0,0,NULL,FREESASA_HALT_AT_UNKNOWN | FREESASA_SKIP_UNKNOWN), FREESASA_FAIL);
-    ck_assert_int_eq(freesasa_structure_n(s), 8);
+    ck_assert_int_eq(freesasa_structure_n(s), 9);
 
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 
@@ -179,12 +180,24 @@ START_TEST (test_hydrogen)
     ck_assert(freesasa_structure_n(s) == 602);
     freesasa_structure_free(s);
     rewind(pdb);
+
     freesasa_set_verbosity(FREESASA_V_SILENT);
+
     s = freesasa_structure_from_pdb(pdb,NULL,FREESASA_INCLUDE_HYDROGEN);
-    freesasa_set_verbosity(FREESASA_V_NORMAL);
     ck_assert(s != NULL);
     ck_assert(freesasa_structure_n(s) == 1231);
     freesasa_structure_free(s);
+
+    rewind(pdb);
+    ck_assert_ptr_eq(freesasa_structure_from_pdb(pdb,NULL,FREESASA_INCLUDE_HYDROGEN | FREESASA_HALT_AT_UNKNOWN), NULL);
+
+    rewind(pdb);
+    s = freesasa_structure_from_pdb(pdb,NULL,FREESASA_INCLUDE_HYDROGEN | FREESASA_SKIP_UNKNOWN);
+    ck_assert(s != NULL);
+    ck_assert(freesasa_structure_n(s) == 602);
+    freesasa_structure_free(s);
+
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
     fclose(pdb);
 }
 END_TEST

@@ -523,6 +523,7 @@ classes Nitrogens separately, and assigns radii based on element only
 (and crudely).
 
 ~~~{.py}
+import freesasa
 import re
 
 class DerivedClassifier(Classifier):
@@ -551,6 +552,16 @@ result = freesasa.calc(structure)
 # use the DerivedClassifier to classify atoms
 area_classes = freesasa.classifyResults(result,structure,classifier)
 ~~~
+
+Of course, this example is somewhat contrived, if we only want the
+integrated area of Nitrogen atoms, the simpler choice would be
+~~~{.py}
+    selection = freesasa.selectArea('nitrogen, symbol n', structure, result)
+~~~
+
+However, extending freesasa.Classifier, as illustrated above, allows
+classification to arbitrary complexity and also lets us redefine the
+radii used in the calculation.
 
 @page Geometry Geometry of Lee & Richards' algorithm
 
