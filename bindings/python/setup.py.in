@@ -16,7 +16,7 @@ setup(
     description='Calculate solvent accessible surface areas of proteins',
     version= '@PACKAGE_VERSION@',
     author='Simon Mitternacht',
-    url='http://mittinatten.github.io/freesasa/',
+    url='http://freesasa.github.io/',
     license='GPL-v3',
     ext_modules = cythonize(extensions)
 )

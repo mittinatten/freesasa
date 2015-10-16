@@ -37,7 +37,6 @@
 from libc.stdio cimport FILE, fopen, fclose
 from libc.stdlib cimport free, realloc, malloc
 from libc.string cimport memcpy
-from cpython cimport array
 from cfreesasa cimport *
 
 ## Used to specify the algorithm by Shrake & Rupley

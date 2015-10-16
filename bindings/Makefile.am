@@ -20,6 +20,11 @@ install-exec-hook:
 
 $(python_bindings): pylib
 
+clean-local:
+	@cd $(top_srcdir)/bindings/python/; \
+		@PYTHON@ setup.py clean --all;
+	rm python/freesasa.so
+
 all-local: $(python_bindings)
 
 endif #have-cython
