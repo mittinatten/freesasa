@@ -259,9 +259,10 @@ freesasa_log(FILE *log,
         fprintf(log,"\n");
         fprintf(log,fmt,"Total",result->total);
         for (int i = 0; i < class_area->n; ++i) {
-            fprintf(log,fmt,
-                    class_area->string[i],
-                    class_area->value[i]);
+            if (class_area->value[i] > 0)
+                fprintf(log,fmt,
+                        class_area->string[i],
+                        class_area->value[i]);
         }
     } 
     if (errno != 0) { 

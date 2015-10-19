@@ -65,18 +65,20 @@ const char** select_cmd;
 void
 help(void)
 {
-    fprintf(stderr,"\nUsage: %s [%s] pdb-file(s)\n",
-            program_name,options_string);
-    fprintf(stderr,"\n"
+    fprintf(stderr,"\nUsage: %s [options] pdb-file(s)\n\n",
+            program_name);
+    fprintf(stderr,"Options:\n\n"
             "  -h (--help)           Print this message\n"
             "  -v (--version)        Print version of the program\n");
-    fprintf(stderr,"\nSASA calculation parameters:\n"
+    fprintf(stderr,"\nSASA calculation parameters:\n\n"
             "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm [default]\n"
             "  -L (--lee-richards)   Use Lee & Richards algorithm\n");
     fprintf(stderr,
-            "  -p <value>  --probe-radius=<value>\n"
+            "\n"
+            "  -p <value>  (--probe-radius=<value>)\n"
             "                        Probe radius [default: %4.2f Å]\n"
-            "  -n <value>  --resolution=<value>\n"
+            "\n"
+            "  -n <value>  (--resolution=<value>)\n"
             "                        Either: \n"
             "                        - Number of test points in Shrake & Rupley algorithm, [default: %d] or\n"
             "                        - number of slices per atom in Lee & Richards algorithm. [default: %d]\n"
@@ -84,7 +86,7 @@ help(void)
             FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_SR_N,FREESASA_DEF_LR_N);
 #ifdef HAVE_LIBPTHREAD
     fprintf(stderr,
-            "  -t <value>  --n-threads=<value>\n"
+            "  -t <value>  (--n-threads=<value>)\n"
             "                        Number of threads to use in calculation. [default %d]\n",
             FREESASA_DEF_NUMBER_THREADS);
 #endif
@@ -93,33 +95,41 @@ help(void)
             "                        Use atomic radii and classes provided in file, example configuration files\n"
             "                        can be found in the directory share/.\n");
     fprintf(stderr,
-            "\nInput PDB:              (default: ignore HETATM and hydrogens, include all\n"
-            "                         chains of the first MODEL)\n"
-            "  -H (--hetatm)         Include HETATM entries from input\n"
-            "  -Y (--hydrogen)       Include hydrogen atoms. Use with care. To get sensible results, one probably needs\n"
-            "                        to redefine all atomic radii with -c option. Default H radius is 1.10 Å.\n"
+            "\nInput PDB:\n\n"
+            "  -H (--hetatm)         Include HETATM entries from input.\n"
+            "  -Y (--hydrogen)       Include hydrogen atoms (skipped by default). Use with care.\n"
+            "                        To get sensible results, one probably needs to redefine atomic\n"
+            "                        radii with -c option. Default H radius is 1.10 Å.\n"
             "  -m (--join-models)    Join all MODELs in input into one big structure.\n"
             "  -C (--separate-chains) Calculate SASA for each chain separately.\n"
             "  -M (--separate-models) Calculate SASA for each MODEL separately.\n"
-            "  -g <chains> --chain-groups <chains>\n"
+            "\n"
+            "  -g <chains> (--chain-groups <chains>)\n"
             "                        Select chain or group of chains to treat separately.\n"
             "                        Several groups can be concatenated by '+', or by repetition.\n"
             "                        Examples:\n"
-            "                                    '-g A', '-g AB', -g 'A+B', '-g A -g B', '-g AB+CD', etc\n");
-    fprintf(stderr,"\nOutput options:\n"
+            "                                    '-g A', '-g AB', -g 'A+B', '-g A -g B', '-g AB+CD', etc\n"
+            "\n"
+            "  --unknown <guess|skip|halt>\n"
+            "                        When an unknown atom is encountered FreeSASA can either 'guess' its\n"
+            "                        VdW radius, 'skip' the atom, or 'halt'. Default is 'guess'.\n");
+    fprintf(stderr,"\nOutput options:\n\n"
             "  -l (--no-log)         Don't print log message (useful with -r -R and -B)\n"
             "  -w (--no-warnings)    Don't print warnings (will still print warnings due to invalid command\n"
-            "                        line options)\n\n"
-            "  -r  --foreach-residue-type --residue-type-file <output-file>\n"
-            "  -R  --foreach-residue --residue-file <output-file>\n"
+            "                        line options)\n"
+            "\n"
+            "  -r  (--foreach-residue-type)  --residue-type-file <output-file>\n"
+            "  -R  (--foreach-residue)       --residue-file <output-file>\n"
             "                        Print SASA for each residue, either grouped by type or sequentially.\n"
-            "                        Use the -file variant to specify an output file.\n\n"
-            "  -B  --print-as-B-values --B-value-file <output-file>\n"
+            "                        Use the -file variant to specify an output file.\n"
+            "\n"
+            "  -B  (--print-as-B-values)     --B-value-file <output-file>\n"
             "                        Print PDB file where the temperature factor of each atom has\n"
             "                        been replaced by its SASA, and the occupancy number by the atomic\n"
             "                        radius. Use the -file variant to specify an output file.\n"
             "                        This option might at moment give confusing output when used in conjuction\n"
             "                        with the options -C and -g.\n"
+            "\n"
             "  --select <command>    Select atoms using Pymol select syntax.\n"
             "                        The option can be repeated to define several selections.\n"
             "                        Command examples: \n"
@@ -288,6 +298,23 @@ add_select(const char* cmd)
     select_cmd[n_select-1] = cmd;
 }
 
+void
+add_unknown_option(const char *optarg)
+{
+    if (strcmp(optarg,"skip") == 0) {
+        structure_options |= FREESASA_SKIP_UNKNOWN;
+        return;
+    } 
+    if(strcmp(optarg,"halt") == 0) {
+        structure_options |= FREESASA_HALT_AT_UNKNOWN;
+        return;
+    } 
+    if(strcmp(optarg,"guess") == 0) {
+        return; //default
+    }
+    abort_msg("Unknown alternative to option --unknown: '%s'", optarg);
+}
+
 int
 main(int argc,
      char **argv) 
@@ -299,7 +326,7 @@ main(int argc,
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
-    enum {B_FILE,RES_FILE,SEQ_FILE,SELECT};
+    enum {B_FILE,RES_FILE,SEQ_FILE,SELECT,UNKNOWN};
     parameters = freesasa_default_parameters;
     memset(opt_set,0,n_opt);
     // errors from this file will be prepended with freesasa, library errors with FreeSASA
@@ -327,8 +354,8 @@ main(int argc,
         {"residue-type-file",required_argument,&option_flag,RES_FILE},
         {"residue-file",required_argument,&option_flag,SEQ_FILE},
         {"B-value-file",required_argument,&option_flag,B_FILE},
-        {"select",required_argument,&option_flag,SELECT}
-
+        {"select",required_argument,&option_flag,SELECT},
+        {"unknown",required_argument,&option_flag,UNKNOWN}
     };
     options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:";
     while ((opt = getopt_long(argc, argv, options_string,
@@ -359,6 +386,9 @@ main(int argc,
                 break;
             case SELECT:
                 add_select(optarg);
+                break;
+            case UNKNOWN:
+                add_unknown_option(optarg);
                 break;
             default:
                 abort(); // what does this even mean?
