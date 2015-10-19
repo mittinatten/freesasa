@@ -246,7 +246,7 @@ freesasa_classifier_from_file(FILE *file);
     @return A copy of the default classifier.
  */
 freesasa_classifier*
-freesasa_classifier_default();
+freesasa_classifier_default(void);
 
 /**
     Frees a classifier object

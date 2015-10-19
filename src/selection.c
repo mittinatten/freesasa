@@ -34,6 +34,28 @@ struct selection {
     int size;
 };
 
+
+static const char*
+e_str(expression_type e)
+{
+    switch(e) {
+    case E_SELECTION: return "<selection>";
+    case E_SYMBOL:    return "symbol";
+    case E_NAME:      return "name";
+    case E_RESN:      return "resn";
+    case E_RESI:      return "resi";
+    case E_CHAIN:     return "chain";
+    case E_ID:        return "<id>";
+    case E_NUMBER:    return "<number>";
+    case E_AND:       return "and";
+    case E_OR:        return "or";
+    case E_NOT:       return "not";
+    case E_PLUS:      return "< + >";
+    case E_RANGE:     return "< - >";
+    }
+    return NULL;
+}
+
 extern int freesasa_yyparse(expression **expression, yyscan_t scanner);
 
 static expression *
@@ -283,7 +305,7 @@ select_id(expression_type parent_type,
         count += match;
     }
     if (count == 0) freesasa_warn("Found no matches to %s '%s', typo?",
-                                  e_str[parent_type],id);
+                                  e_str(parent_type),id);
 }
 
 static int
@@ -396,7 +418,7 @@ select_list(expression_type parent_type,
         break;
     default:
         freesasa_fail("in %s(): parse error (expression: '%s %s')",
-                      __func__,e_str[parent_type],e_str[expr->type]);
+                      __func__,e_str(parent_type),e_str(expr->type));
         break;
     }
     return FREESASA_SUCCESS;
@@ -516,7 +538,7 @@ print_expr(const expression *e,int level)
         for (int i = 0; i < level; ++i) fprintf(stderr,"  ");
         if (e == NULL) fprintf(stderr,"()");
         else {
-            fprintf(stderr,"(%s ",e_str[e->type]);
+            fprintf(stderr,"(%s ",e_str(e->type));
             if (e->value) fprintf(stderr,": %s ",e->value);
             print_expr(e->left,level+1);
             print_expr(e->right,level+1);
