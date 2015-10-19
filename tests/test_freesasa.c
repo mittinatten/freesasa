@@ -345,7 +345,7 @@ START_TEST (test_user_classes)
     ck_assert((res = freesasa_calc_structure(st,NULL)) != NULL);
     res_class = freesasa_result_classify(res,st,user_classifier);
     res_class_ref = freesasa_result_classify(res,st,NULL);
-    ck_assert(res_class->n <= res_class_ref->n);
+    ck_assert_int_eq(res_class->n, res_class_ref->n);
     for (int i = 0; i < res_class->n; ++i) {
         ck_assert(fabs(res_class->value[i] - res_class_ref->value[i]) < 1e-10);
     }

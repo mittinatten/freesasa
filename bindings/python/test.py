@@ -147,7 +147,8 @@ class FreeSASATestCase(unittest.TestCase):
 
         s = Structure("data/1d3z.pdb",None,{'hydrogen' : True, 'skip-unknown' : True})
         self.assertTrue(s.nAtoms() == 602)
-
+        
+        setVerbosity(silent)
         self.assertRaises(Exception, lambda : Structure("data/1d3z.pdb",None,{'hydrogen' : True, 'halt-at-unknown' : True}))
         setVerbosity(normal)
 

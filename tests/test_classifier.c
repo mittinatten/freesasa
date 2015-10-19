@@ -296,11 +296,11 @@ START_TEST (test_user)
     freesasa_classifier* c = freesasa_classifier_from_file(f);
     fclose(f);
     ck_assert(c != NULL);
-    ck_assert(c->n_classes == 2);
+    ck_assert(c->n_classes == 3);
     ck_assert(fabs(c->radius("ALA","CA",c) - 2.0) < 1e-5);
     ck_assert(fabs(c->radius("ALA","N",c) - 1.55) < 1e-5);
-    ck_assert_str_eq(c->class2str(c->sasa_class("ALA","CB",c),c), "apolar");
-    ck_assert_str_eq(c->class2str(c->sasa_class("ALA","O",c),c), "polar");
+    ck_assert_str_eq(c->class2str(c->sasa_class("ALA","CB",c),c), "Apolar");
+    ck_assert_str_eq(c->class2str(c->sasa_class("ALA","O",c),c), "Polar");
     // compare oons.config and built in classification (should be identical for standard atoms)
     for (int i = 0; i < 188; ++i) {
         const char *res_name = atoms[i].a, *atom_name = atoms[i].b;
