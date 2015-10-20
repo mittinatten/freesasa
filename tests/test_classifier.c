@@ -42,6 +42,7 @@ struct atom {
 #define hyd_O 1.40
 #define sulf 2.00
 #define sele 1.90
+#define phos 1.80
 #define unk_P 1.5
 #define r_unk -1.0
 #define APO FREESASA_APOLAR
@@ -177,8 +178,111 @@ const struct atom atoms[] = {
     {"PYL"," CD2",aro_C,APO}, {"PYL"," CE2",aro_C,APO}, {"PYL"," N2 ",ami_N,POL},
 // 243
     {"ACE"," C  ",car_C,POL}, {"ACE"," O  ",car_O,POL}, {"ACE"," CH3",ali_C,APO},
-    {"NH2"," NH2",ami_N,POL}
+    {"NH2"," NH2",ami_N,POL},
 // 247
+    {"  A"," P  ",phos, POL}, {"  A"," OP1",car_O,POL}, {"  A"," OP2",car_O,POL},
+    {"  A"," OP3",car_O,POL}, {"  A"," O5'",car_O,POL}, {"  A"," C5'",ali_C,APO},
+    {"  A"," C4'",aro_C,APO}, {"  A"," O4'",car_O,POL}, {"  A"," C3'",aro_C,APO}, 
+    {"  A"," O3'",car_O,POL}, {"  A"," C2'",aro_C,APO}, {"  A"," O2'",car_O,POL}, 
+    {"  A"," C1'",aro_C,APO}, {"  A"," N9 ",ami_N,POL}, {"  A"," C8 ",aro_C,APO},
+    {"  A"," N7 ",ami_N,POL}, {"  A"," C5 ",aro_C,APO}, {"  A"," C6 ",aro_C,APO},
+    {"  A"," N6 ",ami_N,POL}, {"  A"," N1 ",ami_N,POL}, {"  A"," C2 ",aro_C,APO},
+    {"  A"," N3 ",ami_N,POL}, {"  A"," C4 ",aro_C,APO},
+// 270
+    {"  C"," P  ",phos, POL}, {"  C"," OP1",car_O,POL}, {"  C"," OP2",car_O,POL},
+    {"  C"," OP3",car_O,POL}, {"  C"," O5'",car_O,POL}, {"  C"," C5'",ali_C,APO},
+    {"  C"," C4'",aro_C,APO}, {"  C"," O4'",car_O,POL}, {"  C"," C3'",aro_C,APO}, 
+    {"  C"," O3'",car_O,POL}, {"  C"," C2'",aro_C,APO}, {"  C"," O2'",car_O,POL}, 
+    {"  C"," C1'",aro_C,APO}, {"  C"," N1 ",ami_N,POL}, {"  C"," C2 ",aro_C,APO},
+    {"  C"," O2 ",car_O,POL}, {"  C"," N3 ",ami_N,POL}, {"  C"," C4 ",aro_C,APO},
+    {"  C"," N4 ",ami_N,POL}, {"  C"," C5 ",aro_C,APO}, {"  C"," C6 ",aro_C,APO},
+// 291
+    {"  G"," P  ",phos, POL}, {"  G"," OP1",car_O,POL}, {"  G"," OP2",car_O,POL},
+    {"  G"," OP3",car_O,POL}, {"  G"," O5'",car_O,POL}, {"  G"," C5'",ali_C,APO},
+    {"  G"," C4'",aro_C,APO}, {"  G"," O4'",car_O,POL}, {"  G"," C3'",aro_C,APO}, 
+    {"  G"," O3'",car_O,POL}, {"  G"," C2'",aro_C,APO}, {"  G"," O2'",car_O,POL}, 
+    {"  G"," C1'",aro_C,APO}, {"  G"," N9 ",ami_N,POL}, {"  G"," C8 ",aro_C,APO},
+    {"  G"," N7 ",ami_N,POL}, {"  G"," C5 ",aro_C,APO}, {"  G"," C6 ",aro_C,APO},
+    {"  G"," O6 ",car_O,POL}, {"  G"," N1 ",ami_N,POL}, {"  G"," C2 ",aro_C,APO},
+    {"  G"," N3 ",ami_N,POL}, {"  G"," C4 ",aro_C,APO},
+// 304
+    {"  T"," P  ",phos, POL}, {"  T"," OP1",car_O,POL}, {"  T"," OP2",car_O,POL},
+    {"  T"," OP3",car_O,POL}, {"  T"," O5'",car_O,POL}, {"  T"," C5'",ali_C,APO},
+    {"  T"," C4'",aro_C,APO}, {"  T"," O4'",car_O,POL}, {"  T"," C3'",aro_C,APO}, 
+    {"  T"," O3'",car_O,POL}, {"  T"," C2'",aro_C,APO}, {"  T"," O2'",car_O,POL}, 
+    {"  T"," C1'",aro_C,APO}, {"  T"," N1 ",ami_N,POL}, {"  T"," C2 ",aro_C,APO},
+    {"  T"," O2 ",car_O,POL}, {"  T"," N3 ",ami_N,POL}, {"  T"," C4 ",aro_C,APO},
+    {"  T"," O4 ",car_O,POL}, {"  T"," C5 ",aro_C,APO}, {"  T"," C6 ",aro_C,APO},
+    {"  T"," C7 ",aro_C,APO},
+// 326
+    {"  U"," P  ",phos, POL}, {"  U"," OP1",car_O,POL}, {"  U"," OP2",car_O,POL},
+    {"  U"," OP3",car_O,POL}, {"  U"," O5'",car_O,POL}, {"  U"," C5'",ali_C,APO},
+    {"  U"," C4'",aro_C,APO}, {"  U"," O4'",car_O,POL}, {"  U"," C3'",aro_C,APO}, 
+    {"  U"," O3'",car_O,POL}, {"  U"," C2'",aro_C,APO}, {"  U"," O2'",car_O,POL}, 
+    {"  U"," C1'",aro_C,APO}, {"  U"," N1 ",ami_N,POL}, {"  U"," C2 ",aro_C,APO},
+    {"  U"," O2 ",car_O,POL}, {"  U"," N3 ",ami_N,POL}, {"  U"," C4 ",aro_C,APO},
+    {"  U"," O4 ",car_O,POL}, {"  U"," C5 ",aro_C,APO}, {"  U"," C6 ",aro_C,APO},
+// 347
+    {"  I"," P  ",phos, POL}, {"  I"," OP1",car_O,POL}, {"  I"," OP2",car_O,POL},
+    {"  I"," OP3",car_O,POL}, {"  I"," O5'",car_O,POL}, {"  I"," C5'",ali_C,APO},
+    {"  I"," C4'",aro_C,APO}, {"  I"," O4'",car_O,POL}, {"  I"," C3'",aro_C,APO}, 
+    {"  I"," O3'",car_O,POL}, {"  I"," C2'",aro_C,APO}, {"  I"," O2'",car_O,POL}, 
+    {"  I"," C1'",aro_C,APO}, {"  I"," N9 ",ami_N,POL}, {"  I"," C8 ",aro_C,APO},
+    {"  I"," N7 ",ami_N,POL}, {"  I"," C5 ",aro_C,APO}, {"  I"," C6 ",aro_C,APO},
+    {"  I"," N6 ",ami_N,POL}, {"  I"," N1 ",ami_N,POL}, {"  I"," C2 ",aro_C,APO},
+    {"  I"," N3 ",ami_N,POL}, {"  I"," C4 ",aro_C,APO},
+
+    {" DA"," P  ",phos, POL}, {" DA"," OP1",car_O,POL}, {" DA"," OP2",car_O,POL},
+    {" DA"," OP3",car_O,POL}, {" DA"," O5'",car_O,POL}, {" DA"," C5'",ali_C,APO},
+    {" DA"," C4'",aro_C,APO}, {" DA"," O4'",car_O,POL}, {" DA"," C3'",aro_C,APO}, 
+    {" DA"," O3'",car_O,POL}, {" DA"," C2'",aro_C,APO},
+    {" DA"," C1'",aro_C,APO}, {" DA"," N9 ",ami_N,POL}, {" DA"," C8 ",aro_C,APO},
+    {" DA"," N7 ",ami_N,POL}, {" DA"," C5 ",aro_C,APO}, {" DA"," C6 ",aro_C,APO},
+    {" DA"," N6 ",ami_N,POL}, {" DA"," N1 ",ami_N,POL}, {" DA"," C2 ",aro_C,APO},
+    {" DA"," N3 ",ami_N,POL}, {" DA"," C4 ",aro_C,APO},
+
+    {" DC"," P  ",phos, POL}, {" DC"," OP1",car_O,POL}, {" DC"," OP2",car_O,POL},
+    {" DC"," OP3",car_O,POL}, {" DC"," O5'",car_O,POL}, {" DC"," C5'",ali_C,APO},
+    {" DC"," C4'",aro_C,APO}, {" DC"," O4'",car_O,POL}, {" DC"," C3'",aro_C,APO}, 
+    {" DC"," O3'",car_O,POL}, {" DC"," C2'",aro_C,APO}, 
+    {" DC"," C1'",aro_C,APO}, {" DC"," N1 ",ami_N,POL}, {" DC"," C2 ",aro_C,APO},
+    {" DC"," O2 ",car_O,POL}, {" DC"," N3 ",ami_N,POL}, {" DC"," C4 ",aro_C,APO},
+    {" DC"," N4 ",ami_N,POL}, {" DC"," C5 ",aro_C,APO}, {" DC"," C6 ",aro_C,APO},
+
+    {" DG"," P  ",phos, POL}, {" DG"," OP1",car_O,POL}, {" DG"," OP2",car_O,POL},
+    {" DG"," OP3",car_O,POL}, {" DG"," O5'",car_O,POL}, {" DG"," C5'",ali_C,APO},
+    {" DG"," C4'",aro_C,APO}, {" DG"," O4'",car_O,POL}, {" DG"," C3'",aro_C,APO}, 
+    {" DG"," O3'",car_O,POL}, {" DG"," C2'",aro_C,APO},
+    {" DG"," C1'",aro_C,APO}, {" DG"," N9 ",ami_N,POL}, {" DG"," C8 ",aro_C,APO},
+    {" DG"," N7 ",ami_N,POL}, {" DG"," C5 ",aro_C,APO}, {" DG"," C6 ",aro_C,APO},
+    {" DG"," O6 ",car_O,POL}, {" DG"," N1 ",ami_N,POL}, {" DG"," C2 ",aro_C,APO},
+    {" DG"," N3 ",ami_N,POL}, {" DG"," C4 ",aro_C,APO},
+
+    {" DT"," P  ",phos, POL}, {" DT"," OP1",car_O,POL}, {" DT"," OP2",car_O,POL},
+    {" DT"," OP3",car_O,POL}, {" DT"," O5'",car_O,POL}, {" DT"," C5'",ali_C,APO},
+    {" DT"," C4'",aro_C,APO}, {" DT"," O4'",car_O,POL}, {" DT"," C3'",aro_C,APO}, 
+    {" DT"," O3'",car_O,POL}, {" DT"," C2'",aro_C,APO},
+    {" DT"," C1'",aro_C,APO}, {" DT"," N1 ",ami_N,POL}, {" DT"," C2 ",aro_C,APO},
+    {" DT"," O2 ",car_O,POL}, {" DT"," N3 ",ami_N,POL}, {" DT"," C4 ",aro_C,APO},
+    {" DT"," O4 ",car_O,POL}, {" DT"," C5 ",aro_C,APO}, {" DT"," C6 ",aro_C,APO},
+    {" DT"," C7 ",aro_C,APO},
+
+    {" DU"," P  ",phos, POL}, {" DU"," OP1",car_O,POL}, {" DU"," OP2",car_O,POL},
+    {" DU"," OP3",car_O,POL}, {" DU"," O5'",car_O,POL}, {" DU"," C5'",ali_C,APO},
+    {" DU"," C4'",aro_C,APO}, {" DU"," O4'",car_O,POL}, {" DU"," C3'",aro_C,APO}, 
+    {" DU"," O3'",car_O,POL}, {" DU"," C2'",aro_C,APO}, 
+    {" DU"," C1'",aro_C,APO}, {" DU"," N1 ",ami_N,POL}, {" DU"," C2 ",aro_C,APO},
+    {" DU"," O2 ",car_O,POL}, {" DU"," N3 ",ami_N,POL}, {" DU"," C4 ",aro_C,APO},
+    {" DU"," O4 ",car_O,POL}, {" DU"," C5 ",aro_C,APO}, {" DU"," C6 ",aro_C,APO},
+
+    {" DI"," P  ",phos, POL}, {" DI"," OP1",car_O,POL}, {" DI"," OP2",car_O,POL},
+    {" DI"," OP3",car_O,POL}, {" DI"," O5'",car_O,POL}, {" DI"," C5'",ali_C,APO},
+    {" DI"," C4'",aro_C,APO}, {" DI"," O4'",car_O,POL}, {" DI"," C3'",aro_C,APO}, 
+    {" DI"," O3'",car_O,POL}, {" DI"," C2'",aro_C,APO},
+    {" DI"," C1'",aro_C,APO}, {" DI"," N9 ",ami_N,POL}, {" DI"," C8 ",aro_C,APO},
+    {" DI"," N7 ",ami_N,POL}, {" DI"," C5 ",aro_C,APO}, {" DI"," C6 ",aro_C,APO},
+    {" DI"," N6 ",ami_N,POL}, {" DI"," N1 ",ami_N,POL}, {" DI"," C2 ",aro_C,APO},
+    {" DI"," N3 ",ami_N,POL}, {" DI"," C4 ",aro_C,APO},
 };
 
 const int n_atom_types = sizeof(atoms)/sizeof(struct atom);
