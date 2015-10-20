@@ -287,19 +287,19 @@ const struct atom atoms[] = {
 
 const int n_atom_types = sizeof(atoms)/sizeof(struct atom);
 
-static const freesasa_classifier *dc = NULL;
+static freesasa_classifier *oons_c = NULL;
 extern const freesasa_classifier freesasa_residue_classifier;
 
 static void
 setup() 
 {
-    dc = freesasa_classifier_default_acquire();
+    oons_c = freesasa_classifier_oons();
 }
 
 static void
 teardown()
 {
-    freesasa_classifier_default_release();
+    freesasa_classifier_free(oons_c);
 }
 
 // tests freesasa_classify_radius() and freesasa_classify_oons_radius()
@@ -309,12 +309,12 @@ START_TEST (test_radius)
     freesasa_set_verbosity(FREESASA_V_SILENT); // the X and Y atoms give warnings
     for (int i = 0; i < n_atom_types; ++i) {
         const struct atom a = atoms[i];
-        double r1 = dc->radius(a.a, a.b, dc);
+        double r1 = oons_c->radius(a.a, a.b, oons_c);
         sprintf(buf,"%s %s ret=%f ref=%f",a.a,a.b,r1,a.radius);
         // make sure correct radius is supplied
         ck_assert_msg(fabs(r1 - a.radius) < 1e-10,buf);
     }
-    //ck_assert(fabs(dc->radius("XXX"," H  ", dc) - 1.1)  < 1e-10);
+    //ck_assert(fabs(oons_c->radius("XXX"," H  ", oons_c) - 1.1)  < 1e-10);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
@@ -324,25 +324,25 @@ START_TEST (test_class)
     char buf[50];
     for (int i = 0; i < n_atom_types; ++i) {
         const struct atom a = atoms[i];
-        int c = dc->sasa_class(a.a, a.b, dc);
+        int c = oons_c->sasa_class(a.a, a.b, oons_c);
         if (c == FREESASA_WARN) { ck_assert(a.class == UNK); continue; }
         sprintf(buf,"Classification error for %s %s %s %s",
-                a.a,a.b,dc->class2str(c, dc),dc->class2str(a.class, dc));
+                a.a,a.b,oons_c->class2str(c, oons_c),oons_c->class2str(a.class, oons_c));
         ck_assert_msg(c == a.class, buf);
     }
-    //ck_assert(dc->sasa_class("  C", " C1 ", dc) == FREESASA_NUCLEICACID);
+    //ck_assert(oons_c->sasa_class("  C", " C1 ", oons_c) == FREESASA_NUCLEICACID);
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert(dc->sasa_class("ABC", " X  ", dc) == FREESASA_WARN);
+    ck_assert(oons_c->sasa_class("ABC", " X  ", oons_c) == FREESASA_WARN);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
-    /*ck_assert_str_eq(dc->class2str(FREESASA_POLAR, dc),"Polar");
-    ck_assert_str_eq(dc->class2str(FREESASA_APOLAR, dc),"Apolar");
-    ck_assert_str_eq(dc->class2str(FREESASA_NUCLEICACID, dc),"Nucleic");
-    ck_assert_str_eq(dc->class2str(FREESASA_CLASS_UNKNOWN, dc),"Unknown");
+    /*ck_assert_str_eq(oons_c->class2str(FREESASA_POLAR, oons_c),"Polar");
+    ck_assert_str_eq(oons_c->class2str(FREESASA_APOLAR, oons_c),"Apolar");
+    ck_assert_str_eq(oons_c->class2str(FREESASA_NUCLEICACID, oons_c),"Nucleic");
+    ck_assert_str_eq(oons_c->class2str(FREESASA_CLASS_UNKNOWN, oons_c),"Unknown");
     */
     
     //freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert_ptr_eq(dc->class2str(100, dc), NULL);
-    ck_assert_ptr_eq(dc->class2str(-1, dc), NULL);
+    ck_assert_ptr_eq(oons_c->class2str(100, oons_c), NULL);
+    ck_assert_ptr_eq(oons_c->class2str(-1, oons_c), NULL);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
@@ -411,8 +411,8 @@ START_TEST (test_user)
         if (strcmp(atom_name," X  ") == 0) continue;
         if (strcmp(atom_name," Y  ") == 0) continue;
         ck_assert(fabs(c->radius(res_name, atom_name, c) -
-                       dc->radius(res_name, atom_name, dc)) < 1e-5);
-        char *c1 = strdup(dc->class2str(dc->sasa_class(res_name, atom_name, dc), dc));
+                       oons_c->radius(res_name, atom_name, oons_c)) < 1e-5);
+        char *c1 = strdup(oons_c->class2str(oons_c->sasa_class(res_name, atom_name, oons_c), oons_c));
         char *c2 = strdup(c->class2str(c->sasa_class(res_name, atom_name, c), c));
         for (int i = 0; c1[i]; ++i) c1[i] = tolower(c1[i]); 
         for (int i = 0; c2[i]; ++i) c2[i] = tolower(c2[i]); 

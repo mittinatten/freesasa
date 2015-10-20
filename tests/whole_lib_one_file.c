@@ -8,5 +8,6 @@
 #include <pdb.c>
 #include <util.c>
 #include <classifier.c>
+#include <classifiers.c>
 #include <selection.c>
 

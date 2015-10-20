@@ -184,9 +184,9 @@ void setup_sr (void)
     parameters.alg = FREESASA_SHRAKE_RUPLEY;
     parameters.shrake_rupley_n_points = 100;
     parameters.n_threads = 1;
-    total_ref = 4779.5109924;
-    polar_ref = 2236.9298941;
-    apolar_ref = 2542.5810983;
+    total_ref = 4834.716265;
+    polar_ref = 2515.821238;
+    apolar_ref = 2318.895027;
 }
 void teardown_sr(void)
 {
@@ -199,9 +199,9 @@ void setup_lr (void)
     parameters.alg = FREESASA_LEE_RICHARDS;
     parameters.lee_richards_n_slices = 20;
     parameters.n_threads = 1;
-    total_ref = 4759.46651;
-    polar_ref = 2226.83182;
-    apolar_ref = 2532.63469;
+    total_ref = 4804.055641;
+    polar_ref = 2504.217302;
+    apolar_ref = 2299.838339;
 }
 void teardown_lr(void)
 {
@@ -283,9 +283,9 @@ END_TEST
 START_TEST (test_trimmed_pdb) 
 {
     // This test is due to suggestion from João Rodrigues (issue #6 on Github)
-    double total_ref = 15964.2723037;
-    double polar_ref = 6545.4595991;
-    double apolar_ref = 9418.8127046;
+    double total_ref = 16133.867124;
+    double polar_ref = 7432.608118;
+    double apolar_ref = 8701.259006;
     freesasa_result *result;
     freesasa_structure *st;
     FILE *pdb;
@@ -314,7 +314,7 @@ END_TEST
 START_TEST (test_user_classes)
 {
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
-    FILE *config = fopen(DATADIR "oons.config", "r");
+    FILE *config = fopen(DATADIR "ProtOr.config", "r");
     freesasa_structure *st, *st_ref;
     freesasa_classifier *user_classifier;
     freesasa_result *res;
@@ -394,12 +394,12 @@ START_TEST (test_multi_calc)
     p.n_threads = 2;
     p.alg = FREESASA_SHRAKE_RUPLEY;
     ck_assert((res = freesasa_calc_structure(st,&p)) != NULL);
-    ck_assert(fabs(res->total - 4779.5109924) < 1e-5);
+    ck_assert(fabs(res->total - 4834.716265) < 1e-5);
     // L&R
     p.alg = FREESASA_LEE_RICHARDS;
     p.lee_richards_n_slices = 20;
     ck_assert((res = freesasa_calc_structure(st,&p)) != NULL);
-    ck_assert(fabs(res->total - 4759.46651) < 1e-5);
+    ck_assert(fabs(res->total - 4804.055641) < 1e-5);
     
     freesasa_structure_free(st);
     freesasa_result_free(res);
@@ -416,7 +416,7 @@ START_TEST (test_1d3z)
     freesasa_result *result = freesasa_calc_structure(st, NULL);
     double *radii_ref = malloc(sizeof(double)*602);
     ck_assert(freesasa_structure_n(st) == 602);
-    ck_assert(fabs(result->total - 4945.8705756) < 1e-5);
+    ck_assert(fabs(result->total - 5000.340175) < 1e-5);
     memcpy(radii_ref,freesasa_structure_radius(st),sizeof(double)*602);
     rewind(pdb);
     freesasa_structure_free(st);
@@ -425,7 +425,7 @@ START_TEST (test_1d3z)
     st = freesasa_structure_from_pdb(pdb, NULL, FREESASA_INCLUDE_HYDROGEN);
     result = freesasa_calc_structure(st, NULL);
     ck_assert(freesasa_structure_n(st) == 1231);
-    ck_assert(fabs(result->total - 4988.93) < 0.1);
+    ck_assert(fabs(result->total - 5035.614493) < 1e-5);
     rewind(pdb);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 
@@ -433,7 +433,7 @@ START_TEST (test_1d3z)
     ck_assert(n == 10);
     result = freesasa_calc_structure(ss[0], NULL);
     ck_assert(freesasa_structure_n(ss[0]) == 602);
-    ck_assert(fabs(result->total - 4945.8705756) < 1e-5);
+    ck_assert(fabs(result->total - 5000.340175) < 1e-5);
     for (int i = 0; i < n; ++i) {
         const double *r2 = freesasa_structure_radius(ss[i]);
         ck_assert(r2 != NULL);

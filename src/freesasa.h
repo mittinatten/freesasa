@@ -234,6 +234,9 @@ freesasa_classifier_from_file(FILE *file);
 /**
     Generates a default classifier.
 
+    The default classifier uses the radii in Tsai et al. (1999) JMB
+    290: 253-266.
+
     The functions that use the default classifier if passed a null
     pointer use their own shared copy of it. It is therefore not
     necessary to use this function to simply pass a default classifier
@@ -247,6 +250,19 @@ freesasa_classifier_from_file(FILE *file);
  */
 freesasa_classifier*
 freesasa_classifier_default(void);
+
+/**
+    Generates a classifier using the OONS radii.
+
+    Based on the paper by Oii et al. (1987) PNAS 84: 3086-3090.
+
+    Return value is dynamically allocated, should be freed with
+    freesasa_classifier_free().
+
+    @return A copy of the default classifier.    
+ */
+freesasa_classifier*
+freesasa_classifier_oons(void);
 
 /**
     Frees a classifier object

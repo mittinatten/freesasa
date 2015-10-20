@@ -57,7 +57,7 @@ class FreeSASATestCase(unittest.TestCase):
         c = Classifier()
         self.assertTrue(c.classify("ALA"," CB ") == apolar)
         self.assertTrue(c.classify("ARG"," NH1") == polar)
-        self.assertTrue(c.radius("ALA"," CB ") == 2.00)
+        self.assertTrue(c.radius("ALA"," CB ") == 1.88)
 
         setVerbosity(silent)
         self.assertRaises(Exception,lambda: Classifier("data/err.config"))
@@ -89,7 +89,7 @@ class FreeSASATestCase(unittest.TestCase):
 
         s = Structure("data/1ubq.pdb")
         self.assertTrue(s.nAtoms() == 602)
-        self.assertTrue(s.radius(1) == 2.0)
+        self.assertTrue(s.radius(1) == 1.88)
         self.assertTrue(s.chainLabel(1) == 'A')
         self.assertTrue(s.atomName(1) == ' CA ')
         self.assertTrue(s.residueName(1) == 'MET')
@@ -97,8 +97,9 @@ class FreeSASATestCase(unittest.TestCase):
 
         s2 = Structure("data/1ubq.pdb",Classifier("data/oons.config"))
         self.assertTrue(s.nAtoms() == 602)
-        self.assertTrue(s.radius(1) == 2.0)
+        self.assertTrue(math.fabs(s2.radius(1) - 2.0) < 1e-5)
 
+        s2 = Structure("data/1ubq.pdb",Classifier("data/ProtOr.config"))
         for i in range (0,601):
             self.assertTrue(math.fabs(s.radius(i)- s2.radius(i)) < 1e-5)
 
@@ -117,8 +118,8 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(s.residueNumber(1) == '2')
 
         s.setRadiiWithClassifier(Classifier())
-        self.assertTrue(s.radius(0) == 2.0)
-        self.assertTrue(s.radius(1) == 2.0)
+        self.assertTrue(s.radius(0) == 1.88)
+        self.assertTrue(s.radius(1) == 1.88)
 
         s.setRadiiWithClassifier(DerivedClassifier())
         self.assertTrue(s.radius(0) == s.radius(1) == 10.0)
@@ -183,7 +184,7 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(len(ss) == 1)
         self.assertTrue(ss[0].nAtoms() == 602)
         result = calc(ss[0])
-        self.assertTrue(math.fabs(result.totalArea() - 4779.5109924) < 1e-5)
+        self.assertTrue(math.fabs(result.totalArea() - 4834.716265) < 1e-5)
 
         # Test exceptions
         setVerbosity(silent)
@@ -203,31 +204,31 @@ class FreeSASATestCase(unittest.TestCase):
         # test default settings
         structure = Structure("data/1ubq.pdb")
         result = calc(structure)
-        self.assertTrue(math.fabs(result.totalArea() - 4779.5109924) < 1e-5)
+        self.assertTrue(math.fabs(result.totalArea() - 4834.716265) < 1e-5)
         sasa_classes = classifyResults(result,structure)
-        self.assertTrue(math.fabs(sasa_classes['Polar'] - 2236.9298941) < 1e-5)
-        self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2542.5810983) < 1e-5)
+        self.assertTrue(math.fabs(sasa_classes['Polar'] - 2515.821238) < 1e-5)
+        self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2318.895027) < 1e-5)
 
         # test L&R
         result = calc(structure,Parameters({'algorithm' : LeeRichards, 'n-slices' : 20}))
         sasa_classes = classifyResults(result,structure)
-        self.assertTrue(math.fabs(result.totalArea() - 4759.46651) < 1e-5)
-        self.assertTrue(math.fabs(sasa_classes['Polar'] - 2226.83182) < 1e-5)
-        self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2532.63469) < 1e-5)
+        self.assertTrue(math.fabs(result.totalArea() - 4804.055641) < 1e-5)
+        self.assertTrue(math.fabs(sasa_classes['Polar'] - 2504.217302) < 1e-5)
+        self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2299.838339) < 1e-5)
 
         # test extending Classifier with derived class
         sasa_classes = classifyResults(result,structure,DerivedClassifier())
-        self.assertTrue(math.fabs(sasa_classes['bla'] - 4759.46651) < 1e-5)
+        self.assertTrue(math.fabs(sasa_classes['bla'] - 4804.055641) < 1e-5)
         
         ## test calculating with user-defined classifier ##
-        classifier = Classifier("data/naccess.config")
+        classifier = Classifier("data/oons.config")
         # classifier passed to assign user-defined radii, could also have used setRadiiWithClassifier()
         structure = Structure("data/1ubq.pdb",classifier) 
         result = calc(structure)
-        self.assertTrue(math.fabs(result.totalArea() - 4823.29) < 0.1)
+        self.assertTrue(math.fabs(result.totalArea() - 4779.5109924) < 1e-5)
         sasa_classes = classifyResults(result,structure,classifier) # classifier passed to get user-classes
-        self.assertTrue(math.fabs(sasa_classes['polar'] - 2360.52) < 0.1)
-        self.assertTrue(math.fabs(sasa_classes['apolar'] - 2462.77) < 0.1)
+        self.assertTrue(math.fabs(sasa_classes['Polar'] - 2236.9298941) < 1e-5)
+        self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2542.5810983) < 1e-5)
 
     def testSelectArea(self):
         structure = Structure("data/1ubq.pdb")
@@ -235,8 +236,8 @@ class FreeSASATestCase(unittest.TestCase):
         # will only test that this gets through to the C interface,
         # extensive checking of the parser is done in the C unit tests
         selections = selectArea(('s1, resn ala','s2, resi 1'),structure,result)
-        self.assertTrue(math.fabs(selections['s1'] - 122.87) < 0.1)
-        self.assertTrue(math.fabs(selections['s2'] - 55.99) < 0.1)
+        self.assertTrue(math.fabs(selections['s1'] - 118.35) < 0.1)
+        self.assertTrue(math.fabs(selections['s2'] - 50.77) < 0.1)
 
 if __name__ == '__main__':
     # make sure we're in the right directory (if script is called from

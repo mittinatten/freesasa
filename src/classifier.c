@@ -31,209 +31,6 @@
     aliphatic/aromatic/etc. See the example configurations in share/.
  */
 
-static const char *default_type_input[] = {
-    // The original OONS classification
-    "C_ALI 2.00 Apolar ",
-    "C_ARO 1.75 Apolar",
-    "C_CAR 1.55 Polar",
-    "N 1.55 Polar",
-    "O 1.40 Polar", // carbo- and hydroxyl oxygen have the same radius in OONS
-    "S 2.00 Polar",
-
-    // P and SE are not in the OONS paper, and should perhaps not be
-    // smaller than S.
-    "P 1.80 Polar",
-    "SE 1.90 Polar",
-
-    // Unknown polar, for ASX and GLX
-    "U_POL 1.5 Polar",
-
-    // Water
-    "WATER 1.4 Water",
-};
-
-static const char *default_atom_input[] = {
-    // Polypeptide backbone
-    "ANY C   C_CAR",
-    "ANY O   O",
-    "ANY CA  C_ALI",
-    "ANY N   N",
-    "ANY CB  C_ALI",
-    "ANY OXT O",
-
-    /* RNA/DNA, these are treated jointly since they are all rings and
-       have overlapping atom names. The atoms of A, C, G, T, U, in
-       both deoxyribose and ribose forms are included, and also
-       Inosinic acid (I) and N (general nucleotide).
-    */
-    // PO4
-    "ANY P P",
-    "ANY OP1 O",
-    "ANY OP2 O",
-    "ANY OP3 O",
-    "ANY O5' O",
-    // Sugar
-    "ANY C5' C_ALI",
-    "ANY C4' C_ARO", 
-    "ANY O4' O",
-    "ANY C3' C_ARO",
-    "ANY O3' O",
-    "ANY C2' C_ARO",
-    "ANY O2' O",
-    "ANY C1' C_ARO",
-    // Sidechains
-    "ANY N1 N",
-    "ANY N2 N",
-    "ANY N3 N",
-    "ANY N4 N",
-    "ANY N6 N",
-    "ANY N7 N",
-    "ANY N9 N",
-    "ANY C2 C_ARO",
-    "ANY C4 C_ARO",
-    "ANY C5 C_ARO",
-    "ANY C6 C_ARO",
-    "ANY C7 C_ARO",
-    "ANY C8 C_ARO",
-    "ANY O2 O",
-    "ANY O4 O",
-    "ANY O6 O",
-    // Methylation
-    "ANY CM2 C_ALI",
-
-    // Amino acids
-    "ARG CG C_ALI",
-    "ARG CD C_ALI",
-    "ARG NE N",
-    "ARG CZ C_ALI",
-    "ARG NH1 N",
-    "ARG NH2 N",
-
-    "ASN CG  C_CAR",
-    "ASN OD1 O",
-    "ASN ND2 N",
-
-    "ASP CG  C_CAR",
-    "ASP OD1 O",
-    "ASP OD2 O",
-
-    "CYS SG  S",
-
-    "GLN CG  C_ALI",
-    "GLN CD  C_CAR",
-    "GLN OE1 O",
-    "GLN NE2 N",
-
-    "GLU CG  C_ALI",
-    "GLU CD  C_CAR",
-    "GLU OE1 O",
-    "GLU OE2 O",
-
-    "HIS CG  C_ARO",
-    "HIS ND1 N",
-    "HIS CD2 C_ARO",
-    "HIS NE2 N",
-    "HIS CE1 C_ARO",
-
-    "ILE CG1 C_ALI",
-    "ILE CG2 C_ALI",
-    "ILE CD1 C_ALI",
-
-    "LEU CG  C_ALI",
-    "LEU CD1 C_ALI",
-    "LEU CD2 C_ALI",
-
-    "LYS CG  C_ALI",
-    "LYS CD  C_ALI",
-    "LYS CE  C_ALI",
-    "LYS NZ  N",
-
-    "MET CG  C_ALI",
-    "MET SD  S",
-    "MET CE  C_ALI",
-
-    "PHE CG  C_ARO",
-    "PHE CD1 C_ARO",
-    "PHE CD2 C_ARO",
-    "PHE CE1 C_ARO",
-    "PHE CE2 C_ARO",
-    "PHE CZ  C_ARO",
-
-    "PRO CB  C_ARO",
-    "PRO CG  C_ARO",
-    "PRO CD  C_ARO",
-
-    "SER OG  O",
-
-    "THR OG1 O",
-    "THR CG2 C_ALI",
-
-    "TRP CG  C_ARO",
-    "TRP CD1 C_ARO",
-    "TRP CD2 C_ARO",
-    "TRP NE1 N",
-    "TRP CE2 C_ARO",
-    "TRP CE3 C_ARO",
-    "TRP CZ2 C_ARO",
-    "TRP CZ3 C_ARO",
-    "TRP CH2 C_ARO",
-
-    "TYR CG  C_ARO",
-    "TYR CD1 C_ARO",
-    "TYR CD2 C_ARO",
-    "TYR CE1 C_ARO",
-    "TYR CE2 C_ARO",
-    "TYR CZ  C_ARO",
-    "TYR OH  O",
-
-    "VAL CG1 C_ALI",
-    "VAL CG2 C_ALI",
-
-    "ASX CG C_CAR",
-    "ASX XD1 U_POL",
-    "ASX XD2 U_POL",
-    "ASX AD1 U_POL",
-    "ASX AD2 U_POL",
-
-    "GLX CG C_ALI",
-    "GLX CD C_CAR",
-    "GLX XE1 U_POL",
-    "GLX XE2 U_POL",
-    "GLX AE1 U_POL",
-    "GLX AE2 U_POL",
-
-    // Seleno-cystein
-    "SEC SE SE",
-    "CSE SE SE", // is this really used?
-
-    // Pyrolysine
-    "PYL CG C_ALI",
-    "PYL CD C_ALI",
-    "PYL CE C_ALI",
-    "PYL NZ N",
-    "PYL O2 O",
-    "PYL C2 C_CAR",
-    "PYL CA2 C_ARO",
-    "PYL CB2 C_ALI",
-    "PYL CG2 C_ARO",
-    "PYL CD2 C_ARO",
-    "PYL CE2 C_ARO",
-    "PYL N2 N",
-
-    // capping groups
-    "ACE CH3 C_ALI",
-    
-    "NH2 NH2 N",
-
-    //water
-    "HOH O WATER",
-
-    // add more here
-};
-
-// count references to default classifier
-static unsigned int default_classifier_refcount = 0;
-static freesasa_classifier *default_classifier = NULL;
 
 /**
     Struct to store information about the types-section in a user-config.
@@ -927,18 +724,19 @@ freesasa_classifier_free(freesasa_classifier *classifier)
 }
 
 
-static struct config *
-default_config()
+struct config *
+config_from_array(const char **type_input,
+                  const char **atom_input,
+                  int n_types,
+                  int n_atoms)
 {
     struct types *types;
     struct config *config;
-    const int n_types = sizeof(default_type_input)/sizeof(char *);
-    const int n_atoms = sizeof(default_atom_input)/sizeof(char *);
-
+    
     types = types_new();
     if (types == NULL) return NULL;
     for (int i = 0; i < n_types; ++i) {
-        if (read_types_line(types, default_type_input[i])
+        if (read_types_line(types, type_input[i])
             == FREESASA_FAIL) {
             // this should never happen
             fail_msg("Error setting up types for default classifier");
@@ -950,7 +748,7 @@ default_config()
     config = config_new();
     if (config == NULL) return NULL;
     for (int i = 0; i < n_atoms; ++i) {
-        if (read_atoms_line(config, types, default_atom_input[i])
+        if (read_atoms_line(config, types, atom_input[i])
             == FREESASA_FAIL) {
             // this should never happen
             fail_msg("Error setting up atoms for default classifier");
@@ -970,9 +768,13 @@ default_config()
 }
 
 freesasa_classifier *
-freesasa_classifier_default()
+freesasa_classifier_from_array(const char **type_input,
+                               const char **atom_input,
+                               int n_types,
+                               int n_atoms)
 {
-    struct config *config = default_config();
+    struct config *config = config_from_array(type_input, atom_input,
+                                              n_types, n_atoms);
     if (config == NULL) {
         fail_msg("");
         return NULL;
@@ -980,144 +782,3 @@ freesasa_classifier_default()
     
     return init_classifier(config);
 }
-
-const freesasa_classifier *
-freesasa_classifier_default_acquire()
-{
-    if (default_classifier == NULL) {
-        assert(default_classifier_refcount == 0);
-        default_classifier = freesasa_classifier_default();
-        if (default_classifier == NULL) {
-            fail_msg("Failed to load default classifier.");
-            return NULL;
-        }
-    }
-    ++default_classifier_refcount;
-    return default_classifier;
-}
-
-void
-freesasa_classifier_default_release() {
-    if (default_classifier_refcount == 0) return;
-    if (--default_classifier_refcount == 0) {
-        freesasa_classifier_free(default_classifier);
-        default_classifier = NULL;
-    }
-}
-
-struct symbol_radius {
-    const char symbol[3];
-    double radius;
-};
-
-/* Taken from: 
-   
-   Mantina et al. "Consistent van der Waals Radii for
-   the Whole Main Group". J. Phys. Chem. A, 2009, 113 (19), pp
-   5806–5812. 
-   
-   Many of these elements, if they occur in a PDB file, should
-   probably rather be skipped than used in a SASA calculation, and
-   ionization will change the effective radius.
-
-*/
-static const struct symbol_radius symbol_radius[] = {
-    // elements that actually occur in the regular amino acids and nucleotides
-    {" H", 1.10}, {" C", 1.70}, {" N", 1.55}, {" O", 1.52}, {" P", 1.80}, {" S", 1.80}, {"SE", 1.90}, 
-    // some others, just because there were readily available values
-    {" F", 1.47}, {"CL", 1.75}, {"BR", 1.83}, {" I", 1.98},
-    {"LI", 1.81}, {"BE", 1.53}, {" B", 1.92}, 
-    {"NA", 2.27}, {"MG", 1.74}, {"AL", 1.84}, {"SI", 2.10}, 
-    {" K", 2.75}, {"CA", 2.31}, {"GA", 1.87}, {"GE", 2.11}, {"AS", 1.85}, 
-    {"RB", 3.03}, {"SR", 2.49}, {"IN", 1.93}, {"SN", 2.17}, {"SB", 2.06}, {"TE", 2.06}, 
-};
-
-double
-freesasa_guess_radius(const char* symbol)
-{
-    assert(symbol);
-    int n_symbol = sizeof(symbol_radius)/sizeof(struct symbol_radius);
-    for (int i = 0; i < n_symbol; ++i) {
-        if (strcmp(symbol,symbol_radius[i].symbol) == 0)
-            return symbol_radius[i].radius;
-    }
-    return -1.0;
-}
-
-//! The residue types that are returned by freesasa_classify_residue()
-enum residue {
-    //Regular amino acids
-    ALA=0, ARG, ASN, ASP,
-    CYS, GLN, GLU, GLY,
-    HIS, ILE, LEU, LYS, 
-    MET, PHE, PRO, SER,
-    THR, TRP, TYR, VAL,
-    //some non-standard ones
-    CSE, SEC, PYL, PYH,
-    ASX, GLX,
-    //residue unknown
-    RES_UNK,
-    //capping N- and C-terminal groups (usually HETATM)
-    ACE, NH2,
-    //DNA
-    DA, DC, DG, DT,
-    DU, DI,
-    //RNA (avoid one-letter enums)
-    RA, RC, RG, RU, RI, RT,
-    //generic nucleotide
-    NN
-};
-
-// Residue types, make sure this always matches the corresponding enum.
-static const char *residue_names[] = {
-    //amino acids
-    "ALA","ARG","ASN","ASP",
-    "CYS","GLN","GLU","GLY",
-    "HIS","ILE","LEU","LYS",
-    "MET","PHE","PRO","SER",
-    "THR","TRP","TYR","VAL",
-    // non-standard amino acids
-    "CSE","SEC","PYL","PYH", // SEC and PYL are standard names, CSE and PYH are found in some early files
-    "ASX","GLX",
-    "UNK",
-    // capping groups
-    "ACE","NH2",
-    //DNA
-    "DA","DC","DG","DT","DU","DI",
-    //RNA
-    "A","C","G","U","I","T",
-    //General nucleotide
-    "N"
-};
-
-static int
-residue(const char *res_name,
-        const char *atom_name,
-        const freesasa_classifier *c)
-{
-    int len = strlen(res_name);
-    char cpy[len+1];
-
-    sscanf(res_name,"%s",cpy);
-    for (int i = ALA; i <= NN; ++i) {
-        if (! strcmp(cpy,residue_names[i])) return i;
-    }
-    return RES_UNK;
-}
-
-static const char*
-residue2str(int the_residue,
-            const freesasa_classifier *c)
-{
-    assert(the_residue >= ALA && the_residue <= NN);
-    return residue_names[the_residue];
-}
-
-const freesasa_classifier freesasa_residue_classifier = {
-    .radius = NULL,
-    .sasa_class = residue,
-    .class2str = residue2str,
-    .n_classes = NN+1,
-    .free_config = NULL,
-    .config = NULL
-};

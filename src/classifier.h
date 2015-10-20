@@ -37,7 +37,20 @@ freesasa_classifier_default_acquire();
 void
 freesasa_classifier_default_release();
 
+/**
+    Get the VdW radius of an element
+ */
 double
 freesasa_guess_radius(const char* symbol);
+
+/**
+    Init classifier from arrays representing the lines in a config
+    file.
+ */
+freesasa_classifier *
+freesasa_classifier_from_array(const char **type_input,
+                               const char **atom_input,
+                               int n_types,
+                               int n_atoms);
 
 #endif /* CLASSIFIER_H */
