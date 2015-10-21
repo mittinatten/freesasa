@@ -40,11 +40,9 @@ This generates the following output
     n_thread: 2
     n_testpoint: 100
 
-       Total:   4779.51 A2
-       Polar:   2236.93 A2
-      Apolar:   2542.58 A2
-     Nucleic:      0.00 A2
-     Unknown:      0.00 A2
+      Total:   4834.72 A2
+     Apolar:   2318.90 A2
+      Polar:   2515.82 A2
     
 The results are all in the unit Ångström-squared. 
 
@@ -78,17 +76,17 @@ To calculate the SASA of each residue in
 the sequence, or each residue type, the commands
 
     $ freesasa --foreach-residue --no-log 1ubq.pdb
-    SEQ: A    1 MET   55.99
-    SEQ: A    2 GLN   72.16
+    SEQ: A    1 MET   50.77
+    SEQ: A    2 GLN   77.34
     SEQ: A    3 ILE    0.00
     ...
 
 and
 
     $ freesasa --foreach-residue-type --no-log 1ubq.pdb
-    RES: ALA    122.87
-    RES: ARG    531.77
-    RES: ASN    160.57
+    RES: ALA    118.35
+    RES: ARG    546.58
+    RES: ASN    165.76
     ...
 
 to stdout respectively (`--no-log` suppresses the standard log
@@ -97,9 +95,9 @@ message).
 The command-line interface can also be used as a PDB filter:
 
     $ cat 1ubq.pdb | freesasa --no-log --print-as-B-values 
-    ATOM      1  N   MET A   1      27.340  24.430   2.614  1.55 15.31
-    ATOM      2  CA  MET A   1      26.266  25.413   2.842  2.00 20.34
-    ATOM      3  C   MET A   1      26.913  26.639   3.531  1.55  0.00
+    ATOM      1  N   MET A   1      27.340  24.430   2.614  1.64 17.42
+    ATOM      2  CA  MET A   1      26.266  25.413   2.842  1.88 16.22
+    ATOM      3  C   MET A   1      26.913  26.639   3.531  1.61  0.00
     ...
 
 The output is PDB-file where the temperature factors have been replaced by
@@ -121,12 +119,12 @@ integrated SASA we are interested in. It uses a subset of the Pymol
 documentation. The following example shows how to calculate the sum of
 exposed surface areas of all aromatic residues and of ASP and ASN
 
-    $ freesasa --select "aromatic, resn phe+tyr+trp+his+pro" --select "asx, resn asp+asn" resn 1ubq.pdb
+    $ freesasa --select "aromatic, resn phe+tyr+trp+his+pro" --select "asx, resn asp+asn" 1ubq.pdb
     ...
     Selections:
     freesasa: warning: Found no matches to resn 'TRP', typo?
-    aromatic:    348.32 A2
-    asx:    549.25 A2
+    aromatic:    369.24 A2
+    asx:    560.89 A2
 
 This command adds a 'Selection:' section at the end of the
 output. This particular protein did not have any TRP residues, hence
@@ -138,11 +136,23 @@ flag `-w`.
 @subsection Hetatom-hydrogen Including extra atoms
 
 The user can ask to include hydrogen atoms and HETATM entries in the
-calculation using the options `--hydrogen` and `--hetatm`. The default
-radius of a hydrogen atom is 0, so including hydrogens will only make
-sense if the user has also provided a config-file to specify a
-hydrogen radius. By default the program tries to guess the radius of a
-HETATM entry, but will halt if the element is not recognized. 
+calculation using the options `--hydrogen` and `--hetatm`. In both
+cases adding unknown atoms will emit a warning for each atom. This can
+either be amended by using the flag '-w' to suppress warnings, or by
+using a custom classifier so that they are recognized (see @ref
+Config-file).
+
+@subsection Halt-skip Skipping unknown atoms
+
+By default FreeSASA guesses the element of an unknown atom and uses
+that elements VdW radius. If this fails the radius is set to 0 (and
+hence the atom will not contribute to the calculated area). Users can
+request to either skip unknown atoms completely (i.e. no guessing) or
+to halt when unknown atoms are found and exit with an error. This is
+done with the option `--unknown` which takes one of the three
+arguments `skip`, `halt` or `guess` (default). Whenever an unknown
+atom is skipped or its radius is guessed a warning is printed to
+stderr.
 
 @subsection Chains-models Separating and joining chains and models
 
@@ -344,21 +354,35 @@ classifier-configuration can also be read from a file using
 freesasa_classifier_from_file() (see @ref Config-file).
 
 The default classifier is available throught the function
-freesasa_classifier_default(). This uses the classes and radii,
-defined in the paper by Ooi et al. ([PNAS 1987, 84:
-3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/)) for the
-standard amino acids, for some capping groups (ACE/NH2) and nucleic
-acids. For nonstandard amino acids, or unrecognized HETATM entries the
-VdW radius of the element is used. Warnings are emitted in the latter
-case. If the element can't be determined or is unknown, a negative
-radius is returned. See freesasa_structure_from_pdb() for options for
-how to deal with unknown atoms.
+freesasa_classifier_default(). This uses the radii, defined in the
+paper by Tsai et al. ([JMB 1999, 290:
+253](http://www.ncbi.nlm.nih.gov/pubmed/10388571)) for the standard
+amino acids (20 regular plus SEC, PYL, ASX and GLX), for some capping
+groups (ACE/NH2) and the nucleic acids. If the element can't be
+determined or is unknown, a negative radius is returned. It classes
+all carbons as *apolar* and all other known atoms as *polar*. 
+
+In the latter case, one can use the function freesasa_guess_radius()
+to get get the VdW radius of the element (as defined by [Mantina et
+al. J Phys Chem 2009,
+113:5806](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3658832/)).
+
+Early versions of FreeSASA used the atomic radii by Ooi et al. ([PNAS
+1987, 84: -3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/),
+this classifier is still available through freesasa_classifier_oons().
+
+The default behavior of freesasa_structure_from_pdb(),
+freesasa_structure_array(), freesasa_structure_add_atom() and
+freesasa_structure_add_atom_wopt() is to first try the default
+classifier and then guess the radius if necessary (emitting warnings
+if this is done). See the documentation for these functions for what
+parameters to use to change the default behavior.
 
 @page Config-file Classifier configuration files
 
-The configuration files read by freesasa_classifier_from_file() should
-have two sections: `types:` and `atoms:`. A few example configurations 
-are available in the directory `share/`.
+The configuration files read by freesasa_classifier_from_file() or the
+command-line option `-c` should have two sections: `types:` and
+`atoms:`. 
 
 The types-section defines what types of atoms are available
 (aliphatic, aromatic, hydroxyl, ...), what the radius of that type is
@@ -390,6 +414,26 @@ The residue type `ANY` can be used for atoms that are the same in all
 or most residues (such as backbone atoms). If there is an exception
 for a given amino acid this can be overridden as is shown for `PRO CB`
 in the example.
+
+A few example configurations are available in the directory
+[share/](https://github.com/mittinatten/freesasa/tree/master/share). The
+configuration-file
+[protor.config](https://github.com/mittinatten/freesasa/tree/master/share/protor.config)
+is a copy of the default classifier, and can be used to add extra
+atoms that need to be classified, while keeping the defaults for the
+standard residues (also see the file
+[scripts/chemcomp2config.pl](https://github.com/mittinatten/freesasa/tree/master/scripts/)
+for instructions on how to generate configurations for new chemical
+components semi-automatically). If something common is missing in the
+default classifier, [create an
+issue](https://github.com/mittinatten/freesasa/issues) on Github so
+that it can be added.
+
+FreeSASA also ships with some configuration-files that mimic other
+popular programs, such as
+[NACCESS](https://github.com/mittinatten/freesasa/tree/master/share/naccess.config)
+and
+[DSSP](https://github.com/mittinatten/freesasa/tree/master/share/dssp.config).
 
 @page Selection Selection syntax
 
@@ -478,9 +522,9 @@ for key in area_classes:
 
 Which would give the following output
 
-    Total : 4779.51 A2
-    Polar : 2236.93 A2
-    Apolar : 2542.58 A2
+    Total : 4834.72 A2
+    Polar : 2515.82 A2
+    Apolar : 2318.90 A2
 
 The following does a high precision L&R calculation
 
@@ -501,8 +545,8 @@ for key in selections:
 ~~~
 which gives the output
 
-    alanine : 122.03 A2
-    r1_10 : 655.48 A2
+    alanine : 118.35 A2
+    r1_10 : 643.01 A2
 
 
 @section Python-classification Customizing atom classification
