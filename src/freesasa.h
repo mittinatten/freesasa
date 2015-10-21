@@ -433,6 +433,27 @@ freesasa_verbosity
 freesasa_get_verbosity(void);
 
 /**
+    Set where to write errors.
+    
+    By default stderr is used, this function can be called to redirect
+    error output elsewhere.
+
+    @param err The file to write to. If NULL stderr will be used.
+ */
+void
+freesasa_set_err_out(FILE *err);
+
+/**
+    Get pointer to error file.
+
+    NULL means stderr is used.
+  
+    @return The error file.
+ */
+FILE *
+freesasa_get_err_out();
+
+/**
     Allocate empty structure.
 
     Return value is dynamically allocated, should be freed with

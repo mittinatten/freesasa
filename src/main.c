@@ -118,6 +118,9 @@ help(void)
             "  -w (--no-warnings)    Don't print warnings (will still print warnings due to invalid command\n"
             "                        line options)\n"
             "\n"
+            "  -e <file> --error-file <file>\n"
+            "                        Write errors and warnings to file.\n"
+            "\n"
             "  -r  (--foreach-residue-type)  --residue-type-file <output-file>\n"
             "  -R  (--foreach-residue)       --residue-file <output-file>\n"
             "                        Print SASA for each residue, either grouped by type or sequentially.\n"
@@ -177,7 +180,7 @@ const char *name)
     freesasa_structure *single_structure[1];
     freesasa_structure **structures;
     int n = 0;
-
+    
     if ((structure_options & FREESASA_SEPARATE_CHAINS) ||
         (structure_options & FREESASA_SEPARATE_MODELS)) {
         structures = freesasa_structure_array(input,&n,classifier,structure_options);
@@ -320,7 +323,7 @@ main(int argc,
      char **argv) 
 {
     int alg_set = 0;
-    FILE *input = NULL;
+    FILE *input = NULL, *errlog = NULL;
     char opt;
     int n_opt = 'z'+1;
     char opt_set[n_opt];
@@ -351,13 +354,14 @@ main(int argc,
         {"foreach-residue",no_argument,0,'R'},
         {"print-as-B-values",no_argument,0,'B'},
         {"chain-groups",required_argument,0,'g'},
+        {"error-file",required_argument,0,'e'},
         {"residue-type-file",required_argument,&option_flag,RES_FILE},
         {"residue-file",required_argument,&option_flag,SEQ_FILE},
         {"B-value-file",required_argument,&option_flag,B_FILE},
         {"select",required_argument,&option_flag,SELECT},
         {"unknown",required_argument,&option_flag,UNKNOWN}
     };
-    options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:";
+    options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:e:";
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
         opt_set[(int)opt] = 1;
@@ -400,6 +404,12 @@ main(int argc,
         case 'v':
             printf("%s\n",version);
             exit(EXIT_SUCCESS);
+        case 'e': {
+            //printf("Writing errors to '%s'\n",optarg);
+            errlog = fopen_werr(optarg,"w");
+            freesasa_set_err_out(errlog);
+            break;
+        }
         case 'l':
             printlog = 0;
             break;
@@ -505,5 +515,6 @@ main(int argc,
     if (output_pdb) fclose(output_pdb);
     if (per_residue_type_file) fclose(per_residue_type_file);
     if (per_residue_file) fclose(per_residue_file);
+    if (errlog) fclose(errlog);
     return EXIT_SUCCESS;
 }

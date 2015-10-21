@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <assert.h>
 #include "freesasa.h"
 #include "util.h"
 
@@ -29,21 +30,26 @@ const char *freesasa_name = PACKAGE_NAME;
 const char *freesasa_name = "freesasa";
 #endif
 
+static FILE *errlog = NULL;
+
 static void
 freesasa_err_impl(int err,
                   const char *format,
                   va_list arg)
 {
-    fprintf(stderr, "%s: ", freesasa_name);
+    FILE *fp = stderr;
+    if (errlog != NULL) fp = errlog;
+
+    fprintf(fp, "%s: ", freesasa_name);
     switch (err) {
-    case FREESASA_FAIL: fputs("error: ", stderr); break;
-    case FREESASA_WARN: fputs("warning: ", stderr); break;
+    case FREESASA_FAIL: fputs("error: ", fp); break;
+    case FREESASA_WARN: fputs("warning: ", fp); break;
     default: break;
     }
-    vfprintf(stderr, format, arg);
+    vfprintf(fp, format, arg);
     va_end(arg);
-    fputc('\n', stderr);
-    fflush(stderr);
+    fputc('\n', fp);
+    fflush(fp);
 }
 
 int
@@ -83,3 +89,15 @@ freesasa_mem_fail(const char* func, const char* file, int line)
     return freesasa_fail_wloc(func,file,line,"Out of memory.");
 }
 
+void
+freesasa_set_err_out(FILE *fp)
+{
+    assert(fp);
+    errlog = fp;
+}
+
+FILE *
+freesasa_get_err_out()
+{
+    return errlog;
+}
