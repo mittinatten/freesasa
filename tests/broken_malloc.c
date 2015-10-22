@@ -171,13 +171,13 @@ START_TEST (test_classifier)
 {
     freesasa_set_verbosity(FREESASA_V_SILENT);
 
-    struct types types = empty_types;
-    struct residue_cfg res = empty_residue;
-    struct config cfg = empty_config;
+    struct classifier_types types = empty_types;
+    struct classifier_residue res = empty_residue;
+    struct classifier_config cfg = empty_config;
 
     set_fail_freq(1);
     ck_assert_ptr_eq(types_new(),NULL);
-    ck_assert_ptr_eq(residue_cfg_new("A"),NULL);
+    ck_assert_ptr_eq(classifier_residue_new("A"),NULL);
     ck_assert_ptr_eq(config_new(),NULL);
 
     for (int i = 1; i < 4; ++i) {
@@ -200,9 +200,6 @@ START_TEST (test_classifier)
         set_fail_freq(i);
         ck_assert_ptr_eq(freesasa_classifier_from_file(config),NULL);
         rewind(config);
-        set_fail_freq(i);
-        ck_assert_ptr_eq(freesasa_classifier_default_acquire(),NULL);
-        freesasa_classifier_default_release();
     }
     fclose(config);
     freesasa_set_verbosity(FREESASA_V_NORMAL);

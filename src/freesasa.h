@@ -170,6 +170,12 @@ typedef struct freesasa_classifier {
     void (*free_config)(void*);
 } freesasa_classifier;
 
+//! The default classifier
+extern const freesasa_classifier freesasa_default_classifier;
+
+//! Classifier using OONS classes (used to be default)
+extern const freesasa_classifier freesasa_oons_classifier;
+
 /**
     Calculates SASA based on a given structure.
 
@@ -230,39 +236,6 @@ freesasa_result_free(freesasa_result *result);
  */
 freesasa_classifier*
 freesasa_classifier_from_file(FILE *file);
-
-/**
-    Generates a default classifier.
-
-    The default classifier uses the radii in Tsai et al. (1999) JMB
-    290: 253-266.
-
-    The functions that use the default classifier if passed a null
-    pointer use their own shared copy of it. It is therefore not
-    necessary to use this function to simply pass a default classifier
-    to freesasa_structure_from_pdb(), freesasa_structure_array() or
-    freesasa_structure_add_atom_wopt().
-
-    Return value is dynamically allocated, should be freed with
-    freesasa_classifier_free().
-
-    @return A copy of the default classifier.
- */
-freesasa_classifier*
-freesasa_classifier_default(void);
-
-/**
-    Generates a classifier using the OONS radii.
-
-    Based on the paper by Oii et al. (1987) PNAS 84: 3086-3090.
-
-    Return value is dynamically allocated, should be freed with
-    freesasa_classifier_free().
-
-    @return A copy of the default classifier.    
- */
-freesasa_classifier*
-freesasa_classifier_oons(void);
 
 /**
     Frees a classifier object

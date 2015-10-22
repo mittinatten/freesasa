@@ -287,19 +287,19 @@ const struct atom atoms[] = {
 
 const int n_atom_types = sizeof(atoms)/sizeof(struct atom);
 
-static freesasa_classifier *oons_c = NULL;
+static const freesasa_classifier *oons_c = &freesasa_oons_classifier;
 extern const freesasa_classifier freesasa_residue_classifier;
 
 static void
 setup() 
 {
-    oons_c = freesasa_classifier_oons();
+    //..
 }
 
 static void
 teardown()
 {
-    freesasa_classifier_free(oons_c);
+    //..
 }
 
 // tests freesasa_classify_radius() and freesasa_classify_oons_radius()

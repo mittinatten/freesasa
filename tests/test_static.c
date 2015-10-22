@@ -200,9 +200,9 @@ START_TEST (test_classifier)
     const char *strarr[] = {"A","B","C"};
     const char *line[] = {"# Bla"," # Bla","Bla # Bla"," Bla # Bla","#Bla #Alb"};
     char *dummy_str = NULL;
-    struct types *types = types_new();
-    struct residue_cfg *residue_cfg = residue_cfg_new("ALA");
-    struct config *config = config_new();
+    struct classifier_types *types = types_new();
+    struct classifier_residue *residue_cfg = classifier_residue_new("ALA");
+    struct classifier_config *config = config_new();
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
 
@@ -273,7 +273,7 @@ START_TEST (test_classifier)
     ck_assert_str_eq(residue_cfg->atom_name[1],"CB");
     ck_assert(fabs(residue_cfg->atom_radius[0]-1.0) < 1e-10);
     ck_assert(fabs(residue_cfg->atom_radius[1]-2.0) < 1e-10);
-    residue_cfg_free(residue_cfg);
+    classifier_residue_free(residue_cfg);
 
     ck_assert_int_eq(add_residue(config,"A"),0);
     ck_assert_int_eq(add_residue(config,"B"),1);

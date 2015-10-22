@@ -52,7 +52,6 @@ struct freesasa_structure {
     char *chains; //all chain labels found (as string)
     int *res_first_atom; // first atom of each residue
     char **res_desc;
-    const freesasa_classifier *def_classifier;
 };
 
 static int
@@ -149,13 +148,11 @@ freesasa_structure_new(void)
         p->xyz = NULL;
         p->res_first_atom = NULL;
         p->res_desc = NULL;
-        p->def_classifier = NULL;
         if ((p->chains = malloc(1)) == NULL ||
             (p->a = malloc(sizeof(struct atom*))) == NULL ||
             (p->xyz = freesasa_coord_new()) == NULL ||
             (p->res_first_atom = malloc(sizeof(int))) == NULL ||
-            (p->res_desc = malloc(sizeof(char*))) == NULL ||
-            (p->def_classifier = freesasa_classifier_default_acquire()) == NULL) {
+            (p->res_desc = malloc(sizeof(char*))) == NULL) {
             freesasa_structure_free(p);
             p = NULL;
         } else {
@@ -178,12 +175,11 @@ freesasa_structure_free(freesasa_structure *p)
     if (p->res_desc) {
         for (int i = 0; i < p->number_residues; ++i)
             if (p->res_desc[i]) free(p->res_desc[i]);
-        free(p->res_desc);
+       free(p->res_desc);
     }
     free(p->radius);
     free(p->res_first_atom);
     free(p->chains);
-    if (p->def_classifier) freesasa_classifier_default_release();
     free(p);
 }
 
@@ -283,7 +279,7 @@ structure_add_atom(freesasa_structure *p,
     double r;
     
     if (classifier == NULL) {
-        classifier = p->def_classifier;
+        classifier = &freesasa_default_classifier;
     }
 
     // calculate radius and check if we should keep the atom (based on options)

@@ -79,10 +79,9 @@ freesasa_result_classify(const freesasa_result *result,
     freesasa_strvp *strvp;
 
     if (classifier == NULL) {
-        classifier = freesasa_classifier_default_acquire();
+        classifier = &freesasa_default_classifier;
         if (classifier == NULL) return NULL;
     }
-
 
     n_atoms = freesasa_structure_n(structure);
     n_classes = classifier->n_classes;
@@ -105,8 +104,6 @@ freesasa_result_classify(const freesasa_result *result,
         if (c == FREESASA_WARN) c = n_classes; // unknown
         strvp->value[c] += result->sasa[i];
     }
-
-    freesasa_classifier_default_release();
 
     return strvp;
 }

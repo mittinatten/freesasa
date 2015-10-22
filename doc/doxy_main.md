@@ -298,17 +298,20 @@ passing null pointers where not allowed, are checked by asserts.
 @subsection Thread-safety 
 
 The only global state the library stores is the verbosity level (set
-by freesasa_set_verbosity()). It should be clear from the
-documentation when the other functions have side effects such as
-memory allocation and I/O, and thread-safety should generally not be
-an issue (to the extent that your C library has threadsafe I/O and
-dynamic memory allocation). The SASA calculation itself can be
-parallelized by passing a ::freesasa_parameters struct with
-::freesasa_parameters.n_threads set to a value > 1 (default is 2) to
-freesasa_calc_structure() or freesasa_calc_coord(). This only gives a
-significant effect on performance for large proteins or at high
-precision, and because not all steps are parallelized it is usually
-not worth it to go beyond 2 threads.
+by freesasa_set_verbosity()) and the pointer to the error-log
+(defaults to `stderr`, can be changed by freesasa_set_err_out()). 
+
+It should be clear from the documentation when the other
+functions have side effects such as memory allocation and I/O, and
+thread-safety should generally not be an issue (to the extent that
+your C library has threadsafe I/O and dynamic memory allocation). The
+SASA calculation itself can be parallelized by passing a
+::freesasa_parameters struct with ::freesasa_parameters.n_threads set
+to a value > 1 (default is 2) to freesasa_calc_structure() or
+freesasa_calc_coord(). This only gives a significant effect on
+performance for large proteins or at high precision, and because not
+all steps are parallelized it is usually not worth it to go beyond 2
+threads.
 
 @section Customizing Customizing behavior
 
@@ -353,19 +356,14 @@ own functions and providing them via a ::freesasa_classifier object. A
 classifier-configuration can also be read from a file using
 freesasa_classifier_from_file() (see @ref Config-file).
 
-The default classifier is available throught the function
-freesasa_classifier_default(). This uses the radii, defined in the
+The default classifier is available through the const variable
+::freesasa_default_classifier. This uses the radii, defined in the
 paper by Tsai et al. ([JMB 1999, 290:
 253](http://www.ncbi.nlm.nih.gov/pubmed/10388571)) for the standard
 amino acids (20 regular plus SEC, PYL, ASX and GLX), for some capping
 groups (ACE/NH2) and the nucleic acids. If the element can't be
 determined or is unknown, a negative radius is returned. It classes
 all carbons as *apolar* and all other known atoms as *polar*. 
-
-In the latter case, one can use the function freesasa_guess_radius()
-to get get the VdW radius of the element (as defined by [Mantina et
-al. J Phys Chem 2009,
-113:5806](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3658832/)).
 
 Early versions of FreeSASA used the atomic radii by Ooi et al. ([PNAS
 1987, 84: -3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/),
@@ -375,7 +373,11 @@ The default behavior of freesasa_structure_from_pdb(),
 freesasa_structure_array(), freesasa_structure_add_atom() and
 freesasa_structure_add_atom_wopt() is to first try the default
 classifier and then guess the radius if necessary (emitting warnings
-if this is done). See the documentation for these functions for what
+if this is done, uses VdW radii defined by [Mantina et al. J Phys Chem
+2009,
+113:5806](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3658832/)).
+
+See the documentation for these functions for what
 parameters to use to change the default behavior.
 
 @page Config-file Classifier configuration files
