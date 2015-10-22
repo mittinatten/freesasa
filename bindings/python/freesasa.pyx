@@ -260,13 +260,11 @@ cdef class Classifier:
                   if self._c_classifier is NULL:
                         raise Exception("Error parsing configuration in '%s'." % fileName)
             else:
-                  self._c_classifier = freesasa_classifier_default()
-                  if self._c_classifier is NULL:
-                        raise Exception("Error initializing default classifier.") 
-      
+                  self._c_classifier = &freesasa_default_classifier
       ## The destructor
       def __dealloc__(self):
-            freesasa_classifier_free(self._c_classifier)
+            if self._c_classifier is not &freesasa_default_classifier:
+                  freesasa_classifier_free(self._c_classifier)
 
       ## Class of atom.
       #

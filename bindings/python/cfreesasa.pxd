@@ -76,6 +76,7 @@ cdef extern from "freesasa.h":
         pass
 
     cdef extern const freesasa_parameters freesasa_default_parameters
+    cdef extern const freesasa_classifier freesasa_default_classifier
     cdef extern const freesasa_classifier freesasa_residue_classifier
 
     freesasa_result* freesasa_calc_structure(const freesasa_structure *structure,
@@ -87,8 +88,6 @@ cdef extern from "freesasa.h":
                                          const freesasa_parameters *parameters)
 
     void freesasa_result_free(freesasa_result *result)
-
-    freesasa_classifier* freesasa_classifier_default()
 
     freesasa_classifier* freesasa_classifier_from_file(FILE *file)
 
