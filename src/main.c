@@ -52,6 +52,7 @@ freesasa_classifier *classifier = NULL;
 FILE *output_pdb = NULL;
 FILE *per_residue_type_file = NULL;
 FILE *per_residue_file = NULL;
+FILE *output = NULL;
 int per_residue_type = 0;
 int per_residue = 0;
 int printlog = 1;
@@ -67,10 +68,10 @@ help(void)
 {
     fprintf(stderr,"\nUsage: %s [options] pdb-file(s)\n\n",
             program_name);
-    fprintf(stderr,"Options:\n\n"
+    fprintf(stderr,"GENERAL OPTIONS\n"
             "  -h (--help)           Print this message\n"
             "  -v (--version)        Print version of the program\n");
-    fprintf(stderr,"\nSASA calculation parameters:\n\n"
+    fprintf(stderr,"\nPARAMETERS\n"
             "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm [default]\n"
             "  -L (--lee-richards)   Use Lee & Richards algorithm\n");
     fprintf(stderr,
@@ -95,10 +96,10 @@ help(void)
             "                        Use atomic radii and classes provided in file, example configuration files\n"
             "                        can be found in the directory share/.\n");
     fprintf(stderr,
-            "\nInput PDB:\n\n"
+            "\nINPUT\n"
             "  -H (--hetatm)         Include HETATM entries from input.\n"
-            "  -Y (--hydrogen)       Include hydrogen atoms (skipped by default). Use with care.\n"
-            "                        To get sensible results, one probably needs to redefine atomic\n"
+            "  -Y (--hydrogen)       Include hydrogen atoms (skipped by default). Default classifier emits warnings.\n"
+            "                        Use with care. To get sensible results, one probably needs to redefine atomic\n"
             "                        radii with -c option. Default H radius is 1.10 Å.\n"
             "  -m (--join-models)    Join all MODELs in input into one big structure.\n"
             "  -C (--separate-chains) Calculate SASA for each chain separately.\n"
@@ -113,13 +114,14 @@ help(void)
             "  --unknown <guess|skip|halt>\n"
             "                        When an unknown atom is encountered FreeSASA can either 'guess' its\n"
             "                        VdW radius, 'skip' the atom, or 'halt'. Default is 'guess'.\n");
-    fprintf(stderr,"\nOutput options:\n\n"
+    fprintf(stderr,"\nOUTPUT\n"
             "  -l (--no-log)         Don't print log message (useful with -r -R and -B)\n"
             "  -w (--no-warnings)    Don't print warnings (will still print warnings due to invalid command\n"
             "                        line options)\n"
             "\n"
-            "  -e <file> --error-file <file>\n"
-            "                        Write errors and warnings to file.\n"
+            "  -o <file> (--output <file>)\n"
+            "  -e <file> (--error-file <file>)\n"
+            "                        Redirect output and/or errors and warnings to file.\n"
             "\n"
             "  -r  (--foreach-residue-type)  --residue-type-file <output-file>\n"
             "  -R  (--foreach-residue)       --residue-file <output-file>\n"
@@ -172,7 +174,7 @@ abort_msg(const char *format,
 
 void
 run_analysis(FILE *input,
-const char *name) 
+             const char *name)
 {
     int several_structures = 0, name_len = strlen(name);
     freesasa_result *result;
@@ -185,6 +187,9 @@ const char *name)
         (structure_options & FREESASA_SEPARATE_MODELS)) {
         structures = freesasa_structure_array(input,&n,classifier,structure_options);
         several_structures = 1;
+        for (int i = 0; i < n; ++i) {
+            if (structures[i] == NULL) abort_msg("Invalid input.\n");
+        }
     } else {
         single_structure[0] = freesasa_structure_from_pdb(input,classifier,structure_options);
         structures = single_structure;
@@ -215,7 +220,6 @@ const char *name)
     }
 
     for (int i = 0; i < n; ++i) {
-        if (structures[i] == NULL) abort_msg("Invalid input.\n");
         result = freesasa_calc_structure(structures[i],&parameters);
         if (result == NULL)        abort_msg("Can't calculate SASA.\n");
         classes = freesasa_result_classify(result,structures[i],classifier);
@@ -224,12 +228,12 @@ const char *name)
             char name_i[name_len+10];
             strcpy(name_i,name);
             if (several_structures) {
-                printf("\n");
+                fprintf(stdout,"\n");
                 if (structure_options & FREESASA_SEPARATE_MODELS) 
                     sprintf(name_i+strlen(name_i),":%d",freesasa_structure_model(structures[i]));
                 sprintf(name_i+strlen(name_i),":%s",freesasa_structure_chain_labels(structures[i]));
             }
-            freesasa_log(stdout,result,name_i,&parameters,classes);
+            freesasa_log(output,result,name_i,&parameters,classes);
             if (several_structures) printf("\n");
         }
         if (per_residue_type) {
@@ -244,13 +248,13 @@ const char *name)
             freesasa_write_pdb(output_pdb,result,structures[i]);
         }
         if (n_select > 0) {
-            printf("\nSelections:\n");
+            fprintf(output,"\nSelections:\n");
             for (int c = 0; c < n_select; ++c) {
                 double a;
                 char name[FREESASA_MAX_SELECTION_NAME+1];
                 if (freesasa_select_area(select_cmd[c],name,&a,structures[i],result)
                     == FREESASA_SUCCESS) {
-                    printf("%s: %9.2f A2\n",name,a);
+                    fprintf(output,"%s: %9.2f A2\n",name,a);
                 } else {
                 }
             }
@@ -355,13 +359,14 @@ main(int argc,
         {"print-as-B-values",no_argument,0,'B'},
         {"chain-groups",required_argument,0,'g'},
         {"error-file",required_argument,0,'e'},
+        {"output",required_argument,0,'o'},
         {"residue-type-file",required_argument,&option_flag,RES_FILE},
         {"residue-file",required_argument,&option_flag,SEQ_FILE},
         {"B-value-file",required_argument,&option_flag,B_FILE},
         {"select",required_argument,&option_flag,SELECT},
         {"unknown",required_argument,&option_flag,UNKNOWN}
     };
-    options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:e:";
+    options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:e:o:";
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
         opt_set[(int)opt] = 1;
@@ -404,12 +409,13 @@ main(int argc,
         case 'v':
             printf("%s\n",version);
             exit(EXIT_SUCCESS);
-        case 'e': {
-            //printf("Writing errors to '%s'\n",optarg);
+        case 'e': 
             errlog = fopen_werr(optarg,"w");
             freesasa_set_err_out(errlog);
             break;
-        }
+        case 'o':
+            output = fopen_werr(optarg,"w");
+            break;
         case 'l':
             printlog = 0;
             break;
@@ -459,16 +465,13 @@ main(int argc,
             break;
         case 'r':
             per_residue_type = 1;
-            if (per_residue_type_file == NULL) per_residue_type_file = stdout;
             break;
         case 'R':
             per_residue = 1;
-            if (per_residue_file == NULL) per_residue_file = stdout;
             break;
         case 'b':
         case 'B':
             printpdb = 1;
-            if (output_pdb == NULL) output_pdb = stdout;
             break;
         case 'g':
             add_chain_groups(optarg);
@@ -490,10 +493,14 @@ main(int argc,
             break;
         }
     }
+    if (output == NULL) output = stdout;
+    if (per_residue_type_file == NULL) per_residue_type_file = output;
+    if (per_residue_file == NULL) per_residue_file = output;
+    if (output_pdb == NULL) output_pdb = output;
     if (alg_set > 1) abort_msg("Multiple algorithms specified.\n");
     if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.\n");
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.\n");
-    if (printlog) printf("## %s %s ##\n",program_name,version);
+    if (printlog) fprintf(output,"## %s %s ##\n",program_name,version);
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {
             errno = 0;
@@ -501,7 +508,7 @@ main(int argc,
             if (input != NULL) {
                 run_analysis(input,argv[i]);
                 fclose(input);
-                printf("\n");
+                fprintf(output,"\n");
             } else {
                 abort_msg("Opening file '%s'; %s\n",argv[i],strerror(errno));
             }
