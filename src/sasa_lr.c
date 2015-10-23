@@ -78,7 +78,12 @@ init_lr(double *sasa,
     const int n_atoms = freesasa_coord_n(xyz);
     lr_data* lr = malloc(sizeof(lr_data));
     double *radii = malloc(sizeof(double)*n_atoms);
-    if (!lr || !radii) { free(lr); free(radii); mem_fail(); return NULL;}
+    if (!lr || !radii) { 
+        free(lr);
+        free(radii);
+        mem_fail();
+        return NULL;
+    }
 
     //init some arrays
     for (int i = 0; i < n_atoms; ++i) {
@@ -132,7 +137,10 @@ freesasa_lee_richards(double *sasa,
 
     // determine which atoms are neighbours
     lr->adj = freesasa_nb_new(xyz,lr->radii);
-    if (lr->adj == NULL) return mem_fail();
+    if (lr->adj == NULL) {
+        free_lr(lr);
+        return mem_fail();
+    }
 
     if (n_threads > 1) {
 #if HAVE_LIBPTHREAD

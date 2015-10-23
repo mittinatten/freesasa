@@ -565,15 +565,20 @@ freesasa_structure_add_atom_wopt(freesasa_structure *p,
 
     if (guess_symbol(symbol,atom_name) == FREESASA_WARN &&
         options & FREESASA_SKIP_UNKNOWN) ++warn;
-    
+
     a = atom_new(residue_name,residue_number,atom_name,symbol,chain_label);
     if (a == NULL) return mem_fail();
-    
-    ret = structure_add_atom(p,a,v,classifier,options);
-    if (ret == FREESASA_FAIL) return ret;
-    if (warn) return FREESASA_WARN;
-    return ret;
 
+    ret = structure_add_atom(p,a,v,classifier,options);
+
+    if (ret == FREESASA_FAIL) {
+        atom_free(a);
+        return ret;
+    }
+
+    if (warn) return FREESASA_WARN;
+
+    return ret;
 }
 
 int 
@@ -731,7 +736,8 @@ freesasa_structure_get_chains(const freesasa_structure *p,
                                                   ai->res_name, ai->res_number,
                                                   c, v[0], v[1], v[2]);
             if (res == FREESASA_FAIL) {
-                mem_fail();
+                fail_msg("");
+                freesasa_structure_free(new_p);
                 return NULL;
             }
         }

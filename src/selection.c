@@ -132,8 +132,10 @@ freesasa_selection_selector(expression_type type,
                             expression *list)
 {
     expression *e = expression_new();
-    if (e == NULL) return NULL;
-    
+    if (e == NULL) {
+        expression_free(list);
+        return NULL;
+    }
     e->type = type;
     e->left = list;
     
@@ -146,8 +148,11 @@ freesasa_selection_operation(expression_type type,
                              expression *right)
 {
     expression *e = expression_new();
-    if (e == NULL) return NULL;
-    
+    if (e == NULL) {
+        expression_free(left);
+        expression_free(right);
+        return NULL;
+    }
     e->type = type;
     e->left = left;
     e->right = right;
@@ -568,7 +573,7 @@ freesasa_select_area(const char *command,
     
     expression = get_expression(command);
     selection = selection_new(result->n_atoms);
-    //print_expr(expression,0);
+
     if (expression != NULL && selection != NULL) {
         switch (select_atoms(selection, expression, structure)) {
         case FREESASA_FAIL: 
@@ -576,11 +581,9 @@ freesasa_select_area(const char *command,
             break;
         case FREESASA_WARN: 
             warn = 1; // proceed with calculation, print warning later
-        case FREESASA_SUCCESS:
-            //int count = 0;
+        case FREESASA_SUCCESS: {
             for (int j = 0; j < selection->size; ++j) {
                 sasa += selection->atom[j]*result->sasa[j];
-                //count += selection->atom[j];
             }
             
             *area = sasa;
@@ -592,9 +595,9 @@ freesasa_select_area(const char *command,
             else {
                 strcpy(name,selection->name);
             }
-            //printf(">> %s %f %d\n",name,*area,count); fflush(stdout);
             
             break;
+        }
         default:
             assert(0);
         }

@@ -90,13 +90,17 @@ struct cell_list a_cell_list = {.cell = &a_cell, .n = 1, .nx = 1, .ny =1, .nz = 
 
 START_TEST (test_coord) 
 {
+    set_fail_freq(1000);
+    coord_t *coord_dyn = freesasa_coord_new();
+    set_fail_freq(1);
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_ptr_eq(freesasa_coord_new(),NULL);
     ck_assert_ptr_eq(freesasa_coord_copy(&coord),NULL);
     ck_assert_ptr_eq(freesasa_coord_new_linked(v,1),NULL);
-    ck_assert_ptr_eq(freesasa_coord_append(&coord,v,1),FREESASA_FAIL); 
-    ck_assert_ptr_eq(freesasa_coord_append_xyz(&coord,v,v+1,v+2,1),FREESASA_FAIL); 
+    ck_assert_ptr_eq(freesasa_coord_append(coord_dyn,v,1),FREESASA_FAIL);
+    ck_assert_ptr_eq(freesasa_coord_append_xyz(coord_dyn,v,v+1,v+2,1),FREESASA_FAIL);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
+    freesasa_coord_free(coord_dyn);
 }
 END_TEST
 
@@ -272,13 +276,13 @@ int main(int argc, char **argv) {
     Suite *s = suite_create("Test that null-returning malloc breaks program gracefully.");
     
     TCase *tc = tcase_create("Basic");
-    //tcase_add_test(tc,test_coord);
-    //tcase_add_test(tc,test_structure);
-    //tcase_add_test(tc,test_nb);
-    //tcase_add_test(tc,test_alg);
+    tcase_add_test(tc,test_coord);
+    tcase_add_test(tc,test_structure);
+    tcase_add_test(tc,test_nb);
+    tcase_add_test(tc,test_alg);
     tcase_add_test(tc,test_classifier);
-    //tcase_add_test(tc,test_selector);
-    //tcase_add_test(tc,test_api);
+    tcase_add_test(tc,test_selector);
+    tcase_add_test(tc,test_api);
     
     suite_add_tcase(s, tc);
     SRunner *sr = srunner_create(s);

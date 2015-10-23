@@ -111,13 +111,12 @@ freesasa_coord_append(coord_t *c,
 
     if (n == 0) return FREESASA_SUCCESS;
 
-    c->n += n;
-    
-    c->xyz = (double*) realloc(c->xyz, sizeof(double)*3*c->n);
+    c->xyz = (double*) realloc(c->xyz, sizeof(double)*3*(c->n+n));
     if (c->xyz == NULL) {
         free(xyz_old);
         return mem_fail();
     }
+    c->n += n;
 
     memcpy(&(c->xyz[3*n_old]), xyz, sizeof(double)*n*3);
     return FREESASA_SUCCESS;
