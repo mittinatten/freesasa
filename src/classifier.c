@@ -37,7 +37,7 @@ const struct classifier_residue empty_residue = {0,NULL,NULL,NULL,NULL};
 const struct classifier_config empty_config = {0, 0, NULL, NULL, NULL};
 
 static struct classifier_types*
-types_new()
+classifier_types_new()
 {
     struct classifier_types *t = malloc(sizeof(struct classifier_types));
     if (t == NULL) {
@@ -49,7 +49,7 @@ types_new()
 }
 
 static void
-types_free(struct classifier_types* t)
+classifier_types_free(struct classifier_types* t)
 {
     if (t == NULL) return;
     free(t->type_radius);
@@ -105,7 +105,7 @@ classifier_residue_free(struct classifier_residue* res)
 }
 
 static struct classifier_config* 
-config_new()
+classifier_config_new()
 {
     struct classifier_config *cfg = malloc(sizeof(struct classifier_config));
     if (cfg == NULL) {
@@ -117,7 +117,7 @@ config_new()
 }
 
 static void
-config_free(void *p)
+classifier_config_free(void *p)
 {
     if (p == NULL) return;
     struct classifier_config *c = p;
@@ -214,7 +214,7 @@ int
 strip_line(char **line,
            const char *input) 
 {
-    char *linebuf = malloc(strlen(input)+1),
+    char *linebuf = malloc(strlen(input)+1), *line_bkp,
         *comment, *first, *last;
     if (linebuf == NULL) return mem_fail();
     
@@ -228,8 +228,13 @@ strip_line(char **line,
     
     if (last > first) 
         while (*last == ' ' || *last == '\t' || *last == '\n') --last;
+    line_bkp = *line;
     *line = realloc(*line,strlen(first)+1);
-    if (*line == NULL) return mem_fail();
+    if (*line == NULL) {
+        free(linebuf);
+        free(line_bkp);
+        return mem_fail();
+    }
     
     if (first >= last) {
         **line = '\0';
@@ -271,17 +276,18 @@ static int
 add_class(struct classifier_types *types,
           const char *name)
 {
-    int the_class = find_string(types->class_name, name, types->n_classes);
+    int the_class = find_string(types->class_name, name, types->n_classes),
+        n = types->n_classes + 1;
+    char **cn = types->class_name;
     if (the_class < 0) {
+        if ((types->class_name = realloc(cn, sizeof(char*) * n)) == NULL){
+            types->class_name = cn;
+            return mem_fail();
+        }
+        if ((types->class_name[n - 1] = strdup(name)) == NULL) {
+            return mem_fail();
+        }
         types->n_classes++;
-        if (!(types->class_name = realloc(types->class_name, sizeof(char*)*types->n_classes))){
-            types->n_classes--;
-            return mem_fail();
-        }
-        if (!(types->class_name[types->n_classes-1] = strdup(name))) {
-            types->n_classes--;
-            return mem_fail();
-        }
         the_class = types->n_classes - 1;
     }
     return the_class;
@@ -298,24 +304,39 @@ add_type(struct classifier_types *types,
          const char *class_name, 
          double r)
 {
-    int the_class;
+    int the_class, n = types->n_types + 1, err = 0;
+    char **tn = types->name;
+    double *tr = types->type_radius;
+    int *tc = types->type_class;
+    
     if (find_string(types->name, type_name, types->n_types) >= 0)
         return freesasa_warn("Ignoring duplicate entry for '%s'.", type_name);
+    
     the_class = add_class(types,class_name);
-    if (the_class == FREESASA_FAIL) return fail_msg("");
-
+    if (the_class == FREESASA_FAIL) {
+        return mem_fail();
+    }
+    
+    if ((types->name = realloc(tn, sizeof(char*)*n)) == NULL) {
+        types->name = tn;
+        return mem_fail();
+    }
+    
+    if ((types->type_radius = realloc(tr, sizeof(double)*n)) == NULL) {
+        types->type_radius = tr;
+        return mem_fail();
+    }
+    
+    if ((types->type_class = realloc(tc, sizeof(int) * n)) == NULL) {
+        types->type_class = tc;
+        return mem_fail();
+    }
+    
+    if ((types->name[n-1] = strdup(type_name)) == NULL) {
+        return mem_fail();
+    }
+        
     types->n_types++;
-    types->name = realloc(types->name,sizeof(char*)*types->n_types);
-    types->type_radius = realloc(types->type_radius,sizeof(double)*types->n_types);
-    types->type_class = realloc(types->type_class,sizeof(int) * types->n_types);
-    if (!types->name || !types->type_radius || !types->type_class) {
-        types->n_types--;
-        return mem_fail();
-    }
-    if (!(types->name[types->n_types-1] = strdup(type_name))) {
-        types->n_types--;
-        return mem_fail();
-    }
     types->type_radius[types->n_types-1] = r;
     types->type_class[types->n_types-1] = the_class;
     return types->n_types-1;
@@ -368,7 +389,7 @@ read_types(struct classifier_types *types,
     while (ftell(input) < fi.end) { 
         nl = next_line(&line,input);
         if (nl == 0) continue;
-        if (nl == FREESASA_FAIL) return FREESASA_FAIL;
+        if (nl == FREESASA_FAIL) {ret = nl; break; };
         ret = read_types_line(types,line);
         if (ret == FREESASA_FAIL) break;
     }
@@ -388,23 +409,34 @@ add_atom(struct classifier_residue *res,
          int the_class)
 {
     int n;
+    char **an = res->atom_name;
+    double *ar = res->atom_radius;
+    int *ac = res->atom_class;
+
     if (find_string(res->atom_name, name, res->n_atoms) >= 0)
         return freesasa_warn("in %s(): Ignoring duplicate entry for atom '%s %s'", 
                              __func__, res->name, name);
-    n = ++res->n_atoms;
-    res->atom_name = realloc(res->atom_name,sizeof(char*)*n);
-    res->atom_radius = realloc(res->atom_radius,sizeof(double)*n);
-    res->atom_class = realloc(res->atom_class,sizeof(int)*n);
-    if (!res->atom_name || !res->atom_radius || !res->atom_class) {
-        --res->n_atoms;
+    n = res->n_atoms+1;
+
+    if ((res->atom_name = realloc(res->atom_name,sizeof(char*)*n)) == NULL) {
+        res->atom_name = an;
         return mem_fail();
     }
-    if (!(res->atom_name[n-1] = strdup(name))) {
-        --res->n_atoms;
+    if ((res->atom_radius = realloc(res->atom_radius,sizeof(double)*n)) == NULL) {
+        res->atom_radius = ar;
         return mem_fail();
     }
+    if ((res->atom_class = realloc(res->atom_class,sizeof(int)*n)) == NULL) {
+        res->atom_class = ac;
+        return mem_fail();
+    }
+    if ((res->atom_name[n-1] = strdup(name)) == NULL) 
+        return mem_fail();
+
+    ++res->n_atoms;
     res->atom_radius[n-1] = radius;
     res->atom_class[n-1] = the_class;
+
     return n-1;
 }
 
@@ -417,19 +449,25 @@ static int
 add_residue(struct classifier_config *config,
             const char* name)
 {
+    char **rn = config->residue_name;
+    struct classifier_residue **cr = config->residue;
     int res = find_string(config->residue_name, name, config->n_residues);
+
     if (res >= 0) return res;
-    res = ++config->n_residues;
-    config->residue_name = realloc(config->residue_name, sizeof(char*) * res);
-    config->residue = realloc(config->residue, sizeof(struct classifier_residue) * res);
-    if (!config->residue_name || !config->residue) {
-        --config->n_residues;
+
+    res = config->n_residues + 1;
+    if ((config->residue_name = realloc(rn, sizeof(char*) * res)) == NULL) {
+        config->residue_name = rn;
         return mem_fail();
     }
-    if (!(config->residue[res-1] = classifier_residue_new(name))) {
-        --config->n_residues;
+    if ((config->residue = realloc(cr, sizeof(struct classifier_residue *) * res)) == NULL) {
+        config->residue = cr;
         return mem_fail();
     }
+    if ((config->residue[res-1] = classifier_residue_new(name)) == NULL) {
+        return mem_fail();
+    }
+    ++config->n_residues;
     config->residue_name[res-1] = config->residue[res-1]->name;
     return res-1;
 }
@@ -522,24 +560,20 @@ read_config(FILE *input)
 {
     assert(input);
     struct file_interval types_section, atoms_section; 
-    struct classifier_config *config;
-    struct classifier_types *types;
+    struct classifier_config *config = NULL;
+    struct classifier_types *types = NULL;
+    int err = 0;
     
-    if (!(types = types_new())) 
-        return NULL;
-    if (!(config = config_new()))
-        return NULL;
-    if (check_file(input, &types_section, &atoms_section) != FREESASA_SUCCESS)
-        return NULL;
-    
-    if (read_types(types, input, types_section)         == FREESASA_FAIL ||
-        read_atoms(config, types, input, atoms_section) == FREESASA_FAIL ||
-        config_copy_classes(config, types)         == FREESASA_FAIL) {
-        types_free(types);
-        config_free(config);
-        return NULL;
+    if (!(types = classifier_types_new()) ||
+        !(config = classifier_config_new()) ||
+        check_file(input, &types_section, &atoms_section) ||
+        read_types(types, input, types_section) ||
+        read_atoms(config, types, input, atoms_section) ||
+        config_copy_classes(config, types)) {
+        classifier_config_free(config);
+        config = NULL;
     }
-    types_free(types);
+    classifier_types_free(types);
     
     return config;
 }
@@ -651,7 +685,7 @@ init_classifier(struct classifier_config *config)
     c->radius = freesasa_classifier_config_radius;
     c->sasa_class = freesasa_classifier_config_class;
     c->class2str = freesasa_classifier_config_class2str;
-    c->free_config = config_free;
+    c->free_config = classifier_config_free;
 
     return c;
 }

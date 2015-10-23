@@ -200,9 +200,9 @@ START_TEST (test_classifier)
     const char *strarr[] = {"A","B","C"};
     const char *line[] = {"# Bla"," # Bla","Bla # Bla"," Bla # Bla","#Bla #Alb"};
     char *dummy_str = NULL;
-    struct classifier_types *types = types_new();
+    struct classifier_types *types = classifier_types_new();
     struct classifier_residue *residue_cfg = classifier_residue_new("ALA");
-    struct classifier_config *config = config_new();
+    struct classifier_config *config = classifier_config_new();
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
 
@@ -231,8 +231,8 @@ START_TEST (test_classifier)
     ck_assert_int_eq(types->n_classes, 2);
     ck_assert_str_eq(types->class_name[1], "B");
 
-    free(types);
-    types = types_new();
+    classifier_types_free(types);
+    types = classifier_types_new();
 
     ck_assert_int_eq(types->n_types, 0);
     ck_assert_int_eq(add_type(types,"a","A",1.0),0);
@@ -251,8 +251,8 @@ START_TEST (test_classifier)
     ck_assert(fabs(types->type_radius[1]-2.0) < 1e-10);
     ck_assert(fabs(types->type_radius[2]-3.0) < 1e-10);
 
-    free(types);
-    types = types_new();
+    classifier_types_free(types);
+    types = classifier_types_new();
 
     ck_assert_int_eq(read_types_line(types,""),FREESASA_FAIL);
     ck_assert_int_eq(read_types_line(types,"a"),FREESASA_FAIL);
@@ -283,8 +283,8 @@ START_TEST (test_classifier)
     ck_assert_str_eq(config->residue_name[1],"B");
     ck_assert_str_eq(config->residue[0]->name,"A");
 
-    config_free(config);
-    config = config_new();
+    classifier_config_free(config);
+    config = classifier_config_new();
     
     ck_assert_int_eq(read_atoms_line(config,types,"A A"),FREESASA_FAIL);
     ck_assert_int_eq(read_atoms_line(config,types,"A A A"),FREESASA_FAIL);
@@ -306,8 +306,8 @@ START_TEST (test_classifier)
     ck_assert(fabs(config->residue[0]->atom_radius[0]-1.0) < 1e-5);
     ck_assert(fabs(config->residue[0]->atom_radius[1]-2.0) < 1e-5);
     
-    config_free(config);
-    types_free(types);
+    classifier_config_free(config);
+    classifier_types_free(types);
 
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 

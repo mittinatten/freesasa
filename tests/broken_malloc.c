@@ -170,26 +170,30 @@ START_TEST (test_classifier)
 {
     freesasa_set_verbosity(FREESASA_V_SILENT);
 
-    struct classifier_types types = empty_types;
-    struct classifier_residue res = empty_residue;
-    struct classifier_config cfg = empty_config;
-
     set_fail_freq(1);
-    ck_assert_ptr_eq(types_new(),NULL);
+    ck_assert_ptr_eq(classifier_types_new(),NULL);
     ck_assert_ptr_eq(classifier_residue_new("A"),NULL);
-    ck_assert_ptr_eq(config_new(),NULL);
+    ck_assert_ptr_eq(classifier_config_new(),NULL);
 
-    for (int i = 1; i < 4; ++i) {
+    for (int i = 1; i < 5; ++i) {
+        set_fail_freq(10000);
+        struct classifier_types *types = classifier_types_new();
+        struct classifier_residue *res = classifier_residue_new("ALA");
+        struct classifier_config *cfg = classifier_config_new();
+
         if (i < 3) {
             set_fail_freq(i);
-            ck_assert_int_eq(add_class(&types,"A"),FREESASA_FAIL);        
+            ck_assert_int_eq(add_class(types,"A"),FREESASA_FAIL);        
             set_fail_freq(i);
-            ck_assert_int_eq(add_type(&types,"a","A",1.0),FREESASA_FAIL);
-        }
+            ck_assert_int_eq(add_type(types,"a","A",1.0),FREESASA_FAIL);
+        } 
         set_fail_freq(i);
-        ck_assert_int_eq(add_atom(&res,"A",1.0,0),FREESASA_FAIL);
+        ck_assert_int_eq(add_atom(res,"A",1.0,0),FREESASA_FAIL);
         set_fail_freq(i);
-        ck_assert_int_eq(add_residue(&cfg,"A"),FREESASA_FAIL);
+        ck_assert_int_eq(add_residue(cfg,"A"),FREESASA_FAIL);
+        classifier_types_free(types);
+        classifier_residue_free(res);
+        classifier_config_free(cfg);
     }
     // don't test all levels, but make sure errors in low level
     // allocation propagates to the interface
@@ -269,10 +273,10 @@ int main(int argc, char **argv) {
     
     TCase *tc = tcase_create("Basic");
     //tcase_add_test(tc,test_coord);
-    tcase_add_test(tc,test_structure);
+    //tcase_add_test(tc,test_structure);
     //tcase_add_test(tc,test_nb);
     //tcase_add_test(tc,test_alg);
-    //tcase_add_test(tc,test_classifier);
+    tcase_add_test(tc,test_classifier);
     //tcase_add_test(tc,test_selector);
     //tcase_add_test(tc,test_api);
     
