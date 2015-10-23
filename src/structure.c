@@ -289,7 +289,7 @@ structure_add_atom(freesasa_structure *p,
     assert(r >= 0);
 
     // if it's a keeper store the radius, increase number of atoms counter
-    na = ++p->number_atoms;
+    na = p->number_atoms+1;
     if ((p->radius = realloc(p->radius,sizeof(double)*na)) == NULL)
         return mem_fail();
     p->radius[na-1] = r;
@@ -298,6 +298,8 @@ structure_add_atom(freesasa_structure *p,
     if ((p->a = realloc(p->a,sizeof(struct atom*)*na)) == NULL) 
         return mem_fail();
     p->a[na-1] = a;
+
+    ++p->number_atoms;
 
     if (freesasa_coord_append(p->xyz, xyz, 1)) return mem_fail();
     if (structure_add_chain(p, a->chain_label)) return mem_fail();
@@ -367,6 +369,7 @@ from_pdb_impl(FILE *pdb_file,
             
             if (a == NULL) {
                 mem_fail();
+                free(line);
                 return NULL;
             }
             
@@ -617,13 +620,25 @@ freesasa_structure_array(FILE *pdb,
                 continue;
             }
             ss = realloc(ss,sizeof(freesasa_structure*)*(n_chains+new_chains));
-            if (!ss) { mem_fail(); return NULL; } // now way of cleaning up, might as well exit
+
+            // now way of cleaning up if the above fails, might as well exit
+            if (!ss) {
+                mem_fail();
+                return NULL;
+            } 
+
+            // to facilitate cleanup if reading fails below
+            for (int j = 0; j < new_chains; ++j) ss[n_chains+j] = NULL;
+            
             for (int j = 0; j < new_chains; ++j) {
                 freesasa_structure *s = from_pdb_impl(pdb,chains[j],classifier,options);
+                ss[n_chains+j] = s;
                 if (s != NULL) {
-                    ss[n_chains+j] = s;
                     ss[n_chains+j]->model = ss[n_chains]->model; // all have the same model number
-                } else { ++err; break; }
+                } else {
+                    ++err;
+                    break;
+                }
             }
             n_chains += new_chains;
             free(chains);
@@ -631,11 +646,18 @@ freesasa_structure_array(FILE *pdb,
         *n = n_chains;
     } else {
         ss = malloc(sizeof(freesasa_structure*)*n_models);
-        if (!ss) { mem_fail(); return NULL; }
+        if (!ss) {
+            mem_fail();
+            return NULL;
+        }
+
+        // to facilitate cleanup if reading fails below
+        for (int i = 0; i < n_models; ++i) ss[i] = NULL; 
+
         for (int i = 0; i < n_models; ++i) {
             freesasa_structure *s = from_pdb_impl(pdb,models[i],classifier,options);
-            if (s != NULL) ss[i] = s;
-            else {
+            ss[i] = s;
+            if (s == NULL) {
                 ++err; 
                 break;
             }
@@ -643,6 +665,7 @@ freesasa_structure_array(FILE *pdb,
         *n = n_models;
     }
     if (err || *n == 0) {
+        for (int i = 0; i < *n; ++i) freesasa_structure_free(ss[i]);
         *n = 0;
         free(ss);
         freesasa_fail("in %s(): Problems reading input.",__func__);
