@@ -108,12 +108,11 @@ START_TEST (test_structure)
     ck_assert_ptr_ne(file, NULL);
     ck_assert_ptr_eq(freesasa_structure_new(), NULL);
     ck_assert_ptr_eq(from_pdb_impl(file,interval, NULL, 0), NULL);
-    for (int i = 1; i < 50; ++i) {
+    for (int i = 1; i < 100; ++i) {
         set_fail_freq(i);
         rewind(file);
         ck_assert_ptr_eq(freesasa_structure_from_pdb(file, NULL, 0), NULL);
     }
-    set_fail_freq(1);
     fclose(file);
     
     file = fopen(DATADIR "2jo4.pdb", "r");
@@ -269,13 +268,13 @@ int main(int argc, char **argv) {
     Suite *s = suite_create("Test that null-returning malloc breaks program gracefully.");
     
     TCase *tc = tcase_create("Basic");
-    tcase_add_test(tc,test_coord);
+    //tcase_add_test(tc,test_coord);
     tcase_add_test(tc,test_structure);
-    tcase_add_test(tc,test_nb);
-    tcase_add_test(tc,test_alg);
-    tcase_add_test(tc,test_classifier);
-    tcase_add_test(tc,test_selector);
-    tcase_add_test(tc,test_api);
+    //tcase_add_test(tc,test_nb);
+    //tcase_add_test(tc,test_alg);
+    //tcase_add_test(tc,test_classifier);
+    //tcase_add_test(tc,test_selector);
+    //tcase_add_test(tc,test_api);
     
     suite_add_tcase(s, tc);
     SRunner *sr = srunner_create(s);

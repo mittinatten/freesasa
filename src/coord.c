@@ -106,12 +106,17 @@ freesasa_coord_append(coord_t *c,
     assert(c); assert(xyz); assert(!c->is_linked);
 
     int n_old = c->n;
+    double *xyz_old = c->xyz;
 
     if (n == 0) return FREESASA_SUCCESS;
 
     c->n += n;
+    
     c->xyz = (double*) realloc(c->xyz, sizeof(double)*3*c->n);
-    if (c->xyz == NULL) return mem_fail();
+    if (c->xyz == NULL) {
+        free(xyz_old);
+        return mem_fail();
+    }
 
     memcpy(&(c->xyz[3*n_old]), xyz, sizeof(double)*n*3);
     return FREESASA_SUCCESS;

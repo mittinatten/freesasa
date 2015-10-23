@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
+#include "util.h"
 #include "pdb.h"
 
 static inline int
@@ -76,7 +77,9 @@ freesasa_pdb_get_coord(double *xyz,
     if (pdb_line_check(line,54) == FREESASA_FAIL) {
         return FREESASA_FAIL;
     }
-    sscanf(line+30, "%lf%lf%lf", &xyz[0], &xyz[1], &xyz[2]);
+    if (sscanf(line+30, "%lf%lf%lf", &xyz[0], &xyz[1], &xyz[2]) != 3) {
+        return freesasa_fail("Could not read coordinates from line '%s'",line);
+    }
     return FREESASA_SUCCESS;
 }
 
