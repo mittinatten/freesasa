@@ -71,6 +71,8 @@ test_points(int N)
     coord_t *coord = freesasa_coord_new();
     double *tp = malloc(3*N*sizeof(double));
     if (tp == NULL || coord == NULL) {
+        freesasa_coord_free(coord);
+        free(tp);
         mem_fail();
         return NULL;
     }
@@ -86,7 +88,8 @@ test_points(int N)
 
     if (freesasa_coord_append(coord,tp,N) == FREESASA_FAIL) {
         fail_msg("");
-        return NULL;
+        freesasa_coord_free(coord);
+        coord = NULL;
     }
     free(tp);
 

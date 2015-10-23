@@ -36,6 +36,11 @@ struct cell {
     int n_atoms; //! number of atoms in cell
 };
 
+cell *empty_nb[17] = 
+    {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
+     NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+cell empty_cell = {(cell *)empty_nb, NULL, 0, 0};
+
 //! Verlet cell lists
 typedef struct cell_list {
     cell *cell; //! the cells
@@ -46,6 +51,8 @@ typedef struct cell_list {
     double y_max, y_min;
     double z_max, z_min;
 } cell_list;
+
+struct cell_list empty_cell_list = {NULL,0,0,0,0,0,0,0,0,0,0,0};
 
 //! Finds the bounds of the cell list and writes them to the provided cell list
 static void
@@ -159,10 +166,12 @@ fill_cells(cell_list *c,
     for (int i = 0; i < freesasa_coord_n(coord); ++i) {
         const double *v = freesasa_coord_i(coord,i);
         cell *cell;
+        int *a;
         cell = &c->cell[coord2cell_index(c,v)];
         ++cell->n_atoms;
+        a = cell->atom;
         cell->atom = realloc(cell->atom,sizeof(int)*cell->n_atoms);
-        if (!cell->atom) return mem_fail();
+        if (!cell->atom) { cell->atom = a; return mem_fail(); }
         cell->atom[cell->n_atoms-1] = i;
     }
     return FREESASA_SUCCESS;
@@ -173,7 +182,7 @@ static void
 cell_list_free(cell_list *c)
 {
     if (c) {
-        for (int i = 0; i < c->n; ++i) free(c->cell[i].atom);
+        if (c->cell) for (int i = 0; i < c->n; ++i) free(c->cell[i].atom);
         free(c->cell);
         free(c);
     }
@@ -196,18 +205,23 @@ cell_list_new(double cell_size,
     cell_list *c = malloc(sizeof(cell_list));
     if (!c) {mem_fail(); return NULL;}
 
+    *c = empty_cell_list;
+
     c->d = cell_size;
     cell_list_bounds(c,coord);
+
     c->cell = malloc(sizeof(cell)*c->n);
     if (!c->cell) {
-        mem_fail(); 
+        cell_list_free(c);
+        mem_fail();
         return NULL;
     }
     
     for (int i = 0; i < c->n; ++i) 
-        c->cell[i].atom = NULL;
+        c->cell[i] = empty_cell;
     
     if (fill_cells(c,coord)) {
+        cell_list_free(c);
         mem_fail();
         return NULL;
     }
@@ -313,20 +327,27 @@ chunk_up(nb_list *nb_list,
          int i)
 {
     int nni = nb_list->nn[i];
-    int **nbi = &nb_list->nb[i];
-    double **xydi = &nb_list->xyd[i];
-    double **xdi = &nb_list->xd[i];
-    double **ydi = &nb_list->yd[i];
 
     if (nni > nb_list->capacity[i]) {
+        int **nbi = &nb_list->nb[i];
+        int *nbi_b = *nbi;
+        double **xydi = &nb_list->xyd[i];
+        double **xdi = &nb_list->xd[i];
+        double **ydi = &nb_list->yd[i];
+        double *xydi_b = *xydi, *xdi_b = *xdi, *ydi_b = *ydi;
         int new_cap = (nb_list->capacity[i] += NB_CHUNK);
+
         *nbi = realloc(*nbi,sizeof(int)*new_cap);
+        if (*nbi == NULL)  { nb_list->nb[i]  = nbi_b;  return mem_fail(); }
+
         *xydi = realloc(*xydi,sizeof(double)*new_cap);
+        if (*xydi == NULL) { nb_list->xyd[i] = xydi_b; return mem_fail(); }
+
         *xdi = realloc(*xdi,sizeof(double)*new_cap);
+        if (*xdi == NULL)  { nb_list->xd[i]  = xdi_b;  return mem_fail(); }
+
         *ydi = realloc(*ydi,sizeof(double)*new_cap);
-        if (!(*nbi) || !(*xydi) || !(*xdi) || !(*ydi)) {
-            return mem_fail();
-        }
+        if (*ydi == NULL)  { nb_list->yd[i]  = ydi_b;  return mem_fail(); }
     }
     return FREESASA_SUCCESS;
 }
@@ -367,12 +388,12 @@ nb_add_pair(nb_list *nb_list,
 
     xyd[i][nn[i]-1] = d;
     xyd[j][nn[j]-1] = d;
-    
+
     xd[i][nn[i]-1] = dx;
     xd[j][nn[j]-1] = -dx;
     yd[i][nn[i]-1] = dy;
     yd[j][nn[j]-1] = -dy;
-    
+
     return FREESASA_SUCCESS;
 }
 
@@ -461,16 +482,12 @@ freesasa_nb_new(const coord_t *coord,
     cell_size = 2*max_array(radii,n);
     assert(cell_size > 0);
     c = cell_list_new(cell_size,coord);
-    if (c == NULL) {
+    if (c == NULL ||
+        nb_fill_list(nb,c,coord,radii)) {
         mem_fail(); 
         freesasa_nb_free(nb);
         nb = NULL;
-    } // this is where it happens:
-    else if (nb_fill_list(nb,c,coord,radii)) {
-        mem_fail();
-        freesasa_nb_free(nb);
-        nb = NULL;
-    }
+    } 
     
     // the cell lists are only a tool to generate the neighbor lists
     cell_list_free(c);

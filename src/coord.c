@@ -57,9 +57,10 @@ freesasa_coord_new()
 void
 freesasa_coord_free(coord_t *c)
 {
-    assert(c);
-    if (c->xyz && !c->is_linked) free(c->xyz);
-    free(c);
+    if (c) {
+        if (c->xyz && !c->is_linked) free(c->xyz);
+        free(c);
+    }
 }
 static void
 coord_clear(coord_t *c)
