@@ -8,36 +8,44 @@ C-library for calculating Solvent Accessible Surface Areas.
 
 License: GPLv3 (see file COPYING). Copyright: Simon Mitternacht 2013-2015.
 
-The library includes the algorithms by Lee & Richards and Shrake &
-Rupley. Verification has been done by comparing the results of the two
-calculations and by visual inspection of the surfaces found by them
-(and comparing with analytic results in the two-atom case). For high
+FreeSASA is a C library and command line tool for calculating Solvent
+Accessible Surface Area (SASA) of biomolecules. It is designed to be
+very simple to use with defaults, but allows customization of all
+parameters of the calculation and provides a few different tools to
+analyze the results as well. Python bindings are also included in the
+repository.
+
+The library includes both the algorithm by Lee & Richards and that by
+Shrake & Rupley. Verification has been done by comparing the results
+of the two calculations and by visual inspection of the surfaces found
+by them (and comparing with analytic results in the two-atom
+case). Both can be parameterized to arbitrary precision, and for high
 resolution versions of the algorithms, the calculations give identical
 results.
 
 FreeSASA assigns a radius and a class to each atom. The atomic radii
-are by default those defined by [Ooi et al. PNAS 1987, 84:
-3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/) (OONS) 
-for standard protein atoms, and the van der Waals
-radius of the element for other atoms (in for example nucleci
-acids). Each atom is also assigned to a class. The default classes are
-`polar`, `apolar`, `nucleic acid`, and `unknown`. The program outputs
-the total SASA and the area of the four classes.
+are by default those defined by Tsai et al. ([JMB 1999, 290:
+253](http://www.ncbi.nlm.nih.gov/pubmed/10388571)) for standard amino
+acids and nucleic acids, and the van der Waals radius of the element
+for other atoms. Each atom is also assigned to a class. The default
+classes are `Apolar` (carbon) and `Polar` (all other elements). The
+program outputs the total SASA and the area of these two classes, if a
+protein has more than one chain the contribution of each chain is also
+included in the output.
 
-Users can also provide their own atomic radii and classes, either via
+Users can provide their own atomic radii and classes, either via
 configuration files or via the API. The input format for configuration
 files is described in the [online
 documentation](http://freesasa.github.io/doxygen/Config-file.html),
-and the `share/` directory contains two sample configurations, one for
-the NACCESS parameters ([Hubbard & Thornton
-1993](http://www.bioinf.manchester.ac.uk/naccess/)) and one for OONS.
+and the `share/` directory contains some sample configurations,
+including one for the NACCESS parameters ([Hubbard & Thornton
+1993](http://www.bioinf.manchester.ac.uk/naccess/)).
 
-The library is still a work in progress, but the calculations have
-been verified to give correct results for a large number of
-proteins. Therefore, the commandline tool can be considered reliable
-and stable. Planned changes before a stable release mainly include
-refining the API and adding more tests to weed out the more subtle
-bugs.
+Versions 0.6.* will be the last pre-release cycle, meaning that focus
+will be on removing bugs, optimizating and documentation. The API and
+the command line interface will therefore only change in backwards
+incompatible ways if necessary to resolve serious bugs. No major
+features will be added before going to 1.0.
 
 Compiling and installing
 ------------------------
@@ -52,8 +60,12 @@ This builds and installs the command line tool `freesasa` (built in
 
     freesasa -h
 
-gives an overview of options. `make install`
-also installs the header `freesasa.h` and the library
+gives an overview of options. To run a calculation from PDB-file input
+using the defaults, simply type
+
+    freesasa <pdb-file>
+
+`make install` also installs the header `freesasa.h` and the library
 `libfreesasa`. If the source is downloaded from the git repository the
 configure-script needs to be set up first using `autoreconf -i`. Users
 who don't have autotools installed, can download a tarball that
