@@ -332,16 +332,33 @@ freesasa_write_pdb(FILE *output,
                    const freesasa_structure *structure);
 
 /**
+    Print SASA for each chain.
+
+    Prints the contribution of each chain to the total SASA. Each line
+    in the output is prefixed by the string `CHAIN`.
+
+    @param output Output file.
+    @param result SASA values.
+    @param structure The structure. 
+    @return ::FREESASA_FAIL if problems writing to
+    output. ::FREESASA_SUCCESS else.
+ */
+int
+freesasa_per_chain(FILE *output,
+                   freesasa_result *result,
+                   const freesasa_structure *structure);
+
+/**
     Print SASA for all residue types to file.
 
     Prints name/value-pairs with the total SASA of each residue
     type. The standard 20 amino acids are always included in output,
     non-standard ones and nucleotides only if they were present in
-    input. Each line in the output is prefixed by the string "`RES:`".
+    input. Each line in the output is prefixed by the string "`RES`".
 
     @param output Output file.
     @param result SASA values.
-    @param structure The structure (includes sequence information).
+    @param structure The structure.
     @return ::FREESASA_FAIL if problems writing to
     output. ::FREESASA_SUCCESS else.
  */
@@ -353,7 +370,7 @@ freesasa_per_residue_type(FILE *output,
 /**
     Print SASA for each residue in the sequence to file.
 
-    Each line in the output is prefixed by the string "`SEQ:`".
+    Each line in the output is prefixed by the string "`SEQ`".
 
     @param output Output file.
     @param result SASA values.

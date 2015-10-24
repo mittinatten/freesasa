@@ -77,27 +77,27 @@ echo "== Testing S&R =="
 assert_pass "$cli < $datadir/1ubq.pdb > $dump"
 echo
 #check that output message has required components
-assert_pass "grep 'name: stdin' $dump"
+assert_pass "grep 'input\s\s*: stdin' $dump"
 $cli $datadir/1ubq.pdb > $dump
-assert_pass "grep 'name: $datadir/1ubq.pdb' $dump"
-assert_pass "grep 'n_atoms: 602' $dump"
-assert_pass "grep 'probe-radius: \d' $dump"
-assert_pass "grep 'n_thread: \d' $dump"
-assert_pass "grep 'n_testpoint: \d' $dump"
-assert_pass "grep 'algorithm: \w' $dump"
-assert_pass "grep 'Total:\s\s*4834.72 A2' $dump"
-assert_pass "grep 'Polar:\s\s*2515.82 A2' $dump"
-assert_pass "grep 'Apolar:\s\s*2318.90 A2' $dump"
+assert_pass "grep 'input\s\s*: $datadir/1ubq.pdb' $dump"
+assert_pass "grep 'n_atoms\s\s*: 602' $dump"
+assert_pass "grep 'probe-radius\s\s*: \d' $dump"
+assert_pass "grep 'n_thread\s\s*: \d' $dump"
+assert_pass "grep 'n_testpoint\s\s*: \d' $dump"
+assert_pass "grep 'algorithm\s\s*: \w' $dump"
+assert_pass "grep 'Total\s\s*:\s\s*4834.72' $dump"
+assert_pass "grep 'Polar\s\s*:\s\s*2515.82' $dump"
+assert_pass "grep 'Apolar\s\s*:\s\s*2318.90' $dump"
 # The above formulation of log output gives freedom in ordering and
 # whitespace, and also version. Allows non-essential details to change
 # without breaking the test. Will not be performed for variant
 # parameter values, those should be covered by tests.
 assert_pass "$cli -Y $datadir/1d3z.pdb -w > $dump"
-assert_pass "grep 'n_atoms: 1231' $dump"
-assert_pass "grep 'Total:\s\s*5035.61 A2' $dump"
+assert_pass "grep 'n_atoms\s\s*: 1231' $dump"
+assert_pass "grep 'Total\s\s*:\s\s*5035.61' $dump"
 assert_pass "$cli -H -w $datadir/1ubq.pdb > $dump" # suppress warnings here
-assert_pass "grep 'n_atoms: 660' $dump"
-assert_pass "grep 'Total:\s\s*5656.65 A2' $dump"
+assert_pass "grep 'n_atoms\s\s*: 660' $dump"
+assert_pass "grep 'Total\s\s*:\s\s*5656.65' $dump"
 assert_pass "$cli -n 50 < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli -n 0 < $datadir/1ubq.pdb > $dump"
 echo
@@ -160,26 +160,26 @@ assert_pass "diff tmp/seq $datadir/seq.reference"
 echo
 echo "== Testing option --select =="
 assert_pass "$cli --select \"s1, resn ala\" --select \"s2, resn arg\" --select \"s3, resi 1\" $datadir/1ubq.pdb > tmp/select"
-sel_ala=$(grep s1: tmp/select | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2//)
-res_ala=$(grep ALA tmp/restype | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2// | sed s/ALA//)
+sel_ala=$(grep s1 tmp/select | cut -f 2 -d ':' | sed 's/\ //g') 
+res_ala=$(grep ALA tmp/restype | cut -f 2 -d ':' | sed 's/\ //g')
 if [ "$res_ala" != "$sel_ala" ]; 
 then 
     let errors=errors+1
     echo "Error: options -r and --select don't give same result for ALA ('$res_ala' and '$sel_ala')"
 fi
-sel_arg=$(grep s2: tmp/select | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2//)
+sel_arg=$(grep s2 tmp/select | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2//)
 res_arg=$(grep ARG tmp/restype | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2// | sed s/ARG//)
 if [ "$res_arg" != "$sel_arg" ]
 then 
     let errors=errors+1
-    echo "Error: options -r and --select don't give same result for ARG ($res_arg and $sel_arg)"
+    echo "Error: options -r and --select don't give same result for ARG ('$res_arg' and '$sel_arg')"
 fi
-sel_res1=$(grep s3: tmp/select | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2//)
+sel_res1=$(grep s3 tmp/select | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2//)
 seq_res1=$(grep " 1 " tmp/seq | cut -f 2 -d ':' | cut -f 2 -d 'T' | sed 's/ //g')
 if [ "$seq_res1" != "$sel_res1" ]
 then 
     let errors=errors+1
-    echo "Error: options -R and --select don't give same result for first residue in 1ubq.pdb ($seq_res1 and $sel_res1)"
+    echo "Error: options -R and --select don't give same result for first residue in 1ubq.pdb ('$seq_res1' and '$sel_res1')"
 fi
 echo
 echo "== Testing option --unknown =="

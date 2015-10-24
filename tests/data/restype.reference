@@ -1,20 +1,20 @@
-RES: ALA    118.35
-RES: ARG    546.58
-RES: ASN    165.76
-RES: ASP    395.13
-RES: CYS      0.00
-RES: GLN    418.65
-RES: GLU    644.31
-RES: GLY    447.82
-RES: HIS     77.90
-RES: ILE     67.19
-RES: LEU    351.84
-RES: LYS    639.27
-RES: MET     50.77
-RES: PHE     92.84
-RES: PRO    162.88
-RES: SER    168.12
-RES: THR    409.79
-RES: TRP      0.00
-RES: TYR     35.63
-RES: VAL     41.91
+RES ALA :     118.35
+RES ARG :     546.58
+RES ASN :     165.76
+RES ASP :     395.13
+RES CYS :       0.00
+RES GLN :     418.65
+RES GLU :     644.31
+RES GLY :     447.82
+RES HIS :      77.90
+RES ILE :      67.19
+RES LEU :     351.84
+RES LYS :     639.27
+RES MET :      50.77
+RES PHE :      92.84
+RES PRO :     162.88
+RES SER :     168.12
+RES THR :     409.79
+RES TRP :       0.00
+RES TYR :      35.63
+RES VAL :      41.91

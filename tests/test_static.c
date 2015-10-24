@@ -109,7 +109,7 @@ START_TEST (test_get_chains)
     // Test a non PDB file
     FILE *pdb = fopen(DATADIR "err.config", "r");
     struct file_interval whole_file = get_whole_file(pdb), *it = NULL;
-    int nc = get_chains(pdb, whole_file, &it, 0);
+    int nc = get_chain_pos(pdb, whole_file, &it, 0);
     fclose(pdb);
     ck_assert_int_eq(nc,0);
     ck_assert_ptr_eq(it,NULL);
@@ -117,7 +117,7 @@ START_TEST (test_get_chains)
     // This file only has one chain
     pdb = fopen(DATADIR "1ubq.pdb", "r");
     whole_file = get_whole_file(pdb);
-    nc = get_chains(pdb,whole_file,&it,0);
+    nc = get_chain_pos(pdb,whole_file,&it,0);
     fclose(pdb);
     ck_assert_int_eq(nc,1);
     ck_assert_ptr_ne(it,NULL);
@@ -130,7 +130,7 @@ START_TEST (test_get_chains)
     ck_assert_ptr_ne(it,NULL);
     for (int i = 0; i < nm; ++i) {
         struct file_interval *jt = NULL;
-        nc = get_chains(pdb,it[i],&jt,0);
+        nc = get_chain_pos(pdb,it[i],&jt,0);
         ck_assert_int_eq(nc,4);
         ck_assert_ptr_ne(jt,NULL);
         for (int j = 1; j < nc; ++j) {

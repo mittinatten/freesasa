@@ -221,30 +221,31 @@ freesasa_log(FILE *log,
     // return value. 
     errno = 0;
 
-    if (name == NULL) fprintf(log,"name: unknown\n");
-    else              fprintf(log,"name: %s\n",name);
+    fprintf(log,"\nPARAMETERS\n");
+    if (name == NULL) fprintf(log,"input             : unknown\n");
+    else              fprintf(log,"input             : %s\n",name);
 
-    fprintf(log,"n_atoms: %d\n",result->n_atoms);
+    fprintf(log,"n_atoms           : %d\n",result->n_atoms);
 
-    fprintf(log,"algorithm: %s\nprobe-radius: %f A\n",
-            freesasa_alg_names[p->alg],
-            p->probe_radius);
+    fprintf(log,"algorithm         : %s\n",freesasa_alg_names[p->alg]);
+    fprintf(log,"probe-radius      : %.3f\n", p->probe_radius);
     if(HAVE_LIBPTHREAD) {
-        fprintf(log,"n_thread: %d\n",p->n_threads);
+        fprintf(log,"n_thread          : %d\n",p->n_threads);
     }
     switch(p->alg) {
     case FREESASA_SHRAKE_RUPLEY:
-        fprintf(log,"n_testpoint: %d\n",p->shrake_rupley_n_points);
+        fprintf(log,"n_testpoint       : %d\n",p->shrake_rupley_n_points);
         break;
     case FREESASA_LEE_RICHARDS:
-        fprintf(log,"n_slices_per_atom: %d\n",p->lee_richards_n_slices);
+        fprintf(log,"n_slices_per_atom : %d\n",p->lee_richards_n_slices);
         break;
     default:
         assert(0);
         break;
     }
+    fprintf(log,"\nRESULTS\n");
     if (class_area == NULL) {
-        fprintf(log,"\nTotal: %9.2f A2\n",result->total);
+        fprintf(log,"Total : %10.2f\n",result->total);
     } else {
         int m = 6;
         char fmt[21];
@@ -252,8 +253,7 @@ freesasa_log(FILE *log,
             int l = strlen(class_area->string[i]);
             m = (l > m) ? l : m;
         }
-        sprintf(fmt," %%%ds: %%9.2f A2\n",m);
-        fprintf(log,"\n");
+        sprintf(fmt,"%%-%ds : %%10.2f\n",m);
         fprintf(log,fmt,"Total",result->total);
         for (int i = 0; i < class_area->n; ++i) {
             if (class_area->value[i] > 0)
@@ -261,8 +261,32 @@ freesasa_log(FILE *log,
                         class_area->string[i],
                         class_area->value[i]);
         }
-    } 
+    }
+    
     if (errno != 0) { 
+        return fail_msg(strerror(errno));
+    }
+    return FREESASA_SUCCESS;
+}
+
+int
+freesasa_per_chain(FILE *output,
+                   freesasa_result *result,
+                   const freesasa_structure *structure)
+{
+    const char *chains = freesasa_structure_chain_labels(structure);
+    int n_chains = strlen(chains);
+    errno = 0;
+
+    for (int c = 0; c < n_chains; ++c) {
+        double area = 0;
+        for (int i = 0; i < result->n_atoms; ++i) 
+            if (freesasa_structure_atom_chain(structure, i) == chains[c]) 
+                area += result->sasa[i];
+        fprintf(output,"CHAIN %c : %10.2f\n", chains[c], area);
+    }
+
+    if (errno != 0) {
         return fail_msg(strerror(errno));
     }
     return FREESASA_SUCCESS;
@@ -285,7 +309,7 @@ freesasa_per_residue_type(FILE *output,
         int result = 0;
         errno = 0;
         if (i < 20 || sasa > 0) {
-            result = fprintf(output,"RES: %s %9.2f\n",
+            result = fprintf(output,"RES %s : %10.2f\n",
                              residue_area->string[i],sasa);
         }
         if (result < 0) {
@@ -331,7 +355,7 @@ freesasa_per_residue(FILE *output,
     for (int i = 0; i < naa; ++i) {
         errno = 0;
         int area =
-            fprintf(output,"SEQ: %s %7.2f\n",
+            fprintf(output,"SEQ %s : %7.2f\n",
                     freesasa_structure_residue_descriptor(structure,i),
                     freesasa_single_residue_sasa(result,structure,i));
         if (area < 0)

@@ -220,41 +220,42 @@ run_analysis(FILE *input,
     }
 
     for (int i = 0; i < n; ++i) {
+        char name_i[name_len+10];
         result = freesasa_calc_structure(structures[i],&parameters);
         if (result == NULL)        abort_msg("Can't calculate SASA.\n");
         classes = freesasa_result_classify(result,structures[i],classifier);
         if (classes == NULL)       abort_msg("Can't determine atom classes. Aborting.\n");
+        strcpy(name_i,name);
+        if (several_structures) {
+            if (structure_options & FREESASA_SEPARATE_MODELS) 
+                sprintf(name_i+strlen(name_i),":%d",freesasa_structure_model(structures[i]));
+            sprintf(name_i+strlen(name_i),":%s",freesasa_structure_chain_labels(structures[i]));
+        }
         if (printlog) {
-            char name_i[name_len+10];
-            strcpy(name_i,name);
-            if (several_structures) {
-                fprintf(stdout,"\n");
-                if (structure_options & FREESASA_SEPARATE_MODELS) 
-                    sprintf(name_i+strlen(name_i),":%d",freesasa_structure_model(structures[i]));
-                sprintf(name_i+strlen(name_i),":%s",freesasa_structure_chain_labels(structures[i]));
-            }
             freesasa_log(output,result,name_i,&parameters,classes);
-            if (several_structures) printf("\n");
+            if (strlen(freesasa_structure_chain_labels(structures[i])) > 1)
+                freesasa_per_chain(output,result,structures[i]);
+            if (n > 1) fprintf(output,"\n#######################\n");
         }
         if (per_residue_type) {
-            if (several_structures) fprintf(per_residue_type_file,"\n## Structure %d\n",i);
+            if (several_structures) fprintf(per_residue_type_file,"\n## %s\n",name_i);
             freesasa_per_residue_type(per_residue_type_file,result,structures[i]);
         }
         if (per_residue) {
-            if (several_structures) fprintf(per_residue_file,"\n## Structure %d\n",i);
+            if (several_structures) fprintf(per_residue_file,"\n## %s\n",name_i);
             freesasa_per_residue(per_residue_file,result,structures[i]);
         }
         if (printpdb) {
             freesasa_write_pdb(output_pdb,result,structures[i]);
         }
         if (n_select > 0) {
-            fprintf(output,"\nSelections:\n");
+            fprintf(output,"\nSELECTIONS\n");
             for (int c = 0; c < n_select; ++c) {
                 double a;
                 char name[FREESASA_MAX_SELECTION_NAME+1];
                 if (freesasa_select_area(select_cmd[c],name,&a,structures[i],result)
                     == FREESASA_SUCCESS) {
-                    fprintf(output,"%s: %9.2f A2\n",name,a);
+                    fprintf(output,"%s : %10.2f\n",name,a);
                 } else {
                 }
             }
@@ -508,7 +509,6 @@ main(int argc,
             if (input != NULL) {
                 run_analysis(input,argv[i]);
                 fclose(input);
-                fprintf(output,"\n");
             } else {
                 abort_msg("Opening file '%s'; %s\n",argv[i],strerror(errno));
             }
