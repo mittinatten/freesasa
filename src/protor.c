@@ -15,7 +15,7 @@ static struct classifier_residue ACE_cfg = {
     .atom_class = (int*)ACE_atom_class };
 
 static const char *T_atom_name[] = {"N3", "OP1", "C3'", "C2", "C6", "N1", "C5", "C1'", "O2", "P", "C7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O4", };
-static double T_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.61, 1.88, 1.42, 1.9, 1.88, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
+static double T_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.61, 1.88, 1.42, 1.8, 1.88, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
 static int T_atom_class[] = {1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, };
 static struct classifier_residue T_cfg = {
     .name = "T", .n_atoms = 21,
@@ -69,7 +69,7 @@ static struct classifier_residue GLY_cfg = {
     .atom_class = (int*)GLY_atom_class };
 
 static const char *DC_atom_name[] = {"N3", "OP1", "C3'", "C2", "C6", "N1", "C5", "C1'", "O2", "P", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "N4", };
-static double DC_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.76, 1.88, 1.42, 1.9, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.64, };
+static double DC_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.76, 1.88, 1.42, 1.8, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.64, };
 static int DC_atom_class[] = {1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, };
 static struct classifier_residue DC_cfg = {
     .name = "DC", .n_atoms = 20,
@@ -105,7 +105,7 @@ static struct classifier_residue SER_cfg = {
     .atom_class = (int*)SER_atom_class };
 
 static const char *DI_atom_name[] = {"N9", "N3", "OP1", "C3'", "C8", "C2", "N1", "C6", "C5", "C1'", "P", "N7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O6", };
-static double DI_atom_radius[] = {1.64, 1.64, 1.42, 1.88, 1.76, 1.76, 1.64, 1.61, 1.61, 1.88, 1.9, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
+static double DI_atom_radius[] = {1.64, 1.64, 1.42, 1.88, 1.76, 1.76, 1.64, 1.61, 1.61, 1.88, 1.8, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
 static int DI_atom_class[] = {1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, };
 static struct classifier_residue DI_cfg = {
     .name = "DI", .n_atoms = 22,
@@ -168,7 +168,7 @@ static struct classifier_residue MET_cfg = {
     .atom_class = (int*)MET_atom_class };
 
 static const char *I_atom_name[] = {"N9", "N3", "OP1", "C3'", "C8", "C2", "N1", "C6", "C5", "C1'", "P", "N7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O2'", "O6", };
-static double I_atom_radius[] = {1.64, 1.64, 1.42, 1.88, 1.76, 1.76, 1.64, 1.61, 1.61, 1.88, 1.9, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, 1.42, };
+static double I_atom_radius[] = {1.64, 1.64, 1.42, 1.88, 1.76, 1.76, 1.64, 1.61, 1.61, 1.88, 1.8, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, 1.42, };
 static int I_atom_class[] = {1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, };
 static struct classifier_residue I_cfg = {
     .name = "I", .n_atoms = 23,
@@ -186,7 +186,7 @@ static struct classifier_residue HIS_cfg = {
     .atom_class = (int*)HIS_atom_class };
 
 static const char *G_atom_name[] = {"N9", "N3", "OP1", "N2", "C3'", "C8", "C2", "N1", "C6", "C5", "C1'", "P", "N7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O2'", "O6", };
-static double G_atom_radius[] = {1.64, 1.64, 1.42, 1.64, 1.88, 1.76, 1.61, 1.64, 1.61, 1.61, 1.88, 1.9, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, 1.42, };
+static double G_atom_radius[] = {1.64, 1.64, 1.42, 1.64, 1.88, 1.76, 1.61, 1.64, 1.61, 1.61, 1.88, 1.8, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, 1.42, };
 static int G_atom_class[] = {1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, };
 static struct classifier_residue G_cfg = {
     .name = "G", .n_atoms = 24,
@@ -213,7 +213,7 @@ static struct classifier_residue GLX_cfg = {
     .atom_class = (int*)GLX_atom_class };
 
 static const char *DU_atom_name[] = {"N3", "OP1", "C3'", "C2", "C6", "N1", "C5", "C1'", "O2", "P", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O4", };
-static double DU_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.76, 1.88, 1.42, 1.9, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
+static double DU_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.76, 1.88, 1.42, 1.8, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
 static int DU_atom_class[] = {1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, };
 static struct classifier_residue DU_cfg = {
     .name = "DU", .n_atoms = 20,
@@ -222,7 +222,7 @@ static struct classifier_residue DU_cfg = {
     .atom_class = (int*)DU_atom_class };
 
 static const char *U_atom_name[] = {"N3", "OP1", "C3'", "C2", "C6", "N1", "C5", "C1'", "O2", "P", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O2'", "O4", };
-static double U_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.76, 1.88, 1.42, 1.9, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, 1.42, };
+static double U_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.76, 1.88, 1.42, 1.8, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, 1.42, };
 static int U_atom_class[] = {1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, };
 static struct classifier_residue U_cfg = {
     .name = "U", .n_atoms = 21,
@@ -276,7 +276,7 @@ static struct classifier_residue TRP_cfg = {
     .atom_class = (int*)TRP_atom_class };
 
 static const char *DG_atom_name[] = {"N9", "N3", "OP1", "N2", "C3'", "C8", "C2", "N1", "C6", "C5", "C1'", "P", "N7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O6", };
-static double DG_atom_radius[] = {1.64, 1.64, 1.42, 1.64, 1.88, 1.76, 1.61, 1.64, 1.61, 1.61, 1.88, 1.9, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
+static double DG_atom_radius[] = {1.64, 1.64, 1.42, 1.64, 1.88, 1.76, 1.61, 1.64, 1.61, 1.61, 1.88, 1.8, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
 static int DG_atom_class[] = {1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, };
 static struct classifier_residue DG_cfg = {
     .name = "DG", .n_atoms = 23,
@@ -294,7 +294,7 @@ static struct classifier_residue PHE_cfg = {
     .atom_class = (int*)PHE_atom_class };
 
 static const char *C_atom_name[] = {"N3", "OP1", "C3'", "C2", "C6", "N1", "C5", "C1'", "O2", "P", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O2'", "N4", };
-static double C_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.76, 1.88, 1.42, 1.9, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, 1.64, };
+static double C_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.76, 1.88, 1.42, 1.8, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, 1.64, };
 static int C_atom_class[] = {1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, };
 static struct classifier_residue C_cfg = {
     .name = "C", .n_atoms = 21,
@@ -303,7 +303,7 @@ static struct classifier_residue C_cfg = {
     .atom_class = (int*)C_atom_class };
 
 static const char *DT_atom_name[] = {"N3", "OP1", "C3'", "C2", "C6", "N1", "C5", "C1'", "O2", "P", "C7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O4", };
-static double DT_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.61, 1.88, 1.42, 1.9, 1.88, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
+static double DT_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.61, 1.88, 1.42, 1.8, 1.88, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
 static int DT_atom_class[] = {1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, };
 static struct classifier_residue DT_cfg = {
     .name = "DT", .n_atoms = 21,
@@ -312,7 +312,7 @@ static struct classifier_residue DT_cfg = {
     .atom_class = (int*)DT_atom_class };
 
 static const char *A_atom_name[] = {"N9", "N3", "OP1", "C3'", "C8", "C2", "N1", "C6", "N6", "C5", "C1'", "P", "N7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O2'", };
-static double A_atom_radius[] = {1.64, 1.64, 1.42, 1.88, 1.76, 1.76, 1.64, 1.61, 1.64, 1.61, 1.88, 1.9, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, };
+static double A_atom_radius[] = {1.64, 1.64, 1.42, 1.88, 1.76, 1.76, 1.64, 1.61, 1.64, 1.61, 1.88, 1.8, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, };
 static int A_atom_class[] = {1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, };
 static struct classifier_residue A_cfg = {
     .name = "A", .n_atoms = 23,
@@ -348,7 +348,7 @@ static struct classifier_residue THR_cfg = {
     .atom_class = (int*)THR_atom_class };
 
 static const char *DA_atom_name[] = {"N9", "N3", "OP1", "C3'", "C8", "C2", "N1", "C6", "N6", "C5", "C1'", "P", "N7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", };
-static double DA_atom_radius[] = {1.64, 1.64, 1.42, 1.88, 1.76, 1.76, 1.64, 1.61, 1.64, 1.61, 1.88, 1.9, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, };
+static double DA_atom_radius[] = {1.64, 1.64, 1.42, 1.88, 1.76, 1.76, 1.64, 1.61, 1.64, 1.61, 1.88, 1.8, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, };
 static int DA_atom_class[] = {1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, };
 static struct classifier_residue DA_cfg = {
     .name = "DA", .n_atoms = 22,
