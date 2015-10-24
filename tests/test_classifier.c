@@ -396,7 +396,7 @@ END_TEST
 
 START_TEST (test_user)
 {
-    FILE *f = fopen(DATADIR "oons.config","r");
+    FILE *f = fopen(SHAREDIR "oons.config","r");
     freesasa_classifier* c = freesasa_classifier_from_file(f);
     fclose(f);
     ck_assert(c != NULL);

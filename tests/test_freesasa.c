@@ -314,7 +314,7 @@ END_TEST
 START_TEST (test_user_classes)
 {
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
-    FILE *config = fopen(DATADIR "ProtOr.config", "r");
+    FILE *config = fopen(SHAREDIR "ProtOr.config", "r");
     freesasa_structure *st, *st_ref;
     freesasa_classifier *user_classifier;
     freesasa_result *res;

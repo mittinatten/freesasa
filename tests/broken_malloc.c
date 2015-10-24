@@ -201,7 +201,7 @@ START_TEST (test_classifier)
     }
     // don't test all levels, but make sure errors in low level
     // allocation propagates to the interface
-    FILE *config = fopen(DATADIR "naccess.config","r");
+    FILE *config = fopen(SHAREDIR "naccess.config","r");
     ck_assert_ptr_ne(config, NULL);
     for (int i = 1; i < 50; ++i) {
         set_fail_freq(i);

@@ -39,6 +39,9 @@ aclocal.m4
 tmp*
 bindings/python/*.c
 bindings/python/setup.py
+bindings/python/share
+bindings/python/data
+bindings/check-python
 doc/doxygen
 doc/html/
 doc/fig/lnr_*.eps

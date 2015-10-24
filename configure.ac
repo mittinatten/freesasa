@@ -36,7 +36,9 @@ AC_CHECK_FUNCS([mkdir])
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile
                  tests/Makefile bindings/Makefile
-                 bindings/python/setup.py  tests/test-cli])
+                 bindings/python/setup.py])
+AC_CONFIG_FILES([tests/test-cli], [chmod +x tests/test-cli])
+AC_CONFIG_FILES([bindings/check-python], [chmod +x bindings/check-python])
 
 # Python-bindings
 AC_ARG_WITH([python],
