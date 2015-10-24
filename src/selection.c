@@ -112,7 +112,10 @@ freesasa_selection_create(expression *selection,
 {
     assert(id);
     expression *e = expression_new();
-    if (e == NULL) return NULL;
+    if (e == NULL) {
+        expression_free(selection);
+        return NULL;
+    }
 
     e->type = E_SELECTION;
     e->left = selection;
@@ -622,5 +625,3 @@ int freesasa_selection_parse_error(expression *e,
     if (freesasa_get_verbosity() == FREESASA_V_NORMAL) fprintf(stderr,"\n");
     return freesasa_fail(msg);
 }
-
-

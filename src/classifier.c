@@ -155,7 +155,7 @@ find_string(char **array,
         assert(array[i]);
         if (strcmp(array[i],key_trimmed) == 0) return i;
     }
-    return -1;
+    return FREESASA_FAIL;
 }
 
 /**
@@ -279,7 +279,8 @@ add_class(struct classifier_types *types,
     int the_class = find_string(types->class_name, name, types->n_classes),
         n = types->n_classes + 1;
     char **cn = types->class_name;
-    if (the_class < 0) {
+
+    if (the_class == FREESASA_FAIL) {
         if ((types->class_name = realloc(cn, sizeof(char*) * n)) == NULL){
             types->class_name = cn;
             return mem_fail();
@@ -290,6 +291,7 @@ add_class(struct classifier_types *types,
         types->n_classes++;
         the_class = types->n_classes - 1;
     }
+
     return the_class;
 }
 

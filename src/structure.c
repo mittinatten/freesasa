@@ -112,12 +112,16 @@ atom_new_from_line(const char *line,
     int flag;
     struct atom *a;
     char aname[buflen], rname[buflen], rnumber[buflen], symbol[buflen];
+
     if (alt_label) *alt_label = freesasa_pdb_get_alt_coord_label(line);
+
     freesasa_pdb_get_atom_name(aname, line);
     freesasa_pdb_get_res_name(rname, line);
     freesasa_pdb_get_res_number(rnumber, line);
+
     flag = freesasa_pdb_get_symbol(symbol, line);
     if (flag == FREESASA_FAIL) guess_symbol(symbol,aname);
+
     a = atom_new(rname, rnumber, aname, symbol, freesasa_pdb_get_chain_label(line));
     
     if (a == NULL) return NULL;
@@ -146,7 +150,7 @@ freesasa_structure_new(void)
             (p->res_desc = malloc(sizeof(char*))) == NULL) {
             freesasa_structure_free(p);
             return NULL;
-        } 
+        }
         p->chains[0] = '\0';
     }
     return p;
@@ -205,18 +209,16 @@ static int
 structure_add_chain(freesasa_structure *p,
                     char chain_label)
 {
-    if (p->chains == NULL) {
-        p->chains = strdup("");
-        if (p->chains == NULL) return mem_fail();
-    }
     if (strchr(p->chains,chain_label) == NULL) {
         int n = ++p->number_chains;
+        char *pc = p->chains;
         p->chains = realloc(p->chains,n + 1);
         if (p->chains) {
             p->chains[n-1] = chain_label;
             p->chains[n] = '\0';
             assert (strlen(p->chains) == p->number_chains);
         } else {
+            p->chains = pc;
             return mem_fail();
         }
     }
@@ -393,16 +395,8 @@ from_pdb_impl(FILE *pdb_file,
         }
 
         if (! (options & FREESASA_JOIN_MODELS)) {
-            if (strncmp("MODEL",line,5)==0) {
-                sscanf(line+10,"%d",&p->model);
-            }
-            if (strncmp("ENDMDL",line,6)==0) {
-                if (p->number_atoms == 0) {
-                    freesasa_fail("Input had ENDMDL before first ATOM entry.");
-                    ++err;
-                }
-                break;
-            }
+            if (strncmp("MODEL",line,5)==0)  sscanf(line+10,"%d",&p->model);
+            if (strncmp("ENDMDL",line,6)==0) break;
         }
     }
     
@@ -492,10 +486,10 @@ get_models(FILE *pdb,
 }
 
 static int
-get_chains(FILE *pdb,
-           struct file_interval model,
-           struct file_interval **intervals,
-           int options)
+get_chain_pos(FILE *pdb,
+              struct file_interval model,
+              struct file_interval **intervals,
+              int options)
 {
     assert(pdb);
     assert(intervals);
@@ -640,7 +634,7 @@ freesasa_structure_array(FILE *pdb,
     if (options & FREESASA_SEPARATE_CHAINS) {
         for (int i = 0; i < n_models; ++i) {
             struct file_interval* chains = NULL;
-            int new_chains = get_chains(pdb,models[i],&chains,options);
+            int new_chains = get_chain_pos(pdb,models[i],&chains,options);
             int j0 = n_chains;
             if (new_chains == FREESASA_FAIL) { mem_fail(); ++err; break; }
             if (new_chains == 0) {
@@ -650,7 +644,6 @@ freesasa_structure_array(FILE *pdb,
             ssb = ss;
             ss = realloc(ss,sizeof(freesasa_structure*)*(n_chains + new_chains));
 
-            // now way of cleaning up if the above fails, might as well exit
             if (!ss) {
                 free(chains);
                 ss = ssb; // we'll free it below
