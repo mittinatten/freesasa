@@ -70,7 +70,7 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(c.radius("AA","aa") == 1.0)
         self.assertTrue(c.radius("BB","bb") == 2.0)
 
-        c = Classifier("data/oons.config")
+        c = Classifier("share/oons.config")
         self.assertTrue(c.radius("ALA"," CB ") == 2.00)
 
         c = DerivedClassifier()
@@ -95,11 +95,11 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(s.residueName(1) == 'MET')
         self.assertTrue(s.residueNumber(1) == '   1')
 
-        s2 = Structure("data/1ubq.pdb",Classifier("data/oons.config"))
+        s2 = Structure("data/1ubq.pdb",Classifier("share/oons.config"))
         self.assertTrue(s.nAtoms() == 602)
         self.assertTrue(math.fabs(s2.radius(1) - 2.0) < 1e-5)
 
-        s2 = Structure("data/1ubq.pdb",Classifier("data/ProtOr.config"))
+        s2 = Structure("data/1ubq.pdb",Classifier("share/ProtOr.config"))
         for i in range (0,601):
             self.assertTrue(math.fabs(s.radius(i)- s2.radius(i)) < 1e-5)
 
@@ -221,7 +221,7 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(math.fabs(sasa_classes['bla'] - 4804.055641) < 1e-5)
         
         ## test calculating with user-defined classifier ##
-        classifier = Classifier("data/oons.config")
+        classifier = Classifier("share/oons.config")
         # classifier passed to assign user-defined radii, could also have used setRadiiWithClassifier()
         structure = Structure("data/1ubq.pdb",classifier) 
         result = calc(structure)

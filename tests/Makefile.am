@@ -1,4 +1,4 @@
-EXTRA_DIST = data test-cli.in run-test-cli whole_lib_one_file.c
+EXTRA_DIST = data test-cli.in whole_lib_one_file.c
 check_PROGRAMS =
 TESTS = 
 AM_CFLAGS =
@@ -20,7 +20,7 @@ libtest_SOURCES = libtest.c test_pdb.c test_freesasa.c test_structure.c \
 static_test_SOURCES = test_static.c tools.h
 broken_malloc_SOURCES = broken_malloc.c tools.h 
 
-AM_CFLAGS += -I$(top_srcdir)/src -DDATADIR=\"$(top_srcdir)/tests/data/\"
+AM_CFLAGS += -I$(top_srcdir)/src -DDATADIR=\"$(top_srcdir)/tests/data/\" -DSHAREDIR=\"$(top_srcdir)/share/\"
 
 libtest_LDADD = ../src/libfreesasa.a -lcheck
 static_test_LDADD = ../src/parser.o ../src/lexer.o -lcheck 
@@ -29,7 +29,7 @@ broken_malloc_LDADD = ../src/parser.o ../src/lexer.o -lcheck
 endif # USE_CHECK
 
 if RUN_CLI_TESTS # on by default
-TESTS += run-test-cli
+TESTS += test-cli
 endif # RUN_CLI_TESTS
 
 CLEANFILES = tmp/*  $(GCOV_FILES) *~

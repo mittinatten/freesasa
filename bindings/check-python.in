@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [ ! -d data ]; then
+    ln -s @abs_top_srcdir@/tests/data @abs_top_srcdir@/bindings/python/
+fi
+if [ ! -d share ]; then
+    ln -s @abs_top_srcdir@/share @abs_top_srcdir@/bindings/python/
+fi
+
+@PYTHON@ python/test.py

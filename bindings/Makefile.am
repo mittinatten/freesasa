@@ -2,11 +2,15 @@ TESTS =
 
 cython_src = python/cfreesasa.pxd python/freesasa.pyx 
 
-EXTRA_DIST = $(cython_src) python/setup.py python/test.py python/data test-python.sh
+EXTRA_DIST = $(cython_src) python/setup.py.in python/test.py check-python.in
+
+CLEANFILES = *~ python/*~
 
 if HAVE_CYTHON
 
-TESTS += test-python.sh
+TESTS += check-python
+
+#check_SCRIPTS = check-python
 
 python_bindings = python/freesasa.so python/freesasa.c
 
