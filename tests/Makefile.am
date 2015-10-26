@@ -22,7 +22,7 @@ broken_malloc_SOURCES = broken_malloc.c tools.h
 
 AM_CFLAGS += -I$(top_srcdir)/src -DDATADIR=\"$(top_srcdir)/tests/data/\" -DSHAREDIR=\"$(top_srcdir)/share/\"
 
-libtest_LDADD = ../src/libfreesasa.a -lcheck
+libtest_LDADD = ../src/libfreesasa.a -lcheck 
 static_test_LDADD = ../src/parser.o ../src/lexer.o -lcheck 
 broken_malloc_LDADD = ../src/parser.o ../src/lexer.o -lcheck 
 

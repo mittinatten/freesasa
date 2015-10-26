@@ -55,7 +55,7 @@ if test x$enable_python_bindings = xyes ; then
   AM_CONDITIONAL([HAVE_CYTHON], [test -n "$CYTHON" && test -n "$PYTHON"])
   AM_COND_IF([HAVE_CYTHON],[],[echo "Cython not available, will not build Python bindings"])
 else
-  AM_CONDITIONAL([HAVE_CYTHON],FALSE)
+  AM_CONDITIONAL([HAVE_CYTHON],false)
 fi
 
 # Enable parser generation with Flex/Bison
@@ -68,7 +68,7 @@ if test x$enable_flex_bison = xyes ; then
   AM_CONDITIONAL([GENERATE_PARSER], [test -n "$FLEX" && test -n "$BISON"])
   AM_COND_IF([GENERATE_PARSER],[],[echo "Flex and/or Bison missing, won't generate parser source (but parser can still be built from the provided sources)."])
 else
-  AM_CONDITIONAL([GENERATE_PARSER],FALSE)
+  AM_CONDITIONAL([GENERATE_PARSER],false)
 fi
 
 # Enable Doxygen
@@ -88,7 +88,7 @@ if test x$enable_doxygen = xyes ; then
        [echo "Warning: Doxygen should preferrably be of version $DOXYGEN_REQ or higher (found $DOXYGEN_V)"])
   fi
 else
-  AM_CONDITIONAL([HAVE_DOXYGEN],FALSE)
+  AM_CONDITIONAL([HAVE_DOXYGEN],false)
 fi
 
 AM_CONDITIONAL([BUILD_DOC],[test -n "$build_doc"])
@@ -102,9 +102,10 @@ if test x$enable_check = xyes ; then
   AC_CHECK_LIB([check],[suite_create],
     [have_check=yes],
     [echo "Check not availabe, option '--enable-check' ignored"])
+  AC_CHECK_LIB(rt, setitimer) # necessary on some platforms
   AM_CONDITIONAL([USE_CHECK],[test x$have_check = xyes])
 else
-  AM_CONDITIONAL([USE_CHECK],FALSE)
+  AM_CONDITIONAL([USE_CHECK],false)
 fi
 
 # Enable gcov
@@ -120,9 +121,9 @@ AC_ARG_ENABLE([CLI-tests],
            disabling them can help speed up development when only unit
            tests are needed.]))
 if test x$enable_CLI_tests != xno ; then
-   AM_CONDITIONAL([RUN_CLI_TESTS],TRUE)
+   AM_CONDITIONAL([RUN_CLI_TESTS],true)
 else
-   AM_CONDITIONAL([RUN_CLI_TESTS],FALSE)
+   AM_CONDITIONAL([RUN_CLI_TESTS],false)
 fi
 
 AC_OUTPUT
