@@ -99,7 +99,7 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(s.nAtoms() == 602)
         self.assertTrue(math.fabs(s2.radius(1) - 2.0) < 1e-5)
 
-        s2 = Structure("data/1ubq.pdb",Classifier("share/ProtOr.config"))
+        s2 = Structure("data/1ubq.pdb",Classifier("share/protor.config"))
         for i in range (0,601):
             self.assertTrue(math.fabs(s.radius(i)- s2.radius(i)) < 1e-5)
 

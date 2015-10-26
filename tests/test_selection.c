@@ -59,7 +59,7 @@ char selection_name[100][FREESASA_MAX_SELECTION_NAME+1];
 double value[100];
 
 static int
-select(const char **command,int n_commands) 
+test_select(const char **command,int n_commands) 
 {
     for (int i = 0; i < n_commands; ++i) 
         ck_assert_int_eq(freesasa_select_area(command[i],selection_name[i],value+i,structure,result),
@@ -99,7 +99,7 @@ START_TEST (test_name)
                               "c4, name ca AND name o",
                               "c5, name ca OR  name o",
                               "c6, name ca+o+oxt"};
-    select(commands,6);
+    test_select(commands,6);
     ck_assert(value[0] > 5); // check that it's non-zero
     ck_assert(float_eq(value[0], addup(name_CA,result) + addup(name_O,result), 1e-10));
     ck_assert(float_eq(value[0], value[4], 1e-10));
@@ -122,7 +122,7 @@ START_TEST (test_symbol)
                               "c6, symbol O+C+SE",
                               "c7, symbol SE",
                               "c8, symbol O+C+SE and not symbol se"};
-    select(commands,8);
+    test_select(commands,8);
     ck_assert_str_eq(selection_name[0], "c1");
     ck_assert_str_eq(selection_name[1], "c2");
     ck_assert_str_eq(selection_name[2], "c3");
@@ -148,7 +148,7 @@ START_TEST (test_resn)
                               "c4, resn ala AND resn arg",
                               "c5, resn ala OR  resn arg",
                               "c6, resn ala+arg AND NOT resn arg"};
-    select(commands,6);
+    test_select(commands,6);
     ck_assert(value[0] > 5);
     ck_assert(float_eq(value[0], addup(resn_A,result) + addup(resn_R,result), 1e-10));
     ck_assert(float_eq(value[1], addup(resn_A,result), 1e-10));
@@ -171,7 +171,7 @@ START_TEST (test_resi)
                               "c8, resi 1-2+7+9+3-5+100",
                               "c9, resi 1-4 AND NOT resi 2-4"};
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    select(commands,9);
+    test_select(commands,9);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     ck_assert(value[0] > 5);
     ck_assert(float_eq(value[0], addup(resi_1,result) + addup(resi_2r4,result), 1e-10));
@@ -195,7 +195,7 @@ START_TEST (test_chain)
                               "c5, chain A OR chain B",
                               "c6, chain A-B",
                               "c7, chain A-B AND NOT chain A"};
-    select(commands,7);
+    test_select(commands,7);
     ck_assert(value[0] > 5);
     ck_assert(float_eq(value[0], addup(chain_A,result) + addup(chain_B,result), 1e-10));
     ck_assert(float_eq(value[0], value[4], 1e-10));
