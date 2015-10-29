@@ -384,7 +384,7 @@ END_TEST
 
 START_TEST (test_multi_calc)
 {
-#if HAVE_LIBPTHREAD
+#if USE_THREADS
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
     freesasa_structure *st = freesasa_structure_from_pdb(pdb, NULL, 0);
     freesasa_result *res;
@@ -405,7 +405,7 @@ START_TEST (test_multi_calc)
     
     freesasa_structure_free(st);
     freesasa_result_free(res);
-#endif
+#endif /* USE_THREADS */
 }
 END_TEST
 
@@ -493,7 +493,7 @@ Suite *sasa_suite()
     suite_add_tcase(s, tc_trimmed);
     suite_add_tcase(s, tc_1d3z);
 
-#if HAVE_LIBPTHREAD
+#if USE_THREADS
     printf("Using pthread\n");
     TCase *tc_pthr = tcase_create("Pthread");
     tcase_add_test(tc_pthr,test_multi_calc);
