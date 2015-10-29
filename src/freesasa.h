@@ -58,7 +58,7 @@ typedef enum {
 } freesasa_verbosity;
 
 // Default parameters
-#define FREESASA_DEF_ALGORITHM FREESASA_SHRAKE_RUPLEY //!< Default algorithm
+#define FREESASA_DEF_ALGORITHM FREESASA_LEE_RICHARDS //!< Default algorithm
 #define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångström).
 #define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R.
 #define FREESASA_DEF_LR_N 20 //!< Default number of slices per atom  in L&R.

@@ -72,8 +72,8 @@ help(void)
             "  -h (--help)           Print this message\n"
             "  -v (--version)        Print version of the program\n");
     fprintf(stderr,"\nPARAMETERS\n"
-            "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm [default]\n"
-            "  -L (--lee-richards)   Use Lee & Richards algorithm\n");
+            "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm\n"
+            "  -L (--lee-richards)   Use Lee & Richards algorithm [default]\n");
     fprintf(stderr,
             "\n"
             "  -p <value>  (--probe-radius=<value>)\n"

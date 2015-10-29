@@ -286,10 +286,12 @@ START_TEST (test_trimmed_pdb)
     double total_ref = 16133.867124;
     double polar_ref = 7432.608118;
     double apolar_ref = 8701.259006;
+    freesasa_parameters param = freesasa_default_parameters;
     freesasa_result *result;
     freesasa_structure *st;
     FILE *pdb;
     freesasa_strvp *res_class;
+    param.alg = FREESASA_SHRAKE_RUPLEY;
     
     errno = 0;
     pdb = fopen(DATADIR "3bzd_trimmed.pdb","r");
@@ -297,7 +299,7 @@ START_TEST (test_trimmed_pdb)
     st = freesasa_structure_from_pdb(pdb,NULL,0);
     fclose(pdb);
 
-    ck_assert((result = freesasa_calc_structure(st,NULL)) != NULL);
+    ck_assert((result = freesasa_calc_structure(st,&param)) != NULL);
     res_class = freesasa_result_classify(result,st,NULL);
     ck_assert(res_class != NULL);
     
@@ -412,8 +414,10 @@ START_TEST (test_1d3z)
 {
     FILE *pdb = fopen(DATADIR "1d3z.pdb","r");
     int n = 0;
+    freesasa_parameters param = freesasa_default_parameters;
+    param.alg = FREESASA_SHRAKE_RUPLEY;
     freesasa_structure* st = freesasa_structure_from_pdb(pdb, NULL, 0);
-    freesasa_result *result = freesasa_calc_structure(st, NULL);
+    freesasa_result *result = freesasa_calc_structure(st, &param);
     double *radii_ref = malloc(sizeof(double)*602);
     ck_assert(freesasa_structure_n(st) == 602);
     ck_assert(fabs(result->total - 5000.340175) < 1e-5);
@@ -423,7 +427,7 @@ START_TEST (test_1d3z)
     
     freesasa_set_verbosity(FREESASA_V_SILENT);
     st = freesasa_structure_from_pdb(pdb, NULL, FREESASA_INCLUDE_HYDROGEN);
-    result = freesasa_calc_structure(st, NULL);
+    result = freesasa_calc_structure(st, &param);
     ck_assert(freesasa_structure_n(st) == 1231);
     ck_assert(fabs(result->total - 5035.614493) < 1e-5);
     rewind(pdb);
@@ -431,7 +435,7 @@ START_TEST (test_1d3z)
 
     freesasa_structure** ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_MODELS);
     ck_assert(n == 10);
-    result = freesasa_calc_structure(ss[0], NULL);
+    result = freesasa_calc_structure(ss[0], &param);
     ck_assert(freesasa_structure_n(ss[0]) == 602);
     ck_assert(fabs(result->total - 5000.340175) < 1e-5);
     for (int i = 0; i < n; ++i) {

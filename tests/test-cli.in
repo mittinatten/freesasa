@@ -74,11 +74,11 @@ version=`$cli -v`
 assert_pass "echo $version | perl -ne 'if (m/^\d+\.(\d+\.)+\d$/) {exit 0} else  {exit 1}'"
 echo
 echo "== Testing S&R =="
-assert_pass "$cli < $datadir/1ubq.pdb > $dump"
+assert_pass "$cli -S <  $datadir/1ubq.pdb > $dump"
 echo
 #check that output message has required components
 assert_pass "grep 'input\s\s*: stdin' $dump"
-$cli $datadir/1ubq.pdb > $dump
+$cli -S  $datadir/1ubq.pdb > $dump
 assert_pass "grep 'input\s\s*: $datadir/1ubq.pdb' $dump"
 assert_pass "grep 'n_atoms\s\s*: 602' $dump"
 assert_pass "grep 'probe-radius\s\s*: [[:digit:]]' $dump"
@@ -92,32 +92,33 @@ assert_pass "grep 'Apolar\s\s*:\s\s*2318.90' $dump"
 # whitespace, and also version. Allows non-essential details to change
 # without breaking the test. Will not be performed for variant
 # parameter values, those should be covered by tests.
-assert_pass "$cli -Y $datadir/1d3z.pdb -w > $dump"
+assert_pass "$cli -S -Y $datadir/1d3z.pdb -w > $dump"
 assert_pass "grep 'n_atoms\s\s*: 1231' $dump"
 assert_pass "grep 'Total\s\s*:\s\s*5035.61' $dump"
-assert_pass "$cli -H -w $datadir/1ubq.pdb > $dump" # suppress warnings here
+assert_pass "$cli -S -H -w $datadir/1ubq.pdb > $dump" # suppress warnings here
 assert_pass "grep 'n_atoms\s\s*: 660' $dump"
 assert_pass "grep 'Total\s\s*:\s\s*5656.65' $dump"
-assert_pass "$cli -n 50 < $datadir/1ubq.pdb > $dump"
-assert_fail "$cli -n 0 < $datadir/1ubq.pdb > $dump"
+assert_pass "$cli -S -n 50 < $datadir/1ubq.pdb > $dump"
+assert_fail "$cli -S -n 0 < $datadir/1ubq.pdb > $dump"
 echo
 echo "== Testing -m -M and -C options =="
-assert_pass "$cli -M $datadir/1d3z.pdb > $dump"
+# using flags -S and -n 10 to speed things up
+assert_pass "$cli -n 10 -S -M $datadir/1d3z.pdb > $dump"
 n_mod=`grep 1d3z.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 10"
-assert_pass "$cli -C $datadir/1d3z.pdb > $dump"
+assert_pass "$cli -n 10 -S -C $datadir/1d3z.pdb > $dump"
 n_mod=`grep 1d3z.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 1"
-assert_pass "$cli -M -C $datadir/1d3z.pdb > $dump"
+assert_pass "$cli -n 10 -S -M -C $datadir/1d3z.pdb > $dump"
 n_mod=`grep 1d3z.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 10"
-assert_pass "$cli -n 10 -M $datadir/2jo4.pdb > $dump"
+assert_pass "$cli -n 10 -S -M $datadir/2jo4.pdb > $dump"
 n_mod=`grep 2jo4.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 10"
-assert_pass "$cli -n 10 -C $datadir/2jo4.pdb > $dump"
+assert_pass "$cli -n 10 -S -C $datadir/2jo4.pdb > $dump"
 n_mod=`grep 2jo4.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 4"
-assert_pass "$cli -n 10 -M -C  $datadir/2jo4.pdb > $dump"
+assert_pass "$cli -n 10 -S -M -C  $datadir/2jo4.pdb > $dump"
 n_mod=`grep 2jo4.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 40"
 assert_fail "$cli -mM $datadir/2jo4.pdb > $dump"
@@ -135,31 +136,31 @@ assert_fail "$cli -g E -n 10 $datadir/2jo4.pdb > $dump"
 assert_pass "$cli -g AB+CD -n 10 $datadir/2jo4.pdb > $dump"
 echo
 echo "== Testing B-factors =="
-assert_pass "$cli -l -B < $datadir/1ubq.pdb > tmp/bfactor.pdb"
+assert_pass "$cli -S -l -B < $datadir/1ubq.pdb > tmp/bfactor.pdb"
 assert_pass "diff tmp/bfactor.pdb $datadir/1ubq.B.pdb"
-assert_pass "$cli -l --B-value-file tmp/bfactor.pdb < $datadir/1ubq.pdb"
+assert_pass "$cli -S -l --B-value-file tmp/bfactor.pdb < $datadir/1ubq.pdb"
 assert_pass "diff tmp/bfactor.pdb $datadir/1ubq.B.pdb"
 echo
 echo "== Testing probe radius =="
 assert_fail "$cli -p -1 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -p 1 < $datadir/1ubq.pdb > $dump"
-assert_pass "$cli -p 1.4 --B-value-file tmp/bfactor.pdb < $datadir/1ubq.pdb > $dump"
+assert_pass "$cli -S -p 1.4 --B-value-file tmp/bfactor.pdb < $datadir/1ubq.pdb > $dump"
 assert_pass "diff tmp/bfactor.pdb $datadir/1ubq.B.pdb"
 echo
 echo "== Testing option -r =="
-assert_pass "$cli -l -r < $datadir/1ubq.pdb > tmp/restype"
+assert_pass "$cli -S -l -r < $datadir/1ubq.pdb > tmp/restype"
 assert_pass "diff tmp/restype $datadir/restype.reference"
-assert_pass "$cli -l --residue-type-file tmp/restype < $datadir/1ubq.pdb"
+assert_pass "$cli -S -l --residue-type-file tmp/restype < $datadir/1ubq.pdb"
 assert_pass "diff tmp/restype $datadir/restype.reference"
 echo
 echo "== Testing option -R =="
-assert_pass "$cli -l -R < $datadir/1ubq.pdb > tmp/seq"
+assert_pass "$cli -S -l -R < $datadir/1ubq.pdb > tmp/seq"
 assert_pass "diff tmp/seq $datadir/seq.reference"
-assert_pass "$cli -l --residue-file tmp/seq < $datadir/1ubq.pdb"
+assert_pass "$cli -S -l --residue-file tmp/seq < $datadir/1ubq.pdb"
 assert_pass "diff tmp/seq $datadir/seq.reference"
 echo
 echo "== Testing option --select =="
-assert_pass "$cli --select \"s1, resn ala\" --select \"s2, resn arg\" --select \"s3, resi 1\" $datadir/1ubq.pdb > tmp/select"
+assert_pass "$cli -S --select \"s1, resn ala\" --select \"s2, resn arg\" --select \"s3, resi 1\" $datadir/1ubq.pdb > tmp/select"
 sel_ala=$(grep s1 tmp/select | cut -f 2 -d ':' | sed 's/\ //g') 
 res_ala=$(grep ALA tmp/restype | cut -f 2 -d ':' | sed 's/\ //g')
 if [ "$res_ala" != "$sel_ala" ]; 
