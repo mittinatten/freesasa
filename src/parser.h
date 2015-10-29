@@ -69,6 +69,18 @@ extern int freesasa_yydebug;
     ATOM = 268
   };
 #endif
+/* Tokens.  */
+#define T_NUMBER 258
+#define T_ID 259
+#define T_AND 260
+#define T_OR 261
+#define T_NOT 262
+#define T_RESN 263
+#define T_RESI 264
+#define T_SYMBOL 265
+#define T_NAME 266
+#define T_CHAIN 267
+#define ATOM 268
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -80,7 +92,7 @@ union YYSTYPE
     const char *value;
     expression *expression;
 
-#line 84 "parser.h" /* yacc.c:1909  */
+#line 96 "parser.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

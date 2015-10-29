@@ -229,9 +229,9 @@ freesasa_log(FILE *log,
 
     fprintf(log,"algorithm         : %s\n",freesasa_alg_names[p->alg]);
     fprintf(log,"probe-radius      : %.3f\n", p->probe_radius);
-    if(HAVE_LIBPTHREAD) {
+    if (USE_THREADS)
         fprintf(log,"n_thread          : %d\n",p->n_threads);
-    }
+
     switch(p->alg) {
     case FREESASA_SHRAKE_RUPLEY:
         fprintf(log,"n_testpoint       : %d\n",p->shrake_rupley_n_points);
