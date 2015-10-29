@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [ ! -d data ]; then
+if [ ! -e "@abs_top_srcdir@/bindings/python/data" ]; then
     ln -s @abs_top_srcdir@/tests/data @abs_top_srcdir@/bindings/python/
 fi
-if [ ! -d share ]; then
+if [ ! -e "@abs_top_srcdir@/bindings/python/share" ]; then
     ln -s @abs_top_srcdir@/share @abs_top_srcdir@/bindings/python/
 fi
 

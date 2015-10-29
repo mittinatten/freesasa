@@ -16,7 +16,7 @@ class FreeSASATestCase(unittest.TestCase):
     def testParameters(self):
         d = defaultParameters
         p = Parameters()
-        self.assertTrue(p.algorithm() == ShrakeRupley)
+        self.assertTrue(p.algorithm() == LeeRichards)
         self.assertTrue(p.algorithm() == d['algorithm'])
         self.assertTrue(p.probeRadius() == d['probe-radius'])
         self.assertTrue(p.nPoints() == d['n-points'])
@@ -183,7 +183,7 @@ class FreeSASATestCase(unittest.TestCase):
         ss = structureArray("data/1ubq.pdb")
         self.assertTrue(len(ss) == 1)
         self.assertTrue(ss[0].nAtoms() == 602)
-        result = calc(ss[0])
+        result = calc(ss[0],Parameters({'algorithm' : ShrakeRupley}))
         self.assertTrue(math.fabs(result.totalArea() - 4834.716265) < 1e-5)
 
         # Test exceptions
@@ -203,7 +203,7 @@ class FreeSASATestCase(unittest.TestCase):
     def testCalc(self):
         # test default settings
         structure = Structure("data/1ubq.pdb")
-        result = calc(structure)
+        result = calc(structure,Parameters({'algorithm' : ShrakeRupley}))
         self.assertTrue(math.fabs(result.totalArea() - 4834.716265) < 1e-5)
         sasa_classes = classifyResults(result,structure)
         self.assertTrue(math.fabs(sasa_classes['Polar'] - 2515.821238) < 1e-5)
@@ -224,7 +224,7 @@ class FreeSASATestCase(unittest.TestCase):
         classifier = Classifier("share/oons.config")
         # classifier passed to assign user-defined radii, could also have used setRadiiWithClassifier()
         structure = Structure("data/1ubq.pdb",classifier) 
-        result = calc(structure)
+        result = calc(structure,Parameters({'algorithm' : ShrakeRupley}))
         self.assertTrue(math.fabs(result.totalArea() - 4779.5109924) < 1e-5)
         sasa_classes = classifyResults(result,structure,classifier) # classifier passed to get user-classes
         self.assertTrue(math.fabs(sasa_classes['Polar'] - 2236.9298941) < 1e-5)
@@ -232,7 +232,7 @@ class FreeSASATestCase(unittest.TestCase):
 
     def testSelectArea(self):
         structure = Structure("data/1ubq.pdb")
-        result = calc(structure)
+        result = calc(structure,Parameters({'algorithm' : ShrakeRupley}))
         # will only test that this gets through to the C interface,
         # extensive checking of the parser is done in the C unit tests
         selections = selectArea(('s1, resn ala','s2, resi 1'),structure,result)

@@ -62,7 +62,7 @@ debug = FREESASA_V_DEBUG
 
 ## The default values for calculation parameters
 defaultParameters = {
-     'algorithm'    : ShrakeRupley, 
+     'algorithm'    : LeeRichards, 
      'probe-radius' : freesasa_default_parameters.probe_radius,
      'n-points'     : freesasa_default_parameters.shrake_rupley_n_points,
      'n-slices'     : freesasa_default_parameters.lee_richards_n_slices,
