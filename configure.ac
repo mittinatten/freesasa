@@ -31,7 +31,7 @@ AC_C_INLINE
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([gettimeofday sqrt strerror])
+AC_CHECK_FUNCS([sqrt strerror getopt_long getline])
 AC_CHECK_FUNCS([mkdir])
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile
