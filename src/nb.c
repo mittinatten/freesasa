@@ -36,10 +36,9 @@ struct cell {
     int n_atoms; //! number of atoms in cell
 };
 
-cell *empty_nb[17] = 
-    {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
-     NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
-cell empty_cell = {(cell *)empty_nb, NULL, 0, 0};
+cell empty_cell = {{NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
+                    NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL},
+                   NULL, 0, 0};
 
 //! Verlet cell lists
 typedef struct cell_list {

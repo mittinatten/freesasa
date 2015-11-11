@@ -26,7 +26,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#if HAVE_PTHREAD_H
+#if USE_THREADS
 # include <pthread.h>
 #endif
 
@@ -54,7 +54,7 @@ typedef struct {
     double *sasa;
 } sr_data;
 
-#if HAVE_LIBPTHREAD
+#if USE_THREADS
 static void sr_do_threads(int n_threads, sr_data sr);
 static void *sr_thread(void *arg);
 #endif
@@ -163,7 +163,7 @@ freesasa_shrake_rupley(double *sasa,
 
     //calculate SASA
     if (n_threads > 1) {
-#if HAVE_LIBPTHREAD
+#if USE_THREADS
         sr_do_threads(n_threads, sr);
 #else
         return_value = freesasa_warn("%s: program compiled for single-threaded use, "
@@ -183,7 +183,7 @@ freesasa_shrake_rupley(double *sasa,
     return return_value;
 }
 
-#if HAVE_LIBPTHREAD
+#if USE_THREADS
 static void
 sr_do_threads(int n_threads,
               sr_data sr)

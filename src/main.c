@@ -72,8 +72,8 @@ help(void)
             "  -h (--help)           Print this message\n"
             "  -v (--version)        Print version of the program\n");
     fprintf(stderr,"\nPARAMETERS\n"
-            "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm [default]\n"
-            "  -L (--lee-richards)   Use Lee & Richards algorithm\n");
+            "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm\n"
+            "  -L (--lee-richards)   Use Lee & Richards algorithm [default]\n");
     fprintf(stderr,
             "\n"
             "  -p <value>  (--probe-radius=<value>)\n"
@@ -85,7 +85,7 @@ help(void)
             "                        - number of slices per atom in Lee & Richards algorithm. [default: %d]\n"
             "                        depending on which is selected.\n",
             FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_SR_N,FREESASA_DEF_LR_N);
-#ifdef HAVE_LIBPTHREAD
+#ifdef USE_THREADS
     fprintf(stderr,
             "  -t <value>  (--n-threads=<value>)\n"
             "                        Number of threads to use in calculation. [default %d]\n",
@@ -478,7 +478,7 @@ main(int argc,
             add_chain_groups(optarg);
             break;
         case 't':
-#if HAVE_LIBPTHREAD
+#if USE_THREADS
             parameters.n_threads = atoi(optarg);
             if (parameters.n_threads < 1) abort_msg("Number of threads must be 1 or larger.\n");
 #else

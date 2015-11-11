@@ -139,6 +139,18 @@ extern int freesasa_yydebug;
     ATOM = 268
   };
 #endif
+/* Tokens.  */
+#define T_NUMBER 258
+#define T_ID 259
+#define T_AND 260
+#define T_OR 261
+#define T_NOT 262
+#define T_RESN 263
+#define T_RESI 264
+#define T_SYMBOL 265
+#define T_NAME 266
+#define T_CHAIN 267
+#define ATOM 268
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -150,7 +162,7 @@ union YYSTYPE
     const char *value;
     expression *expression;
 
-#line 154 "parser.c" /* yacc.c:355  */
+#line 166 "parser.c" /* yacc.c:355  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -166,7 +178,7 @@ int freesasa_yyparse (expression **expression, freesasa_yyscan_t scanner);
 
 /* Copy the second part of user declarations.  */
 
-#line 170 "parser.c" /* yacc.c:358  */
+#line 182 "parser.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -1263,113 +1275,113 @@ yyreduce:
         case 2:
 #line 64 "parser.y" /* yacc.c:1646  */
     { *expression = freesasa_selection_create((yyvsp[0].expression),(yyvsp[-2].value)); }
-#line 1267 "parser.c" /* yacc.c:1646  */
+#line 1279 "parser.c" /* yacc.c:1646  */
     break;
 
   case 3:
 #line 68 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = (yyvsp[-1].expression); }
-#line 1273 "parser.c" /* yacc.c:1646  */
+#line 1285 "parser.c" /* yacc.c:1646  */
     break;
 
   case 4:
 #line 69 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = freesasa_selection_operation(E_AND, (yyvsp[-2].expression), (yyvsp[0].expression)); }
-#line 1279 "parser.c" /* yacc.c:1646  */
+#line 1291 "parser.c" /* yacc.c:1646  */
     break;
 
   case 5:
 #line 70 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = freesasa_selection_operation(E_OR, (yyvsp[-2].expression), (yyvsp[0].expression)); }
-#line 1285 "parser.c" /* yacc.c:1646  */
+#line 1297 "parser.c" /* yacc.c:1646  */
     break;
 
   case 6:
 #line 71 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = freesasa_selection_operation(E_NOT, NULL, (yyvsp[0].expression)); }
-#line 1291 "parser.c" /* yacc.c:1646  */
+#line 1303 "parser.c" /* yacc.c:1646  */
     break;
 
   case 7:
 #line 72 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = freesasa_selection_selector(E_RESN, (yyvsp[0].expression)); }
-#line 1297 "parser.c" /* yacc.c:1646  */
+#line 1309 "parser.c" /* yacc.c:1646  */
     break;
 
   case 8:
 #line 73 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = freesasa_selection_selector(E_RESI, (yyvsp[0].expression)); }
-#line 1303 "parser.c" /* yacc.c:1646  */
+#line 1315 "parser.c" /* yacc.c:1646  */
     break;
 
   case 9:
 #line 74 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = freesasa_selection_selector(E_SYMBOL, (yyvsp[0].expression)); }
-#line 1309 "parser.c" /* yacc.c:1646  */
+#line 1321 "parser.c" /* yacc.c:1646  */
     break;
 
   case 10:
 #line 75 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = freesasa_selection_selector(E_NAME, (yyvsp[0].expression)); }
-#line 1315 "parser.c" /* yacc.c:1646  */
+#line 1327 "parser.c" /* yacc.c:1646  */
     break;
 
   case 11:
 #line 76 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = freesasa_selection_selector(E_CHAIN, (yyvsp[0].expression)); }
-#line 1321 "parser.c" /* yacc.c:1646  */
+#line 1333 "parser.c" /* yacc.c:1646  */
     break;
 
   case 12:
 #line 80 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = (yyvsp[0].expression); }
-#line 1327 "parser.c" /* yacc.c:1646  */
+#line 1339 "parser.c" /* yacc.c:1646  */
     break;
 
   case 13:
 #line 81 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = freesasa_selection_operation(E_PLUS, (yyvsp[-2].expression), (yyvsp[0].expression)); }
-#line 1333 "parser.c" /* yacc.c:1646  */
+#line 1345 "parser.c" /* yacc.c:1646  */
     break;
 
   case 14:
 #line 84 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = (yyvsp[0].expression); }
-#line 1339 "parser.c" /* yacc.c:1646  */
+#line 1351 "parser.c" /* yacc.c:1646  */
     break;
 
   case 15:
 #line 85 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = freesasa_selection_operation(E_RANGE, (yyvsp[-2].expression), (yyvsp[0].expression)); }
-#line 1345 "parser.c" /* yacc.c:1646  */
+#line 1357 "parser.c" /* yacc.c:1646  */
     break;
 
   case 16:
 #line 86 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = freesasa_selection_operation(E_PLUS, freesasa_selection_operation(E_RANGE, (yyvsp[-4].expression), (yyvsp[-2].expression)),(yyvsp[0].expression)); }
-#line 1351 "parser.c" /* yacc.c:1646  */
+#line 1363 "parser.c" /* yacc.c:1646  */
     break;
 
   case 17:
 #line 87 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = freesasa_selection_operation(E_PLUS, (yyvsp[-2].expression), (yyvsp[0].expression)); }
-#line 1357 "parser.c" /* yacc.c:1646  */
+#line 1369 "parser.c" /* yacc.c:1646  */
     break;
 
   case 18:
 #line 91 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = freesasa_selection_atom(E_NUMBER,(yyvsp[0].value)); }
-#line 1363 "parser.c" /* yacc.c:1646  */
+#line 1375 "parser.c" /* yacc.c:1646  */
     break;
 
   case 19:
 #line 92 "parser.y" /* yacc.c:1646  */
     { (yyval.expression) = freesasa_selection_atom(E_ID,(yyvsp[0].value)); }
-#line 1369 "parser.c" /* yacc.c:1646  */
+#line 1381 "parser.c" /* yacc.c:1646  */
     break;
 
 
-#line 1373 "parser.c" /* yacc.c:1646  */
+#line 1385 "parser.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires

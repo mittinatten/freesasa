@@ -1,8 +1,12 @@
+AM_LDFLAGS = 
+
 if COND_GCOV
 AM_CFLAGS = --coverage
-AM_LDFLAGS = -lgcov
+AM_LDFLAGS += -lgcov
 endif # COND_GCOV
+
 GCOV_FILES = *.gcda *.gcno *.gcov
+
 CLEANFILES = $(GCOV_FILES) *~
 EXTRA_DIST = lexer.l parser.y
 
@@ -25,8 +29,8 @@ lp_output = lexer.c lexer.h parser.c parser.h
 
 if GENERATE_PARSER
 $(lp_output): lexer.l parser.y
-	flex lexer.l
-	bison parser.y
+	@LEX@ lexer.l
+	@YACC@ parser.y
 
 CLEANFILES += $(lp_output)
 

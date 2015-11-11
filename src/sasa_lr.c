@@ -26,7 +26,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#if HAVE_PTHREAD_H
+#if USE_THREADS
 # include <pthread.h>
 #endif
 
@@ -53,7 +53,7 @@ typedef struct {
     lr_data *lr;
 } lr_thread_interval;
 
-#if HAVE_LIBPTHREAD
+#if USE_THREADS
 static void lr_do_threads(int n_threads, lr_data*);
 static void *lr_thread(void *arg);
 #endif
@@ -143,7 +143,7 @@ freesasa_lee_richards(double *sasa,
     }
 
     if (n_threads > 1) {
-#if HAVE_LIBPTHREAD
+#if USE_THREADS
         lr_do_threads(n_threads, lr);
 #else
         return_value = freesasa_warn("in %s(): program compiled for single-threaded use, "
@@ -162,7 +162,7 @@ freesasa_lee_richards(double *sasa,
     return return_value;
 }
 
-#if HAVE_LIBPTHREAD
+#if USE_THREADS
 static void
 lr_do_threads(int n_threads,
               lr_data *lr)
@@ -207,7 +207,7 @@ lr_thread(void *arg)
     }
     pthread_exit(NULL);
 }
-#endif /* pthread */
+#endif /* USE_THREADS */
 
 static double
 atom_area(lr_data *lr,
