@@ -60,7 +60,7 @@ set_fail_freq(int freq) {
 #define strdup(s) broken_strdup(s)
 
 
-#define NB_CHUNK 1 // to force som reallocs to take place
+#define FREESASA_NB_CHUNK 1 // to force som reallocs to take place
 #include "whole_lib_one_file.c"
 
 int int_array[6] = {0,1,2,3,4,5};

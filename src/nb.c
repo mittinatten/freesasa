@@ -24,8 +24,8 @@
 #include "util.h"
 #include "nb.h"
 
-#ifndef NB_CHUNK
-#define NB_CHUNK 32
+#ifndef FREESASA_NB_CHUNK
+#define FREESASA_NB_CHUNK 32
 #endif
 
 typedef struct cell cell;
@@ -278,16 +278,16 @@ freesasa_nb_alloc(int n)
 
     for (int i=0; i < n; ++i) {
         nb->nn[i] = 0;
-        nb->capacity[i] = NB_CHUNK;
+        nb->capacity[i] = FREESASA_NB_CHUNK;
         // again prepare for a potential cleanup
         nb->nb[i] = NULL;
         nb->xyd[i] = nb->xd[i] = nb->yd[i] = NULL;
     }
     for (int i=0; i < n; ++i) {
-        nb->nb[i] = malloc(sizeof(int)*NB_CHUNK);
-        nb->xyd[i] = malloc(sizeof(double)*NB_CHUNK);
-        nb->xd[i] = malloc(sizeof(double)*NB_CHUNK);
-        nb->yd[i] = malloc(sizeof(double)*NB_CHUNK);
+        nb->nb[i] = malloc(sizeof(int)*FREESASA_NB_CHUNK);
+        nb->xyd[i] = malloc(sizeof(double)*FREESASA_NB_CHUNK);
+        nb->xd[i] = malloc(sizeof(double)*FREESASA_NB_CHUNK);
+        nb->yd[i] = malloc(sizeof(double)*FREESASA_NB_CHUNK);
         if (!nb->nb[i] || !nb->xyd[i] || !nb->xd[i] || !nb->yd[i]) {
             freesasa_nb_free(nb);
             mem_fail();
@@ -334,7 +334,7 @@ chunk_up(nb_list *nb_list,
         double **xdi = &nb_list->xd[i];
         double **ydi = &nb_list->yd[i];
         double *xydi_b = *xydi, *xdi_b = *xdi, *ydi_b = *ydi;
-        int new_cap = (nb_list->capacity[i] += NB_CHUNK);
+        int new_cap = (nb_list->capacity[i] += FREESASA_NB_CHUNK);
 
         *nbi = realloc(*nbi,sizeof(int)*new_cap);
         if (*nbi == NULL)  { nb_list->nb[i]  = nbi_b;  return mem_fail(); }
