@@ -33,16 +33,18 @@ simply type:
 
 This generates the following output
 
-    name: 1ubq.pdb
-    n_atoms: 602
-    algorithm: Shrake & Rupley
-    probe-radius: 1.400000 A
-    n_thread: 2
-    n_testpoint: 100
-
-      Total:   4834.72 A2
-     Apolar:   2318.90 A2
-      Polar:   2515.82 A2
+    PARAMETERS
+    input             : tests/data/1ubq.pdb
+    n_atoms           : 602
+    algorithm         : Lee & Richards
+    probe-radius      : 1.400
+    n_thread          : 2
+    n_slices_per_atom : 20
+    
+    RESULTS
+    Total   :    4804.06
+    Apolar  :    2299.84
+    Polar   :    2504.22
     
 The results are all in the unit Ångström-squared. 
 
@@ -50,15 +52,15 @@ The results are all in the unit Ångström-squared.
 
 If higher precision is needed, the command
 
-    $ freesasa -n 1000 1ubq.pdb
+    $ freesasa -n 100 1ubq.pdb
 
-specifies that the calculation should use 1000 test points instead of
-the default 100. The command
+specifies that the calculation should use 100 slices per atom instead of
+the default 20. The command
 
-    $ freesasa --lee-richards -n 200 --probe-radius 1.2 --n-threads 4 1ubq.pdb
+    $ freesasa --shrake-rupley -n 200 --probe-radius 1.2 --n-threads 4 1ubq.pdb
 
-instead calculates the SASA using Lee & Richards algorithm with 200
-slices per atom, a probe radius of 1.2 Å, using 4 parallel threads to
+instead calculates the SASA using Shrake & Rupley's algorithm with 200
+test points, a probe radius of 1.2 Å, using 4 parallel threads to
 speed things up.
 
 If the user wants to use their own atomic radii the command 
@@ -76,17 +78,17 @@ To calculate the SASA of each residue in
 the sequence, or each residue type, the commands
 
     $ freesasa --foreach-residue --no-log 1ubq.pdb
-    SEQ: A    1 MET   50.77
-    SEQ: A    2 GLN   77.34
-    SEQ: A    3 ILE    0.00
+    SEQ A    1 MET :   54.39
+    SEQ A    2 GLN :   74.21
+    SEQ A    3 ILE :    0.00
     ...
 
 and
 
     $ freesasa --foreach-residue-type --no-log 1ubq.pdb
-    RES: ALA    118.35
-    RES: ARG    546.58
-    RES: ASN    165.76
+    RES ALA :     120.08
+    RES ARG :     540.12
+    RES ASN :     166.45
     ...
 
 to stdout respectively (`--no-log` suppresses the standard log
@@ -95,13 +97,14 @@ message).
 The command-line interface can also be used as a PDB filter:
 
     $ cat 1ubq.pdb | freesasa --no-log --print-as-B-values 
-    ATOM      1  N   MET A   1      27.340  24.430   2.614  1.64 17.42
-    ATOM      2  CA  MET A   1      26.266  25.413   2.842  1.88 16.22
-    ATOM      3  C   MET A   1      26.913  26.639   3.531  1.61  0.00
+    ATOM      1  N   MET A   1      27.340  24.430   2.614  1.64 19.52
+    ATOM      2  CA  MET A   1      26.266  25.413   2.842  1.88 15.53
+    ATOM      3  C   MET A   1      26.913  26.639   3.531  1.61  0.26
     ...
 
-The output is PDB-file where the temperature factors have been replaced by
-SASA values, and occupancy numbers by the radius of each atom:
+The output is a PDB-file where the temperature factors have been
+replaced by SASA values (last column), and occupancy numbers by the
+radius of each atom (second to last column).
 
 Only the atoms and models used in the calculation will be present in
 the output (see @ref Input for how to modify this).
@@ -121,10 +124,10 @@ exposed surface areas of all aromatic residues and of ASP and ASN
 
     $ freesasa --select "aromatic, resn phe+tyr+trp+his+pro" --select "asx, resn asp+asn" 1ubq.pdb
     ...
-    Selections:
+    SELECTIONS
     freesasa: warning: Found no matches to resn 'TRP', typo?
-    aromatic:    369.24 A2
-    asx:    560.89 A2
+    aromatic :     360.38
+    asx :     559.46
 
 This command adds a 'Selection:' section at the end of the
 output. This particular protein did not have any TRP residues, hence
@@ -203,7 +206,7 @@ To calculate the SASA of a structure, there are two main options:
 
 The following explains how to use FreeSASA to calculate the SASA of a
 fictive PDB file (1abc.pdb). At each step one or more error checks
-should have been done, but theses are ignored here for brevity. See
+should have been done, but these are ignored here for brevity. See
 the documentation of each function to see what errors can occur.
 Default parameters are used at every step, the section @ref
 Customizing explains how to configure the calculations.
@@ -330,12 +333,12 @@ freesasa_parameters param = freesasa_default_parameters;
 
 To allow the user to only change the parameters that are non-default.
 
-The following call would run a high precision Lee & Richards
-calculation with 200 slices per atom
+The following call would run a high precision Shrake & Rupley
+calculation with 10000 test points
 
 ~~~{.c}
-param.alg = FREESASA_LEE_RICHARDS;
-param.lee_richards_n_slices = 200;
+param.alg = FREESASA_SHRAKE_RUPLEY;
+param.lee_richards_n_slices = 10000;
 freesasa_result *result = freesasa_calc_structure(structure,radii,param);
 ~~~
 
