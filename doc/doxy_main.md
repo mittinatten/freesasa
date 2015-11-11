@@ -527,9 +527,9 @@ for key in area_classes:
 
 Which would give the following output
 
-    Total : 4834.72 A2
-    Polar : 2515.82 A2
-    Apolar : 2318.90 A2
+    Total : 4804.06 A2
+    Polar : 2504.22 A2
+    Apolar : 2299.84 A2
 
 The following does a high precision L&R calculation
 
@@ -550,8 +550,8 @@ for key in selections:
 ~~~
 which gives the output
 
-    alanine : 118.35 A2
-    r1_10 : 643.01 A2
+    alanine : 120.08 A2
+    r1_10 : 634.31 A2
 
 
 @section Python-classification Customizing atom classification
