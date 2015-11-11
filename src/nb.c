@@ -36,9 +36,9 @@ struct cell {
     int n_atoms; //! number of atoms in cell
 };
 
-cell empty_cell = {{NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
-                    NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL},
-                   NULL, 0, 0};
+static cell empty_cell = {{NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
+                           NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL},
+                          NULL, 0, 0};
 
 //! Verlet cell lists
 typedef struct cell_list {
@@ -51,7 +51,7 @@ typedef struct cell_list {
     double z_max, z_min;
 } cell_list;
 
-struct cell_list empty_cell_list = {NULL,0,0,0,0,0,0,0,0,0,0,0};
+static struct cell_list empty_cell_list = {NULL,0,0,0,0,0,0,0,0,0,0,0};
 
 //! Finds the bounds of the cell list and writes them to the provided cell list
 static void
