@@ -338,7 +338,7 @@ calculation with 10000 test points
 
 ~~~{.c}
 param.alg = FREESASA_SHRAKE_RUPLEY;
-param.lee_richards_n_slices = 10000;
+param.shrake_rupley_n_points = 10000;
 freesasa_result *result = freesasa_calc_structure(structure,radii,param);
 ~~~
 
