@@ -239,26 +239,25 @@ sr_atom_area(int i,
     int spcount[n_points]; 
     const double ri = sr.r[i];
     const double *restrict v = freesasa_coord_all(sr.xyz);
-    const double *restrict vi = v+3*i;
     const double *restrict tp;
     int n_surface = 0;
     /* testpoints for this atom */
     coord_t *tp_coord_ri = freesasa_coord_copy(sr.srp);
     
-    freesasa_coord_scale(tp_coord_ri, sr.r[i]);
-    freesasa_coord_translate(tp_coord_ri, vi);
+    freesasa_coord_scale(tp_coord_ri, ri);
+    freesasa_coord_translate(tp_coord_ri, v+3*i);
     tp = freesasa_coord_all(tp_coord_ri);
 
     memset(spcount,0,n_points*sizeof(int));
 
     for (int j = 0; j < sr.nb->nn[i]; ++j) {
         const int ja = sr.nb->nb[i][j];
-        const double rj = sr.r[ja];
-        const double xj = v[3*ja+0], yj = v[3*ja+1], zj = v[3*ja+2];
+        const double rj2 = sr.r[ja]*sr.r[ja];
+        const double xj = v[3*ja], yj = v[3*ja+1], zj = v[3*ja+2];
         for (int k = 0; k < n_points; ++k) {
             if (spcount[k]) continue;
-            double dx = tp[3*k]-xj, dy = tp[3*k+1]-yj, dz = tp[3*k+2]-zj;
-            if (dx*dx + dy*dy + dz*dz < rj*rj) {
+            double dx = tp[k*3]-xj, dy = tp[k*3+1]-yj, dz = tp[k*3+2]-zj;
+            if (dx*dx + dy*dy + dz*dz < rj2) {
                 spcount[k] = 1;
             }
             /* i.e. if |xyz[i]+ri*srp[k] - xyz[j]| <= rj we have an

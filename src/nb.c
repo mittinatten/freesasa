@@ -426,11 +426,6 @@ nb_calc_cell_pair(nb_list *nb_list,
             rj = radii[ja];
             xj = v[ja*3]; yj = v[ja*3+1]; zj = v[ja*3+2];
             cut2 = (ri+rj)*(ri+rj);
-            if ((xj-xi)*(xj-xi) > cut2 ||
-                (yj-yi)*(yj-yi) > cut2 ||
-                (zj-zi)*(zj-zi) > cut2) {
-                continue;
-            }
             dx = xj-xi; dy = yj-yi; dz = zj-zi;
             if (dx*dx + dy*dy + dz*dz < cut2) {
                 if (nb_add_pair(nb_list,ia,ja,dx,dy))
