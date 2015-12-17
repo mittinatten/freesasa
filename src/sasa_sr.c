@@ -50,6 +50,7 @@ typedef struct {
     const coord_t *xyz;
     coord_t *srp; // test-points
     double *r;
+    double *r2;
     nb_list *nb;
     double *sasa;
 } sr_data;
@@ -114,17 +115,27 @@ init_sr(sr_data* sr_p,
                   .probe_radius = probe_radius,
                   .xyz = xyz, .srp = srp,
                   .sasa = sasa};
-    
-    sr.r = malloc(sizeof(double)*n_atoms);
-    if (sr.r == NULL) {freesasa_coord_free(srp); return mem_fail(); }
 
-    for (int i = 0; i < n_atoms; ++i) sr.r[i] = r[i] + probe_radius;
+    sr.r = malloc(sizeof(double)*n_atoms);
+    sr.r2 = malloc(sizeof(double)*n_atoms);
+    if (sr.r == NULL || sr.r2 == NULL) {
+        freesasa_coord_free(srp);
+        free(sr.r);
+        free(sr.r2);
+        return mem_fail();
+    }
     
+    for (int i = 0; i < n_atoms; ++i) {
+        sr.r[i] = r[i] + probe_radius;
+        sr.r2[i] = sr.r[i]*sr.r[i];
+    }
+
     //calculate distances
     sr.nb = freesasa_nb_new(xyz,sr.r);
-    if (sr.nb == NULL) { 
-        freesasa_coord_free(srp); 
-        free(sr.r); 
+    if (sr.nb == NULL) {
+        freesasa_coord_free(srp);
+        free(sr.r);
+        free(sr.r2);
         return mem_fail();
     }
     *sr_p = sr;
@@ -138,6 +149,7 @@ release_sr(sr_data sr)
     freesasa_coord_free(sr.srp);
     freesasa_nb_free(sr.nb);
     free(sr.r);
+    free(sr.r2);
 }
 
 int
@@ -235,39 +247,57 @@ sr_atom_area(int i,
 {
     const int n_points = sr.n_points;
     /* this array keeps track of which testpoints belonging to
-       a certain atom are inside other atoms */
-    int spcount[n_points]; 
+       a certain atom do not overlap with any other atoms */
+    int spcount[n_points];
+    const int nni = sr.nb->nn[i];
     const double ri = sr.r[i];
+    const double *restrict r2 = sr.r2;
     const double *restrict v = freesasa_coord_all(sr.xyz);
     const double *restrict vi = v+3*i;
     const double *restrict tp;
-    int n_surface = 0;
+    int n_surface = 0, current_nb, a;
+    double dx, dy, dz;
     /* testpoints for this atom */
     coord_t * restrict tp_coord_ri = freesasa_coord_copy(sr.srp);
-    
+
     freesasa_coord_scale(tp_coord_ri, ri);
     freesasa_coord_translate(tp_coord_ri, vi);
     tp = freesasa_coord_all(tp_coord_ri);
 
+    // initialize with all surface points hidden
     memset(spcount,0,n_points*sizeof(int));
 
-    for (int j = 0; j < sr.nb->nn[i]; ++j) {
-        const int ja = sr.nb->nb[i][j];
-        const double rj2 = sr.r[ja]*sr.r[ja];
-        const double xj = v[3*ja], yj = v[3*ja+1], zj = v[3*ja+2];
-        for (int k = 0; k < n_points; ++k) {
-            if (spcount[k]) continue;
-            double dx = tp[k*3]-xj, dy = tp[k*3+1]-yj, dz = tp[k*3+2]-zj;
-            if (dx*dx + dy*dy + dz*dz < rj2) {
-                spcount[k] = 1;
+    /* Using the trick from NSOL to check points one by one for all
+       atoms, start comparing with the first neighbor. If there is no
+       overlap for a given test-point, try with other neighbors
+       instead. Would probably work even better if test points were
+       organized in patches and not spirals. */
+    current_nb = 0;
+    for (int j = 0; j < n_points; ++j) {
+        //a is the index of the atom under consideration
+        a = sr.nb->nb[i][current_nb];
+        dx = tp[j*3]   - v[a*3];
+        dy = tp[j*3+1] - v[a*3+1];
+        dz = tp[j*3+2] - v[a*3+2];
+        if (dx*dx + dy*dy + dz*dz > r2[a]) {
+            int k = 0;
+            for (; k < nni; ++k) {
+                a = sr.nb->nb[i][k];
+                dx = tp[j*3]   - v[a*3];
+                dy = tp[j*3+1] - v[a*3+1];
+                dz = tp[j*3+2] - v[a*3+2];
+                if (dx*dx + dy*dy + dz*dz <= r2[a]) {
+                    current_nb = k;
+                    break;
+                }
             }
-            /* i.e. if |xyz[i]+ri*srp[k] - xyz[j]| <= rj we have an
-               overlap. */
+            // we have gone through the whole list without overlap
+            if (k == nni) spcount[j] = 1;
         }
     }
-    freesasa_coord_free(tp_coord_ri);
     for (int k = 0; k < n_points; ++k) {
-        if (!spcount[k]) ++n_surface;
+        if (spcount[k]) ++n_surface;
     }
+    freesasa_coord_free(tp_coord_ri);
     return (4.0*M_PI*ri*ri*n_surface)/n_points;
 }

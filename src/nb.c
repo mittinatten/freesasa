@@ -25,7 +25,7 @@
 #include "nb.h"
 
 #ifndef FREESASA_NB_CHUNK
-#define FREESASA_NB_CHUNK 32
+#define FREESASA_NB_CHUNK 128
 #endif
 
 typedef struct cell cell;
