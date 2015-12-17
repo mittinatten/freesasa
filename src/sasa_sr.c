@@ -243,7 +243,7 @@ sr_atom_area(int i,
     const double *restrict tp;
     int n_surface = 0;
     /* testpoints for this atom */
-    coord_t *tp_coord_ri = freesasa_coord_copy(sr.srp);
+    coord_t * restrict tp_coord_ri = freesasa_coord_copy(sr.srp);
     
     freesasa_coord_scale(tp_coord_ri, ri);
     freesasa_coord_translate(tp_coord_ri, vi);
