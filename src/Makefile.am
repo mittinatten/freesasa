@@ -8,6 +8,11 @@ endif # COND_GCOV
 GCOV_FILES = *.gcda *.gcno *.gcov
 
 CLEANFILES = $(GCOV_FILES) *~
+
+clean-local:
+	-rm -rf *.dSYM
+
+
 EXTRA_DIST = lexer.l parser.y
 
 bin_PROGRAMS = freesasa

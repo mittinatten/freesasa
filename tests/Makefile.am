@@ -34,3 +34,5 @@ endif # RUN_CLI_TESTS
 
 CLEANFILES = tmp/*  $(GCOV_FILES) *~
 
+clean-local:
+	-rm -rf *.dSYM
