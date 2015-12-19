@@ -368,30 +368,37 @@ nb_add_pair(nb_list *nb_list,
 {
     assert(i != j);
 
-    int **nb = nb_list->nb;
-    int *nn = nb_list->nn;
-    double **xyd = nb_list->xyd;
-    double **xd = nb_list->xd;
-    double **yd = nb_list->yd;
+    int ** nb;
+    int * nn = nb_list->nn;
+    int nni, nnj;
+    double ** xyd;
+    double ** xd;
+    double ** yd;
     double d;
 
-    ++nn[i]; ++nn[j];
+    nni = nn[i]++;
+    nnj = nn[j]++;
 
     if (chunk_up(nb_list,i)) return mem_fail();
     if (chunk_up(nb_list,j)) return mem_fail();
 
-    nb[i][nn[i]-1] = j;
-    nb[j][nn[j]-1] = i;
+    nb = nb_list->nb;
+    xyd = nb_list->xyd;
+    xd = nb_list->xd;
+    yd = nb_list->yd;
+
+    nb[i][nni] = j;
+    nb[j][nnj] = i;
 
     d = sqrt(dx*dx+dy*dy);
 
-    xyd[i][nn[i]-1] = d;
-    xyd[j][nn[j]-1] = d;
+    xyd[i][nni] = d;
+    xyd[j][nnj] = d;
 
-    xd[i][nn[i]-1] = dx;
-    xd[j][nn[j]-1] = -dx;
-    yd[i][nn[i]-1] = dy;
-    yd[j][nn[j]-1] = -dy;
+    xd[i][nni] = dx;
+    xd[j][nnj] = -dx;
+    yd[i][nni] = dy;
+    yd[j][nnj] = -dy;
 
     return FREESASA_SUCCESS;
 }
@@ -422,7 +429,6 @@ nb_calc_cell_pair(nb_list *nb_list,
         // the following loop is performance critical
         for (; j < cj->n_atoms; ++j) {
             ja = cj->atom[j];
-            assert (ia != ja);
             rj = radii[ja];
             xj = v[ja*3]; yj = v[ja*3+1]; zj = v[ja*3+2];
             cut2 = (ri+rj)*(ri+rj);

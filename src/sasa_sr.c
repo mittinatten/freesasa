@@ -250,11 +250,12 @@ sr_atom_area(int i,
        a certain atom do not overlap with any other atoms */
     int spcount[n_points];
     const int nni = sr.nb->nn[i];
+    const int * restrict nbi = sr.nb->nb[i];
     const double ri = sr.r[i];
-    const double *restrict r2 = sr.r2;
-    const double *restrict v = freesasa_coord_all(sr.xyz);
-    const double *restrict vi = v+3*i;
-    const double *restrict tp;
+    const double * restrict r2 = sr.r2;
+    const double * restrict v = freesasa_coord_all(sr.xyz);
+    const double * restrict vi = v+3*i;
+    const double * restrict tp;
     int n_surface = 0, current_nb, a;
     double dx, dy, dz;
     /* testpoints for this atom */
@@ -275,14 +276,14 @@ sr_atom_area(int i,
     current_nb = 0;
     for (int j = 0; j < n_points; ++j) {
         //a is the index of the atom under consideration
-        a = sr.nb->nb[i][current_nb];
+        a = nbi[current_nb];
         dx = tp[j*3]   - v[a*3];
         dy = tp[j*3+1] - v[a*3+1];
         dz = tp[j*3+2] - v[a*3+2];
         if (dx*dx + dy*dy + dz*dz > r2[a]) {
             int k = 0;
             for (; k < nni; ++k) {
-                a = sr.nb->nb[i][k];
+                a = nbi[k];
                 dx = tp[j*3]   - v[a*3];
                 dy = tp[j*3+1] - v[a*3+1];
                 dz = tp[j*3+2] - v[a*3+2];
