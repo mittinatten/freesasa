@@ -42,7 +42,7 @@ including one for the NACCESS parameters ([Hubbard & Thornton
 1993](http://www.bioinf.manchester.ac.uk/naccess/)).
 
 Versions 0.6.* will be the last pre-release cycle, meaning that focus
-will be on removing bugs, optimizating and documentation. The API and
+will be on removing bugs, optimization and documentation. The API and
 the command line interface will therefore only change in backwards
 incompatible ways if necessary to resolve serious bugs. No major
 features will be added before going to 1.0.
