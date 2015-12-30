@@ -42,7 +42,7 @@ AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memset mkdir sqrt strchr strdup strerror getopt_long getline])
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile
-                 tests/Makefile bindings/Makefile
+                 tests/Makefile bindings/Makefile share/Makefile
                  bindings/python/setup.py])
 AC_CONFIG_FILES([tests/test-cli], [chmod +x tests/test-cli])
 AC_CONFIG_FILES([bindings/check-python], [chmod +x bindings/check-python])
