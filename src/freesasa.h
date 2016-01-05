@@ -62,13 +62,11 @@ typedef enum {
 #define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångström).
 #define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R.
 #define FREESASA_DEF_LR_N 20 //!< Default number of slices per atom  in L&R.
-#ifdef USE_THREADS
-#define FREESASA_DEF_NUMBER_THREADS 2 //!< Default number of threads.
-#else
-//! Default number of threads. Value will depend on if library was compiled 
-//!  with or without thread support. (2 with threads, 1 without)
-#define FREESASA_DEF_NUMBER_THREADS 1 
-#endif
+
+//! Default number of threads. Value will depend on if library was
+//! compiled with or without thread support. (2 with threads, 1
+//! without)
+extern const int FREESASA_DEF_NUMBER_THREADS; 
 
 //! Error codes. Can rely upon FREESASA_SUCCESS being 0 and the errors
 //! having negative numbers.

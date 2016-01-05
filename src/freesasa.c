@@ -50,15 +50,26 @@ const char *freesasa_version = "";
 // to control error messages (used for debugging and testing)
 static freesasa_verbosity verbosity;
 
+// Allows compilation with different defaults
+// depending on USE_THREADS. but still exposing the value in a header
+// that doesn't depend on USE_THREADS
+#ifdef USE_THREADS
+#define DEF_NUMBER_THREADS 2
+#else
+#define DEF_NUMBER_THREADS 1
+#endif
+const int FREESASA_DEF_NUMBER_THREADS = DEF_NUMBER_THREADS;
+
 const freesasa_parameters freesasa_default_parameters = {
     .alg = FREESASA_DEF_ALGORITHM,
     .probe_radius = FREESASA_DEF_PROBE_RADIUS,
     .shrake_rupley_n_points = FREESASA_DEF_SR_N,
     .lee_richards_n_slices = FREESASA_DEF_LR_N,
-    .n_threads = FREESASA_DEF_NUMBER_THREADS,
+    .n_threads = DEF_NUMBER_THREADS,
 };
 
 const char *freesasa_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
+
 
 // Classifier that classifies each atom according to residue
 extern const freesasa_classifier freesasa_residue_classifier;
