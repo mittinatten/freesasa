@@ -81,43 +81,49 @@ help(void)
             "\n"
             "  -n <value>  (--resolution=<value>)\n"
             "                        Either: \n"
-            "                        - Number of test points in Shrake & Rupley algorithm, [default: %d] or\n"
-            "                        - number of slices per atom in Lee & Richards algorithm. [default: %d]\n"
+            "                        - Number of test points in Shrake & Rupley algorithm,\n"
+            "                          [default: %d] or\n"
+            "                        - number of slices per atom in Lee & Richards algorithm.\n"
+            "                          [default: %d]\n"
             "                        depending on which is selected.\n",
             FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_SR_N,FREESASA_DEF_LR_N);
 #ifdef USE_THREADS
     fprintf(stderr,
-            "  -t <value>  (--n-threads=<value>)\n"
+            "\n  -t <value>  (--n-threads=<value>)\n"
             "                        Number of threads to use in calculation. [default %d]\n",
             FREESASA_DEF_NUMBER_THREADS);
 #endif
     fprintf(stderr,
-            "  -c <file> (--config-file=<file>)\n"
-            "                        Use atomic radii and classes provided in file, example configuration files\n"
-            "                        can be found in the directory share/.\n");
+            "\n  -c <file> (--config-file=<file>)\n"
+            "                        Use atomic radii and classes provided in file, example\n"
+            "                        configuration files can be found in the directory\n"
+            "                        share/.\n");
     fprintf(stderr,
             "\nINPUT\n"
             "  -H (--hetatm)         Include HETATM entries from input.\n"
-            "  -Y (--hydrogen)       Include hydrogen atoms (skipped by default). Default classifier emits warnings.\n"
-            "                        Use with care. To get sensible results, one probably needs to redefine atomic\n"
-            "                        radii with -c option. Default H radius is 1.10 Å.\n"
+            "  -Y (--hydrogen)       Include hydrogen atoms (skipped by default). Default\n"
+            "                        classifier emits warnings. Use with care. To get\n"
+            "                        sensible results, one probably needs to redefine atomic\n"
+            "                        radii with the -c option. Default H radius is 1.10 Å.\n"
             "  -m (--join-models)    Join all MODELs in input into one big structure.\n"
             "  -C (--separate-chains) Calculate SASA for each chain separately.\n"
             "  -M (--separate-models) Calculate SASA for each MODEL separately.\n"
             "\n"
             "  -g <chains> (--chain-groups=<chains>)\n"
             "                        Select chain or group of chains to treat separately.\n"
-            "                        Several groups can be concatenated by '+', or by repetition.\n"
+            "                        Several groups can be concatenated by '+', or by\n"
+            "                        repetition.\n\n"
             "                        Examples:\n"
-            "                                    '-g A', '-g AB', -g 'A+B', '-g A -g B', '-g AB+CD', etc\n"
+            "                            '-g A', '-g AB', -g 'A+B', '-g A -g B', '-g AB+CD'\n"
             "\n"
             "  --unknown=<guess|skip|halt>\n"
-            "                        When an unknown atom is encountered FreeSASA can either 'guess' its\n"
-            "                        VdW radius, 'skip' the atom, or 'halt'. Default is 'guess'.\n");
+            "                        When an unknown atom is encountered FreeSASA can either\n"
+            "                        'guess' its VdW radius, 'skip' the atom, or 'halt'.\n"
+            "                        Default is 'guess'.\n");
     fprintf(stderr,"\nOUTPUT\n"
             "  -l (--no-log)         Don't print log message (useful with -r -R and -B)\n"
-            "  -w (--no-warnings)    Don't print warnings (will still print warnings due to invalid command\n"
-            "                        line options)\n"
+            "  -w (--no-warnings)    Don't print warnings (will still print warnings due to\n"
+            "                        invalid command line options)\n"
             "\n"
             "  -o <file> (--output=<file>)\n"
             "  -e <file> (--error-file=<file>)\n"
@@ -125,25 +131,28 @@ help(void)
             "\n"
             "  -r  (--foreach-residue-type)  --residue-type-file=<output-file>\n"
             "  -R  (--foreach-residue)       --residue-file=<output-file>\n"
-            "                        Print SASA for each residue, either grouped by type or sequentially.\n"
-            "                        Use the -file variant to specify an output file.\n"
+            "                        Print SASA for each residue, either grouped by type or\n"
+            "                        sequentially. Use the -file variant to specify an output\n"
+            "                        file.\n"
             "\n"
             "  -B  (--print-as-B-values)     --B-value-file=<output-file>\n"
-            "                        Print PDB file where the temperature factor of each atom has\n"
-            "                        been replaced by its SASA, and the occupancy number by the atomic\n"
-            "                        radius. Use the -file variant to specify an output file.\n"
-            "                        This option might at moment give confusing output when used in conjuction\n"
-            "                        with the options -C and -g.\n"
+            "                        Print PDB file where the temperature factor of each atom\n"
+            "                        has been replaced by its SASA, and the occupancy number\n"
+            "                        by the atomic radius. Use the -file variant to specify\n"
+            "                        an output file.\n"
+            "                        This option might give confusing output when used in\n"
+            "                        conjuction with the options -C and -g.\n"
             "\n"
             "  --select <command>    Select atoms using Pymol select syntax.\n"
-            "                        The option can be repeated to define several selections.\n"
-            "                        Command examples: \n"
-            "                                      'AR, resn ala+arg', 'chain_A, chain A'\n"
-            "                        AR and chain_A are just the names of the selections, which will be reused\n"
-            "                        in output. See documentation for full syntax specification.\n");
+            "                        The option can be repeated to define several selections.\n\n"
+            "                        Examples:\n"
+            "                            'AR, resn ala+arg', 'chain_A, chain A'\n"
+            "                        AR and chain_A are just the names of the selections,\n"
+            "                        which will be reused in output. See documentation for\n"
+            "                        full syntax specification.\n");
     fprintf(stderr,
             "\nIf no pdb-file is specified STDIN is used for input.\n\n"
-            "To calculate SASA of one or several PDB file using default parameters simply type:\n\n"
+            "To calculate SASA of one or several PDB file using default parameters simply\ntype:\n\n"
             "   '%s pdb-file(s)'     or    '%s < pdb-file'\n\n",
             program_name,program_name);
 }
