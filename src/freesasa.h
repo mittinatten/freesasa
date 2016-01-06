@@ -66,7 +66,7 @@ typedef enum {
 //! Default number of threads. Value will depend on if library was
 //! compiled with or without thread support. (2 with threads, 1
 //! without)
-extern const int FREESASA_DEF_NUMBER_THREADS; 
+const int FREESASA_DEF_NUMBER_THREADS; 
 
 //! Error codes. Can rely upon FREESASA_SUCCESS being 0 and the errors
 //! having negative numbers.
