@@ -310,7 +310,7 @@ structure_add_atom(freesasa_structure *p,
     if (ret == FREESASA_WARN) return FREESASA_WARN;
     assert(r >= 0);
 
-    // if it's a keeper store the radius, increase number of atoms counter
+    // if it's a keeper store the radius
     na = p->number_atoms+1;
     if ((p->radius = realloc(p->radius,sizeof(double)*na)) == NULL) {
         p->radius = pr;
@@ -319,7 +319,6 @@ structure_add_atom(freesasa_structure *p,
     p->radius[na-1] = r;
 
     // allocate memory for atom, add chain
-
     if ((p->a = realloc(p->a,sizeof(struct atom*)*na)) == NULL) {
         p->a = pa;
         return mem_fail();
@@ -460,13 +459,13 @@ get_whole_file(FILE* file)
 }
 
 /**
-    Finds the location of all MODEL entries in the file pdb, returns the number
-    of models found. *intervals points to a dynamically allocated file intervals
-    for each model.
+    Finds the location of all MODEL entries in the file pdb, returns
+    the number of models found. *intervals points to an array of
+    dynamically allocated file intervals for each model.
 
-    Returns 0 if no MODEL lines were found (for example an X-ray structure with
-    only one model) and sets *intervals to NULL. That means that a return value
-    of 0 doesn't have to mean the file is empty.
+    Returns 0 if no MODEL lines were found (for example an X-ray
+    structure with only one model) and sets *intervals to NULL. A
+    return value of 0 doesn't have to mean the file is empty.
 
     Return FREESASA_FAIL if malloc-failure.
  */
@@ -572,7 +571,7 @@ get_chain_pos(FILE *pdb,
     return n_chains;
 }
 
-int 
+int
 freesasa_structure_add_atom_wopt(freesasa_structure *p,
                                  const char *atom_name,
                                  const char *residue_name,
@@ -906,17 +905,18 @@ freesasa_write_pdb(FILE *output,
         }
         strncpy(buf,p->a[i]->line,PDB_LINE_STRL);
         sprintf(&buf[54],"%6.2f%6.2f",radii[i],values[i]);
-        errno = 0;
-        if (fprintf(output,"%s\n",buf) < 0)
-            return fail_msg(strerror(errno));
+        fprintf(output,"%s\n",buf);
     }
     // Write TER  and ENDMDL lines
     errno = 0;
     strncpy(buf2,&buf[6],5);
     buf2[5]='\0';
-    if (fprintf(output,"TER   %5d     %4s %c%4s\nENDMDL\n",
-                atoi(buf2)+1, p->a[n-1]->res_name,
-                p->a[n-1]->chain_label, p->a[n-1]->res_number) < 0) {
+    fprintf(output,"TER   %5d     %4s %c%4s\nENDMDL\n",
+            atoi(buf2)+1, p->a[n-1]->res_name,
+            p->a[n-1]->chain_label, p->a[n-1]->res_number);
+
+    fflush(output);
+    if (ferror(output)) {
         return fail_msg(strerror(errno));
     }
     return FREESASA_SUCCESS;

@@ -227,11 +227,6 @@ freesasa_log(FILE *log,
     const freesasa_parameters *p = parameters;
     if (p == NULL) p = &freesasa_default_parameters;
 
-    // Using errno to check for fprintf-errors. Perhaps not completely
-    // portable, but makes function a lot simpler than checking every
-    // return value. 
-    errno = 0;
-
     fprintf(log,"\nPARAMETERS\n");
     if (name == NULL) fprintf(log,"input             : unknown\n");
     else              fprintf(log,"input             : %s\n",name);
@@ -273,10 +268,12 @@ freesasa_log(FILE *log,
                         class_area->value[i]);
         }
     }
-    
-    if (errno != 0) { 
+
+    fflush(log);
+    if (ferror(log)) {
         return fail_msg(strerror(errno));
     }
+
     return FREESASA_SUCCESS;
 }
 
@@ -287,7 +284,6 @@ freesasa_per_chain(FILE *output,
 {
     const char *chains = freesasa_structure_chain_labels(structure);
     int n_chains = strlen(chains);
-    errno = 0;
 
     for (int c = 0; c < n_chains; ++c) {
         double area = 0;
@@ -297,7 +293,8 @@ freesasa_per_chain(FILE *output,
         fprintf(output,"CHAIN %c : %10.2f\n", chains[c], area);
     }
 
-    if (errno != 0) {
+    fflush(output);
+    if (ferror(output)) {
         return fail_msg(strerror(errno));
     }
     return FREESASA_SUCCESS;
@@ -317,18 +314,17 @@ freesasa_per_residue_type(FILE *output,
 
     for (int i = 0; i < c->n_classes; ++i) {
         double sasa = residue_area->value[i];
-        int result = 0;
-        errno = 0;
         if (i < 20 || sasa > 0) {
-            result = fprintf(output,"RES %s : %10.2f\n",
-                             residue_area->string[i],sasa);
-        }
-        if (result < 0) {
-            freesasa_strvp_free(residue_area);
-            return fail_msg(strerror(errno));
+            fprintf(output,"RES %s : %10.2f\n",
+                    residue_area->string[i],sasa);
         }
     }
     freesasa_strvp_free(residue_area);
+
+    fflush(output);
+    if (ferror(output)) {
+        return fail_msg(strerror(errno));
+    }
     return FREESASA_SUCCESS;
 }
 
