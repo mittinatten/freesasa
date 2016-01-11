@@ -6,7 +6,6 @@
 *.log
 *.pdf
 *.ps
-*.svg
 *.gcda
 *.gcno
 *.out
@@ -44,7 +43,6 @@ bindings/python/data
 bindings/check-python
 doc/doxygen
 doc/html/
-doc/fig/lnr_*.eps
 doc/doxygen
 doc/Doxyfile
 doc/doxyfile.stamp
