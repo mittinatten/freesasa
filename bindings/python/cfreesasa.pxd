@@ -1,4 +1,4 @@
-# Copyright Simon Mitternacht 2013-2015.
+# Copyright Simon Mitternacht 2013-2016.
 #
 # This file is part of FreeSASA.
 #
@@ -19,15 +19,10 @@ from libc.stdio cimport FILE
 cdef extern from "freesasa.h":
     ctypedef enum freesasa_algorithm:
         FREESASA_LEE_RICHARDS, FREESASA_SHRAKE_RUPLEY
-    ctypedef enum freesasa_class:
-        FREESASA_POLAR, FREESASA_APOLAR,
-        FREESASA_CLASS_UNKNOWN
+
     ctypedef enum freesasa_verbosity:
         FREESASA_V_NORMAL, FREESASA_V_NOWARNINGS, FREESASA_V_SILENT, FREESASA_V_DEBUG
 
-    cdef double FREESASA_DEF_PROBE_RADIUS
-    cdef int FREESASA_DEF_SR_N
-    cdef double FREESASA_DEF_LR_D
     cdef int FREESASA_SUCCESS
     cdef int FREESASA_FAIL
     cdef int FREESASA_WARN

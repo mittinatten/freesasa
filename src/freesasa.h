@@ -1,5 +1,5 @@
 /*
-  Copyright Simon Mitternacht 2013-2015.
+  Copyright Simon Mitternacht 2013-2016.
 
   This file is part of FreeSASA.
 
@@ -66,7 +66,7 @@ typedef enum {
 //! Default number of threads. Value will depend on if library was
 //! compiled with or without thread support. (2 with threads, 1
 //! without)
-const int FREESASA_DEF_NUMBER_THREADS; 
+const extern int FREESASA_DEF_NUMBER_THREADS; 
 
 //! Error codes. Can rely upon FREESASA_SUCCESS being 0 and the errors
 //! having negative numbers.

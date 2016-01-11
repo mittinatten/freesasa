@@ -1,4 +1,4 @@
-# Copyright Simon Mitternacht 2013-2015.
+# Copyright Simon Mitternacht 2013-2016.
 #
 # This file is part of FreeSASA.
 #
