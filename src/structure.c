@@ -38,6 +38,9 @@ struct atom {
     char chain_label;
 };
 
+static const struct atom empty_atom =
+     {NULL, NULL, NULL, NULL, NULL, NULL, '\0'};
+
 struct freesasa_structure {
     struct atom **a;
     coord_t *xyz;
@@ -78,10 +81,13 @@ atom_new(const char *residue_name,
          char chain_label)
 {
     struct atom *a = malloc(sizeof(struct atom));
+    int dlen = 0;
     if (a == NULL) { 
         mem_fail(); 
         return NULL; 
     }
+
+    *a = empty_atom;
 
     a->line = NULL;
     a->chain_label = chain_label;
@@ -90,15 +96,20 @@ atom_new(const char *residue_name,
     a->res_number = strdup(residue_number);
     a->atom_name = strdup(atom_name);
     a->symbol = strdup(symbol);
-    a->descriptor = malloc(FREESASA_STRUCTURE_DESCRIPTOR_STRL);
 
-    if (!a->res_name || !a->res_number || !a->atom_name || !a->symbol || !a->descriptor) {
+    dlen = strlen(residue_number) + strlen(residue_name)
+        + strlen(atom_name) + 4;
+    a->descriptor = malloc(dlen+1);
+
+    if (!a->res_name || !a->res_number || !a->atom_name ||
+        !a->symbol || !a->descriptor) {
         mem_fail();
         atom_free(a);
         return NULL;
     }
 
-    sprintf(a->descriptor,"%c %s %s %s",chain_label,residue_number,residue_name,atom_name);
+    sprintf(a->descriptor,"%c %s %s %s",
+            chain_label,residue_number,residue_name,atom_name);
 
     return a;
 }
@@ -141,18 +152,25 @@ freesasa_structure*
 freesasa_structure_new(void)
 {
     freesasa_structure *p = malloc(sizeof(freesasa_structure));
-    if (p) {
-        *p = empty_structure;
-        if ((p->chains = malloc(1)) == NULL ||
-            (p->a = malloc(sizeof(struct atom*))) == NULL ||
-            (p->xyz = freesasa_coord_new()) == NULL ||
-            (p->res_first_atom = malloc(sizeof(int))) == NULL ||
-            (p->res_desc = malloc(sizeof(char*))) == NULL) {
-            freesasa_structure_free(p);
-            return NULL;
-        }
-        p->chains[0] = '\0';
+
+    if (p == NULL) {
+        mem_fail();
+        return NULL;
     }
+
+    *p = empty_structure;
+
+    if ((p->chains = malloc(1)) == NULL ||
+        (p->a = malloc(sizeof(struct atom*))) == NULL ||
+        (p->xyz = freesasa_coord_new()) == NULL ||
+        (p->res_first_atom = malloc(sizeof(int))) == NULL ||
+        (p->res_desc = malloc(sizeof(char*))) == NULL) {
+        freesasa_structure_free(p);
+        mem_fail();
+        return NULL;
+    }
+    p->chains[0] = '\0';
+
     return p;
 }
 
@@ -177,6 +195,13 @@ freesasa_structure_free(freesasa_structure *p)
     free(p);
 }
 
+/**
+    This function is called when either the symbol field is missing
+    from an ATOM record, or when an atom is added directly using
+    freesasa_structure_add_atom() or
+    freesasa_structure_add_atom_wopt(). The symbol is in turn only
+    used if the atom cannot be recognized by the classifier.
+*/
 static int
 guess_symbol(char *symbol,
              const char *name) 
@@ -225,6 +250,10 @@ structure_add_chain(freesasa_structure *p,
     return FREESASA_SUCCESS;
 }
 
+/**
+    Get the radius of an atom, and fail, warn and/or guess depending
+    on the options.
+ */
 static int
 structure_check_atom_radius(double *radius,
                             struct atom *a,
@@ -305,9 +334,11 @@ structure_add_atom(freesasa_structure *p,
     if (p->number_residues == 0) {
         ++p->number_residues;
         p->res_first_atom[0] = 0;
-        if (!(p->res_desc[0] = malloc(FREESASA_STRUCTURE_DESCRIPTOR_STRL)))
+        if (!(p->res_desc[0] = malloc(strlen(a->res_number)+
+                                      strlen(a->res_name)+4)))
             return mem_fail();
-        sprintf(p->res_desc[0], "%c %s %s", a->chain_label, a->res_number, a->res_name);
+        sprintf(p->res_desc[0], "%c %s %s",
+                a->chain_label, a->res_number, a->res_name);
     }
 
     if (na > 1 && strcmp(a->res_number,p->a[na-2]->res_number)) {
@@ -323,9 +354,11 @@ structure_add_atom(freesasa_structure *p,
             p->res_desc = prd;
             return mem_fail();
         }
-        if (!(p->res_desc[naa-1] = malloc(FREESASA_STRUCTURE_DESCRIPTOR_STRL)))
+        if (!(p->res_desc[naa-1] = malloc(strlen(a->res_number)+
+                                          strlen(a->res_name)+4)))
             return mem_fail();
-        sprintf(p->res_desc[naa-1], "%c %s %s", a->chain_label, a->res_number, a->res_name);
+        sprintf(p->res_desc[naa-1], "%c %s %s",
+                a->chain_label, a->res_number, a->res_name);
         ++p->number_residues;
     }
 
@@ -337,7 +370,7 @@ structure_add_atom(freesasa_structure *p,
 }
 
 /**
-    Handles the reading of pdb-files, returns NULL if problems reading
+    Handles the reading of PDB-files, returns NULL if problems reading
     or input or malloc failure. Error-messages should explain what
     went wrong.
  */
