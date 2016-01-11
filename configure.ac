@@ -103,7 +103,7 @@ AC_ARG_ENABLE([doxygen],
 if test "x$enable_doxygen" = "xyes" ; then
   AC_CHECK_PROG(DOXYGEN, doxygen, doxygen)
   AM_CONDITIONAL([HAVE_DOXYGEN],[test -n "$DOXYGEN"])
-  AM_COND_IF([HAVE_DOXYGEN],[build_doc=yes])
+  AM_COND_IF([HAVE_DOXYGEN],[build_doc=yes],[echo "Doxygen not available, can not build documentation."])
 
   if test -n "$DOXYGEN"; then
      DOXYGEN_V=`doxygen --version`
