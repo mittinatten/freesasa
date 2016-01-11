@@ -3,7 +3,7 @@ ALLFILES =
 
 EXTRA_DIST = doxy_main.md GPL.md README.md \
 	doxygen-footer.html doxygen-header.html \
-	fig/
+	fig
 
 if HAVE_DOXYGEN
 
