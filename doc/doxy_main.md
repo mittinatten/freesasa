@@ -114,6 +114,21 @@ separate files, run
 
     $ freesasa --residue-file=1ubq.seq --residue-type-file=1ubq.res --B-value-file=1ubq.b 1ubq.pdb
 
+@section Chain-groups Treating chains separately
+
+Calculating the SASA of a given chain or group of chains separately
+from the rest of the structure, can be useful for measuring how buried
+a chain is in a given structure. The option `--chain-groups` can be
+used to do such a separate calculation, calling
+
+    $ freesasa --chain-groups="ABCD+XY" 3wbm.pdb
+
+produces the regular output for the structure 3WBM, but in addition it
+runs a separate calculation for the chains A, B, C and D as though X
+and Y aren't in the structure, and vice versa. These two calculations
+plus the regular one are output sequentially, separated by a line of
+'#'-signs.
+
 @section CLI-select Selecting groups of atoms
 
 The option `--select` can be used to define groups of atoms whose
