@@ -214,41 +214,34 @@ freesasa_calc_structure(const freesasa_structure* structure,
                          freesasa_structure_radius(structure),
                          parameters);
 }
-
 int
-freesasa_log(FILE *log, 
+freesasa_log(FILE *log,
              freesasa_result *result,
              const char *name,
              const freesasa_parameters *parameters,
-             const freesasa_strvp* class_area)
+             const freesasa_strvp* class_sasa)
+{
+    assert(log);
+    if (freesasa_write_parameters(log,parameters) != FREESASA_FAIL &&
+        freesasa_write_result(log,result,name,class_sasa)
+        != FREESASA_FAIL)
+        return FREESASA_SUCCESS;
+    return fail_msg("");
+}
+
+int
+freesasa_write_result(FILE *log,
+                      freesasa_result *result,
+                      const char *name,
+                      const freesasa_strvp* class_area)
 {
     assert(log);
 
-    const freesasa_parameters *p = parameters;
-    if (p == NULL) p = &freesasa_default_parameters;
+    fprintf(log,"\nINPUT\n");
+    if (name == NULL) fprintf(log,"input   : unknown\n");
+    else              fprintf(log,"input   : %s\n",name);
+    fprintf(log,"n_atoms : %d\n",result->n_atoms);
 
-    fprintf(log,"\nPARAMETERS\n");
-    if (name == NULL) fprintf(log,"input             : unknown\n");
-    else              fprintf(log,"input             : %s\n",name);
-
-    fprintf(log,"n_atoms           : %d\n",result->n_atoms);
-
-    fprintf(log,"algorithm         : %s\n",freesasa_alg_names[p->alg]);
-    fprintf(log,"probe-radius      : %.3f\n", p->probe_radius);
-    if (USE_THREADS)
-        fprintf(log,"n_thread          : %d\n",p->n_threads);
-
-    switch(p->alg) {
-    case FREESASA_SHRAKE_RUPLEY:
-        fprintf(log,"n_testpoint       : %d\n",p->shrake_rupley_n_points);
-        break;
-    case FREESASA_LEE_RICHARDS:
-        fprintf(log,"n_slices_per_atom : %d\n",p->lee_richards_n_slices);
-        break;
-    default:
-        assert(0);
-        break;
-    }
     fprintf(log,"\nRESULTS\n");
     if (class_area == NULL) {
         fprintf(log,"Total : %10.2f\n",result->total);
@@ -267,6 +260,40 @@ freesasa_log(FILE *log,
                         class_area->string[i],
                         class_area->value[i]);
         }
+    }
+
+    fflush(log);
+    if (ferror(log)) {
+        return fail_msg(strerror(errno));
+    }
+
+    return FREESASA_SUCCESS;
+}
+
+int freesasa_write_parameters(FILE *log,
+                              const freesasa_parameters *parameters)
+{
+    assert(log);
+    const freesasa_parameters *p = parameters;
+    if (p == NULL) p = &freesasa_default_parameters;
+
+    fprintf(log,"\nPARAMETERS\n");
+
+    fprintf(log,"algorithm         : %s\n",freesasa_alg_names[p->alg]);
+    fprintf(log,"probe-radius      : %.3f\n", p->probe_radius);
+    if (USE_THREADS)
+        fprintf(log,"n_thread          : %d\n",p->n_threads);
+
+    switch(p->alg) {
+    case FREESASA_SHRAKE_RUPLEY:
+        fprintf(log,"n_testpoint       : %d\n",p->shrake_rupley_n_points);
+        break;
+    case FREESASA_LEE_RICHARDS:
+        fprintf(log,"n_slices_per_atom : %d\n",p->lee_richards_n_slices);
+        break;
+    default:
+        assert(0);
+        break;
     }
 
     fflush(log);

@@ -192,7 +192,10 @@ run_analysis(FILE *input,
     freesasa_structure *single_structure[1];
     freesasa_structure **structures;
     int n = 0;
-    
+
+    if (printlog) {
+        freesasa_write_parameters(output,&parameters);
+    }
     if ((structure_options & FREESASA_SEPARATE_CHAINS) ||
         (structure_options & FREESASA_SEPARATE_MODELS)) {
         structures = freesasa_structure_array(input,&n,classifier,structure_options);
@@ -242,10 +245,10 @@ run_analysis(FILE *input,
             sprintf(name_i+strlen(name_i),":%s",freesasa_structure_chain_labels(structures[i]));
         }
         if (printlog) {
-            freesasa_log(output,result,name_i,&parameters,classes);
+            if (n > 1) fprintf(output,"\n#######################\n");
+            freesasa_write_result(output,result,name_i,classes);
             if (strlen(freesasa_structure_chain_labels(structures[i])) > 1)
                 freesasa_per_chain(output,result,structures[i]);
-            if (n > 1) fprintf(output,"\n#######################\n");
         }
         if (per_residue_type) {
             if (several_structures) fprintf(per_residue_type_file,"\n## %s\n",name_i);

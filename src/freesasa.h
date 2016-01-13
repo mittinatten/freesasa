@@ -384,23 +384,52 @@ freesasa_per_residue(FILE *output,
 /**
     Log calculation results.
 
-    Prints log of calculation results to specified file. 
+    Prints log of calculation to specified file, equivalent of calling
+    first freesasa_parameters_log() and then freesasa_result_log()
+
+    @param log Output-file.
+    @param result SASA values.
+    @param parameters Parameters to print, if NULL defaults are used
+    @param name Name of the protein, if NULL "unknown" used.
+    @param class_sasa The SASA values for each class, if NULL
+    only total SASA printed
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
+    problems writing to file.
+
+    @deprecated
+ */
+int
+freesasa_log(FILE *log,
+             freesasa_result *result,
+             const char *name,
+             const freesasa_parameters *parameters,
+             const freesasa_strvp* class_sasa);
+/**
+    Write results of claculation to file.
 
     @param log Output-file.
     @param result SASA values.
     @param name Name of the protein, if NULL "unknown" used.
-    @param parameters Parameters to print, if NULL defaults are used
     @param class_sasa The SASA values for each class, if NULL
     only total SASA printed
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
     problems writing to file.
  */
 int
-freesasa_log(FILE *log, 
-             freesasa_result *result,
-             const char *name,
-             const freesasa_parameters *parameters,
-             const freesasa_strvp* class_sasa);
+freesasa_write_result(FILE *log,
+                      freesasa_result *result,
+                      const char *name,
+                      const freesasa_strvp* class_sasa);
+/**
+    Print parameters to file
+
+    @param parameters Parameters to print, if NULL defaults are used
+
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
+    problems writing to file.
+*/
+int freesasa_write_parameters(FILE *log,
+                              const freesasa_parameters *parameters);
 
 /**
     Set the global verbosity level.
