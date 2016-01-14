@@ -25,26 +25,35 @@ explains how to use most of them.
 
 @section CLI-Default Run using defaults
 
-In the following we will use the PDB structure 1UBQ as
-an example. To run a simple SASA calculation using default parameters,
-simply type:
+In the following we will use the RNA/protein complex PDB structure
+3WBM as an example. It has four protein chains A, B, C and D, and two
+RNA strands X and Y. To run a simple SASA calculation using default
+parameters, simply type:
 
-    $ freesasa 1ubq.pdb
+    $ freesasa 3wbm.pdb
 
 This generates the following output
 
     PARAMETERS
-    input             : tests/data/1ubq.pdb
-    n_atoms           : 602
     algorithm         : Lee & Richards
     probe-radius      : 1.400
     n_thread          : 2
     n_slices_per_atom : 20
-    
+
+    INPUT
+    input   : 3wbm.pdb
+    n_atoms : 3714
+
     RESULTS
-    Total   :    4804.06
-    Apolar  :    2299.84
-    Polar   :    2504.22
+    Total   :   25190.77
+    Apolar  :   11552.38
+    Polar   :   13638.39
+    CHAIN A :    3785.49
+    CHAIN B :    4342.33
+    CHAIN C :    3961.12
+    CHAIN D :    4904.30
+    CHAIN X :    4156.46
+    CHAIN Y :    4041.08
     
 The results are all in the unit Ångström-squared. 
 
@@ -52,12 +61,12 @@ The results are all in the unit Ångström-squared.
 
 If higher precision is needed, the command
 
-    $ freesasa -n 100 1ubq.pdb
+    $ freesasa -n 100 3wbm.pdb
 
 specifies that the calculation should use 100 slices per atom instead of
 the default 20. The command
 
-    $ freesasa --shrake-rupley -n 200 --probe-radius 1.2 --n-threads 4 1ubq.pdb
+    $ freesasa --shrake-rupley -n 200 --probe-radius 1.2 --n-threads 4 3wbm.pdb
 
 instead calculates the SASA using Shrake & Rupley's algorithm with 200
 test points, a probe radius of 1.2 Å, using 4 parallel threads to
@@ -65,7 +74,7 @@ speed things up.
 
 If the user wants to use their own atomic radii the command 
 
-    $ freesasa --config-file <file> 1ubq.pdb
+    $ freesasa --config-file <file> 3wbm.pdb
 
 Reads a configuration from a file and uses it to assign atomic
 radii. The program will halt if it encounters atoms in the PDB input
@@ -74,32 +83,35 @@ instructions how to write a configuration.
 
 @section Output Other output types
 
-To calculate the SASA of each residue in
-the sequence, or each residue type, the commands
+To calculate the SASA of each residue in the sequence, or each residue
+type, use the following commands (`--no-log` suppresses the standard output
+shown above):
 
-    $ freesasa --foreach-residue --no-log 1ubq.pdb
-    SEQ A    1 MET :   54.39
-    SEQ A    2 GLN :   74.21
-    SEQ A    3 ILE :    0.00
+    $ freesasa --foreach-residue --no-log 3wbm.pdb
+    SEQ A    5 THR :  138.48
+    SEQ A    6 PRO :   25.53
+    SEQ A    7 THR :   99.42
     ...
 
 and
 
-    $ freesasa --foreach-residue-type --no-log 1ubq.pdb
-    RES ALA :     120.08
-    RES ARG :     540.12
-    RES ASN :     166.45
+    $ freesasa --foreach-residue-type --no-log 3wbm.pdb
+    RES ALA :     251.57
+    RES ARG :    2868.98
+    RES ASN :    1218.87
     ...
+    RES A :    1581.57
+    RES C :    2967.12
+    RES G :    1955.16
+    RES U :    1693.68
 
-to stdout respectively (`--no-log` suppresses the standard log
-message). 
 
 The command-line interface can also be used as a PDB filter:
 
-    $ cat 1ubq.pdb | freesasa --no-log --print-as-B-values 
-    ATOM      1  N   MET A   1      27.340  24.430   2.614  1.64 19.52
-    ATOM      2  CA  MET A   1      26.266  25.413   2.842  1.88 15.53
-    ATOM      3  C   MET A   1      26.913  26.639   3.531  1.61  0.26
+    $ cat 3wbm.pdb | freesasa --no-log --print-as-B-values 
+    ATOM      1  N   THR A   5     -19.727  29.259  13.573  1.64  9.44
+    ATOM      2  CA  THR A   5     -19.209  28.356  14.602  1.88  5.01
+    ATOM      3  C   THR A   5     -18.747  26.968  14.116  1.61  0.40
     ...
 
 The output is a PDB-file where the temperature factors have been
@@ -112,7 +124,7 @@ the output (see @ref Input for how to modify this).
 To generate all three results at the same time and write them to
 separate files, run
 
-    $ freesasa --residue-file=1ubq.seq --residue-type-file=1ubq.res --B-value-file=1ubq.b 1ubq.pdb
+    $ freesasa --residue-file=3wbm.seq --residue-type-file=3wbm.res --B-value-file=3wbm.b 3wbm.pdb
 
 @section Chain-groups Treating chains separately
 
@@ -125,7 +137,62 @@ used to do such a separate calculation, calling
 
 produces the regular output for the structure 3WBM, but in addition it
 runs a separate calculation for the chains A, B, C and D as though X
-and Y aren't in the structure, and vice versa. These two calculations
+and Y aren't in the structure, and vice versa:
+
+    PARAMETERS
+    algorithm         : Lee & Richards
+    probe-radius      : 1.400
+    n_thread          : 2
+    n_slices_per_atom : 20
+
+    #######################
+
+    INPUT
+    input   : 3wbm.pdb:ABCDXY
+    n_atoms : 3714
+
+    RESULTS
+    Total   :   25190.77
+    Apolar  :   11552.38
+    Polar   :   13638.39
+    CHAIN A :    3785.49
+    CHAIN B :    4342.33
+    CHAIN C :    3961.12
+    CHAIN D :    4904.30
+    CHAIN X :    4156.46
+    CHAIN Y :    4041.08
+
+    #######################
+
+    INPUT
+    input   : 3wbm.pdb:ABCD
+    n_atoms : 2664
+
+    RESULTS
+    Total   :   18202.78
+    Apolar  :    9799.46
+    Polar   :    8403.32
+    CHAIN A :    4243.12
+    CHAIN B :    4595.18
+    CHAIN C :    4427.11
+    CHAIN D :    4937.38
+
+    #######################
+
+    INPUT
+    input   : 3wbm.pdb:XY
+    n_atoms : 1050
+
+    RESULTS
+    Total   :    9396.28
+    Apolar  :    2743.09
+    Polar   :    6653.19
+    CHAIN X :    4714.45
+    CHAIN Y :    4681.83
+
+
+
+These two calculations
 plus the regular one are output sequentially, separated by a line of
 '#'-signs.
 
@@ -135,19 +202,21 @@ The option `--select` can be used to define groups of atoms whose
 integrated SASA we are interested in. It uses a subset of the Pymol
 `select` command syntax, see @ref Selection for full
 documentation. The following example shows how to calculate the sum of
-exposed surface areas of all aromatic residues and of ASP and ASN
+exposed surface areas of all aromatic residues and of the four chains
+A, B, C and D (just the sum of the areas above).
 
-    $ freesasa --select "aromatic, resn phe+tyr+trp+his+pro" --select "asx, resn asp+asn" 1ubq.pdb
+    $ freesasa --select "aromatic, resn phe+tyr+trp+his+pro" --select "abcd, chain A+B+C+D" 3wbm.pdb
     ...
     SELECTIONS
     freesasa: warning: Found no matches to resn 'TRP', typo?
-    aromatic :     360.38
-    asx :     559.46
+    freesasa: warning: Found no matches to resn 'HIS', typo?
+    aromatic :    1196.45
+    abcd :   16993.24
 
 This command adds a 'Selection:' section at the end of the
-output. This particular protein did not have any TRP residues, hence
-the warning (written to stderr). The warning can be supressed with the
-flag `-w`.
+output. This particular protein did not have any TRP or HIS residues,
+hence the warnings (written to stderr). The warnings can be supressed
+with the flag `-w`.
 
 @section Input PDB input
 
