@@ -1,5 +1,5 @@
 /*
-  Copyright Simon Mitternacht 2013-2015.
+  Copyright Simon Mitternacht 2013-2016.
 
   This file is part of FreeSASA.
 
@@ -34,7 +34,7 @@
 
 #if STDC_HEADERS
 extern int getopt(int, char * const *, const char *);
-extern int optind;
+extern int optind, optopt;
 extern char *optarg;
 #endif
 
@@ -53,15 +53,16 @@ FILE *output_pdb = NULL;
 FILE *per_residue_type_file = NULL;
 FILE *per_residue_file = NULL;
 FILE *output = NULL;
+FILE *errlog;
 int per_residue_type = 0;
 int per_residue = 0;
 int printlog = 1;
 int structure_options = 0;
 int printpdb = 0;
 int n_chain_groups = 0;
-const char** chain_groups;
+char** chain_groups = NULL;
 int n_select = 0;
-const char** select_cmd;
+char** select_cmd = NULL;
 
 void
 help(void)
@@ -110,9 +111,10 @@ help(void)
             "  -M (--separate-models) Calculate SASA for each MODEL separately.\n"
             "\n"
             "  -g <chains> (--chain-groups=<chains>)\n"
-            "                        Select chain or group of chains to treat separately.\n"
-            "                        Several groups can be concatenated by '+', or by\n"
-            "                        repetition.\n\n"
+            "                        Select chain or group of chains, several groups can be \n"
+            "                        concatenated by '+', or by repeting the command. A\n"
+            "                        separate SASA calculation will be performed for each\n"
+            "                        group as though the other chains didn't exist.\n\n"
             "                        Examples:\n"
             "                            '-g A', '-g AB', -g 'A+B', '-g A -g B', '-g AB+CD'\n"
             "\n"
@@ -164,6 +166,24 @@ short_help(void)
             program_name);
 }
 
+void release_resources()
+{
+    if (classifier) freesasa_classifier_free(classifier);
+    if (output_pdb) fclose(output_pdb);
+    if (per_residue_type_file) fclose(per_residue_type_file);
+    if (per_residue_file) fclose(per_residue_file);
+    if (errlog) fclose(errlog);
+    if (chain_groups) {
+        for (int i = 0; i < n_chain_groups; ++i) {
+            free(chain_groups[i]);
+        }
+    }
+    if (select_cmd) {
+        for (int i = 0; i < n_select; ++i) {
+            free(select_cmd[i]);
+        }
+    }
+}
 void
 abort_msg(const char *format,
           ...)
@@ -177,6 +197,7 @@ abort_msg(const char *format,
     short_help();
     fputc('\n', stderr);
     fflush(stderr);
+    release_resources();
     exit(EXIT_FAILURE);
 }
 
@@ -191,7 +212,10 @@ run_analysis(FILE *input,
     freesasa_structure *single_structure[1];
     freesasa_structure **structures;
     int n = 0;
-    
+
+    if (printlog) {
+        freesasa_write_parameters(output,&parameters);
+    }
     if ((structure_options & FREESASA_SEPARATE_CHAINS) ||
         (structure_options & FREESASA_SEPARATE_MODELS)) {
         structures = freesasa_structure_array(input,&n,classifier,structure_options);
@@ -241,10 +265,10 @@ run_analysis(FILE *input,
             sprintf(name_i+strlen(name_i),":%s",freesasa_structure_chain_labels(structures[i]));
         }
         if (printlog) {
-            freesasa_log(output,result,name_i,&parameters,classes);
+            if (n > 1) fprintf(output,"\n#######################\n");
+            freesasa_write_result(output,result,name_i,classes);
             if (strlen(freesasa_structure_chain_labels(structures[i])) > 1)
                 freesasa_per_chain(output,result,structures[i]);
-            if (n > 1) fprintf(output,"\n#######################\n");
         }
         if (per_residue_type) {
             if (several_structures) fprintf(per_residue_type_file,"\n## %s\n",name_i);
@@ -294,16 +318,37 @@ fopen_werr(const char* filename,
 void
 add_chain_groups(const char* cmd) 
 {
-    char *str = strdup(cmd);
-    const char *token = strtok(str,"+");
-    while (token) {
-        ++n_chain_groups;
-        chain_groups = realloc(chain_groups,sizeof(char*)*n_chain_groups);
-        if (chain_groups == NULL) {mem_fail(); abort();}
-        chain_groups[n_chain_groups-1] = strdup(token);
-        token = strtok(0,"+");
+    int err = 0;
+    char *str;
+    const char *token;
+
+    // check that string is valid
+    for (size_t i = 0; i < strlen(cmd); ++i) {
+        char a = cmd[i];
+        if (a != '+' && 
+            !(a >= 'a' && a <= 'z') && !(a >= 'A' && a <= 'Z') &&
+            !(a >= '0' && a <= '9')) {
+            freesasa_fail("Character '%c' not valid chain ID in --chain-groups. "
+                          "Valdig characters are [A-z0-9] and '+' as separator.",a);
+            ++err;
+        }
     }
-    free(str);
+
+    //extract chain groups
+    if (err == 0) {
+        str = strdup(cmd);
+        token = strtok(str,"+");
+        while (token) {
+            ++n_chain_groups;
+            chain_groups = realloc(chain_groups,sizeof(char*)*n_chain_groups);
+            if (chain_groups == NULL) {mem_fail(); abort();}
+            chain_groups[n_chain_groups-1] = strdup(token);
+            token = strtok(0,"+");
+        }
+        free(str);
+    } else {
+        abort_msg("Aborting.");
+    }
 }
 
 void
@@ -312,7 +357,8 @@ add_select(const char* cmd)
     ++n_select;
     select_cmd = realloc(select_cmd,sizeof(char*)*n_select);
     if (select_cmd == NULL) { mem_fail(); abort(); }
-    select_cmd[n_select-1] = cmd;
+    select_cmd[n_select-1] = strdup(cmd);
+    if (select_cmd[n_select-1] == NULL) { mem_fail(); abort(); }
 }
 
 void
@@ -337,7 +383,7 @@ main(int argc,
      char **argv) 
 {
     int alg_set = 0;
-    FILE *input = NULL, *errlog = NULL;
+    FILE *input = NULL;
     char opt;
     int n_opt = 'z'+1;
     char opt_set[n_opt];
@@ -349,32 +395,33 @@ main(int argc,
     // errors from this file will be prepended with freesasa, library errors with FreeSASA
     program_name = "freesasa";
     struct option long_options[] = {
-        {"lee-richards", no_argument, 0, 'L'},
-        {"shrake-rupley", no_argument, 0, 'S'},
-        {"probe-radius", required_argument, 0, 'p'},
-        {"resolution", required_argument, 0, 'n'},
-        {"help", no_argument, 0, 'h'},
-        {"version", no_argument, 0, 'v'},
-        {"no-log", no_argument, 0, 'l'},
-        {"no-warnings", no_argument, 0, 'w'},
-        {"n-threads",required_argument, 0, 't'},
-        {"hetatm",no_argument, 0, 'H'},
-        {"hydrogen",no_argument, 0, 'Y'},
-        {"separate-chains",no_argument, 0, 'C'},
-        {"separate-models",no_argument, 0, 'M'},
-        {"join-models",no_argument, 0, 'm'},
-        {"config-file",required_argument,0,'c'},
-        {"foreach-residue-type",no_argument,0,'r'},
-        {"foreach-residue",no_argument,0,'R'},
-        {"print-as-B-values",no_argument,0,'B'},
-        {"chain-groups",required_argument,0,'g'},
-        {"error-file",required_argument,0,'e'},
-        {"output",required_argument,0,'o'},
-        {"residue-type-file",required_argument,&option_flag,RES_FILE},
-        {"residue-file",required_argument,&option_flag,SEQ_FILE},
-        {"B-value-file",required_argument,&option_flag,B_FILE},
-        {"select",required_argument,&option_flag,SELECT},
-        {"unknown",required_argument,&option_flag,UNKNOWN}
+        {"lee-richards",         no_argument,       0, 'L'},
+        {"shrake-rupley",        no_argument,       0, 'S'},
+        {"probe-radius",         required_argument, 0, 'p'},
+        {"resolution",           required_argument, 0, 'n'},
+        {"help",                 no_argument,       0, 'h'},
+        {"version",              no_argument,       0, 'v'},
+        {"no-log",               no_argument,       0, 'l'},
+        {"no-warnings",          no_argument,       0, 'w'},
+        {"n-threads",            required_argument, 0, 't'},
+        {"hetatm",               no_argument,       0, 'H'},
+        {"hydrogen",             no_argument,       0, 'Y'},
+        {"separate-chains",      no_argument,       0, 'C'},
+        {"separate-models",      no_argument,       0, 'M'},
+        {"join-models",          no_argument,       0, 'm'},
+        {"config-file",          required_argument, 0, 'c'},
+        {"foreach-residue-type", no_argument,       0, 'r'},
+        {"foreach-residue",      no_argument,       0, 'R'},
+        {"print-as-B-values",    no_argument,       0, 'B'},
+        {"chain-groups",         required_argument, 0, 'g'},
+        {"error-file",           required_argument, 0, 'e'},
+        {"output",               required_argument, 0, 'o'},
+        {"residue-type-file",    required_argument, &option_flag, RES_FILE},
+        {"residue-file",         required_argument, &option_flag, SEQ_FILE},
+        {"B-value-file",         required_argument, &option_flag, B_FILE},
+        {"select",               required_argument, &option_flag, SELECT},
+        {"unknown",              required_argument, &option_flag, UNKNOWN},
+        {0,0,0,0}
     };
     options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:e:o:";
     while ((opt = getopt_long(argc, argv, options_string,
@@ -527,10 +574,7 @@ main(int argc,
         else abort_msg("No input.\n", program_name);
     }
 
-    if (classifier) freesasa_classifier_free(classifier);
-    if (output_pdb) fclose(output_pdb);
-    if (per_residue_type_file) fclose(per_residue_type_file);
-    if (per_residue_file) fclose(per_residue_file);
-    if (errlog) fclose(errlog);
+    release_resources();
+
     return EXIT_SUCCESS;
 }

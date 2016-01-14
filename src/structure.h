@@ -1,5 +1,5 @@
 /*
-  Copyright Simon Mitternacht 2013-2015.
+  Copyright Simon Mitternacht 2013-2016.
 
   This file is part of FreeSASA.
 
@@ -32,9 +32,6 @@
 #include <stdio.h>
 #include "freesasa.h"
 #include "coord.h"
-
-//! The maximum string length of returned by freesasa_structure_descriptor() 
-#define FREESASA_STRUCTURE_DESCRIPTOR_STRL 20
 
 /**
     Get coordinates.
@@ -89,8 +86,8 @@ freesasa_structure_residue_atoms(const freesasa_structure *s,
                                  int *last);
 
 /**
-    Get a string describin a residue.
-    Format: "A    1 ALA" (chain lable, resiude number, atom name)
+    Get a string describing a residue.
+    Format: "A    1 ALA" (chain label, residue number, residue type)
     
     @param s Self.
     @param r_i atom index

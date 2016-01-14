@@ -1,5 +1,5 @@
 /*
-  Copyright Simon Mitternacht 2013-2015.
+  Copyright Simon Mitternacht 2013-2016.
 
   This file is part of FreeSASA.
 
@@ -66,7 +66,7 @@ typedef enum {
 //! Default number of threads. Value will depend on if library was
 //! compiled with or without thread support. (2 with threads, 1
 //! without)
-extern const int FREESASA_DEF_NUMBER_THREADS; 
+const extern int FREESASA_DEF_NUMBER_THREADS; 
 
 //! Error codes. Can rely upon FREESASA_SUCCESS being 0 and the errors
 //! having negative numbers.
@@ -384,23 +384,52 @@ freesasa_per_residue(FILE *output,
 /**
     Log calculation results.
 
-    Prints log of calculation results to specified file. 
+    Prints log of calculation to specified file, equivalent of calling
+    first freesasa_parameters_log() and then freesasa_result_log()
+
+    @param log Output-file.
+    @param result SASA values.
+    @param parameters Parameters to print, if NULL defaults are used
+    @param name Name of the protein, if NULL "unknown" used.
+    @param class_sasa The SASA values for each class, if NULL
+    only total SASA printed
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
+    problems writing to file.
+
+    @deprecated
+ */
+int
+freesasa_log(FILE *log,
+             freesasa_result *result,
+             const char *name,
+             const freesasa_parameters *parameters,
+             const freesasa_strvp* class_sasa);
+/**
+    Write results of claculation to file.
 
     @param log Output-file.
     @param result SASA values.
     @param name Name of the protein, if NULL "unknown" used.
-    @param parameters Parameters to print, if NULL defaults are used
     @param class_sasa The SASA values for each class, if NULL
     only total SASA printed
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
     problems writing to file.
  */
 int
-freesasa_log(FILE *log, 
-             freesasa_result *result,
-             const char *name,
-             const freesasa_parameters *parameters,
-             const freesasa_strvp* class_sasa);
+freesasa_write_result(FILE *log,
+                      freesasa_result *result,
+                      const char *name,
+                      const freesasa_strvp* class_sasa);
+/**
+    Print parameters to file
+
+    @param parameters Parameters to print, if NULL defaults are used
+
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
+    problems writing to file.
+*/
+int freesasa_write_parameters(FILE *log,
+                              const freesasa_parameters *parameters);
 
 /**
     Set the global verbosity level.
@@ -627,7 +656,11 @@ freesasa_structure_add_atom_wopt(freesasa_structure *structure,
                                  const freesasa_classifier *classifier,
                                  int options);
 /**
-    Create new structure consisting of a selection chains from the provided structure.
+    Create new structure consisting of a selection chains from the
+    provided structure.
+
+    Simply looks for chain labels that match the characters in the
+    provided string.
 
     Return value is dynamically allocated, should be freed with
     freesasa_structure_free().
