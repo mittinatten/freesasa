@@ -191,11 +191,6 @@ and Y aren't in the structure, and vice versa:
     CHAIN Y :    4681.83
 
 
-
-These two calculations
-plus the regular one are output sequentially, separated by a line of
-'#'-signs.
-
 @section CLI-select Selecting groups of atoms
 
 The option `--select` can be used to define groups of atoms whose
