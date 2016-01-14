@@ -656,7 +656,11 @@ freesasa_structure_add_atom_wopt(freesasa_structure *structure,
                                  const freesasa_classifier *classifier,
                                  int options);
 /**
-    Create new structure consisting of a selection chains from the provided structure.
+    Create new structure consisting of a selection chains from the
+    provided structure.
+
+    Simply looks for chain labels that match the characters in the
+    provided string.
 
     Return value is dynamically allocated, should be freed with
     freesasa_structure_free().
