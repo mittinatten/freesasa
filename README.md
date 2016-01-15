@@ -73,7 +73,9 @@ using the defaults, simply type
     freesasa <pdb-file>
 
 `make install` also installs the header `freesasa.h` and the library
-`libfreesasa`.
+`libfreesasa`. If the configure script is called with the option
+`--enable-python-bindings`, the Python module is also built and 
+installed.
 
 Configuring with
 
