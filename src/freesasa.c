@@ -238,9 +238,9 @@ freesasa_write_result(FILE *log,
     assert(log);
 
     fprintf(log,"\nINPUT\n");
-    if (name == NULL) fprintf(log,"input   : unknown\n");
-    else              fprintf(log,"input   : %s\n",name);
-    fprintf(log,"n_atoms : %d\n",result->n_atoms);
+    if (name == NULL) fprintf(log,"source  : unknown\n");
+    else              fprintf(log,"source  : %s\n",name);
+    fprintf(log,"atoms   : %d\n",result->n_atoms);
 
     fprintf(log,"\nRESULTS\n");
     if (class_area == NULL) {
@@ -279,17 +279,17 @@ int freesasa_write_parameters(FILE *log,
 
     fprintf(log,"\nPARAMETERS\n");
 
-    fprintf(log,"algorithm         : %s\n",freesasa_alg_names[p->alg]);
-    fprintf(log,"probe-radius      : %.3f\n", p->probe_radius);
+    fprintf(log,"algorithm    : %s\n",freesasa_alg_names[p->alg]);
+    fprintf(log,"probe-radius : %.3f\n", p->probe_radius);
     if (USE_THREADS)
-        fprintf(log,"n_thread          : %d\n",p->n_threads);
+        fprintf(log,"threads      : %d\n",p->n_threads);
 
     switch(p->alg) {
     case FREESASA_SHRAKE_RUPLEY:
-        fprintf(log,"n_testpoint       : %d\n",p->shrake_rupley_n_points);
+        fprintf(log,"testpoints   : %d\n",p->shrake_rupley_n_points);
         break;
     case FREESASA_LEE_RICHARDS:
-        fprintf(log,"n_slices_per_atom : %d\n",p->lee_richards_n_slices);
+        fprintf(log,"slices       : %d\n",p->lee_richards_n_slices);
         break;
     default:
         assert(0);
