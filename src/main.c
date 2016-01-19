@@ -207,10 +207,10 @@ run_analysis(FILE *input,
              const char *name)
 {
     int several_structures = 0, name_len = strlen(name);
-    freesasa_result *result;
+    freesasa_result *result = NULL;
     freesasa_strvp *classes = NULL;
-    freesasa_structure *single_structure[1];
-    freesasa_structure **structures;
+    freesasa_structure *single_structure[1] = {NULL};
+    freesasa_structure **structures = NULL;
     int n = 0;
 
     if (printlog) {
@@ -253,28 +253,18 @@ run_analysis(FILE *input,
     }
 
     for (int i = 0; i < n; ++i) {
-        int suffix_len = strlen(freesasa_structure_chain_labels(structures[i]))+10;
-        char name_i[name_len+suffix_len];
+        char name_i[name_len+10];
         result = freesasa_calc_structure(structures[i],&parameters);
         if (result == NULL)        abort_msg("Can't calculate SASA.\n");
         classes = freesasa_result_classify(result,structures[i],classifier);
         if (classes == NULL)       abort_msg("Can't determine atom classes. Aborting.\n");
         strcpy(name_i,name);
-        if (several_structures) {
-            if (structure_options & FREESASA_SEPARATE_MODELS) 
-                sprintf(name_i+strlen(name_i),":%d",freesasa_structure_model(structures[i]));
-            sprintf(name_i+strlen(name_i),":%s",freesasa_structure_chain_labels(structures[i]));
-        }
+        if (several_structures && (structure_options & FREESASA_SEPARATE_MODELS))
+            sprintf(name_i+strlen(name_i),":%d",freesasa_structure_model(structures[i]));
         if (printlog) {
-            if (n > 1) {
-                fprintf(output,"\n\n#### ");
-                if (structure_options & FREESASA_SEPARATE_MODELS)
-                    fprintf(output,"%d:",freesasa_structure_model(structures[i]));
-                fprintf(output,"%s ####\n",freesasa_structure_chain_labels(structures[i]));
-            }
-            freesasa_write_result(output,result,name_i,classes);
-            if (strlen(freesasa_structure_chain_labels(structures[i])) > 1)
-                freesasa_per_chain(output,result,structures[i]);
+            if (n > 1) fprintf(output,"\n\n####################\n");
+            freesasa_write_result(output,result,name_i,freesasa_structure_chain_labels(structures[i]),classes);
+            freesasa_per_chain(output,result,structures[i]);
         }
         if (per_residue_type) {
             if (several_structures) fprintf(per_residue_type_file,"\n## %s\n",name_i);

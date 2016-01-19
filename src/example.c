@@ -38,9 +38,9 @@ int main(int argc, char **argv) {
     class_area = freesasa_result_classify(result,structure,NULL);
 
     /* Print results */
-    printf("Total area: %f A2\n",result->total);
+    printf("Total area : %f A2\n",result->total);
     for (int i = 0; i < class_area->n; ++i)
-        printf("%s: %f A2\n",class_area->string[i],
+        printf("%s : %f A2\n",class_area->string[i],
                class_area->value[i]);
 
     /* Free allocated resources, not strictly necessary in this

@@ -223,7 +223,7 @@ freesasa_log(FILE *log,
 {
     assert(log);
     if (freesasa_write_parameters(log,parameters) != FREESASA_FAIL &&
-        freesasa_write_result(log,result,name,class_sasa)
+        freesasa_write_result(log,result,name,NULL,class_sasa)
         != FREESASA_FAIL)
         return FREESASA_SUCCESS;
     return fail_msg("");
@@ -233,6 +233,7 @@ int
 freesasa_write_result(FILE *log,
                       freesasa_result *result,
                       const char *name,
+                      const char *chains,
                       const freesasa_strvp* class_area)
 {
     assert(log);
@@ -240,8 +241,9 @@ freesasa_write_result(FILE *log,
     fprintf(log,"\nINPUT\n");
     if (name == NULL) fprintf(log,"source  : unknown\n");
     else              fprintf(log,"source  : %s\n",name);
+    if (chains != NULL) fprintf(log,"chains  : %s\n",chains);
     fprintf(log,"atoms   : %d\n",result->n_atoms);
-
+    
     fprintf(log,"\nRESULTS (A^2)\n");
     if (class_area == NULL) {
         fprintf(log,"Total : %10.2f\n",result->total);
