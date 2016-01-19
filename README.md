@@ -73,7 +73,9 @@ using the defaults, simply type
     freesasa <pdb-file>
 
 `make install` also installs the header `freesasa.h` and the library
-`libfreesasa`.
+`libfreesasa`. If the configure script is called with the option
+`--enable-python-bindings`, the Python module is also built and 
+installed.
 
 Configuring with
 
@@ -123,3 +125,9 @@ requires Cython. Changing the selection parser and lexer requires Flex
 and Bison. These build options, which add extra dependencies,
 are disabled by default to simplify installation for users only
 interested in the command line tool and and/or C Library.
+
+Citing FreeSASA
+---------------
+
+To cite FreeSASA, before a proper publication is available, the [DOI number from Zenodo](https://zenodo.org/badge/latestdoi/18467/mittinatten/freesasa)
+can be used.

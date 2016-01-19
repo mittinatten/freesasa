@@ -385,7 +385,7 @@ freesasa_per_residue(FILE *output,
     Log calculation results.
 
     Prints log of calculation to specified file, equivalent of calling
-    first freesasa_parameters_log() and then freesasa_result_log()
+    first freesasa_write_parameters() and then freesasa_write_result()
 
     @param log Output-file.
     @param result SASA values.
@@ -396,7 +396,8 @@ freesasa_per_residue(FILE *output,
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
     problems writing to file.
 
-    @deprecated
+    @deprecated Use freesasa_write_parameters() and
+    freesasa_write_result() instead.
  */
 int
 freesasa_log(FILE *log,
