@@ -242,7 +242,7 @@ freesasa_write_result(FILE *log,
     else              fprintf(log,"source  : %s\n",name);
     fprintf(log,"atoms   : %d\n",result->n_atoms);
 
-    fprintf(log,"\nRESULTS\n");
+    fprintf(log,"\nRESULTS (A^2)\n");
     if (class_area == NULL) {
         fprintf(log,"Total : %10.2f\n",result->total);
     } else {

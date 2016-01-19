@@ -253,7 +253,8 @@ run_analysis(FILE *input,
     }
 
     for (int i = 0; i < n; ++i) {
-        char name_i[name_len+10];
+        int suffix_len = strlen(freesasa_structure_chain_labels(structures[i]))+10;
+        char name_i[name_len+suffix_len];
         result = freesasa_calc_structure(structures[i],&parameters);
         if (result == NULL)        abort_msg("Can't calculate SASA.\n");
         classes = freesasa_result_classify(result,structures[i],classifier);
@@ -265,7 +266,12 @@ run_analysis(FILE *input,
             sprintf(name_i+strlen(name_i),":%s",freesasa_structure_chain_labels(structures[i]));
         }
         if (printlog) {
-            if (n > 1) fprintf(output,"\n#######################\n");
+            if (n > 1) {
+                fprintf(output,"\n\n#### ");
+                if (structure_options & FREESASA_SEPARATE_MODELS)
+                    fprintf(output,"%d:",freesasa_structure_model(structures[i]));
+                fprintf(output,"%s ####\n",freesasa_structure_chain_labels(structures[i]));
+            }
             freesasa_write_result(output,result,name_i,classes);
             if (strlen(freesasa_structure_chain_labels(structures[i])) > 1)
                 freesasa_per_chain(output,result,structures[i]);
@@ -282,7 +288,7 @@ run_analysis(FILE *input,
             freesasa_write_pdb(output_pdb,result,structures[i]);
         }
         if (n_select > 0) {
-            fprintf(output,"\nSELECTIONS\n");
+            fprintf(output,"\n## SELECTIONS ##\n");
             for (int c = 0; c < n_select; ++c) {
                 double a;
                 char name[FREESASA_MAX_SELECTION_NAME+1];
