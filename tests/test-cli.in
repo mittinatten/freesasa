@@ -71,7 +71,7 @@ echo "== General options =="
 assert_pass "$cli -h > $dump 2> /dev/null"
 version=`$cli -v`
 # check that it's a valid version number
-assert_pass "echo $version | perl -ne 'if (m/^\d+\.(\d+\.)+\d$/) {exit 0} else  {exit 1}'"
+assert_pass "echo $version | perl -ne 'if (m/^(\d+\.)*\d$/) {exit 0} else  {exit 1}'"
 echo
 echo "== Testing S&R =="
 assert_pass "$cli -S <  $datadir/1ubq.pdb > $dump"
