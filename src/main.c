@@ -278,7 +278,7 @@ run_analysis(FILE *input,
             freesasa_write_pdb(output_pdb,result,structures[i]);
         }
         if (n_select > 0) {
-            fprintf(output,"\n## SELECTIONS ##\n");
+            fprintf(output,"\nSELECTIONS\n");
             for (int c = 0; c < n_select; ++c) {
                 double a;
                 char name[FREESASA_MAX_SELECTION_NAME+1];
