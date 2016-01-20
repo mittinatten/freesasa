@@ -35,16 +35,17 @@ parameters, simply type:
 This generates the following output
 
     PARAMETERS
-    algorithm         : Lee & Richards
-    probe-radius      : 1.400
-    n_thread          : 2
-    n_slices_per_atom : 20
+    algorithm    : Lee & Richards
+    probe-radius : 1.400
+    threads      : 2
+    slices       : 20
 
     INPUT
-    input   : 3wbm.pdb
-    n_atoms : 3714
+    source  : 3wbm.pdb
+    chains  : ABCDXY
+    atoms   : 3714
 
-    RESULTS
+    RESULTS (A^2)
     Total   :   25190.77
     Apolar  :   11552.38
     Polar   :   13638.39
@@ -126,71 +127,6 @@ separate files, run
 
     $ freesasa --residue-file=3wbm.seq --residue-type-file=3wbm.res --B-value-file=3wbm.b 3wbm.pdb
 
-@section Chain-groups Treating chains separately
-
-Calculating the SASA of a given chain or group of chains separately
-from the rest of the structure, can be useful for measuring how buried
-a chain is in a given structure. The option `--chain-groups` can be
-used to do such a separate calculation, calling
-
-    $ freesasa --chain-groups="ABCD+XY" 3wbm.pdb
-
-produces the regular output for the structure 3WBM, but in addition it
-runs a separate calculation for the chains A, B, C and D as though X
-and Y aren't in the structure, and vice versa:
-
-    PARAMETERS
-    algorithm         : Lee & Richards
-    probe-radius      : 1.400
-    n_thread          : 2
-    n_slices_per_atom : 20
-
-    #######################
-
-    INPUT
-    input   : 3wbm.pdb:ABCDXY
-    n_atoms : 3714
-
-    RESULTS
-    Total   :   25190.77
-    Apolar  :   11552.38
-    Polar   :   13638.39
-    CHAIN A :    3785.49
-    CHAIN B :    4342.33
-    CHAIN C :    3961.12
-    CHAIN D :    4904.30
-    CHAIN X :    4156.46
-    CHAIN Y :    4041.08
-
-    #######################
-
-    INPUT
-    input   : 3wbm.pdb:ABCD
-    n_atoms : 2664
-
-    RESULTS
-    Total   :   18202.78
-    Apolar  :    9799.46
-    Polar   :    8403.32
-    CHAIN A :    4243.12
-    CHAIN B :    4595.18
-    CHAIN C :    4427.11
-    CHAIN D :    4937.38
-
-    #######################
-
-    INPUT
-    input   : 3wbm.pdb:XY
-    n_atoms : 1050
-
-    RESULTS
-    Total   :    9396.28
-    Apolar  :    2743.09
-    Polar   :    6653.19
-    CHAIN X :    4714.45
-    CHAIN Y :    4681.83
-
-
 @section CLI-select Selecting groups of atoms
 
 The option `--select` can be used to define groups of atoms whose
@@ -208,10 +144,80 @@ A, B, C and D (just the sum of the areas above).
     aromatic :    1196.45
     abcd :   16993.24
 
-This command adds a 'Selection:' section at the end of the
-output. This particular protein did not have any TRP or HIS residues,
-hence the warnings (written to stderr). The warnings can be supressed
-with the flag `-w`.
+The lines shown above are appended to the regular output. This
+particular protein did not have any TRP or HIS residues, hence the
+warnings (written to stderr). The warnings can be supressed with the
+flag `-w`.
+
+@section Chain-groups Analyzing groups of chains
+
+Calculating the SASA of a given chain or group of chains separately
+from the rest of the structure, can be useful for measuring how buried
+a chain is in a given structure. The option `--chain-groups` can be
+used to do such a separate calculation, calling
+
+    $ freesasa --chain-groups=ABCD+XY 3wbm.pdb
+
+produces the regular output for the structure 3WBM, but in addition it
+runs a separate calculation for the chains A, B, C and D as though X
+and Y aren't in the structure, and vice versa:
+
+    PARAMETERS
+    algorithm    : Lee & Richards
+    probe-radius : 1.400
+    threads      : 2
+    slices       : 20
+
+
+    ####################
+
+    INPUT
+    source  : 3wbm.pdb
+    chains  : ABCDXY
+    atoms   : 3714
+
+    RESULTS (A^2)
+    Total   :   25190.77
+    Apolar  :   11552.38
+    Polar   :   13638.39
+    CHAIN A :    3785.49
+    CHAIN B :    4342.33
+    CHAIN C :    3961.12
+    CHAIN D :    4904.30
+    CHAIN X :    4156.46
+    CHAIN Y :    4041.08
+
+
+    ####################
+
+    INPUT
+    source  : 3wbm.pdb
+    chains  : ABCD
+    atoms   : 2664
+
+    RESULTS (A^2)
+    Total   :   18202.78
+    Apolar  :    9799.46
+    Polar   :    8403.32
+    CHAIN A :    4243.12
+    CHAIN B :    4595.18
+    CHAIN C :    4427.11
+    CHAIN D :    4937.38
+
+
+    ####################
+
+    INPUT
+    source  : 3wbm.pdb
+    chains  : XY
+    atoms   : 1050
+
+    RESULTS (A^2)
+    Total   :    9396.28
+    Apolar  :    2743.09
+    Polar   :    6653.19
+    CHAIN X :    4714.45
+    CHAIN Y :    4681.83
 
 @section Input PDB input
 
@@ -255,13 +261,7 @@ behavior can be modified using the following options
     the input. Can be joined with `--separate-models` to calculate
     SASA of each chain in each model.
 
-  - `--chain-groups`: Define groups of chains that should be treated
-    as separate entities, can be repeated. If we for example have a
-    tetramer with chains ABCD and want to know how much surface was
-    buried when the dimers AB and CD were joined, we can use the option
-    `--chain-groups=AB+CD`. The output will contain the SASA for the
-    full molecule and one entry for each of the pairs of chains AB and
-    CD. Can not be combined with `--separate-chains`.
+  - `--chain-groups`: see @ref Chain-groups
 
 @page API FreeSASA API
 

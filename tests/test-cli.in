@@ -71,19 +71,19 @@ echo "== General options =="
 assert_pass "$cli -h > $dump 2> /dev/null"
 version=`$cli -v`
 # check that it's a valid version number
-assert_pass "echo $version | perl -ne 'if (m/^\d+\.(\d+\.)+\d$/) {exit 0} else  {exit 1}'"
+assert_pass "echo $version | perl -ne 'if (m/^(\d+\.)*\d$/) {exit 0} else  {exit 1}'"
 echo
 echo "== Testing S&R =="
 assert_pass "$cli -S <  $datadir/1ubq.pdb > $dump"
 echo
 #check that output message has required components
-assert_pass "grep 'input\s\s*: stdin' $dump"
+assert_pass "grep 'source\s\s*: stdin' $dump"
 $cli -S  $datadir/1ubq.pdb > $dump
-assert_pass "grep 'input\s\s*: $datadir/1ubq.pdb' $dump"
-assert_pass "grep 'n_atoms\s\s*: 602' $dump"
+assert_pass "grep 'source\s\s*: $datadir/1ubq.pdb' $dump"
+assert_pass "grep 'atoms\s\s*: 602' $dump"
 assert_pass "grep 'probe-radius\s\s*: [[:digit:]]' $dump"
-assert_pass "grep 'n_thread\s\s*: [[:digit:]]' $dump"
-assert_pass "grep 'n_testpoint\s\s*: [[:digit:]]' $dump"
+assert_pass "grep 'threads\s\s*: [[:digit:]]' $dump"
+assert_pass "grep 'testpoints\s\s*: [[:digit:]]' $dump"
 assert_pass "grep 'algorithm\s\s*: \w' $dump"
 assert_pass "grep 'Total\s\s*:\s\s*4834.72' $dump"
 assert_pass "grep 'Polar\s\s*:\s\s*2515.82' $dump"
@@ -93,10 +93,10 @@ assert_pass "grep 'Apolar\s\s*:\s\s*2318.90' $dump"
 # without breaking the test. Will not be performed for variant
 # parameter values, those should be covered by tests.
 assert_pass "$cli -S -Y $datadir/1d3z.pdb -w > $dump"
-assert_pass "grep 'n_atoms\s\s*: 1231' $dump"
+assert_pass "grep 'atoms\s\s*: 1231' $dump"
 assert_pass "grep 'Total\s\s*:\s\s*5035.61' $dump"
 assert_pass "$cli -S -H -w $datadir/1ubq.pdb > $dump" # suppress warnings here
-assert_pass "grep 'n_atoms\s\s*: 660' $dump"
+assert_pass "grep 'atoms\s\s*: 660' $dump"
 assert_pass "grep 'Total\s\s*:\s\s*5656.65' $dump"
 assert_pass "$cli -S -n 50 < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli -S -n 0 < $datadir/1ubq.pdb > $dump"

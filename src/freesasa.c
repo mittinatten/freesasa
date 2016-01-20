@@ -223,7 +223,7 @@ freesasa_log(FILE *log,
 {
     assert(log);
     if (freesasa_write_parameters(log,parameters) != FREESASA_FAIL &&
-        freesasa_write_result(log,result,name,class_sasa)
+        freesasa_write_result(log,result,name,NULL,class_sasa)
         != FREESASA_FAIL)
         return FREESASA_SUCCESS;
     return fail_msg("");
@@ -233,16 +233,18 @@ int
 freesasa_write_result(FILE *log,
                       freesasa_result *result,
                       const char *name,
+                      const char *chains,
                       const freesasa_strvp* class_area)
 {
     assert(log);
 
     fprintf(log,"\nINPUT\n");
-    if (name == NULL) fprintf(log,"input   : unknown\n");
-    else              fprintf(log,"input   : %s\n",name);
-    fprintf(log,"n_atoms : %d\n",result->n_atoms);
-
-    fprintf(log,"\nRESULTS\n");
+    if (name == NULL) fprintf(log,"source  : unknown\n");
+    else              fprintf(log,"source  : %s\n",name);
+    if (chains != NULL) fprintf(log,"chains  : %s\n",chains);
+    fprintf(log,"atoms   : %d\n",result->n_atoms);
+    
+    fprintf(log,"\nRESULTS (A^2)\n");
     if (class_area == NULL) {
         fprintf(log,"Total : %10.2f\n",result->total);
     } else {
@@ -279,17 +281,17 @@ int freesasa_write_parameters(FILE *log,
 
     fprintf(log,"\nPARAMETERS\n");
 
-    fprintf(log,"algorithm         : %s\n",freesasa_alg_names[p->alg]);
-    fprintf(log,"probe-radius      : %.3f\n", p->probe_radius);
+    fprintf(log,"algorithm    : %s\n",freesasa_alg_names[p->alg]);
+    fprintf(log,"probe-radius : %.3f\n", p->probe_radius);
     if (USE_THREADS)
-        fprintf(log,"n_thread          : %d\n",p->n_threads);
+        fprintf(log,"threads      : %d\n",p->n_threads);
 
     switch(p->alg) {
     case FREESASA_SHRAKE_RUPLEY:
-        fprintf(log,"n_testpoint       : %d\n",p->shrake_rupley_n_points);
+        fprintf(log,"testpoints   : %d\n",p->shrake_rupley_n_points);
         break;
     case FREESASA_LEE_RICHARDS:
-        fprintf(log,"n_slices_per_atom : %d\n",p->lee_richards_n_slices);
+        fprintf(log,"slices       : %d\n",p->lee_richards_n_slices);
         break;
     default:
         assert(0);

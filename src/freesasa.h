@@ -411,6 +411,7 @@ freesasa_log(FILE *log,
     @param log Output-file.
     @param result SASA values.
     @param name Name of the protein, if NULL "unknown" used.
+    @param chains The chains used in the calculation, can be NULL
     @param class_sasa The SASA values for each class, if NULL
     only total SASA printed
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
@@ -420,6 +421,7 @@ int
 freesasa_write_result(FILE *log,
                       freesasa_result *result,
                       const char *name,
+                      const char *chains,
                       const freesasa_strvp* class_sasa);
 /**
     Print parameters to file

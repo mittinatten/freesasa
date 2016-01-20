@@ -77,6 +77,7 @@ cdef extern from "freesasa.h":
     freesasa_result* freesasa_calc_structure(const freesasa_structure *structure,
                                              const freesasa_parameters *parameters)
 
+    # not used yet, should be added to the Python interface eventually
     freesasa_result* freesasa_calc_coord(const double *xyz,
                                          const double *radii,
                                          int n,
@@ -111,12 +112,6 @@ cdef extern from "freesasa.h":
     int freesasa_per_residue(FILE *output,
                              freesasa_result *result,
                              const freesasa_structure *structure)
-
-    int freesasa_log(FILE *log,
-                     freesasa_result *result,
-                     const char *name,
-                     const freesasa_parameters *parameters,
-                     const freesasa_strvp* class_sasa)
 
     int freesasa_set_verbosity(freesasa_verbosity v)
 
