@@ -27,9 +27,9 @@
    @author Simon Mitternacht
    
    Functions to compute neighbor lists. The function
-   freesasa_nb_contact() is mainly intended for checking
-   consitency, in performance-critical code it is advisible to use the
-   struct (as demonstrated in sasa_lr.c and sasa_sr.c).
+   freesasa_nb_contact() is mainly intended for checking consistency,
+   in performance-critical code it is advisible to use the struct (as
+   demonstrated in sasa_lr.c and sasa_sr.c).
  */
 
 //! Neighbor list
@@ -47,7 +47,7 @@ typedef struct {
     Creates a neigbor list based on a set of coordinates with
     corresponding sphere radii. 
 
-    Implemented using Verlet lists, giving O(N) performance. Should be
+    Implemented using cell lists, giving O(N) performance. Should be
     freed with freesasa_nb_free(). For efficient calculations
     using this list the members of the returned struct should be used
     directly and not freesasa_nb_contact().

@@ -40,7 +40,7 @@ static cell empty_cell = {{NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
                            NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL},
                           NULL, 0, 0};
 
-//! Verlet cell lists
+//! cell lists, divide space into boxes
 typedef struct cell_list {
     cell *cell; //! the cells
     int n; //! number of cells
