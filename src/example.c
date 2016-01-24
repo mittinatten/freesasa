@@ -22,29 +22,34 @@
 #include "freesasa.h"
 
 int main(int argc, char **argv) {
-    freesasa_result *result;
-    freesasa_strvp *class_area;
-    freesasa_structure *structure;
+    freesasa_structure *structure = NULL;
+    freesasa_result *result = NULL;
+    freesasa_strvp *class_area = NULL;
 
     /* Read structure from stdin */
     structure = freesasa_structure_from_pdb(stdin,NULL,0);
 
-    /* Calculate SASA using structure and radii, store in
-       'result'. NULL means default parameters. */
-    result = freesasa_calc_structure(structure,NULL);
+    /* Calculate SASA using structure */
+    if (structure) {
+        result = freesasa_calc_structure(structure,NULL);
+    }
+    /* Calculate area of classes (Polar/Apolar/..) */
+    if (result) {
+        class_area = freesasa_result_classify(result,structure,NULL);
+    }
     
-    /* Calculate area of classes (Polar/Apolar/..) using default
-       classifier */
-    class_area = freesasa_result_classify(result,structure,NULL);
-
     /* Print results */
-    printf("Total area : %f A2\n",result->total);
-    for (int i = 0; i < class_area->n; ++i)
-        printf("%s : %f A2\n",class_area->string[i],
-               class_area->value[i]);
+    if (class_area) {
+        printf("Total area : %f A2\n",result->total);
+        for (int i = 0; i < class_area->n; ++i)
+            printf("%s : %f A2\n",class_area->string[i],
+                   class_area->value[i]);
+    } else {
+        /* If there was an error at any step, we will end up here */
+        printf("Error calculating SASA\n");
+    }
 
-    /* Free allocated resources, not strictly necessary in this
-       context */
+    /* Free allocated resources */
     freesasa_strvp_free(class_area);
     freesasa_result_free(result);
     freesasa_structure_free(structure);
