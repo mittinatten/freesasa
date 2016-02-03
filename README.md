@@ -6,7 +6,7 @@ FreeSASA
 
 C-library for calculating Solvent Accessible Surface Areas.
 
-License: GPLv3 (see file COPYING). Copyright: Simon Mitternacht 2013-2016.
+License: GPLv3 (see file LICENSE). Copyright: Simon Mitternacht 2013-2016.
 
 FreeSASA is a C library and command line tool for calculating Solvent
 Accessible Surface Area (SASA) of biomolecules. It is designed to be
