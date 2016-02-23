@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <math.h>
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -56,7 +55,7 @@ typedef struct {
 } sr_data;
 
 #if USE_THREADS
-static void sr_do_threads(int n_threads, sr_data sr);
+static int sr_do_threads(int n_threads, sr_data sr);
 static void *sr_thread(void *arg);
 #endif
 
@@ -170,13 +169,17 @@ freesasa_shrake_rupley(double *sasa,
     sr_data sr;
 
     if (n_atoms == 0) return freesasa_warn("%s(): empty coordinates", __func__);
+    if (n_threads > n_atoms) {
+        n_threads = n_atoms;
+        freesasa_warn("No sense in having more threads than atoms, only using %d threads.", n_threads);
+    }
 
     if (init_sr(&sr,sasa,xyz,r,probe_radius,n_points)) return mem_fail();
 
     //calculate SASA
     if (n_threads > 1) {
 #if USE_THREADS
-        sr_do_threads(n_threads, sr);
+        return_value = sr_do_threads(n_threads, sr);
 #else
         return_value = freesasa_warn("%s: program compiled for single-threaded use, "
                                      "but multiple threads were requested. Will "
@@ -196,7 +199,7 @@ freesasa_shrake_rupley(double *sasa,
 }
 
 #if USE_THREADS
-static void
+static int
 sr_do_threads(int n_threads,
               sr_data sr)
 {
@@ -204,7 +207,8 @@ sr_do_threads(int n_threads,
     sr_data srt[n_threads];
     int n_atoms = sr.n_atoms;
     int thread_block_size = n_atoms/n_threads;
-    int res;
+    int res, return_value = FREESASA_SUCCESS;
+    int threads_created = 0;
 
     // divide atoms evenly over threads
     for (int t = 0; t < n_threads; ++t) {
@@ -212,21 +216,20 @@ sr_do_threads(int n_threads,
         srt[t].i1 = t*thread_block_size;
         if (t == n_threads-1) srt[t].i2 = n_atoms;
         else srt[t].i2 = (t+1)*thread_block_size;
-        errno = 0;
         res = pthread_create(&thread[t], NULL, sr_thread, (void *) &srt[t]);
         if (res) {
-            perror(freesasa_name);
-            abort();
+            return_value = fail_msg(freesasa_thread_error(res));
+            break;
         }
+        ++threads_created;
     }
-    for (int t = 0; t < n_threads; ++t) {
-        errno = 0;
-        int res = pthread_join(thread[t],NULL);
+    for (int t = 0; t < threads_created; ++t) {
+        int res = pthread_join(thread[t], NULL);
         if (res) {
-            perror(freesasa_name);
-            abort();
+            return_value = fail_msg(freesasa_thread_error(res));
         }
     }
+    return return_value;
 }
 
 static void *

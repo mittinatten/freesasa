@@ -78,6 +78,16 @@ freesasa_mem_fail(const char* func,
                   const char* file,
                   int line);
 
+/**
+    Returns string explaining return values of pthread_create() and
+    pthread_join().
+
+    @param error_code The error code
+    @return A string describing the error code.
+ */
+const char*
+freesasa_thread_error(int error_code);
+
 int
 freesasa_fail_wloc(const char* func,
                    const char* file,

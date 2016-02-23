@@ -21,6 +21,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
+#include <errno.h>
 #include "freesasa.h"
 #include "util.h"
 
@@ -87,6 +88,18 @@ int
 freesasa_mem_fail(const char* func, const char* file, int line)
 {
     return freesasa_fail_wloc(func,file,line,"Out of memory.");
+}
+
+const char*
+freesasa_thread_error(int error_code)
+{
+    switch (error_code) {
+    case EDEADLK: return "deadlock (EDEADLK)";
+    case EINVAL: return "(EINVAL)";
+    case ESRCH: return "no matching thread (ESRCH)";
+    case EAGAIN: return "no resources to create thread (EAGAIN)";
+    }
+    return "Unknown thread error";
 }
 
 void

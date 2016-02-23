@@ -88,7 +88,8 @@ freesasa_coord_copy(const coord_t *src);
     reinitialization. The returned ::coord_t-pointer is not
     explicitly const, to allow it to be freed later, but objects
     initiated through this interface will not change their
-    coordinates.
+    coordinates. It also allows ::coord_t to be used as a wrapper
+    for an array controlled by the caller.
 
     Return value is dynamically allocated, should be freed with
     freesasa_coord_free().
