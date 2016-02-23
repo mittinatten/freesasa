@@ -193,7 +193,7 @@ lr_do_threads(int n_threads,
         }
         ++threads_created;
     }
-    for (int t = 0; t < n_threads; ++t) {
+    for (int t = 0; t < threads_created; ++t) {
         res = pthread_join(thread[t],NULL);
         if (res) {
             return_value = fail_msg(freesasa_thread_error(res));
