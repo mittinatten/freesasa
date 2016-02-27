@@ -33,6 +33,20 @@ const char *freesasa_name = "freesasa";
 
 static FILE *errlog = NULL;
 
+struct file_range
+freesasa_whole_file(FILE* file)
+{
+    assert(file);
+    struct file_range range;
+    rewind(file);
+    range.begin = ftell(file);
+    fseek(file,0,SEEK_END);
+    range.end = ftell(file);
+    rewind(file);
+    assert(range.begin <= range.end);
+    return range;
+}
+
 static void
 freesasa_err_impl(int err,
                   const char *format,

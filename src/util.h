@@ -34,13 +34,22 @@
 #define fail_msg(msg) freesasa_fail_wloc(__func__,__FILE__,__LINE__,msg)
 
 /**
-    Holds interval in a file, to be initalized with ftell() and used
+    Holds range in a file, to be initalized with ftell() and used
     with fseek().
  */
-struct file_interval {
-    long begin; //!< Position of beginning of interval
-    long end; //!< Position of end of interval
+struct file_range {
+    long begin; //!< Position of beginning of range
+    long end; //!< Position of end of range
 };
+
+/**
+    For convenience, get a file range that covers a whole file.
+
+    @param file The file to study
+    @return the ::file_range.
+ */
+struct file_range
+freesasa_whole_file(FILE* file);
 
 //! The name of the library, to be used in error messages and logging
 extern const char *freesasa_name;

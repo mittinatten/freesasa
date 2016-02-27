@@ -166,32 +166,32 @@ find_string(char **array,
  */
 static int 
 check_file(FILE *input,
-           struct file_interval *types, 
-           struct file_interval *atoms)
+           struct file_range *types, 
+           struct file_range *atoms)
 {
     assert(input); assert(types); assert(atoms);
     long last_tell;
     const int blen = 200;
     char buf[blen];
-    struct file_interval *last_interval = NULL;
+    struct file_range *last_range = NULL;
         
     last_tell = ftell(input);
     types->begin = atoms->begin = -1;
     while (fscanf(input,"%s",buf) > 0) {
         if (strcmp(buf,"types:") == 0) {
             types->begin = last_tell;
-            if (last_interval) last_interval->end = last_tell;
-            last_interval = types;
+            if (last_range) last_range->end = last_tell;
+            last_range = types;
         }
         if (strcmp(buf,"atoms:") == 0) {
             atoms->begin = last_tell;
-            if (last_interval) last_interval->end = last_tell;
-            last_interval = atoms;
+            if (last_range) last_range->end = last_tell;
+            last_range = atoms;
         }
         last_tell = ftell(input);
     }
-    if (last_interval != NULL) { 
-        last_interval->end = last_tell;
+    if (last_range != NULL) { 
+        last_range->end = last_tell;
     } 
     rewind(input);
 
@@ -306,7 +306,7 @@ add_type(struct classifier_types *types,
          const char *class_name, 
          double r)
 {
-    int the_class, n = types->n_types + 1, err = 0;
+    int the_class, n = types->n_types + 1;
     char **tn = types->name;
     double *tr = types->type_radius;
     int *tc = types->type_class;
@@ -378,7 +378,7 @@ read_types_line(struct classifier_types *types,
 static int
 read_types(struct classifier_types *types,
            FILE *input,
-           struct file_interval fi)
+           struct file_range fi)
 {
     char *line = NULL;
     int ret = FREESASA_SUCCESS, nl;
@@ -519,7 +519,7 @@ static int
 read_atoms(struct classifier_config *config,
            struct classifier_types *types,
            FILE *input,
-           struct file_interval fi)
+           struct file_range fi)
 {
     size_t blen=100;
     char *line = NULL, buf[blen];
@@ -561,11 +561,10 @@ static struct classifier_config*
 read_config(FILE *input) 
 {
     assert(input);
-    struct file_interval types_section, atoms_section; 
+    struct file_range types_section, atoms_section; 
     struct classifier_config *config = NULL;
     struct classifier_types *types = NULL;
-    int err = 0;
-    
+
     if (!(types = classifier_types_new()) ||
         !(config = classifier_config_new()) ||
         check_file(input, &types_section, &atoms_section) ||

@@ -20,6 +20,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <pdb.h>
 #include <check.h>
 
@@ -105,11 +106,88 @@ START_TEST (test_pdb_lines)
 }
 END_TEST
 
+START_TEST (test_get_models) {
+    // FILE without models
+    FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
+    struct file_range* it;
+    int n = freesasa_pdb_get_models(pdb,&it);
+    ck_assert_int_eq(n,0);
+    ck_assert(it == NULL);
+    fclose(pdb);
+
+    // this file has models
+    pdb = fopen(DATADIR "2jo4.pdb","r");
+    n = freesasa_pdb_get_models(pdb,&it);
+    ck_assert_int_eq(n,10);
+    for (int i = 0; i < n; ++i) {
+        char *line = NULL;
+        size_t len;
+        ck_assert_int_gt(it[i].end,it[i].begin);
+        fseek(pdb,it[i].begin,0);
+        getline(&line,&len,pdb);
+        // each segment should begin with MODEL
+        ck_assert(strncmp(line,"MODEL",5) == 0);
+        while(1) {
+            getline(&line,&len,pdb);
+            // there should be only one MODEL per model
+            ck_assert(strncmp(line,"MODEL",5) != 0);
+            if (ftell(pdb) >= it[i].end) break;
+        }
+        // the last line of the segment should be ENDMDL
+        ck_assert(strncmp(line,"ENDMDL",6) == 0);
+        free(line);
+    }
+    free(it);
+    fclose(pdb);
+}
+END_TEST
+
+START_TEST (test_get_chains)
+{
+    // Test a non PDB file
+    FILE *pdb = fopen(DATADIR "err.config", "r");
+    struct file_range whole_file = freesasa_whole_file(pdb), *it = NULL;
+    int nc = freesasa_pdb_get_chains(pdb, whole_file, &it, 0);
+    fclose(pdb);
+    ck_assert_int_eq(nc,0);
+    ck_assert_ptr_eq(it,NULL);
+
+    // This file only has one chain
+    pdb = fopen(DATADIR "1ubq.pdb", "r");
+    whole_file = freesasa_whole_file(pdb);
+    nc = freesasa_pdb_get_chains(pdb,whole_file,&it,0);
+    fclose(pdb);
+    ck_assert_int_eq(nc,1);
+    ck_assert_ptr_ne(it,NULL);
+    free(it);
+
+    // This file has 4 chains
+    pdb = fopen(DATADIR "2jo4.pdb","r");
+    int nm = freesasa_pdb_get_models(pdb,&it);
+    ck_assert_int_eq(nm,10);
+    ck_assert_ptr_ne(it,NULL);
+    for (int i = 0; i < nm; ++i) {
+        struct file_range *jt = NULL;
+        nc = freesasa_pdb_get_chains(pdb,it[i],&jt,0);
+        ck_assert_int_eq(nc,4);
+        ck_assert_ptr_ne(jt,NULL);
+        for (int j = 1; j < nc; ++j) {
+            printf(">> %d\n",j);fflush(stdout);
+            ck_assert_int_ge(jt[j].begin, jt[j-1].end);
+        }
+        free(jt);
+    }
+    free(it);
+}
+END_TEST
+
 Suite *pdb_suite() {
     Suite *s = suite_create("PDB-parser");
     TCase *tc_core = tcase_create("Core");
     tcase_add_test(tc_core, test_pdb_empty_lines);
     tcase_add_test(tc_core, test_pdb_lines);
+    tcase_add_test(tc_core, test_get_models);
+    tcase_add_test(tc_core, test_get_chains);
     suite_add_tcase(s, tc_core);
 
     return s;

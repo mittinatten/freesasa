@@ -58,7 +58,7 @@ const int chain_B[N]= {      0,      0,      0,      0,      0,      1,      1, 
 char selection_name[100][FREESASA_MAX_SELECTION_NAME+1];
 double value[100];
 
-static int
+static void
 test_select(const char **command,int n_commands) 
 {
     for (int i = 0; i < n_commands; ++i) 

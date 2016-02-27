@@ -81,7 +81,7 @@ struct freesasa_structure structure = {
     .res_first_atom = int_array,
     .res_desc = (char**)str_array
 };
-struct file_interval interval = {.begin = 0, .end = 1};
+struct file_range range = {.begin = 0, .end = 1};
 struct cell a_cell = {.nb = NULL, .atom = int_array, .n_nb=0, .n_atoms = 0};
 struct cell_list a_cell_list = {.cell = &a_cell, .n = 1, .nx = 1, .ny =1, .nz = 1,
                                 .d = 20, .x_min = 0, .x_max = 1, 
@@ -111,7 +111,7 @@ START_TEST (test_structure)
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_ptr_ne(file, NULL);
     ck_assert_ptr_eq(freesasa_structure_new(), NULL);
-    ck_assert_ptr_eq(from_pdb_impl(file,interval, NULL, 0), NULL);
+    ck_assert_ptr_eq(from_pdb_impl(file,range, NULL, 0), NULL);
     for (int i = 1; i < 100; ++i) {
         set_fail_freq(i);
         rewind(file);

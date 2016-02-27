@@ -21,6 +21,7 @@
 #define FREESASA_PDB_H
 
 #include "freesasa.h"
+#include "util.h"
 
 /**
     @file
@@ -39,7 +40,34 @@
 #define PDB_ATOM_SYMBOL_STRL 2 //!< Length for string with element symbol, such "FE"
 #define PDB_LINE_STRL 80 //!< Length of a line in PDB file.
 
+/**
+    Finds the location of all MODEL entries in the file pdb, returns
+    the number of models found. 
 
+    The array *ranges will be dynamically allocated to contain a
+    file ranges for each model.
+
+    @return Returns 0 if no MODEL lines were found (for example an
+      X-ray structure with only one model) and sets *ranges to
+      NULL. A return value of 0 doesn't have to mean the file is
+      empty. ::FREESASA_FAIL if malloc-failure.
+ */
+int
+freesasa_pdb_get_models(FILE* pdb,
+                        struct file_range** ranges);
+
+/**
+    Finds the location of all chains within the file range 'model'.
+
+    *ranges points to an array of dynamically allocated file
+    ranges for each model.
+    
+ */
+int
+freesasa_pdb_get_chains(FILE *pdb,
+                        struct file_range model,
+                        struct file_range **ranges,
+                        int options);
 /**
     Get atom name from a PDB line.
     
