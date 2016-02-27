@@ -216,6 +216,8 @@ run_analysis(FILE *input,
     if (printlog) {
         freesasa_write_parameters(output,&parameters);
     }
+
+    // read PDB file
     if ((structure_options & FREESASA_SEPARATE_CHAINS) ||
         (structure_options & FREESASA_SEPARATE_MODELS)) {
         structures = freesasa_structure_array(input,&n,classifier,structure_options);
@@ -230,6 +232,7 @@ run_analysis(FILE *input,
     }
     if (structures == NULL) abort_msg("Invalid input. Aborting.\n");
 
+    // get chain-groups (if requested)
     if (n_chain_groups > 0) {
         int n2 = n;
         if (several_structures == 0) {
@@ -252,6 +255,7 @@ run_analysis(FILE *input,
         n = n2;
     }
 
+    // perform calculation on each structure and output results
     for (int i = 0; i < n; ++i) {
         char name_i[name_len+10];
         result = freesasa_calc_structure(structures[i],&parameters);
@@ -286,6 +290,7 @@ run_analysis(FILE *input,
                     == FREESASA_SUCCESS) {
                     fprintf(output,"%s : %10.2f\n",name,a);
                 } else {
+                    abort_msg("Illegal selection");
                 }
             }
         }

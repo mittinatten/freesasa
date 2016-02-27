@@ -174,13 +174,13 @@ lr_do_threads(int n_threads,
 {
     pthread_t thread[n_threads];
     lr_thread_interval t_data[n_threads];
-    int n_atoms = lr->n_atoms, n_perthread = n_atoms/n_threads, res;
+    int n_perthread = lr->n_atoms/n_threads, res;
     int threads_created = 0, return_value = FREESASA_SUCCESS;
  
     for (int t = 0; t < n_threads; ++t) {
         t_data[t].first_atom = t*n_perthread;
         if (t == n_threads-1) {
-            t_data[t].last_atom = n_atoms - 1;
+            t_data[t].last_atom = lr->n_atoms - 1;
         } else {
             t_data[t].last_atom = (t+1)*n_perthread - 1;
         }

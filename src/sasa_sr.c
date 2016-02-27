@@ -205,8 +205,7 @@ sr_do_threads(int n_threads,
 {
     pthread_t thread[n_threads];
     sr_data srt[n_threads];
-    int n_atoms = sr.n_atoms;
-    int thread_block_size = n_atoms/n_threads;
+    int thread_block_size = sr.n_atoms/n_threads;
     int res, return_value = FREESASA_SUCCESS;
     int threads_created = 0;
 
@@ -214,7 +213,7 @@ sr_do_threads(int n_threads,
     for (int t = 0; t < n_threads; ++t) {
         srt[t] = sr;
         srt[t].i1 = t*thread_block_size;
-        if (t == n_threads-1) srt[t].i2 = n_atoms;
+        if (t == n_threads-1) srt[t].i2 = sr.n_atoms;
         else srt[t].i2 = (t+1)*thread_block_size;
         res = pthread_create(&thread[t], NULL, sr_thread, (void *) &srt[t]);
         if (res) {
