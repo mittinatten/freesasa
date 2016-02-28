@@ -162,9 +162,7 @@ freesasa_structure_new(void)
 
     if ((p->chains = malloc(1)) == NULL ||
         (p->a = malloc(sizeof(struct atom*))) == NULL ||
-        (p->xyz = freesasa_coord_new()) == NULL ||
-        (p->res_first_atom = malloc(sizeof(int))) == NULL ||
-        (p->res_desc = malloc(sizeof(char*))) == NULL) {
+        (p->xyz = freesasa_coord_new()) == NULL) {
         freesasa_structure_free(p);
         mem_fail();
         return NULL;
@@ -250,6 +248,34 @@ structure_add_chain(freesasa_structure *p,
     return FREESASA_SUCCESS;
 }
 
+static int
+structure_add_residue(freesasa_structure *p, const struct atom *a, int i)
+{
+    int n = p->number_residues+1;
+    int *rfa = p->res_first_atom;
+    char **rd = p->res_desc;
+
+    rfa = realloc(rfa, sizeof(int) * n);
+    if (!rfa) return mem_fail();
+    rfa[n-1] = i;
+    p->res_first_atom = rfa;
+
+    rd = realloc(rd, sizeof(char*)*n);
+    if (!rd) return mem_fail();
+
+    rd[n-1] = malloc(strlen(a->res_number) + strlen(a->res_name)+4);
+    if (!rd[n-1]) {
+        free(rd);
+        return mem_fail();
+    }
+    sprintf(rd[n-1], "%c %s %s", a->chain_label, a->res_number, a->res_name);
+
+    p->res_desc = rd;
+    ++p->number_residues;
+
+    return FREESASA_SUCCESS;
+}
+
 /**
     Get the radius of an atom, and fail, warn and/or guess depending
     on the options.
@@ -327,38 +353,12 @@ structure_add_atom(freesasa_structure *p,
     if (freesasa_coord_append(p->xyz, xyz, 1)) return mem_fail();
     if (structure_add_chain(p, a->chain_label)) return mem_fail();
 
-    /* here we assume atoms are ordered sequentially, i.e. residues are
-       not mixed in input: if two sequential atoms have different
-       residue numbers, a new residue is assumed to begin */
-    if (p->number_residues == 0) {
-        ++p->number_residues;
-        p->res_first_atom[0] = 0;
-        if (!(p->res_desc[0] = malloc(strlen(a->res_number)+
-                                      strlen(a->res_name)+4)))
-            return mem_fail();
-        sprintf(p->res_desc[0], "%c %s %s",
-                a->chain_label, a->res_number, a->res_name);
-    }
-
-    if (na > 1 && strcmp(a->res_number,p->a[na-2]->res_number)) {
-        int naa = p->number_residues+1, *prfa = p->res_first_atom;
-        char **prd = p->res_desc;
-        
-        if (!(p->res_first_atom = realloc(p->res_first_atom, sizeof(int)*naa))) {
-            p->res_first_atom = prfa;
-            return mem_fail();
-        }
-        p->res_first_atom[naa-1] = na-1;
-        if (!(p->res_desc = realloc(p->res_desc, sizeof(char*)*naa))) {
-            p->res_desc = prd;
-            return mem_fail();
-        }
-        if (!(p->res_desc[naa-1] = malloc(strlen(a->res_number)+
-                                          strlen(a->res_name)+4)))
-            return mem_fail();
-        sprintf(p->res_desc[naa-1], "%c %s %s",
-                a->chain_label, a->res_number, a->res_name);
-        ++p->number_residues;
+    /* register a new residue if it's the first atom, or if the
+       residue number of the current atom is different from the
+       previous one */
+    if ( p->number_residues == 0 ||
+        (na > 1 && strcmp(a->res_number, p->a[na-2]->res_number))) {
+        if (structure_add_residue(p, a, na - 1)) return mem_fail();
     }
 
     // by doing this last, we can free as much memory as possible if anything fails
@@ -404,9 +404,7 @@ from_pdb_impl(FILE *pdb_file,
                 !(options & FREESASA_INCLUDE_HYDROGEN))
                 continue;
  
-            a = atom_new_from_line(line,&alt);
-            
-            if (a == NULL) {
+            if (!(a = atom_new_from_line(line, &alt))) {
                 fail_msg("");
                 ++err;
                 break;

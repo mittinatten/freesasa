@@ -220,7 +220,7 @@ START_TEST (test_selector)
     p.shrake_rupley_n_points = 10;
     FILE *file = fopen(DATADIR "1ubq.pdb", "r");
     freesasa_structure *s = freesasa_structure_from_pdb(file, NULL, 0);
-    freesasa_result *result = freesasa_calc_structure(s, NULL);
+    freesasa_result *result = freesasa_calc_structure(s, &p);
     double area;
     char name[FREESASA_MAX_SELECTION_NAME];
 
