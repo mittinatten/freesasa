@@ -59,9 +59,14 @@ freesasa_pdb_get_models(FILE* pdb,
 /**
     Finds the location of all chains within the file range 'model'.
 
-    *ranges points to an array of dynamically allocated file
-    ranges for each model.
-    
+    @param pdb The pdb-file
+    @param model The ::file_range to search for chains within.
+    @param ranges The address to a dynamically allocated array
+      containing the ::file_range of each chain will be stored here.
+    @param options Bitfield, can be used to set
+      ::FREESASA_INCLUDE_HETATM.
+    @return Number of chains found. Returns ::FREESASA_FAIL if memory
+      allocation fails.
  */
 int
 freesasa_pdb_get_chains(FILE *pdb,
