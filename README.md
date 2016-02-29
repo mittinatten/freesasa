@@ -123,10 +123,9 @@ interested in the command line tool and and/or C Library.
 Citing FreeSASA
 ---------------
 
-To cite FreeSASA, use the arXiv pre-print  
+FreeSASA can be cited using the following publication
 
-Simon Mitternacht (2016)
-_FreeSASA: An open source C library for solvent accessible surface area calculations_. [arXiv:1601.06764](http://arxiv.org/abs/1601.06764).
+* Simon Mitternacht (2016) FreeSASA: An open source C library for solvent accessible surface area calculations. _F1000Research_ 2016, 5:189. (doi: [10.12688/f1000research.7931.1](http://dx.doi.org/10.12688/f1000research.7931.1)) 
 
 The [DOI numbers from Zenodo](https://zenodo.org/badge/latestdoi/18467/mittinatten/freesasa)
 can be used to cite a specific version of FreeSASA.
