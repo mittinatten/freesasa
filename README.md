@@ -125,7 +125,7 @@ Citing FreeSASA
 
 FreeSASA can be cited using the following publication
 
-* Simon Mitternacht (2016) FreeSASA: An open source C library for solvent accessible surface area calculations. _F1000Research_ 2016, 5:189. (doi: [10.12688/f1000research.7931.1](http://dx.doi.org/10.12688/f1000research.7931.1)) 
+* Simon Mitternacht (2016) FreeSASA: An open source C library for solvent accessible surface area calculations. _F1000Research_ 5:189. (doi: [10.12688/f1000research.7931.1](http://dx.doi.org/10.12688/f1000research.7931.1)) 
 
 The [DOI numbers from Zenodo](https://zenodo.org/badge/latestdoi/18467/mittinatten/freesasa)
 can be used to cite a specific version of FreeSASA.
