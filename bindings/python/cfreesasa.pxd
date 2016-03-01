@@ -164,3 +164,5 @@ cdef extern from "freesasa.h":
                                                    int i)
 
     char freesasa_structure_atom_chain(const freesasa_structure *s, int i)
+
+    const double* freesasa_structure_coord_array(const freesasa_structure *structure)

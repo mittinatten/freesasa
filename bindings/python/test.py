@@ -254,18 +254,24 @@ class FreeSASATestCase(unittest.TestCase):
 
             for i in range(0, s2.nAtoms()):
                 self.assertTrue(s1.radius(i) == s2.radius(i))
+                # there can be tiny errors here
+                self.assertTrue(math.fabs(s1.getCoord(i)[0] - s2.getCoord(i)[0]) < 1e-5)
 
-            result = calc(s2, Parameters({'algorithm' : LeeRichards, 'n-slices' : 20}))
-            self.assertTrue(math.fabs(result.totalArea() - 4804.055641) < 1e-5)
-            sasa_classes = classifyResults(result, s2)
-            self.assertTrue(math.fabs(sasa_classes['Polar'] - 2504.217302) < 1e-5)
-            self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2299.838339) < 1e-5)
+            # because Bio.PDB structures will have slightly different
+            # coordinates (due to rounding errors) we set the
+            # tolerance as high as 1e-3
+            result = calc(s1, Parameters({'algorithm' : LeeRichards, 'n-slices' : 20}))
+            print result.totalArea()
+            self.assertTrue(math.fabs(result.totalArea() - 4804.055641) < 1e-3)
+            sasa_classes = classifyResults(result, s1)
+            self.assertTrue(math.fabs(sasa_classes['Polar'] - 2504.217302) < 1e-3)
+            self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2299.838339) < 1e-3)
 
             result = calcBioPDB(bp_structure, Parameters({'algorithm' : ShrakeRupley}))
-            self.assertTrue(math.fabs(result.totalArea() - 4834.716265) < 1e-5)
+            self.assertTrue(math.fabs(result.totalArea() - 4834.716265) < 1e-3)
             sasa_classes = classifyResults(result, s1) # this needs to be solved
-            self.assertTrue(math.fabs(sasa_classes['Polar'] - 2515.821238) < 1e-5)
-            self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2318.895027) < 1e-5)
+            self.assertTrue(math.fabs(sasa_classes['Polar'] - 2515.821238) < 1e-3)
+            self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2318.895027) < 1e-3)
             print result.totalArea()
 
 

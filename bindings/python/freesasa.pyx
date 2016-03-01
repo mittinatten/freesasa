@@ -477,6 +477,12 @@ cdef class Structure:
             label[1] = '\0'
             return label
 
+      def getCoord(self, i):
+            assert(i >= 0 and i < self.nAtoms())
+            assert(self._c_structure is not NULL)
+            cdef const double *coord = freesasa_structure_coord_array(self._c_structure);
+            return [coord[3*i], coord[3*i+1], coord[3*i+2]]
+
       @staticmethod
       def _get_structure_options(param):
             options = 0
