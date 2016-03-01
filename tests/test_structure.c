@@ -22,7 +22,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <check.h>
-#include <structure.h>
+#include <freesasa.h>
+#include <freesasa_internal.h>
 #include <pdb.h>
 
 #define N 6

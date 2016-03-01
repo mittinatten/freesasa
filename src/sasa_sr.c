@@ -30,9 +30,8 @@
 #endif
 
 #include "freesasa.h"
-#include "sasa.h"
+#include "freesasa_internal.h"
 #include "nb.h"
-#include "util.h"
 
 #ifdef __GNUC__
 #define __attrib_pure__ __attribute__((pure))

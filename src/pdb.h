@@ -21,7 +21,7 @@
 #define FREESASA_PDB_H
 
 #include "freesasa.h"
-#include "util.h"
+#include "freesasa_internal.h"
 
 /**
     @file

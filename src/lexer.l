@@ -2,7 +2,7 @@
 
 #include "selection.h"
 #include "parser.h"
-#include "util.h"
+#include "freesasa_internal.h"
 
 #include <stdio.h>
 

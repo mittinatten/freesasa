@@ -23,7 +23,7 @@
 #include <assert.h>
 #include <errno.h>
 #include "freesasa.h"
-#include "util.h"
+#include "freesasa_internal.h"
 
 #ifdef PACKAGE_NAME
 const char *freesasa_name = PACKAGE_NAME;

@@ -22,8 +22,7 @@
 #include <assert.h>
 #include <string.h>
 #include "classifier.h"
-#include "freesasa.h"
-#include "util.h"
+#include "freesasa_internal.h"
 
 /**
     In this file the concept class refers to polar/apolar and type to

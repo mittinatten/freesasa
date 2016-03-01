@@ -477,7 +477,7 @@ static yyconst flex_int16_t yy_chk[142] =
 
 #include "selection.h"
 #include "parser.h"
-#include "util.h"
+#include "freesasa_internal.h"
 
 #include <stdio.h>
 

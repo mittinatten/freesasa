@@ -21,7 +21,7 @@
 #include <math.h>
 #include <assert.h>
 #include "freesasa.h"
-#include "util.h"
+#include "freesasa_internal.h"
 #include "nb.h"
 
 #ifndef FREESASA_NB_CHUNK

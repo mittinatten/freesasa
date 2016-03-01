@@ -22,11 +22,10 @@
 #include <stdio.h>
 #include <assert.h>
 #include <errno.h>
-#include "structure.h"
+#include "freesasa_internal.h"
 #include "pdb.h"
 #include "classifier.h"
 #include "coord.h"
-#include "util.h"
 
 struct atom {
     char *res_name;

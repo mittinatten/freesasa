@@ -24,8 +24,8 @@
 #include "selection.h"
 #include "parser.h"
 #include "lexer.h"
-#include "util.h"
 #include "freesasa.h"
+#include "freesasa_internal.h"
 #include "pdb.h"
 
 struct selection {

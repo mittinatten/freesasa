@@ -21,9 +21,8 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
-#include "freesasa.h"
+#include "freesasa_internal.h"
 #include "coord.h"
-#include "util.h"
 
 /** Store a set of 3-dimensional coordinates in a contiguous array */
 struct coord_t {
