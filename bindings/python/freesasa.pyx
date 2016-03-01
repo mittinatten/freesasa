@@ -647,3 +647,39 @@ def setVerbosity(verbosity):
 def getVerbosity():
       return freesasa_get_verbosity()
 
+def structureFromBioPDB(bioPDBStructure, classifier=None, options = Structure.defaultOptions):
+      #try: 
+      #      from Bio.PDB import *
+      #except ImportError:
+      #      print "The function structureFromBioPDB requires Bio.PDB"
+      #      raise
+      structure = Structure()
+      if (classifier is None):
+            classifier = Classifier()
+      optbitfield = Structure._get_structure_options(options)
+
+      atoms = bioPDBStructure.get_atoms()
+
+      for a in atoms:
+            r = a.get_parent()
+            hetflag, resseq, icode = r.get_id()
+
+            if (hetflag is not ' ' and not (optbitfield & FREESASA_INCLUDE_HETATM)):
+                  continue
+
+            c = r.get_parent()
+            v = a.get_vector()
+
+            if (classifier.classify(r.get_resname(),a.get_fullname()) is 'Unknown'):
+                  if (optbitfield & FREESASA_SKIP_UNKNOWN):
+                        continue
+                  if (optbitfield & FREESASA_HALT_AT_UNKNOWN):
+                        raise Exception("Halting at unknown atom")
+
+            structure.addAtom(a.get_fullname(), r.get_resname(), resseq, c.get_id(),
+                              v[0], v[1], v[2])
+
+      structure.setRadiiWithClassifier(classifier)
+      return structure
+
+

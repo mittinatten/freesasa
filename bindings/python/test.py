@@ -239,6 +239,28 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(math.fabs(selections['s1'] - 118.35) < 0.1)
         self.assertTrue(math.fabs(selections['s2'] - 50.77) < 0.1)
 
+    def testBioPDB(self):
+        try:
+            from Bio.PDB import *
+        except ImportError:
+            print "Can't import Bio.PDB, tests skipped"
+            pass
+        else:
+            parser = PDBParser()
+            bp_structure = parser.get_structure("Ubiquitin","data/1ubq.pdb")
+            s = structureFromBioPDB(bp_structure)
+            self.assertTrue(s.nAtoms() == 602)
+            self.assertTrue(s.radius(1) == 1.88)
+            self.assertTrue(s.chainLabel(1) == 'A')
+            self.assertTrue(s.atomName(1) == ' CA ')
+            self.assertTrue(s.residueName(1) == 'MET')
+            self.assertTrue(s.residueNumber(1) == '1')
+            result = calc(s, Parameters({'algorithm' : ShrakeRupley}))
+            self.assertTrue(math.fabs(result.totalArea() - 4834.716265) < 1e-5)
+            sasa_classes = classifyResults(result, s)
+            self.assertTrue(math.fabs(sasa_classes['Polar'] - 2515.821238) < 1e-5)
+            self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2318.895027) < 1e-5)
+
 if __name__ == '__main__':
     # make sure we're in the right directory (if script is called from
     # outside the directory)
