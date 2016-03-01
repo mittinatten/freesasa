@@ -608,6 +608,7 @@ def classifyResults(result,structure,classifier=None):
                   ret[name] = 0
             ret[name] += result.atomArea(i)
       return ret
+
 ## Sum SASA result over a selection of atoms
 # @param commands A list of commands with selections using Pymol
 #   syntax, e.g. `"s1, resn ala+arg"` or `"s2, chain A and resi 1-5"` 
@@ -647,12 +648,12 @@ def setVerbosity(verbosity):
 def getVerbosity():
       return freesasa_get_verbosity()
 
+## Create a freesasa structure from a Bio.PDB structure
+# @param bioPDBStructure a Bio.PDB structure
+# @param classifier an optional classifier to specify atomic radii
+# @param options Options supported are 'hetatm', 'skip-unknown' and 'halt-at-unknown'
+# @return a freesasa.Structure
 def structureFromBioPDB(bioPDBStructure, classifier=None, options = Structure.defaultOptions):
-      #try: 
-      #      from Bio.PDB import *
-      #except ImportError:
-      #      print "The function structureFromBioPDB requires Bio.PDB"
-      #      raise
       structure = Structure()
       if (classifier is None):
             classifier = Classifier()
@@ -682,4 +683,9 @@ def structureFromBioPDB(bioPDBStructure, classifier=None, options = Structure.de
       structure.setRadiiWithClassifier(classifier)
       return structure
 
+def calcBioPDB(bioPDBStructure, parameters = Parameters(), 
+               classifier = None, options = Structure.defaultOptions):
+      structure = structureFromBioPDB(bioPDBStructure, classifier, options)
+      return calc(structure, parameters)
+      
 
