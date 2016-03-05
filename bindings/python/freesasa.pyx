@@ -394,6 +394,7 @@ cdef class Structure:
       ## Assign radii to atoms in structure using a classifier.
       #
       # @param classifier A classifier to use to calculate radii
+      # @exception AssertionError if structure not properly initialized
       def setRadiiWithClassifier(self,classifier):
             assert(self._c_structure is not NULL)
             n = self.nAtoms()
@@ -477,6 +478,10 @@ cdef class Structure:
             label[1] = '\0'
             return label
 
+      ## Get coordinates of given atom.
+      # @param i (int) Atom index.
+      # @return array of x, y, and z coordinates
+      # @exception AssertionError if index out of range or Structure not properly initialized
       def getCoord(self, i):
             assert(i >= 0 and i < self.nAtoms())
             assert(self._c_structure is not NULL)
@@ -659,6 +664,10 @@ def getVerbosity():
 # @param classifier an optional classifier to specify atomic radii
 # @param options Options supported are 'hetatm', 'skip-unknown' and 'halt-at-unknown'
 # @return a freesasa.Structure
+# @exception Exception if option 'halt-at-unknown' is selected and
+#            unknown atoms are encountered. Passes on exceptions from
+#            Structure.addAtom() and
+#            Structure.setRadiiWithClassifier().
 def structureFromBioPDB(bioPDBStructure, classifier=None, options = Structure.defaultOptions):
       structure = Structure()
       if (classifier is None):
@@ -677,7 +686,7 @@ def structureFromBioPDB(bioPDBStructure, classifier=None, options = Structure.de
             c = r.get_parent()
             v = a.get_vector()
 
-            if (classifier.classify(r.get_resname(),a.get_fullname()) is 'Unknown'):
+            if (classifier.classify(r.get_resname(), a.get_fullname()) is 'Unknown'):
                   if (optbitfield & FREESASA_SKIP_UNKNOWN):
                         continue
                   if (optbitfield & FREESASA_HALT_AT_UNKNOWN):
@@ -689,9 +698,27 @@ def structureFromBioPDB(bioPDBStructure, classifier=None, options = Structure.de
       structure.setRadiiWithClassifier(classifier)
       return structure
 
+## Calc SASA from Bio.PDB structure
+#
+# Usage 
+# 
+#     result, sasa_classes = calcBioPDB(structure, ...)  
+#
+# @remark Experimental, not thorougly tested yet
+# @param bioPDBStructure A Bio.PDB structure
+# @param parameters A freesasa.Paremeters object
+# @param classifier A freesasa.Classifier object
+# @param options Options supported are 'hetatm', 'skip-unknown' and 'halt-at-unknown'
+# @return A freesasa.Result object and a dictionary with classes
+#         defined by the classifier and associated areas
+# @exception Exception if unknown atom is encountered and the option
+#            'halt-at-unknown' is active. Passes on exceptions from
+#            calc(), classifyResults() and structureFromBioPDB().
 def calcBioPDB(bioPDBStructure, parameters = Parameters(), 
                classifier = None, options = Structure.defaultOptions):
       structure = structureFromBioPDB(bioPDBStructure, classifier, options)
-      return calc(structure, parameters)
+      result = calc(structure, parameters)
+      sasa_classes = classifyResults(result, structure, classifier)
+      return result, sasa_classes
       
 

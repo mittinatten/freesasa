@@ -267,9 +267,8 @@ class FreeSASATestCase(unittest.TestCase):
             self.assertTrue(math.fabs(sasa_classes['Polar'] - 2504.217302) < 1e-3)
             self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2299.838339) < 1e-3)
 
-            result = calcBioPDB(bp_structure, Parameters({'algorithm' : ShrakeRupley}))
+            result, sasa_classes = calcBioPDB(bp_structure, Parameters({'algorithm' : ShrakeRupley}))
             self.assertTrue(math.fabs(result.totalArea() - 4834.716265) < 1e-3)
-            sasa_classes = classifyResults(result, s1) # this needs to be solved
             self.assertTrue(math.fabs(sasa_classes['Polar'] - 2515.821238) < 1e-3)
             self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2318.895027) < 1e-3)
             print result.totalArea()
