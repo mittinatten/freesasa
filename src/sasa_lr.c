@@ -31,9 +31,8 @@
 #endif
 
 #include "freesasa.h"
-#include "sasa.h"
+#include "freesasa_internal.h"
 #include "nb.h"
-#include "util.h"
 
 const double TWOPI = 2*M_PI;
 

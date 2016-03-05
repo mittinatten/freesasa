@@ -426,8 +426,8 @@ freesasa_write_result(FILE *log,
 /**
     Print parameters to file
 
+    @param log Output-file
     @param parameters Parameters to print, if NULL defaults are used
-
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
     problems writing to file.
 */

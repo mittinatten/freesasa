@@ -28,7 +28,7 @@
 #endif
 
 #include <freesasa.h>
-#include <structure.h>
+#include <freesasa_internal.h>
 #include "tools.h"
 
 #define PASS 1
@@ -38,9 +38,6 @@ double total_ref, polar_ref, apolar_ref;
 double tolerance;
 
 freesasa_parameters parameters;
-
-extern int freesasa_fail(const char*);
-extern int freesasa_warn(const char*);
 
 double rel_err(double v1, double v2) {
     return fabs(v1-v2)/(fabs(v1)+fabs(v2));

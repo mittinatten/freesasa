@@ -303,6 +303,9 @@ cdef class Classifier:
 #  classifier, or custom one provided as argument to initalizer
 #
 #  Wraps the C struct freesasa_structure.
+#
+#  Since it is intended to be a static structure the word 'get' is
+#  omitted in the getter-functions.
 cdef class Structure:
       cdef freesasa_structure* _c_structure
       ## By default ignore HETATM, Hydrogens, only use first model. For unknown atoms
@@ -394,6 +397,7 @@ cdef class Structure:
       ## Assign radii to atoms in structure using a classifier.
       #
       # @param classifier A classifier to use to calculate radii
+      # @exception AssertionError if structure not properly initialized
       def setRadiiWithClassifier(self,classifier):
             assert(self._c_structure is not NULL)
             n = self.nAtoms()
@@ -476,6 +480,16 @@ cdef class Structure:
             label[0] = freesasa_structure_atom_chain(self._c_structure,i); 
             label[1] = '\0'
             return label
+
+      ## Get coordinates of given atom.
+      # @param i (int) Atom index.
+      # @return array of x, y, and z coordinates
+      # @exception AssertionError if index out of range or Structure not properly initialized
+      def coord(self, i):
+            assert(i >= 0 and i < self.nAtoms())
+            assert(self._c_structure is not NULL)
+            cdef const double *coord = freesasa_structure_coord_array(self._c_structure);
+            return [coord[3*i], coord[3*i+1], coord[3*i+2]]
 
       @staticmethod
       def _get_structure_options(param):
@@ -608,6 +622,7 @@ def classifyResults(result,structure,classifier=None):
                   ret[name] = 0
             ret[name] += result.atomArea(i)
       return ret
+
 ## Sum SASA result over a selection of atoms
 # @param commands A list of commands with selections using Pymol
 #   syntax, e.g. `"s1, resn ala+arg"` or `"s2, chain A and resi 1-5"` 
@@ -646,4 +661,74 @@ def setVerbosity(verbosity):
 # @return Verbosity (freesasa.silent, freesasa.nowarnings or freesasa.normal)
 def getVerbosity():
       return freesasa_get_verbosity()
+
+## Create a freesasa structure from a Bio.PDB structure
+#
+#  @remark Experimental, not thorougly tested yet
+#
+#  @param bioPDBStructure a Bio.PDB structure
+#  @param classifier an optional classifier to specify atomic radii
+#  @param options Options supported are 'hetatm', 'skip-unknown' and 'halt-at-unknown'
+#  @return a freesasa.Structure
+#
+#  @exception Exception if option 'halt-at-unknown' is selected and
+#             unknown atoms are encountered. Passes on exceptions from
+#             Structure.addAtom() and
+#             Structure.setRadiiWithClassifier().
+def structureFromBioPDB(bioPDBStructure, classifier=None, options = Structure.defaultOptions):
+      structure = Structure()
+      if (classifier is None):
+            classifier = Classifier()
+      optbitfield = Structure._get_structure_options(options)
+
+      atoms = bioPDBStructure.get_atoms()
+
+      for a in atoms:
+            r = a.get_parent()
+            hetflag, resseq, icode = r.get_id()
+
+            if (hetflag is not ' ' and not (optbitfield & FREESASA_INCLUDE_HETATM)):
+                  continue
+
+            c = r.get_parent()
+            v = a.get_vector()
+
+            if (classifier.classify(r.get_resname(), a.get_fullname()) is 'Unknown'):
+                  if (optbitfield & FREESASA_SKIP_UNKNOWN):
+                        continue
+                  if (optbitfield & FREESASA_HALT_AT_UNKNOWN):
+                        raise Exception("Halting at unknown atom")
+
+            structure.addAtom(a.get_fullname(), r.get_resname(), resseq, c.get_id(),
+                              v[0], v[1], v[2])
+
+      structure.setRadiiWithClassifier(classifier)
+      return structure
+
+## Calc SASA from Bio.PDB structure
+#
+#  Usage 
+#
+#      result, sasa_classes = calcBioPDB(structure, ...)  
+#
+#  @remark Experimental, not thorougly tested yet
+#
+#  @param bioPDBStructure A Bio.PDB structure
+#  @param parameters A freesasa.Paremeters object
+#  @param classifier A freesasa.Classifier object
+#  @param options Options supported are 'hetatm', 'skip-unknown' and 'halt-at-unknown'
+#
+#  @return A freesasa.Result object and a dictionary with classes
+#         defined by the classifier and associated areas
+#
+#  @exception Exception if unknown atom is encountered and the option
+#             'halt-at-unknown' is active. Passes on exceptions from
+#             calc(), classifyResults() and structureFromBioPDB().
+def calcBioPDB(bioPDBStructure, parameters = Parameters(), 
+               classifier = None, options = Structure.defaultOptions):
+      structure = structureFromBioPDB(bioPDBStructure, classifier, options)
+      result = calc(structure, parameters)
+      sasa_classes = classifyResults(result, structure, classifier)
+      return result, sasa_classes
+      
 

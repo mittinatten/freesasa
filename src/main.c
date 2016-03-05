@@ -30,7 +30,7 @@
 #endif
 
 #include "freesasa.h"
-#include "util.h"
+#include "freesasa_internal.h"
 
 #if STDC_HEADERS
 extern int getopt(int, char * const *, const char *);
@@ -342,7 +342,7 @@ add_chain_groups(const char* cmd)
         while (token) {
             ++n_chain_groups;
             chain_groups = realloc(chain_groups,sizeof(char*)*n_chain_groups);
-            if (chain_groups == NULL) {mem_fail(); abort();}
+            if (chain_groups == NULL) { mem_fail(); abort();}
             chain_groups[n_chain_groups-1] = strdup(token);
             token = strtok(0,"+");
         }
@@ -357,9 +357,15 @@ add_select(const char* cmd)
 {
     ++n_select;
     select_cmd = realloc(select_cmd,sizeof(char*)*n_select);
-    if (select_cmd == NULL) { mem_fail(); abort(); }
+    if (select_cmd == NULL) {
+        mem_fail(); 
+        abort(); 
+    }
     select_cmd[n_select-1] = strdup(cmd);
-    if (select_cmd[n_select-1] == NULL) { mem_fail(); abort(); }
+    if (select_cmd[n_select-1] == NULL) {
+        mem_fail(); 
+        abort();
+    }
 }
 
 void
@@ -390,7 +396,7 @@ main(int argc,
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
-    enum {B_FILE,RES_FILE,SEQ_FILE,SELECT,UNKNOWN};
+    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN};
     parameters = freesasa_default_parameters;
     memset(opt_set,0,n_opt);
     // errors from this file will be prepended with freesasa, library errors with FreeSASA

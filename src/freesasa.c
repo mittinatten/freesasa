@@ -34,12 +34,10 @@
 # include <config.h>
 #endif
 
-#include "structure.h"
-#include "sasa.h"
-#include "pdb.h"
 #include "freesasa.h"
+#include "freesasa_internal.h"
+#include "pdb.h"
 #include "classifier.h"
-#include "util.h"
 
 #ifdef PACKAGE_VERSION
 const char *freesasa_version = PACKAGE_VERSION;

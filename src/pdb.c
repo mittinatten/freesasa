@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "util.h"
+#include "freesasa_internal.h"
 #include "pdb.h"
 
 static inline int
