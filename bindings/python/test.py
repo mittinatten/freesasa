@@ -22,9 +22,9 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(p.nPoints() == d['n-points'])
         self.assertTrue(p.nSlices() == d['n-slices'])
         self.assertTrue(p.nThreads() == d['n-threads'])
-        self.assertRaises(AssertionError,lambda: Parameters({'not-an-option' : 1}));
-        self.assertRaises(AssertionError,lambda: Parameters({'n-slices' : 50, 'not-an-option' : 1}));
-        self.assertRaises(AssertionError,lambda: Parameters({'not-an-option' : 50, 'also-not-an-option' : 1}));
+        self.assertRaises(AssertionError,lambda: Parameters({'not-an-option' : 1}))
+        self.assertRaises(AssertionError,lambda: Parameters({'n-slices' : 50, 'not-an-option' : 1}))
+        self.assertRaises(AssertionError,lambda: Parameters({'not-an-option' : 50, 'also-not-an-option' : 1}))
 
         p.setAlgorithm(ShrakeRupley)
         self.assertTrue(p.algorithm() == ShrakeRupley)
@@ -108,14 +108,22 @@ class FreeSASATestCase(unittest.TestCase):
         s = Structure()
         s.addAtom(' CA ','ALA','   1','A',1,1,1)
         self.assertTrue(s.nAtoms() == 1)
-        self.assertTrue(s.atomName(0) == ' CA ');
-        self.assertTrue(s.residueName(0) == 'ALA');
-        self.assertTrue(s.residueNumber(0) == '   1');
-        self.assertTrue(s.chainLabel(0) == 'A');
+        self.assertTrue(s.atomName(0) == ' CA ')
+        self.assertTrue(s.residueName(0) == 'ALA')
+        self.assertTrue(s.residueNumber(0) == '   1')
+        self.assertTrue(s.chainLabel(0) == 'A')
         self.assertTrue(s.nAtoms() == 1)
+        x, y, z = s.coord(0)
+        self.assertTrue(x == 1 and y ==1 and z ==1)
         s.addAtom(' CB ','ALA',2,'A',2,1,1)
         self.assertTrue(s.nAtoms() == 2)
         self.assertTrue(s.residueNumber(1) == '2')
+
+        self.assertRaises(AssertionError, lambda: s.atomName(3))
+        self.assertRaises(AssertionError, lambda: s.residueName(3))
+        self.assertRaises(AssertionError, lambda: s.residueNumber(3))
+        self.assertRaises(AssertionError, lambda: s.chainLabel(3))
+        self.assertRaises(AssertionError, lambda: s.coord(3))
 
         s.setRadiiWithClassifier(Classifier())
         self.assertTrue(s.radius(0) == 1.88)
@@ -255,7 +263,9 @@ class FreeSASATestCase(unittest.TestCase):
             for i in range(0, s2.nAtoms()):
                 self.assertTrue(s1.radius(i) == s2.radius(i))
                 # there can be tiny errors here
-                self.assertTrue(math.fabs(s1.getCoord(i)[0] - s2.getCoord(i)[0]) < 1e-5)
+                self.assertTrue(math.fabs(s1.coord(i)[0] - s2.coord(i)[0]) < 1e-5)
+                self.assertTrue(math.fabs(s1.coord(i)[1] - s2.coord(i)[1]) < 1e-5)
+                self.assertTrue(math.fabs(s1.coord(i)[2] - s2.coord(i)[2]) < 1e-5)
 
             # because Bio.PDB structures will have slightly different
             # coordinates (due to rounding errors) we set the
