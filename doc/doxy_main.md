@@ -632,7 +632,6 @@ which gives the output
     alanine : 120.08 A2
     r1_10 : 634.31 A2
 
-
 @section Python-classification Customizing atom classification
 
 This uses the NACCESS parameters (the file 'naccess.config' is
@@ -690,6 +689,22 @@ integrated area of Nitrogen atoms, the simpler choice would be
 However, extending freesasa.Classifier, as illustrated above, allows
 classification to arbitrary complexity and also lets us redefine the
 radii used in the calculation.
+
+@section Bio.PDB
+
+FreeSASA can also calculate the SASA of a Bio.PDB structure
+
+~~~{.py}
+    from Bio.PDB import PDBParser
+    parser = PDBParser()
+    structure = parser.get_structure("Ubiquitin","1ubq.pdb")
+    result, sasa_classes = freesasa.calcBioPDB(structure)
+~~~
+
+If one needs more control over the analysis the structure can be
+converted to a freesasa.Structure using freesasa.structureFromBioPDB()
+and the calculation can be performed the normal way using this
+structure.
 
 @page Geometry Geometry of Lee & Richards' algorithm
 
