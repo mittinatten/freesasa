@@ -237,14 +237,14 @@ structure_add_chain(freesasa_structure *s,
 {
     if (strchr(s->chains,chain_label) == NULL) {
         int n = ++s->number_chains;
-        char *pc = s->chains;
+        char *sc = s->chains;
         s->chains = realloc(s->chains,n + 1);
         if (s->chains) {
             s->chains[n-1] = chain_label;
             s->chains[n] = '\0';
             assert (strlen(s->chains) == s->number_chains);
         } else {
-            s->chains = pc;
+            s->chains = sc;
             return mem_fail();
         }
     }
@@ -391,10 +391,7 @@ from_pdb_impl(FILE *pdb_file,
     struct atom *a = NULL;
     freesasa_structure *s = freesasa_structure_new();
  
-    if (s == NULL) { 
-        mem_fail();
-        return NULL;
-    }
+    if (s == NULL) return NULL;
     
     fseek(pdb_file,it.begin,SEEK_SET);
     
@@ -402,29 +399,21 @@ from_pdb_impl(FILE *pdb_file,
         
         if (strncmp("ATOM",line,4)==0 || ( (options & FREESASA_INCLUDE_HETATM) &&
                                            (strncmp("HETATM", line, 6) == 0) )) {
-            
+
             if (freesasa_pdb_ishydrogen(line) &&
                 !(options & FREESASA_INCLUDE_HYDROGEN))
                 continue;
- 
-            if (!(a = atom_new_from_line(line, &alt))) {
-                fail_msg("");
-                ++err;
-                break;
-            }
-            
+
+            if (!(a = atom_new_from_line(line, &alt))) goto cleanup;
+
             if ((alt != ' ' && the_alt == ' ') || (alt == ' '))
                 the_alt = alt;
             else if (alt != ' ' && alt != the_alt)
                 continue;
-                        
+
             if (freesasa_pdb_get_coord(v, line) == FREESASA_FAIL ||
-                structure_add_atom(s, a, v, classifier, options) == FREESASA_FAIL) { 
-                fail_msg("");
-                atom_free(a);
-                ++err;
-                break;
-            }
+                structure_add_atom(s, a, v, classifier, options) == FREESASA_FAIL) 
+                goto cleanup;
         }
 
         if (! (options & FREESASA_JOIN_MODELS)) {
@@ -433,16 +422,20 @@ from_pdb_impl(FILE *pdb_file,
         }
     }
     
-    free(line);
-    if (err == 0 && s->number_atoms == 0) {
+    if (s->number_atoms == 0) {
         freesasa_fail("Input had no valid ATOM or HETATM lines.");
-        ++err;
+        goto cleanup;
     }
-    if (err) {
-        freesasa_structure_free(s);
-        s = NULL;
-    }
+
+    free(line);
     return s;
+
+ cleanup:
+    fail_msg("");
+    free(line);
+    atom_free(a);
+    freesasa_structure_free(s);
+    return NULL;
 }
 
 
@@ -514,6 +507,11 @@ freesasa_structure_array(FILE *pdb,
     assert(pdb);
     assert(n);
 
+    struct file_range *models = NULL, *chains = NULL;
+    struct file_range whole_file;
+    int n_models = 0, n_chains = 0, j0, n_new_chains;
+    freesasa_structure **ss = NULL, **ssb, *s;
+
     if( ! (options & FREESASA_SEPARATE_MODELS ||
            options & FREESASA_SEPARATE_CHAINS) ) {
         fail_msg("Options need to specify at least one of FREESASA_SEPARATE_CHAINS "
@@ -521,11 +519,8 @@ freesasa_structure_array(FILE *pdb,
         return NULL;
     }
 
-    struct file_range *models = NULL;
-    struct file_range whole_file = freesasa_whole_file(pdb);
-    int n_models = freesasa_pdb_get_models(pdb,&models), n_chains = 0;
-    freesasa_structure **ss = NULL, **ssb;
-    int err = 0;
+    whole_file = freesasa_whole_file(pdb);
+    n_models = freesasa_pdb_get_models(pdb,&models);
 
     if (n_models == FREESASA_FAIL) {
         fail_msg("Problems reading PDB-file.");
@@ -542,39 +537,34 @@ freesasa_structure_array(FILE *pdb,
     //for each model read chains if requested
     if (options & FREESASA_SEPARATE_CHAINS) {
         for (int i = 0; i < n_models; ++i) {
-            struct file_range* chains = NULL;
-            int new_chains = freesasa_pdb_get_chains(pdb, models[i], &chains, options);
-            int j0 = n_chains;
-            if (new_chains == FREESASA_FAIL) { mem_fail(); ++err; break; }
-            if (new_chains == 0) {
+            chains = NULL;
+            n_new_chains = freesasa_pdb_get_chains(pdb, models[i], &chains, options);
+
+            if (n_new_chains == FREESASA_FAIL) goto cleanup;
+            if (n_new_chains == 0) {
                 freesasa_warn("in %s(): No chains found (in model %d).", __func__, i+1);
                 continue;
             }
+
             ssb = ss;
-            ss = realloc(ss,sizeof(freesasa_structure*)*(n_chains + new_chains));
+            ss = realloc(ss,sizeof(freesasa_structure*)*(n_chains + n_new_chains));
 
             if (!ss) {
-                free(chains);
-                ss = ssb; // we'll free it below
+                ss = ssb;
                 mem_fail();
-                ++err;
-                break;
-            } 
+                goto cleanup;
+            }
 
-            n_chains += new_chains;
+            j0 = n_chains;
+            n_chains += n_new_chains;
 
-            // to facilitate cleanup if reading fails below
-            for (int j = 0; j < new_chains; ++j) ss[j0+j] = NULL;
-            
-            for (int j = 0; j < new_chains; ++j) {
-                freesasa_structure *s = from_pdb_impl(pdb, chains[j], classifier, options);
+            for (int j = 0; j < n_new_chains; ++j) ss[j0+j] = NULL;
+
+            for (int j = 0; j < n_new_chains; ++j) {
+                s = from_pdb_impl(pdb, chains[j], classifier, options);
+                if (s == NULL) goto cleanup;
                 ss[j0+j] = s;
-                if (s == NULL) {
-                    ++err;
-                    break;
-                }
-                // all have the same model number
-                ss[j0+j]->model = ss[n_chains-new_chains]->model; 
+                ss[j0+j]->model = ss[n_chains-n_new_chains]->model;
             }
 
             free(chains);
@@ -584,34 +574,32 @@ freesasa_structure_array(FILE *pdb,
         ss = malloc(sizeof(freesasa_structure*)*n_models);
         if (!ss) {
             mem_fail();
-            ++err;
-        } else {
-            // to facilitate cleanup if reading fails below
-            for (int i = 0; i < n_models; ++i) ss[i] = NULL; 
-            *n = n_models;
-            
-            for (int i = 0; i < n_models; ++i) {
-                freesasa_structure *s = from_pdb_impl(pdb, models[i], classifier, options);
-                ss[i] = s;
-                if (s == NULL) {
-                    ++err; 
-                    break;
-                }
-            }
+            goto cleanup;
+        }
+
+        for (int i = 0; i < n_models; ++i) ss[i] = NULL;
+        *n = n_models;
+
+        for (int i = 0; i < n_models; ++i) {
+            s = from_pdb_impl(pdb, models[i], classifier, options);
+            if (s == NULL) goto cleanup;
+            ss[i] = s;
         }
     }
 
-    // clean up
-    if (err || *n == 0) {
-        if (ss) for (int i = 0; i < *n; ++i) freesasa_structure_free(ss[i]);
-        *n = 0;
-        free(ss);
-        ss = NULL;
-    }
+    if (*n == 0) goto cleanup;
 
     if (models != &whole_file) free(models);
 
     return ss;
+
+ cleanup:
+    if (ss) for (int i = 0; i < *n; ++i) freesasa_structure_free(ss[i]);
+    if (models != &whole_file) free(models);
+    free(chains);
+    *n = 0;
+    free(ss);
+    return NULL;
 }
 
 freesasa_structure*

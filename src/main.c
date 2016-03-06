@@ -227,8 +227,10 @@ run_analysis(FILE *input,
         }
     } else {
         single_structure[0] = freesasa_structure_from_pdb(input,classifier,structure_options);
-        structures = single_structure;
-        n = 1;
+        if (single_structure[0]) {
+            structures = single_structure;
+            n = 1;
+        }
     }
     if (structures == NULL) abort_msg("Invalid input. Aborting.\n");
 

@@ -172,7 +172,6 @@ START_TEST (test_get_chains)
         ck_assert_int_eq(nc,4);
         ck_assert_ptr_ne(jt,NULL);
         for (int j = 1; j < nc; ++j) {
-            printf(">> %d\n",j);fflush(stdout);
             ck_assert_int_ge(jt[j].begin, jt[j-1].end);
         }
         free(jt);
