@@ -690,7 +690,7 @@ However, extending freesasa.Classifier, as illustrated above, allows
 classification to arbitrary complexity and also lets us redefine the
 radii used in the calculation.
 
-@section Bio.PDB
+@section BioPDB Bio.PDB
 
 FreeSASA can also calculate the SASA of a Bio.PDB structure
 
