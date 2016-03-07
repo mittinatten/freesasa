@@ -382,7 +382,6 @@ main(int argc,
     enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN};
     parameters = freesasa_default_parameters;
     memset(opt_set,0,n_opt);
-    // errors from this file will be prepended with freesasa, library errors with FreeSASA
     program_name = "freesasa";
     struct option long_options[] = {
         {"lee-richards",         no_argument,       0, 'L'},
@@ -454,7 +453,12 @@ main(int argc,
             help();
             exit(EXIT_SUCCESS);
         case 'v':
-            printf("%s\n",version);
+            printf("FreeSASA %s\n",version);
+            printf("License: MIT <http://opensource.org/licenses/MIT>\n");
+            printf("If you use this program for research, please cite:\n");
+            printf("  Simon Mitternacht (2016) FreeSASA: An open source C\n"
+                   "  library for solvent accessible surface area calculations.\n"
+                   "  F1000Research 5:189.\n");
             exit(EXIT_SUCCESS);
         case 'e': 
             errlog = fopen_werr(optarg,"w");
