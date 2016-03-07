@@ -9,7 +9,7 @@ These pages document the
   - @ref Config-file
   - @ref Geometry
 
-The library is licensed under [GPLv3](GPL.md).
+The library is released under the [MIT license](license.md).
 
 Installation instructions can be found in the [README](README.md) file.
 
