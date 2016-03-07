@@ -629,7 +629,7 @@ WARN_LOGFILE           =
 
 INPUT                  = @top_srcdir@/src/freesasa.h
 INPUT                  += doxy_main.md 
-INPUT                  += GPL.md README.md
+INPUT                  += README.md license.md
 INPUT                  += @top_srcdir@/bindings/python/freesasa.pyx
 USE_MDFILE_AS_MAINPAGE = doxy_main.md
 

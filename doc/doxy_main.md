@@ -9,7 +9,7 @@ These pages document the
   - @ref Config-file
   - @ref Geometry
 
-The library is licensed under [GPLv3](GPL.md).
+The library is released under the [MIT license](license.md).
 
 Installation instructions can be found in the [README](README.md) file.
 
@@ -690,7 +690,7 @@ However, extending freesasa.Classifier, as illustrated above, allows
 classification to arbitrary complexity and also lets us redefine the
 radii used in the calculation.
 
-@section Bio.PDB
+@section BioPDB Bio.PDB
 
 FreeSASA can also calculate the SASA of a Bio.PDB structure
 
