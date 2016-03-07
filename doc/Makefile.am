@@ -1,7 +1,7 @@
 CLEANFILES =
 ALLFILES =
 
-EXTRA_DIST = doxy_main.md GPL.md README.md \
+EXTRA_DIST = doxy_main.md license.md README.md \
 	doxygen-footer.html doxygen-header.html \
 	fig
 
