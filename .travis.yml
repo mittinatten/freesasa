@@ -1,3 +1,6 @@
+# This only checks the c part of the repository, it was difficult to
+# get the Python bindings to build on 
+
 language: c
 git:
   depth: 3
