@@ -147,6 +147,18 @@ freesasa_structure_residue_descriptor(const freesasa_structure *s,
                                       int r_i);
 
 /**
+    Returns the SASA for a given residue
+
+    @param r The SASA results
+    @param s The structure
+    @param r_i Index of residue
+    @return The SASA of the residue
+*/
+double
+freesasa_single_residue_sasa(const freesasa_result *r,
+                             const freesasa_structure *s, 
+                             int r_i);
+/**
     Holds range in a file, to be initalized with ftell() and used
     with fseek().
  */

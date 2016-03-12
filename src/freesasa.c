@@ -337,7 +337,7 @@ freesasa_per_residue_type(FILE *output,
 }
 
 
-static double
+double
 freesasa_single_residue_sasa(const freesasa_result *r,
                              const freesasa_structure *s, 
                              int r_i)
@@ -368,7 +368,6 @@ freesasa_per_residue(FILE *output,
     
     const int naa = freesasa_structure_n_residues(structure);
     for (int i = 0; i < naa; ++i) {
-        errno = 0;
         int area =
             fprintf(output,"SEQ %s : %7.2f\n",
                     freesasa_structure_residue_descriptor(structure,i),

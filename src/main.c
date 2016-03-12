@@ -33,6 +33,7 @@ freesasa_classifier *classifier = NULL;
 FILE *output_pdb = NULL;
 FILE *per_residue_type_file = NULL;
 FILE *per_residue_file = NULL;
+FILE *rsa_file = NULL;
 FILE *output = NULL;
 FILE *errlog;
 int per_residue_type = 0;
@@ -40,6 +41,7 @@ int per_residue = 0;
 int printlog = 1;
 int structure_options = 0;
 int printpdb = 0;
+int printrsa = 0;
 int n_chain_groups = 0;
 char** chain_groups = NULL;
 int n_select = 0;
@@ -48,12 +50,11 @@ char** select_cmd = NULL;
 void
 help(void)
 {
-    fprintf(stderr,"\nUsage: %s [options] pdb-file(s)\n\n",
-            program_name);
-    fprintf(stderr,"GENERAL OPTIONS\n"
+    fprintf(stderr, "\nUsage: %s [options] pdb-file(s)\n\n", program_name);
+    fprintf(stderr, "GENERAL OPTIONS\n"
             "  -h (--help)           Print this message\n"
             "  -v (--version)        Print version of the program\n");
-    fprintf(stderr,"\nPARAMETERS\n"
+    fprintf(stderr, "\nPARAMETERS\n"
             "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm\n"
             "  -L (--lee-richards)   Use Lee & Richards algorithm [default]\n");
     fprintf(stderr,
@@ -68,7 +69,7 @@ help(void)
             "                        - number of slices per atom in Lee & Richards algorithm.\n"
             "                          [default: %d]\n"
             "                        depending on which is selected.\n",
-            FREESASA_DEF_PROBE_RADIUS,FREESASA_DEF_SR_N,FREESASA_DEF_LR_N);
+            FREESASA_DEF_PROBE_RADIUS, FREESASA_DEF_SR_N, FREESASA_DEF_LR_N);
 #ifdef USE_THREADS
     fprintf(stderr,
             "\n  -t <value>  (--n-threads=<value>)\n"
@@ -103,7 +104,7 @@ help(void)
             "                        When an unknown atom is encountered FreeSASA can either\n"
             "                        'guess' its VdW radius, 'skip' the atom, or 'halt'.\n"
             "                        Default is 'guess'.\n");
-    fprintf(stderr,"\nOUTPUT\n"
+    fprintf(stderr, "\nOUTPUT\n"
             "  -l (--no-log)         Don't print log message (useful with -r -R and -B)\n"
             "  -w (--no-warnings)    Don't print warnings (will still print warnings due to\n"
             "                        invalid command line options)\n"
@@ -143,7 +144,7 @@ help(void)
 void
 short_help(void)
 {
-    fprintf(stderr,"Run '%s -h' for usage instructions.\n",
+    fprintf(stderr, "Run '%s -h' for usage instructions.\n",
             program_name);
 }
 
@@ -153,6 +154,7 @@ void release_resources()
     if (output_pdb) fclose(output_pdb);
     if (per_residue_type_file) fclose(per_residue_type_file);
     if (per_residue_file) fclose(per_residue_file);
+    if (rsa_file) fclose(rsa_file);
     if (errlog) fclose(errlog);
     if (chain_groups) {
         for (int i = 0; i < n_chain_groups; ++i) {
@@ -195,19 +197,19 @@ run_analysis(FILE *input,
     int n = 0;
 
     if (printlog) {
-        freesasa_write_parameters(output,&parameters);
+        freesasa_write_parameters(output, &parameters);
     }
 
     // read PDB file
     if ((structure_options & FREESASA_SEPARATE_CHAINS) ||
         (structure_options & FREESASA_SEPARATE_MODELS)) {
-        structures = freesasa_structure_array(input,&n,classifier,structure_options);
+        structures = freesasa_structure_array(input, &n, classifier, structure_options);
         several_structures = 1;
         for (int i = 0; i < n; ++i) {
             if (structures[i] == NULL) abort_msg("Invalid input.\n");
         }
     } else {
-        single_structure[0] = freesasa_structure_from_pdb(input,classifier,structure_options);
+        single_structure[0] = freesasa_structure_from_pdb(input, classifier, structure_options);
         if (single_structure[0]) {
             structures = single_structure;
             n = 1;
@@ -225,13 +227,13 @@ run_analysis(FILE *input,
         }
         for (int i = 0; i < n_chain_groups; ++i) {
             for (int j = 0; j < n; ++j) {
-                freesasa_structure* tmp = freesasa_structure_get_chains(structures[j],chain_groups[i]);
+                freesasa_structure* tmp = freesasa_structure_get_chains(structures[j], chain_groups[i]);
                 if (tmp != NULL) {
                     ++n2;
-                    structures = realloc(structures,sizeof(freesasa_structure*)*n2);
+                    structures = realloc(structures, sizeof(freesasa_structure*)*n2);
                     structures[n2-1] = tmp;
                 } else {
-                    abort_msg("Chain(s) '%s' not found.\n",chain_groups[i]);
+                    abort_msg("Chain(s) '%s' not found.\n", chain_groups[i]);
                 }
             }
         }
@@ -241,41 +243,45 @@ run_analysis(FILE *input,
     // perform calculation on each structure and output results
     for (int i = 0; i < n; ++i) {
         char name_i[name_len+10];
-        result = freesasa_calc_structure(structures[i],&parameters);
+        result = freesasa_calc_structure(structures[i], &parameters);
         if (result == NULL)        abort_msg("Can't calculate SASA.\n");
-        classes = freesasa_result_classify(result,structures[i],classifier);
+        classes = freesasa_result_classify(result, structures[i], classifier);
         if (classes == NULL)       abort_msg("Can't determine atom classes. Aborting.\n");
         strcpy(name_i,name);
         if (several_structures && (structure_options & FREESASA_SEPARATE_MODELS))
-            sprintf(name_i+strlen(name_i),":%d",freesasa_structure_model(structures[i]));
+            sprintf(name_i+strlen(name_i), ":%d", freesasa_structure_model(structures[i]));
         if (printlog) {
             if (n > 1) fprintf(output,"\n\n####################\n");
-            freesasa_write_result(output,result,name_i,freesasa_structure_chain_labels(structures[i]),classes);
-            freesasa_per_chain(output,result,structures[i]);
+            freesasa_write_result(output, result, name_i, 
+                                  freesasa_structure_chain_labels(structures[i]), classes);
+            freesasa_per_chain(output, result, structures[i]);
         }
         if (per_residue_type) {
-            if (several_structures) fprintf(per_residue_type_file,"\n## %s\n",name_i);
-            freesasa_per_residue_type(per_residue_type_file,result,structures[i]);
+            if (several_structures) fprintf(per_residue_type_file, "\n## %s\n", name_i);
+            freesasa_per_residue_type(per_residue_type_file, result, structures[i]);
         }
         if (per_residue) {
-            if (several_structures) fprintf(per_residue_file,"\n## %s\n",name_i);
-            freesasa_per_residue(per_residue_file,result,structures[i]);
+            if (several_structures) fprintf(per_residue_file, "\n## %s\n", name_i);
+            freesasa_per_residue(per_residue_file, result, structures[i]);
         }
         if (printpdb) {
-            freesasa_write_pdb(output_pdb,result,structures[i]);
+            freesasa_write_pdb(output_pdb, result, structures[i]);
         }
         if (n_select > 0) {
             fprintf(output,"\nSELECTIONS\n");
             for (int c = 0; c < n_select; ++c) {
                 double a;
                 char name[FREESASA_MAX_SELECTION_NAME+1];
-                if (freesasa_select_area(select_cmd[c],name,&a,structures[i],result)
+                if (freesasa_select_area(select_cmd[c], name, &a, structures[i], result)
                     == FREESASA_SUCCESS) {
-                    fprintf(output,"%s : %10.2f\n",name,a);
+                    fprintf(output, "%s : %10.2f\n", name, a);
                 } else {
                     abort_msg("Illegal selection");
                 }
             }
+        }
+        if (printrsa) {
+            freesasa_print_rsa(rsa_file, result, structures[i], name);
         }
         freesasa_result_free(result);
         freesasa_strvp_free(classes);
@@ -289,10 +295,10 @@ fopen_werr(const char* filename,
            const char* mode) 
 {
     errno = 0;
-    FILE *f = fopen(filename,mode);
+    FILE *f = fopen(filename, mode);
     if (f == NULL) {
         fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
-                program_name,optarg,strerror(errno));
+                program_name, optarg, strerror(errno));
         short_help();
         exit(EXIT_FAILURE);
     }
@@ -321,13 +327,13 @@ add_chain_groups(const char* cmd)
     //extract chain groups
     if (err == 0) {
         str = strdup(cmd);
-        token = strtok(str,"+");
+        token = strtok(str, "+");
         while (token) {
             ++n_chain_groups;
             chain_groups = realloc(chain_groups,sizeof(char*)*n_chain_groups);
             if (chain_groups == NULL) { mem_fail(); abort();}
             chain_groups[n_chain_groups-1] = strdup(token);
-            token = strtok(0,"+");
+            token = strtok(0, "+");
         }
         free(str);
     } else {
@@ -339,7 +345,7 @@ void
 add_select(const char* cmd) 
 {
     ++n_select;
-    select_cmd = realloc(select_cmd,sizeof(char*)*n_select);
+    select_cmd = realloc(select_cmd, sizeof(char*)*n_select);
     if (select_cmd == NULL) {
         mem_fail(); 
         abort(); 
@@ -354,15 +360,15 @@ add_select(const char* cmd)
 void
 add_unknown_option(const char *optarg)
 {
-    if (strcmp(optarg,"skip") == 0) {
+    if (strcmp(optarg, "skip") == 0) {
         structure_options |= FREESASA_SKIP_UNKNOWN;
         return;
     } 
-    if(strcmp(optarg,"halt") == 0) {
+    if(strcmp(optarg, "halt") == 0) {
         structure_options |= FREESASA_HALT_AT_UNKNOWN;
         return;
     } 
-    if(strcmp(optarg,"guess") == 0) {
+    if(strcmp(optarg, "guess") == 0) {
         return; //default
     }
     abort_msg("Unknown alternative to option --unknown: '%s'", optarg);
@@ -379,9 +385,9 @@ main(int argc,
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
-    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN};
+    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN, RSA_FILE, RSA};
     parameters = freesasa_default_parameters;
-    memset(opt_set,0,n_opt);
+    memset(opt_set, 0, n_opt);
     program_name = "freesasa";
     struct option long_options[] = {
         {"lee-richards",         no_argument,       0, 'L'},
@@ -410,6 +416,8 @@ main(int argc,
         {"B-value-file",         required_argument, &option_flag, B_FILE},
         {"select",               required_argument, &option_flag, SELECT},
         {"unknown",              required_argument, &option_flag, UNKNOWN},
+        {"rsa-file",             required_argument, &option_flag, RSA_FILE},
+        {"rsa",                  no_argument,       &option_flag, RSA},
         {0,0,0,0}
     };
     options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:e:o:";
@@ -429,21 +437,28 @@ main(int argc,
             switch(long_options[option_index].val) {
             case RES_FILE:
                 per_residue_type = 1;
-                per_residue_type_file = fopen_werr(optarg,"w");
+                per_residue_type_file = fopen_werr(optarg, "w");
                 break;
             case SEQ_FILE:
                 per_residue = 1;
-                per_residue_file = fopen_werr(optarg,"w");
+                per_residue_file = fopen_werr(optarg, "w");
                 break;
             case B_FILE:
                 printpdb = 1;
-                output_pdb = fopen_werr(optarg,"w");
+                output_pdb = fopen_werr(optarg, "w");
                 break;
             case SELECT:
                 add_select(optarg);
                 break;
             case UNKNOWN:
                 add_unknown_option(optarg);
+                break;
+            case RSA:
+                printrsa = 1;
+                break;
+            case RSA_FILE:
+                printrsa = 1;
+                rsa_file = fopen_werr(optarg, "w");
                 break;
             default:
                 abort(); // what does this even mean?
@@ -453,7 +468,7 @@ main(int argc,
             help();
             exit(EXIT_SUCCESS);
         case 'v':
-            printf("FreeSASA %s\n",version);
+            printf("FreeSASA %s\n", version);
             printf("License: MIT <http://opensource.org/licenses/MIT>\n");
             printf("If you use this program for research, please cite:\n");
             printf("  Simon Mitternacht (2016) FreeSASA: An open source C\n"
@@ -461,11 +476,11 @@ main(int argc,
                    "  F1000Research 5:189.\n");
             exit(EXIT_SUCCESS);
         case 'e': 
-            errlog = fopen_werr(optarg,"w");
+            errlog = fopen_werr(optarg, "w");
             freesasa_set_err_out(errlog);
             break;
         case 'o':
-            output = fopen_werr(optarg,"w");
+            output = fopen_werr(optarg, "w");
             break;
         case 'l':
             printlog = 0;
@@ -474,10 +489,10 @@ main(int argc,
             freesasa_set_verbosity(FREESASA_V_NOWARNINGS);
             break;
         case 'c': {
-            FILE *f = fopen_werr(optarg,"r");
+            FILE *f = fopen_werr(optarg, "r");
             classifier = freesasa_classifier_from_file(f);
             fclose(f);
-            if (classifier == NULL) abort_msg("Can't read file '%s'.\n",optarg);
+            if (classifier == NULL) abort_msg("Can't read file '%s'.\n", optarg);
             break;
         }
         case 'n':
@@ -536,11 +551,11 @@ main(int argc,
 #endif
             break;
         case ':':
-            abort_msg("Option '-%c' missing argument.\n",optopt);
+            abort_msg("Option '-%c' missing argument.\n", optopt);
         case '?':
         default:
             fprintf(stderr, "%s: warning: Unknown option '-%c' (will be ignored)\n",
-                    program_name,opt);
+                    program_name, opt);
             break;
         }
     }
@@ -548,23 +563,24 @@ main(int argc,
     if (per_residue_type_file == NULL) per_residue_type_file = output;
     if (per_residue_file == NULL) per_residue_file = output;
     if (output_pdb == NULL) output_pdb = output;
+    if (rsa_file == NULL) rsa_file = output;
     if (alg_set > 1) abort_msg("Multiple algorithms specified.\n");
     if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.\n");
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.\n");
-    if (printlog) fprintf(output,"## %s %s ##\n",program_name,version);
+    if (printlog) fprintf(output,"## %s %s ##\n", program_name, version);
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {
             errno = 0;
             input = fopen(argv[i],"r");
             if (input != NULL) {
-                run_analysis(input,argv[i]);
+                run_analysis(input, argv[i]);
                 fclose(input);
             } else {
-                abort_msg("Opening file '%s'; %s\n",argv[i],strerror(errno));
+                abort_msg("Opening file '%s'; %s\n", argv[i], strerror(errno));
             }
         }
     } else {
-        if (!isatty(STDIN_FILENO)) run_analysis(stdin,"stdin");
+        if (!isatty(STDIN_FILENO)) run_analysis(stdin, "stdin");
         else abort_msg("No input.\n", program_name);
     }
 
@@ -572,3 +588,4 @@ main(int argc,
 
     return EXIT_SUCCESS;
 }
+ 

@@ -23,7 +23,7 @@ libfreesasa_a_SOURCES = classifier.c classifier.h protor.c oons.c \
 	coord.c coord.h pdb.c pdb.h \
 	sasa_lr.c sasa_sr.c structure.c \
 	freesasa.c freesasa.h freesasa_internal.h \
-	nb.h nb.c util.c \
+	nb.h nb.c util.c rsa.c \
 	selection.h selection.c $(lp_output)
 freesasa_SOURCES = main.c 
 example_SOURCES = example.c

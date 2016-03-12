@@ -416,6 +416,24 @@ int freesasa_write_parameters(FILE *log,
                               const freesasa_parameters *parameters);
 
 /**
+    Print RSA-file
+
+    Uses default reference SASA values
+
+    @param output Output-file
+    @param result SASA values
+    @param structure The structure
+    @param name Name of the protein
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
+    writing to file
+*/
+int
+freesasa_print_rsa(FILE* output,
+                   const freesasa_result *result,
+                   const freesasa_structure *structure,
+                   const char *name);
+
+/**
     Set the global verbosity level.
 
     @param v the verbosity level
