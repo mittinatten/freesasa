@@ -64,7 +64,9 @@ struct freesasa_structure structure = {
     .res_desc = (char**)str_array
 };
 struct file_range range = {.begin = 0, .end = 1};
-struct cell a_cell = {.nb = NULL, .atom = int_array, .n_nb=0, .n_atoms = 0};
+struct cell a_cell = {.nb = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
+                             NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL},
+                      .atom = int_array, .n_nb=0, .n_atoms = 0};
 struct cell_list a_cell_list = {.cell = &a_cell, .n = 1, .nx = 1, .ny =1, .nz = 1,
                                 .d = 20, .x_min = 0, .x_max = 1, 
                                 .y_min = 0, .y_max = 1,
@@ -79,8 +81,8 @@ START_TEST (test_coord)
     ck_assert_ptr_eq(freesasa_coord_new(),NULL);
     ck_assert_ptr_eq(freesasa_coord_copy(&coord),NULL);
     ck_assert_ptr_eq(freesasa_coord_new_linked(v,1),NULL);
-    ck_assert_ptr_eq(freesasa_coord_append(coord_dyn,v,1),FREESASA_FAIL);
-    ck_assert_ptr_eq(freesasa_coord_append_xyz(coord_dyn,v,v+1,v+2,1),FREESASA_FAIL);
+    ck_assert_int_eq(freesasa_coord_append(coord_dyn,v,1),FREESASA_FAIL);
+    ck_assert_int_eq(freesasa_coord_append_xyz(coord_dyn,v,v+1,v+2,1),FREESASA_FAIL);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     freesasa_coord_free(coord_dyn);
 }
@@ -143,7 +145,7 @@ START_TEST (test_alg)
     freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 1; i < 50; ++i) {
         set_fail_freq(i);
-        ck_assert_int_eq(freesasa_lee_richards(dummy,&coord,r,1.4,0.1,1),FREESASA_FAIL);
+        ck_assert_int_eq(freesasa_lee_richards(dummy,&coord,r,1.4,20,1),FREESASA_FAIL);
         set_fail_freq(i);
         ck_assert_int_eq(freesasa_shrake_rupley(dummy,&coord,r,1.4,100,1),FREESASA_FAIL);
     }
@@ -231,10 +233,10 @@ START_TEST (test_api)
     for (int i = 1; i < 50; ++i) {
         p.alg = FREESASA_SHRAKE_RUPLEY;
         set_fail_freq(i);
-        ck_assert_int_eq(freesasa_calc(&coord, r, &p), NULL);
+        ck_assert_ptr_eq(freesasa_calc(&coord, r, &p), NULL);
         p.alg = FREESASA_LEE_RICHARDS; 
         set_fail_freq(i);
-        ck_assert_int_eq(freesasa_calc(&coord, r, &p), NULL);
+        ck_assert_ptr_eq(freesasa_calc(&coord, r, &p), NULL);
     }
 
     FILE *file = fopen(DATADIR "1ubq.pdb","r");

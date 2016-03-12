@@ -17,6 +17,6 @@ setup(
     version= '@PACKAGE_VERSION@',
     author='Simon Mitternacht',
     url='http://freesasa.github.io/',
-    license='GPL-v3',
+    license='MIT',
     ext_modules = cythonize(extensions)
 )

@@ -151,8 +151,7 @@ check_file(FILE *input,
 {
     assert(input); assert(types); assert(atoms);
     long last_tell;
-    const int blen = 200;
-    char buf[blen];
+    char buf[200];
     struct file_range *last_range = NULL;
         
     last_tell = ftell(input);
@@ -242,8 +241,11 @@ next_line(char **line,
     size_t len = 0;
     int ret;
     
-    getline(&linebuf,&len,fp);
-    ret = strip_line(line,linebuf);
+    ret = getline(&linebuf,&len,fp);
+
+    if (ret >= 0) ret = strip_line(line,linebuf);
+    else ret = FREESASA_FAIL;
+
     free(linebuf);
     
     return ret;
@@ -366,7 +368,7 @@ read_types(struct classifier_types *types,
     char buf[blen];
     fseek(input,fi.begin,SEEK_SET);
     // read command (and discard)
-    fscanf(input,"%s",buf);
+    if (fscanf(input,"%s",buf) == 0) return FREESASA_FAIL;
     assert(strcmp(buf,"types:") == 0);
     while (ftell(input) < fi.end) { 
         nl = next_line(&line,input);
@@ -506,7 +508,7 @@ read_atoms(struct classifier_config *config,
     int ret = FREESASA_SUCCESS, nl;
     fseek(input, fi.begin, SEEK_SET);
     // read command (and discard)
-    fscanf(input, "%s", buf);
+    if (fscanf(input, "%s", buf) == 0) return FREESASA_FAIL;
     assert(strcmp(buf, "atoms:") == 0);
     while (ftell(input) < fi.end) { 
         nl = next_line(&line, input);

@@ -1,0 +1,28 @@
+# This only checks the c part of the repository, it was difficult to
+# get the Python bindings to build on 
+
+language: c
+git:
+  depth: 3
+dist:
+  trusty
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq check
+
+branches:
+  only:
+    - master
+    - dev
+
+compiler:
+  - gcc
+  - clang
+
+before_script:
+  - autoreconf -i
+  - ./configure --enable-check
+
+script: make && make check
+
