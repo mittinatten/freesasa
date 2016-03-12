@@ -18,12 +18,12 @@ START_TEST (test_cell) {
     ck_assert(c->cell != NULL);
     ck_assert(fabs(c->d - r_max) < 1e-10);
     // check bounds
-    ck_assert(fabs(c->x_min < -5));
-    ck_assert(fabs(c->x_max > 2));
-    ck_assert(fabs(c->y_min < 0));
-    ck_assert(fabs(c->y_max > 5));
-    ck_assert(fabs(c->z_min < -2));
-    ck_assert(fabs(c->z_max > 5));
+    ck_assert(c->x_min < -5);
+    ck_assert(c->x_max > 2);
+    ck_assert(c->y_min < 0);
+    ck_assert(c->y_max > 5);
+    ck_assert(c->z_min < -2);
+    ck_assert(c->z_max > 5);
     // check number of cells
     ck_assert(c->nx*c->d >= 7);
     ck_assert(c->nx <= ceil(7/r_max)+1);
@@ -267,8 +267,8 @@ START_TEST (test_selection)
     ck_assert_int_eq(s3->atom[0],1);
     ck_assert_int_eq(s3->atom[1],1);
     ck_assert_int_eq(selection_join(NULL,s1,s2,E_OR),FREESASA_FAIL);
-    ck_assert_ptr_eq(selection_join(s3,NULL,s1,E_OR),FREESASA_FAIL);
-    ck_assert_ptr_eq(selection_join(NULL,NULL,NULL,E_OR),FREESASA_FAIL);
+    ck_assert_int_eq(selection_join(s3,NULL,s1,E_OR),FREESASA_FAIL);
+    ck_assert_int_eq(selection_join(NULL,NULL,NULL,E_OR),FREESASA_FAIL);
     
     //selection_not
     ck_assert_int_eq(selection_not(s3),FREESASA_SUCCESS);

@@ -151,8 +151,7 @@ check_file(FILE *input,
 {
     assert(input); assert(types); assert(atoms);
     long last_tell;
-    const int blen = 200;
-    char buf[blen];
+    char buf[200];
     struct file_range *last_range = NULL;
         
     last_tell = ftell(input);
