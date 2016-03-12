@@ -64,7 +64,9 @@ struct freesasa_structure structure = {
     .res_desc = (char**)str_array
 };
 struct file_range range = {.begin = 0, .end = 1};
-struct cell a_cell = {.nb = NULL, .atom = int_array, .n_nb=0, .n_atoms = 0};
+struct cell a_cell = {.nb = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
+                             NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL},
+                      .atom = int_array, .n_nb=0, .n_atoms = 0};
 struct cell_list a_cell_list = {.cell = &a_cell, .n = 1, .nx = 1, .ny =1, .nz = 1,
                                 .d = 20, .x_min = 0, .x_max = 1, 
                                 .y_min = 0, .y_max = 1,

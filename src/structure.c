@@ -364,7 +364,6 @@ from_pdb_impl(FILE *pdb_file,
               int options)
 {
     assert(pdb_file);
-    int err = 0;
     size_t len = PDB_LINE_STRL;
     char *line = NULL;
     char alt, the_alt = ' ';
