@@ -295,7 +295,6 @@ START_TEST (test_radius)
         // make sure correct radius is supplied
         ck_assert_msg(fabs(r1 - a.radius) < 1e-10,buf);
     }
-    //ck_assert(fabs(oons_c->radius("XXX"," H  ", oons_c) - 1.1)  < 1e-10);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
@@ -311,19 +310,12 @@ START_TEST (test_class)
                 a.a,a.b,oons_c->class2str(c, oons_c),oons_c->class2str(a.class, oons_c));
         ck_assert_msg(c == a.class, buf);
     }
-    //ck_assert(oons_c->sasa_class("  C", " C1 ", oons_c) == FREESASA_NUCLEICACID);
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert(oons_c->sasa_class("ABC", " X  ", oons_c) == FREESASA_WARN);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
-    /*ck_assert_str_eq(oons_c->class2str(FREESASA_POLAR, oons_c),"Polar");
-    ck_assert_str_eq(oons_c->class2str(FREESASA_APOLAR, oons_c),"Apolar");
-    ck_assert_str_eq(oons_c->class2str(FREESASA_NUCLEICACID, oons_c),"Nucleic");
-    ck_assert_str_eq(oons_c->class2str(FREESASA_CLASS_UNKNOWN, oons_c),"Unknown");
-    */
     
-    //freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert_ptr_eq(oons_c->class2str(100, oons_c), NULL);
-    ck_assert_ptr_eq(oons_c->class2str(-1, oons_c), NULL);
+    ck_assert(oons_c->class2str(100, oons_c) == NULL);
+    ck_assert(oons_c->class2str(-1, oons_c) == NULL);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
@@ -339,21 +331,6 @@ START_TEST (test_residue)
         res[i] = rc->class2str(i, rc);
         ck_assert_int_eq(rc->sasa_class(res[i], "", rc),i);
     }
-
-    freesasa_set_verbosity(FREESASA_V_SILENT);
-    // check erroneous input
-    /*
-    ck_assert(freesasa_classify_residue2str(nrt+1) == NULL);
-    ck_assert(freesasa_classify_residue2str(-1) == NULL);
-    ck_assert(freesasa_classify_is_aminoacid(-1) == FREESASA_FAIL);
-    ck_assert(freesasa_classify_is_nucleicacid(-1) == FREESASA_FAIL);
-    ck_assert(freesasa_classify_is_aminoacid(freesasa_classify_nresiduetypes())
-              == FREESASA_FAIL);
-    ck_assert(freesasa_classify_is_nucleicacid(freesasa_classify_nresiduetypes())
-              == FREESASA_FAIL);
-    ck_assert(freesasa_classify_residue("AAAA") == freesasa_classify_residue("UNK"));
-    */
-    freesasa_set_verbosity(FREESASA_V_NORMAL);
 
     // check numbering
     for (int i = 0; i < naa; ++i) {

@@ -105,11 +105,11 @@ START_TEST (test_get_models) {
         size_t len;
         ck_assert_int_gt(it[i].end,it[i].begin);
         fseek(pdb,it[i].begin,0);
-        getline(&line,&len,pdb);
+        ck_assert(getline(&line,&len,pdb) > 0);
         // each segment should begin with MODEL
         ck_assert(strncmp(line,"MODEL",5) == 0);
         while(1) {
-            getline(&line,&len,pdb);
+            ck_assert(getline(&line,&len,pdb) > 0);
             // there should be only one MODEL per model
             ck_assert(strncmp(line,"MODEL",5) != 0);
             if (ftell(pdb) >= it[i].end) break;
