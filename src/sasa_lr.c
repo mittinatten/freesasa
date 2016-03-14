@@ -93,33 +93,38 @@ int
 freesasa_lee_richards(double *sasa,
                       const coord_t *xyz,
                       const double *atom_radii,
-                      double probe_radius,
-                      int n_slices_per_atom,
-                      int n_threads)
+		      const freesasa_parameters *param)
 {
     assert(sasa);
     assert(xyz);
     assert(atom_radii);
-    if (n_slices_per_atom <= 0) 
-        return freesasa_fail("in %s(): n_slices_per_atom = %f is invalid, must be > 0\n",
-                             __func__,n_slices_per_atom);
 
-    int return_value = FREESASA_SUCCESS;
-    int n_atoms = freesasa_coord_n(xyz);
+    if (param == NULL) param = &freesasa_default_parameters;
+
+    int return_value = FREESASA_SUCCESS,
+        n_atoms = freesasa_coord_n(xyz),
+        n_threads = param->n_threads,
+        resolution = param->lee_richards_n_slices;
+    double probe_radius = param->probe_radius;
     lr_data *lr;
 
+    if (resolution <= 0)
+        return freesasa_fail("in %s(): n_slices_per_atom = %f is invalid, must be > 0\n",
+                             __func__, resolution);
+
     if (n_atoms == 0) {
-        return freesasa_warn("in %s(): Empty coordinates",__func__);
+        return freesasa_warn("in %s(): Empty coordinates", __func__);
     }
     if (n_threads > n_atoms) {
         n_threads = n_atoms;
-        freesasa_warn("No sense in having more threads than atoms, only using %d threads.", n_threads);
+        freesasa_warn("No sense in having more threads than atoms, only using %d threads.",
+                      n_threads);
     }
-
+    
     // determine slice range and init radii and sasa arrays
-    lr = init_lr(sasa, xyz, atom_radii, probe_radius, n_slices_per_atom);
+    lr = init_lr(sasa, xyz, atom_radii, probe_radius, resolution);
     if (lr == NULL) return mem_fail();
-
+    
     // determine which atoms are neighbours
     lr->adj = freesasa_nb_new(xyz,lr->radii);
     if (lr->adj == NULL) {

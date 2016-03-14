@@ -135,27 +135,33 @@ int
 freesasa_shrake_rupley(double *sasa,
                        const coord_t *xyz,
                        const double *r,
-                       double probe_radius,
-                       int n_points,
-                       int n_threads)
+		       const freesasa_parameters *param)
 {
     assert(sasa);
     assert(xyz);
     assert(r);
-    assert(n_threads > 0);
 
-    int n_atoms = freesasa_coord_n(xyz);
-    int return_value = FREESASA_SUCCESS;
+    if (param == NULL) param = &freesasa_default_parameters;
+    
+    int n_atoms = freesasa_coord_n(xyz),
+        n_threads = param->n_threads,
+        resolution = param->shrake_rupley_n_points,
+        return_value = FREESASA_SUCCESS;
+    double probe_radius = param->probe_radius;
     sr_data sr;
-
+    
+    if (resolution <= 0)
+        return freesasa_fail("in %s(): n_slices_per_atom = %f is invalid, must be > 0\n",
+                             __func__, resolution);
     if (n_atoms == 0) return freesasa_warn("%s(): empty coordinates", __func__);
     if (n_threads > n_atoms) {
         n_threads = n_atoms;
-        freesasa_warn("No sense in having more threads than atoms, only using %d threads.", n_threads);
+        freesasa_warn("No sense in having more threads than atoms, only using %d threads.",
+                      n_threads);
     }
-
-    if (init_sr(&sr,sasa,xyz,r,probe_radius,n_points)) return mem_fail();
-
+    
+    if (init_sr(&sr, sasa, xyz, r, probe_radius, resolution)) return mem_fail();
+    
     //calculate SASA
     if (n_threads > 1) {
 #if USE_THREADS

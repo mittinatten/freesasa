@@ -28,14 +28,8 @@ extern const char *freesasa_name;
     make sure it is large enough.
     @param c Coordinates of the object to calculate SASA for.
     @param radii Array of radii for each sphere.
-    @param probe_radius Probe radius to be used.
-    @param n_points Number of points to be used, must be accepted by 
-    freesasa_srp_n_is_valid(). 
-    @param n_threads Number of threads to use for parallel computations 
-    (only leads to performance improvement for largish objects, see 
-    manual). Program has to be compiled with `-DPTHREADS` for this option
-    to have any effect.
-    
+    @param param Parameters specifying resolution, probe radius and
+    number of threads. If NULL :.freesasa_default_parameters is used.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_WARN if multiple
     threads are requested when compiled in single-threaded mode (with
     error message). ::FREESASA_FAIL if memory allocation failure.
@@ -44,9 +38,7 @@ int
 freesasa_shrake_rupley(double *sasa,
                        const coord_t *c,
                        const double *radii,
-                       double probe_radius,
-                       int n_points,
-                       int n_threads);
+		       const freesasa_parameters *param);
 
 /**
     Calculate SASA using L&R algorithm.
@@ -62,13 +54,8 @@ freesasa_shrake_rupley(double *sasa,
     make sure it is large enough.
     @param c Coordinates of the object to calculate SASA for.
     @param radii Array of radii for each sphere.
-    @param probe_radius Probe radius to be used.
-    @param n_slices_per_atom Number of slices per atom (resolution).
-    @param n_threads Number of threads to use for parallel computations 
-    (only leads to performance improvement for largish objects, see 
-    manual). Program has to be compiled with `-DPTHREADS` for this option
-    to have any effect.
-    
+    @param param Parameters specifying resolution, probe radius and
+    number of threads. If NULL :.freesasa_default_parameters is used.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_WARN if
     multiple threads are requested when compiled in single-threaded
     mode (with error message). ::FREESASA_FAIL if memory allocation 
@@ -77,9 +64,7 @@ freesasa_shrake_rupley(double *sasa,
 int freesasa_lee_richards(double* sasa,
                           const coord_t *c,
                           const double *radii,
-                          double probe_radius,
-                          int n_slices_per_atom,
-                          int n_threads);
+			  const freesasa_parameters *param);
 
 
 /**

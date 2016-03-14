@@ -129,16 +129,10 @@ freesasa_calc(const coord_t *c,
 
     switch(p->alg) {
     case FREESASA_SHRAKE_RUPLEY:
-        ret = freesasa_shrake_rupley(result->sasa, c, radii,
-                                     p->probe_radius,
-                                     p->shrake_rupley_n_points, 
-                                     p->n_threads);
+      ret = freesasa_shrake_rupley(result->sasa, c, radii, parameters);
         break;
     case FREESASA_LEE_RICHARDS:
-        ret = freesasa_lee_richards(result->sasa, c, radii,
-                                    p->probe_radius,
-                                    p->lee_richards_n_slices, 
-                                    p->n_threads);
+        ret = freesasa_lee_richards(result->sasa, c, radii, parameters);
         break;
     default:
         assert(0); //should never get here

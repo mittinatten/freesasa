@@ -139,15 +139,15 @@ START_TEST (test_alg)
 {
     // First check that the input actually gives a valid calculation
     set_fail_freq(10000);
-    ck_assert_int_eq(freesasa_lee_richards(dummy,&coord,r,1.4,20,1),FREESASA_SUCCESS);
-    ck_assert_int_eq(freesasa_shrake_rupley(dummy,&coord,r,1.4,100,1),FREESASA_SUCCESS);
+    ck_assert_int_eq(freesasa_lee_richards(dummy, &coord, r, NULL), FREESASA_SUCCESS);
+    ck_assert_int_eq(freesasa_shrake_rupley(dummy, &coord, r, NULL), FREESASA_SUCCESS);
     
     freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 1; i < 50; ++i) {
         set_fail_freq(i);
-        ck_assert_int_eq(freesasa_lee_richards(dummy,&coord,r,1.4,20,1),FREESASA_FAIL);
+        ck_assert_int_eq(freesasa_lee_richards(dummy,&coord,r,NULL),FREESASA_FAIL);
         set_fail_freq(i);
-        ck_assert_int_eq(freesasa_shrake_rupley(dummy,&coord,r,1.4,100,1),FREESASA_FAIL);
+        ck_assert_int_eq(freesasa_shrake_rupley(dummy,&coord,r,NULL),FREESASA_FAIL);
     }
     set_fail_freq(1);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
