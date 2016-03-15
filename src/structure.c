@@ -31,11 +31,12 @@ struct freesasa_structure {
     int model; // model number
     char *chains; //all chain labels found (as string)
     int *res_first_atom; // first atom of each residue
+    int *chain_first_atom; // first atom of each chain
     char **res_desc;
 };
 
 static const struct freesasa_structure empty_structure = 
-    {NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL};
+    {NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL};
 
 static int
 guess_symbol(char *symbol,
@@ -173,6 +174,7 @@ freesasa_structure_free(freesasa_structure *s)
     }
     free(s->radius);
     free(s->res_first_atom);
+    free(s->chain_first_atom);
     free(s->chains);
     free(s);
 }
@@ -214,18 +216,23 @@ guess_symbol(char *symbol,
 }
 static int
 structure_add_chain(freesasa_structure *s,
-                    char chain_label)
+                    char chain_label,
+                    int i_latest_atom)
 {
     if (strchr(s->chains,chain_label) == NULL) {
-        int n = ++s->number_chains;
         char *sc = s->chains;
+        int *cfa = s->chain_first_atom;
+        int n = ++s->number_chains;
         s->chains = realloc(s->chains,n + 1);
-        if (s->chains) {
+        s->chain_first_atom = realloc(s->chain_first_atom, n*sizeof(int));
+        if (s->chains && s->chain_first_atom) {
             s->chains[n-1] = chain_label;
             s->chains[n] = '\0';
             assert (strlen(s->chains) == s->number_chains);
+            s->chain_first_atom[n-1] = i_latest_atom;
         } else {
             s->chains = sc;
+            s->chain_first_atom = cfa;
             return mem_fail();
         }
     }
@@ -335,7 +342,7 @@ structure_add_atom(freesasa_structure *s,
     }
 
     if (freesasa_coord_append(s->xyz, xyz, 1)) return mem_fail();
-    if (structure_add_chain(s, a->chain_label)) return mem_fail();
+    if (structure_add_chain(s, a->chain_label, na - 1)) return mem_fail();
 
     /* register a new residue if it's the first atom, or if the
        residue number of the current atom is different from the
@@ -728,6 +735,40 @@ freesasa_structure_residue_descriptor(const freesasa_structure *s,
     assert(s);
     assert(r_i < s->number_residues);
     return s->res_desc[r_i];
+}
+
+int
+freesasa_structure_n_chains(const freesasa_structure *s)
+{
+    return s->number_chains;
+}
+
+int
+freesasa_structure_chain_index(const freesasa_structure *s,
+                               char chain)
+{
+    for (int i = 0; i < s->number_chains; ++i) {
+        if (s->chains[i] == chain) return i;
+    }
+    return freesasa_fail("in %s: Chain %c not found.", __func__, chain);
+}
+
+int
+freesasa_structure_chain_atoms(const freesasa_structure *s,
+                               char chain,
+                               int *first,
+                               int *last)
+{
+    int c_i = freesasa_structure_chain_index(s,chain),
+        n = freesasa_structure_n_chains(s);
+    if (c_i < 0) return fail_msg("");
+
+    *first = s->chain_first_atom[c_i];
+    if (c_i == n - 1) *last = s->number_atoms-1;
+    else *last = s->chain_first_atom[c_i+1] - 1;
+    assert(*last >= *first);
+
+    return FREESASA_SUCCESS;
 }
 
 int

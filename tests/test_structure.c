@@ -43,11 +43,19 @@ START_TEST (test_structure_api)
         const double *xyz = freesasa_coord_i(c, i);
         ck_assert(fabs(xyz[0]+xyz[1]+xyz[2]-3*i) < 1e-10);
     }
-    ck_assert(freesasa_structure_n(s) == N);
-    ck_assert(freesasa_structure_n_residues(s) == 1);
+    ck_assert_int_eq(freesasa_structure_n(s), N);
+    ck_assert_int_eq(freesasa_structure_n_residues(s), 1);
+    ck_assert_int_eq(freesasa_structure_n_chains(s), 1);
 
+    ck_assert_int_eq(freesasa_structure_chain_index(s, 'A'), 0);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    ck_assert_int_eq(freesasa_structure_chain_index(s, 'B'), FREESASA_FAIL);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+        
     int first, last;
-    ck_assert(freesasa_structure_residue_atoms(s,0,&first,&last) == FREESASA_SUCCESS);
+    ck_assert(freesasa_structure_residue_atoms(s, 0, &first, &last) == FREESASA_SUCCESS);
+    ck_assert(first == 0 && last == N-1);
+    ck_assert(freesasa_structure_chain_atoms(s, 'A', &first, &last) == FREESASA_SUCCESS);
     ck_assert(first == 0 && last == N-1);
     freesasa_structure_free(s);
     s = NULL;
@@ -295,9 +303,23 @@ END_TEST
 START_TEST (test_get_chains) {
     FILE *pdb = fopen(DATADIR "2jo4.pdb","r");
     freesasa_structure *s = freesasa_structure_from_pdb(pdb, NULL, 0);
-    ck_assert(freesasa_structure_n(s) == 4*129);
-    ck_assert_str_eq(freesasa_structure_chain_labels(s),"ABCD");
-
+    int first, last;
+    ck_assert_int_eq(freesasa_structure_n(s), 4*129);
+    ck_assert_int_eq(freesasa_structure_n_chains(s), 4);
+    ck_assert_str_eq(freesasa_structure_chain_labels(s), "ABCD");
+    ck_assert_int_eq(freesasa_structure_chain_atoms(s, 'A', &first, &last),FREESASA_SUCCESS);
+    ck_assert_int_eq(first, 0);
+    ck_assert_int_eq(last, 128);
+    ck_assert_int_eq(freesasa_structure_chain_atoms(s, 'B', &first, &last),FREESASA_SUCCESS);
+    ck_assert_int_eq(first, 129);
+    ck_assert_int_eq(last, 129*2-1);
+    ck_assert_int_eq(freesasa_structure_chain_atoms(s, 'C', &first, &last),FREESASA_SUCCESS);
+    ck_assert_int_eq(first, 129*2);
+    ck_assert_int_eq(last, 129*3-1);
+    ck_assert_int_eq(freesasa_structure_chain_atoms(s, 'D', &first, &last),FREESASA_SUCCESS);
+    ck_assert_int_eq(first, 129*3);
+    ck_assert_int_eq(last, 129*4-1);
+    
     freesasa_structure *s2 = freesasa_structure_get_chains(s,"");
     ck_assert(s2 == NULL);
     s2 = freesasa_structure_get_chains(s,"X");

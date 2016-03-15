@@ -484,6 +484,14 @@ freesasa_structure*
 freesasa_structure_new(void);
 
 /**
+    Free structure.
+
+    @param structure The structure to free.
+ */
+void
+freesasa_structure_free(freesasa_structure* structure);
+
+/**
     Init structure with coordinates from pdb-file.
 
     Reads in a PDB-file and generates a structure object.
@@ -536,6 +544,7 @@ freesasa_structure_new(void);
     @return The generated structure. Returns `NULL` and prints error
       if input is invalid or  memory allocation failure.
  */
+
 freesasa_structure*
 freesasa_structure_from_pdb(FILE *pdb,
                             const freesasa_classifier *classifier,
@@ -553,11 +562,8 @@ freesasa_structure_from_pdb(FILE *pdb,
     free().
 
     @param pdb Input PDB-file.  
-    
     @param n Number of structures found are written to this integer.
-    
     @param classifier A classifier to calculate atomic radii.
-
     @param options Bitfield. Either or both of
       ::FREESASA_SEPARATE_MODELS and ::FREESASA_SEPARATE_CHAINS can be
       used to generate one structure per model and one structure per
@@ -565,7 +571,6 @@ freesasa_structure_from_pdb(FILE *pdb,
       specified). See freesasa_structure_from_pdb() for documentation
       on options for deciding what atoms to include
       (::FREESASA_JOIN_MODELS is not supported here).
-
     @return Array of structures. Prints error message(s) and returns
       NULL if there were problems reading input, if invalid value of
       `options`, or upon a memory allocation
@@ -591,9 +596,8 @@ freesasa_structure_array(FILE *pdb,
     @param x x-coordinate of atom.
     @param y y-coordinate of atom.
     @param z z-coordinate of atom.
-
     @return ::FREESASA_SUCCESS on normal execution. ::FREESASA_FAIL if
-    if memory allocation fails.
+      if memory allocation fails.
  */
 int 
 freesasa_structure_add_atom(freesasa_structure *structure,
@@ -657,6 +661,7 @@ freesasa_structure_add_atom_wopt(freesasa_structure *structure,
                                  double x, double y, double z,
                                  const freesasa_classifier *classifier,
                                  int options);
+
 /**
     Create new structure consisting of a selection chains from the
     provided structure.
@@ -697,12 +702,28 @@ int
 freesasa_structure_n(const freesasa_structure *structure);
 
 /**
-    Free structure.
+    Get number of residues.
 
-    @param structure The structure to free.
+    Calculated crudely by determining the number of unique
+    combinations of residue number and chain label contained in the
+    structure. If residues are mingled i.e. atoms of the same residue
+    are in non-contiguous regions of the file, this function might be
+    off.
+
+    @param s A structure.
+    @return Number of residues.
  */
-void
-freesasa_structure_free(freesasa_structure* structure);
+int
+freesasa_structure_n_residues(const freesasa_structure *s);
+
+/**
+    Get number of chains.
+
+    @param s A structure.
+    @return The number of chains in the structure.
+ */
+int
+freesasa_structure_n_chains(const freesasa_structure *s);
 
 /**
     Returns a pointer to an array of the radii of each atom.
@@ -826,6 +847,37 @@ freesasa_structure_model(const freesasa_structure *structure);
  */
 const double*
 freesasa_structure_coord_array(const freesasa_structure *structure);
+
+/**
+    Get indices of first and last atoms of a residue
+ 
+    @param s A structure.
+    @param r_i Residue index.
+    @param first First atom of residue `r_i` will be stored here.
+    @param last Last atom of residue `r_i` will be stored here.
+    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if index `r_i` is invalid.
+ */
+int
+freesasa_structure_residue_atoms(const freesasa_structure *s,
+                                 int r_i, 
+                                 int *first,
+                                 int *last);
+
+/**
+    Get indices of first and last atoms of a chain
+ 
+    @param s A structure.
+    @param chain The chain label.
+    @param first First atom of `chain` will be stored here.
+    @param last Last atom of `chain` will be stored here.
+    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if `chain` not found.
+ */
+int
+freesasa_structure_chain_atoms(const freesasa_structure *s,
+                                 char label,
+                                 int *first,
+                                 int *last);
+
 
 #ifdef __cplusplus
 }

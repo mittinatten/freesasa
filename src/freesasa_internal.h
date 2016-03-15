@@ -70,33 +70,18 @@ int freesasa_lee_richards(double* sasa,
 /**
     Get coordinates.
     
-    @param s Self.
+    @param s A structure.
     @return The coordinates of the structure as a ::coord_t struct.
  */
 const coord_t *
 freesasa_structure_xyz(const freesasa_structure *s);
 
 /**
-    Get number of residues.
-
-    Calculated crudely by determining the number of unique
-    combinations of residue name and chain label contained in the
-    structure. If residues are mingled i.e. atoms of the same residue
-    are in non-contiguous regions of the file, this function might be
-    off.
-
-    @param s Self.
-    @return Number of residues.
- */
-int
-freesasa_structure_n_residues(const freesasa_structure *s);
-
-/**
     Get a string describing an atom. 
     Format: "A    1 ALA  CA " 
     (chain label, residue number, residue type, atom name)
 
-    @param s Self.
+    @param s A structure.
     @param i Atom index
     @return Descriptor string. 
  */
@@ -105,25 +90,23 @@ freesasa_structure_atom_descriptor(const freesasa_structure *s,
                                    int i);
 
 /**
-    Get indices of first and last atoms of a residue
- 
-    @param s Self.
-    @param r_i Residue index.
-    @param first First atom of residue `r_i` will be stored here.
-    @param last Last atom of residue `r_i` will be stored here.
-    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if index `r_i` is invalid.
+    Get the index of a chain.
+
+    @param s A structure.
+    @param chain The chain label.
+    @return The index of `chain` in the structure. ::FREESASA_FAIL 
+    if `chain` not found.
+    
  */
 int
-freesasa_structure_residue_atoms(const freesasa_structure *s,
-                                 int r_i, 
-                                 int *first,
-                                 int *last);
+freesasa_structure_chain_index(const freesasa_structure *s,
+                               char chain);
 
 /**
     Get a string describing a residue.
     Format: "A    1 ALA" (chain label, residue number, residue type)
     
-    @param s Self.
+    @param s A structure.
     @param r_i atom index
     @return Descriptor string
  */
