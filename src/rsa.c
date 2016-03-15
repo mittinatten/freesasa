@@ -7,6 +7,9 @@
 #include <errno.h>
 #include <math.h>
 #include <pdb.h>
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif
 
 struct residue_sasa {
     const char *name;
@@ -144,10 +147,15 @@ static void
 rsa_print_header(FILE *output,
                  const char *name)
 {
-   fprintf(output, "REM  Using default relative accessibilites\n");
-   fprintf(output, "REM  Absolute and relative SASAs for %s\n", name);
-   fprintf(output, "REM RES _ NUM      All-atoms   Total-Side   Main-Chain    Non-polar    All polar\n");
-   fprintf(output, "REM                ABS   REL    ABS   REL    ABS   REL    ABS   REL    ABS   REL\n");
+#ifdef PACKAGE_VERSION
+    fprintf(output, "REM  FreeSASA " PACKAGE_VERSION "\n");
+#else
+    fprintf(output, "REM  FreeSASA\n");
+#endif
+    fprintf(output, "REM  Using default relative accessibilites\n");
+    fprintf(output, "REM  Absolute and relative SASAs for %s\n", name);
+    fprintf(output, "REM RES _ NUM      All-atoms   Total-Side   Main-Chain    Non-polar    All polar\n");
+    fprintf(output, "REM                ABS   REL    ABS   REL    ABS   REL    ABS   REL    ABS   REL\n");
 }
 
 static inline void 

@@ -426,6 +426,9 @@ int freesasa_write_parameters(FILE *log,
     moment there is no support for outputting RSA files for other
     configurations.
 
+    @remark This is still an experimental feature, and the interface
+      may change in future versions.
+
     @param output Output-file
     @param result SASA values
     @param structure The structure
@@ -880,7 +883,7 @@ freesasa_structure_residue_atoms(const freesasa_structure *s,
  */
 int
 freesasa_structure_chain_atoms(const freesasa_structure *s,
-                                 char label,
+                                 char chain,
                                  int *first,
                                  int *last);
 

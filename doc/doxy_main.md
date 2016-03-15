@@ -127,6 +127,27 @@ separate files, run
 
     $ freesasa --residue-file=3wbm.seq --residue-type-file=3wbm.res --B-value-file=3wbm.b 3wbm.pdb
 
+
+@subsection RSA Relative SASA values
+
+The CLI can also produce output similar to the RSA format from NACCESS
+using the options `--rsa` and `--rsa-file`. At the moment this will
+only give consistent results for the default configuration. This
+format includes both absolute SASA values and relative ones compared
+to a precalculated reference max value. The only significant
+difference between FreeSASA's RSA output and that of NACCESS (except
+differences in areas due to different atomic radii), is that FreeSASA
+will print the value "N/A" and NACCESS "-99.9" when no reference value
+is available, for example for nucleic acids.
+
+The reference SASA values for residue X are calculated from Ala-X-Ala
+peptides in a stretched out configuration. The reference
+configurations are supplied for reference in the directory
+`rsa`. Since these are not always the most exposed possible
+configuration, and because bond lengths and bond angles might vary,
+the relative SASA values will sometimes be larger than 100 %.
+
+
 @section CLI-select Selecting groups of atoms
 
 The option `--select` can be used to define groups of atoms whose
