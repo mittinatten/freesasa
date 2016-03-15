@@ -339,7 +339,7 @@ freesasa_per_chain(FILE *output,
     @param result SASA values.
     @param structure The structure.
     @return ::FREESASA_FAIL if problems writing to
-    output. ::FREESASA_SUCCESS else.
+      `output`. ::FREESASA_SUCCESS else.
  */
 int
 freesasa_per_residue_type(FILE *output,
@@ -355,7 +355,7 @@ freesasa_per_residue_type(FILE *output,
     @param result SASA values.
     @param structure The structure.
     @return ::FREESASA_FAIL if problems writing to
-    output. ::FREESASA_SUCCESS else.
+      `output`. ::FREESASA_SUCCESS else.
  */
 int
 freesasa_per_residue(FILE *output,
@@ -373,9 +373,9 @@ freesasa_per_residue(FILE *output,
     @param parameters Parameters to print, if NULL defaults are used
     @param name Name of the protein, if NULL "unknown" used.
     @param class_sasa The SASA values for each class, if NULL
-    only total SASA printed
-    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
-    problems writing to file.
+      only total SASA printed
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
+      writing to file.
 
     @deprecated Use freesasa_write_parameters() and
     freesasa_write_result() instead.
@@ -394,9 +394,9 @@ freesasa_log(FILE *log,
     @param name Name of the protein, if NULL "unknown" used.
     @param chains The chains used in the calculation, can be NULL
     @param class_sasa The SASA values for each class, if NULL
-    only total SASA printed
-    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
-    problems writing to file.
+      only total SASA printed
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
+      writing to file.
  */
 int
 freesasa_write_result(FILE *log,
@@ -409,8 +409,8 @@ freesasa_write_result(FILE *log,
 
     @param log Output-file
     @param parameters Parameters to print, if NULL defaults are used
-    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if
-    problems writing to file.
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
+      writing to file.
 */
 int freesasa_write_parameters(FILE *log,
                               const freesasa_parameters *parameters);
@@ -418,14 +418,20 @@ int freesasa_write_parameters(FILE *log,
 /**
     Print RSA-file
 
-    Uses default reference SASA values
+    Uses reference SASA values calculated using the default
+    configuration (ProtOr radii; Carbon is apolar, all other elements
+    polar; probe radius = 1.4 Å). The Ala-X-Ala configurations
+    supplied in the directory `rsa` were used as input (the reference
+    values themselves are stored statically in the code). At the
+    moment there is no support for outputting RSA files for other
+    configurations.
 
     @param output Output-file
     @param result SASA values
     @param structure The structure
     @param name Name of the protein
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
-    writing to file
+      writing to file, or if `structure` is inconsistent.
 */
 int
 freesasa_print_rsa(FILE* output,

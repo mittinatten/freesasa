@@ -6,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 #include <math.h>
+#include <pdb.h>
 
 struct residue_sasa {
     const char *name;
@@ -42,48 +43,62 @@ static const struct residue_sasa sasa_ref[20] = {
     {.name = "TYR", .total = 208.08, .main_chain = 43.49, .side_chain = 164.58, .polar = 76.46, .apolar = 131.62},
 };
 
-//not used yet
 static int
 atom_is_backbone(const char *atom_name)
 {
-    if (strcmp(atom_name, "  CA") == 0 ||
-        strcmp(atom_name, "  N ") == 0 ||
-        strcmp(atom_name, "  O ") == 0 ||
-        strcmp(atom_name, "  C ") == 0)
+    assert(strlen(atom_name) <= PDB_ATOM_NAME_STRL);
+
+    char name[PDB_ATOM_NAME_STRL];
+    sscanf(atom_name, "%s", name); //trim whitespace
+
+    if (strcmp(name, "CA") == 0 ||
+        strcmp(name, "N") == 0 ||
+        strcmp(name, "O") == 0 ||
+        strcmp(name, "C") == 0)
         return 1;
     return 0;
 }
 
 static int
+atom_is_polar(const char *atom_name)
+{
+    assert(strlen(atom_name) <= PDB_ATOM_NAME_STRL);
+
+    char name[PDB_ATOM_NAME_STRL];
+    sscanf(atom_name,"%s", name); //trim whitespace
+
+    if (name[0] == 'C') return 0;
+    return 1;
+}
+
+static int
 get_abs(struct residue_sasa *rs,
-        int resi,
-        char chain,
+        int idx,
+        const char *resn,
         const freesasa_result *result,
         const freesasa_structure *structure)
 
 {
     char selbuf[100];
     char namebuf[FREESASA_MAX_SELECTION_NAME];
+    int first, last;
 
-    sprintf(selbuf,"total, chain %c and resi %d", chain, resi);
-    if (freesasa_select_area(selbuf, namebuf, &rs->total, structure, result))
+    *rs = zero_rs;
+    if (freesasa_structure_residue_atoms(structure, idx, &first, &last))
         return fail_msg("");
+    rs->name = resn;
 
-    sprintf(selbuf,"bb, chain %c and resi %d and name c+o+n+ca", chain, resi);
-    if (freesasa_select_area(selbuf, namebuf, &rs->main_chain, structure, result))
-        return fail_msg("");
+    for (int i = first; i <= last; ++i) {
+        double v = result->sasa[i];
+        const char *name = freesasa_structure_atom_name(structure,i);
+        assert(name);
 
-    sprintf(selbuf,"sc, chain %c and resi %d and not name c+o+n+ca", chain, resi);
-    if (freesasa_select_area(selbuf, namebuf, &rs->side_chain, structure, result))
-        return fail_msg("");
-
-    sprintf(selbuf,"polar, chain %c and resi %d and not symbol c", chain, resi);
-    if (freesasa_select_area(selbuf, namebuf, &rs->polar, structure, result))
-        return fail_msg("");
-        
-    sprintf(selbuf,"apolar, chain %c and resi %d and symbol c", chain, resi);
-    if (freesasa_select_area(selbuf, namebuf, &rs->apolar, structure, result))
-        return fail_msg("");
+        rs->total += v;
+        if (atom_is_backbone(name)) rs->main_chain += v;
+        if (atom_is_polar(name)) rs->polar += v;
+    }
+    rs->side_chain = rs->total - rs->main_chain;
+    rs->apolar = rs->total - rs->polar;
 
     return FREESASA_SUCCESS;
 }
@@ -184,15 +199,13 @@ freesasa_print_rsa(FILE* output,
         abs = rel = zero_rs;
         freesasa_structure_residue_atoms(structure, i, &first, &last);
         resi_str = freesasa_structure_atom_res_number(structure, first);
-        abs.name = freesasa_structure_atom_res_name(structure, first);
+        resn = freesasa_structure_atom_res_name(structure, first);
         chain = freesasa_structure_atom_chain(structure, first);
         resi = atoi(resi_str);
 
-        fprintf(output, "RES %s %c%s  ", abs.name, chain, resi_str);
-        
-        get_abs(&abs, resi, chain, result, structure);
+             
+        if (get_abs(&abs, i, resn, result, structure)) return fail_msg("");
         i_ref = get_rel(&rel, &abs);
-        rsa_print_residue(output, &abs, &rel, i_ref);
 
         add_residue_sasa(&all_chains_abs, &abs);
 
@@ -201,11 +214,13 @@ freesasa_print_rsa(FILE* output,
                 add_residue_sasa(&chain_abs[j], &abs);
             }
         }
+
+        fprintf(output, "RES %s %c%s  ", abs.name, chain, resi_str);
+        rsa_print_residue(output, &abs, &rel, i_ref);
     }
     
     fprintf(output, "END  Absolute sums over single chains surface\n");
     for (int i = 0; i < n_chains; ++i) {
-        //CHAIN  6 Y     4016.8       3888.5        128.3       1329.8       2687.0
         fprintf(output,"CHAIN%3d %c %10.1f   %10.1f   %10.1f   %10.1f   %10.1f\n",
                 i+1, chain_labels[i], chain_abs[i].total, chain_abs[i].side_chain,
                 chain_abs[i].main_chain, chain_abs[i].apolar, chain_abs[i].polar);
