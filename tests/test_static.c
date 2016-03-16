@@ -1,4 +1,5 @@
 #include <check.h>
+#include "tools.h"
 #include "whole_lib_one_file.c"
 const int n_atoms = 6;
 const int n_coord = 18;
@@ -298,6 +299,10 @@ START_TEST (test_expression)
 }
 END_TEST
 
+int is_never_true(const char *resn, const char *aname, const freesasa_classifier *cfr) {
+    return 0;
+}
+
 START_TEST (test_rsa)
 {
     ck_assert_int_eq(rsa_atom_is_backbone(" CA "), 1);
@@ -308,12 +313,52 @@ START_TEST (test_rsa)
     ck_assert_int_eq(rsa_atom_is_backbone("O"), 1);
     ck_assert_int_eq(rsa_atom_is_backbone("CB"), 0);
     ck_assert_int_eq(rsa_atom_is_backbone(" B"), 0);
+    ck_assert_int_eq(rsa_atom_is_backbone(""), 0);
     ck_assert_int_eq(rsa_atom_is_polar("C"),0);
     ck_assert_int_eq(rsa_atom_is_polar(" C"),0);
     ck_assert_int_eq(rsa_atom_is_polar(" CA"),0);
     ck_assert_int_eq(rsa_atom_is_polar("B"),1);
     ck_assert_int_eq(rsa_atom_is_polar(" B"),1);
-    
+    ck_assert_int_eq(rsa_atom_is_polar(""),0);
+
+    struct residue_sasa rs = zero_rs;
+    freesasa_classifier cfr = {.sasa_class = is_never_true};
+
+    rsa_abs_add_atom(&rs, 1.0, "", "", NULL, NULL);
+    ck_assert(float_eq(rs.polar, 0.0, 1e-10));
+    ck_assert(float_eq(rs.apolar, 1.0, 1e-10));
+    ck_assert(float_eq(rs.main_chain, 0.0, 1e-10));
+    ck_assert(float_eq(rs.side_chain, 1.0, 1e-10));
+
+    rsa_abs_add_atom(&rs, 1.0, "ALA", "CA", NULL, NULL);
+    ck_assert(float_eq(rs.polar, 0.0, 1e-10));
+    ck_assert(float_eq(rs.apolar, 2.0, 1e-10));
+    ck_assert(float_eq(rs.main_chain, 1.0, 1e-10));
+    ck_assert(float_eq(rs.side_chain, 1.0, 1e-10));
+
+    rsa_abs_add_atom(&rs, 1.0, "ALA", "N", NULL, NULL);
+    ck_assert(float_eq(rs.polar, 1.0, 1e-10));
+    ck_assert(float_eq(rs.apolar, 2.0, 1e-10));
+    ck_assert(float_eq(rs.main_chain, 2.0, 1e-10));
+    ck_assert(float_eq(rs.side_chain, 1.0, 1e-10));
+
+    rsa_abs_add_atom(&rs, 1.0, "ALA", "N", &cfr, NULL);
+    ck_assert(float_eq(rs.polar, 1.0, 1e-10));
+    ck_assert(float_eq(rs.apolar, 3.0, 1e-10));
+    ck_assert(float_eq(rs.main_chain, 3.0, 1e-10));
+    ck_assert(float_eq(rs.side_chain, 1.0, 1e-10));
+
+    rsa_abs_add_atom(&rs, 1.0, "VAL", "CB", &cfr, NULL);
+    ck_assert(float_eq(rs.polar, 1.0, 1e-10));
+    ck_assert(float_eq(rs.apolar, 4.0, 1e-10));
+    ck_assert(float_eq(rs.main_chain, 3.0, 1e-10));
+    ck_assert(float_eq(rs.side_chain, 2.0, 1e-10));
+
+    rsa_abs_add_atom(&rs, 1.0, "VAL", "CA", &cfr, &cfr);
+    ck_assert(float_eq(rs.polar, 1.0, 1e-10));
+    ck_assert(float_eq(rs.apolar, 5.0, 1e-10));
+    ck_assert(float_eq(rs.main_chain, 3.0, 1e-10));
+    ck_assert(float_eq(rs.side_chain, 3.0, 1e-10));
 }
 END_TEST
 

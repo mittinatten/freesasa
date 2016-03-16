@@ -433,14 +433,25 @@ int freesasa_write_parameters(FILE *log,
     @param result SASA values
     @param structure The structure
     @param name Name of the protein
+    @param reference A file containing reference values for RSA
+      calculation. Pass NULL to use defaults. (not implemented yet)
+    @param polar_classifier A classifier whose sasa_class() function
+      returns 0 for apolar atoms and non-zero for polar atoms. Pass
+      NULL to use defaults.
+    @param backbone_classifier A classifier whose sasa_class()
+      function returns 0 for side chain atoms and non-zero for
+      backbone. Pass NULL to use defaults.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
       writing to file, or if `structure` is inconsistent.
-*/
+ */
 int
 freesasa_rsa_print(FILE* output,
                    const freesasa_result *result,
                    const freesasa_structure *structure,
-                   const char *name);
+                   const char *name,
+                   FILE *reference,
+                   const freesasa_classifier *polar_classifier,
+                   const freesasa_classifier *backbone_classifier);
 
 /**
     Set the global verbosity level.

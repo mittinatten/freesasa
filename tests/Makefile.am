@@ -17,8 +17,8 @@ TESTS += test-api test-static test-memerr
 check_PROGRAMS += test-api test-static test-memerr
 test_api_SOURCES = libtest.c test_pdb.c test_freesasa.c test_structure.c \
 	test_classifier.c test_coord.c test_nb.c test_selection.c tools.h tools.c
-test_static_SOURCES = test_static.c tools.h
-test_memerr_SOURCES = test_memerr.c tools.h 
+test_static_SOURCES = test_static.c tools.h tools.c
+test_memerr_SOURCES = test_memerr.c tools.h tools.c
 
 AM_CFLAGS += -I$(top_srcdir)/src -DDATADIR=\"$(top_srcdir)/tests/data/\" -DSHAREDIR=\"$(top_srcdir)/share/\"
 

@@ -286,7 +286,7 @@ run_analysis(FILE *input,
             }
         }
         if (printrsa) {
-            freesasa_rsa_print(rsa_file, result, structures[i], name);
+            freesasa_rsa_print(rsa_file, result, structures[i], name, NULL, NULL, NULL);
         }
         freesasa_result_free(result);
         freesasa_strvp_free(classes);
