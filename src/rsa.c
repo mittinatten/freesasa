@@ -47,7 +47,7 @@ static const struct residue_sasa sasa_ref[20] = {
 };
 
 static int
-atom_is_backbone(const char *atom_name)
+rsa_atom_is_backbone(const char *atom_name)
 {
     assert(strlen(atom_name) <= PDB_ATOM_NAME_STRL);
 
@@ -63,7 +63,7 @@ atom_is_backbone(const char *atom_name)
 }
 
 static int
-atom_is_polar(const char *atom_name)
+rsa_atom_is_polar(const char *atom_name)
 {
     assert(strlen(atom_name) <= PDB_ATOM_NAME_STRL);
 
@@ -75,7 +75,7 @@ atom_is_polar(const char *atom_name)
 }
 
 static int
-get_abs(struct residue_sasa *rs,
+rsa_get_abs(struct residue_sasa *rs,
         int idx,
         const char *resn,
         const freesasa_result *result,
@@ -97,8 +97,8 @@ get_abs(struct residue_sasa *rs,
         assert(name);
 
         rs->total += v;
-        if (atom_is_backbone(name)) rs->main_chain += v;
-        if (atom_is_polar(name)) rs->polar += v;
+        if (rsa_atom_is_backbone(name)) rs->main_chain += v;
+        if (rsa_atom_is_polar(name)) rs->polar += v;
     }
     rs->side_chain = rs->total - rs->main_chain;
     rs->apolar = rs->total - rs->polar;
@@ -107,7 +107,7 @@ get_abs(struct residue_sasa *rs,
 }
 
 static int
-get_rel(struct residue_sasa *rel, const struct residue_sasa *abs)
+rsa_get_rel(struct residue_sasa *rel, const struct residue_sasa *abs)
 {
     int i_ref = -1;
     double nan = 0.0/0.0;
@@ -133,7 +133,7 @@ get_rel(struct residue_sasa *rel, const struct residue_sasa *abs)
 }
 
 static void
-add_residue_sasa(struct residue_sasa *sum,
+rsa_add_residue_sasa(struct residue_sasa *sum,
                  const struct residue_sasa *term)
 {
     sum->total += term->total;
@@ -183,7 +183,7 @@ rsa_print_residue(FILE *output,
 }
 
 int
-freesasa_print_rsa(FILE* output,
+freesasa_rsa_print(FILE* output,
                    const freesasa_result *result,
                    const freesasa_structure *structure,
                    const char *name)
@@ -212,14 +212,14 @@ freesasa_print_rsa(FILE* output,
         resi = atoi(resi_str);
 
              
-        if (get_abs(&abs, i, resn, result, structure)) return fail_msg("");
-        i_ref = get_rel(&rel, &abs);
+        if (rsa_get_abs(&abs, i, resn, result, structure)) return fail_msg("");
+        i_ref = rsa_get_rel(&rel, &abs);
 
-        add_residue_sasa(&all_chains_abs, &abs);
+        rsa_add_residue_sasa(&all_chains_abs, &abs);
 
         for (int j = 0; j < n_chains; ++j) {
             if (chain_labels[j] == chain) {
-                add_residue_sasa(&chain_abs[j], &abs);
+                rsa_add_residue_sasa(&chain_abs[j], &abs);
             }
         }
 

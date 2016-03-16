@@ -437,7 +437,7 @@ int freesasa_write_parameters(FILE *log,
       writing to file, or if `structure` is inconsistent.
 */
 int
-freesasa_print_rsa(FILE* output,
+freesasa_rsa_print(FILE* output,
                    const freesasa_result *result,
                    const freesasa_structure *structure,
                    const char *name);

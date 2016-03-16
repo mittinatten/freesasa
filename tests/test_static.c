@@ -300,19 +300,19 @@ END_TEST
 
 START_TEST (test_rsa)
 {
-    ck_assert_int_eq(atom_is_backbone(" CA "), 1);
-    ck_assert_int_eq(atom_is_backbone(" C  "), 1);
-    ck_assert_int_eq(atom_is_backbone(" N  "), 1);
-    ck_assert_int_eq(atom_is_backbone(" O  "), 1);
-    ck_assert_int_eq(atom_is_backbone("  O "), 1);
-    ck_assert_int_eq(atom_is_backbone("O"), 1);
-    ck_assert_int_eq(atom_is_backbone("CB"), 0);
-    ck_assert_int_eq(atom_is_backbone(" B"), 0);
-    ck_assert_int_eq(atom_is_polar("C"),0);
-    ck_assert_int_eq(atom_is_polar(" C"),0);
-    ck_assert_int_eq(atom_is_polar(" CA"),0);
-    ck_assert_int_eq(atom_is_polar("B"),1);
-    ck_assert_int_eq(atom_is_polar(" B"),1);
+    ck_assert_int_eq(rsa_atom_is_backbone(" CA "), 1);
+    ck_assert_int_eq(rsa_atom_is_backbone(" C  "), 1);
+    ck_assert_int_eq(rsa_atom_is_backbone(" N  "), 1);
+    ck_assert_int_eq(rsa_atom_is_backbone(" O  "), 1);
+    ck_assert_int_eq(rsa_atom_is_backbone("  O "), 1);
+    ck_assert_int_eq(rsa_atom_is_backbone("O"), 1);
+    ck_assert_int_eq(rsa_atom_is_backbone("CB"), 0);
+    ck_assert_int_eq(rsa_atom_is_backbone(" B"), 0);
+    ck_assert_int_eq(rsa_atom_is_polar("C"),0);
+    ck_assert_int_eq(rsa_atom_is_polar(" C"),0);
+    ck_assert_int_eq(rsa_atom_is_polar(" CA"),0);
+    ck_assert_int_eq(rsa_atom_is_polar("B"),1);
+    ck_assert_int_eq(rsa_atom_is_polar(" B"),1);
     
 }
 END_TEST

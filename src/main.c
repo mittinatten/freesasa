@@ -127,11 +127,11 @@ help(void)
             "                        This option might give confusing output when used in\n"
             "                        conjuction with the options -C and -g.\n"
             "\n"
-	    "  --rsa   or  --rsa-file=<file>\n"
-	    "                        Print relative SASA values in RSA format (same as\n"
-	    "                        NACCESS). The reference amino acid SASAs are calculated\n"
-	    "                        using ProtOr radii.\n"
-	    "\n"
+            "  --rsa   or  --rsa-file=<file>\n"
+            "                        Print relative SASA values in RSA format (same as\n"
+            "                        NACCESS). The reference amino acid SASAs are calculated\n"
+            "                        using ProtOr radii.\n"
+            "\n"
             "  --select <command>    Select atoms using Pymol select syntax.\n"
             "                        The option can be repeated to define several selections.\n\n"
             "                        Examples:\n"
@@ -286,7 +286,7 @@ run_analysis(FILE *input,
             }
         }
         if (printrsa) {
-            freesasa_print_rsa(rsa_file, result, structures[i], name);
+            freesasa_rsa_print(rsa_file, result, structures[i], name);
         }
         freesasa_result_free(result);
         freesasa_strvp_free(classes);
