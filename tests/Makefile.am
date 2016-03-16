@@ -13,18 +13,18 @@ GCOV_FILES = *.gcda *.gcno *.gcov
 
 if USE_CHECK
 
-TESTS += libtest static-test broken-malloc
-check_PROGRAMS += libtest static-test broken-malloc
-libtest_SOURCES = libtest.c test_pdb.c test_freesasa.c test_structure.c \
+TESTS += test-api test-static test-memerr
+check_PROGRAMS += test-api test-static test-memerr
+test_api_SOURCES = libtest.c test_pdb.c test_freesasa.c test_structure.c \
 	test_classifier.c test_coord.c test_nb.c test_selection.c tools.h tools.c
-static_test_SOURCES = test_static.c tools.h
-broken_malloc_SOURCES = broken_malloc.c tools.h 
+test_static_SOURCES = test_static.c tools.h
+test_memerr_SOURCES = test_memerr.c tools.h 
 
 AM_CFLAGS += -I$(top_srcdir)/src -DDATADIR=\"$(top_srcdir)/tests/data/\" -DSHAREDIR=\"$(top_srcdir)/share/\"
 
-libtest_LDADD = ../src/libfreesasa.a -lcheck 
-static_test_LDADD = ../src/parser.o ../src/lexer.o -lcheck 
-broken_malloc_LDADD = ../src/parser.o ../src/lexer.o -lcheck 
+test_api_LDADD = ../src/libfreesasa.a -lcheck 
+test_static_LDADD = ../src/parser.o ../src/lexer.o -lcheck 
+test_memerr_LDADD = ../src/parser.o ../src/lexer.o -lcheck 
 
 endif # USE_CHECK
 

@@ -1,4 +1,4 @@
-static-*
 test-cli
-libtest
-broken-malloc
+test-api
+test-static
+test-memerr
