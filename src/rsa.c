@@ -20,6 +20,13 @@ struct residue_sasa {
     double apolar;
 };
 
+struct rsa_config {
+    const freesasa_classifier *polar_classifier, *bb_classifier;
+    const freesasa_result *result;
+    const freesasa_structure *structure;
+    const struct residue_sasa *sasa_ref;
+};
+
 static const struct residue_sasa zero_rs = {NULL, 0, 0, 0, 0, 0};
 
 static const struct residue_sasa rsa_sasa_ref[] = {
@@ -45,46 +52,6 @@ static const struct residue_sasa rsa_sasa_ref[] = {
     {.name = "TYR", .total = 208.08, .main_chain = 43.49, .side_chain = 164.58, .polar = 76.46, .apolar = 131.62},
     {NULL, 0, 0, 0, 0, 0}, // marks end of array
 };
-/**
-    Returns 1 if the atom_name equals CA, N, O or C after whitespace
-    is trimmed, 0 else. (i.e. does not check if it is an actual atom,
-    no such strings should be able to reach this point).
- */
-static int
-rsa_atom_is_backbone(const char *atom_name)
-{
-    assert(strlen(atom_name) <= PDB_ATOM_NAME_STRL);
-
-    char name[PDB_ATOM_NAME_STRL] = "";
-    sscanf(atom_name, "%s", name); //trim whitespace
-
-    if (strlen(name) == 0) return 0;
-    if (strcmp(name, "CA") == 0 ||
-        strcmp(name, "N") == 0 ||
-        strcmp(name, "O") == 0 ||
-        strcmp(name, "C") == 0)
-        return 1;
-    return 0;
-}
-
-/**
-    Returns 0 if the first non-whitespace charactor of atom_name is
-    'C' or if it is only whitespace/empty, 1 else. (i.e. does not
-    check if it is an actual atom, no such strings should be able to
-    reach this point).
- */
-static int
-rsa_atom_is_polar(const char *atom_name)
-{
-    assert(strlen(atom_name) <= PDB_ATOM_NAME_STRL);
-
-    char name[PDB_ATOM_NAME_STRL] = "";
-    sscanf(atom_name,"%s", name); //trim whitespace
-
-    if (strlen(name) == 0) return 0;
-    else if (name[0] == 'C') return 0;
-    return 1;
-}
 
 /**
    Adds v to members of rs depending on how the atom specified by resn
@@ -94,29 +61,22 @@ rsa_atom_is_polar(const char *atom_name)
  */
 static inline void
 rsa_abs_add_atom(struct residue_sasa *rs,
-                 double v,
-                 const char *resn,
-                 const char *atom_name,
-                 const freesasa_classifier *p_classifier,
-                 const freesasa_classifier *bb_classifier)
+                 int i_atom,
+                 const struct rsa_config *cfg)
 {
+    double v = cfg->result->sasa[i_atom];
+    const char *atom_name = freesasa_structure_atom_name(cfg->structure,i_atom);
+    assert(atom_name);
+
     rs->total += v;
-    if (!bb_classifier) {
-        if (rsa_atom_is_backbone(atom_name)) rs->main_chain += v;
-        else rs->side_chain += v;
-    } else {
-        if (bb_classifier->sasa_class(resn, atom_name, bb_classifier))
-            rs->main_chain += v;
-        else rs->side_chain += v;
-    }
-    if (!p_classifier){
-        if (rsa_atom_is_polar(atom_name)) rs->polar += v;
-        else rs->apolar += v;
-    } else {
-        if (p_classifier->sasa_class(resn, atom_name, p_classifier))
-            rs->polar += v;
-        else rs->apolar += v;
-    }
+
+    if (cfg->bb_classifier->sasa_class(rs->name, atom_name, cfg->bb_classifier))
+        rs->main_chain += v;
+    else rs->side_chain += v;
+
+    if (cfg->polar_classifier->sasa_class(rs->name, atom_name, cfg->polar_classifier))
+        rs->polar += v;
+    else rs->apolar += v;
 }
 
 /**
@@ -125,27 +85,18 @@ rsa_abs_add_atom(struct residue_sasa *rs,
 static int
 rsa_get_abs(struct residue_sasa *rs,
             int idx,
-            const char *resn,
-            const freesasa_result *result,
-            const freesasa_structure *structure,
-            const freesasa_classifier *p_classifier,
-            const freesasa_classifier *bb_classifier)
+            const struct rsa_config *cfg)
 
 {
     char selbuf[100];
     char namebuf[FREESASA_MAX_SELECTION_NAME];
     int first, last;
 
-    *rs = zero_rs;
-    if (freesasa_structure_residue_atoms(structure, idx, &first, &last))
+    if (freesasa_structure_residue_atoms(cfg->structure, idx, &first, &last))
         return fail_msg("");
-    rs->name = resn;
 
     for (int i = first; i <= last; ++i) {
-        double v = result->sasa[i];
-        const char *name = freesasa_structure_atom_name(structure,i);
-        assert(name);
-        rsa_abs_add_atom(rs, v, resn, name, p_classifier, bb_classifier);
+        rsa_abs_add_atom(rs, i, cfg);
     }
 
     return FREESASA_SUCCESS;
@@ -154,7 +105,7 @@ rsa_get_abs(struct residue_sasa *rs,
 /**
     Calculate relative sasa values based on abs and ref, store in rel.
  */
-static int
+static void
 rsa_get_rel(struct residue_sasa *rel,
             const struct residue_sasa *abs,
             const struct residue_sasa *ref)
@@ -178,8 +129,6 @@ rsa_get_rel(struct residue_sasa *rel,
     } else {
         rel->total = rel->side_chain = rel->main_chain = rel->polar = rel->apolar = nan;
     }
-
-    return i_ref;
 }
 
 /**
@@ -221,18 +170,44 @@ rsa_print_abs_rel(FILE*output,
     else fprintf(output, "   N/A");
 }
 
-static void
+static int
 rsa_print_residue(FILE *output, 
+                  int iaa,
                   const struct residue_sasa *abs,
                   const struct residue_sasa *rel,
-                  int i_ref)
+                  const struct rsa_config *cfg)
 {
+    const char *resi_str;
+    char chain;
+
+    resi_str = freesasa_structure_residue_number(cfg->structure, iaa);
+    chain = freesasa_structure_residue_chain(cfg->structure, iaa);
+
+    fprintf(output, "RES %s %c%s  ", abs->name, chain, resi_str);
     rsa_print_abs_rel(output, abs->total, rel->total);
     rsa_print_abs_rel(output, abs->side_chain, rel->side_chain);
     rsa_print_abs_rel(output, abs->main_chain, rel->main_chain);
     rsa_print_abs_rel(output, abs->apolar, rel->apolar);
     rsa_print_abs_rel(output, abs->polar, rel->polar);
     fprintf(output, "\n");
+    return FREESASA_SUCCESS;
+}
+
+static int
+rsa_calc_rs(struct residue_sasa *abs,
+            struct residue_sasa *rel,
+            int iaa,
+            const struct rsa_config *cfg)
+{
+    *abs = zero_rs;
+
+    abs->name = freesasa_structure_residue_name(cfg->structure, iaa);
+
+    if (rsa_get_abs(abs, iaa, cfg)) return fail_msg("");
+
+    rsa_get_rel(rel, abs, cfg->sasa_ref);
+
+    return FREESASA_SUCCESS;
 }
 
 int
@@ -249,36 +224,34 @@ freesasa_rsa_print(FILE *output,
     assert(structure);
     assert(name);
 
-    const char *chain_labels = freesasa_structure_chain_labels(structure);
-    int naa = freesasa_structure_n_residues(structure), first, last, resi, 
-        i_ref, n_chains = strlen(chain_labels);
-    char chain;
-    const char *resi_str, *resn;
-    struct residue_sasa abs, rel, chain_abs[n_chains], all_chains_abs = zero_rs;
-    const struct residue_sasa *sasa_ref;
-    const freesasa_classifier *p_classifier = polar_classifier,
-        *bb_classifier = backbone_classifier;
+    struct rsa_config cfg = { .polar_classifier = &freesasa_default_classifier,
+                              .bb_classifier = &freesasa_backbone_classifier,
+                              .result = result,
+                              .structure = structure,
+                              .sasa_ref = rsa_sasa_ref};
 
-    if (reference == NULL) sasa_ref = rsa_sasa_ref;
-    else return fail_msg("Reference SASA values from file not implemented yet");
+    const char *chain_labels = freesasa_structure_chain_labels(structure);
+    int naa = freesasa_structure_n_residues(structure),
+        n_chains = strlen(chain_labels);
+    struct residue_sasa abs, rel, chain_abs[n_chains], all_chains_abs = zero_rs;
+
+    if (reference)
+        return fail_msg("Reference SASA values from file not implemented yet");
+
+    if (polar_classifier) cfg.polar_classifier = polar_classifier;
+    if (backbone_classifier) cfg.bb_classifier = backbone_classifier;
 
     for (int i = 0; i < n_chains; ++i) chain_abs[i] = zero_rs;
     
     rsa_print_header(output, name);
 
     for (int i = 0; i < naa; ++i) {
-        abs = rel = zero_rs;
-        freesasa_structure_residue_atoms(structure, i, &first, &last);
-        resi_str = freesasa_structure_atom_res_number(structure, first);
-        resn = freesasa_structure_atom_res_name(structure, first);
-        chain = freesasa_structure_atom_chain(structure, first);
-        resi = atoi(resi_str);
-             
-        if (rsa_get_abs(&abs, i, resn, result, structure, p_classifier, bb_classifier))
-            return fail_msg("");
-        i_ref = rsa_get_rel(&rel, &abs, sasa_ref);
+        if ( rsa_calc_rs(&abs, &rel, i, &cfg) ||
+             rsa_print_residue(output, i, &abs, &rel, &cfg))
+            return fail_msg("Failed calculating residue SASAs, inconsistent input?");
 
         rsa_add_residue_sasa(&all_chains_abs, &abs);
+        char chain = freesasa_structure_residue_chain(structure, i);
 
         for (int j = 0; j < n_chains; ++j) {
             if (chain_labels[j] == chain) {
@@ -286,8 +259,6 @@ freesasa_rsa_print(FILE *output,
             }
         }
 
-        fprintf(output, "RES %s %c%s  ", abs.name, chain, resi_str);
-        rsa_print_residue(output, &abs, &rel, i_ref);
     }
     
     fprintf(output, "END  Absolute sums over single chains surface\n");
