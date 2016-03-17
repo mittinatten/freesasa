@@ -49,10 +49,6 @@ const freesasa_parameters freesasa_default_parameters = {
 
 const char *freesasa_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 
-
-// Classifier that classifies each atom according to residue
-extern const freesasa_classifier freesasa_residue_classifier;
-
 freesasa_strvp*
 freesasa_strvp_new(int n);
 

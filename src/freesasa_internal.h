@@ -5,19 +5,24 @@
 #include "freesasa.h"
 #include "coord.h"
 
-/**
-    @file
-    @author Simon Mitternacht
-
-    Functions to perform the actual SASA calculations.
- */
-
 //! The name of the library, to be used in error messages and logging
 extern const char *freesasa_name;
+
+/**
+    This classifier only has the sasa_class function, which returns 1
+    for protien backbone atoms, and 0 else. Backbone atoms are CA, N,
+    C and O. All other member functions are NULL.
+ */
+extern const freesasa_classifier freesasa_backbone_classifier;
+
+//! Classifier that classifies each atom according to residue
+extern const freesasa_classifier freesasa_residue_classifier;
+
 
 //! Shortcut for memory error generation
 #define mem_fail() freesasa_mem_fail(__func__,__FILE__,__LINE__) 
 
+//! Shortcut for error message with position information
 #define fail_msg(msg) freesasa_fail_wloc(__func__,__FILE__,__LINE__,msg)
 
 
@@ -114,6 +119,7 @@ const char*
 freesasa_structure_residue_descriptor(const freesasa_structure *s,
                                       int r_i);
 
+
 /**
     Returns the SASA for a given residue
 
@@ -126,6 +132,8 @@ double
 freesasa_single_residue_sasa(const freesasa_result *r,
                              const freesasa_structure *s, 
                              int r_i);
+
+
 /**
     Holds range in a file, to be initalized with ftell() and used
     with fseek().

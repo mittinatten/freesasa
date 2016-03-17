@@ -622,8 +622,6 @@ freesasa_classifier_config_radius(const char *res_name,
     status = find_atom(config,res_name,atom_name,&res,&atom);
     if (status == FREESASA_SUCCESS)
         return config->residue[res]->atom_radius[atom];
-    //freesasa_warn("in %s(): couldn't find radius of atom '%s %s'.",
-    //              __func__, res_name, atom_name);
     return -1.0;
 }
 
@@ -639,8 +637,7 @@ freesasa_classifier_config_class(const char *res_name,
     status = find_atom(config,res_name,atom_name,&res,&atom);
     if (status == FREESASA_SUCCESS)
         return config->residue[res]->atom_class[atom];
-    return FREESASA_WARN; //freesasa_warn("in %s(): couldn't find classification of atom '%s %s'.",
-    //__func__, res_name, atom_name);
+    return FREESASA_WARN;
 }
 
 /** To be linked to a Classifier struct */
@@ -811,6 +808,39 @@ const freesasa_classifier freesasa_residue_classifier = {
     .sasa_class = residue,
     .class2str = residue2str,
     .n_classes = NN+1,
+    .free_config = NULL,
+    .config = NULL
+};
+
+/**
+    Returns 1 if the atom_name equals CA, N, O or C after whitespace
+    is trimmed, 0 else. (i.e. does not check if it is an actual atom,
+    no such strings should be able to reach this point).
+ */
+static int
+classifier_is_backbone(const char *res_name,
+                       const char *atom_name,
+                       const freesasa_classifier *classifier)
+{
+    int n = strlen(atom_name);
+    char name[n+1];
+    name[0] = '\0';
+    sscanf(atom_name, "%s", name); //trim whitespace
+
+    if (strlen(name) == 0) return 0;
+    if (strcmp(name, "CA") == 0 ||
+        strcmp(name, "N") == 0 ||
+        strcmp(name, "O") == 0 ||
+        strcmp(name, "C") == 0)
+        return 1;
+    return 0;
+}
+
+const freesasa_classifier freesasa_backbone_classifier = {
+    .radius = NULL,
+    .sasa_class = classifier_is_backbone,
+    .class2str = NULL,
+    .n_classes = 2,
     .free_config = NULL,
     .config = NULL
 };
