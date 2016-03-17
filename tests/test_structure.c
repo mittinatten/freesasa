@@ -47,6 +47,10 @@ START_TEST (test_structure_api)
     ck_assert_int_eq(freesasa_structure_n_residues(s), 1);
     ck_assert_int_eq(freesasa_structure_n_chains(s), 1);
 
+    ck_assert_str_eq(freesasa_structure_residue_name(s,0), rna[0]);
+    ck_assert_str_eq(freesasa_structure_residue_number(s,0), rnu[0]);
+    ck_assert_int_eq(freesasa_structure_residue_chain(s,0), cl[0]);
+
     ck_assert_int_eq(freesasa_structure_chain_index(s, 'A'), 0);
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_int_eq(freesasa_structure_chain_index(s, 'B'), FREESASA_FAIL);

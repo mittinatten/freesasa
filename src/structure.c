@@ -345,10 +345,12 @@ structure_add_atom(freesasa_structure *s,
     if (structure_add_chain(s, a->chain_label, na - 1)) return mem_fail();
 
     /* register a new residue if it's the first atom, or if the
-       residue number of the current atom is different from the
-       previous one */
+       residue number or chain label of the current atom is different
+       from the previous one */
     if ( s->number_residues == 0 ||
-        (na > 1 && strcmp(a->res_number, s->a[na-2]->res_number))) {
+         (na > 1 && 
+          (strcmp(a->res_number, s->a[na-2]->res_number) ||
+           a->chain_label != s->a[na-2]->chain_label) )) {
         if (structure_add_residue(s, a, na - 1)) return mem_fail();
     }
 
@@ -733,8 +735,36 @@ freesasa_structure_residue_descriptor(const freesasa_structure *s,
                                       int r_i)
 {
     assert(s);
-    assert(r_i < s->number_residues);
+    assert(r_i < s->number_residues && r_i >= 0);
     return s->res_desc[r_i];
+}
+
+const char*
+freesasa_structure_residue_name(const freesasa_structure *s,
+                                int r_i)
+{
+    assert(s);
+    assert(r_i < s->number_residues && r_i >= 0);
+    return s->a[s->res_first_atom[r_i]]->res_name;
+}
+
+const char*
+freesasa_structure_residue_number(const freesasa_structure *s,
+                                  int r_i)
+{
+    assert(s);
+    assert(r_i < s->number_residues && r_i >= 0);
+    return s->a[s->res_first_atom[r_i]]->res_number;
+}
+
+char
+freesasa_structure_residue_chain(const freesasa_structure *s,
+                                 int r_i)
+{
+    assert(s);
+    assert(r_i < s->number_residues && r_i >= 0);
+
+    return s->a[s->res_first_atom[r_i]]->chain_label;
 }
 
 int

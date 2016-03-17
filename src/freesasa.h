@@ -845,6 +845,39 @@ freesasa_structure_atom_chain(const freesasa_structure *structure,
 const char*
 freesasa_structure_atom_symbol(const freesasa_structure *structure,
                                int i);
+
+/**
+    Get name of residue.
+
+    @param s The structure.
+    @param r_i Residue index (in whole structure)
+    @return Name of residue
+ */
+const char*
+freesasa_structure_residue_name(const freesasa_structure *s,
+                                int r_i);
+
+/**
+    Get residue number.
+
+    @param s The structure.
+    @param r_i Residue index (in whole structure).
+    @return Residue number as string.
+ */
+const char*
+freesasa_structure_residue_number(const freesasa_structure *s,
+                                  int r_i);
+/**
+    Get chain residue belongs to.
+
+    @param s The structure.
+    @param r_i Residue index (in whole structure).
+    @return Chain label.
+ */
+char
+freesasa_structure_residue_chain(const freesasa_structure *s,
+                                 int r_i);
+
 /**
     Get model number for structure.
 
