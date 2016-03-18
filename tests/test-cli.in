@@ -196,6 +196,18 @@ assert_pass "$cli -c $sharedir/naccess.config -n 10 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -c $sharedir/oons.config -n 10 < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli -c $datadir/err.config -n 10 < $datadir/1ubq.pdb > $dump"
 echo
+echo "== Testing RSA =="
+for p in $(ls $datadir/rsa/A*A.pdb)
+do
+    rel=$($cli -L -n 1000 $p --no-log --rsa | grep "A   2" | sed "s/[[:space:]]\{1,\}/ /g" | cut -f 6,8,10,12,14 -d ' ')
+    if [[ $p == *"AGA"* ]]
+    then
+        assert_pass "test '$rel' = '100.0 N/A 100.0 100.0 100.0' && test $p"
+    else
+        assert_pass "test '$rel' = '100.0 100.0 100.0 100.0 100.0' && test $p"
+    fi
+done
+echo
 echo "== Testing multithreading =="
 assert_pass "$cli -t 1 -n 10 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -t 2 -n 10 < $datadir/1ubq.pdb > $dump"

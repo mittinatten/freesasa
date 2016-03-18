@@ -29,6 +29,8 @@ struct rsa_config {
 
 static const struct residue_sasa zero_rs = {NULL, 0, 0, 0, 0, 0};
 
+/* these are calculated using L&R with 1000 slices and ProtOr radii,
+   from the AXA configurations in the directory rsa. */
 static const struct residue_sasa rsa_sasa_ref[] = {
     {.name = "ALA", .total = 103.10, .main_chain = 46.51, .side_chain = 56.60, .polar = 29.89, .apolar = 73.21},
     {.name = "CYS", .total = 125.02, .main_chain = 45.47, .side_chain = 79.55, .polar = 79.68, .apolar = 45.33},
