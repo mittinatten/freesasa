@@ -427,7 +427,7 @@ int freesasa_write_parameters(FILE *log,
     configurations.
 
     @remark This is still an experimental feature, and the interface
-      may change in future versions.
+      may still be subject to change without warning.
 
     @param output Output-file
     @param result SASA values

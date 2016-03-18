@@ -138,7 +138,36 @@ to a precalculated reference max value. The only significant
 difference between FreeSASA's RSA output and that of NACCESS (except
 differences in areas due to different atomic radii), is that FreeSASA
 will print the value "N/A" and NACCESS "-99.9" when no reference value
-is available, for example for nucleic acids.
+is available, for example for nucleic acids, or for the side chain in
+Gly.
+
+    $ freesasa 3wbm.pdb --rsa --no-log
+    ... (header)
+    REM RES _ NUM      All-atoms   Total-Side   Main-Chain    Non-polar    All polar
+    REM                ABS   REL    ABS   REL    ABS   REL    ABS   REL    ABS   REL
+    RES THR A   5   138.48 104.1  99.58 107.4  38.90  96.3  81.59  98.1  56.89 114.0
+    RES PRO A   6    25.53  19.3  11.31  11.0  14.23  47.7  21.67  18.7   3.86  23.9
+    ...
+    RES GLY A  15     0.64   0.9   0.00   N/A   0.64   0.9   0.00   0.0   0.64   2.0
+    ...
+    RES   U Y  23   165.16   N/A 165.16   N/A   0.00   N/A  52.01   N/A 113.15   N/A
+    RES   C Y  24   165.01   N/A 165.01   N/A   0.00   N/A  46.24   N/A 118.77   N/A
+    RES   C Y  25   262.46   N/A 262.46   N/A   0.00   N/A  85.93   N/A 176.52   N/A
+    END  Absolute sums over single chains surface
+    CHAIN  1 A     3785.5       3062.1        723.3       2051.6       1733.9
+    CHAIN  2 B     4342.3       3488.6        853.7       2385.2       1957.1
+    CHAIN  3 C     3961.1       3178.5        782.7       2122.4       1838.7
+    CHAIN  4 D     4904.3       3926.8        977.5       2572.0       2332.3
+    CHAIN  5 X     4156.5       4156.5          0.0       1236.9       2919.6
+    CHAIN  6 Y     4041.1       4041.1          0.0       1184.3       2856.8
+    END  Absolute sums over all chains
+    TOTAL         25190.8      21853.6       3337.2      11552.4      13638.4
+
+Note that each RES is a single residue, not a residue type as above
+(i.e. has the same meaning as SEQ above). This unfortunate confusion
+of labels is due to RSA support being added much later than the other
+options. Fixing it now would break the interface, and will thus
+earliest be dealt with in the next major release.
 
 The reference SASA values for residue X are calculated from Ala-X-Ala
 peptides in a stretched out configuration. The reference
