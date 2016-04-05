@@ -241,7 +241,7 @@ void
 run_analysis(FILE *input,
              const char *name)
 {
-    int several_structures = 0, name_len = strlen(name);
+    int name_len = strlen(name);
     freesasa_result *result = NULL;
     freesasa_strvp *classes = NULL;
     freesasa_structure **structures = NULL;
@@ -249,7 +249,6 @@ run_analysis(FILE *input,
 
     // read PDB file
     structures = get_structures(input, &n);
-    if (n > 1) several_structures = 1;
     if (n == 0) abort_msg("Invalid input.");
     
     if (printlog) {
@@ -264,7 +263,7 @@ run_analysis(FILE *input,
         classes = freesasa_result_classify(result, structures[i], classifier);
         if (classes == NULL)       abort_msg("Can't determine atom classes. Aborting.");
         strcpy(name_i,name);
-        if (several_structures && (structure_options & FREESASA_SEPARATE_MODELS))
+        if (n > 1 && (structure_options & FREESASA_SEPARATE_MODELS))
             sprintf(name_i+strlen(name_i), ":%d", freesasa_structure_model(structures[i]));
         if (printlog) {
             if (n > 1) fprintf(output,"\n\n####################\n");
@@ -273,11 +272,11 @@ run_analysis(FILE *input,
             freesasa_per_chain(output, result, structures[i]);
         }
         if (per_residue_type) {
-            if (several_structures) fprintf(per_residue_type_file, "\n## %s\n", name_i);
+            if (n > 1) fprintf(per_residue_type_file, "\n## %s\n", name_i);
             freesasa_per_residue_type(per_residue_type_file, result, structures[i]);
         }
         if (per_residue) {
-            if (several_structures) fprintf(per_residue_file, "\n## %s\n", name_i);
+            if (n > 1) fprintf(per_residue_file, "\n## %s\n", name_i);
             freesasa_per_residue(per_residue_file, result, structures[i]);
         }
         if (printpdb) {
