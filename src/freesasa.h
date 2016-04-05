@@ -95,6 +95,16 @@ typedef struct {
     int n_atoms;  //!< Number of atoms
 } freesasa_result;
 
+//! Struct to store SASA values for a named residue
+typedef struct {
+    const char *name;  //!< Residue name
+    double total;      //!< Total SASA
+    double main_chain; //!< Main-chain/Backbone SASA
+    double side_chain; //!< Side-chain SASA
+    double polar;      //!< Polar SASA
+    double apolar;     //!< Apolar SASA
+} freesasa_residue_sasa;
+
 /**
     Struct for structure object.
 
@@ -154,6 +164,31 @@ extern const freesasa_classifier freesasa_default_classifier;
 
 //! Classifier using OONS classes (used to be default)
 extern const freesasa_classifier freesasa_oons_classifier;
+
+//! Used as reference in generation of RSA file
+typedef struct {
+    /**
+        Array containing max SASA-values for named residues types.
+        Last element of array should have name == NULL.
+    */
+    const freesasa_residue_sasa *max;
+
+    /**
+        A classifier whose sasa_class() function returns 0 for apolar
+        atoms and non-zero for polar atoms.
+    */
+    const freesasa_classifier *polar_classifier;
+    
+    /**
+       A classifier whose sasa_class() function returns 0 for side
+       chain atoms and non-zero for backbone.
+    */
+    const freesasa_classifier *bb_classifier;
+} freesasa_rsa_reference;
+
+//! An RSA-reference for the default configuration
+extern const freesasa_rsa_reference freesasa_protor_rsa;
+
 
 /**
     Calculates SASA based on a given structure.
@@ -433,26 +468,17 @@ int freesasa_write_parameters(FILE *log,
     @param result SASA values
     @param structure The structure
     @param name Name of the protein
-    @param reference A file containing reference values for RSA
-      calculation. Pass NULL to use defaults. (not implemented yet)
-    @param polar_classifier A classifier whose sasa_class() function
-      returns 0 for apolar atoms and non-zero for polar atoms. Pass
-      NULL to use defaults.
-    @param backbone_classifier A classifier whose sasa_class()
-      function returns 0 for side chain atoms and non-zero for
-      backbone. Pass NULL to use defaults.
+    @param reference Reference to calculate RSA from, if NULL defaults
+      are used.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
       writing to file, or if `structure` is inconsistent.
  */
 int
-freesasa_rsa_print(FILE *output,
+freesasa_write_rsa(FILE *output,
                    const freesasa_result *result,
                    const freesasa_structure *structure,
                    const char *name,
-                   FILE *reference,
-                   const freesasa_classifier *polar_classifier,
-                   const freesasa_classifier *backbone_classifier);
-
+                   const freesasa_rsa_reference *reference);
 /**
     Set the global verbosity level.
 
