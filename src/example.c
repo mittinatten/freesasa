@@ -1,7 +1,21 @@
+/**
+    @file
+    @author Simon Mitternacht
+    @copyright [MIT License](md_license.html)
+
+    @brief Short program that illustrates how to use the most basic
+    functionality of the API
+
+    The program does basic error handling, printing an unspecific
+    error message if anything fails, in addition to the library
+    errors.
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include "freesasa.h"
 
+//! \{
 int main(int argc, char **argv) {
     freesasa_structure *structure = NULL;
     freesasa_result *result = NULL;
@@ -14,6 +28,7 @@ int main(int argc, char **argv) {
     if (structure) {
         result = freesasa_calc_structure(structure,NULL);
     }
+
     /* Calculate area of classes (Polar/Apolar/..) */
     if (result) {
         class_area = freesasa_result_classify(result,structure,NULL);
@@ -37,3 +52,4 @@ int main(int argc, char **argv) {
 
     return EXIT_SUCCESS;
 }
+//! \}

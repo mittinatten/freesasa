@@ -1,6 +1,6 @@
 ## @package freesasa
 # @author Simon Mitternacht
-# @copyright GPLv3
+# @copyright [MIT License](md_license.html)
 #
 # @brief FreeSASA Python interface.
 #

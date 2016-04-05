@@ -627,7 +627,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = @top_srcdir@/src/freesasa.h
+INPUT                  = @top_srcdir@/src/freesasa.h @top_srcdir@/src/example.c
 INPUT                  += doxy_main.md 
 INPUT                  += README.md license.md
 INPUT                  += @top_srcdir@/bindings/python/freesasa.pyx
@@ -758,7 +758,7 @@ FILTER_SOURCE_PATTERNS =
 # Note: To get rid of all source code in the generated output, make sure also
 # VERBATIM_HEADERS is set to NO.
 
-SOURCE_BROWSER         = NO
+SOURCE_BROWSER         = YES
 
 # Setting the INLINE_SOURCES tag to YES will include the body
 # of functions and classes directly in the documentation.

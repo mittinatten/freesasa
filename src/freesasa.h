@@ -4,11 +4,10 @@
 /**
     @file
     @author Simon Mitternacht
+    @copyright [MIT License](md_license.html)
 
     @brief Functions and datatypes for performing and analyzing SASA
     calculations.
-
-    @copyright GPLv3
 
     This header provides the functions and data types necessary to
     perfrom and analyze a SASA calculation using FreeSASA, including
@@ -16,6 +15,7 @@
     of, atoms. There are also functions to access properties of a
     structure, to allow refined analysis of the results. The page @ref
     API shows how to set up and perform a simple SASA calculation.
+
  */
 
 #include <stdio.h>
@@ -445,7 +445,7 @@ int freesasa_write_parameters(FILE *log,
       writing to file, or if `structure` is inconsistent.
  */
 int
-freesasa_rsa_print(FILE* output,
+freesasa_rsa_print(FILE *output,
                    const freesasa_result *result,
                    const freesasa_structure *structure,
                    const char *name,

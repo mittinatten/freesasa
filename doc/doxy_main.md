@@ -173,7 +173,7 @@ The reference SASA values for residue X are calculated from Ala-X-Ala
 peptides in a stretched out configuration. The reference
 configurations are supplied for reference in the directory
 `rsa`. Since these are not always the most exposed possible
-configuration, and because bond lengths and bond angles might vary,
+configuration, and because bond lengths and bond angles vary,
 the relative SASA values will sometimes be larger than 100 %.
 
 
@@ -320,7 +320,10 @@ behavior can be modified using the following options
 The API is found in the header [freesasa.h](freesasa_8h.html) and this
 is the only header installed by `make install`. The other source-files
 and headers in the repository are for internal use, and are not
-present here, but are thoroughly documented in the source itself.
+present here, but are documented in the source itself. The file
+[example.c](example_8c_source.html) contains a simple program that
+illustrates how to use the API to read a PDB file from `stdin` and
+calculate and print the SASA.
 
 To calculate the SASA of a structure, there are two main options:
 
