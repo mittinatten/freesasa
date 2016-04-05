@@ -6,7 +6,7 @@
 use strict;
 
 my @pdb = `ls *.pdb`;
-print "struct residue_sasa sasa_ref[20] = \{\n";
+print "freesasa_residue_sasa sasa_ref[20] = \{\n";
 foreach my $p (@pdb) {
     chomp $p;
     my %res;

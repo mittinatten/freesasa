@@ -29,7 +29,9 @@ char *program_name;
 const char* options_string;
 
 freesasa_parameters parameters;
-freesasa_classifier *classifier = NULL;
+const freesasa_classifier *classifier = NULL;
+freesasa_classifier *classifier_from_file = NULL;
+const freesasa_rsa_reference *rsa_reference = NULL;
 FILE *output_pdb = NULL;
 FILE *per_residue_type_file = NULL;
 FILE *per_residue_file = NULL;
@@ -46,6 +48,7 @@ int n_chain_groups = 0;
 char** chain_groups = NULL;
 int n_select = 0;
 char** select_cmd = NULL;
+int static_config = 0;
 
 void
 help(void)
@@ -80,7 +83,12 @@ help(void)
             "\n  -c <file> (--config-file=<file>)\n"
             "                        Use atomic radii and classes provided in file, example\n"
             "                        configuration files can be found in the directory\n"
-            "                        share/.\n");
+            "                        share/.\n"
+            "\n  --config=<protor|naccess>\n"
+            "                        Use either ProtOr or NACCESS atomic radii, classes and\n"
+            "                        RSA reference values. Cannot be used in conjunction\n"
+            "                        with the option '-c'.\n"
+            "                        Default value is 'protor'.\n");
     fprintf(stderr,
             "\nINPUT\n"
             "  -H (--hetatm)         Include HETATM entries from input.\n"
@@ -155,7 +163,7 @@ short_help(void)
 
 void release_resources()
 {
-    if (classifier) freesasa_classifier_free(classifier);
+    if (classifier_from_file) freesasa_classifier_free(classifier_from_file);
     if (output_pdb) fclose(output_pdb);
     if (per_residue_type_file) fclose(per_residue_type_file);
     if (per_residue_file) fclose(per_residue_file);
@@ -194,6 +202,7 @@ freesasa_structure **
 get_structures(FILE *input, int *n)
 {
    freesasa_structure **structures = NULL;
+
    *n = 0;
    if ((structure_options & FREESASA_SEPARATE_CHAINS) ||
        (structure_options & FREESASA_SEPARATE_MODELS)) {
@@ -296,7 +305,7 @@ run_analysis(FILE *input,
             }
         }
         if (printrsa) {
-            freesasa_write_rsa(rsa_file, result, structures[i], name, NULL);
+            freesasa_write_rsa(rsa_file, result, structures[i], name, rsa_reference);
         }
         freesasa_result_free(result);
         freesasa_strvp_free(classes);
@@ -398,10 +407,11 @@ main(int argc,
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
-    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN, RSA_FILE, RSA};
+    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN, RSA_FILE, RSA, CONFIG};
     parameters = freesasa_default_parameters;
     memset(opt_set, 0, n_opt);
     program_name = "freesasa";
+
     struct option long_options[] = {
         {"lee-richards",         no_argument,       0, 'L'},
         {"shrake-rupley",        no_argument,       0, 'S'},
@@ -431,6 +441,7 @@ main(int argc,
         {"unknown",              required_argument, &option_flag, UNKNOWN},
         {"rsa-file",             required_argument, &option_flag, RSA_FILE},
         {"rsa",                  no_argument,       &option_flag, RSA},
+        {"config",               required_argument, &option_flag, CONFIG},
         {0,0,0,0}
     };
     options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:e:o:";
@@ -473,6 +484,19 @@ main(int argc,
                 printrsa = 1;
                 rsa_file = fopen_werr(optarg, "w");
                 break;
+            case CONFIG:
+                static_config = 1;
+                if (strcmp("naccess", optarg) == 0) {
+                    classifier = &freesasa_naccess_classifier;
+                    rsa_reference = &freesasa_naccess_rsa;
+                } else if (strcmp("protor", optarg) == 0) {
+                    classifier = &freesasa_default_classifier;
+                    rsa_reference = &freesasa_default_rsa;
+                } else {
+                    abort_msg("Config '%s' not allowed, "
+                              "can only be 'protor' or 'naccess')", optarg);
+                }
+                break;
             default:
                 abort(); // what does this even mean?
             }
@@ -503,9 +527,9 @@ main(int argc,
             break;
         case 'c': {
             FILE *f = fopen_werr(optarg, "r");
-            classifier = freesasa_classifier_from_file(f);
+            classifier = classifier_from_file = freesasa_classifier_from_file(f);
             fclose(f);
-            if (classifier == NULL) abort_msg("Can't read file '%s'.", optarg);
+            if (classifier_from_file == NULL) abort_msg("Can't read file '%s'.", optarg);
             break;
         }
         case 'n':
@@ -580,6 +604,7 @@ main(int argc,
     if (alg_set > 1) abort_msg("Multiple algorithms specified.");
     if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.");
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.");
+    if (opt_set['c'] && static_config) abort_msg("The options -c and --config cannot be combined");
     if (printlog) fprintf(output,"## %s %s ##\n", program_name, version);
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {

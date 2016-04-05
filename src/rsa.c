@@ -31,7 +31,7 @@ static const freesasa_residue_sasa zero_rs = {NULL, 0, 0, 0, 0, 0};
 
 /* these are calculated using L&R with 1000 slices and ProtOr radii,
    from the AXA configurations in the directory rsa. */
-static const freesasa_residue_sasa rsa_sasa_ref[] = {
+static const freesasa_residue_sasa rsa_default_ref[] = {
     {.name = "ALA", .total = 103.10, .main_chain = 46.51, .side_chain = 56.60, .polar = 29.89, .apolar = 73.21},
     {.name = "CYS", .total = 125.02, .main_chain = 45.47, .side_chain = 79.55, .polar = 79.68, .apolar = 45.33},
     {.name = "ASP", .total = 135.76, .main_chain = 44.65, .side_chain = 91.11, .polar = 88.93, .apolar = 46.83},
@@ -55,8 +55,36 @@ static const freesasa_residue_sasa rsa_sasa_ref[] = {
     {NULL, 0, 0, 0, 0, 0}, // marks end of array
 };
 
-const freesasa_rsa_reference freesasa_protor_rsa = {
-    .max = rsa_sasa_ref,
+const freesasa_rsa_reference freesasa_default_rsa = {
+    .max = rsa_default_ref,
+    .polar_classifier = &freesasa_default_classifier,
+    .bb_classifier = &freesasa_backbone_classifier
+};
+static const freesasa_residue_sasa rsa_naccess_ref[20] = {
+    {.name = "ALA", .total = 102.31, .main_chain = 46.96, .side_chain = 55.35, .polar = 28.51, .apolar = 73.80},
+    {.name = "CYS", .total = 127.09, .main_chain = 45.71, .side_chain = 81.38, .polar = 83.01, .apolar = 44.08},
+    {.name = "ASP", .total = 134.50, .main_chain = 45.25, .side_chain = 89.25, .polar = 81.36, .apolar = 53.14},
+    {.name = "GLU", .total = 166.09, .main_chain = 45.60, .side_chain = 120.49, .polar = 103.10, .apolar = 63.00},
+    {.name = "PHE", .total = 193.15, .main_chain = 44.02, .side_chain = 149.13, .polar = 28.51, .apolar = 164.64},
+    {.name = "GLY", .total = 71.50, .main_chain = 71.50, .side_chain = 0.00, .polar = 29.80, .apolar = 41.69},
+    {.name = "HIS", .total = 173.15, .main_chain = 44.71, .side_chain = 128.44, .polar = 68.23, .apolar = 104.92},
+    {.name = "ILE", .total = 166.62, .main_chain = 38.94, .side_chain = 127.68, .polar = 24.25, .apolar = 142.37},
+    {.name = "LYS", .total = 192.51, .main_chain = 45.59, .side_chain = 146.93, .polar = 77.19, .apolar = 115.32},
+    {.name = "LEU", .total = 159.40, .main_chain = 45.05, .side_chain = 114.35, .polar = 28.51, .apolar = 130.89},
+    {.name = "MET", .total = 185.85, .main_chain = 45.57, .side_chain = 140.28, .polar = 71.22, .apolar = 114.63},
+    {.name = "ASN", .total = 137.97, .main_chain = 44.26, .side_chain = 93.71, .polar = 87.92, .apolar = 50.05},
+    {.name = "PRO", .total = 131.26, .main_chain = 29.75, .side_chain = 101.50, .polar = 14.98, .apolar = 116.27},
+    {.name = "GLN", .total = 172.15, .main_chain = 45.58, .side_chain = 126.57, .polar = 117.24, .apolar = 54.91},
+    {.name = "ARG", .total = 232.08, .main_chain = 45.58, .side_chain = 186.50, .polar = 148.95, .apolar = 83.13},
+    {.name = "SER", .total = 109.82, .main_chain = 46.67, .side_chain = 63.15, .polar = 54.97, .apolar = 54.85},
+    {.name = "THR", .total = 131.81, .main_chain = 40.30, .side_chain = 91.51, .polar = 47.59, .apolar = 84.22},
+    {.name = "VAL", .total = 146.03, .main_chain = 44.72, .side_chain = 101.31, .polar = 28.51, .apolar = 117.52},
+    {.name = "TRP", .total = 226.33, .main_chain = 40.90, .side_chain = 185.43, .polar = 58.94, .apolar = 167.40},
+    {.name = "TYR", .total = 206.14, .main_chain = 43.99, .side_chain = 162.14, .polar = 70.47, .apolar = 135.66},
+};
+
+const freesasa_rsa_reference freesasa_naccess_rsa = {
+    .max = rsa_naccess_ref,
     .polar_classifier = &freesasa_default_classifier,
     .bb_classifier = &freesasa_backbone_classifier
 };
@@ -234,7 +262,7 @@ freesasa_write_rsa(FILE *output,
                               .bb_classifier = &freesasa_backbone_classifier,
                               .result = result,
                               .structure = structure,
-                              .sasa_ref = rsa_sasa_ref};
+                              .sasa_ref = rsa_default_ref};
 
     const char *chain_labels = freesasa_structure_chain_labels(structure);
     int naa = freesasa_structure_n_residues(structure),

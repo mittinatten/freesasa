@@ -159,11 +159,14 @@ typedef struct freesasa_classifier {
     void (*free_config)(void*);
 } freesasa_classifier;
 
-//! The default classifier
+//! The default classifier (ProtOr)
 extern const freesasa_classifier freesasa_default_classifier;
 
 //! Classifier using OONS classes (used to be default)
 extern const freesasa_classifier freesasa_oons_classifier;
+
+//! Classifier using NACCESS classes and radii
+extern const freesasa_classifier freesasa_naccess_classifier;
 
 //! Used as reference in generation of RSA file
 typedef struct {
@@ -187,7 +190,10 @@ typedef struct {
 } freesasa_rsa_reference;
 
 //! An RSA-reference for the default configuration
-extern const freesasa_rsa_reference freesasa_protor_rsa;
+extern const freesasa_rsa_reference freesasa_default_rsa;
+
+//! An RSA-reference for the NACCESS configuration
+extern const freesasa_rsa_reference freesasa_naccess_rsa;
 
 
 /**
