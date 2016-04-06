@@ -44,6 +44,12 @@ typedef enum {
 #define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R.
 #define FREESASA_DEF_LR_N 20 //!< Default number of slices per atom  in L&R.
 
+//! Default ::freesasa_classifier
+#define freesasa_default_classifier freesasa_protor_classifier
+
+//! Default ::freesasa_rsa_reference
+#define freesasa_default_rsa freesasa_protor_rsa
+
 //! Default number of threads. Value will depend on if library was
 //! compiled with or without thread support. (2 with threads, 1
 //! without)
@@ -159,17 +165,20 @@ typedef struct freesasa_classifier {
     void (*free_config)(void*);
 } freesasa_classifier;
 
-//! The default classifier (ProtOr)
-extern const freesasa_classifier freesasa_default_classifier;
+//! Classifier using ProtOr radii and classes
+extern const freesasa_classifier freesasa_protor_classifier;
 
-//! Classifier using OONS classes (used to be default)
+//! Classifier using OONS radii and classes
 extern const freesasa_classifier freesasa_oons_classifier;
 
-//! Classifier using NACCESS classes and radii
+//! Classifier using NACCESS radii and classes
 extern const freesasa_classifier freesasa_naccess_classifier;
 
 //! Used as reference in generation of RSA file
 typedef struct {
+    //! Name of RSA reference
+    char *name;
+
     /**
         Array containing max SASA-values for named residues types.
         Last element of array should have name == NULL.
@@ -178,7 +187,9 @@ typedef struct {
 
     /**
         A classifier whose sasa_class() function returns 0 for apolar
-        atoms and non-zero for polar atoms.
+        atoms and non-zero for polar atoms. This is true for
+        ::freesasa_protor_classifier, ::freesasa_oons_classifier and
+        ::freesasa_naccess_classifier.
     */
     const freesasa_classifier *polar_classifier;
     
@@ -190,11 +201,10 @@ typedef struct {
 } freesasa_rsa_reference;
 
 //! An RSA-reference for the default configuration
-extern const freesasa_rsa_reference freesasa_default_rsa;
+extern const freesasa_rsa_reference freesasa_protor_rsa;
 
 //! An RSA-reference for the NACCESS configuration
 extern const freesasa_rsa_reference freesasa_naccess_rsa;
-
 
 /**
     Calculates SASA based on a given structure.

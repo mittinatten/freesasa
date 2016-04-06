@@ -31,7 +31,7 @@ static const freesasa_residue_sasa zero_rs = {NULL, 0, 0, 0, 0, 0};
 
 /* these are calculated using L&R with 1000 slices and ProtOr radii,
    from the AXA configurations in the directory rsa. */
-static const freesasa_residue_sasa rsa_default_ref[] = {
+static const freesasa_residue_sasa rsa_protor_ref[] = {
     {.name = "ALA", .total = 103.10, .main_chain = 46.51, .side_chain = 56.60, .polar = 29.89, .apolar = 73.21},
     {.name = "CYS", .total = 125.02, .main_chain = 45.47, .side_chain = 79.55, .polar = 79.68, .apolar = 45.33},
     {.name = "ASP", .total = 135.76, .main_chain = 44.65, .side_chain = 91.11, .polar = 88.93, .apolar = 46.83},
@@ -55,9 +55,10 @@ static const freesasa_residue_sasa rsa_default_ref[] = {
     {NULL, 0, 0, 0, 0, 0}, // marks end of array
 };
 
-const freesasa_rsa_reference freesasa_default_rsa = {
-    .max = rsa_default_ref,
-    .polar_classifier = &freesasa_default_classifier,
+const freesasa_rsa_reference freesasa_protor_rsa = {
+    .name = "ProtOr",
+    .max = rsa_protor_ref,
+    .polar_classifier = &freesasa_protor_classifier,
     .bb_classifier = &freesasa_backbone_classifier
 };
 static const freesasa_residue_sasa rsa_naccess_ref[20] = {
@@ -84,8 +85,9 @@ static const freesasa_residue_sasa rsa_naccess_ref[20] = {
 };
 
 const freesasa_rsa_reference freesasa_naccess_rsa = {
+    .name = "NACCESS",
     .max = rsa_naccess_ref,
-    .polar_classifier = &freesasa_default_classifier,
+    .polar_classifier = &freesasa_naccess_classifier,
     .bb_classifier = &freesasa_backbone_classifier
 };
 
@@ -183,15 +185,16 @@ rsa_add_residue_sasa(freesasa_residue_sasa *sum,
 
 static void
 rsa_print_header(FILE *output,
-                 const char *name)
+                 const char *config_name,
+                 const char *protein_name)
 {
 #ifdef PACKAGE_VERSION
     fprintf(output, "REM  FreeSASA " PACKAGE_VERSION "\n");
 #else
     fprintf(output, "REM  FreeSASA\n");
 #endif
-    fprintf(output, "REM  Using default relative accessibilites\n");
-    fprintf(output, "REM  Absolute and relative SASAs for %s\n", name);
+    fprintf(output, "REM  Absolute and relative SASAs for %s\n", protein_name);
+    fprintf(output, "REM  Reference values calculated using %s radii\n", config_name);
     fprintf(output, "REM RES _ NUM      All-atoms   Total-Side   Main-Chain    Non-polar    All polar\n");
     fprintf(output, "REM                ABS   REL    ABS   REL    ABS   REL    ABS   REL    ABS   REL\n");
 }
@@ -258,11 +261,13 @@ freesasa_write_rsa(FILE *output,
     assert(structure);
     assert(name);
 
-    struct rsa_config cfg = { .polar_classifier = &freesasa_default_classifier,
-                              .bb_classifier = &freesasa_backbone_classifier,
-                              .result = result,
-                              .structure = structure,
-                              .sasa_ref = rsa_default_ref};
+    struct rsa_config cfg = {
+        .polar_classifier = freesasa_default_rsa.polar_classifier,
+        .bb_classifier = freesasa_default_rsa.bb_classifier,
+        .result = result,
+        .structure = structure,
+        .sasa_ref = freesasa_default_rsa.max
+    };
 
     const char *chain_labels = freesasa_structure_chain_labels(structure);
     int naa = freesasa_structure_n_residues(structure),
@@ -273,11 +278,13 @@ freesasa_write_rsa(FILE *output,
         cfg.polar_classifier = reference->polar_classifier;
         cfg.bb_classifier = reference->bb_classifier;
         cfg.sasa_ref = reference->max;
+    } else {
+        reference = &freesasa_default_rsa;
     }
 
     for (int i = 0; i < n_chains; ++i) chain_abs[i] = zero_rs;
     
-    rsa_print_header(output, name);
+    rsa_print_header(output, reference->name, name);
 
     for (int i = 0; i < naa; ++i) {
         if ( rsa_calc_rs(&abs, &rel, i, &cfg) ||

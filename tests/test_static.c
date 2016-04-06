@@ -306,6 +306,7 @@ int is_never_true(const char *resn, const char *aname, const freesasa_classifier
 START_TEST (test_rsa)
 {
     freesasa_residue_sasa rs, rs2;
+    const freesasa_residue_sasa *rsa_default_ref = freesasa_default_rsa.max;
     freesasa_classifier cfr = {.sasa_class = is_never_true};
     freesasa_structure *structure = freesasa_structure_new();
     freesasa_structure_add_atom(structure," CA ","ALA","   1",'A',0,0,0);
@@ -315,11 +316,13 @@ START_TEST (test_rsa)
     freesasa_structure_add_atom(structure," O  ","ALA","   1",'B',11,11,11);
     freesasa_structure_add_atom(structure," CB ","ALA","   1",'B',12,12,12);
     freesasa_result *result = freesasa_calc_structure(structure, NULL);
-    struct rsa_config cfg = {.polar_classifier = &freesasa_default_classifier,
-                             .bb_classifier = &freesasa_backbone_classifier,
-                             .result = result,
-                             .structure = structure,
-                             .sasa_ref = rsa_default_ref};
+    struct rsa_config cfg = {
+        .polar_classifier = freesasa_default_rsa.polar_classifier,
+        .bb_classifier = freesasa_default_rsa.bb_classifier,
+        .result = result,
+        .structure = structure,
+        .sasa_ref = rsa_default_ref
+    };
 
     for (int i = 0; i < 6; ++i) {
         rs = zero_rs;
