@@ -305,7 +305,7 @@ int is_never_true(const char *resn, const char *aname, const freesasa_classifier
 
 START_TEST (test_rsa)
 {
-    struct residue_sasa rs, rs2;
+    freesasa_residue_sasa rs, rs2;
     freesasa_classifier cfr = {.sasa_class = is_never_true};
     freesasa_structure *structure = freesasa_structure_new();
     freesasa_structure_add_atom(structure," CA ","ALA","   1",'A',0,0,0);
@@ -319,7 +319,7 @@ START_TEST (test_rsa)
                              .bb_classifier = &freesasa_backbone_classifier,
                              .result = result,
                              .structure = structure,
-                             .sasa_ref = rsa_sasa_ref};
+                             .sasa_ref = rsa_default_ref};
 
     for (int i = 0; i < 6; ++i) {
         rs = zero_rs;
@@ -352,20 +352,20 @@ START_TEST (test_rsa)
     ck_assert(float_eq(rs.side_chain, 2*rs2.side_chain, 1e-10));
 
     // Check relative sasa
-    rsa_get_rel(&rs, &rs2, rsa_sasa_ref);
-    ck_assert(float_eq(rs.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_sasa_ref[0].total, 1e-10));
-    ck_assert(float_eq(rs.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_sasa_ref[0].main_chain, 1e-10));
-    ck_assert(float_eq(rs.side_chain, 100*(result->sasa[2])/rsa_sasa_ref[0].side_chain, 1e-10));
-    ck_assert(float_eq(rs.polar, 100*(result->sasa[1])/rsa_sasa_ref[0].polar, 1e-10));
-    ck_assert(float_eq(rs.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_sasa_ref[0].apolar, 1e-10));
+    rsa_get_rel(&rs, &rs2, rsa_default_ref);
+    ck_assert(float_eq(rs.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_default_ref[0].total, 1e-10));
+    ck_assert(float_eq(rs.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_default_ref[0].main_chain, 1e-10));
+    ck_assert(float_eq(rs.side_chain, 100*(result->sasa[2])/rsa_default_ref[0].side_chain, 1e-10));
+    ck_assert(float_eq(rs.polar, 100*(result->sasa[1])/rsa_default_ref[0].polar, 1e-10));
+    ck_assert(float_eq(rs.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_default_ref[0].apolar, 1e-10));
 
     // Check that compound function gives same results
     rsa_calc_rs(&rs, &rs2, 0, &cfg);
-    ck_assert(float_eq(rs2.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_sasa_ref[0].total, 1e-10));
-    ck_assert(float_eq(rs2.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_sasa_ref[0].main_chain, 1e-10));
-    ck_assert(float_eq(rs2.side_chain, 100*(result->sasa[2])/rsa_sasa_ref[0].side_chain, 1e-10));
-    ck_assert(float_eq(rs2.polar, 100*(result->sasa[1])/rsa_sasa_ref[0].polar, 1e-10));
-    ck_assert(float_eq(rs2.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_sasa_ref[0].apolar, 1e-10));
+    ck_assert(float_eq(rs2.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_default_ref[0].total, 1e-10));
+    ck_assert(float_eq(rs2.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_default_ref[0].main_chain, 1e-10));
+    ck_assert(float_eq(rs2.side_chain, 100*(result->sasa[2])/rsa_default_ref[0].side_chain, 1e-10));
+    ck_assert(float_eq(rs2.polar, 100*(result->sasa[1])/rsa_default_ref[0].polar, 1e-10));
+    ck_assert(float_eq(rs2.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_default_ref[0].apolar, 1e-10));
     ck_assert(float_eq(rs.total, result->sasa[0] + result->sasa[1] + result->sasa[2], 1e-10));
     ck_assert(float_eq(rs.polar, result->sasa[1], 1e-10));
     ck_assert(float_eq(rs.apolar, result->sasa[0] + result->sasa[2], 1e-10));
