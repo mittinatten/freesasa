@@ -10,5 +10,6 @@
 #include <classifier.c>
 #include <classifier_protor.c>
 #include <classifier_naccess.c>
+#include <classifier_oons.c>
 #include <selection.c>
 #include <rsa.c>

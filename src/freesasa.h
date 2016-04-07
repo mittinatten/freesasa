@@ -10,7 +10,7 @@
     calculations.
 
     This header provides the functions and data types necessary to
-    perfrom and analyze a SASA calculation using FreeSASA, including
+    perform and analyze a SASA calculation using FreeSASA, including
     facilities to customize assignment of radii to, and classification
     of, atoms. There are also functions to access properties of a
     structure, to allow refined analysis of the results. The page @ref
@@ -151,7 +151,7 @@ typedef struct freesasa_classifier {
 
     /**
         Function that returns the class [0,1,...,n_classes-1] of an
-        atom, shoul return ::FREESASA_WARN if atom not recognized.
+        atom, should return ::FREESASA_WARN if atom not recognized.
     */
     int (*sasa_class)(const char* res_name,
                       const char* atom_name,
@@ -168,11 +168,11 @@ typedef struct freesasa_classifier {
 //! Classifier using ProtOr radii and classes
 extern const freesasa_classifier freesasa_protor_classifier;
 
-//! Classifier using OONS radii and classes
-extern const freesasa_classifier freesasa_oons_classifier;
-
 //! Classifier using NACCESS radii and classes
 extern const freesasa_classifier freesasa_naccess_classifier;
+
+//! Classifier using OONS radii and classes
+extern const freesasa_classifier freesasa_oons_classifier;
 
 //! Used as reference in generation of RSA file
 typedef struct {
@@ -200,7 +200,7 @@ typedef struct {
     const freesasa_classifier *bb_classifier;
 } freesasa_rsa_reference;
 
-//! An RSA-reference for the default configuration
+//! An RSA-reference for the ProtOr configuration
 extern const freesasa_rsa_reference freesasa_protor_rsa;
 
 //! An RSA-reference for the NACCESS configuration

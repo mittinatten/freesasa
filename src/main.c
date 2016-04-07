@@ -84,7 +84,7 @@ help(void)
             "                        Use atomic radii and classes provided in file, example\n"
             "                        configuration files can be found in the directory\n"
             "                        share/.\n"
-            "\n  --config=<protor|naccess>\n"
+            "\n  --radii=<protor|naccess>\n"
             "                        Use either ProtOr or NACCESS atomic radii, classes and\n"
             "                        RSA reference values. Cannot be used in conjunction\n"
             "                        with the option '-c'.\n"
@@ -490,8 +490,8 @@ main(int argc,
                     classifier = &freesasa_naccess_classifier;
                     rsa_reference = &freesasa_naccess_rsa;
                 } else if (strcmp("protor", optarg) == 0) {
-                    classifier = &freesasa_default_classifier;
-                    rsa_reference = &freesasa_default_rsa;
+                    classifier = &freesasa_protor_classifier;
+                    rsa_reference = &freesasa_protor_rsa;
                 } else {
                     abort_msg("Config '%s' not allowed, "
                               "can only be 'protor' or 'naccess')", optarg);
