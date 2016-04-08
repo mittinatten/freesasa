@@ -78,7 +78,6 @@ enum freesasa_structure_options {
     FREESASA_HALT_AT_UNKNOWN=32, //!< Halt reading when unknown atom is encountered.
     FREESASA_SKIP_UNKNOWN=64, //!< Skip atom when unknown atom is encountered.
     FREESASA_RADIUS_FROM_OCCUPANCY=128, //!< Read atom radius from occupancy field.
-    FREESASA_RADIUS_FROM_BFACTOR=256, //!< Read atom radius from temperature/B-factor field.
 };
 
 //! The maximum length of a selection name @see freesasa_select_area()
@@ -587,6 +586,9 @@ freesasa_structure_free(freesasa_structure* structure);
       
       - `options & ::FREESASA_HALT_AT_UNKNOWN == 1`: Halt at unknown
          atom and return NULL. Overrides ::FREESASA_SKIP_UNKNOWN.
+
+      - `options & ::FREESASA_RADIUS_FROM_OCCUPANCY == 1`: Read atomic
+         radii from Occupancy field in PDB file.
 
     If a more fine-grained control over which atoms to include is
     needed, the PDB-file needs to be modified before calling this

@@ -327,8 +327,7 @@ structure_add_atom(freesasa_structure *s,
     }
 
     // calculate radius and check if we should keep the atom (based on options)
-    if (options & FREESASA_RADIUS_FROM_BFACTOR ||
-        options & FREESASA_RADIUS_FROM_OCCUPANCY) {
+    if (options & FREESASA_RADIUS_FROM_OCCUPANCY) {
         r = 1; // fix it later
     } else {
         ret = structure_check_atom_radius(&r, a, classifier, options);
@@ -414,11 +413,7 @@ from_pdb_impl(FILE *pdb_file,
                 structure_add_atom(s, a, v, classifier, options) == FREESASA_FAIL) 
                 goto cleanup;
 
-            if (options & FREESASA_RADIUS_FROM_BFACTOR) {
-                if (freesasa_pdb_get_bfactor(&r, line) == FREESASA_SUCCESS) {
-                    s->radius[s->number_atoms-1] = r;
-                }
-            } else if (options & FREESASA_RADIUS_FROM_OCCUPANCY) {
+            if (options & FREESASA_RADIUS_FROM_OCCUPANCY) {
                 if (freesasa_pdb_get_occupancy(&r, line) == FREESASA_SUCCESS) {
                     s->radius[s->number_atoms-1] = r;
                 }
@@ -465,6 +460,9 @@ freesasa_structure_add_atom_wopt(freesasa_structure *s,
     char symbol[PDB_ATOM_SYMBOL_STRL+1];
     double v[3] = {x,y,z};
     int ret, warn = 0;
+
+    // this option can not be used here, and needs to be unset
+    options &= ~FREESASA_RADIUS_FROM_OCCUPANCY;
 
     if (guess_symbol(symbol, atom_name) == FREESASA_WARN &&
         options & FREESASA_SKIP_UNKNOWN) 

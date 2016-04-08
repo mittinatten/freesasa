@@ -80,6 +80,8 @@ help(void)
             FREESASA_DEF_NUMBER_THREADS);
 #endif
     fprintf(stderr,
+            "\n  -O (--radius-from-occupancy)\n"
+            "                        Read atomic radii from Occupancy field in the PDB input.\n"
             "\n  -c <file> (--config-file=<file>)\n"
             "                        Use atomic radii and classes provided in file, example\n"
             "                        configuration files can be found in the directory\n"
@@ -407,8 +409,7 @@ main(int argc,
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
-    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN, RSA_FILE, RSA, CONFIG,
-          RADII_B, RADII_OCC};
+    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN, RSA_FILE, RSA, CONFIG};
     parameters = freesasa_default_parameters;
     memset(opt_set, 0, n_opt);
     program_name = "freesasa";
@@ -435,6 +436,7 @@ main(int argc,
         {"chain-groups",         required_argument, 0, 'g'},
         {"error-file",           required_argument, 0, 'e'},
         {"output",               required_argument, 0, 'o'},
+        {"radius-from-occupancy",no_argument,       0, 'O'},
         {"residue-type-file",    required_argument, &option_flag, RES_FILE},
         {"residue-file",         required_argument, &option_flag, SEQ_FILE},
         {"B-value-file",         required_argument, &option_flag, B_FILE},
@@ -443,12 +445,9 @@ main(int argc,
         {"rsa-file",             required_argument, &option_flag, RSA_FILE},
         {"rsa",                  no_argument,       &option_flag, RSA},
         {"config",               required_argument, &option_flag, CONFIG},
-        {"radius-from-B-factor", no_argument,       &option_flag, RADII_B},
-        {"radius-from-occupancy",no_argument,       &option_flag, RADII_OCC},
-
         {0,0,0,0}
     };
-    options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:e:o:";
+    options_string = ":hvlwLSHYOCMmBrRc:n:t:p:g:e:o:";
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
         opt_set[(int)opt] = 1;
@@ -500,12 +499,6 @@ main(int argc,
                     abort_msg("Config '%s' not allowed, "
                               "can only be 'protor' or 'naccess')", optarg);
                 }
-                break;
-            case RADII_B:
-                structure_options |= FREESASA_RADIUS_FROM_BFACTOR;
-                break;
-            case RADII_OCC:
-                structure_options |= FREESASA_RADIUS_FROM_OCCUPANCY;
                 break;
             default:
                 abort(); // what does this even mean?
@@ -566,6 +559,9 @@ main(int argc,
             break;
         case 'Y':
             structure_options |= FREESASA_INCLUDE_HYDROGEN;
+            break;
+        case 'O':
+            structure_options |= FREESASA_RADIUS_FROM_OCCUPANCY;
             break;
         case 'M':
             structure_options |= FREESASA_SEPARATE_MODELS;
