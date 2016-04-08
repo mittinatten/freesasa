@@ -160,6 +160,14 @@ int
 freesasa_pdb_get_symbol(char *symbol,
                         const char* line);
 
+int
+freesasa_pdb_get_occupancy(double *occ,
+                           const char* line);
+
+int
+freesasa_pdb_get_bfactor(double *bfac,
+                         const char* line);
+
 /**
     Is atom Hydrogen?
     

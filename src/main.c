@@ -407,7 +407,8 @@ main(int argc,
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
-    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN, RSA_FILE, RSA, CONFIG};
+    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN, RSA_FILE, RSA, CONFIG,
+          RADII_B, RADII_OCC};
     parameters = freesasa_default_parameters;
     memset(opt_set, 0, n_opt);
     program_name = "freesasa";
@@ -442,6 +443,9 @@ main(int argc,
         {"rsa-file",             required_argument, &option_flag, RSA_FILE},
         {"rsa",                  no_argument,       &option_flag, RSA},
         {"config",               required_argument, &option_flag, CONFIG},
+        {"radius-from-B-factor", no_argument,       &option_flag, RADII_B},
+        {"radius-from-occupancy",no_argument,       &option_flag, RADII_OCC},
+
         {0,0,0,0}
     };
     options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:e:o:";
@@ -496,6 +500,12 @@ main(int argc,
                     abort_msg("Config '%s' not allowed, "
                               "can only be 'protor' or 'naccess')", optarg);
                 }
+                break;
+            case RADII_B:
+                structure_options |= FREESASA_RADIUS_FROM_BFACTOR;
+                break;
+            case RADII_OCC:
+                structure_options |= FREESASA_RADIUS_FROM_OCCUPANCY;
                 break;
             default:
                 abort(); // what does this even mean?

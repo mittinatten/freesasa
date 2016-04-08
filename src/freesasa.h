@@ -77,6 +77,8 @@ enum freesasa_structure_options {
     FREESASA_JOIN_MODELS=16, //!< Read MODELs as part of one big structure
     FREESASA_HALT_AT_UNKNOWN=32, //!< Halt reading when unknown atom is encountered.
     FREESASA_SKIP_UNKNOWN=64, //!< Skip atom when unknown atom is encountered.
+    FREESASA_RADIUS_FROM_OCCUPANCY=128, //!< Read atom radius from occupancy field.
+    FREESASA_RADIUS_FROM_BFACTOR=256, //!< Read atom radius from temperature/B-factor field.
 };
 
 //! The maximum length of a selection name @see freesasa_select_area()
@@ -807,7 +809,8 @@ freesasa_structure_radius(const freesasa_structure *structure);
       as the number of atoms in the structure.
  */
 void
-freesasa_structure_set_radius(freesasa_structure *structure, const double* radii);
+freesasa_structure_set_radius(freesasa_structure *structure,
+                              const double* radii);
 
 /**
     Get atom name.
