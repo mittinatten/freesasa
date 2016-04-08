@@ -254,21 +254,22 @@ freesasa_write_rsa(FILE *output,
                    const freesasa_result *result,
                    const freesasa_structure *structure,
                    const char *name,
-                   const freesasa_rsa_reference *reference)
+                   const freesasa_rsa_reference *reference,
+                   int skip_REL)
 {
     assert(output);
     assert(result);
     assert(structure);
     assert(name);
 
+    const freesasa_residue_sasa empty_rs[1] = {zero_rs};
     struct rsa_config cfg = {
         .polar_classifier = freesasa_default_rsa.polar_classifier,
         .bb_classifier = freesasa_default_rsa.bb_classifier,
         .result = result,
         .structure = structure,
-        .sasa_ref = freesasa_default_rsa.max
+        .sasa_ref = skip_REL ? empty_rs : freesasa_default_rsa.max,
     };
-
     const char *chain_labels = freesasa_structure_chain_labels(structure);
     int naa = freesasa_structure_n_residues(structure),
         n_chains = strlen(chain_labels);
@@ -277,7 +278,7 @@ freesasa_write_rsa(FILE *output,
     if (reference) {
         cfg.polar_classifier = reference->polar_classifier;
         cfg.bb_classifier = reference->bb_classifier;
-        cfg.sasa_ref = reference->max;
+        cfg.sasa_ref = skip_REL ? empty_rs : reference->max;
     } else {
         reference = &freesasa_default_rsa;
     }

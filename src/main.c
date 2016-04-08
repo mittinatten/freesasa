@@ -44,6 +44,7 @@ int printlog = 1;
 int structure_options = 0;
 int printpdb = 0;
 int printrsa = 0;
+int skip_REL = 0;
 int n_chain_groups = 0;
 char** chain_groups = NULL;
 int n_select = 0;
@@ -307,7 +308,8 @@ run_analysis(FILE *input,
             }
         }
         if (printrsa) {
-            freesasa_write_rsa(rsa_file, result, structures[i], name, rsa_reference);
+            freesasa_write_rsa(rsa_file, result, structures[i], name,
+                               rsa_reference, skip_REL);
         }
         freesasa_result_free(result);
         freesasa_strvp_free(classes);
@@ -611,6 +613,10 @@ main(int argc,
     if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.");
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.");
     if (opt_set['c'] && static_config) abort_msg("The options -c and --config cannot be combined");
+    if (printrsa && (opt_set['c'] || opt_set['O'])) {
+        skip_REL = 1;
+        freesasa_warn("Will only print absolute values in RSA when custom atomic radii selected.");
+    }
     if (printlog) fprintf(output,"## %s %s ##\n", program_name, version);
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {
