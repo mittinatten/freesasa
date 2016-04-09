@@ -126,8 +126,6 @@ rsa_get_abs(freesasa_residue_sasa *rs,
             const struct rsa_config *cfg)
 
 {
-    char selbuf[100];
-    char namebuf[FREESASA_MAX_SELECTION_NAME];
     int first, last;
 
     if (freesasa_structure_residue_atoms(cfg->structure, idx, &first, &last))

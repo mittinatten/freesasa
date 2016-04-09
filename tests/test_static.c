@@ -343,15 +343,10 @@ START_TEST (test_expression)
 }
 END_TEST
 
-int is_never_true(const char *resn, const char *aname, const freesasa_classifier *cfr) {
-    return 0;
-}
-
 START_TEST (test_rsa)
 {
     freesasa_residue_sasa rs, rs2;
     const freesasa_residue_sasa *rsa_default_ref = freesasa_default_rsa.max;
-    freesasa_classifier cfr = {.sasa_class = is_never_true};
     freesasa_structure *structure = freesasa_structure_new();
     freesasa_structure_add_atom(structure," CA ","ALA","   1",'A',0,0,0);
     freesasa_structure_add_atom(structure," O  ","ALA","   1",'A',1,1,1);
