@@ -51,6 +51,7 @@ int n_select = 0;
 char** select_cmd = NULL;
 int static_config = 0;
 
+
 void
 help(void)
 {
@@ -400,6 +401,20 @@ add_unknown_option(const char *optarg)
     abort_msg("Unknown alternative to option --unknown: '%s'", optarg);
 }
 
+// generate a RSA reference for when we have custom radii, this memory won't be freed
+freesasa_rsa_reference *
+empty_rsa_reference(const freesasa_classifier *c, const char *name)
+{
+    freesasa_rsa_reference *empty = malloc(sizeof(freesasa_rsa_reference));
+    if (!empty) abort_msg("Out of memory");
+    empty->name = strdup(name);
+    if (!name) abort_msg("Out of memory");
+    empty->max = (freesasa_residue_sasa[]){{NULL, 0, 0, 0, 0, 0}};
+    empty->polar_classifier = c;
+    empty->bb_classifier = freesasa_default_rsa.bb_classifier;
+    return empty;
+}
+
 int
 main(int argc,
      char **argv) 
@@ -535,6 +550,7 @@ main(int argc,
             classifier = classifier_from_file = freesasa_classifier_from_file(f);
             fclose(f);
             if (classifier_from_file == NULL) abort_msg("Can't read file '%s'.", optarg);
+            rsa_reference = empty_rsa_reference(classifier, optarg);
             break;
         }
         case 'n':
@@ -564,6 +580,7 @@ main(int argc,
             break;
         case 'O':
             structure_options |= FREESASA_RADIUS_FROM_OCCUPANCY;
+            rsa_reference = empty_rsa_reference(&freesasa_default_classifier, "input occupancy");
             break;
         case 'M':
             structure_options |= FREESASA_SEPARATE_MODELS;
@@ -613,6 +630,7 @@ main(int argc,
     if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.");
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.");
     if (opt_set['c'] && static_config) abort_msg("The options -c and --config cannot be combined");
+    if (opt_set['c'] && opt_set['O']) abort_msg("The option -c and -O can't be combined");
     if (printrsa && (opt_set['c'] || opt_set['O'])) {
         skip_REL = 1;
         freesasa_warn("Will only print absolute values in RSA when custom atomic radii selected.");
