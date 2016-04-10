@@ -10,6 +10,7 @@ dist:
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq check
+  - pip install --user cpp-coveralls  
 
 branches:
   only:
@@ -22,7 +23,10 @@ compiler:
 
 before_script:
   - autoreconf -i
-  - ./configure --enable-check
+  - ./configure --enable-check --enable-gcov
 
 script: make && make check
+
+after_sucess:
+  - coveralls --exclude lib --exclude tests --gcov-options '\-lp'
 
