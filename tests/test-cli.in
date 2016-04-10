@@ -195,6 +195,18 @@ echo "== Testing user-configurations =="
 assert_pass "$cli -c $sharedir/naccess.config -n 3 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -c $sharedir/oons.config -n 3 < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli -c $datadir/err.config -n 3 < $datadir/1ubq.pdb > $dump"
+# can't combine these options
+assert_fail "$cli -c $datadir/naccess.config -n 3 -O < $datadir/1ubq.pdb > $dump"
+assert_fail "$cli -c $datadir/naccess.config -n 3 --radii=naccess < $datadir/1ubq.pdb > $dump"
+echo
+echo "== Testing --radii" ==
+assert_pass "$cli --radii=naccess -n 3 < $datadir/1ubq.pdb > tmp/static.dat"
+assert_pass "$cli -c $sharedir/naccess.config -n 3 < $datadir/1ubq.pdb > tmp/from_config.dat"
+assert_pass "diff tmp/static.dat tmp/from_config.dat"
+assert_pass "$cli --radii=protor -n 3 < $datadir/1ubq.pdb > tmp/static.dat"
+assert_pass "$cli -c $sharedir/protor.config -n 3 < $datadir/1ubq.pdb > tmp/from_config.dat"
+assert_pass "diff tmp/static.dat tmp/from_config.dat"
+assert_fail "$cli --radii=bla -n 3 < $datadir/1ubq.pdb > $dump"
 echo
 echo "== Testing RSA =="
 for r in protor naccess

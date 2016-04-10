@@ -2,13 +2,13 @@
 
 # Meant to be run in this directory to calculate the reference SASA
 # values based on the PDB files stored here. Defines all C atoms as apolar
-# and all else as polar, i.e. doesn't work for OONS.
+# and all else as polar, i.e. needs to be modifier to work for OONS or NACCESS.
 
 use strict;
 
 my @pdb = `ls *.pdb`;
 my @res_array;
-print ">>>> C code";
+print ">>>> C code\n";
 print "freesasa_residue_sasa sasa_ref[20] = \{\n";
 foreach my $p (@pdb) {
     chomp $p;

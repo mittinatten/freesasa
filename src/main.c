@@ -426,7 +426,7 @@ main(int argc,
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
-    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN, RSA_FILE, RSA, CONFIG};
+    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN, RSA_FILE, RSA, RADII};
     parameters = freesasa_default_parameters;
     memset(opt_set, 0, n_opt);
     program_name = "freesasa";
@@ -461,7 +461,7 @@ main(int argc,
         {"unknown",              required_argument, &option_flag, UNKNOWN},
         {"rsa-file",             required_argument, &option_flag, RSA_FILE},
         {"rsa",                  no_argument,       &option_flag, RSA},
-        {"config",               required_argument, &option_flag, CONFIG},
+        {"radii",                required_argument, &option_flag, RADII},
         {0,0,0,0}
     };
     options_string = ":hvlwLSHYOCMmBrRc:n:t:p:g:e:o:";
@@ -504,7 +504,7 @@ main(int argc,
                 printrsa = 1;
                 rsa_file = fopen_werr(optarg, "w");
                 break;
-            case CONFIG:
+            case RADII:
                 static_config = 1;
                 if (strcmp("naccess", optarg) == 0) {
                     classifier = &freesasa_naccess_classifier;
@@ -616,7 +616,7 @@ main(int argc,
             abort_msg("Option '-%c' missing argument.", optopt);
         case '?':
         default:
-            fprintf(stderr, "%s: warning: Unknown option '-%c' (will be ignored)",
+            fprintf(stderr, "%s: warning: Unknown option '-%c' (will be ignored)\n",
                     program_name, opt);
             break;
         }
