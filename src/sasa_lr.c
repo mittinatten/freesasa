@@ -315,13 +315,20 @@ sort_arcs(double * restrict arc,
     double tmp[2];
     double *end = arc+2*n, *arcj, *arci;
     for (arci = arc+2; arci < end; arci += 2) {
-        memcpy(tmp,arci,2*sizeof(double));
+        //memcpy(tmp,arci,2*sizeof(double));
+        // this is much faster than memcpy for this small chunk
+        *tmp = *arci;
+        *(tmp+1) = *(arci+1);
         arcj = arci;
         while (arcj > arc && *(arcj-2) > tmp[0]) {
-            memcpy(arcj,arcj-2,2*sizeof(double));
+            //memcpy(arcj,arcj-2,2*sizeof(double)); 
+            *arcj = *(arcj-2);
+            *(arcj+1) = *(arcj-1);
             arcj -= 2;
         }
-        memcpy(arcj,tmp,2*sizeof(double));
+        //memcpy(arcj,tmp,2*sizeof(double));
+        *arcj = *tmp;
+        *(arcj+1) = *(tmp+1);
     }
 }
 
