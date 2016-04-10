@@ -90,6 +90,11 @@ START_TEST (test_name)
     ck_assert(float_eq(value[5], 
                        addup(name_CA,result) + addup(name_O,result) + addup(name_OXT,result),
                        1e-10));
+
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    ck_assert_int_eq(freesasa_select_area("c1, name ABCDE",selection_name[0],value,structure,result),
+                     FREESASA_WARN);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 
@@ -118,6 +123,11 @@ START_TEST (test_symbol)
                        1e-10));
     ck_assert(float_eq(value[6], addup(symb_SE,result), 1e-10));
     ck_assert(float_eq(value[7], value[0], 1e-10));
+
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    ck_assert_int_eq(freesasa_select_area("c1, symbol ABC",selection_name[0],value,structure,result),
+                     FREESASA_WARN);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 
@@ -137,6 +147,11 @@ START_TEST (test_resn)
     ck_assert(float_eq(value[3], 0, 1e-10));
     ck_assert(float_eq(value[4], value[0], 1e-10));
     ck_assert(float_eq(value[5], value[1], 1e-10));
+
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    ck_assert_int_eq(freesasa_select_area("c1, resn ABCD",selection_name[0],value,structure,result),
+                     FREESASA_WARN);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 
@@ -164,6 +179,15 @@ START_TEST (test_resi)
     ck_assert(float_eq(value[6], value[0], 1e-10));
     ck_assert(float_eq(value[7], value[0], 1e-10));
     ck_assert(float_eq(value[8], value[2], 1e-10));
+
+    //freesasa_set_verbosity(FREESASA_V_SILENT);
+    ck_assert_int_eq(freesasa_select_area("c1, resi A",selection_name[0],value,structure,result),
+                     FREESASA_WARN);
+    ck_assert_int_eq(freesasa_select_area("c1, resi 1A",selection_name[0],value,structure,result),
+                     FREESASA_FAIL); // This is a syntax error
+    ck_assert_int_eq(freesasa_select_area("c1, resi 1-A",selection_name[0],value,structure,result),
+                     FREESASA_WARN);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 
@@ -186,6 +210,10 @@ START_TEST (test_chain)
     ck_assert(float_eq(value[3], 0, 1e-10));
     ck_assert(float_eq(value[6], addup(chain_B,result), 1e-10));
 
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    ck_assert_int_eq(freesasa_select_area("c1, chain AA",selection_name[0],value,structure,result),
+                     FREESASA_WARN);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 
