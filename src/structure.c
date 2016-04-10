@@ -304,7 +304,12 @@ structure_check_atom_radius(double *radius,
     return FREESASA_SUCCESS;
 }
 
-/** adds an atom to the structure */
+/**
+   Adds an atom to the structure using the rules specified by
+   'options'. If it includes FREESASA_RADIUS_FROM_* a dummy radius is
+   assigned and the caller is expected to replace it with a correct
+   radius later.
+ */
 static int
 structure_add_atom(freesasa_structure *s,
                    struct atom *a,
@@ -322,9 +327,13 @@ structure_add_atom(freesasa_structure *s,
     }
 
     // calculate radius and check if we should keep the atom (based on options)
-    ret = structure_check_atom_radius(&r, a, classifier, options);
-    if (ret == FREESASA_FAIL) return fail_msg("Halting at unknown atom.");
-    if (ret == FREESASA_WARN) return FREESASA_WARN;
+    if (options & FREESASA_RADIUS_FROM_OCCUPANCY) {
+        r = 1; // fix it later
+    } else {
+        ret = structure_check_atom_radius(&r, a, classifier, options);
+        if (ret == FREESASA_FAIL) return fail_msg("Halting at unknown atom.");
+        if (ret == FREESASA_WARN) return FREESASA_WARN;
+    }
     assert(r >= 0);
 
     // if it's a keeper store the radius
@@ -376,7 +385,7 @@ from_pdb_impl(FILE *pdb_file,
     size_t len = PDB_LINE_STRL;
     char *line = NULL;
     char alt, the_alt = ' ';
-    double v[3];
+    double v[3], r;
     struct atom *a = NULL;
     freesasa_structure *s = freesasa_structure_new();
  
@@ -403,6 +412,12 @@ from_pdb_impl(FILE *pdb_file,
             if (freesasa_pdb_get_coord(v, line) == FREESASA_FAIL ||
                 structure_add_atom(s, a, v, classifier, options) == FREESASA_FAIL) 
                 goto cleanup;
+
+            if (options & FREESASA_RADIUS_FROM_OCCUPANCY) {
+                if (freesasa_pdb_get_occupancy(&r, line) == FREESASA_FAIL) 
+                    goto cleanup;
+                s->radius[s->number_atoms-1] = r;
+            }
         }
 
         if (! (options & FREESASA_JOIN_MODELS)) {
@@ -445,6 +460,9 @@ freesasa_structure_add_atom_wopt(freesasa_structure *s,
     char symbol[PDB_ATOM_SYMBOL_STRL+1];
     double v[3] = {x,y,z};
     int ret, warn = 0;
+
+    // this option can not be used here, and needs to be unset
+    options &= ~FREESASA_RADIUS_FROM_OCCUPANCY;
 
     if (guess_symbol(symbol, atom_name) == FREESASA_WARN &&
         options & FREESASA_SKIP_UNKNOWN) 

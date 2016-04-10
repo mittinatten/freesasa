@@ -6,6 +6,50 @@ const int n_coord = 18;
 static const double v[] = {0,0,0, 1,1,1, -1,1,-1, 2,0,-2, 2,2,0, -5,5,5};
 static const double r[]  = {4,2,2,2,2,2};
 
+START_TEST (test_pdb_aux)
+{
+    double v;
+    ck_assert(pdb_line_check("", 6) == FREESASA_FAIL);
+    ck_assert(pdb_line_check("ATOM", 4) == FREESASA_FAIL);
+    ck_assert(pdb_line_check("ATOM", 6) == FREESASA_FAIL);
+    ck_assert(pdb_line_check("HETAT", 6) == FREESASA_FAIL);
+    ck_assert(pdb_line_check("HETAT ", 6) == FREESASA_FAIL);
+    ck_assert(pdb_line_check("BLA BLA BLA", 10) == FREESASA_FAIL);
+    ck_assert(pdb_line_check("BLA BLA BLA", 11) == FREESASA_FAIL);
+    ck_assert(pdb_line_check("BLA BLA BLA", 12) == FREESASA_FAIL);
+
+    //these will pass, although they would be useless
+    ck_assert(pdb_line_check("ATOM  ", 6) == FREESASA_SUCCESS);
+    ck_assert(pdb_line_check("HETATM", 6) == FREESASA_SUCCESS);
+
+    // a more likely type of error
+    ck_assert(pdb_line_check("HETATM", 7) == FREESASA_FAIL);
+
+    // The normal case
+    ck_assert(pdb_line_check("ATOM      1  N   MET A   1      27.340  "
+                             "24.430   2.614  1.00  9.67           N  ",
+                             80)
+              == FREESASA_SUCCESS);
+
+    v = 0;
+    ck_assert(pdb_get_double("1.23", 4, &v) == FREESASA_SUCCESS);
+    ck_assert(float_eq(1.23, v, 1e-5));
+    v = 0;
+    ck_assert(pdb_get_double(" 1.23", 5, &v) == FREESASA_SUCCESS);
+    ck_assert(float_eq(1.23, v, 1e-5));
+    v = 0;
+    ck_assert(pdb_get_double("1.23", 10, &v) == FREESASA_SUCCESS);
+    ck_assert(float_eq(1.23, v, 1e-5));
+    v = 0;
+    ck_assert(pdb_get_double("1.23 4.56", 10, &v) == FREESASA_SUCCESS);
+    ck_assert(float_eq(1.23, v, 1e-5));
+
+    ck_assert(pdb_get_double("  ", 10, &v) == FREESASA_FAIL);
+    ck_assert(pdb_get_double("    1.23", 4, &v) == FREESASA_FAIL);
+    ck_assert(pdb_get_double("abc", 10, &v) == FREESASA_FAIL);
+    ck_assert(pdb_get_double("a 1.23", 6, &v) == FREESASA_FAIL);
+}
+END_TEST
 
 START_TEST (test_cell) {
     double r_max;
@@ -299,14 +343,10 @@ START_TEST (test_expression)
 }
 END_TEST
 
-int is_never_true(const char *resn, const char *aname, const freesasa_classifier *cfr) {
-    return 0;
-}
-
 START_TEST (test_rsa)
 {
-    struct residue_sasa rs, rs2;
-    freesasa_classifier cfr = {.sasa_class = is_never_true};
+    freesasa_residue_sasa rs, rs2;
+    const freesasa_residue_sasa *rsa_default_ref = freesasa_default_rsa.max;
     freesasa_structure *structure = freesasa_structure_new();
     freesasa_structure_add_atom(structure," CA ","ALA","   1",'A',0,0,0);
     freesasa_structure_add_atom(structure," O  ","ALA","   1",'A',1,1,1);
@@ -315,11 +355,13 @@ START_TEST (test_rsa)
     freesasa_structure_add_atom(structure," O  ","ALA","   1",'B',11,11,11);
     freesasa_structure_add_atom(structure," CB ","ALA","   1",'B',12,12,12);
     freesasa_result *result = freesasa_calc_structure(structure, NULL);
-    struct rsa_config cfg = {.polar_classifier = &freesasa_default_classifier,
-                             .bb_classifier = &freesasa_backbone_classifier,
-                             .result = result,
-                             .structure = structure,
-                             .sasa_ref = rsa_sasa_ref};
+    struct rsa_config cfg = {
+        .polar_classifier = freesasa_default_rsa.polar_classifier,
+        .bb_classifier = freesasa_default_rsa.bb_classifier,
+        .result = result,
+        .structure = structure,
+        .sasa_ref = rsa_default_ref
+    };
 
     for (int i = 0; i < 6; ++i) {
         rs = zero_rs;
@@ -352,20 +394,20 @@ START_TEST (test_rsa)
     ck_assert(float_eq(rs.side_chain, 2*rs2.side_chain, 1e-10));
 
     // Check relative sasa
-    rsa_get_rel(&rs, &rs2, rsa_sasa_ref);
-    ck_assert(float_eq(rs.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_sasa_ref[0].total, 1e-10));
-    ck_assert(float_eq(rs.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_sasa_ref[0].main_chain, 1e-10));
-    ck_assert(float_eq(rs.side_chain, 100*(result->sasa[2])/rsa_sasa_ref[0].side_chain, 1e-10));
-    ck_assert(float_eq(rs.polar, 100*(result->sasa[1])/rsa_sasa_ref[0].polar, 1e-10));
-    ck_assert(float_eq(rs.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_sasa_ref[0].apolar, 1e-10));
+    rsa_get_rel(&rs, &rs2, rsa_default_ref);
+    ck_assert(float_eq(rs.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_default_ref[0].total, 1e-10));
+    ck_assert(float_eq(rs.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_default_ref[0].main_chain, 1e-10));
+    ck_assert(float_eq(rs.side_chain, 100*(result->sasa[2])/rsa_default_ref[0].side_chain, 1e-10));
+    ck_assert(float_eq(rs.polar, 100*(result->sasa[1])/rsa_default_ref[0].polar, 1e-10));
+    ck_assert(float_eq(rs.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_default_ref[0].apolar, 1e-10));
 
     // Check that compound function gives same results
     rsa_calc_rs(&rs, &rs2, 0, &cfg);
-    ck_assert(float_eq(rs2.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_sasa_ref[0].total, 1e-10));
-    ck_assert(float_eq(rs2.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_sasa_ref[0].main_chain, 1e-10));
-    ck_assert(float_eq(rs2.side_chain, 100*(result->sasa[2])/rsa_sasa_ref[0].side_chain, 1e-10));
-    ck_assert(float_eq(rs2.polar, 100*(result->sasa[1])/rsa_sasa_ref[0].polar, 1e-10));
-    ck_assert(float_eq(rs2.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_sasa_ref[0].apolar, 1e-10));
+    ck_assert(float_eq(rs2.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_default_ref[0].total, 1e-10));
+    ck_assert(float_eq(rs2.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_default_ref[0].main_chain, 1e-10));
+    ck_assert(float_eq(rs2.side_chain, 100*(result->sasa[2])/rsa_default_ref[0].side_chain, 1e-10));
+    ck_assert(float_eq(rs2.polar, 100*(result->sasa[1])/rsa_default_ref[0].polar, 1e-10));
+    ck_assert(float_eq(rs2.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_default_ref[0].apolar, 1e-10));
     ck_assert(float_eq(rs.total, result->sasa[0] + result->sasa[1] + result->sasa[2], 1e-10));
     ck_assert(float_eq(rs.polar, result->sasa[1], 1e-10));
     ck_assert(float_eq(rs.apolar, result->sasa[0] + result->sasa[2], 1e-10));
@@ -377,6 +419,10 @@ END_TEST
 int main(int argc, char **argv) 
 {
     Suite *s = suite_create("Tests of static functions");
+
+    TCase *pdb = tcase_create("pdb.c");
+    tcase_add_test(pdb,test_pdb_aux);
+    suite_add_tcase(s, pdb);
 
     TCase *nb = tcase_create("nb.c");
     tcase_add_test(nb,test_cell);

@@ -8,6 +8,8 @@
 #include <pdb.c>
 #include <util.c>
 #include <classifier.c>
-#include <protor.c>
+#include <classifier_protor.c>
+#include <classifier_naccess.c>
+#include <classifier_oons.c>
 #include <selection.c>
 #include <rsa.c>

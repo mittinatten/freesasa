@@ -10,7 +10,7 @@
     calculations.
 
     This header provides the functions and data types necessary to
-    perfrom and analyze a SASA calculation using FreeSASA, including
+    perform and analyze a SASA calculation using FreeSASA, including
     facilities to customize assignment of radii to, and classification
     of, atoms. There are also functions to access properties of a
     structure, to allow refined analysis of the results. The page @ref
@@ -44,6 +44,12 @@ typedef enum {
 #define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R.
 #define FREESASA_DEF_LR_N 20 //!< Default number of slices per atom  in L&R.
 
+//! Default ::freesasa_classifier
+#define freesasa_default_classifier freesasa_protor_classifier
+
+//! Default ::freesasa_rsa_reference
+#define freesasa_default_rsa freesasa_protor_rsa
+
 //! Default number of threads. Value will depend on if library was
 //! compiled with or without thread support. (2 with threads, 1
 //! without)
@@ -71,6 +77,7 @@ enum freesasa_structure_options {
     FREESASA_JOIN_MODELS=16, //!< Read MODELs as part of one big structure
     FREESASA_HALT_AT_UNKNOWN=32, //!< Halt reading when unknown atom is encountered.
     FREESASA_SKIP_UNKNOWN=64, //!< Skip atom when unknown atom is encountered.
+    FREESASA_RADIUS_FROM_OCCUPANCY=128, //!< Read atom radius from occupancy field.
 };
 
 //! The maximum length of a selection name @see freesasa_select_area()
@@ -94,6 +101,16 @@ typedef struct {
     double *sasa; //!< SASA of each atom in Ångström^2
     int n_atoms;  //!< Number of atoms
 } freesasa_result;
+
+//! Struct to store SASA values for a named residue
+typedef struct {
+    const char *name;  //!< Residue name
+    double total;      //!< Total SASA
+    double main_chain; //!< Main-chain/Backbone SASA
+    double side_chain; //!< Side-chain SASA
+    double polar;      //!< Polar SASA
+    double apolar;     //!< Apolar SASA
+} freesasa_residue_sasa;
 
 /**
     Struct for structure object.
@@ -135,7 +152,7 @@ typedef struct freesasa_classifier {
 
     /**
         Function that returns the class [0,1,...,n_classes-1] of an
-        atom, shoul return ::FREESASA_WARN if atom not recognized.
+        atom, should return ::FREESASA_WARN if atom not recognized.
     */
     int (*sasa_class)(const char* res_name,
                       const char* atom_name,
@@ -149,11 +166,46 @@ typedef struct freesasa_classifier {
     void (*free_config)(void*);
 } freesasa_classifier;
 
-//! The default classifier
-extern const freesasa_classifier freesasa_default_classifier;
+//! Classifier using ProtOr radii and classes
+extern const freesasa_classifier freesasa_protor_classifier;
 
-//! Classifier using OONS classes (used to be default)
+//! Classifier using NACCESS radii and classes
+extern const freesasa_classifier freesasa_naccess_classifier;
+
+//! Classifier using OONS radii and classes
 extern const freesasa_classifier freesasa_oons_classifier;
+
+//! Used as reference in generation of RSA file
+typedef struct {
+    //! Name of RSA reference
+    char *name;
+
+    /**
+        Array containing max SASA-values for named residues types.
+        Last element of array should have name == NULL.
+    */
+    const freesasa_residue_sasa *max;
+
+    /**
+        A classifier whose sasa_class() function returns 0 for apolar
+        atoms and non-zero for polar atoms. This is true for
+        ::freesasa_protor_classifier, ::freesasa_oons_classifier and
+        ::freesasa_naccess_classifier.
+    */
+    const freesasa_classifier *polar_classifier;
+    
+    /**
+       A classifier whose sasa_class() function returns 0 for side
+       chain atoms and non-zero for backbone.
+    */
+    const freesasa_classifier *bb_classifier;
+} freesasa_rsa_reference;
+
+//! An RSA-reference for the ProtOr configuration
+extern const freesasa_rsa_reference freesasa_protor_rsa;
+
+//! An RSA-reference for the NACCESS configuration
+extern const freesasa_rsa_reference freesasa_naccess_rsa;
 
 /**
     Calculates SASA based on a given structure.
@@ -433,26 +485,22 @@ int freesasa_write_parameters(FILE *log,
     @param result SASA values
     @param structure The structure
     @param name Name of the protein
-    @param reference A file containing reference values for RSA
-      calculation. Pass NULL to use defaults. (not implemented yet)
-    @param polar_classifier A classifier whose sasa_class() function
-      returns 0 for apolar atoms and non-zero for polar atoms. Pass
-      NULL to use defaults.
-    @param backbone_classifier A classifier whose sasa_class()
-      function returns 0 for side chain atoms and non-zero for
-      backbone. Pass NULL to use defaults.
+    @param reference Reference to calculate RSA from, if NULL defaults
+      are used.
+    @param skip_REL If non-zero, relative values will not be
+      calculated, if 0 they will. This allows users using custom atomic
+      radii without available reference SASA values to get output in
+      RSA format, but with 'N/A' in all REL columns.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
       writing to file, or if `structure` is inconsistent.
  */
 int
-freesasa_rsa_print(FILE *output,
+freesasa_write_rsa(FILE *output,
                    const freesasa_result *result,
                    const freesasa_structure *structure,
                    const char *name,
-                   FILE *reference,
-                   const freesasa_classifier *polar_classifier,
-                   const freesasa_classifier *backbone_classifier);
-
+                   const freesasa_rsa_reference *reference,
+                   int skip_REL);
 /**
     Set the global verbosity level.
 
@@ -543,6 +591,9 @@ freesasa_structure_free(freesasa_structure* structure);
       
       - `options & ::FREESASA_HALT_AT_UNKNOWN == 1`: Halt at unknown
          atom and return NULL. Overrides ::FREESASA_SKIP_UNKNOWN.
+
+      - `options & ::FREESASA_RADIUS_FROM_OCCUPANCY == 1`: Read atomic
+         radii from Occupancy field in PDB file.
 
     If a more fine-grained control over which atoms to include is
     needed, the PDB-file needs to be modified before calling this
@@ -765,7 +816,8 @@ freesasa_structure_radius(const freesasa_structure *structure);
       as the number of atoms in the structure.
  */
 void
-freesasa_structure_set_radius(freesasa_structure *structure, const double* radii);
+freesasa_structure_set_radius(freesasa_structure *structure,
+                              const double* radii);
 
 /**
     Get atom name.

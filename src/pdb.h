@@ -141,7 +141,7 @@ freesasa_pdb_get_chain_label(const char* line);
     
     @param line Line from a PDB file.
     @return The label. If line is invalid, the function returns
-    '\0'.
+      '\0'.
  */
 char
 freesasa_pdb_get_alt_coord_label(const char* line);
@@ -153,12 +153,36 @@ freesasa_pdb_get_alt_coord_label(const char* line);
 
     @param symbol The symbol will be written to this string.
     @param line Line from a PDB file.
-    @return ::FREESASA_SUCCESS line has more 78 or more characters. ::FREESASA_FAIL if
-      line too short.
+    @return ::FREESASA_SUCCESS line has 78 or more characters. ::FREESASA_FAIL if
+      line too short. Does not check if symbol is valid.
  */
 int
 freesasa_pdb_get_symbol(char *symbol,
                         const char* line);
+
+/**
+    Get occupancy from PDB line
+
+    @param occ The occupancy will be written to this location.
+    @param line Line from a PDB file
+
+    @return ::FREESASA_SUCCESS if line is long enough, starts with
+      ATOM or HETATM, and characters 55-60 contain a number.
+ */
+int
+freesasa_pdb_get_occupancy(double *occ,
+                           const char* line);
+/**
+    Get temperature factor (B-factor) from PDB line
+
+    @param bfac The B-factor will be written to this location.
+    @param line Line from a PDB file
+    @return ::FREESASA_SUCCESS if line is long enough, starts with
+      ATOM or HETATM, and characters 61-66 contain a number.
+ */
+int
+freesasa_pdb_get_bfactor(double *bfac,
+                         const char* line);
 
 /**
     Is atom Hydrogen?
@@ -167,7 +191,7 @@ freesasa_pdb_get_symbol(char *symbol,
 
     @param line Line from a PDB file.  
     @return 1 if Hydrogen (or deuterium). 0 otherwise. If line is
-    invalid, the function returns ::FREESASA_FAIL.
+      invalid, the function returns ::FREESASA_FAIL.
  */
 int
 freesasa_pdb_ishydrogen(const char* line);

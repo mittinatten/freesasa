@@ -29,7 +29,9 @@ char *program_name;
 const char* options_string;
 
 freesasa_parameters parameters;
-freesasa_classifier *classifier = NULL;
+const freesasa_classifier *classifier = NULL;
+freesasa_classifier *classifier_from_file = NULL;
+const freesasa_rsa_reference *rsa_reference = NULL;
 FILE *output_pdb = NULL;
 FILE *per_residue_type_file = NULL;
 FILE *per_residue_file = NULL;
@@ -42,10 +44,12 @@ int printlog = 1;
 int structure_options = 0;
 int printpdb = 0;
 int printrsa = 0;
+int skip_REL = 0;
 int n_chain_groups = 0;
 char** chain_groups = NULL;
 int n_select = 0;
 char** select_cmd = NULL;
+int static_config = 0;
 
 void
 help(void)
@@ -77,10 +81,17 @@ help(void)
             FREESASA_DEF_NUMBER_THREADS);
 #endif
     fprintf(stderr,
+            "\n  -O (--radius-from-occupancy)\n"
+            "                        Read atomic radii from Occupancy field in the PDB input.\n"
             "\n  -c <file> (--config-file=<file>)\n"
             "                        Use atomic radii and classes provided in file, example\n"
             "                        configuration files can be found in the directory\n"
-            "                        share/.\n");
+            "                        share/.\n"
+            "\n  --radii=<protor|naccess>\n"
+            "                        Use either ProtOr or NACCESS atomic radii, classes and\n"
+            "                        RSA reference values. Cannot be used in conjunction\n"
+            "                        with the option '-c'.\n"
+            "                        Default value is 'protor'.\n");
     fprintf(stderr,
             "\nINPUT\n"
             "  -H (--hetatm)         Include HETATM entries from input.\n"
@@ -155,7 +166,7 @@ short_help(void)
 
 void release_resources()
 {
-    if (classifier) freesasa_classifier_free(classifier);
+    if (classifier_from_file) freesasa_classifier_free(classifier_from_file);
     if (output_pdb) fclose(output_pdb);
     if (per_residue_type_file) fclose(per_residue_type_file);
     if (per_residue_file) fclose(per_residue_file);
@@ -182,6 +193,7 @@ abort_msg(const char *format,
     vfprintf(stderr, format, arg);
     va_end(arg);
     fputc('\n', stderr);
+    fputc('\n', stderr);
     short_help();
     fputc('\n', stderr);
     fflush(stderr);
@@ -189,71 +201,81 @@ abort_msg(const char *format,
     exit(EXIT_FAILURE);
 }
 
+freesasa_structure **
+get_structures(FILE *input, int *n)
+{
+   freesasa_structure **structures = NULL;
+
+   *n = 0;
+   if ((structure_options & FREESASA_SEPARATE_CHAINS) ||
+       (structure_options & FREESASA_SEPARATE_MODELS)) {
+       structures = freesasa_structure_array(input, n, classifier, structure_options);
+       if (structures == NULL) abort_msg("Invalid input.");
+       for (int i = 0; i < *n; ++i) {
+           if (structures[i] == NULL) abort_msg("Invalid input.");
+       }
+   } else {
+       structures = malloc(sizeof(freesasa_structure*));
+       if (structures == NULL) {
+           abort_msg("Out of memory.");
+       }
+       *n = 1;
+       structures[0] = freesasa_structure_from_pdb(input, classifier, structure_options);
+       if (structures[0] == NULL) {
+           abort_msg("Invalid input.");
+       }
+   }
+   
+   // get chain-groups (if requested)
+   if (n_chain_groups > 0) {
+       int n2 = *n;
+       for (int i = 0; i < n_chain_groups; ++i) {
+           for (int j = 0; j < *n; ++j) {
+               freesasa_structure* tmp = freesasa_structure_get_chains(structures[j], chain_groups[i]);
+               if (tmp != NULL) {
+                   ++n2;
+                   structures = realloc(structures, sizeof(freesasa_structure*)*n2);
+                   if (structures == NULL) abort_msg("Out of memory.");
+                   structures[n2-1] = tmp;
+               } else {
+                   abort_msg("Chain(s) '%s' not found.", chain_groups[i]);
+               }
+           }
+       }
+       *n = n2;
+   }
+
+   return structures;
+}
+
 
 void
 run_analysis(FILE *input,
              const char *name)
 {
-    int several_structures = 0, name_len = strlen(name);
+    int name_len = strlen(name);
     freesasa_result *result = NULL;
     freesasa_strvp *classes = NULL;
-    freesasa_structure *single_structure[1] = {NULL};
     freesasa_structure **structures = NULL;
     int n = 0;
 
+    // read PDB file
+    structures = get_structures(input, &n);
+    if (n == 0) abort_msg("Invalid input.");
+    
     if (printlog) {
         freesasa_write_parameters(output, &parameters);
     }
-
-    // read PDB file
-    if ((structure_options & FREESASA_SEPARATE_CHAINS) ||
-        (structure_options & FREESASA_SEPARATE_MODELS)) {
-        structures = freesasa_structure_array(input, &n, classifier, structure_options);
-        several_structures = 1;
-        for (int i = 0; i < n; ++i) {
-            if (structures[i] == NULL) abort_msg("Invalid input.\n");
-        }
-    } else {
-        single_structure[0] = freesasa_structure_from_pdb(input, classifier, structure_options);
-        if (single_structure[0]) {
-            structures = single_structure;
-            n = 1;
-        }
-    }
-    if (structures == NULL) abort_msg("Invalid input. Aborting.\n");
-
-    // get chain-groups (if requested)
-    if (n_chain_groups > 0) {
-        int n2 = n;
-        if (several_structures == 0) {
-            structures = malloc(sizeof(freesasa_structure*));
-            structures[0] = single_structure[0];
-            several_structures = 1;
-        }
-        for (int i = 0; i < n_chain_groups; ++i) {
-            for (int j = 0; j < n; ++j) {
-                freesasa_structure* tmp = freesasa_structure_get_chains(structures[j], chain_groups[i]);
-                if (tmp != NULL) {
-                    ++n2;
-                    structures = realloc(structures, sizeof(freesasa_structure*)*n2);
-                    structures[n2-1] = tmp;
-                } else {
-                    abort_msg("Chain(s) '%s' not found.\n", chain_groups[i]);
-                }
-            }
-        }
-        n = n2;
-    }
-
+    
     // perform calculation on each structure and output results
     for (int i = 0; i < n; ++i) {
         char name_i[name_len+10];
         result = freesasa_calc_structure(structures[i], &parameters);
-        if (result == NULL)        abort_msg("Can't calculate SASA.\n");
+        if (result == NULL)        abort_msg("Can't calculate SASA.");
         classes = freesasa_result_classify(result, structures[i], classifier);
-        if (classes == NULL)       abort_msg("Can't determine atom classes. Aborting.\n");
+        if (classes == NULL)       abort_msg("Can't determine atom classes. Aborting.");
         strcpy(name_i,name);
-        if (several_structures && (structure_options & FREESASA_SEPARATE_MODELS))
+        if (n > 1 && (structure_options & FREESASA_SEPARATE_MODELS))
             sprintf(name_i+strlen(name_i), ":%d", freesasa_structure_model(structures[i]));
         if (printlog) {
             if (n > 1) fprintf(output,"\n\n####################\n");
@@ -262,11 +284,11 @@ run_analysis(FILE *input,
             freesasa_per_chain(output, result, structures[i]);
         }
         if (per_residue_type) {
-            if (several_structures) fprintf(per_residue_type_file, "\n## %s\n", name_i);
+            if (n > 1) fprintf(per_residue_type_file, "\n## %s\n", name_i);
             freesasa_per_residue_type(per_residue_type_file, result, structures[i]);
         }
         if (per_residue) {
-            if (several_structures) fprintf(per_residue_file, "\n## %s\n", name_i);
+            if (n > 1) fprintf(per_residue_file, "\n## %s\n", name_i);
             freesasa_per_residue(per_residue_file, result, structures[i]);
         }
         if (printpdb) {
@@ -286,13 +308,14 @@ run_analysis(FILE *input,
             }
         }
         if (printrsa) {
-            freesasa_rsa_print(rsa_file, result, structures[i], name, NULL, NULL, NULL);
+            freesasa_write_rsa(rsa_file, result, structures[i], name,
+                               rsa_reference, skip_REL);
         }
         freesasa_result_free(result);
         freesasa_strvp_free(classes);
         freesasa_structure_free(structures[i]);
     }
-    if (structures != single_structure) free(structures);
+    free(structures);
 }
 
 FILE*
@@ -302,10 +325,8 @@ fopen_werr(const char* filename,
     errno = 0;
     FILE *f = fopen(filename, mode);
     if (f == NULL) {
-        fprintf(stderr,"%s: error: could not open file '%s'; %s\n",
-                program_name, optarg, strerror(errno));
-        short_help();
-        exit(EXIT_FAILURE);
+        abort_msg("could not open file '%s'; %s",
+                  filename, strerror(errno));
     }
     return f;
 }
@@ -390,10 +411,11 @@ main(int argc,
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
-    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN, RSA_FILE, RSA};
+    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN, RSA_FILE, RSA, CONFIG};
     parameters = freesasa_default_parameters;
     memset(opt_set, 0, n_opt);
     program_name = "freesasa";
+
     struct option long_options[] = {
         {"lee-richards",         no_argument,       0, 'L'},
         {"shrake-rupley",        no_argument,       0, 'S'},
@@ -416,6 +438,7 @@ main(int argc,
         {"chain-groups",         required_argument, 0, 'g'},
         {"error-file",           required_argument, 0, 'e'},
         {"output",               required_argument, 0, 'o'},
+        {"radius-from-occupancy",no_argument,       0, 'O'},
         {"residue-type-file",    required_argument, &option_flag, RES_FILE},
         {"residue-file",         required_argument, &option_flag, SEQ_FILE},
         {"B-value-file",         required_argument, &option_flag, B_FILE},
@@ -423,9 +446,10 @@ main(int argc,
         {"unknown",              required_argument, &option_flag, UNKNOWN},
         {"rsa-file",             required_argument, &option_flag, RSA_FILE},
         {"rsa",                  no_argument,       &option_flag, RSA},
+        {"config",               required_argument, &option_flag, CONFIG},
         {0,0,0,0}
     };
-    options_string = ":hvlwLSHYCMmBrRc:n:t:p:g:e:o:";
+    options_string = ":hvlwLSHYOCMmBrRc:n:t:p:g:e:o:";
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
         opt_set[(int)opt] = 1;
@@ -465,6 +489,19 @@ main(int argc,
                 printrsa = 1;
                 rsa_file = fopen_werr(optarg, "w");
                 break;
+            case CONFIG:
+                static_config = 1;
+                if (strcmp("naccess", optarg) == 0) {
+                    classifier = &freesasa_naccess_classifier;
+                    rsa_reference = &freesasa_naccess_rsa;
+                } else if (strcmp("protor", optarg) == 0) {
+                    classifier = &freesasa_protor_classifier;
+                    rsa_reference = &freesasa_protor_rsa;
+                } else {
+                    abort_msg("Config '%s' not allowed, "
+                              "can only be 'protor' or 'naccess')", optarg);
+                }
+                break;
             default:
                 abort(); // what does this even mean?
             }
@@ -495,16 +532,16 @@ main(int argc,
             break;
         case 'c': {
             FILE *f = fopen_werr(optarg, "r");
-            classifier = freesasa_classifier_from_file(f);
+            classifier = classifier_from_file = freesasa_classifier_from_file(f);
             fclose(f);
-            if (classifier == NULL) abort_msg("Can't read file '%s'.\n", optarg);
+            if (classifier_from_file == NULL) abort_msg("Can't read file '%s'.", optarg);
             break;
         }
         case 'n':
             parameters.shrake_rupley_n_points = atoi(optarg);
             parameters.lee_richards_n_slices = atoi(optarg);
             if (parameters.shrake_rupley_n_points <= 0)
-                abort_msg("error: Resolution needs to be at least 1 (20 recommended minum for S&R, 5 for L&R).\n");
+                abort_msg("error: Resolution needs to be at least 1 (20 recommended minum for S&R, 5 for L&R).");
             break;
         case 'S':
             parameters.alg = FREESASA_SHRAKE_RUPLEY;
@@ -517,13 +554,16 @@ main(int argc,
         case 'p':
             parameters.probe_radius = atof(optarg);
             if (parameters.probe_radius <= 0)
-                abort_msg("error: probe radius must be 0 or larger.\n");
+                abort_msg("error: probe radius must be 0 or larger.");
             break;
         case 'H':
             structure_options |= FREESASA_INCLUDE_HETATM;
             break;
         case 'Y':
             structure_options |= FREESASA_INCLUDE_HYDROGEN;
+            break;
+        case 'O':
+            structure_options |= FREESASA_RADIUS_FROM_OCCUPANCY;
             break;
         case 'M':
             structure_options |= FREESASA_SEPARATE_MODELS;
@@ -550,16 +590,16 @@ main(int argc,
         case 't':
 #if USE_THREADS
             parameters.n_threads = atoi(optarg);
-            if (parameters.n_threads < 1) abort_msg("Number of threads must be 1 or larger.\n");
+            if (parameters.n_threads < 1) abort_msg("Number of threads must be 1 or larger.");
 #else
-            abort_msg("Option '-t' only defined if program compiled with thread support.\n");
+            abort_msg("Option '-t' only defined if program compiled with thread support.");
 #endif
             break;
         case ':':
-            abort_msg("Option '-%c' missing argument.\n", optopt);
+            abort_msg("Option '-%c' missing argument.", optopt);
         case '?':
         default:
-            fprintf(stderr, "%s: warning: Unknown option '-%c' (will be ignored)\n",
+            fprintf(stderr, "%s: warning: Unknown option '-%c' (will be ignored)",
                     program_name, opt);
             break;
         }
@@ -569,24 +609,25 @@ main(int argc,
     if (per_residue_file == NULL) per_residue_file = output;
     if (output_pdb == NULL) output_pdb = output;
     if (rsa_file == NULL) rsa_file = output;
-    if (alg_set > 1) abort_msg("Multiple algorithms specified.\n");
-    if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.\n");
-    if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.\n");
+    if (alg_set > 1) abort_msg("Multiple algorithms specified.");
+    if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.");
+    if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.");
+    if (opt_set['c'] && static_config) abort_msg("The options -c and --config cannot be combined");
+    if (printrsa && (opt_set['c'] || opt_set['O'])) {
+        skip_REL = 1;
+        freesasa_warn("Will only print absolute values in RSA when custom atomic radii selected.");
+    }
     if (printlog) fprintf(output,"## %s %s ##\n", program_name, version);
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {
             errno = 0;
-            input = fopen(argv[i],"r");
-            if (input != NULL) {
-                run_analysis(input, argv[i]);
-                fclose(input);
-            } else {
-                abort_msg("Opening file '%s'; %s\n", argv[i], strerror(errno));
-            }
+            input = fopen_werr(argv[i],"r");
+            run_analysis(input, argv[i]);
+            fclose(input);
         }
     } else {
         if (!isatty(STDIN_FILENO)) run_analysis(stdin, "stdin");
-        else abort_msg("No input.\n", program_name);
+        else abort_msg("No input.", program_name);
     }
 
     release_resources();

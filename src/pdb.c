@@ -5,19 +5,39 @@
 #include "freesasa_internal.h"
 #include "pdb.h"
 
+//len >= 6
 static inline int
-pdb_line_check(const char *line,int len)
+pdb_line_check(const char *line, int len)
 {
     assert(line);
-    if (strlen(line) < 6) return FREESASA_FAIL;
-    if (! strncmp(line,"ATOM",4) &&
-        ! strncmp(line,"HETATM",6)) {
-        return FREESASA_FAIL;
-    }
-    if (strlen(line) < len) {
+    if (len < 6) return FREESASA_FAIL;
+    if (strlen(line) < len) return FREESASA_FAIL;
+    if (strncmp("ATOM", line, 4) != 0 &&
+        strncmp("HETATM", line, 6) != 0) {
         return FREESASA_FAIL;
     }
     return FREESASA_SUCCESS;
+}
+
+/**
+    Extracts a double from the line of maximum width characters, to
+    allow checking for empty fields (instead of just reading the first
+    float that comes along.
+ */
+static inline int
+pdb_get_double(const char *line, int width, double *val)
+{
+    // allow truncated lines
+    if (strlen(line) < width) width = strlen(line);
+    char buf[width+1];
+    float tmp;
+    memcpy(buf, line, width);
+    buf[width] = '\0';
+    if (sscanf(buf, "%f", &tmp) == 1) {
+        *val = tmp;
+        return FREESASA_SUCCESS;
+    }
+    return FREESASA_FAIL;
 }
 
 int
@@ -210,6 +230,28 @@ freesasa_pdb_get_symbol(char *symbol,
     strncpy(symbol,line+76,2);
     symbol[2] = '\0';
     return FREESASA_SUCCESS;
+}
+
+int
+freesasa_pdb_get_occupancy(double *occ,
+                           const char* line)
+{
+    assert(line);
+    // allow truncated lines
+    if (pdb_line_check(line, 55) == FREESASA_SUCCESS)
+        return pdb_get_double(line+54, 6, occ);
+    return FREESASA_FAIL;
+}
+
+int
+freesasa_pdb_get_bfactor(double *bfac,
+                         const char* line)
+{
+    assert(line);
+        // allow truncated lines
+    if (pdb_line_check(line, 61) == FREESASA_SUCCESS)
+        return pdb_get_double(line+60, 6, bfac);
+    return FREESASA_FAIL;
 }
 
 int

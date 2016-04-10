@@ -103,22 +103,22 @@ assert_fail "$cli -S -n 0 < $datadir/1ubq.pdb > $dump"
 echo
 echo "== Testing -m -M and -C options =="
 # using flags -S and -n 10 to speed things up
-assert_pass "$cli -n 10 -S -M $datadir/1d3z.pdb > $dump"
+assert_pass "$cli -n 2 -S -M $datadir/1d3z.pdb > $dump"
 n_mod=`grep 1d3z.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 10"
-assert_pass "$cli -n 10 -S -C $datadir/1d3z.pdb > $dump"
+assert_pass "$cli -n 2 -S -C $datadir/1d3z.pdb > $dump"
 n_mod=`grep 1d3z.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 1"
-assert_pass "$cli -n 10 -S -M -C $datadir/1d3z.pdb > $dump"
+assert_pass "$cli -n 2 -S -M -C $datadir/1d3z.pdb > $dump"
 n_mod=`grep 1d3z.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 10"
-assert_pass "$cli -n 10 -S -M $datadir/2jo4.pdb > $dump"
+assert_pass "$cli -n 2 -S -M $datadir/2jo4.pdb > $dump"
 n_mod=`grep 2jo4.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 10"
-assert_pass "$cli -n 10 -S -C $datadir/2jo4.pdb > $dump"
+assert_pass "$cli -n 2 -S -C $datadir/2jo4.pdb > $dump"
 n_mod=`grep 2jo4.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 4"
-assert_pass "$cli -n 10 -S -M -C  $datadir/2jo4.pdb > $dump"
+assert_pass "$cli -n 2 -S -M -C  $datadir/2jo4.pdb > $dump"
 n_mod=`grep 2jo4.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 40"
 assert_fail "$cli -mM $datadir/2jo4.pdb > $dump"
@@ -185,33 +185,36 @@ then
 fi
 echo
 echo "== Testing option --unknown =="
-assert_pass "$cli --unknown=guess -Y -w -n 10  $datadir/1d3z.pdb > $dump"
+assert_pass "$cli --unknown=guess -Y -w -n 2  $datadir/1d3z.pdb > $dump"
 assert_pass "grep 1231 $dump"
-assert_pass "$cli --unknown=skip -Y -w -n 10 $datadir/1d3z.pdb > $dump"
+assert_pass "$cli --unknown=skip -Y -w -n 2 $datadir/1d3z.pdb > $dump"
 assert_pass "grep 602 $dump"
-assert_fail "$cli --unknown=halt -Y -w -n 10 $datadir/1d3z.pdb > $dump"
+assert_fail "$cli --unknown=halt -Y -w -n 2 $datadir/1d3z.pdb > $dump"
 echo
 echo "== Testing user-configurations =="
-assert_pass "$cli -c $sharedir/naccess.config -n 10 < $datadir/1ubq.pdb > $dump"
-assert_pass "$cli -c $sharedir/oons.config -n 10 < $datadir/1ubq.pdb > $dump"
-assert_fail "$cli -c $datadir/err.config -n 10 < $datadir/1ubq.pdb > $dump"
+assert_pass "$cli -c $sharedir/naccess.config -n 3 < $datadir/1ubq.pdb > $dump"
+assert_pass "$cli -c $sharedir/oons.config -n 3 < $datadir/1ubq.pdb > $dump"
+assert_fail "$cli -c $datadir/err.config -n 3 < $datadir/1ubq.pdb > $dump"
 echo
 echo "== Testing RSA =="
-for p in $(ls $datadir/rsa/A*A.pdb)
+for r in protor naccess
 do
-    rel=$($cli -L -n 1000 $p --no-log --rsa | grep "A   2" | sed "s/[[:space:]]\{1,\}/ /g" | cut -f 6,8,10,12,14 -d ' ')
-    if [[ $p == *"AGA"* ]]
-    then
-        assert_pass "test '$rel' = '100.0 N/A 100.0 100.0 100.0' && test $p"
-    else
-        assert_pass "test '$rel' = '100.0 100.0 100.0 100.0 100.0' && test $p"
-    fi
+    for p in $(ls $datadir/rsa/A*A.pdb)
+    do
+        rel=$($cli -L -n 1000 $p --no-log --rsa --radii=$r | grep "A   2" | sed "s/[[:space:]]\{1,\}/ /g" | cut -f 6,8,10,12,14 -d ' ')
+        if [[ $p == *"AGA"* ]]
+        then
+            assert_pass "test '$rel' = '100.0 N/A 100.0 100.0 100.0' && test $p"
+        else
+            assert_pass "test '$rel' = '100.0 100.0 100.0 100.0 100.0' && test $p"
+        fi
+    done
 done
 echo
 echo "== Testing multithreading =="
-assert_pass "$cli -t 1 -n 10 < $datadir/1ubq.pdb > $dump"
-assert_pass "$cli -t 2 -n 10 < $datadir/1ubq.pdb > $dump"
-assert_pass "$cli -t 10 -n 10 < $datadir/1ubq.pdb > $dump"
+assert_pass "$cli -t 1 -S -n 10 < $datadir/1ubq.pdb > $dump"
+assert_pass "$cli -t 2 -S -n 10 < $datadir/1ubq.pdb > $dump"
+assert_pass "$cli -t 10 -S -n 10 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -t 1 -L -n 3 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -t 2 -L -n 3 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -t 10 -L -n 3 < $datadir/1ubq.pdb > $dump"
@@ -222,24 +225,24 @@ assert_equal_opt "$cli $datadir/1ubq.pdb" "-h" "--help"
 assert_equal_opt "$cli $datadir/1ubq.pdb" "-v" "--version" 
 assert_equal_opt "$cli $datadir/1ubq.pdb" "-S -n 10" "--shrake-rupley -n 10"
 assert_equal_opt "$cli $datadir/1ubq.pdb" "-L -n 3 " "--lee-richards -n 3 "
-assert_equal_opt "$cli $datadir/1ubq.pdb" "-p 1.5 -n 10" "--probe-radius=1.5 -n 10" 
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-p 1.5 -n 3" "--probe-radius=1.5 -n 3" 
 assert_equal_opt "$cli $datadir/1ubq.pdb" "-L -n 3 " "-L --resolution=3 "
 assert_equal_opt "$cli $datadir/1ubq.pdb" "-n 5" "--resolution=5"
 assert_equal_opt "$cli $datadir/1ubq.pdb" "-t 4" "--n-threads=4"
 assert_equal_opt "$cli $datadir/1ubq.pdb" "-c $sharedir/naccess.config" "--config-file=$sharedir/naccess.config"
 assert_equal_opt "$cli $datadir/1ubq.pdb" "-H -w" "--hetatm -w"
-assert_equal_opt "$cli $datadir/1d3z.pdb" "-Y -n 10" "--hydrogen -n 10"
-assert_equal_opt "$cli $datadir/1d3z.pdb" "-m -n 10" "--join-models -n 10"
-assert_equal_opt "$cli $datadir/1d3z.pdb" "-C -n 10" "--separate-chains -n 10"
-assert_equal_opt "$cli $datadir/1d3z.pdb" "-M -n 10" "--separate-models -n 10"
-assert_equal_opt "$cli $datadir/1ubq.pdb" "-l -n 10" "--no-log -n 10"
-assert_equal_opt "$cli $datadir/1ubq.pdb" "-w -n 10" "--no-warnings -n 10"
-assert_equal_opt "$cli $datadir/1ubq.pdb" "-r -n 10" "--foreach-residue-type -n 10"
-assert_equal_opt "$cli $datadir/1ubq.pdb" "-R -n 10" "--foreach-residue -n 10"
-assert_equal_opt "$cli $datadir/1ubq.pdb" "-B -n 10" "--print-as-B-values -n 10"
-assert_equal_opt "$cli $datadir/2jo4.pdb" "-g AB+CD -n 10" "--chain-groups AB+CD -n 10"
-assert_equal_opt "$cli $datadir/2jo4.pdb" "-g AB+CD -n 10" "-g AB -g CD -n 10"
-
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-Y -n 2" "--hydrogen -n 2"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-m -n 2" "--join-models -n 2"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-C -n 2" "--separate-chains -n 2"
+assert_equal_opt "$cli $datadir/1d3z.pdb" "-M -n 2" "--separate-models -n 2"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-l -n 2" "--no-log -n 2"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-w -n 2" "--no-warnings -n 2"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-r -n 2" "--foreach-residue-type -n 2"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-R -n 2" "--foreach-residue -n 2"
+assert_equal_opt "$cli $datadir/1ubq.pdb" "-B -n 2" "--print-as-B-values -n 2"
+assert_equal_opt "$cli $datadir/2jo4.pdb" "-g AB+CD -n 2" "--chain-groups AB+CD -n 2"
+assert_equal_opt "$cli $datadir/2jo4.pdb" "-g AB+CD -n 2" "-g AB -g CD -n 2"
+assert_equal_opt "$cli $datadir/1ubq.B.pdb" "-O -n 2" "--radius-from-occupancy -n 2"
 rm -f tmp/*
 
 echo

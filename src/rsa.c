@@ -10,7 +10,7 @@
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif
-
+/*
 struct residue_sasa {
     const char *name;
     double total;
@@ -18,20 +18,20 @@ struct residue_sasa {
     double side_chain;
     double polar;
     double apolar;
-};
+    };*/
 
 struct rsa_config {
     const freesasa_classifier *polar_classifier, *bb_classifier;
     const freesasa_result *result;
     const freesasa_structure *structure;
-    const struct residue_sasa *sasa_ref;
+    const freesasa_residue_sasa *sasa_ref;
 };
 
-static const struct residue_sasa zero_rs = {NULL, 0, 0, 0, 0, 0};
+static const freesasa_residue_sasa zero_rs = {NULL, 0, 0, 0, 0, 0};
 
 /* these are calculated using L&R with 1000 slices and ProtOr radii,
    from the AXA configurations in the directory rsa. */
-static const struct residue_sasa rsa_sasa_ref[] = {
+static const freesasa_residue_sasa rsa_protor_ref[] = {
     {.name = "ALA", .total = 103.10, .main_chain = 46.51, .side_chain = 56.60, .polar = 29.89, .apolar = 73.21},
     {.name = "CYS", .total = 125.02, .main_chain = 45.47, .side_chain = 79.55, .polar = 79.68, .apolar = 45.33},
     {.name = "ASP", .total = 135.76, .main_chain = 44.65, .side_chain = 91.11, .polar = 88.93, .apolar = 46.83},
@@ -55,6 +55,42 @@ static const struct residue_sasa rsa_sasa_ref[] = {
     {NULL, 0, 0, 0, 0, 0}, // marks end of array
 };
 
+const freesasa_rsa_reference freesasa_protor_rsa = {
+    .name = "ProtOr",
+    .max = rsa_protor_ref,
+    .polar_classifier = &freesasa_protor_classifier,
+    .bb_classifier = &freesasa_backbone_classifier
+};
+static const freesasa_residue_sasa rsa_naccess_ref[20] = {
+    {.name = "ALA", .total = 102.31, .main_chain = 46.96, .side_chain = 55.35, .polar = 28.51, .apolar = 73.80},
+    {.name = "CYS", .total = 127.09, .main_chain = 45.71, .side_chain = 81.38, .polar = 83.01, .apolar = 44.08},
+    {.name = "ASP", .total = 134.50, .main_chain = 45.25, .side_chain = 89.25, .polar = 81.36, .apolar = 53.14},
+    {.name = "GLU", .total = 166.09, .main_chain = 45.60, .side_chain = 120.49, .polar = 103.10, .apolar = 63.00},
+    {.name = "PHE", .total = 193.15, .main_chain = 44.02, .side_chain = 149.13, .polar = 28.51, .apolar = 164.64},
+    {.name = "GLY", .total = 71.50, .main_chain = 71.50, .side_chain = 0.00, .polar = 29.80, .apolar = 41.69},
+    {.name = "HIS", .total = 173.15, .main_chain = 44.71, .side_chain = 128.44, .polar = 68.23, .apolar = 104.92},
+    {.name = "ILE", .total = 166.62, .main_chain = 38.94, .side_chain = 127.68, .polar = 24.25, .apolar = 142.37},
+    {.name = "LYS", .total = 192.51, .main_chain = 45.59, .side_chain = 146.93, .polar = 77.19, .apolar = 115.32},
+    {.name = "LEU", .total = 159.40, .main_chain = 45.05, .side_chain = 114.35, .polar = 28.51, .apolar = 130.89},
+    {.name = "MET", .total = 185.85, .main_chain = 45.57, .side_chain = 140.28, .polar = 71.22, .apolar = 114.63},
+    {.name = "ASN", .total = 137.97, .main_chain = 44.26, .side_chain = 93.71, .polar = 87.92, .apolar = 50.05},
+    {.name = "PRO", .total = 131.26, .main_chain = 29.75, .side_chain = 101.50, .polar = 14.98, .apolar = 116.27},
+    {.name = "GLN", .total = 172.15, .main_chain = 45.58, .side_chain = 126.57, .polar = 117.24, .apolar = 54.91},
+    {.name = "ARG", .total = 232.08, .main_chain = 45.58, .side_chain = 186.50, .polar = 148.95, .apolar = 83.13},
+    {.name = "SER", .total = 109.82, .main_chain = 46.67, .side_chain = 63.15, .polar = 54.97, .apolar = 54.85},
+    {.name = "THR", .total = 131.81, .main_chain = 40.30, .side_chain = 91.51, .polar = 47.59, .apolar = 84.22},
+    {.name = "VAL", .total = 146.03, .main_chain = 44.72, .side_chain = 101.31, .polar = 28.51, .apolar = 117.52},
+    {.name = "TRP", .total = 226.33, .main_chain = 40.90, .side_chain = 185.43, .polar = 58.94, .apolar = 167.40},
+    {.name = "TYR", .total = 206.14, .main_chain = 43.99, .side_chain = 162.14, .polar = 70.47, .apolar = 135.66},
+};
+
+const freesasa_rsa_reference freesasa_naccess_rsa = {
+    .name = "NACCESS",
+    .max = rsa_naccess_ref,
+    .polar_classifier = &freesasa_naccess_classifier,
+    .bb_classifier = &freesasa_backbone_classifier
+};
+
 /**
    Adds v to members of rs depending on how the atom specified by resn
    and atom_name is classified. If the classifiers are null the
@@ -62,7 +98,7 @@ static const struct residue_sasa rsa_sasa_ref[] = {
    instead.
  */
 static inline void
-rsa_abs_add_atom(struct residue_sasa *rs,
+rsa_abs_add_atom(freesasa_residue_sasa *rs,
                  int i_atom,
                  const struct rsa_config *cfg)
 {
@@ -85,13 +121,11 @@ rsa_abs_add_atom(struct residue_sasa *rs,
     Get the absolute SASA values of residue idx in structure.
  */
 static int
-rsa_get_abs(struct residue_sasa *rs,
+rsa_get_abs(freesasa_residue_sasa *rs,
             int idx,
             const struct rsa_config *cfg)
 
 {
-    char selbuf[100];
-    char namebuf[FREESASA_MAX_SELECTION_NAME];
     int first, last;
 
     if (freesasa_structure_residue_atoms(cfg->structure, idx, &first, &last))
@@ -108,9 +142,9 @@ rsa_get_abs(struct residue_sasa *rs,
     Calculate relative sasa values based on abs and ref, store in rel.
  */
 static void
-rsa_get_rel(struct residue_sasa *rel,
-            const struct residue_sasa *abs,
-            const struct residue_sasa *ref)
+rsa_get_rel(freesasa_residue_sasa *rel,
+            const freesasa_residue_sasa *abs,
+            const freesasa_residue_sasa *ref)
 {
     int i_ref = -1;
     double nan = 0.0/0.0;
@@ -137,8 +171,8 @@ rsa_get_rel(struct residue_sasa *rel,
     Add members of term to members of sum
  */
 static void
-rsa_add_residue_sasa(struct residue_sasa *sum,
-                     const struct residue_sasa *term)
+rsa_add_residue_sasa(freesasa_residue_sasa *sum,
+                     const freesasa_residue_sasa *term)
 {
     sum->total += term->total;
     sum->side_chain += term->side_chain;
@@ -149,15 +183,16 @@ rsa_add_residue_sasa(struct residue_sasa *sum,
 
 static void
 rsa_print_header(FILE *output,
-                 const char *name)
+                 const char *config_name,
+                 const char *protein_name)
 {
 #ifdef PACKAGE_VERSION
     fprintf(output, "REM  FreeSASA " PACKAGE_VERSION "\n");
 #else
     fprintf(output, "REM  FreeSASA\n");
 #endif
-    fprintf(output, "REM  Using default relative accessibilites\n");
-    fprintf(output, "REM  Absolute and relative SASAs for %s\n", name);
+    fprintf(output, "REM  Absolute and relative SASAs for %s\n", protein_name);
+    fprintf(output, "REM  Reference values calculated using %s radii\n", config_name);
     fprintf(output, "REM RES _ NUM      All-atoms   Total-Side   Main-Chain    Non-polar    All polar\n");
     fprintf(output, "REM                ABS   REL    ABS   REL    ABS   REL    ABS   REL    ABS   REL\n");
 }
@@ -175,8 +210,8 @@ rsa_print_abs_rel(FILE*output,
 static int
 rsa_print_residue(FILE *output, 
                   int iaa,
-                  const struct residue_sasa *abs,
-                  const struct residue_sasa *rel,
+                  const freesasa_residue_sasa *abs,
+                  const freesasa_residue_sasa *rel,
                   const struct rsa_config *cfg)
 {
     const char *resi_str;
@@ -196,8 +231,8 @@ rsa_print_residue(FILE *output,
 }
 
 static int
-rsa_calc_rs(struct residue_sasa *abs,
-            struct residue_sasa *rel,
+rsa_calc_rs(freesasa_residue_sasa *abs,
+            freesasa_residue_sasa *rel,
             int iaa,
             const struct rsa_config *cfg)
 {
@@ -213,39 +248,42 @@ rsa_calc_rs(struct residue_sasa *abs,
 }
 
 int
-freesasa_rsa_print(FILE *output,
+freesasa_write_rsa(FILE *output,
                    const freesasa_result *result,
                    const freesasa_structure *structure,
                    const char *name,
-                   FILE *reference,
-                   const freesasa_classifier *polar_classifier,
-                   const freesasa_classifier *backbone_classifier)
+                   const freesasa_rsa_reference *reference,
+                   int skip_REL)
 {
     assert(output);
     assert(result);
     assert(structure);
     assert(name);
 
-    struct rsa_config cfg = { .polar_classifier = &freesasa_default_classifier,
-                              .bb_classifier = &freesasa_backbone_classifier,
-                              .result = result,
-                              .structure = structure,
-                              .sasa_ref = rsa_sasa_ref};
-
+    const freesasa_residue_sasa empty_rs[1] = {zero_rs};
+    struct rsa_config cfg = {
+        .polar_classifier = freesasa_default_rsa.polar_classifier,
+        .bb_classifier = freesasa_default_rsa.bb_classifier,
+        .result = result,
+        .structure = structure,
+        .sasa_ref = skip_REL ? empty_rs : freesasa_default_rsa.max,
+    };
     const char *chain_labels = freesasa_structure_chain_labels(structure);
     int naa = freesasa_structure_n_residues(structure),
         n_chains = strlen(chain_labels);
-    struct residue_sasa abs, rel, chain_abs[n_chains], all_chains_abs = zero_rs;
+    freesasa_residue_sasa abs, rel, chain_abs[n_chains], all_chains_abs = zero_rs;
 
-    if (reference)
-        return fail_msg("Reference SASA values from file not implemented yet");
-
-    if (polar_classifier) cfg.polar_classifier = polar_classifier;
-    if (backbone_classifier) cfg.bb_classifier = backbone_classifier;
+    if (reference) {
+        cfg.polar_classifier = reference->polar_classifier;
+        cfg.bb_classifier = reference->bb_classifier;
+        cfg.sasa_ref = skip_REL ? empty_rs : reference->max;
+    } else {
+        reference = &freesasa_default_rsa;
+    }
 
     for (int i = 0; i < n_chains; ++i) chain_abs[i] = zero_rs;
     
-    rsa_print_header(output, name);
+    rsa_print_header(output, reference->name, name);
 
     for (int i = 0; i < naa; ++i) {
         if ( rsa_calc_rs(&abs, &rel, i, &cfg) ||
@@ -260,7 +298,6 @@ freesasa_rsa_print(FILE *output,
                 rsa_add_residue_sasa(&chain_abs[j], &abs);
             }
         }
-
     }
     
     fprintf(output, "END  Absolute sums over single chains surface\n");

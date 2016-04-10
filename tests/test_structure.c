@@ -7,6 +7,7 @@
 #include <freesasa.h>
 #include <freesasa_internal.h>
 #include <pdb.h>
+#include "tools.h"
 
 #define N 6
 const char an[N][PDB_ATOM_NAME_STRL+1] =  {" C  "," CA "," O  "," CB "," SD ", "SE  "};
@@ -350,6 +351,23 @@ START_TEST (test_get_chains) {
 }
 END_TEST
 
+START_TEST (test_occupancy)
+{
+    FILE *pdb = fopen(DATADIR "1ubq.occ.pdb", "r");
+    ck_assert_ptr_ne(pdb, NULL);
+    freesasa_structure *s = freesasa_structure_from_pdb(pdb, NULL, FREESASA_RADIUS_FROM_OCCUPANCY);
+    fclose(pdb);
+    ck_assert_ptr_ne(s, NULL);
+    const double *r = freesasa_structure_radius(s);
+    ck_assert_ptr_ne(r, NULL);
+    ck_assert(float_eq(r[0], 3.64, 1e-6));
+    ck_assert(float_eq(r[1], 1.88, 1e-6));
+    ck_assert(float_eq(r[2], 1.61, 1e-6));
+    freesasa_structure_free(s);
+    
+}
+END_TEST
+
 Suite* structure_suite() {
     // what goes in what Case is kind of arbitrary
     Suite *s = suite_create("Structure");
@@ -363,6 +381,7 @@ Suite* structure_suite() {
     tcase_add_test(tc_pdb,test_hetatm);
     tcase_add_test(tc_pdb,test_structure_array);
     tcase_add_test(tc_pdb,test_get_chains);
+    tcase_add_test(tc_pdb,test_occupancy);
 
     TCase *tc_1ubq = tcase_create("1UBQ");
     tcase_add_checked_fixture(tc_1ubq,setup_1ubq,teardown_1ubq);
