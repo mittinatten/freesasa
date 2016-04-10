@@ -180,7 +180,7 @@ START_TEST (test_resi)
     ck_assert(float_eq(value[7], value[0], 1e-10));
     ck_assert(float_eq(value[8], value[2], 1e-10));
 
-    //freesasa_set_verbosity(FREESASA_V_SILENT);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_int_eq(freesasa_select_area("c1, resi A",selection_name[0],value,structure,result),
                      FREESASA_WARN);
     ck_assert_int_eq(freesasa_select_area("c1, resi 1A",selection_name[0],value,structure,result),
