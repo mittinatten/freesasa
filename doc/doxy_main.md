@@ -82,7 +82,25 @@ radii. The program will halt if it encounters atoms in the PDB input
 that are not present in the configuration. See @ref Config-file for
 instructions how to write a configuration.
 
+To use the atomic radii from NACCESS call 
+
+    $ freesasa --radii=naccess 3wbm.pdb
+
+Another way to specify a custom set of atomic radii is to store them as
+occupancies in the input PDB file
+
+    $ freesasa --radius-from-occupancy 3wbm.pdb
+
+This option allows the user to first use either of the options
+`--print-as-B-values` or `--B-value-file` to write generate a PDB file
+with the radii used in the calculation, modify the radii of individual
+atoms in that file, and the recalculate the SASA with these modified
+radii.
+
+
 @section Output Other output types
+
+@subsection Residue-sasa SASA for each residue(-type)
 
 To calculate the SASA of each residue in the sequence, or each residue
 type, use the following commands (`--no-log` suppresses the standard output
@@ -106,6 +124,7 @@ and
     RES G :    1955.16
     RES U :    1693.68
 
+@subsection Atom-sasa SASA for each atom
 
 The command-line interface can also be used as a PDB filter:
 
@@ -122,6 +141,8 @@ radius of each atom (second to last column).
 Only the atoms and models used in the calculation will be present in
 the output (see @ref Input for how to modify this).
 
+@subsection Combining-sasa Several types of output at once
+
 To generate all three results at the same time and write them to
 separate files, run
 
@@ -131,15 +152,12 @@ separate files, run
 @subsection RSA Relative SASA values
 
 The CLI can also produce output similar to the RSA format from NACCESS
-using the options `--rsa` and `--rsa-file`. At the moment this will
-only give consistent results for the default configuration. This
-format includes both absolute SASA values and relative ones compared
-to a precalculated reference max value. The only significant
-difference between FreeSASA's RSA output and that of NACCESS (except
+using the options `--rsa` and `--rsa-file`. This format includes both
+absolute SASA values (ABS) and relative ones (REL) compared to a
+precalculated reference max value. The only significant difference
+between FreeSASA's RSA output format and that of NACCESS (except
 differences in areas due to different atomic radii), is that FreeSASA
-will print the value "N/A" and NACCESS "-99.9" when no reference value
-is available, for example for nucleic acids, or for the side chain in
-Gly.
+will print the value "N/A" where NACCESS prints "-99.9".
 
     $ freesasa 3wbm.pdb --rsa --no-log
     ... (header)
@@ -169,13 +187,34 @@ of labels is due to RSA support being added much later than the other
 options. Fixing it now would break the interface, and will thus
 earliest be dealt with in the next major release.
 
+To calculate the REL values a reference SASA value is needed,
+calculated using the same atomic radii. At the moment such values are
+only available for the ProtOr and NACCESS radii (selected using the
+option `--radii`), if other radii are used all REL columns will have
+the value 'N/A'.
+
 The reference SASA values for residue X are calculated from Ala-X-Ala
 peptides in a stretched out configuration. The reference
 configurations are supplied for reference in the directory
 `rsa`. Since these are not always the most exposed possible
-configuration, and because bond lengths and bond angles vary,
-the relative SASA values will sometimes be larger than 100 %.
+configuration, and because bond lengths and bond angles vary, the
+relative SASA values will sometimes be larger than 100 %. At the
+moment there is no interface to supply user-defined reference values.
 
+@subsubsection RSA-naccess Using the NACCESS configuration
+
+The reference values for the NACCESS configuration in FreeSASA are not
+exactly the same as those that ship with NACCESS, but have been
+calculated from scratch using the tripeptides that ship with
+FreeSASA. Calling
+
+    $ freesasa 3wbm.pdb --rsa-file=3wbm.rsa --radii=naccess --no-log
+
+will give an RSA file where the ABS columns are identical to NACCESS
+(run with the flag `-b`) for the amino acids, and for nucleic acids
+the definition of backbone differs (no nucleic acid backbone has been
+defined in FreeSASA). REL values will differ slightly, due to the
+differences in reference values above.
 
 @section CLI-select Selecting groups of atoms
 

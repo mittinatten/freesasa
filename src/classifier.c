@@ -831,7 +831,8 @@ classifier_is_backbone(const char *res_name,
     if (strcmp(name, "CA") == 0 ||
         strcmp(name, "N") == 0 ||
         strcmp(name, "O") == 0 ||
-        strcmp(name, "C") == 0)
+        strcmp(name, "C") == 0 ||
+        strcmp(name, "OXT") == 0)
         return 1;
     return 0;
 }
