@@ -214,11 +214,23 @@ END_TEST
 
 START_TEST (test_structure_array)
 {
-    FILE *pdb = fopen(DATADIR "1d3z.pdb","r");
-    ck_assert(pdb != NULL);
+    FILE *pdb;
     int n = 0;
-    freesasa_structure** ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_MODELS);
-        
+    freesasa_structure **ss;
+    
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    pdb = fopen(DATADIR "err.config", "r");
+    ck_assert_ptr_eq(freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_MODELS), NULL);
+    fclose(pdb);
+
+    pdb = fopen(DATADIR "1d3z.pdb", "r");
+    ck_assert_ptr_eq(freesasa_structure_array(pdb, &n, NULL, 0), NULL);
+
+    rewind(pdb);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+
+    ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_MODELS);
+
     ck_assert(ss != NULL);
     ck_assert(n == 10);
 

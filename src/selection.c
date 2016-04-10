@@ -399,16 +399,16 @@ select_list(expression_type parent_type,
     case E_RANGE:
         if (left == NULL || right == NULL) 
             return fail_msg("NULL expression.");
-        select_range(parent_type,selection,structure,left,right);
-        break;
-    case E_ID: case E_NUMBER:
+        return select_range(parent_type,selection,structure,left,right);
+    case E_ID:
+    case E_NUMBER:
         if (is_valid_id(parent_type,expr) == FREESASA_SUCCESS)
             select_id(parent_type,selection,structure,expr->value);
+        else return FREESASA_WARN;
         break;
     default:
-        freesasa_fail("in %s(): parse error (expression: '%s %s')",
-                      __func__,e_str(parent_type),e_str(expr->type));
-        break;
+        return freesasa_fail("in %s(): parse error (expression: '%s %s')",
+                             __func__,e_str(parent_type),e_str(expr->type));
     }
     return FREESASA_SUCCESS;
 }

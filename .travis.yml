@@ -10,6 +10,7 @@ dist:
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq check
+  - pip install --user cpp-coveralls  
 
 branches:
   only:
@@ -22,7 +23,10 @@ compiler:
 
 before_script:
   - autoreconf -i
-  - ./configure --enable-check
+  - ./configure --enable-check --enable-gcov
 
 script: make && make check
+
+after_success:
+  - coveralls --exclude tests --exclude src/lexer.l --exclude src/lexer.c --exclude src/parser.c  --gcov-options '\-lp'
 
