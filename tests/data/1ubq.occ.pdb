@@ -1,0 +1,6 @@
+MODEL        1
+ATOM      1  N   MET A   1      27.340  24.430   2.614  3.64 17.42
+ATOM      2  CA  MET A   1      26.266  25.413   2.842  1.88 16.22
+ATOM      3  C   MET A   1      26.913  26.639   3.531  1.61  0.00
+TER       4      MET A   1
+ENDMDL

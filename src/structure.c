@@ -414,9 +414,9 @@ from_pdb_impl(FILE *pdb_file,
                 goto cleanup;
 
             if (options & FREESASA_RADIUS_FROM_OCCUPANCY) {
-                if (freesasa_pdb_get_occupancy(&r, line) == FREESASA_SUCCESS) {
-                    s->radius[s->number_atoms-1] = r;
-                }
+                if (freesasa_pdb_get_occupancy(&r, line) == FREESASA_FAIL) 
+                    goto cleanup;
+                s->radius[s->number_atoms-1] = r;
             }
         }
 
