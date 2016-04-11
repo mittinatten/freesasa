@@ -299,17 +299,17 @@ run_analysis(FILE *input,
             fprintf(output,"\nSELECTIONS\n");
             for (int c = 0; c < n_select; ++c) {
                 double a;
-                char name[FREESASA_MAX_SELECTION_NAME+1];
-                if (freesasa_select_area(select_cmd[c], name, &a, structures[i], result)
+                char sel_name[FREESASA_MAX_SELECTION_NAME+1];
+                if (freesasa_select_area(select_cmd[c], sel_name, &a, structures[i], result)
                     == FREESASA_SUCCESS) {
-                    fprintf(output, "%s : %10.2f\n", name, a);
+                    fprintf(output, "%s : %10.2f\n", sel_name, a);
                 } else {
                     abort_msg("Illegal selection");
                 }
             }
         }
         if (printrsa) {
-            freesasa_write_rsa(rsa_file, result, structures[i], name,
+            freesasa_write_rsa(rsa_file, result, structures[i], name_i,
                                rsa_reference, skip_REL);
         }
         freesasa_result_free(result);
