@@ -10,15 +10,6 @@
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif
-/*
-struct residue_sasa {
-    const char *name;
-    double total;
-    double main_chain;
-    double side_chain;
-    double polar;
-    double apolar;
-    };*/
 
 struct rsa_config {
     const freesasa_classifier *polar_classifier, *bb_classifier;
@@ -253,8 +244,7 @@ freesasa_write_rsa(FILE *output,
                    const freesasa_result *result,
                    const freesasa_structure *structure,
                    const char *name,
-                   const freesasa_rsa_reference *reference,
-                   int skip_REL)
+                   const freesasa_rsa_reference *reference)
 {
     assert(output);
     assert(result);
@@ -267,7 +257,7 @@ freesasa_write_rsa(FILE *output,
         .bb_classifier = freesasa_default_rsa.bb_classifier,
         .result = result,
         .structure = structure,
-        .sasa_ref = skip_REL ? empty_rs : freesasa_default_rsa.max,
+        .sasa_ref = freesasa_default_rsa.max,
     };
     const char *chain_labels = freesasa_structure_chain_labels(structure);
     int naa = freesasa_structure_n_residues(structure),
@@ -277,7 +267,7 @@ freesasa_write_rsa(FILE *output,
     if (reference) {
         cfg.polar_classifier = reference->polar_classifier;
         cfg.bb_classifier = reference->bb_classifier;
-        cfg.sasa_ref = skip_REL ? empty_rs : reference->max;
+        cfg.sasa_ref = reference->max;
     } else {
         reference = &freesasa_default_rsa;
     }
