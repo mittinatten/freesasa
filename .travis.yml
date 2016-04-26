@@ -9,8 +9,9 @@ dist:
 
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq check cython
+  - sudo apt-get install -qq check
   - pip install --user cpp-coveralls  
+  - pip install cython
 
 branches:
   only:
