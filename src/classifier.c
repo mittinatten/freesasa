@@ -131,7 +131,6 @@ find_string(char **array,
     // remove trailing and leading whitespace
     sscanf(key,"%s",key_trimmed);
     for (int i = 0; i < array_size; ++i) {
-        if (array[i] == NULL) {freesasa_fail("%d %d %s %s",i,array_size,key,key_trimmed);}
         assert(array[i]);
         if (strcmp(array[i],key_trimmed) == 0) return i;
     }
@@ -176,9 +175,8 @@ check_file(FILE *input,
 
     if ((types->begin == -1) || 
         (atoms->begin == -1)) {
-        return freesasa_fail("in %s(): Input configuration lacks (at least) one of "
-                             "the entries 'types:' or "
-                             "'atoms:'.", __func__);
+        return fail_msg("Input configuration lacks (at least) one of "
+                        "the entries 'types:' or 'atoms:'.");
     }
     
     return FREESASA_SUCCESS;
@@ -294,7 +292,7 @@ add_type(struct classifier_types *types,
     int *tc = types->type_class;
     
     if (find_string(types->name, type_name, types->n_types) >= 0)
-        return freesasa_warn("Ignoring duplicate entry for '%s'.", type_name);
+        return freesasa_warn("Ignoring duplicate configuration entry for '%s'.", type_name);
     
     the_class = add_class(types,class_name);
     if (the_class == FREESASA_FAIL) {
@@ -344,8 +342,9 @@ read_types_line(struct classifier_types *types,
         if (the_type == FREESASA_FAIL) return fail_msg("");
         if (the_type == FREESASA_WARN) return FREESASA_WARN;
     } else {
-        return freesasa_fail("in %s(): Could not parse line '%s', expecting triplet of type "
-                             "'TYPE [RADIUS] CLASS' for example 'C_ALI 2.00 apolar'",
+        return freesasa_fail("in %s(): Could not parse line '%s' in configuration, "
+                             "expecting triplet of type 'TYPE [RADIUS] CLASS' for "
+                             "example 'C_ALI 2.00 apolar'",
                              __func__, line);
     }
     return FREESASA_SUCCESS;
@@ -398,8 +397,8 @@ add_atom(struct classifier_residue *res,
     int *ac = res->atom_class;
 
     if (find_string(res->atom_name, name, res->n_atoms) >= 0)
-        return freesasa_warn("in %s(): Ignoring duplicate entry for atom '%s %s'", 
-                             __func__, res->name, name);
+        return freesasa_warn("Ignoring duplicate configuration entry for atom '%s %s'", 
+                             res->name, name);
     n = res->n_atoms+1;
 
     if ((res->atom_name = realloc(res->atom_name,sizeof(char*)*n)) == NULL) {
@@ -473,7 +472,8 @@ read_atoms_line(struct classifier_config *config,
     if (sscanf(line,"%s %s %s",buf1,buf2,buf3) == 3) {
         type = find_string(types->name, buf3, types->n_types);
         if (type < 0) 
-            return freesasa_fail("Unknown atom type '%s' in line '%s'",buf3,line);
+            return freesasa_fail("Unknown atom type '%s' in configuration, line '%s'",
+                                 buf3, line);
         res = add_residue(config,buf1);
         if (res == FREESASA_FAIL) return fail_msg("");
         atom = add_atom(config->residue[res],
@@ -485,7 +485,8 @@ read_atoms_line(struct classifier_config *config,
         if (atom == FREESASA_WARN) return FREESASA_WARN;
         
     } else {
-        return freesasa_fail("in %s(): Could not parse line '%s', expecting triplet of type "
+        return freesasa_fail("in %s(): Could not parse configuration, line '%s', "
+                             "expecting triplet of type "
                              "'RESIDUE ATOM CLASS', for example 'ALA CB C_ALI'.",
                              __func__, line);
     }
@@ -579,7 +580,7 @@ find_any(const struct classifier_config *config,
 }
 /**
     Find the residue and atom index of an atom in the supplied
-    configuration. Prints error and returns FREESASA_FAIL if not
+    configuration. Prints error and returns FREESASA_WARN if not
     found.
  */
 static int 
@@ -601,8 +602,6 @@ find_atom(const struct classifier_config *config,
         }
     }
     if (*atom < 0) {
-        //return freesasa_warn("in %s(): Unknown residue '%s' and/or atom '%s'.",
-        //                     __func__, res_name, atom_name);
         return FREESASA_WARN;
     }
     return FREESASA_SUCCESS;
