@@ -11,7 +11,7 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq check
   - pip install --user cpp-coveralls  
-  - pip install --user cython
+#  - pip install --user cython # doesn't work for some reason
 
 branches:
   only:
@@ -24,7 +24,7 @@ compiler:
 
 before_script:
   - autoreconf -i
-  - ./configure --enable-check --enable-gcov --enable-python-bindings CFLAGS="-fPIC -O2"
+  - ./configure --enable-check --enable-gcov CFLAGS="-fPIC -O2"
 
 script: make && make check
 
