@@ -231,6 +231,13 @@ assert_pass "$cli -t 1 -L -n 3 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -t 2 -L -n 3 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -t 10 -L -n 3 < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli -t 0 < $datadir/1ubq.pdb > $dump"
+echo 
+echo "== Testing conflicting options =="
+assert_fail "$cli -m -M $datadir/1ubq.pdb > $dump"
+assert_fail "$cli -g A+B -C $datadir/1ubq.pdb > $dump"
+assert_fail "$cli -c $sharedir/naccess.config --radii=naccess $datadir/1ubq.pdb > $dump"
+assert_fail "$cli -O --radii=naccess $datadir/1ubq.pdb > $dump"
+assert_fail "$cli -c $sharedir/naccess.config -O $datadir/1ubq.pdb > $dump"
 echo
 echo "== Testing long-options =="
 assert_equal_opt "$cli $datadir/1ubq.pdb" "-h" "--help" 

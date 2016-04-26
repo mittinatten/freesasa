@@ -28,28 +28,36 @@ const char* version = "unknown";
 char *program_name;
 const char* options_string;
 
+// configuration
 freesasa_parameters parameters;
 const freesasa_classifier *classifier = NULL;
 freesasa_classifier *classifier_from_file = NULL;
 const freesasa_rsa_reference *rsa_reference = NULL;
+int structure_options = 0;
+
+// output files
 FILE *output_pdb = NULL;
 FILE *per_residue_type_file = NULL;
 FILE *per_residue_file = NULL;
 FILE *rsa_file = NULL;
 FILE *output = NULL;
 FILE *errlog;
+
+// flags
 int per_residue_type = 0;
 int per_residue = 0;
 int printlog = 1;
-int structure_options = 0;
 int printpdb = 0;
 int printrsa = 0;
-int skip_REL = 0;
+int static_config = 0;
+
+// chain groups
 int n_chain_groups = 0;
 char** chain_groups = NULL;
+
+// selection commands
 int n_select = 0;
 char** select_cmd = NULL;
-int static_config = 0;
 
 
 void
@@ -299,18 +307,17 @@ run_analysis(FILE *input,
             fprintf(output,"\nSELECTIONS\n");
             for (int c = 0; c < n_select; ++c) {
                 double a;
-                char name[FREESASA_MAX_SELECTION_NAME+1];
-                if (freesasa_select_area(select_cmd[c], name, &a, structures[i], result)
+                char sel_name[FREESASA_MAX_SELECTION_NAME+1];
+                if (freesasa_select_area(select_cmd[c], sel_name, &a, structures[i], result)
                     == FREESASA_SUCCESS) {
-                    fprintf(output, "%s : %10.2f\n", name, a);
+                    fprintf(output, "%s : %10.2f\n", sel_name, a);
                 } else {
                     abort_msg("Illegal selection");
                 }
             }
         }
         if (printrsa) {
-            freesasa_write_rsa(rsa_file, result, structures[i], name,
-                               rsa_reference, skip_REL);
+            freesasa_write_rsa(rsa_file, result, structures[i], name_i, rsa_reference);
         }
         freesasa_result_free(result);
         freesasa_strvp_free(classes);
@@ -406,10 +413,11 @@ freesasa_rsa_reference *
 empty_rsa_reference(const freesasa_classifier *c, const char *name)
 {
     freesasa_rsa_reference *empty = malloc(sizeof(freesasa_rsa_reference));
+    const static freesasa_residue_sasa zero[] = {{NULL, 0, 0, 0, 0, 0}};
     if (!empty) abort_msg("Out of memory");
     empty->name = strdup(name);
     if (!name) abort_msg("Out of memory");
-    empty->max = (freesasa_residue_sasa[]){{NULL, 0, 0, 0, 0, 0}};
+    empty->max = zero;
     empty->polar_classifier = c;
     empty->bb_classifier = freesasa_default_rsa.bb_classifier;
     return empty;
@@ -614,10 +622,10 @@ main(int argc,
             break;
         case ':':
             abort_msg("Option '-%c' missing argument.", optopt);
+            break;
         case '?':
         default:
-            fprintf(stderr, "%s: warning: Unknown option '-%c' (will be ignored)\n",
-                    program_name, opt);
+            abort_msg("Unknown option '-%c'.", optopt);
             break;
         }
     }
@@ -629,11 +637,11 @@ main(int argc,
     if (alg_set > 1) abort_msg("Multiple algorithms specified.");
     if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.");
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.");
-    if (opt_set['c'] && static_config) abort_msg("The options -c and --config cannot be combined");
+    if (opt_set['c'] && static_config) abort_msg("The options -c and --radii cannot be combined");
+    if (opt_set['O'] && static_config) abort_msg("The options -O and --radii cannot be combined");
     if (opt_set['c'] && opt_set['O']) abort_msg("The option -c and -O can't be combined");
     if (printrsa && (opt_set['c'] || opt_set['O'])) {
-        skip_REL = 1;
-        freesasa_warn("Will only print absolute values in RSA when custom atomic radii selected.");
+        freesasa_warn("Will skip REL columns in RSA when custom atomic radii selected.");
     }
     if (printlog) fprintf(output,"## %s %s ##\n", program_name, version);
     if (argc > optind) {

@@ -487,10 +487,6 @@ int freesasa_write_parameters(FILE *log,
     @param name Name of the protein
     @param reference Reference to calculate RSA from, if NULL defaults
       are used.
-    @param skip_REL If non-zero, relative values will not be
-      calculated, if 0 they will. This allows users using custom atomic
-      radii without available reference SASA values to get output in
-      RSA format, but with 'N/A' in all REL columns.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
       writing to file, or if `structure` is inconsistent.
  */
@@ -499,8 +495,7 @@ freesasa_write_rsa(FILE *output,
                    const freesasa_result *result,
                    const freesasa_structure *structure,
                    const char *name,
-                   const freesasa_rsa_reference *reference,
-                   int skip_REL);
+                   const freesasa_rsa_reference *reference);
 /**
     Set the global verbosity level.
 

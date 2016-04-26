@@ -75,18 +75,10 @@ using the defaults, simply type
 `--enable-python-bindings`, the Python module is also built and 
 installed.
 
-Configuring with
-
-    ./configure CFLAGS="-Ofast" 
-
-increases the speed of the Shrake & Rupley algorithm significantly
-(10-20%), as compared to the standard "-O2". There seems to be no
-measurable effect on Lee & Richards.
-
 The configuration script can be customized with general options:
 * `--enable-python-bindings` builds Python bindings, requires Cython
 * `--with-python=<python>` specifies which python binary to use
-* `--disable-threads` Build without multithreaded calculations
+* `--disable-threads` build without multithreaded calculations
 * `--enable-doxygen` activates building of Doxygen documentation
 
 And some options for developers:
