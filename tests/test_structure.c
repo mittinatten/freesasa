@@ -38,6 +38,9 @@ START_TEST (test_structure_api)
         sprintf(buf,"%c %s %s %s",cl[i],rnu[i],rna[i],an[i]);
         ck_assert_str_eq(freesasa_structure_atom_descriptor(s,i),buf);
     }
+    freesasa_structure_atom_set_radius(s, 0, 10.0);
+    ck_assert(float_eq(freesasa_structure_atom_radius(s, 0), 10.0, 1e-10));
+
     const coord_t *c = freesasa_structure_xyz(s);
     ck_assert(freesasa_structure_coord_array(s) == freesasa_coord_all(c));
     for (int i = 0; i < N; ++i) {

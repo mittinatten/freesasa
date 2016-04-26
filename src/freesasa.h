@@ -781,20 +781,20 @@ freesasa_structure_n(const freesasa_structure *structure);
     are in non-contiguous regions of the file, this function might be
     off.
 
-    @param s A structure.
+    @param structure A structure.
     @return Number of residues.
  */
 int
-freesasa_structure_n_residues(const freesasa_structure *s);
+freesasa_structure_n_residues(const freesasa_structure *structure);
 
 /**
     Get number of chains.
 
-    @param s A structure.
+    @param structure A structure.
     @return The number of chains in the structure.
  */
 int
-freesasa_structure_n_chains(const freesasa_structure *s);
+freesasa_structure_n_chains(const freesasa_structure *structure);
 
 /**
     Returns a pointer to an array of the radii of each atom.
@@ -899,35 +899,61 @@ freesasa_structure_atom_symbol(const freesasa_structure *structure,
                                int i);
 
 /**
+    Get atom radius.
+
+    Asserts that index i is within bounds. 
+
+    @param structure The structure.
+    @param i Atom index.
+    @return Atom radius.
+ */
+double
+freesasa_structure_atom_radius(const freesasa_structure *structure,
+                               int i);
+/**
+    Set atom radius.
+    
+    Asserts that index i is within bounds. 
+
+    @param structure The structure.
+    @param radius The radius.
+    @param i Atom index.
+ */
+void
+freesasa_structure_atom_set_radius(freesasa_structure *structure,
+                                   int i,
+                                   double radius);
+
+/**
     Get name of residue.
 
-    @param s The structure.
+    @param structure The structure.
     @param r_i Residue index (in whole structure)
     @return Name of residue
  */
 const char*
-freesasa_structure_residue_name(const freesasa_structure *s,
+freesasa_structure_residue_name(const freesasa_structure *structure,
                                 int r_i);
 
 /**
     Get residue number.
 
-    @param s The structure.
+    @param structure The structure.
     @param r_i Residue index (in whole structure).
     @return Residue number as string.
  */
 const char*
-freesasa_structure_residue_number(const freesasa_structure *s,
+freesasa_structure_residue_number(const freesasa_structure *structure,
                                   int r_i);
 /**
     Get chain residue belongs to.
 
-    @param s The structure.
+    @param structure The structure.
     @param r_i Residue index (in whole structure).
     @return Chain label.
  */
 char
-freesasa_structure_residue_chain(const freesasa_structure *s,
+freesasa_structure_residue_chain(const freesasa_structure *structure,
                                  int r_i);
 
 /**
@@ -956,14 +982,14 @@ freesasa_structure_coord_array(const freesasa_structure *structure);
 /**
     Get indices of first and last atoms of a residue
  
-    @param s A structure.
+    @param structure A structure.
     @param r_i Residue index.
     @param first First atom of residue `r_i` will be stored here.
     @param last Last atom of residue `r_i` will be stored here.
     @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if index `r_i` is invalid.
  */
 int
-freesasa_structure_residue_atoms(const freesasa_structure *s,
+freesasa_structure_residue_atoms(const freesasa_structure *structure,
                                  int r_i, 
                                  int *first,
                                  int *last);
@@ -971,14 +997,14 @@ freesasa_structure_residue_atoms(const freesasa_structure *s,
 /**
     Get indices of first and last atoms of a chain
  
-    @param s A structure.
+    @param structure A structure.
     @param chain The chain label.
     @param first First atom of `chain` will be stored here.
     @param last Last atom of `chain` will be stored here.
     @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if `chain` not found.
  */
 int
-freesasa_structure_chain_atoms(const freesasa_structure *s,
+freesasa_structure_chain_atoms(const freesasa_structure *structure,
                                  char chain,
                                  int *first,
                                  int *last);
