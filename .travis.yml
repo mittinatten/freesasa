@@ -23,7 +23,7 @@ compiler:
 
 before_script:
   - autoreconf -i
-  - ./configure --enable-check --enable-gcov
+  - ./configure --enable-check --enable-gcov --enable-python-bindings CFLAGS="-fPIC -O2"
 
 script: make && make check
 
