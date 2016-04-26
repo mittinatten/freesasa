@@ -124,6 +124,7 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertRaises(AssertionError, lambda: s.residueNumber(3))
         self.assertRaises(AssertionError, lambda: s.chainLabel(3))
         self.assertRaises(AssertionError, lambda: s.coord(3))
+        self.assertRaises(AssertionError, lambda: s.radius(3))
 
         s.setRadiiWithClassifier(Classifier())
         self.assertTrue(s.radius(0) == 1.88)
@@ -136,6 +137,10 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(s.radius(0) == 1.0)
         self.assertTrue(s.radius(1) == 3.0)
 
+        s.setRadius(0, 10.0)
+        self.assertTrue(s.radius(0) == 10.0);
+
+        self.assertRaises(AssertionError,lambda: s.setRadius(2,10));
         self.assertRaises(AssertionError,lambda: s.setRadii([1]))
         self.assertRaises(AssertionError,lambda: s.setRadii([1,2,3]))
 

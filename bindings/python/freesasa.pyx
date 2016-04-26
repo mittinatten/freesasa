@@ -391,8 +391,8 @@ cdef class Structure:
             self.setRadii(r)
 
       ## Set atomic radii from an array
-      # @param radiusArray: Array of atomic radii in Ångström, should 
-      #                     have nAtoms() elements.
+      # @param radiusArray Array of atomic radii in Ångström, should 
+      #                    have nAtoms() elements.
       # @exception AssertionError if radiusArray has wrong dimension, structure 
       #                           not properly initialized, or if the array contains
       #                           negative radii (not properly classified?) 
@@ -425,6 +425,17 @@ cdef class Structure:
             cdef const double *r = freesasa_structure_radius(self._c_structure)
             assert(r is not NULL)
             return r[i]
+
+      ## Set radius for a given atom
+      # @param atomIndex Index of atom
+      # @param radius Value of radius
+      # @exception AssertionError if index out of bounds, radius
+      #            negative, or structure not properly initialized
+      def setRadius(self, atomIndex, radius):
+            assert(self._c_structure is not NULL)
+            assert(atomIndex >= 0 and atomIndex < self.nAtoms())
+            assert(radius >= 0)
+            freesasa_structure_atom_set_radius(self._c_structure, atomIndex, radius);
       
       ## Get atom name
       # @param i (int) Atom index.

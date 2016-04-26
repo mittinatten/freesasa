@@ -122,14 +122,14 @@ cdef extern from "freesasa.h":
                                        const double *radii)
 
     
-    int freesasa_structure_add_atom(freesasa_structure *s,
+    int freesasa_structure_add_atom(freesasa_structure *structure,
                                     const char* atom_name,
                                     const char* residue_name,
                                     const char* residue_number,
                                     char chain_label,
                                     double x, double y, double z)
 
-    int freesasa_structure_add_atom_wopt(freesasa_structure *s,
+    int freesasa_structure_add_atom_wopt(freesasa_structure *structure,
                                          const char* atom_name,
                                          const char* residue_name,
                                          const char* residue_number,
@@ -138,15 +138,22 @@ cdef extern from "freesasa.h":
                                          const freesasa_classifier *classifier,
                                          int options)
 
-    const char* freesasa_structure_atom_name(const freesasa_structure *s,
+    const char* freesasa_structure_atom_name(const freesasa_structure *structure,
                                              int i)
 
-    const char* freesasa_structure_atom_res_name(const freesasa_structure *s,
+    const char* freesasa_structure_atom_res_name(const freesasa_structure *structure,
                                                  int i)
 
-    const char* freesasa_structure_atom_res_number(const freesasa_structure *s,
+    const char* freesasa_structure_atom_res_number(const freesasa_structure *structure,
                                                    int i)
 
-    char freesasa_structure_atom_chain(const freesasa_structure *s, int i)
+    double freesasa_structure_atom_radius(const freesasa_structure *structure,
+                                          int i)
+
+    void freesasa_structure_atom_set_radius(const freesasa_structure *structure,
+                                            int i,
+                                            double radius)
+
+    char freesasa_structure_atom_chain(const freesasa_structure *structure, int i)
 
     const double* freesasa_structure_coord_array(const freesasa_structure *structure)
