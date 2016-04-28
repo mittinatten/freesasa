@@ -29,5 +29,5 @@ before_script:
 script: make && make check
 
 after_success:
-  - coveralls --exclude tests --exclude src/lexer.l --exclude src/lexer.c --exclude src/parser.c  --gcov-options '\-lp'
+  - coveralls --exclude tests --exclude src/lexer.l --exclude src/lexer.c --exclude src/parser.c --exclude src/util.c  --gcov-options '\-lp'
 
