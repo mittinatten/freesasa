@@ -47,53 +47,61 @@ atom_area(lr_data *lr,int i);
 static double
 exposed_arc_length(double *restrict arc, int n);
 
+/** Release contenst of lr_data pointer*/
+static void
+release_lr(lr_data *lr)
+{
+    free(lr->radii);
+    freesasa_nb_free(lr->adj);
+    lr->radii = NULL;
+    lr->adj = NULL;
+}
+
 /** Initialize object to be used for L&R calculation */
-static lr_data*
-init_lr(double *sasa,
+static int
+init_lr(lr_data *lr,
+        double *sasa,
         const coord_t *xyz,
         const double *atom_radii,
         double probe_radius,
         int n_slices_per_atom)
 {
     const int n_atoms = freesasa_coord_n(xyz);
-    lr_data* lr = malloc(sizeof(lr_data));
-    double *radii = malloc(sizeof(double)*n_atoms);
-    if (!lr || !radii) { 
-        free(lr);
-        free(radii);
-        mem_fail();
-        return NULL;
+
+    lr->n_atoms = n_atoms;
+    lr->xyz = xyz;
+    lr->adj = NULL;
+    lr->n_slices_per_atom = n_slices_per_atom;
+    lr->sasa = sasa;
+
+    lr->radii = malloc(sizeof(double)*n_atoms);
+    if (lr->radii == NULL) {
+        return mem_fail();
     }
 
     //init some arrays
     for (int i = 0; i < n_atoms; ++i) {
-        radii[i] = atom_radii[i] + probe_radius;
+        lr->radii[i] = atom_radii[i] + probe_radius;
         sasa[i] = 0.;
     }
 
+    // determine which atoms are neighbours
+    lr->adj = freesasa_nb_new(xyz, lr->radii);
 
-    //copy parameters
-    lr->n_atoms = n_atoms; lr->radii = radii; lr->xyz = xyz;
-    lr->n_slices_per_atom = n_slices_per_atom;
-    lr->sasa = sasa;
-    lr->adj = NULL;
+    if (lr->adj == NULL) {
+        release_lr(lr);
+        return FREESASA_FAIL;
+    }
 
-    return lr;
-}
+    return FREESASA_SUCCESS;
 
-static void
-free_lr(lr_data *lr)
-{
-    free(lr->radii);
-    freesasa_nb_free(lr->adj);
-    free(lr);
 }
 
 int
 freesasa_lee_richards(double *sasa,
                       const coord_t *xyz,
                       const double *atom_radii,
-		      const freesasa_parameters *param)
+                      const freesasa_parameters *param)
 {
     assert(sasa);
     assert(xyz);
@@ -106,7 +114,7 @@ freesasa_lee_richards(double *sasa,
         n_threads = param->n_threads,
         resolution = param->lee_richards_n_slices;
     double probe_radius = param->probe_radius;
-    lr_data *lr;
+    lr_data lr;
 
     if (resolution <= 0)
         return freesasa_fail("in %s(): n_slices_per_atom = %f is invalid, must be > 0\n",
@@ -121,20 +129,12 @@ freesasa_lee_richards(double *sasa,
                       n_threads);
     }
     
-    // determine slice range and init radii and sasa arrays
-    lr = init_lr(sasa, xyz, atom_radii, probe_radius, resolution);
-    if (lr == NULL) return mem_fail();
+    if(init_lr(&lr, sasa, xyz, atom_radii, probe_radius, resolution))
+        return FREESASA_FAIL;
     
-    // determine which atoms are neighbours
-    lr->adj = freesasa_nb_new(xyz,lr->radii);
-    if (lr->adj == NULL) {
-        free_lr(lr);
-        return mem_fail();
-    }
-
     if (n_threads > 1) {
 #if USE_THREADS
-        return_value = lr_do_threads(n_threads, lr);
+        return_value = lr_do_threads(n_threads, &lr);
 #else
         return_value = freesasa_warn("in %s(): program compiled for single-threaded use, "
                                      "but multiple threads were requested. Will "
@@ -144,11 +144,11 @@ freesasa_lee_richards(double *sasa,
 #endif /* pthread */
     }
     if (n_threads == 1) {
-        for (int i = 0; i < lr->n_atoms; ++i) {
-            lr->sasa[i] = atom_area(lr,i);
+        for (int i = 0; i < lr.n_atoms; ++i) {
+            lr.sasa[i] = atom_area(&lr, i);
         }        
     }
-    free_lr(lr);
+    release_lr(&lr);
     return return_value;
 }
 
