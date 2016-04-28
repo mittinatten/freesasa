@@ -5,8 +5,8 @@ FreeSASA
 (https://zenodo.org/badge/latestdoi/18467/mittinatten/freesasa)
 [![Build Status](https://travis-ci.org/mittinatten/freesasa.svg?branch=master)]
 (https://travis-ci.org/mittinatten/freesasa)
-[![Coverage Status](https://coveralls.io/repos/github/mittinatten/freesasa/badge.svg?branch=dev)]
-(https://coveralls.io/github/mittinatten/freesasa?branch=dev)
+[![Coverage Status](https://coveralls.io/repos/github/mittinatten/freesasa/badge.svg?branch=master)]
+(https://coveralls.io/github/mittinatten/freesasa?branch=master)
 
 C-library for calculating Solvent Accessible Surface Areas.
 
