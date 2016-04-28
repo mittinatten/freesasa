@@ -204,58 +204,62 @@ static double
 atom_area(lr_data *lr,
           int i)
 {
-    // This function is large because a large number of pre-calculated
-    // arrays need to be accessed efficiently. Partially dereferenced
-    // here to make access more efficient.
+    /* This function is large because a large number of pre-calculated
+       arrays need to be accessed efficiently. Partially dereferenced
+       here to make access more efficient.
+    
+       Variables are named according to the documentation (see page
+       "Geometry of Lee & Richards' algorithm") */
+
     const int nni = lr->adj->nn[i];
     const double * restrict const v = freesasa_coord_all(lr->xyz);
-    const double * restrict const r = lr->radii;
+    const double * restrict const R = lr->radii;
     const int * restrict const nbi = lr->adj->nb[i];
     const double * restrict const xydi = lr->adj->xyd[i];
     const double * restrict const xdi = lr->adj->xd[i];
     const double * restrict const ydi = lr->adj->yd[i];
-    const double zi = v[3*i+2], ri = r[i];
+    const double zi = v[3*i+2], Ri = R[i];
     const int ns = lr->n_slices_per_atom;
-    double arc[nni*4], z_nb[nni], r_nb[nni];
-    double z_slice, delta, sasa = 0;
+    double arc[nni*4], z_nb[nni], R_nb[nni];
+    double z, delta, sasa = 0;
     
     for (int j = 0; j < nni; ++j) {
         z_nb[j] = v[3*nbi[j]+2];
-        r_nb[j] = r[nbi[j]];
+        R_nb[j] = R[nbi[j]];
     }
     
-    delta = 2*ri/ns;
-    z_slice = zi-ri-0.5*delta;
+    delta = 2*Ri/ns;
+    z = zi-Ri-0.5*delta;
     for (int islice = 0; islice < ns; ++islice) {
-        z_slice += delta;
-        const double di = fabs(zi - z_slice);
-        const double ri_slice2 = ri*ri-di*di;
-        if (ri_slice2 < 0 ) continue; // handle round-off errors
-        const double ri_slice = sqrt(ri_slice2);
-        if (ri_slice <= 0) continue; // more round-off errors
+        z += delta;
+        const double di = fabs(zi - z);
+        const double Ri_prime2 = Ri*Ri-di*di;
+        if (Ri_prime2 < 0 ) continue; // handle round-off errors
+        const double Ri_prime = sqrt(Ri_prime2);
+        if (Ri_prime <= 0) continue; // more round-off errors
         int n_arcs = 0, is_buried = 0;
         for (int j = 0; j < nni; ++j) {
             const double zj = z_nb[j];
-            const double dj = fabs(zj - z_slice);
-            const double rj = r_nb[j];
-            if (dj < rj) {
-                const double rj_slice2 = rj*rj-dj*dj;
-                const double rj_slice = sqrt(rj_slice2);
+            const double dj = fabs(zj - z);
+            const double Rj = R_nb[j];
+            if (dj < Rj) {
+                const double Rj_prime2 = Rj*Rj-dj*dj;
+                const double Rj_prime = sqrt(Rj_prime2);
                 const double dij = xydi[j];
                 double alpha, beta, inf, sup;
                 int narc2;
-                if (dij >= ri_slice + rj_slice) { // atoms aren't in contact
+                if (dij >= Ri_prime + Rj_prime) { // atoms aren't in contact
                     continue;
                 }
-                if (dij + ri_slice < rj_slice) { // circle i is completely inside j
+                if (dij + Ri_prime < Rj_prime) { // circle i is completely inside j
                     is_buried = 1;
                     break;
                 }
-                if (dij + rj_slice < ri_slice) { // circle j is completely inside i
+                if (dij + Rj_prime < Ri_prime) { // circle j is completely inside i
                     continue;
                 }
                 // arc of circle i intersected by circle j
-                alpha = acos ((ri_slice2 + dij*dij - rj_slice2)/(2.0*ri_slice*dij));
+                alpha = acos ((Ri_prime2 + dij*dij - Rj_prime2)/(2.0*Ri_prime*dij));
                 // position of mid-point of intersection along circle i
                 beta = atan2 (ydi[j],xdi[j]) + M_PI;
                 inf = beta - alpha;
@@ -280,29 +284,8 @@ atom_area(lr_data *lr,
             }
         }
         if (is_buried == 0) {
-            sasa += delta*ri*exposed_arc_length(arc,n_arcs);
+            sasa += delta*Ri*exposed_arc_length(arc,n_arcs);
         }
-#ifdef DEBUG
-        if (is_buried == 0) {
-            //exposed_arc[i] = 0;
-            double xi = v[3*i], yi = v[3*i+1];
-            for (double c = 0; c < 2*M_PI; c += M_PI/30.0) {
-                int is_exp = 1;
-                for (int j = 0; j < n_arcs; ++j) {
-                    double inf = arc[2*j], sup = arc[2*j+1];
-                    if (c >= inf && c <= sup) {
-                        is_exp = 0; break;
-                    }
-                }
-                double d = c+M_PI;
-                // print the arcs used in calculation
-                if (is_exp) printf("%6.2f %6.2f %6.2f %7.5f\n",
-                                   xi+ri_slice*cos(d),yi+ri_slice*sin(d),z_slice,d);
-            }
-            printf("\n");
-        }
-#endif /* Debug */
-
     }
     return sasa;
 }
