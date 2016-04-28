@@ -307,31 +307,31 @@ is_valid_id(int parent_type,
     switch(parent_type) {
     case E_NAME:
         if (strlen(val) > PDB_ATOM_NAME_STRL)
-            return freesasa_warn("select: Atom name '%s' invalid (string too long). "
-                                 "Will be ignored",val);
+            return freesasa_warn("select: %s: Atom name '%s' invalid (string too long). "
+                                 "Will be ignored", e_str(parent_type), val);
         break;
     case E_SYMBOL:
         if (type != E_ID)
-            return freesasa_warn("select: Symbol '%s' invalid (should be 1 or 2 letters, 'C', 'N', 'SE', etc). "
-                                 "Will be ignored.",val);
+            return freesasa_warn("select: %s: '%s' invalid (should be 1 or 2 letters, 'C', 'N', 'SE', etc). "
+                                 "Will be ignored.", e_str(parent_type), val);
         if (strlen(val) > 2)
-            return freesasa_warn("select: Symbol '%s' invalid (element names have 1 or 2 characters). "
-                                 "Will be ignored.",val);
+            return freesasa_warn("select: %s: '%s' invalid (element names have 1 or 2 characters). "
+                                 "Will be ignored.", e_str(parent_type), val);
         break;
     case E_RESN:
         if (strlen(val) > PDB_ATOM_RES_NAME_STRL)
-            return freesasa_warn("select: Residue '%s' invalid (string too long). "
-                                 "Will be ignored.",val);
+            return freesasa_warn("select: %s: '%s' invalid (string too long). "
+                                 "Will be ignored.", e_str(parent_type), val);
         break;
     case E_RESI:
         if (type != E_NUMBER)
-            return freesasa_warn("select: Residue number '%s' invalid (not a number). "
-                                 "Will be ignored.",val);
+            return freesasa_warn("select: %s: '%s' invalid (not a number). "
+                                 "Will be ignored.", e_str(parent_type), val);
         break;
     case E_CHAIN:
         if (strlen(val) > 1)
-            return freesasa_warn("select: Chain label '%s' invalid (string too long). "
-                                 "Will be ignored.",val);
+            return freesasa_warn("select: %s: '%s' invalid (string too long). "
+                                 "Will be ignored.", e_str(parent_type), val);
         break;
     default:
         assert(0);
@@ -351,14 +351,14 @@ select_range(expression_type parent_type,
     int lower, upper;
     if (parent_type == E_RESI) { // residues have integer numbering
         if (left->type != E_NUMBER || right->type != E_NUMBER) {
-            return freesasa_warn("select: Range '%s-%s' invalid, needs to be two numbers (1-5). "
-                                 "Will be ignored.",left->value,right->value);
+            return freesasa_warn("select: %s: Range '%s-%s' invalid, needs to be two numbers. "
+                                 "Will be ignored.",e_str(parent_type), left->value, right->value);
         }
     } else { // chains can be numbered by both letters (common) and numbers (uncommon)
         if (left->type != right->type ||
             (left->type == E_ID && (strlen(left->value) > 1 || strlen(right->value) > 1)))
-            return freesasa_warn("select: Chain range '%s-%s' invalid, needs to be two letters (A-C) or two numbers (1-5). "
-                                 "Will be ignored.",left->value,right->value);
+            return freesasa_warn("select: %s: Range '%s-%s' invalid, should be two letters (A-C) or numbers (1-5). "
+                                 "Will be ignored.", e_str(parent_type), left->value, right->value);
     }
     if (left->type == E_NUMBER) {
         lower = atoi(left->value);
@@ -398,17 +398,18 @@ select_list(expression_type parent_type,
         break;
     case E_RANGE:
         if (left == NULL || right == NULL) 
-            return fail_msg("NULL expression.");
-        return select_range(parent_type,selection,structure,left,right);
+            return fail_msg("select: NULL expression.");
+        return select_range(parent_type, selection, structure, left, right);
     case E_ID:
     case E_NUMBER:
-        if (is_valid_id(parent_type,expr) == FREESASA_SUCCESS)
-            select_id(parent_type,selection,structure,expr->value);
-        else return FREESASA_WARN;
+        if (is_valid_id(parent_type, expr) == FREESASA_SUCCESS)
+            select_id(parent_type, selection, structure, expr->value);
+        else return freesasa_warn("select: %s: '%s' invalid %s",
+                                  e_str(parent_type), expr->value, e_str(expr->type));
         break;
     default:
-        return freesasa_fail("in %s(): parse error (expression: '%s %s')",
-                             __func__,e_str(parent_type),e_str(expr->type));
+        return freesasa_fail("select: parse error (expression: '%s %s')",
+                             e_str(parent_type), e_str(expr->type));
     }
     return FREESASA_SUCCESS;
 }
@@ -518,25 +519,6 @@ select_atoms(struct selection* selection,
     return FREESASA_SUCCESS;
 }
 
-//for debugging
-static void
-print_expr(const expression *e,int level)
-{
-    if (freesasa_get_verbosity() == FREESASA_V_DEBUG) {
-        fprintf(stderr,"\n");
-        for (int i = 0; i < level; ++i) fprintf(stderr,"  ");
-        if (e == NULL) fprintf(stderr,"()");
-        else {
-            fprintf(stderr,"(%s ",e_str(e->type));
-            if (e->value) fprintf(stderr,": %s ",e->value);
-            print_expr(e->left,level+1);
-            print_expr(e->right,level+1);
-            fprintf(stderr,")");
-        }
-        fflush(stderr);
-    }
-}
-
 int
 freesasa_select_area(const char *command,
                      char *name,
@@ -574,7 +556,7 @@ freesasa_select_area(const char *command,
             int len = strlen(selection->name);
             if (len > maxlen) {
                 strncpy(name,selection->name,maxlen);
-                name[maxlen+1] = '\0';
+                name[maxlen] = '\0';
             }
             else {
                 strcpy(name,selection->name);
@@ -598,11 +580,28 @@ freesasa_select_area(const char *command,
     return FREESASA_SUCCESS;
 }
 
+//for debugging
+static void
+print_expr(const expression *e,int level)
+{
+    fprintf(stderr,"\n");
+    for (int i = 0; i < level; ++i) fprintf(stderr,"  ");
+    if (e == NULL) fprintf(stderr,"()");
+    else {
+        fprintf(stderr,"(%s ",e_str(e->type));
+        if (e->value) fprintf(stderr,": %s ",e->value);
+        print_expr(e->left,level+1);
+        print_expr(e->right,level+1);
+        fprintf(stderr,")");
+    }
+    fflush(stderr);
+}
+
 int freesasa_selection_parse_error(expression *e,
                                    yyscan_t scanner,
                                    const char *msg)
 {
-    print_expr(e,0);
+    if (freesasa_get_verbosity() == FREESASA_V_DEBUG)  print_expr(e,0);
     if (freesasa_get_verbosity() == FREESASA_V_NORMAL) fprintf(stderr,"\n");
     return freesasa_fail(msg);
 }

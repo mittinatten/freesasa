@@ -213,6 +213,8 @@ START_TEST (test_chain)
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_int_eq(freesasa_select_area("c1, chain AA",selection_name[0],value,structure,result),
                      FREESASA_WARN);
+    ck_assert_int_eq(freesasa_select_area("c1, chain &",selection_name[0],value,structure,result),
+                     FREESASA_FAIL);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
@@ -220,7 +222,9 @@ END_TEST
 START_TEST (test_syntax_error)
 {
     double a;
+    int i;
     char s[FREESASA_MAX_SELECTION_NAME+1];
+    char s2[2*FREESASA_MAX_SELECTION_NAME+1], c='a';
     const char *err[] = {"","a","a,","a,b",
                          // no selection arg
                          "a,resi","a,resn","a,name","a,symbol","a,chain",
@@ -243,9 +247,18 @@ START_TEST (test_syntax_error)
     };
     int n = sizeof(err)/sizeof(char*);
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    for (int i = 0; i < n; ++i) {
-        ck_assert_int_eq(freesasa_select_area(err[i],s,&a,structure,result),FREESASA_FAIL);
+    for (i = 0; i < n; ++i) {
+        ck_assert_int_eq(freesasa_select_area(err[i],s,&a,structure,result), FREESASA_FAIL);
     }
+
+    // check that really long strings are truncated properly
+    for (i = 0; i < FREESASA_MAX_SELECTION_NAME+5; ++i) {
+        s2[i] = c+(i%25);
+    }
+    strcpy(s2+i, ", resn ala");
+    ck_assert_int_eq(freesasa_select_area(s2, s, &a, structure, result), FREESASA_SUCCESS);
+    ck_assert_int_eq(strlen(s), FREESASA_MAX_SELECTION_NAME);
+    ck_assert(strncmp(s2, s, strlen(s)) == 0);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 } END_TEST
 
