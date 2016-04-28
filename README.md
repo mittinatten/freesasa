@@ -76,7 +76,10 @@ using the defaults, simply type
 installed.
 
 The configuration script can be customized with general options:
-* `--enable-python-bindings` builds Python bindings, requires Cython
+* `--enable-python-bindings` builds Python bindings, requires 
+    Cython 0.21 or higher. On some platforms the C library needs to be
+    compiled with `CFLAGS=-fPIC` to allow it to be linked to the Python
+    module.
 * `--with-python=<python>` specifies which python binary to use
 * `--disable-threads` build without multithreaded calculations
 * `--enable-doxygen` activates building of Doxygen documentation
