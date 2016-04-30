@@ -10,7 +10,6 @@ dist:
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq check
-  - pip install --user cpp-coveralls  
   - pip install --user cython 
 
 branches:
@@ -20,15 +19,10 @@ branches:
 
 compiler:
   - gcc
+  - clang
 
 before_script:
   - autoreconf -i
-  - ./configure --enable-check --enable-gcov CFLAGS="-fPIC -O2" --enable-python-bindings
+  - ./configure --enable-check CFLAGS="-fPIC -O2" --enable-python-bindings
 
 script: make && make check
-
-after_success:
-  - coveralls --exclude tests --exclude src/lexer.l --exclude src/lexer.c --exclude src/parser.c --exclude src/util.c  --gcov-options '\-lp'
-
-# to see what goes wrong
-after_failure: cat bindings/check-python.log
