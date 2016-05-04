@@ -43,7 +43,7 @@ int
 freesasa_shrake_rupley(double *sasa,
                        const coord_t *c,
                        const double *radii,
-		       const freesasa_parameters *param);
+                       const freesasa_parameters *param);
 
 /**
     Calculate SASA using L&R algorithm.
@@ -69,7 +69,7 @@ freesasa_shrake_rupley(double *sasa,
 int freesasa_lee_richards(double* sasa,
                           const coord_t *c,
                           const double *radii,
-			  const freesasa_parameters *param);
+                          const freesasa_parameters *param);
 
 
 /**
@@ -133,6 +133,29 @@ freesasa_single_residue_sasa(const freesasa_result *r,
                              const freesasa_structure *s, 
                              int r_i);
 
+/**
+    Calculates the absolute and relative SASA values for a given residue
+
+    If `reference->max == NULL` then `rel` will be all zero and
+    `rel->name == NULL`. This behavior allows the user to calculate
+    absolute SASA values also when there's no reference to calculate
+    relative values.
+
+    @param abs Where to write absolute SASA
+    @param rel Where to write relative SASA
+    @param residue_index Index of residue
+    @param structure The structure
+    @param result The SASA values
+    @param reference Reference values and classifiers
+    @return ::FREESASA_SUCCESS. ::FREEESASA_FAIL if inconsistencies in structure.
+ */
+int
+freesasa_rsa_val(freesasa_residue_sasa *abs,
+                 freesasa_residue_sasa *rel,
+                 int residue_index,
+                 const freesasa_structure *structure,
+                 const freesasa_result *result,
+                 const freesasa_rsa_reference *reference);
 
 /**
     Holds range in a file, to be initalized with ftell() and used

@@ -83,6 +83,26 @@ const freesasa_rsa_reference freesasa_naccess_rsa = {
     .bb_classifier = &freesasa_backbone_classifier
 };
 
+static struct rsa_config
+rsa_generate_config(const freesasa_structure *structure,
+                    const freesasa_result *result,
+                    const freesasa_rsa_reference *reference)
+{
+    assert(structure);
+    assert(result);
+    assert(reference);
+
+    struct rsa_config cfg = {
+        .polar_classifier = reference->polar_classifier,
+        .bb_classifier = reference->bb_classifier,
+        .result = result,
+        .structure = structure,
+        .sasa_ref = reference->max,
+    };
+
+    return cfg;
+}
+
 /**
    Adds v to members of rs depending on how the atom specified by resn
    and atom_name is classified. If the classifiers are null the
@@ -103,7 +123,6 @@ rsa_abs_add_atom(freesasa_residue_sasa *rs,
     if (cfg->bb_classifier->sasa_class(rs->name, atom_name, cfg->bb_classifier))
         rs->main_chain += v;
     else rs->side_chain += v;
-
     if (cfg->polar_classifier->sasa_class(rs->name, atom_name, cfg->polar_classifier))
         rs->polar += v;
     else rs->apolar += v;
@@ -122,7 +141,7 @@ rsa_get_abs(freesasa_residue_sasa *rs,
 
     if (freesasa_structure_residue_atoms(cfg->structure, idx, &first, &last))
         return fail_msg("");
-
+    
     for (int i = first; i <= last; ++i) {
         rsa_abs_add_atom(rs, i, cfg);
     }
@@ -154,9 +173,38 @@ rsa_get_rel(freesasa_residue_sasa *rel,
         rel->main_chain = 100. * abs->main_chain / ref[i_ref].main_chain;
         rel->polar = 100. * abs->polar / ref[i_ref].polar;
         rel->apolar = 100. * abs->apolar / ref[i_ref].apolar;
+        rel->name = abs->name;
     } else {
         rel->total = rel->side_chain = rel->main_chain = rel->polar = rel->apolar = nan;
+        rel->name = NULL;
     }
+}
+
+int
+freesasa_rsa_val(freesasa_residue_sasa *abs,
+                 freesasa_residue_sasa *rel,
+                 int residue_index,
+                 const freesasa_structure *structure,
+                 const freesasa_result *result,
+                 const freesasa_rsa_reference *reference)
+{
+    assert(rel);
+    assert(abs);
+    assert(structure);
+    assert(result);
+
+    struct rsa_config cfg;
+    abs->name = freesasa_structure_residue_name(structure, residue_index);
+
+    if (!reference) reference = &freesasa_default_rsa;
+    cfg = rsa_generate_config(structure, result, reference);
+
+    if (!rsa_get_abs(abs, residue_index, &cfg)) {
+        if (reference->max) rsa_get_rel(rel, abs, reference->max);
+        else *rel = zero_rs;
+        return FREESASA_SUCCESS;
+    } 
+    return FREESASA_FAIL;
 }
 
 /**
@@ -252,28 +300,16 @@ freesasa_write_rsa(FILE *output,
     assert(name);
 
     const freesasa_residue_sasa empty_rs[1] = {zero_rs};
-    struct rsa_config cfg = {
-        .polar_classifier = freesasa_default_rsa.polar_classifier,
-        .bb_classifier = freesasa_default_rsa.bb_classifier,
-        .result = result,
-        .structure = structure,
-        .sasa_ref = freesasa_default_rsa.max,
-    };
+    struct rsa_config cfg;
     const char *chain_labels = freesasa_structure_chain_labels(structure);
     int naa = freesasa_structure_n_residues(structure),
         n_chains = strlen(chain_labels);
     freesasa_residue_sasa abs, rel, chain_abs[n_chains], all_chains_abs = zero_rs;
 
-    if (reference) {
-        cfg.polar_classifier = reference->polar_classifier;
-        cfg.bb_classifier = reference->bb_classifier;
-        cfg.sasa_ref = reference->max;
-    } else {
-        reference = &freesasa_default_rsa;
-    }
-
     for (int i = 0; i < n_chains; ++i) chain_abs[i] = zero_rs;
-    
+    if (!reference) reference = &freesasa_default_rsa;
+    cfg = rsa_generate_config(structure, result, reference);
+
     rsa_print_header(output, reference->name, name);
 
     for (int i = 0; i < naa; ++i) {
