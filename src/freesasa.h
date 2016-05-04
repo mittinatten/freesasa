@@ -1000,10 +1000,23 @@ freesasa_structure_residue_atoms(const freesasa_structure *structure,
  */
 int
 freesasa_structure_chain_atoms(const freesasa_structure *structure,
-                                 char chain,
-                                 int *first,
-                                 int *last);
+                               char chain,
+                               int *first,
+                               int *last);
+/**
+    Get indices of first and last residues of a chain
 
+    @param structure A structure.
+    @param chain The chain label.
+    @param first First residue of `chain` will be stored here.
+    @param last Last residue of `chain` will be stored here.
+    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if `chain` not found.
+ */
+int
+freesasa_structure_chain_residues(const freesasa_structure *structure,
+                                  char chain,
+                                  int *first,
+                                  int *last);
 
 #ifdef __cplusplus
 }
