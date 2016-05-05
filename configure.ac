@@ -73,8 +73,8 @@ if test "x$enable_json" != "xno" ; then
   AC_DEFINE([USE_JSON],[1],[Define if json should be included.])
   AM_CONDITIONAL([USE_JSON],true)
 else
-  AC_DEFINE([USE_THREADS],[0],[])
-  AM_CONDITIONAL([USE_THREADS],false)
+  AC_DEFINE([USE_JSON],[0],[])
+  AM_CONDITIONAL([USE_JSON],false)
 fi
 
 # Which Python
