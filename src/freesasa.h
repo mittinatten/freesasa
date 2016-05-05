@@ -122,8 +122,22 @@ typedef struct {
     double apolar;     //!< Apolar SASA
 } freesasa_subarea;
 
-//! @Deprecated The typename freesasa_residue_sasa is no longer used
-#define freesasa_residue_sasa freesasa_subarea
+//! @deprecated The typename freesasa_residue_sasa is no longer used
+//#typedef freesasa_residue_sasa freesasa_subarea
+
+typedef enum {
+    FREESASA_NODE_ATOM, FREESASA_NODE_RESIDUE,
+    FREESASA_NODE_CHAIN, FREESASA_NODE_STRUCTURE
+} freesasa_node_type;
+
+/**
+    A node representing a structure, chain, residue or atom in a
+    structure (see ::freesasa_node_type). These can be linked in a tree created by
+    freesasa_structure_tree_generate(), freed by
+    freesasa_structure_tree_free(). A ::freesasa_subarea object can be
+    associated with each node using freesasa_structure_tree_fill().
+ */
+typedef struct freesasa_structure_node freesasa_structure_node;
 
 /**
     Struct used to store n string-value-pairs (strvp) in arrays of
@@ -139,7 +153,17 @@ typedef struct {
 /**
     Struct used for calculating classes and radii for atoms given
     their residue-names ('ALA','ARG',...) and atom-names
-    ('CA','N',...).
+    ('CA','N',...). Some functions depend on classifiers whose
+    sasa_class() method returns 0 for apolar atoms and non-zero for
+    polar atoms, for example freesasa_write_rsa() and
+    freesasa_json_result(). Such classifiers will be referred to as
+    polar classifiers. The static classifiers
+    ::freesasa_protor_classifier (also known as
+    ::freesasa_default_classifier), ::freesasa_naccess_classifier, and
+    ::freesasa_oons_classifier are all polar classifier. The
+    classifier interface allows for other configurations because there
+    is sometimes need for more than two classes, or one might want to
+    classify atoms along some other divide.
  */
 typedef struct freesasa_classifier {
     int n_classes; //!< Total number of different classes
@@ -178,6 +202,13 @@ extern const freesasa_classifier freesasa_naccess_classifier;
 //! Classifier using OONS radii and classes
 extern const freesasa_classifier freesasa_oons_classifier;
 
+/**
+    This classifier only has the sasa_class() function, which returns 1
+    for protein backbone atoms, and 0 else. Backbone atoms are CA, N,
+    C and O. All other member functions are NULL. 
+ */
+extern const freesasa_classifier freesasa_backbone_classifier;
+
 //! Used as reference in generation of RSA file
 typedef struct {
     //! Name of RSA reference
@@ -196,12 +227,6 @@ typedef struct {
         ::freesasa_naccess_classifier.
     */
     const freesasa_classifier *polar_classifier;
-    
-    /**
-       A classifier whose sasa_class() function returns 0 for side
-       chain atoms and non-zero for backbone.
-    */
-    const freesasa_classifier *bb_classifier;
 } freesasa_rsa_reference;
 
 //! An RSA-reference for the ProtOr configuration
@@ -1020,6 +1045,113 @@ freesasa_structure_chain_residues(const freesasa_structure *structure,
                                   char chain,
                                   int *first,
                                   int *last);
+
+/**
+    Generates a tree that represents the structure, with the levels
+    described by ::freesasa_node_type. 
+
+    Use freesasa_structure_node_children() to traverse the tree, and
+    freesasa_structure_node_type(), freesasa_structure_node_area(),
+    and freesasa_node_name() to explore the properties of each node.
+
+    This function does not assign areas to the nodes of the tree, this
+    should be done using freesasa_structure_tree_fill().
+
+    The tree should be freed using freesasa_structure_tree_free().
+
+    @param structure The structure to use
+    @param name The name of the structure
+    @return The root node of the tree
+ */
+freesasa_structure_node *
+freesasa_structure_tree_generate(freesasa_structure *structure,
+                                 const char *name);
+
+/**
+    Free ::freesasa_structure_node-tree.
+
+    Will not free anything if the node has a parent, i.e. if this node
+    is the not the root of the tree it belongs too.
+
+    @param root Root of the tree to free
+    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if the node hasa a
+      parent.
+ */
+int
+freesasa_structure_tree_free(freesasa_structure_node *root);
+
+
+/**
+    For each node of the tree, attach summed SASA of atoms belonging
+    to that node.
+
+    Tree is filled recursively, so only need to call this for the root
+    of tree.
+
+    Areas can be accessed through freesasa_structure_node_area(). 
+
+    @param root The tree to fill
+    @param result SASA-values to use
+    @param polar_classifier Classifier to determine which atoms are
+      polar and apolar
+    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if memory allocation
+      fails.
+ */
+int
+freesasa_structure_tree_fill(freesasa_structure_node *root,
+                             const freesasa_result *result,
+                             const freesasa_classifier *polar_classifier);
+
+/**
+    The ::freesasa_subarea of all atoms belonging to a node.
+
+    Only works if the areas have been added using
+    freesasa_structure_tree_fill().
+
+    @param node The node. 
+    @return The area. NULL if no area has been attached to this node.
+ */
+const freesasa_subarea *
+freesasa_structure_node_area(const freesasa_structure_node *node);
+
+/**
+    The children of a node.
+
+    The last element of the array is a NULL pointer.
+
+    @param node The node.  
+    @return An array of pointers to nodes. NULL if the node has no
+      children.
+ */
+const freesasa_structure_node **
+freesasa_structure_node_children(const freesasa_structure_node *node);
+
+/**
+    The parent of a node.
+
+    @param node The node.
+    @return The parent node. NULL if the node has no parent.
+ */
+const freesasa_structure_node *
+freesasa_structure_node_parent(const freesasa_structure_node *node);
+
+/**
+    The type of a node.
+
+    @param node The node.
+    @return The ::freesasa_node_type.
+ */
+freesasa_node_type
+freesasa_structure_node_type(const freesasa_structure_node *node);
+
+/**
+    The name of a node.
+    
+    @param node The node.
+    @return The name. NULL if the node has no name.
+ */
+const char *
+freesasa_structure_node_name(const freesasa_structure_node *node);
 
 #ifdef __cplusplus
 }

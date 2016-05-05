@@ -930,3 +930,4 @@ freesasa_structure_set_radius(freesasa_structure *structure,
     assert(radii);
     memcpy(structure->radius, radii, structure->number_atoms*sizeof(double));
 }
+

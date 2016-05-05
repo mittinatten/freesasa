@@ -8,13 +8,6 @@
 //! The name of the library, to be used in error messages and logging
 extern const char *freesasa_name;
 
-/**
-    This classifier only has the sasa_class function, which returns 1
-    for protien backbone atoms, and 0 else. Backbone atoms are CA, N,
-    C and O. All other member functions are NULL.
- */
-extern const freesasa_classifier freesasa_backbone_classifier;
-
 //! Classifier that classifies each atom according to residue
 extern const freesasa_classifier freesasa_residue_classifier;
 
@@ -134,6 +127,26 @@ freesasa_single_residue_sasa(const freesasa_result *r,
                              int r_i);
 
 /**
+    Extract area to provided ::freesasa_subarea object
+
+    Main-chain / side-chain atoms are defined by
+    ::freesasa_backbone_classifier.
+
+    @param area Area will be stored here
+    @param structure Structure to use for classification
+    @param result The areas to use
+    @param polar_classifier Classifier to use to determine if 
+      the atom is polar or not
+    @param atom_index Index of atom in question  
+ */
+void
+freesasa_atom_subarea(freesasa_subarea *area,
+                      const freesasa_structure *structure,
+                      const freesasa_result *result,
+                      const freesasa_classifier *polar_classifier,
+                      int atom_index);
+
+/**
     Adds all members of term to corresponding members of sum
 
     @param sum Object to add to
@@ -142,6 +155,7 @@ freesasa_single_residue_sasa(const freesasa_result *r,
 void
 freesasa_add_subarea(freesasa_subarea *sum,
                      const freesasa_subarea *term);
+
 /**
     Calculates the absolute and relative SASA values for a given residue
 
@@ -243,6 +257,6 @@ freesasa_fail_wloc(const char* func,
                    const char* file,
                    int line,
                    const char *msg);
-                
+
 
 #endif /* FREESASA_INTERNAL_H */

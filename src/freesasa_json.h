@@ -15,13 +15,13 @@ freesasa_json_residue(const freesasa_result *result,
                       const freesasa_structure *structure,
                       const freesasa_rsa_reference *rsa,
                       int residue_index,
-                      freesasa_substructure_area *chain_area);
+                      freesasa_subarea *chain_area);
 json_object *
 freesasa_json_chain(const freesasa_result *result,
                     const freesasa_structure *structure,
                     const freesasa_rsa_reference *rsa,
                     char chain,
-                    freesasa_substructure_area *structure_area);
+                    freesasa_subarea *structure_area);
 
 json_object *
 freesasa_json_result(const freesasa_result *result,

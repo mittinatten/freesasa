@@ -1,6 +1,7 @@
 // By including this file we get access to static functions
 #include <freesasa.c>
 #include <structure.c>
+#include <structure_node.c>
 #include <nb.c>
 #include <sasa_lr.c>
 #include <sasa_sr.c>

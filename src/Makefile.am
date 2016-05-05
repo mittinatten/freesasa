@@ -22,7 +22,7 @@ include_HEADERS = freesasa.h
 libfreesasa_a_SOURCES = classifier.c classifier.h \
 	classifier_protor.c classifier_oons.c classifier_naccess.c \
 	coord.c coord.h pdb.c pdb.h \
-	sasa_lr.c sasa_sr.c structure.c \
+	sasa_lr.c sasa_sr.c structure.c structure_node.c \
 	freesasa.c freesasa.h freesasa_internal.h \
 	nb.h nb.c util.c rsa.c \
 	selection.h selection.c $(lp_output)

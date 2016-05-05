@@ -419,7 +419,6 @@ empty_rsa_reference(const freesasa_classifier *c, const char *name)
     if (!name) abort_msg("Out of memory");
     empty->max = zero;
     empty->polar_classifier = c;
-    empty->bb_classifier = freesasa_default_rsa.bb_classifier;
     return empty;
 }
 

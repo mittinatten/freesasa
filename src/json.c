@@ -5,6 +5,7 @@
 #include "freesasa_internal.h"
 #include "freesasa_json.h"
 
+
 json_object *
 freesasa_json_atom(const freesasa_result *result,
                    const freesasa_structure *structure,
@@ -18,7 +19,7 @@ freesasa_json_atom(const freesasa_result *result,
     int name_len = strlen(aname);
     char trim_name[name_len + 1];
     int is_polar = rsa->polar_classifier->sasa_class(resn, aname, rsa->polar_classifier);
-    int is_bb = rsa->bb_classifier->sasa_class(resn, aname, rsa->bb_classifier);
+    int is_bb = freesasa_backbone_classifier.sasa_class(resn, aname, &freesasa_backbone_classifier);
     double sasa = result->sasa[atom_index];
   
     sscanf(aname, "%s", trim_name); // get rid of whitespace

@@ -12,13 +12,13 @@
 #endif
 
 struct rsa_config {
-    const freesasa_classifier *polar_classifier, *bb_classifier;
+    const freesasa_classifier *polar_classifier;
     const freesasa_result *result;
     const freesasa_structure *structure;
     const freesasa_subarea *sasa_ref;
 };
 
-static const freesasa_subarea zero_sub = {NULL, 0, 0, 0, 0, 0};
+extern const freesasa_subarea freesasa_subarea_null;
 
 /* these are calculated using L&R with 1000 slices and ProtOr radii,
    from the AXA configurations in the directory rsa. */
@@ -50,8 +50,8 @@ const freesasa_rsa_reference freesasa_protor_rsa = {
     .name = "ProtOr",
     .max = rsa_protor_ref,
     .polar_classifier = &freesasa_protor_classifier,
-    .bb_classifier = &freesasa_backbone_classifier
 };
+
 static const freesasa_subarea rsa_naccess_ref[20] = {
     {.name = "ALA", .total = 102.31, .main_chain = 46.96, .side_chain = 55.35, .polar = 28.51, .apolar = 73.80},
     {.name = "CYS", .total = 127.09, .main_chain = 45.71, .side_chain = 81.38, .polar = 28.51, .apolar = 98.58},
@@ -80,7 +80,6 @@ const freesasa_rsa_reference freesasa_naccess_rsa = {
     .name = "NACCESS",
     .max = rsa_naccess_ref,
     .polar_classifier = &freesasa_naccess_classifier,
-    .bb_classifier = &freesasa_backbone_classifier
 };
 
 static struct rsa_config
@@ -94,38 +93,12 @@ rsa_generate_config(const freesasa_structure *structure,
 
     struct rsa_config cfg = {
         .polar_classifier = reference->polar_classifier,
-        .bb_classifier = reference->bb_classifier,
         .result = result,
         .structure = structure,
         .sasa_ref = reference->max,
     };
 
     return cfg;
-}
-
-/**
-   Adds v to members of rs depending on how the atom specified by resn
-   and atom_name is classified. If the classifiers are null the
-   functions rsa_atom_is_backbone() and rs_atom_is_polar() are used
-   instead.
- */
-static inline void
-rsa_abs_add_atom(freesasa_subarea *rs,
-                 int i_atom,
-                 const struct rsa_config *cfg)
-{
-    double v = cfg->result->sasa[i_atom];
-    const char *atom_name = freesasa_structure_atom_name(cfg->structure,i_atom);
-    assert(atom_name);
-
-    rs->total += v;
-
-    if (cfg->bb_classifier->sasa_class(rs->name, atom_name, cfg->bb_classifier))
-        rs->main_chain += v;
-    else rs->side_chain += v;
-    if (cfg->polar_classifier->sasa_class(rs->name, atom_name, cfg->polar_classifier))
-        rs->polar += v;
-    else rs->apolar += v;
 }
 
 /**
@@ -138,12 +111,15 @@ rsa_get_abs(freesasa_subarea *rs,
 
 {
     int first, last;
+    freesasa_subarea atom;
 
     if (freesasa_structure_residue_atoms(cfg->structure, idx, &first, &last))
         return fail_msg("");
     
     for (int i = first; i <= last; ++i) {
-        rsa_abs_add_atom(rs, i, cfg);
+        freesasa_atom_subarea(&atom, cfg->structure, cfg->result, 
+                              cfg->polar_classifier, i);
+        freesasa_add_subarea(rs, &atom);
     }
 
     return FREESASA_SUCCESS;
@@ -194,7 +170,7 @@ freesasa_rsa_val(freesasa_subarea *abs,
     assert(result);
 
     struct rsa_config cfg;
-    *abs = zero_sub;
+    *abs = freesasa_subarea_null;
     abs->name = freesasa_structure_residue_name(structure, residue_index);
 
     if (!reference) reference = &freesasa_default_rsa;
@@ -202,24 +178,10 @@ freesasa_rsa_val(freesasa_subarea *abs,
 
     if (!rsa_get_abs(abs, residue_index, &cfg)) {
         if (reference->max) rsa_get_rel(rel, abs, reference->max);
-        else *rel = zero_sub;
+        else *rel = freesasa_subarea_null;
         return FREESASA_SUCCESS;
     } 
     return FREESASA_FAIL;
-}
-
-/**
-    Add members of term to members of sum
- */
-void
-freesasa_add_subarea(freesasa_subarea *sum,
-                     const freesasa_subarea *term)
-{
-    sum->total += term->total;
-    sum->side_chain += term->side_chain;
-    sum->main_chain += term->main_chain;
-    sum->polar += term->polar;
-    sum->apolar += term->apolar;
 }
 
 static void
@@ -277,7 +239,7 @@ rsa_calc_residue_areas(freesasa_subarea *abs,
                        int iaa,
                        const struct rsa_config *cfg)
 {
-    *abs = zero_sub;
+    *abs = freesasa_subarea_null;
 
     abs->name = freesasa_structure_residue_name(cfg->structure, iaa);
 
@@ -300,14 +262,14 @@ freesasa_write_rsa(FILE *output,
     assert(structure);
     assert(name);
 
-    const freesasa_subarea empty_rs[1] = {zero_sub};
+    const freesasa_subarea empty_rs[1] = {freesasa_subarea_null};
     struct rsa_config cfg;
     const char *chain_labels = freesasa_structure_chain_labels(structure);
     int naa = freesasa_structure_n_residues(structure),
         n_chains = strlen(chain_labels);
-    freesasa_subarea abs, rel, chain_abs[n_chains], all_chains_abs = zero_sub;
+    freesasa_subarea abs, rel, chain_abs[n_chains], all_chains_abs = freesasa_subarea_null;
 
-    for (int i = 0; i < n_chains; ++i) chain_abs[i] = zero_sub;
+    for (int i = 0; i < n_chains; ++i) chain_abs[i] = freesasa_subarea_null;
     if (!reference) reference = &freesasa_default_rsa;
     cfg = rsa_generate_config(structure, result, reference);
 
