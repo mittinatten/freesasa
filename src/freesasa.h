@@ -95,23 +95,6 @@ typedef struct {
 //! The default parameters for FreeSASA
 extern const freesasa_parameters freesasa_default_parameters;
 
-//! Struct to store results of SASA calculation @ingroup API
-typedef struct {
-    double total; //!< Total SASA in Ångström^2
-    double *sasa; //!< SASA of each atom in Ångström^2
-    int n_atoms;  //!< Number of atoms
-} freesasa_result;
-
-//! Struct to store SASA values for a named residue
-typedef struct {
-    const char *name;  //!< Residue name
-    double total;      //!< Total SASA
-    double main_chain; //!< Main-chain/Backbone SASA
-    double side_chain; //!< Side-chain SASA
-    double polar;      //!< Polar SASA
-    double apolar;     //!< Apolar SASA
-} freesasa_residue_sasa;
-
 /**
     Struct for structure object.
 
@@ -121,6 +104,26 @@ typedef struct {
     the original one as template (see freesasa_write_pdb()).
  */
 typedef struct freesasa_structure freesasa_structure;
+
+//! Struct to store results of SASA calculation @ingroup API
+typedef struct {
+    double total; //!< Total SASA in Ångström^2
+    double *sasa; //!< SASA of each atom in Ångström^2
+    int n_atoms;  //!< Number of atoms
+} freesasa_result;
+
+//! Struct to store SASA values for a named substructure
+typedef struct {
+    const char *name;  //!< Name of substructure
+    double total;      //!< Total SASA
+    double main_chain; //!< Main-chain/Backbone SASA
+    double side_chain; //!< Side-chain SASA
+    double polar;      //!< Polar SASA
+    double apolar;     //!< Apolar SASA
+} freesasa_subarea;
+
+//! @Deprecated The typename freesasa_residue_sasa is no longer used
+#define freesasa_residue_sasa freesasa_subarea
 
 /**
     Struct used to store n string-value-pairs (strvp) in arrays of
@@ -184,7 +187,7 @@ typedef struct {
         Array containing max SASA-values for named residues types.
         Last element of array should have name == NULL.
     */
-    const freesasa_residue_sasa *max;
+    const freesasa_subarea *max;
 
     /**
         A classifier whose sasa_class() function returns 0 for apolar

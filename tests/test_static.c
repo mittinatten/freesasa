@@ -345,8 +345,8 @@ END_TEST
 
 START_TEST (test_rsa)
 {
-    freesasa_residue_sasa rs, rs2;
-    const freesasa_residue_sasa *rsa_default_ref = freesasa_default_rsa.max;
+    freesasa_subarea ra, ra2;
+    const freesasa_subarea *rsa_default_ref = freesasa_default_rsa.max;
     freesasa_structure *structure = freesasa_structure_new();
     freesasa_structure_add_atom(structure," CA ","ALA","   1",'A',0,0,0);
     freesasa_structure_add_atom(structure," O  ","ALA","   1",'A',1,1,1);
@@ -364,55 +364,55 @@ START_TEST (test_rsa)
     };
 
     for (int i = 0; i < 6; ++i) {
-        rs = zero_rs;
-        rs.name = "ALA";
-        rsa_abs_add_atom(&rs, i, &cfg);
-        ck_assert(float_eq(rs.total, result->sasa[i], 1e-10));
+        ra = zero_sub;
+        ra.name = "ALA";
+        rsa_abs_add_atom(&ra, i, &cfg);
+        ck_assert(float_eq(ra.total, result->sasa[i], 1e-10));
     }
 
     // Check get abs
-    rs = zero_rs;
-    rs.name = "ALA";
-    rsa_get_abs(&rs, 0, &cfg);
-    ck_assert(float_eq(rs.total, result->sasa[0] + result->sasa[1] + result->sasa[2], 1e-10));
-    ck_assert(float_eq(rs.polar, result->sasa[1], 1e-10));
-    ck_assert(float_eq(rs.apolar, result->sasa[0] + result->sasa[2], 1e-10));
-    ck_assert(float_eq(rs.main_chain, result->sasa[0] + result->sasa[1], 1e-10));
-    ck_assert(float_eq(rs.side_chain, result->sasa[2], 1e-10));
+    ra = zero_sub;
+    ra.name = "ALA";
+    rsa_get_abs(&ra, 0, &cfg);
+    ck_assert(float_eq(ra.total, result->sasa[0] + result->sasa[1] + result->sasa[2], 1e-10));
+    ck_assert(float_eq(ra.polar, result->sasa[1], 1e-10));
+    ck_assert(float_eq(ra.apolar, result->sasa[0] + result->sasa[2], 1e-10));
+    ck_assert(float_eq(ra.main_chain, result->sasa[0] + result->sasa[1], 1e-10));
+    ck_assert(float_eq(ra.side_chain, result->sasa[2], 1e-10));
 
-    rs2 = zero_rs;
-    rs2.name = "ALA";
-    rsa_get_abs(&rs2, 1, &cfg);
-    ck_assert(float_eq(rs2.total, result->sasa[3] + result->sasa[4] + result->sasa[5], 1e-10));
+    ra2 = zero_sub;
+    ra2.name = "ALA";
+    rsa_get_abs(&ra2, 1, &cfg);
+    ck_assert(float_eq(ra2.total, result->sasa[3] + result->sasa[4] + result->sasa[5], 1e-10));
 
-    // Check adding of residue_sasas
-    freesasa_add_residue_sasa(&rs, &rs2);
-    ck_assert(float_eq(rs.total, result->total, 1e-10));
-    ck_assert(float_eq(rs.polar, 2*rs2.polar, 1e-10));
-    ck_assert(float_eq(rs.apolar, 2*rs2.apolar, 1e-10));
-    ck_assert(float_eq(rs.main_chain, 2*rs2.main_chain, 1e-10));
-    ck_assert(float_eq(rs.side_chain, 2*rs2.side_chain, 1e-10));
+    // Check adding of subareas
+    freesasa_add_subarea(&ra, &ra2);
+    ck_assert(float_eq(ra.total, result->total, 1e-10));
+    ck_assert(float_eq(ra.polar, 2*ra2.polar, 1e-10));
+    ck_assert(float_eq(ra.apolar, 2*ra2.apolar, 1e-10));
+    ck_assert(float_eq(ra.main_chain, 2*ra2.main_chain, 1e-10));
+    ck_assert(float_eq(ra.side_chain, 2*ra2.side_chain, 1e-10));
 
     // Check relative sasa
-    rsa_get_rel(&rs, &rs2, rsa_default_ref);
-    ck_assert(float_eq(rs.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_default_ref[0].total, 1e-10));
-    ck_assert(float_eq(rs.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_default_ref[0].main_chain, 1e-10));
-    ck_assert(float_eq(rs.side_chain, 100*(result->sasa[2])/rsa_default_ref[0].side_chain, 1e-10));
-    ck_assert(float_eq(rs.polar, 100*(result->sasa[1])/rsa_default_ref[0].polar, 1e-10));
-    ck_assert(float_eq(rs.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_default_ref[0].apolar, 1e-10));
+    rsa_get_rel(&ra, &ra2, rsa_default_ref);
+    ck_assert(float_eq(ra.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_default_ref[0].total, 1e-10));
+    ck_assert(float_eq(ra.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_default_ref[0].main_chain, 1e-10));
+    ck_assert(float_eq(ra.side_chain, 100*(result->sasa[2])/rsa_default_ref[0].side_chain, 1e-10));
+    ck_assert(float_eq(ra.polar, 100*(result->sasa[1])/rsa_default_ref[0].polar, 1e-10));
+    ck_assert(float_eq(ra.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_default_ref[0].apolar, 1e-10));
 
     // Check that compound function gives same results
-    rsa_calc_rs(&rs, &rs2, 0, &cfg);
-    ck_assert(float_eq(rs2.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_default_ref[0].total, 1e-10));
-    ck_assert(float_eq(rs2.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_default_ref[0].main_chain, 1e-10));
-    ck_assert(float_eq(rs2.side_chain, 100*(result->sasa[2])/rsa_default_ref[0].side_chain, 1e-10));
-    ck_assert(float_eq(rs2.polar, 100*(result->sasa[1])/rsa_default_ref[0].polar, 1e-10));
-    ck_assert(float_eq(rs2.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_default_ref[0].apolar, 1e-10));
-    ck_assert(float_eq(rs.total, result->sasa[0] + result->sasa[1] + result->sasa[2], 1e-10));
-    ck_assert(float_eq(rs.polar, result->sasa[1], 1e-10));
-    ck_assert(float_eq(rs.apolar, result->sasa[0] + result->sasa[2], 1e-10));
-    ck_assert(float_eq(rs.main_chain, result->sasa[0] + result->sasa[1], 1e-10));
-    ck_assert(float_eq(rs.side_chain, result->sasa[2], 1e-10));
+    rsa_calc_residue_areas(&ra, &ra2, 0, &cfg);
+    ck_assert(float_eq(ra2.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_default_ref[0].total, 1e-10));
+    ck_assert(float_eq(ra2.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_default_ref[0].main_chain, 1e-10));
+    ck_assert(float_eq(ra2.side_chain, 100*(result->sasa[2])/rsa_default_ref[0].side_chain, 1e-10));
+    ck_assert(float_eq(ra2.polar, 100*(result->sasa[1])/rsa_default_ref[0].polar, 1e-10));
+    ck_assert(float_eq(ra2.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_default_ref[0].apolar, 1e-10));
+    ck_assert(float_eq(ra.total, result->sasa[0] + result->sasa[1] + result->sasa[2], 1e-10));
+    ck_assert(float_eq(ra.polar, result->sasa[1], 1e-10));
+    ck_assert(float_eq(ra.apolar, result->sasa[0] + result->sasa[2], 1e-10));
+    ck_assert(float_eq(ra.main_chain, result->sasa[0] + result->sasa[1], 1e-10));
+    ck_assert(float_eq(ra.side_chain, result->sasa[2], 1e-10));
 }
 END_TEST
 

@@ -15,14 +15,14 @@ struct rsa_config {
     const freesasa_classifier *polar_classifier, *bb_classifier;
     const freesasa_result *result;
     const freesasa_structure *structure;
-    const freesasa_residue_sasa *sasa_ref;
+    const freesasa_subarea *sasa_ref;
 };
 
-static const freesasa_residue_sasa zero_rs = {NULL, 0, 0, 0, 0, 0};
+static const freesasa_subarea zero_sub = {NULL, 0, 0, 0, 0, 0};
 
 /* these are calculated using L&R with 1000 slices and ProtOr radii,
    from the AXA configurations in the directory rsa. */
-static const freesasa_residue_sasa rsa_protor_ref[] = {
+static const freesasa_subarea rsa_protor_ref[] = {
     {.name = "ALA", .total = 103.10, .main_chain = 46.51, .side_chain = 56.60, .polar = 29.89, .apolar = 73.21},
     {.name = "CYS", .total = 125.02, .main_chain = 45.47, .side_chain = 79.55, .polar = 79.68, .apolar = 45.33},
     {.name = "ASP", .total = 135.76, .main_chain = 44.65, .side_chain = 91.11, .polar = 88.93, .apolar = 46.83},
@@ -52,7 +52,7 @@ const freesasa_rsa_reference freesasa_protor_rsa = {
     .polar_classifier = &freesasa_protor_classifier,
     .bb_classifier = &freesasa_backbone_classifier
 };
-static const freesasa_residue_sasa rsa_naccess_ref[20] = {
+static const freesasa_subarea rsa_naccess_ref[20] = {
     {.name = "ALA", .total = 102.31, .main_chain = 46.96, .side_chain = 55.35, .polar = 28.51, .apolar = 73.80},
     {.name = "CYS", .total = 127.09, .main_chain = 45.71, .side_chain = 81.38, .polar = 28.51, .apolar = 98.58},
     {.name = "ASP", .total = 134.50, .main_chain = 45.25, .side_chain = 89.25, .polar = 81.36, .apolar = 53.14},
@@ -110,7 +110,7 @@ rsa_generate_config(const freesasa_structure *structure,
    instead.
  */
 static inline void
-rsa_abs_add_atom(freesasa_residue_sasa *rs,
+rsa_abs_add_atom(freesasa_subarea *rs,
                  int i_atom,
                  const struct rsa_config *cfg)
 {
@@ -132,7 +132,7 @@ rsa_abs_add_atom(freesasa_residue_sasa *rs,
     Get the absolute SASA values of residue idx in structure.
  */
 static int
-rsa_get_abs(freesasa_residue_sasa *rs,
+rsa_get_abs(freesasa_subarea *rs,
             int idx,
             const struct rsa_config *cfg)
 
@@ -153,9 +153,9 @@ rsa_get_abs(freesasa_residue_sasa *rs,
     Calculate relative sasa values based on abs and ref, store in rel.
  */
 static void
-rsa_get_rel(freesasa_residue_sasa *rel,
-            const freesasa_residue_sasa *abs,
-            const freesasa_residue_sasa *ref)
+rsa_get_rel(freesasa_subarea *rel,
+            const freesasa_subarea *abs,
+            const freesasa_subarea *ref)
 {
     int i_ref = -1;
     double nan = 0.0/0.0;
@@ -181,8 +181,8 @@ rsa_get_rel(freesasa_residue_sasa *rel,
 }
 
 int
-freesasa_rsa_val(freesasa_residue_sasa *abs,
-                 freesasa_residue_sasa *rel,
+freesasa_rsa_val(freesasa_subarea *abs,
+                 freesasa_subarea *rel,
                  int residue_index,
                  const freesasa_structure *structure,
                  const freesasa_result *result,
@@ -194,7 +194,7 @@ freesasa_rsa_val(freesasa_residue_sasa *abs,
     assert(result);
 
     struct rsa_config cfg;
-    *abs = zero_rs;
+    *abs = zero_sub;
     abs->name = freesasa_structure_residue_name(structure, residue_index);
 
     if (!reference) reference = &freesasa_default_rsa;
@@ -202,7 +202,7 @@ freesasa_rsa_val(freesasa_residue_sasa *abs,
 
     if (!rsa_get_abs(abs, residue_index, &cfg)) {
         if (reference->max) rsa_get_rel(rel, abs, reference->max);
-        else *rel = zero_rs;
+        else *rel = zero_sub;
         return FREESASA_SUCCESS;
     } 
     return FREESASA_FAIL;
@@ -212,8 +212,8 @@ freesasa_rsa_val(freesasa_residue_sasa *abs,
     Add members of term to members of sum
  */
 void
-freesasa_add_residue_sasa(freesasa_residue_sasa *sum,
-                          const freesasa_residue_sasa *term)
+freesasa_add_subarea(freesasa_subarea *sum,
+                     const freesasa_subarea *term)
 {
     sum->total += term->total;
     sum->side_chain += term->side_chain;
@@ -251,8 +251,8 @@ rsa_print_abs_rel(FILE*output,
 static int
 rsa_print_residue(FILE *output, 
                   int iaa,
-                  const freesasa_residue_sasa *abs,
-                  const freesasa_residue_sasa *rel,
+                  const freesasa_subarea *abs,
+                  const freesasa_subarea *rel,
                   const struct rsa_config *cfg)
 {
     const char *resi_str;
@@ -272,12 +272,12 @@ rsa_print_residue(FILE *output,
 }
 
 static int
-rsa_calc_rs(freesasa_residue_sasa *abs,
-            freesasa_residue_sasa *rel,
-            int iaa,
-            const struct rsa_config *cfg)
+rsa_calc_residue_areas(freesasa_subarea *abs,
+                       freesasa_subarea *rel,
+                       int iaa,
+                       const struct rsa_config *cfg)
 {
-    *abs = zero_rs;
+    *abs = zero_sub;
 
     abs->name = freesasa_structure_residue_name(cfg->structure, iaa);
 
@@ -300,30 +300,30 @@ freesasa_write_rsa(FILE *output,
     assert(structure);
     assert(name);
 
-    const freesasa_residue_sasa empty_rs[1] = {zero_rs};
+    const freesasa_subarea empty_rs[1] = {zero_sub};
     struct rsa_config cfg;
     const char *chain_labels = freesasa_structure_chain_labels(structure);
     int naa = freesasa_structure_n_residues(structure),
         n_chains = strlen(chain_labels);
-    freesasa_residue_sasa abs, rel, chain_abs[n_chains], all_chains_abs = zero_rs;
+    freesasa_subarea abs, rel, chain_abs[n_chains], all_chains_abs = zero_sub;
 
-    for (int i = 0; i < n_chains; ++i) chain_abs[i] = zero_rs;
+    for (int i = 0; i < n_chains; ++i) chain_abs[i] = zero_sub;
     if (!reference) reference = &freesasa_default_rsa;
     cfg = rsa_generate_config(structure, result, reference);
 
     rsa_print_header(output, reference->name, name);
 
     for (int i = 0; i < naa; ++i) {
-        if ( rsa_calc_rs(&abs, &rel, i, &cfg) ||
+        if ( rsa_calc_residue_areas(&abs, &rel, i, &cfg) ||
              rsa_print_residue(output, i, &abs, &rel, &cfg))
             return fail_msg("Failed calculating residue SASAs, inconsistent input?");
 
-        freesasa_add_residue_sasa(&all_chains_abs, &abs);
+        freesasa_add_subarea(&all_chains_abs, &abs);
         char chain = freesasa_structure_residue_chain(structure, i);
 
         for (int j = 0; j < n_chains; ++j) {
             if (chain_labels[j] == chain) {
-                freesasa_add_residue_sasa(&chain_abs[j], &abs);
+                freesasa_add_subarea(&chain_abs[j], &abs);
             }
         }
     }

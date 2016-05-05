@@ -5,7 +5,7 @@
 #include "tools.h"
 
 static int
-compare_rs(json_object *obj, freesasa_residue_sasa *ref, int is_abs)
+compare_subarea(json_object *obj, freesasa_subarea *ref, int is_abs)
 {
     struct json_object_iterator it = json_object_iter_begin(obj),
         it_end = json_object_iter_end(obj);
@@ -94,9 +94,9 @@ START_TEST (test_residue)
         freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
     fclose(pdb);
     freesasa_result *result = freesasa_calc_structure(ubq, NULL);
-    freesasa_residue_sasa chrs = {"A", 0, 0, 0, 0, 0};
+    freesasa_subarea chain_area = {"A", 0, 0, 0, 0, 0};
     json_object *residue = freesasa_json_residue(result, ubq, &freesasa_default_rsa,
-                                                 0, &chrs);
+                                                 0, &chain_area);
 
     struct json_object_iterator it = json_object_iter_begin(residue),
         it_end = json_object_iter_end(residue);
@@ -116,9 +116,9 @@ START_TEST (test_residue)
              ck_assert(json_object_is_type(val, json_type_array));
             //this is checked further by test_atom
         } else if (!strcmp(key, "abs")) {
-            ck_assert(compare_rs(val, &chrs, 1));
+            ck_assert(compare_subarea(val, &chain_area, 1));
         } else if (!strcmp(key, "rel")) {
-            ck_assert(compare_rs(val, &chrs, 0));
+            ck_assert(compare_subarea(val, &chain_area, 0));
         } else {
             ck_assert(0);
         }
@@ -138,12 +138,12 @@ START_TEST (test_chain)
         freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
     fclose(pdb);
     freesasa_result *result = freesasa_calc_structure(ubq, NULL);
-    freesasa_residue_sasa structure_rs = {"1ubq", 0, 0, 0, 0, 0};
+    freesasa_subarea structure_area = {"1ubq", 0, 0, 0, 0, 0};
 
     json_object *chain = freesasa_json_chain(result, ubq, &freesasa_default_rsa,
-                                             'A', &structure_rs);
+                                             'A', &structure_area);
     
-    ck_assert(float_eq(structure_rs.total, result->total, 1e-10));
+    ck_assert(float_eq(structure_area.total, result->total, 1e-10));
 
     struct json_object_iterator it = json_object_iter_begin(chain),
         it_end = json_object_iter_end(chain);
@@ -157,7 +157,7 @@ START_TEST (test_chain)
             ck_assert(json_object_is_type(val, json_type_int));
             ck_assert_int_eq(json_object_get_int(val), 76);
         } else if (!strcmp(key, "abs")) {
-            ck_assert(compare_rs(val, &structure_rs, 1));
+            ck_assert(compare_subarea(val, &structure_area, 1));
         } else if (!strcmp(key, "residues")) {
             ck_assert(json_object_is_type(val, json_type_array));
             // the rest is checked in test_residue
@@ -180,7 +180,7 @@ START_TEST (test_structure)
         freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
     fclose(pdb);
     freesasa_result *result = freesasa_calc_structure(ubq, NULL);
-    freesasa_residue_sasa structure_rs = {
+    freesasa_subarea structure_area = {
         .name = "1ubq",
         .total = 4804.0556411417447,
         .polar = 2504.2173023011442,
@@ -203,7 +203,7 @@ START_TEST (test_structure)
             ck_assert(json_object_is_type(val, json_type_int));
             ck_assert_int_eq(json_object_get_int(val), 1);
         } else if (!strcmp(key, "abs")) {
-            compare_rs(val, &structure_rs, 1);
+            compare_subarea(val, &structure_area, 1);
         } else if (!strcmp(key, "chains")) {
             ck_assert(json_object_is_type(val, json_type_array));
             // these components are tested in test_chains

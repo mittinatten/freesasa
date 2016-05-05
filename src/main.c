@@ -413,7 +413,7 @@ freesasa_rsa_reference *
 empty_rsa_reference(const freesasa_classifier *c, const char *name)
 {
     freesasa_rsa_reference *empty = malloc(sizeof(freesasa_rsa_reference));
-    const static freesasa_residue_sasa zero[] = {{NULL, 0, 0, 0, 0, 0}};
+    const static freesasa_subarea zero[] = {{NULL, 0, 0, 0, 0, 0}};
     if (!empty) abort_msg("Out of memory");
     empty->name = strdup(name);
     if (!name) abort_msg("Out of memory");

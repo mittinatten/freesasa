@@ -127,7 +127,7 @@ freesasa_structure_residue_descriptor(const freesasa_structure *s,
     @param s The structure
     @param r_i Index of residue
     @return The SASA of the residue
-*/
+ */
 double
 freesasa_single_residue_sasa(const freesasa_result *r,
                              const freesasa_structure *s, 
@@ -140,8 +140,8 @@ freesasa_single_residue_sasa(const freesasa_result *r,
     @param term Object to add
  */
 void
-freesasa_add_residue_sasa(freesasa_residue_sasa *sum,
-                          const freesasa_residue_sasa *term);
+freesasa_add_subarea(freesasa_subarea *sum,
+                     const freesasa_subarea *term);
 /**
     Calculates the absolute and relative SASA values for a given residue
 
@@ -159,8 +159,8 @@ freesasa_add_residue_sasa(freesasa_residue_sasa *sum,
     @return ::FREESASA_SUCCESS. ::FREEESASA_FAIL if inconsistencies in structure.
  */
 int
-freesasa_rsa_val(freesasa_residue_sasa *abs,
-                 freesasa_residue_sasa *rel,
+freesasa_rsa_val(freesasa_subarea *abs,
+                 freesasa_subarea *rel,
                  int residue_index,
                  const freesasa_structure *structure,
                  const freesasa_result *result,
