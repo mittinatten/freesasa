@@ -134,6 +134,15 @@ freesasa_single_residue_sasa(const freesasa_result *r,
                              int r_i);
 
 /**
+    Adds all members of term to corresponding members of sum
+
+    @param sum Object to add to
+    @param term Object to add
+ */
+void
+freesasa_add_residue_sasa(freesasa_residue_sasa *sum,
+                          const freesasa_residue_sasa *term);
+/**
     Calculates the absolute and relative SASA values for a given residue
 
     If `reference->max == NULL` then `rel` will be all zero and

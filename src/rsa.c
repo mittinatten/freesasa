@@ -194,6 +194,7 @@ freesasa_rsa_val(freesasa_residue_sasa *abs,
     assert(result);
 
     struct rsa_config cfg;
+    *abs = zero_rs;
     abs->name = freesasa_structure_residue_name(structure, residue_index);
 
     if (!reference) reference = &freesasa_default_rsa;
@@ -210,9 +211,9 @@ freesasa_rsa_val(freesasa_residue_sasa *abs,
 /**
     Add members of term to members of sum
  */
-static void
-rsa_add_residue_sasa(freesasa_residue_sasa *sum,
-                     const freesasa_residue_sasa *term)
+void
+freesasa_add_residue_sasa(freesasa_residue_sasa *sum,
+                          const freesasa_residue_sasa *term)
 {
     sum->total += term->total;
     sum->side_chain += term->side_chain;
@@ -317,12 +318,12 @@ freesasa_write_rsa(FILE *output,
              rsa_print_residue(output, i, &abs, &rel, &cfg))
             return fail_msg("Failed calculating residue SASAs, inconsistent input?");
 
-        rsa_add_residue_sasa(&all_chains_abs, &abs);
+        freesasa_add_residue_sasa(&all_chains_abs, &abs);
         char chain = freesasa_structure_residue_chain(structure, i);
 
         for (int j = 0; j < n_chains; ++j) {
             if (chain_labels[j] == chain) {
-                rsa_add_residue_sasa(&chain_abs[j], &abs);
+                freesasa_add_residue_sasa(&chain_abs[j], &abs);
             }
         }
     }
