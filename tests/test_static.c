@@ -386,7 +386,7 @@ START_TEST (test_rsa)
     ck_assert(float_eq(rs2.total, result->sasa[3] + result->sasa[4] + result->sasa[5], 1e-10));
 
     // Check adding of residue_sasas
-    rsa_add_residue_sasa(&rs, &rs2);
+    freesasa_add_residue_sasa(&rs, &rs2);
     ck_assert(float_eq(rs.total, result->total, 1e-10));
     ck_assert(float_eq(rs.polar, 2*rs2.polar, 1e-10));
     ck_assert(float_eq(rs.apolar, 2*rs2.apolar, 1e-10));

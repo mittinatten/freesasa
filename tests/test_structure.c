@@ -12,7 +12,7 @@
 #define N 6
 const char an[N][PDB_ATOM_NAME_STRL+1] =  {" C  "," CA "," O  "," CB "," SD ", "SE  "};
 const char rna[N][PDB_ATOM_RES_NAME_STRL+1] = {"MET", "MET", "MET", "MET", "MET", "SEC",};
-const char rnu[N][PDB_ATOM_RES_NUMBER_STRL+1] = {"   1","   1","   1","   1","   1","   1"};
+const char rnu[N][PDB_ATOM_RES_NUMBER_STRL+1] = {"   1","   1","   1","   1","   1","   2"};
 const char symbol[N][PDB_ATOM_SYMBOL_STRL+1] = {" C"," C"," O"," C"," S","SE"};
 const char cl[N] = {'A','A','A','A','A','A'};
 const double bfactors[N] = {1., 1., 1., 1., 1., 1.};
@@ -48,7 +48,7 @@ START_TEST (test_structure_api)
         ck_assert(fabs(xyz[0]+xyz[1]+xyz[2]-3*i) < 1e-10);
     }
     ck_assert_int_eq(freesasa_structure_n(s), N);
-    ck_assert_int_eq(freesasa_structure_n_residues(s), 1);
+    ck_assert_int_eq(freesasa_structure_n_residues(s), 2);
     ck_assert_int_eq(freesasa_structure_n_chains(s), 1);
 
     ck_assert_str_eq(freesasa_structure_residue_name(s,0), rna[0]);
@@ -62,9 +62,12 @@ START_TEST (test_structure_api)
         
     int first, last;
     ck_assert(freesasa_structure_residue_atoms(s, 0, &first, &last) == FREESASA_SUCCESS);
-    ck_assert(first == 0 && last == N-1);
+    ck_assert(first == 0 && last == N-2);
     ck_assert(freesasa_structure_chain_atoms(s, 'A', &first, &last) == FREESASA_SUCCESS);
     ck_assert(first == 0 && last == N-1);
+    ck_assert(freesasa_structure_chain_residues(s, 'A', &first, &last) == FREESASA_SUCCESS);
+    ck_assert_int_eq(first, 0);
+    ck_assert_int_eq(last, 1);
     freesasa_structure_free(s);
     s = NULL;
 }

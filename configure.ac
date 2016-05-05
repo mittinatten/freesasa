@@ -62,6 +62,21 @@ else
   AM_CONDITIONAL([USE_THREADS],false)
 fi
 
+# Disable json-c
+AC_ARG_ENABLE([json],
+  AS_HELP_STRING([--disable-json],
+    [Build without support for JSON output]))
+
+if test "x$enable_json" != "xno" ; then
+  AC_CHECK_LIB([json-c], [json_object_get])
+  AC_CHECK_HEADERS([json_object.h])
+  AC_DEFINE([USE_JSON],[1],[Define if json should be included.])
+  AM_CONDITIONAL([USE_JSON],true)
+else
+  AC_DEFINE([USE_THREADS],[0],[])
+  AM_CONDITIONAL([USE_THREADS],false)
+fi
+
 # Which Python
 AC_ARG_WITH([python],
   AS_HELP_STRING([--with-python=<python-binary>], [Specify which python to use.]),

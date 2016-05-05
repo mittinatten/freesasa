@@ -33,6 +33,10 @@ example_LDADD = libfreesasa.a
 
 lp_output = lexer.c lexer.h parser.c parser.h
 
+if USE_JSON
+libfreesasa_a_SOURCES += json.c freesasa_json.h
+endif # USE_JSON
+
 if GENERATE_PARSER
 $(lp_output): lexer.l parser.y
 	@LEX@ lexer.l
