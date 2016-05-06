@@ -10,6 +10,8 @@ branches:
     - master
     - dev
 
+sudo: required
+
 before_install:
     - sudo apt-get update -qq
     - sudo apt-get install -qq check    
@@ -21,7 +23,7 @@ matrix:
       env: ENABLE_COVERAGE=--enable-gcov
       before_install: pip install --user cpp-coveralls 
       after_success:
-        - coveralls --exclude tests --exclude src/lexer.l --exclude src/lexer.c --exclude src/parser.c --exclude src/util.c  --gcov-options '\-lp'
+        - coveralls --exclude tests --exclude src/lexer.* --exclude src/lexer.* --exclude src/example.c --exclude src/util.c  --gcov-options '\-lp'
 
     ## Python bindings test (not compatible with gcov)
     - compiler: gcc
