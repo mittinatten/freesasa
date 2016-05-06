@@ -16,16 +16,22 @@ before_install:
 
 matrix:
   include:
+    ## Coverage test
     - compiler: gcc
       env: ENABLE_COVERAGE=--enable-gcov
+      before_install: pip install --user cpp-coveralls 
       after_success:
         - coveralls --exclude tests --exclude src/lexer.l --exclude src/lexer.c --exclude src/parser.c --exclude src/util.c  --gcov-options '\-lp'
+
+    ## Python bindings test (not compatible with gcov)
     - compiler: gcc
       env: ENABLE_PYTHON=--enable-python-bindings
       before_install:
         - pip install --user cython
         - pip install --user biopython
       after_failure: cat bindings/check-python.log
+
+    ## Test C library with clang
     - compiler: clang    
 
 before_script:
