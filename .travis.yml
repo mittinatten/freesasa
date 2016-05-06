@@ -17,12 +17,14 @@ before_install:
 matrix:
   include:
     - compiler: gcc
-      env: ENABLE_COVERAGE=--enable-coverage
-      after_sucess:
+      env: ENABLE_COVERAGE=--enable-gcov
+      after_success:
         - coveralls --exclude tests --exclude src/lexer.l --exclude src/lexer.c --exclude src/parser.c --exclude src/util.c  --gcov-options '\-lp'
     - compiler: gcc
       env: ENABLE_PYTHON=--enable-python-bindings
-      before_install: pip install --user cython
+      before_install:
+        - pip install --user cython
+        - pip install --user biopython
       after_failure: cat bindings/check-python.log
     - compiler: clang    
 
