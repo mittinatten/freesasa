@@ -343,34 +343,6 @@ START_TEST (test_expression)
 }
 END_TEST
 
-START_TEST (test_rsa)
-{
-    freesasa_subarea ra, ra2;
-    const freesasa_subarea *rsa_default_ref = freesasa_default_rsa.max;
-    freesasa_structure *structure = freesasa_structure_new();
-    freesasa_structure_add_atom(structure," CA ","ALA","   1",'A',0,0,0);
-    freesasa_structure_add_atom(structure," O  ","ALA","   1",'A',1,1,1);
-    freesasa_structure_add_atom(structure," CB ","ALA","   1",'A',2,2,2);
-    freesasa_structure_add_atom(structure," CA ","ALA","   1",'B',10,10,10);
-    freesasa_structure_add_atom(structure," O  ","ALA","   1",'B',11,11,11);
-    freesasa_structure_add_atom(structure," CB ","ALA","   1",'B',12,12,12);
-    freesasa_result *result = freesasa_calc_structure(structure, NULL);
-    struct rsa_config cfg = rsa_generate_config(structure, result, &freesasa_default_rsa);
-
-    rsa_calc_residue_areas(&ra, &ra2, 0, &cfg);
-    ck_assert(float_eq(ra2.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_default_ref[0].total, 1e-10));
-    ck_assert(float_eq(ra2.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_default_ref[0].main_chain, 1e-10));
-    ck_assert(float_eq(ra2.side_chain, 100*(result->sasa[2])/rsa_default_ref[0].side_chain, 1e-10));
-    ck_assert(float_eq(ra2.polar, 100*(result->sasa[1])/rsa_default_ref[0].polar, 1e-10));
-    ck_assert(float_eq(ra2.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_default_ref[0].apolar, 1e-10));
-    ck_assert(float_eq(ra.total, result->sasa[0] + result->sasa[1] + result->sasa[2], 1e-10));
-    ck_assert(float_eq(ra.polar, result->sasa[1], 1e-10));
-    ck_assert(float_eq(ra.apolar, result->sasa[0] + result->sasa[2], 1e-10));
-    ck_assert(float_eq(ra.main_chain, result->sasa[0] + result->sasa[1], 1e-10));
-    ck_assert(float_eq(ra.side_chain, result->sasa[2], 1e-10));
-}
-END_TEST
-
 int main(int argc, char **argv) 
 {
     Suite *s = suite_create("Tests of static functions");
@@ -397,10 +369,6 @@ int main(int argc, char **argv)
     tcase_add_test(selector,test_expression);
     suite_add_tcase(s, selector);
 
-    TCase *rsa = tcase_create("rsa.c");
-    tcase_add_test(rsa, test_rsa);
-    suite_add_tcase(s, rsa);
-    
     SRunner *sr = srunner_create(s);
     srunner_run_all(sr,CK_VERBOSE);
 

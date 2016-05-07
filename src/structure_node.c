@@ -60,6 +60,7 @@ structure_node_free(freesasa_structure_node *node)
             current = next;
         }
         free(node->name);
+        free(node->area);
         free(node);
     }
 }
@@ -214,13 +215,18 @@ freesasa_structure_tree_fill(freesasa_structure_node *node,
                              const freesasa_result *result,
                              const freesasa_classifier *polar_classifier)
 {
+    assert(node);
+    assert(result);
+
     if (polar_classifier == NULL) polar_classifier = &freesasa_default_classifier;
     freesasa_structure_node *child = node->children;
     freesasa_subarea atom,  *area = malloc(sizeof(freesasa_subarea));
     if (!area) return mem_fail();
+
     *area = freesasa_subarea_null;
     area->name = node->name;
     node->area = area;
+
     if (child) {
         while(child) {
             freesasa_structure_tree_fill(child, result, polar_classifier);

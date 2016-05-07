@@ -317,7 +317,10 @@ run_analysis(FILE *input,
             }
         }
         if (printrsa) {
-            freesasa_write_rsa(rsa_file, result, structures[i], name_i, rsa_reference);
+            freesasa_structure_node *tree = freesasa_structure_tree_generate(structures[i], name_i);
+            freesasa_structure_tree_fill(tree, result, rsa_reference->polar_classifier);
+            freesasa_write_rsa(rsa_file, tree, rsa_reference);
+            freesasa_structure_tree_free(tree);
         }
         freesasa_result_free(result);
         freesasa_strvp_free(classes);
@@ -639,6 +642,7 @@ main(int argc,
     if (opt_set['c'] && static_config) abort_msg("The options -c and --radii cannot be combined");
     if (opt_set['O'] && static_config) abort_msg("The options -O and --radii cannot be combined");
     if (opt_set['c'] && opt_set['O']) abort_msg("The option -c and -O can't be combined");
+    if (printrsa && rsa_reference == NULL) rsa_reference = &freesasa_default_rsa;
     if (printrsa && (opt_set['c'] || opt_set['O'])) {
         freesasa_warn("Will skip REL columns in RSA when custom atomic radii selected.");
     }

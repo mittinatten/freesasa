@@ -510,19 +510,15 @@ int freesasa_write_parameters(FILE *log,
       may still be subject to change without warning.
 
     @param output Output-file
-    @param result SASA values
-    @param structure The structure
-    @param name Name of the protein
+    @param tree A tree with stored results
     @param reference Reference to calculate RSA from, if NULL defaults
       are used.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
-      writing to file, or if `structure` is inconsistent.
+      writing to file.
  */
 int
 freesasa_write_rsa(FILE *output,
-                   const freesasa_result *result,
-                   const freesasa_structure *structure,
-                   const char *name,
+                   freesasa_structure_node *tree,
                    const freesasa_rsa_reference *reference);
 /**
     Set the global verbosity level.

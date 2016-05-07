@@ -11,13 +11,6 @@
 #  include <config.h>
 #endif
 
-struct rsa_config {
-    const freesasa_classifier *polar_classifier;
-    const freesasa_result *result;
-    const freesasa_structure *structure;
-    const freesasa_subarea *sasa_ref;
-};
-
 /* these are calculated using L&R with 1000 slices and ProtOr radii,
    from the AXA configurations in the directory rsa. */
 static const freesasa_subarea rsa_protor_ref[] = {
@@ -80,48 +73,6 @@ const freesasa_rsa_reference freesasa_naccess_rsa = {
     .polar_classifier = &freesasa_naccess_classifier,
 };
 
-static struct rsa_config
-rsa_generate_config(const freesasa_structure *structure,
-                    const freesasa_result *result,
-                    const freesasa_rsa_reference *reference)
-{
-    assert(structure);
-    assert(result);
-    assert(reference);
-
-    struct rsa_config cfg = {
-        .polar_classifier = reference->polar_classifier,
-        .result = result,
-        .structure = structure,
-        .sasa_ref = reference->max,
-    };
-
-    return cfg;
-}
-
-/**
-    Get the absolute SASA values of residue idx in structure.
- */
-static int
-rsa_get_abs(freesasa_subarea *rs,
-            int idx,
-            const struct rsa_config *cfg)
-
-{
-    int first, last;
-    freesasa_subarea atom;
-
-    if (freesasa_structure_residue_atoms(cfg->structure, idx, &first, &last))
-        return fail_msg("");
-    
-    for (int i = first; i <= last; ++i) {
-        freesasa_atom_subarea(&atom, cfg->structure, cfg->result, 
-                              cfg->polar_classifier, i);
-        freesasa_add_subarea(rs, &atom);
-    }
-
-    return FREESASA_SUCCESS;
-}
 
 int
 freesasa_residue_rel_subarea(freesasa_subarea *rel,
@@ -181,13 +132,13 @@ rsa_print_residue(FILE *output,
                   int iaa,
                   const freesasa_subarea *abs,
                   const freesasa_subarea *rel,
-                  const struct rsa_config *cfg)
+                  const freesasa_structure *structure)
 {
     const char *resi_str;
     char chain;
 
-    resi_str = freesasa_structure_residue_number(cfg->structure, iaa);
-    chain = freesasa_structure_residue_chain(cfg->structure, iaa);
+    resi_str = freesasa_structure_residue_number(structure, iaa);
+    chain = freesasa_structure_residue_chain(structure, iaa);
 
     fprintf(output, "RES %s %c%s  ", abs->name, chain, resi_str);
     rsa_print_abs_rel(output, abs->total, rel->total);
@@ -199,73 +150,57 @@ rsa_print_residue(FILE *output,
     return FREESASA_SUCCESS;
 }
 
-static int
-rsa_calc_residue_areas(freesasa_subarea *abs,
-                       freesasa_subarea *rel,
-                       int iaa,
-                       const struct rsa_config *cfg)
-{
-    *abs = freesasa_subarea_null;
-
-    abs->name = freesasa_structure_residue_name(cfg->structure, iaa);
-
-    if (rsa_get_abs(abs, iaa, cfg)) return fail_msg("");
-
-    freesasa_residue_rel_subarea(rel, abs, cfg->sasa_ref);
-
-    return FREESASA_SUCCESS;
-}
-
 int
 freesasa_write_rsa(FILE *output,
-                   const freesasa_result *result,
-                   const freesasa_structure *structure,
-                   const char *name,
+                   freesasa_structure_node *tree,
                    const freesasa_rsa_reference *reference)
 {
     assert(output);
-    assert(result);
-    assert(structure);
-    assert(name);
+    assert(tree);
 
-    const freesasa_subarea empty_rs[1] = {freesasa_subarea_null};
-    struct rsa_config cfg;
-    const char *chain_labels = freesasa_structure_chain_labels(structure);
-    int naa = freesasa_structure_n_residues(structure),
-        n_chains = strlen(chain_labels);
-    freesasa_subarea abs, rel, chain_abs[n_chains], all_chains_abs = freesasa_subarea_null;
+    const freesasa_structure *structure = freesasa_structure_node_structure(tree);
+    freesasa_structure_node *residue, *chain = freesasa_structure_node_children(tree);
+    const freesasa_subarea *abs;
+    freesasa_subarea rel;
+    int res_index, chain_index;
 
-    for (int i = 0; i < n_chains; ++i) chain_abs[i] = freesasa_subarea_null;
     if (!reference) reference = &freesasa_default_rsa;
-    cfg = rsa_generate_config(structure, result, reference);
 
-    rsa_print_header(output, reference->name, name);
+    rsa_print_header(output, reference->name, freesasa_structure_node_name(tree));
 
-    for (int i = 0; i < naa; ++i) {
-        if ( rsa_calc_residue_areas(&abs, &rel, i, &cfg) ||
-             rsa_print_residue(output, i, &abs, &rel, &cfg))
-            return fail_msg("Failed calculating residue SASAs, inconsistent input?");
-
-        freesasa_add_subarea(&all_chains_abs, &abs);
-        char chain = freesasa_structure_residue_chain(structure, i);
-
-        for (int j = 0; j < n_chains; ++j) {
-            if (chain_labels[j] == chain) {
-                freesasa_add_subarea(&chain_abs[j], &abs);
-            }
+    res_index = chain_index = 0;
+    while(chain) {
+        residue = freesasa_structure_node_children(chain);
+        while (residue) {
+            abs = freesasa_structure_node_area(residue);
+            freesasa_residue_rel_subarea(&rel, abs, reference->max);
+            rsa_print_residue(output, res_index, abs, &rel, structure);
+            ++res_index;
+            residue = freesasa_structure_node_next(residue);
         }
+        chain = freesasa_structure_node_next(chain);
     }
-    
+
     fprintf(output, "END  Absolute sums over single chains surface\n");
-    for (int i = 0; i < n_chains; ++i) {
+
+    chain = freesasa_structure_node_children(tree);
+    chain_index = 0;
+    while(chain) {
+        const char *name = freesasa_structure_node_name(chain);
+        abs = freesasa_structure_node_area(chain);
+        
         fprintf(output,"CHAIN%3d %c %10.1f   %10.1f   %10.1f   %10.1f   %10.1f\n",
-                i+1, chain_labels[i], chain_abs[i].total, chain_abs[i].side_chain,
-                chain_abs[i].main_chain, chain_abs[i].apolar, chain_abs[i].polar);
+                chain_index+1, name[0], abs->total, abs->side_chain,
+                abs->main_chain, abs->apolar, abs->polar);
+
+        ++chain_index;
+        chain = freesasa_structure_node_next(chain);
     }
+
+    abs = freesasa_structure_node_area(tree);
     fprintf(output, "END  Absolute sums over all chains\n");
     fprintf(output,"TOTAL      %10.1f   %10.1f   %10.1f   %10.1f   %10.1f\n",
-            all_chains_abs.total, all_chains_abs.side_chain,
-            all_chains_abs.main_chain, all_chains_abs.apolar, all_chains_abs.polar);
+            abs->total, abs->side_chain, abs->main_chain, abs->apolar, abs->polar);
     
     fflush(output);
     if (ferror(output)) {
