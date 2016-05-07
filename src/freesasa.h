@@ -1064,7 +1064,7 @@ freesasa_structure_chain_residues(const freesasa_structure *structure,
     @return The root node of the tree
  */
 freesasa_structure_node *
-freesasa_structure_tree_generate(freesasa_structure *structure,
+freesasa_structure_tree_generate(const freesasa_structure *structure,
                                  const char *name);
 
 /**
@@ -1117,14 +1117,23 @@ freesasa_structure_node_area(const freesasa_structure_node *node);
 /**
     The children of a node.
 
-    The last element of the array is a NULL pointer.
+    Use freesasa_structure_node_next() to access next sibling.
 
     @param node The node.  
-    @return An array of pointers to nodes. NULL if the node has no
+    @return Pointer to the first child of a node. NULL if the node has no
       children.
  */
-const freesasa_structure_node **
-freesasa_structure_node_children(const freesasa_structure_node *node);
+freesasa_structure_node *
+freesasa_structure_node_children(freesasa_structure_node *node);
+
+/**
+    Next sibling of a node.
+
+    @param node The node.
+    @return The next node, NULL if this is the last node.
+ */
+freesasa_structure_node *
+freesasa_structure_node_next(freesasa_structure_node *node);
 
 /**
     The parent of a node.
@@ -1132,8 +1141,8 @@ freesasa_structure_node_children(const freesasa_structure_node *node);
     @param node The node.
     @return The parent node. NULL if the node has no parent.
  */
-const freesasa_structure_node *
-freesasa_structure_node_parent(const freesasa_structure_node *node);
+freesasa_structure_node *
+freesasa_structure_node_parent(freesasa_structure_node *node);
 
 /**
     The type of a node.
@@ -1152,6 +1161,27 @@ freesasa_structure_node_type(const freesasa_structure_node *node);
  */
 const char *
 freesasa_structure_node_name(const freesasa_structure_node *node);
+
+/**
+    The atoms that a node spans.
+
+    @param node The node.
+    @param first Index of first atom will be stored here.
+    @param last Index of last atom will be stored here.
+ */
+void
+freesasa_structure_node_atoms(const freesasa_structure_node *node,
+                              int *first,
+                              int *last);
+/**
+    The structure a node is associated with
+
+    @param node The node.
+    @return The structure.
+ */
+const freesasa_structure*
+freesasa_structure_node_structure(const freesasa_structure_node *node);
+
 
 #ifdef __cplusplus
 }

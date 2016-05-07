@@ -11,6 +11,8 @@ extern const char *freesasa_name;
 //! Classifier that classifies each atom according to residue
 extern const freesasa_classifier freesasa_residue_classifier;
 
+//! A ::freesasa_subarea with `name == NULL` and all values 0
+extern const freesasa_subarea freesasa_subarea_null;
 
 //! Shortcut for memory error generation
 #define mem_fail() freesasa_mem_fail(__func__,__FILE__,__LINE__) 
@@ -155,7 +157,23 @@ freesasa_atom_subarea(freesasa_subarea *area,
 void
 freesasa_add_subarea(freesasa_subarea *sum,
                      const freesasa_subarea *term);
+/**
+    Calculate relative SASA values for a residue
 
+    If the array `ref_values` does not have an entry that has the same
+    `name` as `abs`, `rel->name` will be `NULL`.
+
+    @param rel Store results here, will have same name as `abs`
+    @param abs Absolute SASA for residue
+    @param ref_values Array of reference values, will be iterated through
+      until `ref_values[i].name == NULL`.
+    @return ::FREESASA_SUCCESS. ::FREESASA_WARN if the name of the
+       residue in `abs` not found in `ref_values`.
+ */
+int
+freesasa_residue_rel_subarea(freesasa_subarea *rel,
+                             const freesasa_subarea *abs,
+                             const freesasa_subarea *ref_values);
 /**
     Calculates the absolute and relative SASA values for a given residue
 

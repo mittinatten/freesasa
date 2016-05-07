@@ -392,9 +392,10 @@ START_TEST (test_structure_node)
     for (int i = 0; i < N; ++i) {
         freesasa_structure_add_atom(s,an[i],rna[i],rnu[i],cl[i],i,i,i);
     }
-    freesasa_structure_node *tree =
+    freesasa_structure_node *next, *tree =
         freesasa_structure_tree_generate(s, "test");
-    const freesasa_structure_node **ch1, **ch2, **ch3;
+    freesasa_structure_node *chain, *residue, *atom;
+    
     freesasa_result *result = freesasa_calc_structure(s, NULL);
     const freesasa_subarea *area;
     ck_assert_ptr_ne(tree, NULL);
@@ -402,42 +403,47 @@ START_TEST (test_structure_node)
     ck_assert_int_eq(freesasa_structure_node_type(tree), FREESASA_NODE_STRUCTURE);
     ck_assert_str_eq(freesasa_structure_node_name(tree), "test");
     ck_assert_ptr_eq(freesasa_structure_node_area(tree), NULL);
-    ck_assert_ptr_ne((ch1 = freesasa_structure_node_children(tree)), NULL);
-    ck_assert_ptr_ne((ch2 = freesasa_structure_node_children(ch1[0])), NULL);
-    ck_assert_ptr_ne((ch3 = freesasa_structure_node_children(ch2[0])), NULL);
+    ck_assert_ptr_ne((chain = freesasa_structure_node_children(tree)), NULL);
+    ck_assert_ptr_ne((residue = freesasa_structure_node_children(chain)), NULL);
+    ck_assert_ptr_ne((atom = freesasa_structure_node_children(residue)), NULL);
 
-    ck_assert_int_eq(freesasa_structure_node_type(ch1[0]), FREESASA_NODE_CHAIN);
-    ck_assert_int_eq(freesasa_structure_node_type(ch2[0]), FREESASA_NODE_RESIDUE);
-    ck_assert_int_eq(freesasa_structure_node_type(ch3[0]), FREESASA_NODE_ATOM);
+    ck_assert_int_eq(freesasa_structure_node_type(chain), FREESASA_NODE_CHAIN);
+    ck_assert_int_eq(freesasa_structure_node_type(residue), FREESASA_NODE_RESIDUE);
+    ck_assert_int_eq(freesasa_structure_node_type(atom), FREESASA_NODE_ATOM);
     
-    ck_assert_str_eq(freesasa_structure_node_name(ch1[0]), "A");
-    ck_assert_str_eq(freesasa_structure_node_name(ch2[0]), "MET");
-    ck_assert_str_eq(freesasa_structure_node_name(ch2[1]), "SEC");
-    ck_assert_str_eq(freesasa_structure_node_name(ch3[0]), " C  ");
-    ck_assert_str_eq(freesasa_structure_node_name(ch3[1]), " CA ");
+    ck_assert_str_eq(freesasa_structure_node_name(chain), "A");
+    ck_assert_str_eq(freesasa_structure_node_name(residue), "MET");
+    ck_assert_str_eq(freesasa_structure_node_name(atom), " C  ");
 
-    // check arrays are terminated
-    ck_assert_ptr_eq(ch1[1], NULL);
-    ck_assert_ptr_eq(ch2[2], NULL);
-    ck_assert_ptr_eq(ch3[5], NULL);
-    
+    // iterate
+    next = freesasa_structure_node_next(chain);
+    ck_assert_ptr_eq(next, NULL);
+    next = freesasa_structure_node_next(residue);
+    ck_assert_ptr_ne(next, NULL);
+    ck_assert_str_eq(freesasa_structure_node_name(next), "SEC");
+    next = freesasa_structure_node_next(next);
+    ck_assert_ptr_eq(next, NULL);
+    next = freesasa_structure_node_next(atom);
+    ck_assert_str_eq(freesasa_structure_node_name(next), " CA ");
+
     ck_assert_int_eq(freesasa_structure_tree_fill(tree, result, NULL), FREESASA_SUCCESS);
     ck_assert_ptr_ne((area = freesasa_structure_node_area(tree)), NULL);
     ck_assert(float_eq(result->total, area->total, 1e-10));
-    ck_assert_ptr_ne((area = freesasa_structure_node_area(ch1[0])), NULL);
+    ck_assert_ptr_ne((area = freesasa_structure_node_area(chain)), NULL);
     ck_assert(float_eq(result->total, area->total, 1e-10));
+    next = freesasa_structure_node_next(residue);
+    ck_assert_ptr_ne((area = freesasa_structure_node_area(next)), NULL);
+    ck_assert(float_eq(result->sasa[5], area->total, 1e-10));
+    ck_assert_str_eq(area->name, "SEC");
+    ck_assert_ptr_ne((area = freesasa_structure_node_area(atom)), NULL);
+    ck_assert(float_eq(result->sasa[0], area->total, 1e-10));
+    next = freesasa_structure_node_next(atom);
+    ck_assert_ptr_ne((area = freesasa_structure_node_area(next)), NULL);
+    ck_assert(float_eq(result->sasa[1], area->total, 1e-10));
 
     freesasa_structure_tree_free(tree);
     freesasa_structure_free(s);
     freesasa_result_free(result);
-}
-END_TEST
-
-START_TEST (test_structure_node_area)
-{
-    FILE *pdb = fopen(DATADIR "2jo4.pdb", "r");
-
-    fclose(pdb);
 }
 END_TEST
 
@@ -462,7 +468,6 @@ Suite* structure_suite() {
 
     TCase *tc_node = tcase_create("Structure-node");
     tcase_add_test(tc_node, test_structure_node);
-    tcase_add_test(tc_node, test_structure_node_area);
 
     suite_add_tcase(s, tc_core);
     suite_add_tcase(s, tc_pdb);
