@@ -67,9 +67,9 @@ freesasa_json_residue(freesasa_structure_node *node,
     json_object *obj = json_object_new_object();
     const freesasa_structure *structure = freesasa_structure_node_structure(node);
     const char *name = freesasa_structure_node_name(node), *number;
-    int first, last, residue_index;
     const freesasa_subarea *abs = freesasa_structure_node_area(node);
     freesasa_subarea rel;
+    int first, last;
 
     freesasa_structure_node_atoms(node, &first, &last);
     number = freesasa_structure_atom_res_number(structure, first);

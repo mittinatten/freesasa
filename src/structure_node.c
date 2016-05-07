@@ -4,8 +4,6 @@
 #include "freesasa.h"
 #include "freesasa_internal.h"
 
-typedef struct freesasa_structure_node freesasa_structure_node;
-
 struct freesasa_structure_node {
     char *name;
     freesasa_node_type type;
