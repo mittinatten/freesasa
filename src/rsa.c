@@ -18,8 +18,6 @@ struct rsa_config {
     const freesasa_subarea *sasa_ref;
 };
 
-extern const freesasa_subarea freesasa_subarea_null;
-
 /* these are calculated using L&R with 1000 slices and ProtOr radii,
    from the AXA configurations in the directory rsa. */
 static const freesasa_subarea rsa_protor_ref[] = {
@@ -125,16 +123,12 @@ rsa_get_abs(freesasa_subarea *rs,
     return FREESASA_SUCCESS;
 }
 
-/**
-    Calculate relative sasa values based on abs and ref, store in rel.
- */
-static void
-rsa_get_rel(freesasa_subarea *rel,
-            const freesasa_subarea *abs,
-            const freesasa_subarea *ref)
+int
+freesasa_residue_rel_subarea(freesasa_subarea *rel,
+                             const freesasa_subarea *abs,
+                             const freesasa_subarea *ref)
 {
     int i_ref = -1;
-    double nan = 0.0/0.0;
 
     for(int j = 0; ref[j].name != NULL; ++j) {
         if (strcmp(ref[j].name, abs->name) == 0) {
@@ -150,38 +144,10 @@ rsa_get_rel(freesasa_subarea *rel,
         rel->polar = 100. * abs->polar / ref[i_ref].polar;
         rel->apolar = 100. * abs->apolar / ref[i_ref].apolar;
         rel->name = abs->name;
-    } else {
-        rel->total = rel->side_chain = rel->main_chain = rel->polar = rel->apolar = nan;
-        rel->name = NULL;
-    }
-}
-
-int
-freesasa_rsa_val(freesasa_subarea *abs,
-                 freesasa_subarea *rel,
-                 int residue_index,
-                 const freesasa_structure *structure,
-                 const freesasa_result *result,
-                 const freesasa_rsa_reference *reference)
-{
-    assert(rel);
-    assert(abs);
-    assert(structure);
-    assert(result);
-
-    struct rsa_config cfg;
-    *abs = freesasa_subarea_null;
-    abs->name = freesasa_structure_residue_name(structure, residue_index);
-
-    if (!reference) reference = &freesasa_default_rsa;
-    cfg = rsa_generate_config(structure, result, reference);
-
-    if (!rsa_get_abs(abs, residue_index, &cfg)) {
-        if (reference->max) rsa_get_rel(rel, abs, reference->max);
-        else *rel = freesasa_subarea_null;
         return FREESASA_SUCCESS;
-    } 
-    return FREESASA_FAIL;
+    }
+    *rel = freesasa_subarea_null;
+    return FREESASA_WARN;
 }
 
 static void
@@ -245,7 +211,7 @@ rsa_calc_residue_areas(freesasa_subarea *abs,
 
     if (rsa_get_abs(abs, iaa, cfg)) return fail_msg("");
 
-    rsa_get_rel(rel, abs, cfg->sasa_ref);
+    freesasa_residue_rel_subarea(rel, abs, cfg->sasa_ref);
 
     return FREESASA_SUCCESS;
 }

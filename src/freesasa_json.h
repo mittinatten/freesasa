@@ -3,30 +3,8 @@
 #include <json-c/json_object.h>
 #include "freesasa.h"
 
-
 json_object *
-freesasa_json_atom(const freesasa_result *result,
-                   const freesasa_structure *structure,
-                   const freesasa_rsa_reference *rsa,
-                   int atom_index);
-
-json_object *
-freesasa_json_residue(const freesasa_result *result,
-                      const freesasa_structure *structure,
-                      const freesasa_rsa_reference *rsa,
-                      int residue_index,
-                      freesasa_subarea *chain_area);
-json_object *
-freesasa_json_chain(const freesasa_result *result,
-                    const freesasa_structure *structure,
-                    const freesasa_rsa_reference *rsa,
-                    char chain,
-                    freesasa_subarea *structure_area);
-
-json_object *
-freesasa_json_result(const freesasa_result *result,
-                     const freesasa_structure *structure,
-                     const freesasa_rsa_reference *rsa,
-                     const char *name);
+freesasa_json_structure_tree(freesasa_structure_node *node,
+                             const freesasa_rsa_reference *rsa);
 
 #endif

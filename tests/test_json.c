@@ -5,7 +5,7 @@
 #include "tools.h"
 
 static int
-compare_subarea(json_object *obj, freesasa_subarea *ref, int is_abs)
+compare_subarea(json_object *obj, const freesasa_subarea *ref, int is_abs)
 {
     struct json_object_iterator it = json_object_iter_begin(obj),
         it_end = json_object_iter_end(obj);
@@ -46,16 +46,12 @@ compare_subarea(json_object *obj, freesasa_subarea *ref, int is_abs)
     return 1;
 }
 
-START_TEST (test_atom)
+int
+test_atom(freesasa_structure_node *node)
 {
-    FILE *pdb = fopen(DATADIR "1ubq.pdb", "r");
-    freesasa_structure *ubq =
-        freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
-    fclose(pdb);
-    freesasa_result *result = freesasa_calc_structure(ubq, NULL);
-    json_object *atom = freesasa_json_atom(result, ubq, &freesasa_default_rsa, 0);
-
-    ck_assert_ptr_ne(atom, NULL);
+    ck_assert(node);
+    json_object *atom = freesasa_json_structure_tree(node, &freesasa_default_rsa);
+    ck_assert(atom);
     
     struct json_object_iterator it = json_object_iter_begin(atom),
         it_end = json_object_iter_end(atom);
@@ -83,23 +79,20 @@ START_TEST (test_atom)
         json_object_iter_next(&it);
     }
     json_object_put(atom);
-    freesasa_structure_free(ubq);
-} 
-END_TEST
+    
+    return 1;
+}
 
-START_TEST (test_residue)
+int
+test_residue(freesasa_structure_node *node)
 {
-    FILE *pdb = fopen(DATADIR "1ubq.pdb", "r");
-    freesasa_structure *ubq =
-        freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
-    fclose(pdb);
-    freesasa_result *result = freesasa_calc_structure(ubq, NULL);
-    freesasa_subarea chain_area = {"A", 0, 0, 0, 0, 0};
-    json_object *residue = freesasa_json_residue(result, ubq, &freesasa_default_rsa,
-                                                 0, &chain_area);
-
+    ck_assert(node);
+    json_object *residue = freesasa_json_structure_tree(node, &freesasa_default_rsa);
+    ck_assert(residue);
+    const freesasa_subarea *resarea = freesasa_structure_node_area(node);
     struct json_object_iterator it = json_object_iter_begin(residue),
         it_end = json_object_iter_end(residue);
+
     while(!json_object_iter_equal(&it, &it_end)) {
         const char *key = json_object_iter_peek_name(&it);
         json_object *val = json_object_iter_peek_value(&it);
@@ -116,9 +109,9 @@ START_TEST (test_residue)
              ck_assert(json_object_is_type(val, json_type_array));
             //this is checked further by test_atom
         } else if (!strcmp(key, "abs")) {
-            ck_assert(compare_subarea(val, &chain_area, 1));
+            ck_assert(compare_subarea(val, resarea, 1));
         } else if (!strcmp(key, "rel")) {
-            ck_assert(compare_subarea(val, &chain_area, 0));
+            ck_assert(compare_subarea(val, resarea, 0));
         } else {
             ck_assert(0);
         }
@@ -127,23 +120,16 @@ START_TEST (test_residue)
     }
 
     json_object_put(residue);
-    freesasa_structure_free(ubq);
+    return 1;
 }
-END_TEST
 
-START_TEST (test_chain)
+int
+test_chain(freesasa_structure_node *node, const freesasa_result *result)
 {
-    FILE *pdb = fopen(DATADIR "1ubq.pdb", "r");
-    freesasa_structure *ubq =
-        freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
-    fclose(pdb);
-    freesasa_result *result = freesasa_calc_structure(ubq, NULL);
-    freesasa_subarea structure_area = {"1ubq", 0, 0, 0, 0, 0};
-
-    json_object *chain = freesasa_json_chain(result, ubq, &freesasa_default_rsa,
-                                             'A', &structure_area);
-    
-    ck_assert(float_eq(structure_area.total, result->total, 1e-10));
+    ck_assert(node);
+    json_object *chain = freesasa_json_structure_tree(node, &freesasa_default_rsa);
+    const freesasa_subarea *chain_area = freesasa_structure_node_area(node);
+    ck_assert(float_eq(chain_area->total, result->total, 1e-10));
 
     struct json_object_iterator it = json_object_iter_begin(chain),
         it_end = json_object_iter_end(chain);
@@ -157,7 +143,7 @@ START_TEST (test_chain)
             ck_assert(json_object_is_type(val, json_type_int));
             ck_assert_int_eq(json_object_get_int(val), 76);
         } else if (!strcmp(key, "abs")) {
-            ck_assert(compare_subarea(val, &structure_area, 1));
+            ck_assert(compare_subarea(val, chain_area, 1));
         } else if (!strcmp(key, "residues")) {
             ck_assert(json_object_is_type(val, json_type_array));
             // the rest is checked in test_residue
@@ -168,18 +154,13 @@ START_TEST (test_chain)
     }
 
     json_object_put(chain);
-    freesasa_structure_free(ubq);
-    freesasa_result_free(result);
+    return 1;
 }
-END_TEST
 
-START_TEST (test_structure)
+int
+test_structure(freesasa_structure_node *node)
 {
-    FILE *pdb = fopen(DATADIR "1ubq.pdb", "r");
-    freesasa_structure *ubq =
-        freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
-    fclose(pdb);
-    freesasa_result *result = freesasa_calc_structure(ubq, NULL);
+    ck_assert(node);
     freesasa_subarea structure_area = {
         .name = "1ubq",
         .total = 4804.0556411417447,
@@ -188,8 +169,7 @@ START_TEST (test_structure)
         .side_chain = 3689.8982162353718,
         .main_chain = 1114.157424906374
     };
-        
-    json_object *jstruct = freesasa_json_result(result, ubq, &freesasa_default_rsa, "1ubq");
+    json_object *jstruct = freesasa_json_structure_tree(node, &freesasa_default_rsa);
 
     struct json_object_iterator it = json_object_iter_begin(jstruct),
         it_end = json_object_iter_end(jstruct);
@@ -198,7 +178,7 @@ START_TEST (test_structure)
         json_object *val = json_object_iter_peek_value(&it);
         if (!strcmp(key, "name")) {
             ck_assert(json_object_is_type(val, json_type_string));
-            ck_assert_str_eq(json_object_get_string(val), "1ubq");
+            ck_assert_str_eq(json_object_get_string(val), "test");
         } else if (!strcmp(key, "n_chains")) {
             ck_assert(json_object_is_type(val, json_type_int));
             ck_assert_int_eq(json_object_get_int(val), 1);
@@ -215,6 +195,27 @@ START_TEST (test_structure)
     }
     
     json_object_put(jstruct);
+    return 1;
+}
+
+START_TEST (test_json)
+{
+    FILE *pdb = fopen(DATADIR "1ubq.pdb", "r");
+    freesasa_structure *ubq =
+        freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
+    fclose(pdb);
+    freesasa_result *result = freesasa_calc_structure(ubq, NULL);
+    freesasa_structure_node *root = freesasa_structure_tree_generate(ubq, "test");
+    freesasa_structure_tree_fill(root, result, NULL);
+    freesasa_structure_node *chains = freesasa_structure_node_children(root);
+    freesasa_structure_node *residues = freesasa_structure_node_children(chains);
+    freesasa_structure_node *atoms = freesasa_structure_node_children(residues);
+
+    ck_assert(test_atom(atoms));
+    ck_assert(test_residue(residues));
+    ck_assert(test_chain(chains, result));
+    ck_assert(test_structure(root));
+    
     freesasa_structure_free(ubq);
     freesasa_result_free(result);
 }
@@ -223,10 +224,7 @@ END_TEST
 Suite* json_suite() {
     Suite *s = suite_create("JSON");
     TCase *tc_core = tcase_create("Core");
-    tcase_add_test(tc_core, test_atom);
-    tcase_add_test(tc_core, test_residue);
-    tcase_add_test(tc_core, test_chain);
-    tcase_add_test(tc_core, test_structure);
+    tcase_add_test(tc_core, test_json);
 
     suite_add_tcase(s, tc_core);
 
