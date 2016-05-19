@@ -69,7 +69,7 @@ AC_ARG_ENABLE([json],
 
 if test "x$enable_json" != "xno" ; then
   AC_CHECK_LIB([json-c], [json_object_get])
-  AC_CHECK_HEADERS([json_object.h])
+  AC_CHECK_HEADER([json-c/json_object.h])
   AC_DEFINE([USE_JSON],[1],[Define if json should be included.])
   AM_CONDITIONAL([USE_JSON],true)
 else
