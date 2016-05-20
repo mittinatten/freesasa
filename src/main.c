@@ -317,8 +317,8 @@ run_analysis(FILE *input,
             }
         }
         if (printrsa) {
-            freesasa_structure_node *tree = freesasa_structure_tree_generate(structures[i], name_i);
-            freesasa_structure_tree_fill(tree, result, rsa_reference->polar_classifier);
+            freesasa_structure_node *tree =
+                freesasa_structure_tree(structures[i], result, classifier, name_i);
             freesasa_write_rsa(rsa_file, tree, rsa_reference);
             freesasa_structure_tree_free(tree);
         }

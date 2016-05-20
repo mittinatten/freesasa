@@ -183,6 +183,7 @@ freesasa_calc_structure(const freesasa_structure* structure,
                          freesasa_structure_radius(structure),
                          parameters);
 }
+
 int
 freesasa_log(FILE *log,
              freesasa_result *result,

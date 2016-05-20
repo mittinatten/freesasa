@@ -203,9 +203,10 @@ extern const freesasa_classifier freesasa_naccess_classifier;
 extern const freesasa_classifier freesasa_oons_classifier;
 
 /**
-    This classifier only has the sasa_class() function, which returns 1
-    for protein backbone atoms, and 0 else. Backbone atoms are CA, N,
-    C and O. All other member functions are NULL. 
+    This classifier only has the sasa_class() function, which returns
+    1 for protein backbone atoms, and 0 else. Backbone atoms are CA,
+    N, C and O. All other member functions are NULL. Visible in API
+    for reference.
  */
 extern const freesasa_classifier freesasa_backbone_classifier;
 
@@ -1050,18 +1051,19 @@ freesasa_structure_chain_residues(const freesasa_structure *structure,
     freesasa_structure_node_type(), freesasa_structure_node_area(),
     and freesasa_node_name() to explore the properties of each node.
 
-    This function does not assign areas to the nodes of the tree, this
-    should be done using freesasa_structure_tree_fill().
-
     The tree should be freed using freesasa_structure_tree_free().
-
     @param structure The structure to use
+    @param result SASA values for the structure
+    @param polar_classifier Classifier to determine which atoms are
+      polar and apolar
     @param name The name of the structure
-    @return The root node of the tree
+    @return The root node of the tree. NULL if memory allocation fails.
  */
 freesasa_structure_node *
-freesasa_structure_tree_generate(const freesasa_structure *structure,
-                                 const char *name);
+freesasa_structure_tree(const freesasa_structure *structure,
+                        const freesasa_result *result,
+                        const freesasa_classifier *polar_classifier,
+                        const char *name);
 
 /**
     Free ::freesasa_structure_node-tree.
@@ -1076,27 +1078,6 @@ freesasa_structure_tree_generate(const freesasa_structure *structure,
 int
 freesasa_structure_tree_free(freesasa_structure_node *root);
 
-
-/**
-    For each node of the tree, attach summed SASA of atoms belonging
-    to that node.
-
-    Tree is filled recursively, so only need to call this for the root
-    of tree.
-
-    Areas can be accessed through freesasa_structure_node_area(). 
-
-    @param root The tree to fill
-    @param result SASA-values to use
-    @param polar_classifier Classifier to determine which atoms are
-      polar and apolar
-    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if memory allocation
-      fails.
- */
-int
-freesasa_structure_tree_fill(freesasa_structure_node *root,
-                             const freesasa_result *result,
-                             const freesasa_classifier *polar_classifier);
 
 /**
     The ::freesasa_subarea of all atoms belonging to a node.

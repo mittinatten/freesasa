@@ -173,45 +173,10 @@ structure_chain_node(const freesasa_structure *structure,
     return chain;
 }
 
-freesasa_structure_node *
-freesasa_structure_tree_generate(const freesasa_structure *structure,
-                                 const char *name)
-{
-    freesasa_structure_node *root = structure_node_new(name);
-    int n_chains = freesasa_structure_n_chains(structure);
-
-    if (!root) {
-        fail_msg("");
-        return NULL;
-    }
-
-    root->structure = structure;
-    root->first_atom = 0;
-    root->last_atom = freesasa_structure_n(structure);
-    root->type = FREESASA_NODE_STRUCTURE;
-
-    if (!structure_node_gen_children(root, 0, n_chains-1, structure_chain_node)) {
-        structure_node_free(root);
-        return NULL;
-    }
-
-    return root;
-}
-
-int
-freesasa_structure_tree_free(freesasa_structure_node *root) 
-{
-    if (root->parent) return fail_msg("Can't free node that isn't the root of its tree");
-    
-    structure_node_free(root);
-
-    return FREESASA_SUCCESS;
-}
-
-int
-freesasa_structure_tree_fill(freesasa_structure_node *node,
-                             const freesasa_result *result,
-                             const freesasa_classifier *polar_classifier)
+static int
+structure_tree_fill(freesasa_structure_node *node,
+                    const freesasa_result *result,
+                    const freesasa_classifier *polar_classifier)
 {
     assert(node);
     assert(result);
@@ -227,17 +192,56 @@ freesasa_structure_tree_fill(freesasa_structure_node *node,
 
     if (child) {
         while(child) {
-            freesasa_structure_tree_fill(child, result, polar_classifier);
+            structure_tree_fill(child, result, polar_classifier);
             freesasa_add_subarea(node->area, child->area);
             child = child->next;
         }
     } else {
         for (int i = node->first_atom; i <= node->last_atom; ++i) {
-            freesasa_atom_subarea(&atom, node->structure, result, 
+            freesasa_atom_subarea(&atom, node->structure, result,
                                   polar_classifier, i);
             freesasa_add_subarea(node->area, &atom);
         }
     }
+    return FREESASA_SUCCESS;
+}
+
+freesasa_structure_node *
+freesasa_structure_tree(const freesasa_structure *structure,
+                        const freesasa_result *result,
+                        const freesasa_classifier *polar_classifier,
+                        const char *name)
+{
+    freesasa_structure_node *root = structure_node_new(name);
+    int n_chains = freesasa_structure_n_chains(structure);
+
+    if (!root) {
+        fail_msg("");
+        return NULL;
+    }
+
+    root->structure = structure;
+    root->first_atom = 0;
+    root->last_atom = freesasa_structure_n(structure);
+    root->type = FREESASA_NODE_STRUCTURE;
+
+    if (!structure_node_gen_children(root, 0, n_chains-1, structure_chain_node) ||
+        structure_tree_fill(root, result, polar_classifier)) {
+        structure_node_free(root);
+        fail_msg("");
+        return NULL;
+    }
+
+    return root;
+}
+
+int
+freesasa_structure_tree_free(freesasa_structure_node *root) 
+{
+    if (root->parent) return fail_msg("Can't free node that isn't the root of its tree");
+    
+    structure_node_free(root);
+
     return FREESASA_SUCCESS;
 }
 

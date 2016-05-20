@@ -424,6 +424,7 @@ START_TEST (test_backbone)
     ck_assert(bb->sasa_class("ALA","OXT",bb) == 1);
     ck_assert_str_eq(bb->class2str(0,bb),"side-chain");
     ck_assert_str_eq(bb->class2str(1,bb),"main-chain");
+    ck_assert_ptr_eq(bb->class2str(2,bb),NULL);
 }
 END_TEST
 
