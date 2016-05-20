@@ -199,6 +199,17 @@ freesasa_rsa_val(freesasa_subarea *abs,
                  const freesasa_rsa_reference *reference);
 
 /**
+    Is an atom a backbone atom
+   
+    @param atom_name Name of atom
+    @return 1 if the atom_name equals CA, N, O or C after whitespace
+    is trimmed, 0 else. (i.e. does not check if it is an actual atom)
+ */
+int
+freesasa_atom_is_backbone(const char *atom_name);
+
+
+/**
     Holds range in a file, to be initalized with ftell() and used
     with fseek().
  */

@@ -300,7 +300,6 @@ freesasa_atom_subarea(freesasa_subarea *area,
                       int atom_index)
 {
     const char *resn = freesasa_structure_atom_res_name(structure, atom_index);
-    const freesasa_classifier *bb = &freesasa_backbone_classifier;
     double a = result->sasa[atom_index];
 
     area->main_chain = area->side_chain = area->polar = area->apolar = 0;
@@ -308,7 +307,7 @@ freesasa_atom_subarea(freesasa_subarea *area,
     area->name = freesasa_structure_atom_name(structure, atom_index);
     area->total = a; 
 
-    if (bb->sasa_class(resn, area->name, bb))
+    if (freesasa_atom_is_backbone(area->name))
         area->main_chain = a;
     else area->side_chain = a;
 

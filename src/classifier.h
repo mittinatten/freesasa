@@ -81,5 +81,4 @@ const char*
 freesasa_classifier_config_class2str(int the_class,
                                      const freesasa_classifier *classifier);
 
-
 #endif /* CLASSIFIER_H */

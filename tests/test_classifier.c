@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <check.h>
 #include <freesasa.h>
+#include <freesasa_internal.h>
 #include <classifier.h>
 #include "tools.h"
 
@@ -400,6 +401,33 @@ START_TEST (test_user)
 }
 END_TEST
 
+START_TEST (test_backbone)
+{
+    ck_assert(freesasa_atom_is_backbone("C"));
+    ck_assert(freesasa_atom_is_backbone(" C  "));
+    ck_assert(freesasa_atom_is_backbone(" CA "));
+    ck_assert(freesasa_atom_is_backbone(" CA     "));
+    ck_assert(freesasa_atom_is_backbone("CA"));
+    ck_assert(freesasa_atom_is_backbone("N"));
+    ck_assert(freesasa_atom_is_backbone("O"));
+    ck_assert(freesasa_atom_is_backbone("OXT"));
+    ck_assert(freesasa_atom_is_backbone("") == 0);
+    ck_assert(freesasa_atom_is_backbone("X") == 0);
+
+    const freesasa_classifier *bb = &freesasa_backbone_classifier;
+    ck_assert(bb->sasa_class("ALA","C",bb) == 1);
+    ck_assert(bb->sasa_class("ALA","CA",bb) == 1);
+    ck_assert(bb->sasa_class("ALA","O",bb) == 1);
+    ck_assert(bb->sasa_class("ALA","N",bb) == 1);
+    ck_assert(bb->sasa_class("ALA","OXT",bb) == 1);
+    ck_assert(bb->sasa_class("ALA","X",bb) == 0);
+    ck_assert(bb->sasa_class("ALA","OXT",bb) == 1);
+    ck_assert_str_eq(bb->class2str(0,bb),"side-chain");
+    ck_assert_str_eq(bb->class2str(1,bb),"main-chain");
+}
+END_TEST
+
+
 Suite* classifier_suite()
 {
     Suite *s = suite_create("Classify");
@@ -408,6 +436,7 @@ Suite* classifier_suite()
     tcase_add_test(tc_core,test_class);
     tcase_add_test(tc_core,test_residue);
     tcase_add_test(tc_core,test_user);
+    tcase_add_test(tc_core,test_backbone);
 
     tcase_add_checked_fixture(tc_core,setup,teardown);
 

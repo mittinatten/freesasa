@@ -811,15 +811,8 @@ const freesasa_classifier freesasa_residue_classifier = {
     .config = NULL
 };
 
-/**
-    Returns 1 if the atom_name equals CA, N, O or C after whitespace
-    is trimmed, 0 else. (i.e. does not check if it is an actual atom,
-    no such strings should be able to reach this point).
- */
-static int
-classifier_is_backbone(const char *res_name,
-                       const char *atom_name,
-                       const freesasa_classifier *classifier)
+int
+freesasa_atom_is_backbone(const char *atom_name)
 {
     int n = strlen(atom_name);
     char name[n+1];
@@ -836,10 +829,29 @@ classifier_is_backbone(const char *res_name,
     return 0;
 }
 
+static int
+classifier_is_backbone(const char *res_name,
+                       const char *atom_name,
+                       const freesasa_classifier *classifier)
+{
+    return freesasa_atom_is_backbone(atom_name);
+}
+static const char *
+classifier_bb2str(int class_i,
+                  const freesasa_classifier *classifier)
+{
+    switch (class_i) {
+    case 0: return "side-chain";
+    case 1: return "main-chain";
+    default: return NULL;
+    }
+}
+
+
 const freesasa_classifier freesasa_backbone_classifier = {
     .radius = NULL,
     .sasa_class = classifier_is_backbone,
-    .class2str = NULL,
+    .class2str = classifier_bb2str,
     .n_classes = 2,
     .free_config = NULL,
     .config = NULL
