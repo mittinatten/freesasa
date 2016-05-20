@@ -174,9 +174,9 @@ structure_chain_node(const freesasa_structure *structure,
 }
 
 static int
-structure_tree_fill(freesasa_structure_node *node,
-                    const freesasa_result *result,
-                    const freesasa_classifier *polar_classifier)
+structure_tree_add_areas(freesasa_structure_node *node,
+                         const freesasa_result *result,
+                         const freesasa_classifier *polar_classifier)
 {
     assert(node);
     assert(result);
@@ -192,7 +192,7 @@ structure_tree_fill(freesasa_structure_node *node,
 
     if (child) {
         while(child) {
-            structure_tree_fill(child, result, polar_classifier);
+            structure_tree_add_areas(child, result, polar_classifier);
             freesasa_add_subarea(node->area, child->area);
             child = child->next;
         }
@@ -215,24 +215,24 @@ freesasa_structure_tree(const freesasa_structure *structure,
     freesasa_structure_node *root = structure_node_new(name);
     int n_chains = freesasa_structure_n_chains(structure);
 
-    if (!root) {
-        fail_msg("");
-        return NULL;
-    }
+    if (!root) goto cleanup;
 
     root->structure = structure;
     root->first_atom = 0;
     root->last_atom = freesasa_structure_n(structure);
     root->type = FREESASA_NODE_STRUCTURE;
 
-    if (!structure_node_gen_children(root, 0, n_chains-1, structure_chain_node) ||
-        structure_tree_fill(root, result, polar_classifier)) {
-        structure_node_free(root);
-        fail_msg("");
-        return NULL;
-    }
+    if (!structure_node_gen_children(root, 0, n_chains-1, structure_chain_node))
+        goto cleanup;
+    if (structure_tree_add_areas(root, result, polar_classifier))
+        goto cleanup;
 
     return root;
+
+ cleanup:
+    structure_node_free(root);
+    fail_msg("");
+    return NULL;
 }
 
 int
