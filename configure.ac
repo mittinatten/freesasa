@@ -15,10 +15,11 @@ AC_PROG_INSTALL
 
 # Checks for libraries.
 AC_CHECK_LIB([m], [sqrt])
+AC_CHECK_LIB([pthread], [pthread_create])
 
 # Checks for header files.
 AC_FUNC_ALLOCA
-AC_CHECK_HEADERS([inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h sys/time.h unistd.h pthread.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
@@ -47,14 +48,13 @@ AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile
 AC_CONFIG_FILES([tests/test-cli], [chmod +x tests/test-cli])
 AC_CONFIG_FILES([bindings/check-python], [chmod +x bindings/check-python])
 
-# Disable thread support
+# Optionally disable thread support
 AC_ARG_ENABLE([threads],
   AS_HELP_STRING([--disable-threads],
     [Build without support for multiple threads]))
 
-if test "x$enable_threads" != "xno" ; then
-  AC_CHECK_LIB([pthread], [pthread_create])
-  AC_CHECK_HEADERS([pthread.h])
+if test "x$enable_threads" != "xno" && \
+   test -z $HAVE_PTHREAD_H && test -z $HAVE_LIBPTHREAD; then
   AC_DEFINE([USE_THREADS],[1],[Define if threads should be used.])
   AM_CONDITIONAL([USE_THREADS],true)
 else
@@ -70,11 +70,14 @@ AC_ARG_ENABLE([json],
 if test "x$enable_json" != "xno" ; then
   AC_CHECK_LIB([json-c], [json_object_get])
   AC_CHECK_HEADER([json-c/json_object.h])
+fi
+if test -z $HAVE_LIBJSONC && test -z $HAVE_JSON_OBJECT_H ; then
   AC_DEFINE([USE_JSON],[1],[Define if json should be included.])
   AM_CONDITIONAL([USE_JSON],true)
 else
   AC_DEFINE([USE_JSON],[0],[])
   AM_CONDITIONAL([USE_JSON],false)
+  echo "Building without support for JSON output."
 fi
 
 # Which Python
