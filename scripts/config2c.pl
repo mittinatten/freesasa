@@ -3,13 +3,26 @@ use strict;
 # Script to generate source code for a classifier based on a
 # config-file. Useful for having default classifiers statically in
 # memory.  It generates a constant classifier that should be placed in
-# its own source-file. The classifier, defined at the bottom should be
-# renamed to a unique name. (marked with a comment in the output)
+# its own source-file. 
 
 # This interpreter has stricter requirements on the input format than
 # the one in the C-code, since it is only for internal use. It also
 # doesn't do any syntax checks, so it will only work on valid config
-# files. 
+# files.
+
+# The script should be run from the same directory as it is stored,
+# because it depends on the subdir 'rsa/' to gengerate reference SASA
+# values for RSA output. The file classifier_protor.c in the
+# source-directory was generated using the command
+#
+#    perl config2c.pl protor ../share/protor.config
+# 
+# where 'protor' will be the variable name prefix and the name used in
+# output generated from this classifier. It is also referred to in
+# freesasa.h.
+
+# Ideally RSA values should be stored in the configuration file, in a
+# separate section. This will be added in the future.
 
 my %types;
 my %atoms;
