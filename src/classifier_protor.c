@@ -441,17 +441,19 @@ static struct classifier_config protor_auto_config = {
     .n_residues = 39, .n_classes = 3,
     .residue_name = (char**) protor_residue_name,
     .class_name = (char**) protor_class_name,
-    .residue = (struct classifier_residue **) protor_residue_cfg
+    .residue = (struct classifier_residue **) protor_residue_cfg,
 };
 
 static void protor_dummy_free(void *arg) {}
 
 const freesasa_classifier freesasa_protor_classifier = {
+    .name = "protor",
     .config = &protor_auto_config,
     .n_classes = 3,
     .radius = freesasa_classifier_config_radius,
     .sasa_class =freesasa_classifier_config_class,
     .class2str = freesasa_classifier_config_class2str,
+    .residue_reference = freesasa_classifier_config_residue_reference,
     // Since this object is const, calling free should emit compiler warnings.
     .free_config = protor_dummy_free,
 };

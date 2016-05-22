@@ -652,7 +652,8 @@ freesasa_classifier_config_class2str(int the_class,
 }
 
 static freesasa_classifier*
-init_classifier(struct classifier_config *config)
+init_classifier(struct classifier_config *config,
+                const char *name)
 {
    freesasa_classifier* c = malloc(sizeof(freesasa_classifier));
     if (c == NULL) {
@@ -661,10 +662,12 @@ init_classifier(struct classifier_config *config)
     }
 
     c->config = config;
+    c->name = name;
     c->n_classes = config->n_classes;
     c->radius = freesasa_classifier_config_radius;
     c->sasa_class = freesasa_classifier_config_class;
     c->class2str = freesasa_classifier_config_class2str;
+    c->residue_reference = freesasa_classifier_config_residue_reference;
     c->free_config = classifier_config_free;
 
     return c;
@@ -679,8 +682,7 @@ classifier_from_file(FILE *file, const char *name)
         fail_msg("");
         return NULL;
     }
-    config->name = name;
-    return init_classifier(config);
+    return init_classifier(config, name);
 }
 
 freesasa_classifier*
@@ -707,13 +709,6 @@ freesasa_classifier_from_filename(const char *filename)
     return NULL;
 }
 
-const char *
-freesasa_classifier_name(const freesasa_classifier *classifier)
-{
-    const struct classifier_config *config = classifier->config;
-    return config->name;
-}
-
 void
 freesasa_classifier_free(freesasa_classifier *classifier)
 {
@@ -727,12 +722,13 @@ freesasa_classifier_free(freesasa_classifier *classifier)
 }
 
 const freesasa_subarea *
-freesasa_residue_max_area(const char *res_name,
-                          const freesasa_classifier *classifier)
+freesasa_classifier_config_residue_reference(const char *res_name,
+                                             const freesasa_classifier *classifier)
 {
     const struct classifier_config *config = classifier->config;
-    int res = find_string(config->residue_name,res_name,config->n_residues);
+    int res = find_string(config->residue_name, res_name, config->n_residues);
     if (res < 0) return NULL;
+    
     return &config->residue[res]->max_area;
 }
 
@@ -845,9 +841,11 @@ residue2str(int the_residue,
 }
 
 const freesasa_classifier freesasa_residue_classifier = {
+    .name = "Residue-classifier",
     .radius = NULL,
     .sasa_class = residue,
     .class2str = residue2str,
+    .residue_reference = NULL,
     .n_classes = NN+1,
     .free_config = NULL,
     .config = NULL
@@ -891,9 +889,11 @@ classifier_bb2str(int class_i,
 
 
 const freesasa_classifier freesasa_backbone_classifier = {
+    .name = "Backbone-classifier",
     .radius = NULL,
     .sasa_class = classifier_is_backbone,
     .class2str = classifier_bb2str,
+    .residue_reference = NULL,
     .n_classes = 2,
     .free_config = NULL,
     .config = NULL

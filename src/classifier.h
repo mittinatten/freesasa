@@ -63,7 +63,6 @@ struct classifier_config {
     char **residue_name; //!< Names of residues
     char **class_name; //!< Names of classes
     struct classifier_residue **residue;
-    const char *name; //! Name of classifier
 };
 
 /** To be used in classifiers based on config-files */
@@ -82,5 +81,10 @@ freesasa_classifier_config_class(const char *res_name,
 const char*
 freesasa_classifier_config_class2str(int the_class,
                                      const freesasa_classifier *classifier);
+
+/** To be used in classifier based on config-files */
+const freesasa_subarea *
+freesasa_classifier_config_residue_reference(const char *res_name,
+                                             const freesasa_classifier *classifier);
 
 #endif /* CLASSIFIER_H */

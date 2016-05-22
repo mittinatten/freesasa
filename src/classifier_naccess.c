@@ -364,17 +364,19 @@ static struct classifier_config naccess_auto_config = {
     .n_residues = 32, .n_classes = 2,
     .residue_name = (char**) naccess_residue_name,
     .class_name = (char**) naccess_class_name,
-    .residue = (struct classifier_residue **) naccess_residue_cfg
+    .residue = (struct classifier_residue **) naccess_residue_cfg,
 };
 
 static void naccess_dummy_free(void *arg) {}
 
 const freesasa_classifier freesasa_naccess_classifier = {
+    .name = "naccess",
     .config = &naccess_auto_config,
     .n_classes = 2,
     .radius = freesasa_classifier_config_radius,
     .sasa_class =freesasa_classifier_config_class,
     .class2str = freesasa_classifier_config_class2str,
+    .residue_reference = freesasa_classifier_config_residue_reference,
     // Since this object is const, calling free should emit compiler warnings.
     .free_config = naccess_dummy_free,
 };

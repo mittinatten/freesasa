@@ -309,17 +309,19 @@ static struct classifier_config oons_auto_config = {
     .n_residues = 27, .n_classes = 3,
     .residue_name = (char**) oons_residue_name,
     .class_name = (char**) oons_class_name,
-    .residue = (struct classifier_residue **) oons_residue_cfg
+    .residue = (struct classifier_residue **) oons_residue_cfg,
 };
 
 static void oons_dummy_free(void *arg) {}
 
 const freesasa_classifier freesasa_oons_classifier = {
+    .name = "oons",
     .config = &oons_auto_config,
     .n_classes = 3,
     .radius = freesasa_classifier_config_radius,
     .sasa_class =freesasa_classifier_config_class,
     .class2str = freesasa_classifier_config_class2str,
+    .residue_reference = freesasa_classifier_config_residue_reference,
     // Since this object is const, calling free should emit compiler warnings.
     .free_config = oons_dummy_free,
 };

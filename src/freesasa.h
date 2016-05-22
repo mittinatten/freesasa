@@ -165,6 +165,7 @@ typedef struct {
 typedef struct freesasa_classifier {
     int n_classes; //!< Total number of different classes
     void *config;  //!< Optional configuration to allow flexibility
+    const char *name; //!< Name of classifier
 
     /**
         Function that returns an atom radius. Should return negative
@@ -183,8 +184,21 @@ typedef struct freesasa_classifier {
                       const struct freesasa_classifier*);
 
     //! Function that converts a class to its string descriptor.
-    const char* (*class2str)(int the_class,
-                             const struct freesasa_classifier*);
+    const char*
+    (*class2str)(int the_class,
+                 const struct freesasa_classifier*);
+
+    /**
+        Optional function that returns reference SASA values for a
+        given residue. Returns NULL if the residue is not recognized
+        by the classifier, and ::freesasa_subarea with a NULL pointer
+        for the member name, if it is recognized but no reference
+        value exists. The function pointer can be left NULL if this
+        functionality is not required.
+     */
+    const freesasa_subarea *
+    (*residue_reference)(const char *res_name,
+                         const struct freesasa_classifier*);
 
     //! Function that can be called to free the config-pointer
     void (*free_config)(void*);
@@ -502,11 +516,9 @@ int freesasa_write_parameters(FILE *log,
 
     @param output Output-file @param tree A tree with stored results
     @param classifier A classifier to determine which atoms are polar,
-      and to provide maximum reference areas for each residue. Can
-      only be a classifier generated from
-      freesasa_classifier_from_file(),
-      freesasa_classifier_from_filename() or one of the const
-      classifiers that are part of the API.
+      and to provide maximum reference areas for each residue. If
+      `classifier->residue_reference` is NULL the REL columns will be
+      filled with the value 'N/A'.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
       writing to file.
  */

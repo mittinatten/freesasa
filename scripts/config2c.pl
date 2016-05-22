@@ -180,16 +180,17 @@ print "    .n_residues = $n_residues, .n_classes = $n_classes,\n";
 print "    .residue_name = (char**) $prefix\_residue_name,\n";
 print "    .class_name = (char**) $prefix\_class_name,\n";
 print "    .residue = (struct classifier_residue **) $prefix\_residue_cfg,\n";
-print "    .name = \"$prefix\",\n";
 print "};\n\n";
 print "static void $prefix\_dummy_free(void *arg) {}\n\n";
 
 print "const freesasa_classifier freesasa_$prefix\_classifier = {\n";
+print "    .name = \"$prefix\",\n";
 print "    .config = &$prefix\_auto_config,\n";
 print "    .n_classes = $n_classes,\n";
 print "    .radius = freesasa_classifier_config_radius,\n";
 print "    .sasa_class =freesasa_classifier_config_class,\n";
 print "    .class2str = freesasa_classifier_config_class2str,\n";
+print "    .residue_reference = freesasa_classifier_config_residue_reference,\n";
 print "    // Since this object is const, calling free should emit compiler warnings.\n";
 print "    .free_config = $prefix\_dummy_free,\n";
 print "};\n";

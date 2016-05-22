@@ -16,16 +16,17 @@ freesasa_residue_rel_subarea(freesasa_subarea *rel,
                              const freesasa_subarea *abs,
                              const freesasa_classifier *classifier)
 {
-    const freesasa_subarea *ref = freesasa_residue_max_area(abs->name, classifier);
-
-    if (ref->name != NULL) {
-        rel->total = 100. * abs->total / ref->total;
-        rel->side_chain = 100. * abs->side_chain / ref->side_chain;
-        rel->main_chain = 100. * abs->main_chain / ref->main_chain;
-        rel->polar = 100. * abs->polar / ref->polar;
-        rel->apolar = 100. * abs->apolar / ref->apolar;
-        rel->name = abs->name;
-        return FREESASA_SUCCESS;
+    if (classifier->residue_reference) {
+        const freesasa_subarea *ref = classifier->residue_reference(abs->name, classifier);
+        if (ref != NULL && ref->name != NULL) {
+            rel->total = 100. * abs->total / ref->total;
+            rel->side_chain = 100. * abs->side_chain / ref->side_chain;
+            rel->main_chain = 100. * abs->main_chain / ref->main_chain;
+            rel->polar = 100. * abs->polar / ref->polar;
+            rel->apolar = 100. * abs->apolar / ref->apolar;
+            rel->name = abs->name;
+            return FREESASA_SUCCESS;
+        }
     }
     *rel = freesasa_subarea_null;
     return FREESASA_WARN;
@@ -57,6 +58,14 @@ rsa_print_abs_rel(FILE*output,
     else fprintf(output, "   N/A");
 }
 
+static inline void
+rsa_print_abs_only(FILE *output,
+                   double abs)
+{
+    fprintf(output, "%7.2f", abs);
+    fprintf(output, "   N/A");
+}
+
 static int
 rsa_print_residue(FILE *output, 
                   int iaa,
@@ -71,11 +80,19 @@ rsa_print_residue(FILE *output,
     chain = freesasa_structure_residue_chain(structure, iaa);
 
     fprintf(output, "RES %s %c%s  ", abs->name, chain, resi_str);
-    rsa_print_abs_rel(output, abs->total, rel->total);
-    rsa_print_abs_rel(output, abs->side_chain, rel->side_chain);
-    rsa_print_abs_rel(output, abs->main_chain, rel->main_chain);
-    rsa_print_abs_rel(output, abs->apolar, rel->apolar);
-    rsa_print_abs_rel(output, abs->polar, rel->polar);
+    if (rel->name != NULL) {
+        rsa_print_abs_rel(output, abs->total, rel->total);
+        rsa_print_abs_rel(output, abs->side_chain, rel->side_chain);
+        rsa_print_abs_rel(output, abs->main_chain, rel->main_chain);
+        rsa_print_abs_rel(output, abs->apolar, rel->apolar);
+        rsa_print_abs_rel(output, abs->polar, rel->polar);
+    } else {
+        rsa_print_abs_only(output, abs->total);
+        rsa_print_abs_only(output, abs->side_chain);
+        rsa_print_abs_only(output, abs->main_chain);
+        rsa_print_abs_only(output, abs->apolar);
+        rsa_print_abs_only(output, abs->polar);
+    }
     fprintf(output, "\n");
     return FREESASA_SUCCESS;
 }
@@ -96,8 +113,7 @@ freesasa_write_rsa(FILE *output,
 
     if (!classifier) classifier = &freesasa_default_classifier;
 
-    rsa_print_header(output, freesasa_classifier_name(classifier),
-                     freesasa_structure_node_name(tree));
+    rsa_print_header(output, classifier->name, freesasa_structure_node_name(tree));
 
     res_index = chain_index = 0;
     while(chain) {
