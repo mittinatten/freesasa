@@ -1,5 +1,6 @@
 #include "freesasa.h"
 #include "freesasa_internal.h"
+#include "classifier.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -129,10 +129,9 @@ typedef enum {
 
 /**
     A node representing a structure, chain, residue or atom in a
-    structure (see ::freesasa_node_type). These can be linked in a tree created by
-    freesasa_structure_tree_generate(), freed by
-    freesasa_structure_tree_free(). A ::freesasa_subarea object can be
-    associated with each node using freesasa_structure_tree_fill().
+    structure (see ::freesasa_node_type). These can be linked in a
+    tree created by freesasa_structure_tree(), freed by
+    freesasa_structure_tree_free().
  */
 typedef struct freesasa_structure_node freesasa_structure_node;
 
@@ -148,61 +147,10 @@ typedef struct {
 } freesasa_strvp;
 
 /**
-    Struct used for calculating classes and radii for atoms given
-    their residue-names ('ALA','ARG',...) and atom-names
-    ('CA','N',...). Some functions depend on classifiers whose
-    sasa_class() method returns 0 for apolar atoms and non-zero for
-    polar atoms, for example freesasa_write_rsa() and
-    freesasa_json_result(). Such classifiers will be referred to as
-    polar classifiers. The static classifiers
-    ::freesasa_protor_classifier (also known as
-    ::freesasa_default_classifier), ::freesasa_naccess_classifier, and
-    ::freesasa_oons_classifier are all polar classifier. The
-    classifier interface allows for other configurations because there
-    is sometimes need for more than two classes, or one might want to
-    classify atoms along some other divide.
+    Struct that can be used to determine classes (polar/apolar) and
+    radii of atoms. Initiated from freesasa_classifier_from_filename(). A few 
  */
-typedef struct freesasa_classifier {
-    int n_classes; //!< Total number of different classes
-    void *config;  //!< Optional configuration to allow flexibility
-    const char *name; //!< Name of classifier
-
-    /**
-        Function that returns an atom radius. Should return negative
-        value if atom not recognized.
-    */
-    double (*radius)(const char* res_name,
-                     const char* atom_name,
-                     const struct freesasa_classifier*);
-
-    /**
-        Function that returns the class [0,1,...,n_classes-1] of an
-        atom, should return ::FREESASA_WARN if atom not recognized.
-    */
-    int (*sasa_class)(const char* res_name,
-                      const char* atom_name,
-                      const struct freesasa_classifier*);
-
-    //! Function that converts a class to its string descriptor.
-    const char*
-    (*class2str)(int the_class,
-                 const struct freesasa_classifier*);
-
-    /**
-        Optional function that returns reference SASA values for a
-        given residue. Returns NULL if the residue is not recognized
-        by the classifier, and ::freesasa_subarea with a NULL pointer
-        for the member name, if it is recognized but no reference
-        value exists. The function pointer can be left NULL if this
-        functionality is not required.
-     */
-    const freesasa_subarea *
-    (*residue_reference)(const char *res_name,
-                         const struct freesasa_classifier*);
-
-    //! Function that can be called to free the config-pointer
-    void (*free_config)(void*);
-} freesasa_classifier;
+typedef struct freesasa_classifier freesasa_classifier;
 
 //! Classifier using ProtOr radii and classes
 extern const freesasa_classifier freesasa_protor_classifier;
@@ -212,14 +160,6 @@ extern const freesasa_classifier freesasa_naccess_classifier;
 
 //! Classifier using OONS radii and classes
 extern const freesasa_classifier freesasa_oons_classifier;
-
-/**
-    This classifier only has the sasa_class() function, which returns
-    1 for protein backbone atoms, and 0 else. Backbone atoms are CA,
-    N, C and O. All other member functions are NULL. Visible in API
-    for reference.
- */
-extern const freesasa_classifier freesasa_backbone_classifier;
 
 /**
     Calculates SASA based on a given structure.

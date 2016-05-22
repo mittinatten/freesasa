@@ -3,6 +3,7 @@
 #include <assert.h>
 #include "freesasa.h"
 #include "freesasa_internal.h"
+#include "classifier.h"
 
 struct freesasa_structure_node {
     char *name;

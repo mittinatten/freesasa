@@ -8,9 +8,6 @@
 //! The name of the library, to be used in error messages and logging
 extern const char *freesasa_name;
 
-//! Classifier that classifies each atom according to residue
-extern const freesasa_classifier freesasa_residue_classifier;
-
 //! A ::freesasa_subarea with `name == NULL` and all values 0
 extern const freesasa_subarea freesasa_subarea_null;
 
@@ -19,7 +16,6 @@ extern const freesasa_subarea freesasa_subarea_null;
 
 //! Shortcut for error message with position information
 #define fail_msg(msg) freesasa_fail_wloc(__func__,__FILE__,__LINE__,msg)
-
 
 /**
     Calculate SASA using S&R algorithm.

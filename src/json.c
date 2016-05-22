@@ -4,6 +4,7 @@
 #include "freesasa.h"
 #include "freesasa_internal.h"
 #include "freesasa_json.h"
+#include "classifier.h"
 
 json_object *
 freesasa_json_atom(freesasa_structure_node *node,
