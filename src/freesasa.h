@@ -109,32 +109,6 @@ typedef struct {
     int n_atoms;  //!< Number of atoms
 } freesasa_result;
 
-//! Struct to store SASA values for a named substructure
-typedef struct {
-    const char *name;  //!< Name of substructure
-    double total;      //!< Total SASA
-    double main_chain; //!< Main-chain/Backbone SASA
-    double side_chain; //!< Side-chain SASA
-    double polar;      //!< Polar SASA
-    double apolar;     //!< Apolar SASA
-} freesasa_subarea;
-
-//! @deprecated The typename freesasa_residue_sasa is no longer used
-//#typedef freesasa_residue_sasa freesasa_subarea
-
-typedef enum {
-    FREESASA_NODE_ATOM, FREESASA_NODE_RESIDUE,
-    FREESASA_NODE_CHAIN, FREESASA_NODE_STRUCTURE
-} freesasa_node_type;
-
-/**
-    A node representing a structure, chain, residue or atom in a
-    structure (see ::freesasa_node_type). These can be linked in a
-    tree created by freesasa_structure_tree(), freed by
-    freesasa_structure_tree_free().
- */
-typedef struct freesasa_structure_node freesasa_structure_node;
-
 /**
     Struct used to store n string-value-pairs (strvp) in arrays of
     doubles and strings. freesasa_strvp_free() assumes both arrays
@@ -440,32 +414,6 @@ freesasa_write_result(FILE *log,
 int freesasa_write_parameters(FILE *log,
                               const freesasa_parameters *parameters);
 
-/**
-    Print RSA-file
-
-    Uses reference SASA values calculated using the default
-    configuration (ProtOr radii; Carbon is apolar, all other elements
-    polar; probe radius = 1.4 Å). The Ala-X-Ala configurations
-    supplied in the directory `rsa` were used as input (the reference
-    values themselves are stored statically in the code). At the
-    moment there is no support for outputting RSA files for other
-    configurations.
-
-    @remark This is still an experimental feature, and the interface
-      may still be subject to change without warning.
-
-    @param output Output-file @param tree A tree with stored results
-    @param classifier A classifier to determine which atoms are polar,
-      and to provide maximum reference areas for each residue. If
-      `classifier->residue_reference` is NULL the REL columns will be
-      filled with the value 'N/A'.
-    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
-      writing to file.
- */
-int
-freesasa_write_rsa(FILE *output,
-                   freesasa_structure_node *tree,
-                   const freesasa_classifier *classifier);
 /**
     Set the global verbosity level.
 
@@ -987,122 +935,6 @@ freesasa_structure_chain_residues(const freesasa_structure *structure,
                                   char chain,
                                   int *first,
                                   int *last);
-
-/**
-    Generates a tree that represents the structure, with the levels
-    described by ::freesasa_node_type. 
-
-    Use freesasa_structure_node_children() to traverse the tree, and
-    freesasa_structure_node_type(), freesasa_structure_node_area(),
-    and freesasa_node_name() to explore the properties of each node.
-
-    The tree should be freed using freesasa_structure_tree_free().
-    @param structure The structure to use
-    @param result SASA values for the structure
-    @param polar_classifier Classifier to determine which atoms are
-      polar and apolar
-    @param name The name of the structure
-    @return The root node of the tree. NULL if memory allocation fails.
- */
-freesasa_structure_node *
-freesasa_structure_tree(const freesasa_structure *structure,
-                        const freesasa_result *result,
-                        const freesasa_classifier *polar_classifier,
-                        const char *name);
-
-/**
-    Free ::freesasa_structure_node-tree.
-
-    Will not free anything if the node has a parent, i.e. if this node
-    is the not the root of the tree it belongs too.
-
-    @param root Root of the tree to free
-    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if the node hasa a
-      parent.
- */
-int
-freesasa_structure_tree_free(freesasa_structure_node *root);
-
-
-/**
-    The ::freesasa_subarea of all atoms belonging to a node.
-
-    Only works if the areas have been added using
-    freesasa_structure_tree_fill().
-
-    @param node The node. 
-    @return The area. NULL if no area has been attached to this node.
- */
-const freesasa_subarea *
-freesasa_structure_node_area(const freesasa_structure_node *node);
-
-/**
-    The children of a node.
-
-    Use freesasa_structure_node_next() to access next sibling.
-
-    @param node The node.  
-    @return Pointer to the first child of a node. NULL if the node has no
-      children.
- */
-freesasa_structure_node *
-freesasa_structure_node_children(freesasa_structure_node *node);
-
-/**
-    Next sibling of a node.
-
-    @param node The node.
-    @return The next node, NULL if this is the last node.
- */
-freesasa_structure_node *
-freesasa_structure_node_next(freesasa_structure_node *node);
-
-/**
-    The parent of a node.
-
-    @param node The node.
-    @return The parent node. NULL if the node has no parent.
- */
-freesasa_structure_node *
-freesasa_structure_node_parent(freesasa_structure_node *node);
-
-/**
-    The type of a node.
-
-    @param node The node.
-    @return The ::freesasa_node_type.
- */
-freesasa_node_type
-freesasa_structure_node_type(const freesasa_structure_node *node);
-
-/**
-    The name of a node.
-    
-    @param node The node.
-    @return The name. NULL if the node has no name.
- */
-const char *
-freesasa_structure_node_name(const freesasa_structure_node *node);
-
-/**
-    The atoms that a node spans.
-
-    @param node The node.
-    @param first Index of first atom will be stored here.
-    @param last Index of last atom will be stored here.
- */
-void
-freesasa_structure_node_atoms(const freesasa_structure_node *node,
-                              int *first,
-                              int *last);
-/**
-    The structure a node is associated with
-
-    @param node The node.
-    @return The structure.
- */
-const freesasa_structure*
-freesasa_structure_node_structure(const freesasa_structure_node *node);
 
 
 #ifdef __cplusplus
