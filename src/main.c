@@ -32,7 +32,6 @@ const char* options_string;
 freesasa_parameters parameters;
 const freesasa_classifier *classifier = NULL;
 freesasa_classifier *classifier_from_file = NULL;
-const freesasa_rsa_reference *rsa_reference = NULL;
 int structure_options = 0;
 
 // output files
@@ -319,7 +318,7 @@ run_analysis(FILE *input,
         if (printrsa) {
             freesasa_structure_node *tree =
                 freesasa_structure_tree(structures[i], result, classifier, name_i);
-            freesasa_write_rsa(rsa_file, tree, rsa_reference);
+            freesasa_write_rsa(rsa_file, tree, classifier);
             freesasa_structure_tree_free(tree);
         }
         freesasa_result_free(result);
@@ -409,20 +408,6 @@ add_unknown_option(const char *optarg)
         return; //default
     }
     abort_msg("Unknown alternative to option --unknown: '%s'", optarg);
-}
-
-// generate a RSA reference for when we have custom radii, this memory won't be freed
-freesasa_rsa_reference *
-empty_rsa_reference(const freesasa_classifier *c, const char *name)
-{
-    freesasa_rsa_reference *empty = malloc(sizeof(freesasa_rsa_reference));
-    const static freesasa_subarea zero[] = {{NULL, 0, 0, 0, 0, 0}};
-    if (!empty) abort_msg("Out of memory");
-    empty->name = strdup(name);
-    if (!name) abort_msg("Out of memory");
-    empty->max = zero;
-    empty->polar_classifier = c;
-    return empty;
 }
 
 int
@@ -518,10 +503,8 @@ main(int argc,
                 static_config = 1;
                 if (strcmp("naccess", optarg) == 0) {
                     classifier = &freesasa_naccess_classifier;
-                    rsa_reference = &freesasa_naccess_rsa;
                 } else if (strcmp("protor", optarg) == 0) {
                     classifier = &freesasa_protor_classifier;
-                    rsa_reference = &freesasa_protor_rsa;
                 } else {
                     abort_msg("Config '%s' not allowed, "
                               "can only be 'protor' or 'naccess')", optarg);
@@ -556,11 +539,8 @@ main(int argc,
             freesasa_set_verbosity(FREESASA_V_NOWARNINGS);
             break;
         case 'c': {
-            FILE *f = fopen_werr(optarg, "r");
-            classifier = classifier_from_file = freesasa_classifier_from_file(f);
-            fclose(f);
+            classifier = classifier_from_file = freesasa_classifier_from_filename(optarg);
             if (classifier_from_file == NULL) abort_msg("Can't read file '%s'.", optarg);
-            rsa_reference = empty_rsa_reference(classifier, optarg);
             break;
         }
         case 'n':
@@ -590,7 +570,6 @@ main(int argc,
             break;
         case 'O':
             structure_options |= FREESASA_RADIUS_FROM_OCCUPANCY;
-            rsa_reference = empty_rsa_reference(&freesasa_default_classifier, "input occupancy");
             break;
         case 'M':
             structure_options |= FREESASA_SEPARATE_MODELS;
@@ -642,8 +621,7 @@ main(int argc,
     if (opt_set['c'] && static_config) abort_msg("The options -c and --radii cannot be combined");
     if (opt_set['O'] && static_config) abort_msg("The options -O and --radii cannot be combined");
     if (opt_set['c'] && opt_set['O']) abort_msg("The option -c and -O can't be combined");
-    if (printrsa && rsa_reference == NULL) rsa_reference = &freesasa_default_rsa;
-    if (printrsa && (opt_set['c'] || opt_set['O'])) {
+    if (printrsa && (opt_set['c'] || opt_set['O'])) { // !!! Fix this
         freesasa_warn("Will skip REL columns in RSA when custom atomic radii selected.");
     }
     if (printlog) fprintf(output,"## %s %s ##\n", program_name, version);

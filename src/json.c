@@ -59,7 +59,7 @@ freesasa_json_subarea(const freesasa_subarea *area)
 
 json_object *
 freesasa_json_residue(freesasa_structure_node *node,
-                      const freesasa_rsa_reference *rsa)
+                      const freesasa_classifier *classifier)
 {
     assert(node);
     assert(freesasa_structure_node_type(node) == FREESASA_NODE_RESIDUE);
@@ -81,12 +81,11 @@ freesasa_json_residue(freesasa_structure_node *node,
     json_object_object_add(obj, "name", json_object_new_string(name));
     json_object_object_add(obj, "number", json_object_new_string(trim_number));
     json_object_object_add(obj, "abs", freesasa_json_subarea(abs));
-    if (rsa) {
-        freesasa_residue_rel_subarea(&rel, abs, rsa->max);
-        if (rel.name) {
-            json_object_object_add(obj, "rel", freesasa_json_subarea(&rel));
-        }
+    freesasa_residue_rel_subarea(&rel, abs, classifier);
+    if (rel.name) {
+        json_object_object_add(obj, "rel", freesasa_json_subarea(&rel));
     }
+    
     json_object_object_add(obj, "n_atoms", json_object_new_int(last - first + 1));
     return obj;
 }
@@ -128,7 +127,7 @@ freesasa_json_structure(freesasa_structure_node *node)
 
 json_object *
 freesasa_json_structure_tree(freesasa_structure_node *node,
-                             const freesasa_rsa_reference *rsa)
+                             const freesasa_classifier *classifier)
 {
     json_object *obj, *array;
     freesasa_structure_node *child = freesasa_structure_node_children(node);
@@ -145,18 +144,18 @@ freesasa_json_structure_tree(freesasa_structure_node *node,
         json_object_object_add(obj, "residues", array);
         break;
     case FREESASA_NODE_RESIDUE:
-        obj = freesasa_json_residue(node, rsa);
+        obj = freesasa_json_residue(node, classifier);
         json_object_object_add(obj, "atoms", array);
         break;
     case FREESASA_NODE_ATOM:
-        obj = freesasa_json_atom(node, rsa->polar_classifier);
+        obj = freesasa_json_atom(node, classifier);
         break;
     default:
         assert(0 && "Tree illegal");
     }
 
     while (child) {
-        json_object_array_add(array, freesasa_json_structure_tree(child, rsa));
+        json_object_array_add(array, freesasa_json_structure_tree(child, classifier));
         child = freesasa_structure_node_next(child);
     }
 

@@ -5,6 +5,6 @@
 
 json_object *
 freesasa_json_structure_tree(freesasa_structure_node *node,
-                             const freesasa_rsa_reference *rsa);
+                             const freesasa_classifier *classifier);
 
 #endif

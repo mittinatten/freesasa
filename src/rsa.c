@@ -11,89 +11,19 @@
 #  include <config.h>
 #endif
 
-/* these are calculated using L&R with 1000 slices and ProtOr radii,
-   from the AXA configurations in the directory rsa. */
-static const freesasa_subarea rsa_protor_ref[] = {
-    {.name = "ALA", .total = 103.10, .main_chain = 46.51, .side_chain = 56.60, .polar = 29.89, .apolar = 73.21},
-    {.name = "CYS", .total = 125.02, .main_chain = 45.47, .side_chain = 79.55, .polar = 79.68, .apolar = 45.33},
-    {.name = "ASP", .total = 135.76, .main_chain = 44.65, .side_chain = 91.11, .polar = 88.93, .apolar = 46.83},
-    {.name = "GLU", .total = 167.95, .main_chain = 45.12, .side_chain = 122.83, .polar = 113.74, .apolar = 54.21},
-    {.name = "PHE", .total = 193.68, .main_chain = 43.52, .side_chain = 150.16, .polar = 29.89, .apolar = 163.79},
-    {.name = "GLY", .total = 71.84, .main_chain = 71.84, .side_chain = 0.00, .polar = 31.58, .apolar = 40.26},
-    {.name = "HIS", .total = 173.43, .main_chain = 44.26, .side_chain = 129.18, .polar = 69.25, .apolar = 104.18},
-    {.name = "ILE", .total = 167.30, .main_chain = 39.09, .side_chain = 128.22, .polar = 24.70, .apolar = 142.60},
-    {.name = "LYS", .total = 197.47, .main_chain = 45.10, .side_chain = 152.38, .polar = 87.44, .apolar = 110.04},
-    {.name = "LEU", .total = 160.87, .main_chain = 44.85, .side_chain = 116.01, .polar = 29.89, .apolar = 130.98},
-    {.name = "MET", .total = 185.43, .main_chain = 45.08, .side_chain = 140.35, .polar = 67.61, .apolar = 117.83},
-    {.name = "ASN", .total = 138.45, .main_chain = 43.80, .side_chain = 94.65, .polar = 93.13, .apolar = 45.32},
-    {.name = "PRO", .total = 132.32, .main_chain = 29.83, .side_chain = 102.49, .polar = 16.16, .apolar = 116.16},
-    {.name = "GLN", .total = 172.69, .main_chain = 45.09, .side_chain = 127.60, .polar = 123.13, .apolar = 49.56},
-    {.name = "ARG", .total = 231.99, .main_chain = 45.09, .side_chain = 186.90, .polar = 153.92, .apolar = 78.07},
-    {.name = "SER", .total = 111.49, .main_chain = 46.10, .side_chain = 65.39, .polar = 58.63, .apolar = 52.86},
-    {.name = "THR", .total = 133.09, .main_chain = 40.38, .side_chain = 92.71, .polar = 49.91, .apolar = 83.18},
-    {.name = "VAL", .total = 146.72, .main_chain = 44.24, .side_chain = 102.48, .polar = 29.89, .apolar = 116.83},
-    {.name = "TRP", .total = 226.55, .main_chain = 40.50, .side_chain = 186.05, .polar = 61.19, .apolar = 165.37},
-    {.name = "TYR", .total = 208.08, .main_chain = 43.49, .side_chain = 164.58, .polar = 76.46, .apolar = 131.62},
-    {NULL, 0, 0, 0, 0, 0}, // marks end of array
-};
-
-const freesasa_rsa_reference freesasa_protor_rsa = {
-    .name = "ProtOr",
-    .max = rsa_protor_ref,
-    .polar_classifier = &freesasa_protor_classifier,
-};
-
-static const freesasa_subarea rsa_naccess_ref[20] = {
-    {.name = "ALA", .total = 102.31, .main_chain = 46.96, .side_chain = 55.35, .polar = 28.51, .apolar = 73.80},
-    {.name = "CYS", .total = 127.09, .main_chain = 45.71, .side_chain = 81.38, .polar = 28.51, .apolar = 98.58},
-    {.name = "ASP", .total = 134.50, .main_chain = 45.25, .side_chain = 89.25, .polar = 81.36, .apolar = 53.14},
-    {.name = "GLU", .total = 166.09, .main_chain = 45.60, .side_chain = 120.49, .polar = 103.10, .apolar = 63.00},
-    {.name = "PHE", .total = 193.15, .main_chain = 44.02, .side_chain = 149.13, .polar = 28.51, .apolar = 164.64},
-    {.name = "GLY", .total = 71.50, .main_chain = 71.50, .side_chain = 0.00, .polar = 29.80, .apolar = 41.69},
-    {.name = "HIS", .total = 173.15, .main_chain = 44.71, .side_chain = 128.44, .polar = 68.23, .apolar = 104.92},
-    {.name = "ILE", .total = 166.62, .main_chain = 38.94, .side_chain = 127.68, .polar = 24.25, .apolar = 142.37},
-    {.name = "LYS", .total = 192.51, .main_chain = 45.59, .side_chain = 146.93, .polar = 77.19, .apolar = 115.32},
-    {.name = "LEU", .total = 159.40, .main_chain = 45.05, .side_chain = 114.35, .polar = 28.51, .apolar = 130.89},
-    {.name = "MET", .total = 185.85, .main_chain = 45.57, .side_chain = 140.28, .polar = 28.51, .apolar = 157.34},
-    {.name = "ASN", .total = 137.97, .main_chain = 44.26, .side_chain = 93.71, .polar = 87.92, .apolar = 50.05},
-    {.name = "PRO", .total = 131.26, .main_chain = 29.75, .side_chain = 101.50, .polar = 14.98, .apolar = 116.27},
-    {.name = "GLN", .total = 172.15, .main_chain = 45.58, .side_chain = 126.57, .polar = 117.24, .apolar = 54.91},
-    {.name = "ARG", .total = 232.08, .main_chain = 45.58, .side_chain = 186.50, .polar = 148.95, .apolar = 83.13},
-    {.name = "SER", .total = 109.82, .main_chain = 46.67, .side_chain = 63.15, .polar = 54.97, .apolar = 54.85},
-    {.name = "THR", .total = 131.81, .main_chain = 40.30, .side_chain = 91.51, .polar = 47.59, .apolar = 84.22},
-    {.name = "VAL", .total = 146.03, .main_chain = 44.72, .side_chain = 101.31, .polar = 28.51, .apolar = 117.52},
-    {.name = "TRP", .total = 226.33, .main_chain = 40.90, .side_chain = 185.43, .polar = 58.94, .apolar = 167.40},
-    {.name = "TYR", .total = 206.14, .main_chain = 43.99, .side_chain = 162.14, .polar = 70.47, .apolar = 135.66},
-};
-
-
-const freesasa_rsa_reference freesasa_naccess_rsa = {
-    .name = "NACCESS",
-    .max = rsa_naccess_ref,
-    .polar_classifier = &freesasa_naccess_classifier,
-};
-
-
 int
 freesasa_residue_rel_subarea(freesasa_subarea *rel,
                              const freesasa_subarea *abs,
-                             const freesasa_subarea *ref)
+                             const freesasa_classifier *classifier)
 {
-    int i_ref = -1;
+    const freesasa_subarea *ref = freesasa_residue_max_area(abs->name, classifier);
 
-    for(int j = 0; ref[j].name != NULL; ++j) {
-        if (strcmp(ref[j].name, abs->name) == 0) {
-            i_ref = j;
-            break;
-        }
-    }
-
-    if (i_ref >= 0) {
-        rel->total = 100. * abs->total / ref[i_ref].total;
-        rel->side_chain = 100. * abs->side_chain / ref[i_ref].side_chain;
-        rel->main_chain = 100. * abs->main_chain / ref[i_ref].main_chain;
-        rel->polar = 100. * abs->polar / ref[i_ref].polar;
-        rel->apolar = 100. * abs->apolar / ref[i_ref].apolar;
+    if (ref->name != NULL) {
+        rel->total = 100. * abs->total / ref->total;
+        rel->side_chain = 100. * abs->side_chain / ref->side_chain;
+        rel->main_chain = 100. * abs->main_chain / ref->main_chain;
+        rel->polar = 100. * abs->polar / ref->polar;
+        rel->apolar = 100. * abs->apolar / ref->apolar;
         rel->name = abs->name;
         return FREESASA_SUCCESS;
     }
@@ -153,7 +83,7 @@ rsa_print_residue(FILE *output,
 int
 freesasa_write_rsa(FILE *output,
                    freesasa_structure_node *tree,
-                   const freesasa_rsa_reference *reference)
+                   const freesasa_classifier *classifier)
 {
     assert(output);
     assert(tree);
@@ -164,16 +94,17 @@ freesasa_write_rsa(FILE *output,
     freesasa_subarea rel;
     int res_index, chain_index;
 
-    if (!reference) reference = &freesasa_default_rsa;
+    if (!classifier) classifier = &freesasa_default_classifier;
 
-    rsa_print_header(output, reference->name, freesasa_structure_node_name(tree));
+    rsa_print_header(output, freesasa_classifier_name(classifier),
+                     freesasa_structure_node_name(tree));
 
     res_index = chain_index = 0;
     while(chain) {
         residue = freesasa_structure_node_children(chain);
         while (residue) {
             abs = freesasa_structure_node_area(residue);
-            freesasa_residue_rel_subarea(&rel, abs, reference->max);
+            freesasa_residue_rel_subarea(&rel, abs, classifier);
             rsa_print_residue(output, res_index, abs, &rel, structure);
             ++res_index;
             residue = freesasa_structure_node_next(residue);

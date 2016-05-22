@@ -173,7 +173,7 @@ freesasa_add_subarea(freesasa_subarea *sum,
 int
 freesasa_residue_rel_subarea(freesasa_subarea *rel,
                              const freesasa_subarea *abs,
-                             const freesasa_subarea *ref_values);
+                             const freesasa_classifier *classifier);
 /**
     Calculates the absolute and relative SASA values for a given residue
 
@@ -196,7 +196,7 @@ freesasa_rsa_val(freesasa_subarea *abs,
                  int residue_index,
                  const freesasa_structure *structure,
                  const freesasa_result *result,
-                 const freesasa_rsa_reference *reference);
+                 const freesasa_classifier *classifier);
 
 /**
     Is an atom a backbone atom
@@ -208,6 +208,35 @@ freesasa_rsa_val(freesasa_subarea *abs,
 int
 freesasa_atom_is_backbone(const char *atom_name);
 
+/**
+    The maximum areas of a residue, for RSA calculation.
+
+    Will only work where classifier->config points to a struct of type
+    classifier_config.
+
+    @param res_name Name of residue
+    @param classifier The classifier to use
+    @return The maximum areas (total, polar, etc). Will return an
+      object where the name member is NULL if the residue does not
+      have any maximums associated. This is not unusual, classifiers
+      may have max values for amino acids but not nucleic acids for
+      example.
+ */
+const freesasa_subarea *
+freesasa_residue_max_area(const char *res_name, 
+                          const freesasa_classifier *classifier);
+
+/**
+    The name of a classifier.
+
+    Will only work where classifier->config points to a struct of type
+    classifier_config.
+
+    @param Classifier The classifier
+    @return The name. NULL if not defined.
+ */
+const char *
+freesasa_classifier_name(const freesasa_classifier *classifier);
 
 /**
     Holds range in a file, to be initalized with ftell() and used

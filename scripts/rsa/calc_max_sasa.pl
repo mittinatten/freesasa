@@ -8,8 +8,7 @@ use strict;
 
 my @pdb = `ls *.pdb`;
 my @res_array;
-print ">>>> C code\n";
-print "freesasa_residue_sasa sasa_ref[20] = \{\n";
+print "freesasa_subarea sasa_ref[20] = \{\n";
 foreach my $p (@pdb) {
     chomp $p;
     my %res;

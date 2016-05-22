@@ -5,194 +5,236 @@
 static const char *protor_residue_name[] = {"A", "ACE", "ALA", "ARG", "ASN", "ASP", "ASX", "C", "CYS", "DA", "DC", "DG", "DI", "DT", "DU", "G", "GLN", "GLU", "GLX", "GLY", "HIS", "HOH", "I", "ILE", "LEU", "LYS", "MET", "NH2", "PHE", "PRO", "PYL", "SEC", "SER", "T", "THR", "TRP", "TYR", "U", "VAL", };
 static const char *protor_class_name[] = {"Apolar", "Polar", "Water", };
 
-static const char *protor_A_atom_name[] = {"O4'", "OP1", "OP3", "C5'", "N1", "C5", "N6", "C8", "N9", "C2", "N3", "O2'", "P", "O3'", "C4'", "N7", "C6", "OP2", "C2'", "O5'", "C1'", "C3'", "C4", };
-static double protor_A_atom_radius[] = {1.46, 1.42, 1.46, 1.88, 1.64, 1.61, 1.64, 1.76, 1.64, 1.76, 1.64, 1.46, 1.8, 1.46, 1.88, 1.64, 1.61, 1.46, 1.88, 1.46, 1.88, 1.88, 1.61, };
-static int protor_A_atom_class[] = {1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, };
+static const char *protor_A_atom_name[] = {"N9", "N3", "OP1", "C3'", "C8", "C2", "N1", "C6", "N6", "C5", "C1'", "P", "N7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O2'", };
+static double protor_A_atom_radius[] = {1.64, 1.64, 1.42, 1.88, 1.76, 1.76, 1.64, 1.61, 1.64, 1.61, 1.88, 1.8, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, };
+static int protor_A_atom_class[] = {1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, };
 static struct classifier_residue protor_A_cfg = {
     .name = "A", .n_atoms = 23,
     .atom_name = (char**) protor_A_atom_name,
     .atom_radius = (double*) protor_A_atom_radius,
-    .atom_class = (int*) protor_A_atom_class };
+    .atom_class = (int*) protor_A_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_ACE_atom_name[] = {"C", "O", "CH3", };
-static double protor_ACE_atom_radius[] = {1.76, 1.42, 1.88, };
-static int protor_ACE_atom_class[] = {0, 1, 0, };
+static const char *protor_ACE_atom_name[] = {"O", "CH3", "C", };
+static double protor_ACE_atom_radius[] = {1.42, 1.88, 1.76, };
+static int protor_ACE_atom_class[] = {1, 0, 0, };
 static struct classifier_residue protor_ACE_cfg = {
     .name = "ACE", .n_atoms = 3,
     .atom_name = (char**) protor_ACE_atom_name,
     .atom_radius = (double*) protor_ACE_atom_radius,
-    .atom_class = (int*) protor_ACE_atom_class };
+    .atom_class = (int*) protor_ACE_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_ALA_atom_name[] = {"N", "OXT", "CA", "O", "CB", "C", };
-static double protor_ALA_atom_radius[] = {1.64, 1.46, 1.88, 1.42, 1.88, 1.61, };
-static int protor_ALA_atom_class[] = {1, 1, 0, 1, 0, 0, };
+static const char *protor_ALA_atom_name[] = {"O", "C", "N", "CB", "CA", "OXT", };
+static double protor_ALA_atom_radius[] = {1.42, 1.61, 1.64, 1.88, 1.88, 1.46, };
+static int protor_ALA_atom_class[] = {1, 0, 1, 0, 0, 1, };
 static struct classifier_residue protor_ALA_cfg = {
     .name = "ALA", .n_atoms = 6,
     .atom_name = (char**) protor_ALA_atom_name,
     .atom_radius = (double*) protor_ALA_atom_radius,
-    .atom_class = (int*) protor_ALA_atom_class };
+    .atom_class = (int*) protor_ALA_atom_class,
+    .max_area = {.name = "ALA", .total = 103.10, .main_chain = 46.51, .side_chain = 56.60, .polar = 29.89, .apolar = 73.21},
+};
 
-static const char *protor_ARG_atom_name[] = {"C", "NH1", "CD", "CG", "CB", "OXT", "NH2", "CZ", "NE", "N", "O", "CA", };
-static double protor_ARG_atom_radius[] = {1.61, 1.64, 1.88, 1.88, 1.88, 1.46, 1.64, 1.61, 1.64, 1.64, 1.42, 1.88, };
-static int protor_ARG_atom_class[] = {0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, };
+static const char *protor_ARG_atom_name[] = {"O", "N", "CB", "CD", "CZ", "C", "CG", "NE", "NH2", "NH1", "CA", "OXT", };
+static double protor_ARG_atom_radius[] = {1.42, 1.64, 1.88, 1.88, 1.61, 1.61, 1.88, 1.64, 1.64, 1.64, 1.88, 1.46, };
+static int protor_ARG_atom_class[] = {1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, };
 static struct classifier_residue protor_ARG_cfg = {
     .name = "ARG", .n_atoms = 12,
     .atom_name = (char**) protor_ARG_atom_name,
     .atom_radius = (double*) protor_ARG_atom_radius,
-    .atom_class = (int*) protor_ARG_atom_class };
+    .atom_class = (int*) protor_ARG_atom_class,
+    .max_area = {.name = "ARG", .total = 231.99, .main_chain = 45.09, .side_chain = 186.90, .polar = 153.92, .apolar = 78.07},
+};
 
-static const char *protor_ASN_atom_name[] = {"CG", "C", "OD1", "N", "OXT", "ND2", "CB", "CA", "O", };
-static double protor_ASN_atom_radius[] = {1.61, 1.61, 1.42, 1.64, 1.46, 1.64, 1.88, 1.88, 1.42, };
-static int protor_ASN_atom_class[] = {0, 0, 1, 1, 1, 1, 0, 0, 1, };
+static const char *protor_ASN_atom_name[] = {"O", "N", "CB", "ND2", "C", "OD1", "CG", "CA", "OXT", };
+static double protor_ASN_atom_radius[] = {1.42, 1.64, 1.88, 1.64, 1.61, 1.42, 1.61, 1.88, 1.46, };
+static int protor_ASN_atom_class[] = {1, 1, 0, 1, 0, 1, 0, 0, 1, };
 static struct classifier_residue protor_ASN_cfg = {
     .name = "ASN", .n_atoms = 9,
     .atom_name = (char**) protor_ASN_atom_name,
     .atom_radius = (double*) protor_ASN_atom_radius,
-    .atom_class = (int*) protor_ASN_atom_class };
+    .atom_class = (int*) protor_ASN_atom_class,
+    .max_area = {.name = "ASN", .total = 138.45, .main_chain = 43.80, .side_chain = 94.65, .polar = 93.13, .apolar = 45.32},
+};
 
-static const char *protor_ASP_atom_name[] = {"OD2", "O", "CA", "C", "OD1", "CG", "CB", "OXT", "N", };
-static double protor_ASP_atom_radius[] = {1.46, 1.42, 1.88, 1.61, 1.42, 1.61, 1.88, 1.46, 1.64, };
-static int protor_ASP_atom_class[] = {1, 1, 0, 0, 1, 0, 0, 1, 1, };
+static const char *protor_ASP_atom_name[] = {"O", "N", "CB", "OD2", "C", "OD1", "CG", "CA", "OXT", };
+static double protor_ASP_atom_radius[] = {1.42, 1.64, 1.88, 1.46, 1.61, 1.42, 1.61, 1.88, 1.46, };
+static int protor_ASP_atom_class[] = {1, 1, 0, 1, 0, 1, 0, 0, 1, };
 static struct classifier_residue protor_ASP_cfg = {
     .name = "ASP", .n_atoms = 9,
     .atom_name = (char**) protor_ASP_atom_name,
     .atom_radius = (double*) protor_ASP_atom_radius,
-    .atom_class = (int*) protor_ASP_atom_class };
+    .atom_class = (int*) protor_ASP_atom_class,
+    .max_area = {.name = "ASP", .total = 135.76, .main_chain = 44.65, .side_chain = 91.11, .polar = 88.93, .apolar = 46.83},
+};
 
-static const char *protor_ASX_atom_name[] = {"CG", "XD1", "C", "OXT", "N", "CB", "XD2", "CA", "O", };
-static double protor_ASX_atom_radius[] = {1.61, 1.5, 1.61, 1.46, 1.64, 1.88, 1.5, 1.88, 1.42, };
-static int protor_ASX_atom_class[] = {0, 1, 0, 1, 1, 0, 1, 0, 1, };
+static const char *protor_ASX_atom_name[] = {"XD2", "O", "N", "CB", "XD1", "C", "CG", "CA", "OXT", };
+static double protor_ASX_atom_radius[] = {1.5, 1.42, 1.64, 1.88, 1.5, 1.61, 1.61, 1.88, 1.46, };
+static int protor_ASX_atom_class[] = {1, 1, 1, 0, 1, 0, 0, 0, 1, };
 static struct classifier_residue protor_ASX_cfg = {
     .name = "ASX", .n_atoms = 9,
     .atom_name = (char**) protor_ASX_atom_name,
     .atom_radius = (double*) protor_ASX_atom_radius,
-    .atom_class = (int*) protor_ASX_atom_class };
+    .atom_class = (int*) protor_ASX_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_C_atom_name[] = {"OP1", "OP3", "O4'", "C5'", "N1", "C5", "C2", "O2'", "N3", "C4'", "O3'", "N4", "P", "C2'", "OP2", "C6", "O2", "C4", "C3'", "O5'", "C1'", };
-static double protor_C_atom_radius[] = {1.42, 1.46, 1.46, 1.88, 1.64, 1.76, 1.61, 1.46, 1.64, 1.88, 1.46, 1.64, 1.8, 1.88, 1.46, 1.76, 1.42, 1.61, 1.88, 1.46, 1.88, };
-static int protor_C_atom_class[] = {1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, };
+static const char *protor_C_atom_name[] = {"N3", "OP1", "C3'", "C2", "C6", "N1", "C5", "C1'", "O2", "P", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O2'", "N4", };
+static double protor_C_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.76, 1.88, 1.42, 1.8, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, 1.64, };
+static int protor_C_atom_class[] = {1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, };
 static struct classifier_residue protor_C_cfg = {
     .name = "C", .n_atoms = 21,
     .atom_name = (char**) protor_C_atom_name,
     .atom_radius = (double*) protor_C_atom_radius,
-    .atom_class = (int*) protor_C_atom_class };
+    .atom_class = (int*) protor_C_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_CYS_atom_name[] = {"C", "CB", "O", "OXT", "N", "SG", "CA", };
-static double protor_CYS_atom_radius[] = {1.61, 1.88, 1.42, 1.46, 1.64, 1.77, 1.88, };
-static int protor_CYS_atom_class[] = {0, 0, 1, 1, 1, 1, 0, };
+static const char *protor_CYS_atom_name[] = {"O", "C", "N", "CB", "CA", "OXT", "SG", };
+static double protor_CYS_atom_radius[] = {1.42, 1.61, 1.64, 1.88, 1.88, 1.46, 1.77, };
+static int protor_CYS_atom_class[] = {1, 0, 1, 0, 0, 1, 1, };
 static struct classifier_residue protor_CYS_cfg = {
     .name = "CYS", .n_atoms = 7,
     .atom_name = (char**) protor_CYS_atom_name,
     .atom_radius = (double*) protor_CYS_atom_radius,
-    .atom_class = (int*) protor_CYS_atom_class };
+    .atom_class = (int*) protor_CYS_atom_class,
+    .max_area = {.name = "CYS", .total = 125.02, .main_chain = 45.47, .side_chain = 79.55, .polar = 79.68, .apolar = 45.33},
+};
 
-static const char *protor_DA_atom_name[] = {"C2", "C8", "N9", "N6", "C5", "C5'", "N1", "OP3", "OP1", "O4'", "C4", "C1'", "O5'", "C3'", "OP2", "C2'", "N7", "C6", "C4'", "P", "O3'", "N3", };
-static double protor_DA_atom_radius[] = {1.76, 1.76, 1.64, 1.64, 1.61, 1.88, 1.64, 1.46, 1.42, 1.46, 1.61, 1.88, 1.46, 1.88, 1.46, 1.88, 1.64, 1.61, 1.88, 1.8, 1.46, 1.64, };
-static int protor_DA_atom_class[] = {0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, };
+static const char *protor_DA_atom_name[] = {"N9", "N3", "OP1", "C3'", "C8", "C2", "N1", "C6", "N6", "C5", "C1'", "P", "N7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", };
+static double protor_DA_atom_radius[] = {1.64, 1.64, 1.42, 1.88, 1.76, 1.76, 1.64, 1.61, 1.64, 1.61, 1.88, 1.8, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, };
+static int protor_DA_atom_class[] = {1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, };
 static struct classifier_residue protor_DA_cfg = {
     .name = "DA", .n_atoms = 22,
     .atom_name = (char**) protor_DA_atom_name,
     .atom_radius = (double*) protor_DA_atom_radius,
-    .atom_class = (int*) protor_DA_atom_class };
+    .atom_class = (int*) protor_DA_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_DC_atom_name[] = {"N3", "O3'", "P", "N4", "C4'", "C6", "O2", "C2'", "OP2", "C3'", "C1'", "O5'", "C4", "O4'", "OP3", "OP1", "C5'", "N1", "C5", "C2", };
-static double protor_DC_atom_radius[] = {1.64, 1.46, 1.8, 1.64, 1.88, 1.76, 1.42, 1.88, 1.46, 1.88, 1.88, 1.46, 1.61, 1.46, 1.46, 1.42, 1.88, 1.64, 1.76, 1.61, };
-static int protor_DC_atom_class[] = {1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, };
+static const char *protor_DC_atom_name[] = {"N3", "OP1", "C3'", "C2", "C6", "N1", "C5", "C1'", "O2", "P", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "N4", };
+static double protor_DC_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.76, 1.88, 1.42, 1.8, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.64, };
+static int protor_DC_atom_class[] = {1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, };
 static struct classifier_residue protor_DC_cfg = {
     .name = "DC", .n_atoms = 20,
     .atom_name = (char**) protor_DC_atom_name,
     .atom_radius = (double*) protor_DC_atom_radius,
-    .atom_class = (int*) protor_DC_atom_class };
+    .atom_class = (int*) protor_DC_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_DG_atom_name[] = {"C1'", "O5'", "C3'", "C4", "N7", "C6", "OP2", "C2'", "P", "N2", "O3'", "C4'", "N3", "C8", "N9", "C2", "O6", "C5", "N1", "C5'", "O4'", "OP3", "OP1", };
-static double protor_DG_atom_radius[] = {1.88, 1.46, 1.88, 1.61, 1.64, 1.61, 1.46, 1.88, 1.8, 1.64, 1.46, 1.88, 1.64, 1.76, 1.64, 1.61, 1.42, 1.61, 1.64, 1.88, 1.46, 1.46, 1.42, };
-static int protor_DG_atom_class[] = {0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, };
+static const char *protor_DG_atom_name[] = {"N9", "N3", "OP1", "N2", "C3'", "C8", "C2", "N1", "C6", "C5", "C1'", "P", "N7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O6", };
+static double protor_DG_atom_radius[] = {1.64, 1.64, 1.42, 1.64, 1.88, 1.76, 1.61, 1.64, 1.61, 1.61, 1.88, 1.8, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
+static int protor_DG_atom_class[] = {1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, };
 static struct classifier_residue protor_DG_cfg = {
     .name = "DG", .n_atoms = 23,
     .atom_name = (char**) protor_DG_atom_name,
     .atom_radius = (double*) protor_DG_atom_radius,
-    .atom_class = (int*) protor_DG_atom_class };
+    .atom_class = (int*) protor_DG_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_DI_atom_name[] = {"O4'", "OP3", "OP1", "N1", "C5'", "C5", "C8", "N9", "O6", "C2", "N3", "P", "O3'", "C4'", "C6", "N7", "OP2", "C2'", "O5'", "C1'", "C3'", "C4", };
-static double protor_DI_atom_radius[] = {1.46, 1.46, 1.42, 1.64, 1.88, 1.61, 1.76, 1.64, 1.42, 1.76, 1.64, 1.8, 1.46, 1.88, 1.61, 1.64, 1.46, 1.88, 1.46, 1.88, 1.88, 1.61, };
-static int protor_DI_atom_class[] = {1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, };
+static const char *protor_DI_atom_name[] = {"N9", "N3", "OP1", "C3'", "C8", "C2", "N1", "C6", "C5", "C1'", "P", "N7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O6", };
+static double protor_DI_atom_radius[] = {1.64, 1.64, 1.42, 1.88, 1.76, 1.76, 1.64, 1.61, 1.61, 1.88, 1.8, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
+static int protor_DI_atom_class[] = {1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, };
 static struct classifier_residue protor_DI_cfg = {
     .name = "DI", .n_atoms = 22,
     .atom_name = (char**) protor_DI_atom_name,
     .atom_radius = (double*) protor_DI_atom_radius,
-    .atom_class = (int*) protor_DI_atom_class };
+    .atom_class = (int*) protor_DI_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_DT_atom_name[] = {"OP1", "OP3", "O4'", "C5'", "N1", "C7", "C5", "C2", "O4", "N3", "C4'", "O3'", "P", "C2'", "OP2", "C6", "O2", "C4", "C3'", "O5'", "C1'", };
-static double protor_DT_atom_radius[] = {1.42, 1.46, 1.46, 1.88, 1.64, 1.88, 1.61, 1.61, 1.42, 1.64, 1.88, 1.46, 1.8, 1.88, 1.46, 1.76, 1.42, 1.61, 1.88, 1.46, 1.88, };
-static int protor_DT_atom_class[] = {1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, };
+static const char *protor_DT_atom_name[] = {"N3", "OP1", "C3'", "C2", "C6", "N1", "C5", "C1'", "O2", "P", "C7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O4", };
+static double protor_DT_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.61, 1.88, 1.42, 1.8, 1.88, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
+static int protor_DT_atom_class[] = {1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, };
 static struct classifier_residue protor_DT_cfg = {
     .name = "DT", .n_atoms = 21,
     .atom_name = (char**) protor_DT_atom_name,
     .atom_radius = (double*) protor_DT_atom_radius,
-    .atom_class = (int*) protor_DT_atom_class };
+    .atom_class = (int*) protor_DT_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_DU_atom_name[] = {"C4'", "O3'", "P", "N3", "O4", "C4", "C3'", "C1'", "O5'", "C2'", "OP2", "C6", "O2", "N1", "C5'", "OP3", "OP1", "O4'", "C2", "C5", };
-static double protor_DU_atom_radius[] = {1.88, 1.46, 1.8, 1.64, 1.42, 1.61, 1.88, 1.88, 1.46, 1.88, 1.46, 1.76, 1.42, 1.64, 1.88, 1.46, 1.42, 1.46, 1.61, 1.76, };
-static int protor_DU_atom_class[] = {0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, };
+static const char *protor_DU_atom_name[] = {"N3", "OP1", "C3'", "C2", "C6", "N1", "C5", "C1'", "O2", "P", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O4", };
+static double protor_DU_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.76, 1.88, 1.42, 1.8, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
+static int protor_DU_atom_class[] = {1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, };
 static struct classifier_residue protor_DU_cfg = {
     .name = "DU", .n_atoms = 20,
     .atom_name = (char**) protor_DU_atom_name,
     .atom_radius = (double*) protor_DU_atom_radius,
-    .atom_class = (int*) protor_DU_atom_class };
+    .atom_class = (int*) protor_DU_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_G_atom_name[] = {"C6", "N7", "C2'", "OP2", "C3'", "O5'", "C1'", "C4", "N3", "O2'", "O3'", "N2", "P", "C4'", "C5", "N9", "C8", "O6", "C2", "O4'", "OP3", "OP1", "C5'", "N1", };
-static double protor_G_atom_radius[] = {1.61, 1.64, 1.88, 1.46, 1.88, 1.46, 1.88, 1.61, 1.64, 1.46, 1.46, 1.64, 1.8, 1.88, 1.61, 1.64, 1.76, 1.42, 1.61, 1.46, 1.46, 1.42, 1.88, 1.64, };
-static int protor_G_atom_class[] = {0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, };
+static const char *protor_G_atom_name[] = {"N9", "N3", "OP1", "N2", "C3'", "C8", "C2", "N1", "C6", "C5", "C1'", "P", "N7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O2'", "O6", };
+static double protor_G_atom_radius[] = {1.64, 1.64, 1.42, 1.64, 1.88, 1.76, 1.61, 1.64, 1.61, 1.61, 1.88, 1.8, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, 1.42, };
+static int protor_G_atom_class[] = {1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, };
 static struct classifier_residue protor_G_cfg = {
     .name = "G", .n_atoms = 24,
     .atom_name = (char**) protor_G_atom_name,
     .atom_radius = (double*) protor_G_atom_radius,
-    .atom_class = (int*) protor_G_atom_class };
+    .atom_class = (int*) protor_G_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_GLN_atom_name[] = {"N", "OXT", "CB", "CD", "CG", "OE1", "C", "NE2", "CA", "O", };
-static double protor_GLN_atom_radius[] = {1.64, 1.46, 1.88, 1.61, 1.88, 1.42, 1.61, 1.64, 1.88, 1.42, };
-static int protor_GLN_atom_class[] = {1, 1, 0, 0, 0, 1, 0, 1, 0, 1, };
+static const char *protor_GLN_atom_name[] = {"O", "NE2", "N", "OE1", "CB", "CD", "C", "CG", "CA", "OXT", };
+static double protor_GLN_atom_radius[] = {1.42, 1.64, 1.64, 1.42, 1.88, 1.61, 1.61, 1.88, 1.88, 1.46, };
+static int protor_GLN_atom_class[] = {1, 1, 1, 1, 0, 0, 0, 0, 0, 1, };
 static struct classifier_residue protor_GLN_cfg = {
     .name = "GLN", .n_atoms = 10,
     .atom_name = (char**) protor_GLN_atom_name,
     .atom_radius = (double*) protor_GLN_atom_radius,
-    .atom_class = (int*) protor_GLN_atom_class };
+    .atom_class = (int*) protor_GLN_atom_class,
+    .max_area = {.name = "GLN", .total = 172.69, .main_chain = 45.09, .side_chain = 127.60, .polar = 123.13, .apolar = 49.56},
+};
 
-static const char *protor_GLU_atom_name[] = {"O", "CA", "OE2", "CB", "OXT", "N", "C", "CD", "OE1", "CG", };
-static double protor_GLU_atom_radius[] = {1.42, 1.88, 1.46, 1.88, 1.46, 1.64, 1.61, 1.61, 1.42, 1.88, };
-static int protor_GLU_atom_class[] = {1, 0, 1, 0, 1, 1, 0, 0, 1, 0, };
+static const char *protor_GLU_atom_name[] = {"O", "N", "OE1", "CB", "OE2", "CD", "C", "CG", "CA", "OXT", };
+static double protor_GLU_atom_radius[] = {1.42, 1.64, 1.42, 1.88, 1.46, 1.61, 1.61, 1.88, 1.88, 1.46, };
+static int protor_GLU_atom_class[] = {1, 1, 1, 0, 1, 0, 0, 0, 0, 1, };
 static struct classifier_residue protor_GLU_cfg = {
     .name = "GLU", .n_atoms = 10,
     .atom_name = (char**) protor_GLU_atom_name,
     .atom_radius = (double*) protor_GLU_atom_radius,
-    .atom_class = (int*) protor_GLU_atom_class };
+    .atom_class = (int*) protor_GLU_atom_class,
+    .max_area = {.name = "GLU", .total = 167.95, .main_chain = 45.12, .side_chain = 122.83, .polar = 113.74, .apolar = 54.21},
+};
 
-static const char *protor_GLX_atom_name[] = {"OXT", "N", "CB", "CD", "CG", "XE1", "C", "CA", "O", "XE2", };
-static double protor_GLX_atom_radius[] = {1.46, 1.64, 1.88, 1.61, 1.88, 1.5, 1.61, 1.88, 1.42, 1.5, };
-static int protor_GLX_atom_class[] = {1, 1, 0, 0, 0, 1, 0, 0, 1, 1, };
+static const char *protor_GLX_atom_name[] = {"O", "N", "XE2", "CB", "CD", "C", "CG", "CA", "XE1", "OXT", };
+static double protor_GLX_atom_radius[] = {1.42, 1.64, 1.5, 1.88, 1.61, 1.61, 1.88, 1.88, 1.5, 1.46, };
+static int protor_GLX_atom_class[] = {1, 1, 1, 0, 0, 0, 0, 0, 1, 1, };
 static struct classifier_residue protor_GLX_cfg = {
     .name = "GLX", .n_atoms = 10,
     .atom_name = (char**) protor_GLX_atom_name,
     .atom_radius = (double*) protor_GLX_atom_radius,
-    .atom_class = (int*) protor_GLX_atom_class };
+    .atom_class = (int*) protor_GLX_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_GLY_atom_name[] = {"C", "O", "N", "OXT", "CA", };
-static double protor_GLY_atom_radius[] = {1.61, 1.42, 1.64, 1.46, 1.88, };
-static int protor_GLY_atom_class[] = {0, 1, 1, 1, 0, };
+static const char *protor_GLY_atom_name[] = {"O", "C", "N", "CA", "OXT", };
+static double protor_GLY_atom_radius[] = {1.42, 1.61, 1.64, 1.88, 1.46, };
+static int protor_GLY_atom_class[] = {1, 0, 1, 0, 1, };
 static struct classifier_residue protor_GLY_cfg = {
     .name = "GLY", .n_atoms = 5,
     .atom_name = (char**) protor_GLY_atom_name,
     .atom_radius = (double*) protor_GLY_atom_radius,
-    .atom_class = (int*) protor_GLY_atom_class };
+    .atom_class = (int*) protor_GLY_atom_class,
+    .max_area = {.name = "GLY", .total = 71.84, .main_chain = 71.84, .side_chain = 0.00, .polar = 31.58, .apolar = 40.26},
+};
 
-static const char *protor_HIS_atom_name[] = {"CB", "ND1", "OXT", "N", "CD2", "C", "NE2", "CG", "CE1", "O", "CA", };
-static double protor_HIS_atom_radius[] = {1.88, 1.64, 1.46, 1.64, 1.76, 1.61, 1.64, 1.61, 1.76, 1.42, 1.88, };
-static int protor_HIS_atom_class[] = {0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, };
+static const char *protor_HIS_atom_name[] = {"O", "NE2", "N", "CB", "ND1", "CD2", "CE1", "C", "CG", "CA", "OXT", };
+static double protor_HIS_atom_radius[] = {1.42, 1.64, 1.64, 1.88, 1.64, 1.76, 1.76, 1.61, 1.61, 1.88, 1.46, };
+static int protor_HIS_atom_class[] = {1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, };
 static struct classifier_residue protor_HIS_cfg = {
     .name = "HIS", .n_atoms = 11,
     .atom_name = (char**) protor_HIS_atom_name,
     .atom_radius = (double*) protor_HIS_atom_radius,
-    .atom_class = (int*) protor_HIS_atom_class };
+    .atom_class = (int*) protor_HIS_atom_class,
+    .max_area = {.name = "HIS", .total = 173.43, .main_chain = 44.26, .side_chain = 129.18, .polar = 69.25, .apolar = 104.18},
+};
 
 static const char *protor_HOH_atom_name[] = {"O", };
 static double protor_HOH_atom_radius[] = {1.46, };
@@ -201,52 +243,64 @@ static struct classifier_residue protor_HOH_cfg = {
     .name = "HOH", .n_atoms = 1,
     .atom_name = (char**) protor_HOH_atom_name,
     .atom_radius = (double*) protor_HOH_atom_radius,
-    .atom_class = (int*) protor_HOH_atom_class };
+    .atom_class = (int*) protor_HOH_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_I_atom_name[] = {"P", "O3'", "C4'", "N3", "O2'", "O5'", "C1'", "C3'", "C4", "C6", "N7", "OP2", "C2'", "C5'", "N1", "O4'", "OP1", "OP3", "C8", "N9", "C2", "O6", "C5", };
-static double protor_I_atom_radius[] = {1.8, 1.46, 1.88, 1.64, 1.46, 1.46, 1.88, 1.88, 1.61, 1.61, 1.64, 1.46, 1.88, 1.88, 1.64, 1.46, 1.42, 1.46, 1.76, 1.64, 1.76, 1.42, 1.61, };
-static int protor_I_atom_class[] = {1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, };
+static const char *protor_I_atom_name[] = {"N9", "N3", "OP1", "C3'", "C8", "C2", "N1", "C6", "C5", "C1'", "P", "N7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O2'", "O6", };
+static double protor_I_atom_radius[] = {1.64, 1.64, 1.42, 1.88, 1.76, 1.76, 1.64, 1.61, 1.61, 1.88, 1.8, 1.64, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, 1.42, };
+static int protor_I_atom_class[] = {1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, };
 static struct classifier_residue protor_I_cfg = {
     .name = "I", .n_atoms = 23,
     .atom_name = (char**) protor_I_atom_name,
     .atom_radius = (double*) protor_I_atom_radius,
-    .atom_class = (int*) protor_I_atom_class };
+    .atom_class = (int*) protor_I_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_ILE_atom_name[] = {"C", "CD1", "CB", "CG2", "N", "OXT", "CG1", "O", "CA", };
-static double protor_ILE_atom_radius[] = {1.61, 1.88, 1.88, 1.88, 1.64, 1.46, 1.88, 1.42, 1.88, };
-static int protor_ILE_atom_class[] = {0, 0, 0, 0, 1, 1, 0, 1, 0, };
+static const char *protor_ILE_atom_name[] = {"O", "N", "CB", "CG2", "CD1", "C", "CG1", "CA", "OXT", };
+static double protor_ILE_atom_radius[] = {1.42, 1.64, 1.88, 1.88, 1.88, 1.61, 1.88, 1.88, 1.46, };
+static int protor_ILE_atom_class[] = {1, 1, 0, 0, 0, 0, 0, 0, 1, };
 static struct classifier_residue protor_ILE_cfg = {
     .name = "ILE", .n_atoms = 9,
     .atom_name = (char**) protor_ILE_atom_name,
     .atom_radius = (double*) protor_ILE_atom_radius,
-    .atom_class = (int*) protor_ILE_atom_class };
+    .atom_class = (int*) protor_ILE_atom_class,
+    .max_area = {.name = "ILE", .total = 167.30, .main_chain = 39.09, .side_chain = 128.22, .polar = 24.70, .apolar = 142.60},
+};
 
-static const char *protor_LEU_atom_name[] = {"C", "CG", "CD1", "CB", "CD2", "OXT", "N", "O", "CA", };
-static double protor_LEU_atom_radius[] = {1.61, 1.88, 1.88, 1.88, 1.88, 1.46, 1.64, 1.42, 1.88, };
-static int protor_LEU_atom_class[] = {0, 0, 0, 0, 0, 1, 1, 1, 0, };
+static const char *protor_LEU_atom_name[] = {"O", "N", "CB", "CD1", "CD2", "C", "CG", "CA", "OXT", };
+static double protor_LEU_atom_radius[] = {1.42, 1.64, 1.88, 1.88, 1.88, 1.61, 1.88, 1.88, 1.46, };
+static int protor_LEU_atom_class[] = {1, 1, 0, 0, 0, 0, 0, 0, 1, };
 static struct classifier_residue protor_LEU_cfg = {
     .name = "LEU", .n_atoms = 9,
     .atom_name = (char**) protor_LEU_atom_name,
     .atom_radius = (double*) protor_LEU_atom_radius,
-    .atom_class = (int*) protor_LEU_atom_class };
+    .atom_class = (int*) protor_LEU_atom_class,
+    .max_area = {.name = "LEU", .total = 160.87, .main_chain = 44.85, .side_chain = 116.01, .polar = 29.89, .apolar = 130.98},
+};
 
-static const char *protor_LYS_atom_name[] = {"CD", "CG", "C", "OXT", "N", "CE", "CB", "CA", "NZ", "O", };
-static double protor_LYS_atom_radius[] = {1.88, 1.88, 1.61, 1.46, 1.64, 1.88, 1.88, 1.88, 1.64, 1.42, };
-static int protor_LYS_atom_class[] = {0, 0, 0, 1, 1, 0, 0, 0, 1, 1, };
+static const char *protor_LYS_atom_name[] = {"O", "N", "CB", "CE", "CD", "C", "CG", "NZ", "CA", "OXT", };
+static double protor_LYS_atom_radius[] = {1.42, 1.64, 1.88, 1.88, 1.88, 1.61, 1.88, 1.64, 1.88, 1.46, };
+static int protor_LYS_atom_class[] = {1, 1, 0, 0, 0, 0, 0, 1, 0, 1, };
 static struct classifier_residue protor_LYS_cfg = {
     .name = "LYS", .n_atoms = 10,
     .atom_name = (char**) protor_LYS_atom_name,
     .atom_radius = (double*) protor_LYS_atom_radius,
-    .atom_class = (int*) protor_LYS_atom_class };
+    .atom_class = (int*) protor_LYS_atom_class,
+    .max_area = {.name = "LYS", .total = 197.47, .main_chain = 45.10, .side_chain = 152.38, .polar = 87.44, .apolar = 110.04},
+};
 
-static const char *protor_MET_atom_name[] = {"O", "SD", "CA", "C", "CG", "CB", "N", "OXT", "CE", };
-static double protor_MET_atom_radius[] = {1.42, 1.77, 1.88, 1.61, 1.88, 1.88, 1.64, 1.46, 1.88, };
-static int protor_MET_atom_class[] = {1, 1, 0, 0, 0, 0, 1, 1, 0, };
+static const char *protor_MET_atom_name[] = {"O", "N", "CB", "CE", "C", "CG", "SD", "CA", "OXT", };
+static double protor_MET_atom_radius[] = {1.42, 1.64, 1.88, 1.88, 1.61, 1.88, 1.77, 1.88, 1.46, };
+static int protor_MET_atom_class[] = {1, 1, 0, 0, 0, 0, 1, 0, 1, };
 static struct classifier_residue protor_MET_cfg = {
     .name = "MET", .n_atoms = 9,
     .atom_name = (char**) protor_MET_atom_name,
     .atom_radius = (double*) protor_MET_atom_radius,
-    .atom_class = (int*) protor_MET_atom_class };
+    .atom_class = (int*) protor_MET_atom_class,
+    .max_area = {.name = "MET", .total = 185.43, .main_chain = 45.08, .side_chain = 140.35, .polar = 67.61, .apolar = 117.83},
+};
 
 static const char *protor_NH2_atom_name[] = {"N", };
 static double protor_NH2_atom_radius[] = {1.64, };
@@ -255,106 +309,130 @@ static struct classifier_residue protor_NH2_cfg = {
     .name = "NH2", .n_atoms = 1,
     .atom_name = (char**) protor_NH2_atom_name,
     .atom_radius = (double*) protor_NH2_atom_radius,
-    .atom_class = (int*) protor_NH2_atom_class };
+    .atom_class = (int*) protor_NH2_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_PHE_atom_name[] = {"CA", "CE1", "O", "CZ", "OXT", "N", "CD2", "CB", "CD1", "CE2", "CG", "C", };
-static double protor_PHE_atom_radius[] = {1.88, 1.76, 1.42, 1.76, 1.46, 1.64, 1.76, 1.88, 1.76, 1.76, 1.61, 1.61, };
-static int protor_PHE_atom_class[] = {0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, };
+static const char *protor_PHE_atom_name[] = {"O", "N", "CB", "CE2", "CD1", "CD2", "CZ", "CE1", "C", "CG", "CA", "OXT", };
+static double protor_PHE_atom_radius[] = {1.42, 1.64, 1.88, 1.76, 1.76, 1.76, 1.76, 1.76, 1.61, 1.61, 1.88, 1.46, };
+static int protor_PHE_atom_class[] = {1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, };
 static struct classifier_residue protor_PHE_cfg = {
     .name = "PHE", .n_atoms = 12,
     .atom_name = (char**) protor_PHE_atom_name,
     .atom_radius = (double*) protor_PHE_atom_radius,
-    .atom_class = (int*) protor_PHE_atom_class };
+    .atom_class = (int*) protor_PHE_atom_class,
+    .max_area = {.name = "PHE", .total = 193.68, .main_chain = 43.52, .side_chain = 150.16, .polar = 29.89, .apolar = 163.79},
+};
 
-static const char *protor_PRO_atom_name[] = {"CA", "O", "OXT", "N", "CB", "CG", "CD", "C", };
-static double protor_PRO_atom_radius[] = {1.88, 1.42, 1.46, 1.64, 1.88, 1.88, 1.88, 1.61, };
-static int protor_PRO_atom_class[] = {0, 1, 1, 1, 0, 0, 0, 0, };
+static const char *protor_PRO_atom_name[] = {"O", "N", "CB", "CD", "C", "CG", "CA", "OXT", };
+static double protor_PRO_atom_radius[] = {1.42, 1.64, 1.88, 1.88, 1.61, 1.88, 1.88, 1.46, };
+static int protor_PRO_atom_class[] = {1, 1, 0, 0, 0, 0, 0, 1, };
 static struct classifier_residue protor_PRO_cfg = {
     .name = "PRO", .n_atoms = 8,
     .atom_name = (char**) protor_PRO_atom_name,
     .atom_radius = (double*) protor_PRO_atom_radius,
-    .atom_class = (int*) protor_PRO_atom_class };
+    .atom_class = (int*) protor_PRO_atom_class,
+    .max_area = {.name = "PRO", .total = 132.32, .main_chain = 29.83, .side_chain = 102.49, .polar = 16.16, .apolar = 116.16},
+};
 
-static const char *protor_PYL_atom_name[] = {"CA2", "CB", "CE", "CD2", "C2", "C", "NZ", "CB2", "CA", "CG2", "OXT", "N", "O2", "CD", "CE2", "CG", "O", "N2", };
-static double protor_PYL_atom_radius[] = {1.88, 1.88, 1.88, 1.88, 1.61, 1.61, 1.64, 1.88, 1.88, 1.88, 1.46, 1.64, 1.42, 1.88, 1.76, 1.88, 1.42, 1.64, };
-static int protor_PYL_atom_class[] = {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, };
+static const char *protor_PYL_atom_name[] = {"CA2", "N", "CB", "N2", "CG2", "CD2", "CD", "C", "CG", "CA", "C2", "O", "O2", "CB2", "CE", "CE2", "NZ", "OXT", };
+static double protor_PYL_atom_radius[] = {1.88, 1.64, 1.88, 1.64, 1.88, 1.88, 1.88, 1.61, 1.88, 1.88, 1.61, 1.42, 1.42, 1.88, 1.88, 1.76, 1.64, 1.46, };
+static int protor_PYL_atom_class[] = {0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, };
 static struct classifier_residue protor_PYL_cfg = {
     .name = "PYL", .n_atoms = 18,
     .atom_name = (char**) protor_PYL_atom_name,
     .atom_radius = (double*) protor_PYL_atom_radius,
-    .atom_class = (int*) protor_PYL_atom_class };
+    .atom_class = (int*) protor_PYL_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_SEC_atom_name[] = {"C", "CB", "O", "OXT", "SE", "N", "CA", };
-static double protor_SEC_atom_radius[] = {1.61, 1.88, 1.42, 1.46, 1.9, 1.64, 1.88, };
-static int protor_SEC_atom_class[] = {0, 0, 1, 1, 1, 1, 0, };
+static const char *protor_SEC_atom_name[] = {"SE", "O", "C", "N", "CB", "CA", "OXT", };
+static double protor_SEC_atom_radius[] = {1.9, 1.42, 1.61, 1.64, 1.88, 1.88, 1.46, };
+static int protor_SEC_atom_class[] = {1, 1, 0, 1, 0, 0, 1, };
 static struct classifier_residue protor_SEC_cfg = {
     .name = "SEC", .n_atoms = 7,
     .atom_name = (char**) protor_SEC_atom_name,
     .atom_radius = (double*) protor_SEC_atom_radius,
-    .atom_class = (int*) protor_SEC_atom_class };
+    .atom_class = (int*) protor_SEC_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_SER_atom_name[] = {"CA", "OXT", "N", "CB", "O", "OG", "C", };
-static double protor_SER_atom_radius[] = {1.88, 1.46, 1.64, 1.88, 1.42, 1.46, 1.61, };
-static int protor_SER_atom_class[] = {0, 1, 1, 0, 1, 1, 0, };
+static const char *protor_SER_atom_name[] = {"O", "OG", "C", "N", "CB", "CA", "OXT", };
+static double protor_SER_atom_radius[] = {1.42, 1.46, 1.61, 1.64, 1.88, 1.88, 1.46, };
+static int protor_SER_atom_class[] = {1, 1, 0, 1, 0, 0, 1, };
 static struct classifier_residue protor_SER_cfg = {
     .name = "SER", .n_atoms = 7,
     .atom_name = (char**) protor_SER_atom_name,
     .atom_radius = (double*) protor_SER_atom_radius,
-    .atom_class = (int*) protor_SER_atom_class };
+    .atom_class = (int*) protor_SER_atom_class,
+    .max_area = {.name = "SER", .total = 111.49, .main_chain = 46.10, .side_chain = 65.39, .polar = 58.63, .apolar = 52.86},
+};
 
-static const char *protor_T_atom_name[] = {"C1'", "O5'", "C3'", "C4", "O2", "C6", "OP2", "C2'", "P", "O3'", "C4'", "O4", "N3", "C2", "C7", "C5", "C5'", "N1", "O4'", "OP1", "OP3", };
-static double protor_T_atom_radius[] = {1.88, 1.46, 1.88, 1.61, 1.42, 1.76, 1.46, 1.88, 1.8, 1.46, 1.88, 1.42, 1.64, 1.61, 1.88, 1.61, 1.88, 1.64, 1.46, 1.42, 1.46, };
-static int protor_T_atom_class[] = {0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, };
+static const char *protor_T_atom_name[] = {"N3", "OP1", "C3'", "C2", "C6", "N1", "C5", "C1'", "O2", "P", "C7", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O4", };
+static double protor_T_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.61, 1.88, 1.42, 1.8, 1.88, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.42, };
+static int protor_T_atom_class[] = {1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, };
 static struct classifier_residue protor_T_cfg = {
     .name = "T", .n_atoms = 21,
     .atom_name = (char**) protor_T_atom_name,
     .atom_radius = (double*) protor_T_atom_radius,
-    .atom_class = (int*) protor_T_atom_class };
+    .atom_class = (int*) protor_T_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_THR_atom_name[] = {"OG1", "O", "CA", "C", "CB", "CG2", "N", "OXT", };
-static double protor_THR_atom_radius[] = {1.46, 1.42, 1.88, 1.61, 1.88, 1.88, 1.64, 1.46, };
-static int protor_THR_atom_class[] = {1, 1, 0, 0, 0, 0, 1, 1, };
+static const char *protor_THR_atom_name[] = {"O", "N", "CB", "CG2", "OG1", "C", "CA", "OXT", };
+static double protor_THR_atom_radius[] = {1.42, 1.64, 1.88, 1.88, 1.46, 1.61, 1.88, 1.46, };
+static int protor_THR_atom_class[] = {1, 1, 0, 0, 1, 0, 0, 1, };
 static struct classifier_residue protor_THR_cfg = {
     .name = "THR", .n_atoms = 8,
     .atom_name = (char**) protor_THR_atom_name,
     .atom_radius = (double*) protor_THR_atom_radius,
-    .atom_class = (int*) protor_THR_atom_class };
+    .atom_class = (int*) protor_THR_atom_class,
+    .max_area = {.name = "THR", .total = 133.09, .main_chain = 40.38, .side_chain = 92.71, .polar = 49.91, .apolar = 83.18},
+};
 
-static const char *protor_TRP_atom_name[] = {"CZ3", "NE1", "CH2", "CA", "O", "CE2", "CE3", "CG", "CD1", "C", "CZ2", "N", "OXT", "CD2", "CB", };
-static double protor_TRP_atom_radius[] = {1.76, 1.64, 1.76, 1.88, 1.42, 1.61, 1.76, 1.61, 1.76, 1.61, 1.76, 1.64, 1.46, 1.61, 1.88, };
-static int protor_TRP_atom_class[] = {0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, };
+static const char *protor_TRP_atom_name[] = {"O", "CZ2", "N", "CB", "CE2", "NE1", "CD1", "CD2", "CH2", "C", "CE3", "CG", "CZ3", "CA", "OXT", };
+static double protor_TRP_atom_radius[] = {1.42, 1.76, 1.64, 1.88, 1.61, 1.64, 1.76, 1.61, 1.76, 1.61, 1.76, 1.61, 1.76, 1.88, 1.46, };
+static int protor_TRP_atom_class[] = {1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, };
 static struct classifier_residue protor_TRP_cfg = {
     .name = "TRP", .n_atoms = 15,
     .atom_name = (char**) protor_TRP_atom_name,
     .atom_radius = (double*) protor_TRP_atom_radius,
-    .atom_class = (int*) protor_TRP_atom_class };
+    .atom_class = (int*) protor_TRP_atom_class,
+    .max_area = {.name = "TRP", .total = 226.55, .main_chain = 40.50, .side_chain = 186.05, .polar = 61.19, .apolar = 165.37},
+};
 
-static const char *protor_TYR_atom_name[] = {"OH", "OXT", "CD2", "CZ", "N", "CB", "CD1", "CE2", "CG", "C", "CA", "CE1", "O", };
-static double protor_TYR_atom_radius[] = {1.46, 1.46, 1.76, 1.61, 1.64, 1.88, 1.76, 1.76, 1.61, 1.61, 1.88, 1.76, 1.42, };
-static int protor_TYR_atom_class[] = {1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, };
+static const char *protor_TYR_atom_name[] = {"O", "N", "CB", "CE2", "CD1", "CD2", "CZ", "CE1", "C", "CG", "OH", "CA", "OXT", };
+static double protor_TYR_atom_radius[] = {1.42, 1.64, 1.88, 1.76, 1.76, 1.76, 1.61, 1.76, 1.61, 1.61, 1.46, 1.88, 1.46, };
+static int protor_TYR_atom_class[] = {1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, };
 static struct classifier_residue protor_TYR_cfg = {
     .name = "TYR", .n_atoms = 13,
     .atom_name = (char**) protor_TYR_atom_name,
     .atom_radius = (double*) protor_TYR_atom_radius,
-    .atom_class = (int*) protor_TYR_atom_class };
+    .atom_class = (int*) protor_TYR_atom_class,
+    .max_area = {.name = "TYR", .total = 208.08, .main_chain = 43.49, .side_chain = 164.58, .polar = 76.46, .apolar = 131.62},
+};
 
-static const char *protor_U_atom_name[] = {"C2", "C5", "N1", "C5'", "OP3", "OP1", "O4'", "C4", "C1'", "O5'", "C3'", "OP2", "C2'", "O2", "C6", "C4'", "P", "O3'", "O2'", "O4", "N3", };
-static double protor_U_atom_radius[] = {1.61, 1.76, 1.64, 1.88, 1.46, 1.42, 1.46, 1.61, 1.88, 1.46, 1.88, 1.46, 1.88, 1.42, 1.76, 1.88, 1.8, 1.46, 1.46, 1.42, 1.64, };
-static int protor_U_atom_class[] = {0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, };
+static const char *protor_U_atom_name[] = {"N3", "OP1", "C3'", "C2", "C6", "N1", "C5", "C1'", "O2", "P", "O4'", "O3'", "C4", "C5'", "OP2", "C2'", "C4'", "O5'", "OP3", "O2'", "O4", };
+static double protor_U_atom_radius[] = {1.64, 1.42, 1.88, 1.61, 1.76, 1.64, 1.76, 1.88, 1.42, 1.8, 1.46, 1.46, 1.61, 1.88, 1.46, 1.88, 1.88, 1.46, 1.46, 1.46, 1.42, };
+static int protor_U_atom_class[] = {1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, };
 static struct classifier_residue protor_U_cfg = {
     .name = "U", .n_atoms = 21,
     .atom_name = (char**) protor_U_atom_name,
     .atom_radius = (double*) protor_U_atom_radius,
-    .atom_class = (int*) protor_U_atom_class };
+    .atom_class = (int*) protor_U_atom_class,
+    .max_area = {NULL, 0, 0, 0, 0, 0},
+};
 
-static const char *protor_VAL_atom_name[] = {"CG1", "O", "CA", "C", "CG2", "CB", "OXT", "N", };
-static double protor_VAL_atom_radius[] = {1.88, 1.42, 1.88, 1.61, 1.88, 1.88, 1.46, 1.64, };
-static int protor_VAL_atom_class[] = {0, 1, 0, 0, 0, 0, 1, 1, };
+static const char *protor_VAL_atom_name[] = {"O", "N", "CB", "CG2", "C", "CG1", "CA", "OXT", };
+static double protor_VAL_atom_radius[] = {1.42, 1.64, 1.88, 1.88, 1.61, 1.88, 1.88, 1.46, };
+static int protor_VAL_atom_class[] = {1, 1, 0, 0, 0, 0, 0, 1, };
 static struct classifier_residue protor_VAL_cfg = {
     .name = "VAL", .n_atoms = 8,
     .atom_name = (char**) protor_VAL_atom_name,
     .atom_radius = (double*) protor_VAL_atom_radius,
-    .atom_class = (int*) protor_VAL_atom_class };
+    .atom_class = (int*) protor_VAL_atom_class,
+    .max_area = {.name = "VAL", .total = 146.72, .main_chain = 44.24, .side_chain = 102.48, .polar = 29.89, .apolar = 116.83},
+};
 
 static struct classifier_residue *protor_residue_cfg[] = {
     &protor_A_cfg, &protor_ACE_cfg, &protor_ALA_cfg, &protor_ARG_cfg, &protor_ASN_cfg, &protor_ASP_cfg, &protor_ASX_cfg, &protor_C_cfg, &protor_CYS_cfg, &protor_DA_cfg, &protor_DC_cfg, &protor_DG_cfg, &protor_DI_cfg, &protor_DT_cfg, &protor_DU_cfg, &protor_G_cfg, &protor_GLN_cfg, &protor_GLU_cfg, &protor_GLX_cfg, &protor_GLY_cfg, &protor_HIS_cfg, &protor_HOH_cfg, &protor_I_cfg, &protor_ILE_cfg, &protor_LEU_cfg, &protor_LYS_cfg, &protor_MET_cfg, &protor_NH2_cfg, &protor_PHE_cfg, &protor_PRO_cfg, &protor_PYL_cfg, &protor_SEC_cfg, &protor_SER_cfg, &protor_T_cfg, &protor_THR_cfg, &protor_TRP_cfg, &protor_TYR_cfg, &protor_U_cfg, &protor_VAL_cfg, };

@@ -47,9 +47,6 @@ typedef enum {
 //! Default ::freesasa_classifier
 #define freesasa_default_classifier freesasa_protor_classifier
 
-//! Default ::freesasa_rsa_reference
-#define freesasa_default_rsa freesasa_protor_rsa
-
 //! Default number of threads. Value will depend on if library was
 //! compiled with or without thread support. (2 with threads, 1
 //! without)
@@ -210,32 +207,6 @@ extern const freesasa_classifier freesasa_oons_classifier;
  */
 extern const freesasa_classifier freesasa_backbone_classifier;
 
-//! Used as reference in generation of RSA file
-typedef struct {
-    //! Name of RSA reference
-    char *name;
-
-    /**
-        Array containing max SASA-values for named residues types.
-        Last element of array should have name == NULL.
-    */
-    const freesasa_subarea *max;
-
-    /**
-        A classifier whose sasa_class() function returns 0 for apolar
-        atoms and non-zero for polar atoms. This is true for
-        ::freesasa_protor_classifier, ::freesasa_oons_classifier and
-        ::freesasa_naccess_classifier.
-    */
-    const freesasa_classifier *polar_classifier;
-} freesasa_rsa_reference;
-
-//! An RSA-reference for the ProtOr configuration
-extern const freesasa_rsa_reference freesasa_protor_rsa;
-
-//! An RSA-reference for the NACCESS configuration
-extern const freesasa_rsa_reference freesasa_naccess_rsa;
-
 /**
     Calculates SASA based on a given structure.
 
@@ -288,14 +259,33 @@ freesasa_result_free(freesasa_result *result);
     Return value is dynamically allocated, should be freed with
     freesasa_classifier_free().
 
-    @param file File containing configuration 
+    @param file File containing configuration
+    @return The generated classifier. NULL if there were problems
+      parsing or reading the file or memory allocation problem.
+
+    @see @ref Config-file
+
+    @deprecated Use freesasa_classifier_from_filename() instead;
+ */
+freesasa_classifier*
+freesasa_classifier_from_file(FILE *file);
+
+/**
+    Generate a classifier from a config-file
+
+    Input file format described in @ref Config-file
+
+    Return value is dynamically allocated, should be freed with
+    freesasa_classifier_free().
+
+    @param filename Path to file containing configuration
     @return The generated classifier. NULL if there were problems
       parsing or reading the file or memory allocation problem.
 
     @see @ref Config-file
  */
 freesasa_classifier*
-freesasa_classifier_from_file(FILE *file);
+freesasa_classifier_from_filename(const char *filename);
 
 /**
     Frees a classifier object
@@ -510,17 +500,20 @@ int freesasa_write_parameters(FILE *log,
     @remark This is still an experimental feature, and the interface
       may still be subject to change without warning.
 
-    @param output Output-file
-    @param tree A tree with stored results
-    @param reference Reference to calculate RSA from, if NULL defaults
-      are used.
+    @param output Output-file @param tree A tree with stored results
+    @param classifier A classifier to determine which atoms are polar,
+      and to provide maximum reference areas for each residue. Can
+      only be a classifier generated from
+      freesasa_classifier_from_file(),
+      freesasa_classifier_from_filename() or one of the const
+      classifiers that are part of the API.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
       writing to file.
  */
 int
 freesasa_write_rsa(FILE *output,
                    freesasa_structure_node *tree,
-                   const freesasa_rsa_reference *reference);
+                   const freesasa_classifier *classifier);
 /**
     Set the global verbosity level.
 

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <errno.h>
 #include "classifier.h"
 #include "freesasa_internal.h"
 
@@ -12,7 +13,7 @@
 
 static const struct classifier_types empty_types = {0, 0, NULL, NULL, NULL, NULL};
 
-const struct classifier_residue empty_residue = {0,NULL,NULL,NULL,NULL};
+const struct classifier_residue empty_residue = {0, NULL, NULL, NULL, NULL, {NULL, 0, 0, 0, 0, 0}};
 
 const struct classifier_config empty_config = {0, 0, NULL, NULL, NULL};
 
@@ -669,17 +670,48 @@ init_classifier(struct classifier_config *config)
     return c;
 }
 
+static
 freesasa_classifier*
-freesasa_classifier_from_file(FILE *file)
+classifier_from_file(FILE *file, const char *name)
 {
-    assert(file);
-
     struct classifier_config *config = read_config(file);
     if (config == NULL) {
         fail_msg("");
         return NULL;
     }
+    config->name = name;
     return init_classifier(config);
+}
+
+freesasa_classifier*
+freesasa_classifier_from_file(FILE *file)
+{
+    assert(file);
+    return classifier_from_file(file, "unknown");
+}
+
+freesasa_classifier*
+freesasa_classifier_from_filename(const char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if (file) {
+        freesasa_classifier *c = classifier_from_file(file, filename);
+        fclose(file);
+        if (c == NULL) {
+            fail_msg("");
+        }
+        return c;
+    }
+    freesasa_fail("Error: could not open file '%s'; %s",
+                  filename, strerror(errno));
+    return NULL;
+}
+
+const char *
+freesasa_classifier_name(const freesasa_classifier *classifier)
+{
+    const struct classifier_config *config = classifier->config;
+    return config->name;
 }
 
 void
@@ -692,6 +724,16 @@ freesasa_classifier_free(freesasa_classifier *classifier)
         }
         free(classifier);
     }
+}
+
+const freesasa_subarea *
+freesasa_residue_max_area(const char *res_name,
+                          const freesasa_classifier *classifier)
+{
+    const struct classifier_config *config = classifier->config;
+    int res = find_string(config->residue_name,res_name,config->n_residues);
+    if (res < 0) return NULL;
+    return &config->residue[res]->max_area;
 }
 
 struct symbol_radius {

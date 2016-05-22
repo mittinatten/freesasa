@@ -42,6 +42,7 @@ struct classifier_residue {
     char **atom_name; //!< Names of atoms
     double *atom_radius; //!< Atomic radii
     int *atom_class; //!< Classes of atoms
+    freesasa_subarea max_area; //!< Maximum area (for RSA)
 };
 
 /**
@@ -62,6 +63,7 @@ struct classifier_config {
     char **residue_name; //!< Names of residues
     char **class_name; //!< Names of classes
     struct classifier_residue **residue;
+    const char *name; //! Name of classifier
 };
 
 /** To be used in classifiers based on config-files */
