@@ -610,9 +610,9 @@ find_atom(const struct classifier_config *config,
 
 /** To be linked to a Classifier struct */
 double
-freesasa_classifier_config_radius(const char *res_name,
-                                  const char *atom_name,
-                                  const freesasa_classifier *classifier)
+freesasa_classifier_radius(const char *res_name,
+                           const char *atom_name,
+                           const freesasa_classifier *classifier)
 {
     assert(classifier); assert(res_name); assert(atom_name);
     
@@ -627,9 +627,9 @@ freesasa_classifier_config_radius(const char *res_name,
 
 /** To be linked to a Classifier struct */
 int
-freesasa_classifier_config_class(const char *res_name, 
-                                 const char *atom_name,
-                                 const freesasa_classifier *classifier)
+freesasa_classifier_class(const char *res_name, 
+                          const char *atom_name,
+                          const freesasa_classifier *classifier)
 {
     assert(classifier); assert(res_name); assert(atom_name);
     int res, atom, status;
@@ -642,8 +642,8 @@ freesasa_classifier_config_class(const char *res_name,
 
 /** To be linked to a Classifier struct */
 const char*
-freesasa_classifier_config_class2str(int the_class,
-                                     const freesasa_classifier *classifier)
+freesasa_classifier_class2str(int the_class,
+                              const freesasa_classifier *classifier)
 {
     assert(classifier);
     const struct classifier_config *config = classifier->config;
@@ -664,10 +664,10 @@ init_classifier(struct classifier_config *config,
     c->config = config;
     c->name = name;
     c->n_classes = config->n_classes;
-    c->radius = freesasa_classifier_config_radius;
-    c->sasa_class = freesasa_classifier_config_class;
-    c->class2str = freesasa_classifier_config_class2str;
-    c->residue_reference = freesasa_classifier_config_residue_reference;
+    c->radius = freesasa_classifier_radius;
+    c->sasa_class = freesasa_classifier_class;
+    c->class2str = freesasa_classifier_class2str;
+    c->residue_reference = freesasa_classifier_residue_reference;
     c->free_config = classifier_config_free;
 
     return c;
@@ -722,8 +722,8 @@ freesasa_classifier_free(freesasa_classifier *classifier)
 }
 
 const freesasa_subarea *
-freesasa_classifier_config_residue_reference(const char *res_name,
-                                             const freesasa_classifier *classifier)
+freesasa_classifier_residue_reference(const char *res_name,
+                                      const freesasa_classifier *classifier)
 {
     const struct classifier_config *config = classifier->config;
     int res = find_string(config->residue_name, res_name, config->n_residues);

@@ -223,6 +223,26 @@ freesasa_classifier_from_filename(const char *filename);
 void
 freesasa_classifier_free(freesasa_classifier *classifier);
 
+int
+freesasa_structure_chain_residues(const freesasa_structure *structure,
+                                  char chain,
+                                  int *first,
+                                  int *last);
+
+double
+freesasa_classifier_radius(const char *res_name,
+                           const char *atom_name,
+                           const freesasa_classifier *classifier);
+
+int
+freesasa_classifier_class(const char *res_name, 
+                          const char *atom_name,
+                          const freesasa_classifier *classifier);
+
+const char*
+freesasa_classifier_class2str(int the_class,
+                              const freesasa_classifier *classifier);
+
 /**
     Sums up the SASA for groups of atoms defined by a classifier.
 
@@ -930,12 +950,6 @@ freesasa_structure_chain_atoms(const freesasa_structure *structure,
     @param last Last residue of `chain` will be stored here.
     @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if `chain` not found.
  */
-int
-freesasa_structure_chain_residues(const freesasa_structure *structure,
-                                  char chain,
-                                  int *first,
-                                  int *last);
-
 
 #ifdef __cplusplus
 }
