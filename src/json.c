@@ -20,7 +20,7 @@ freesasa_json_atom(freesasa_structure_node *node,
     int n_len = strlen(name);
     char trim_name[n_len+1];
     const char *resn = freesasa_structure_node_name(freesasa_structure_node_parent(node));
-    int is_polar = polar_classifier->sasa_class(resn, name, polar_classifier);
+    int is_polar = freesasa_classifier_class(polar_classifier, resn, name);
     int is_bb = freesasa_atom_is_backbone(name);
     double sasa = area->total;
 

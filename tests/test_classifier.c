@@ -291,7 +291,7 @@ START_TEST (test_radius)
     freesasa_set_verbosity(FREESASA_V_SILENT); // the X and Y atoms give warnings
     for (int i = 0; i < n_atom_types; ++i) {
         const struct atom a = atoms[i];
-        double r1 = oons_c->radius(a.a, a.b, oons_c);
+        double r1 = freesasa_classifier_radius(oons_c, a.a, a.b);
         sprintf(buf,"%s %s ret=%f ref=%f",a.a,a.b,r1,a.radius);
         // make sure correct radius is supplied
         ck_assert_msg(fabs(r1 - a.radius) < 1e-10,buf);
@@ -305,18 +305,18 @@ START_TEST (test_class)
     char buf[50];
     for (int i = 0; i < n_atom_types; ++i) {
         const struct atom a = atoms[i];
-        int c = oons_c->sasa_class(a.a, a.b, oons_c);
+        int c = freesasa_classifier_class(oons_c, a.a, a.b);
         if (c == FREESASA_WARN) { ck_assert(a.class == UNK); continue; }
         sprintf(buf,"Classification error for %s %s %s %s",
-                a.a,a.b,oons_c->class2str(c, oons_c),oons_c->class2str(a.class, oons_c));
+                a.a, a.b, freesasa_classifier_class2str(oons_c, c),
+                freesasa_classifier_class2str(oons_c, a.class));
         ck_assert_msg(c == a.class, buf);
     }
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert(oons_c->sasa_class("ABC", " X  ", oons_c) == FREESASA_WARN);
-    freesasa_set_verbosity(FREESASA_V_NORMAL);
+    ck_assert(freesasa_classifier_class(oons_c, "ABC", " X  ") == FREESASA_WARN);
     
-    ck_assert(oons_c->class2str(100, oons_c) == NULL);
-    ck_assert(oons_c->class2str(-1, oons_c) == NULL);
+    ck_assert(freesasa_classifier_class2str(oons_c, 100) == NULL);
+    ck_assert(freesasa_classifier_class2str(oons_c, -1) == NULL);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
@@ -329,26 +329,26 @@ START_TEST (test_residue)
     int nrt = rc->n_classes;
     const char **res = (const char**) malloc(nrt*sizeof(char*));
     for (int i = 0; i < nrt; ++i) {
-        res[i] = rc->class2str(i, rc);
-        ck_assert_int_eq(rc->sasa_class(res[i], "", rc),i);
+        res[i] = freesasa_classifier_class2str(rc, i);
+        ck_assert_int_eq(freesasa_classifier_class(rc, res[i], ""),i);
     }
 
     // check numbering
     for (int i = 0; i < naa; ++i) {
-        ck_assert_int_lt(rc->sasa_class(aa[i], "", rc), naa);
+        ck_assert_int_lt(freesasa_classifier_class(rc, aa[i], ""), naa);
     }
 
-    ck_assert_int_ge(rc->sasa_class("UNK", "", rc), naa);
-    ck_assert_int_ge(rc->sasa_class("XXX", "", rc), naa);
+    ck_assert_int_ge(freesasa_classifier_class(rc, "UNK", ""), naa);
+    ck_assert_int_ge(freesasa_classifier_class(rc, "XXX", ""), naa);
 
     for (int i = 0; i < n_other; ++i) {
-        ck_assert_int_ge(rc->sasa_class(other_aa[i], "", rc), naa);
+        ck_assert_int_ge(freesasa_classifier_class(rc, other_aa[i], ""), naa);
     }
     for (int i = 0; i < n_capping; ++i) {
-        ck_assert_int_ge(rc->sasa_class(capping[i], "", rc), naa);
+        ck_assert_int_ge(freesasa_classifier_class(rc, capping[i], ""), naa);
     }
     for (int i = 0; i < n_nuc; ++i) {
-        ck_assert_int_ge(rc->sasa_class(nuc[i], "", rc), naa);
+        ck_assert_int_ge(freesasa_classifier_class(rc, nuc[i], ""), naa);
     }
 }
 END_TEST
@@ -360,30 +360,30 @@ START_TEST (test_user)
     fclose(f);
     ck_assert(c != NULL);
     ck_assert(c->n_classes == 3);
-    ck_assert(fabs(c->radius("ALA","CA",c) - 2.0) < 1e-5);
-    ck_assert(fabs(c->radius("ALA","N",c) - 1.55) < 1e-5);
-    ck_assert_str_eq(c->class2str(c->sasa_class("ALA","CB",c),c), "Apolar");
-    ck_assert_str_eq(c->class2str(c->sasa_class("ALA","O",c),c), "Polar");
-    // compare oons.config and built in classification (should be identical for standard atoms)
+    ck_assert(fabs(freesasa_classifier_radius(c, "ALA","CA") - 2.0) < 1e-5);
+    ck_assert(fabs(freesasa_classifier_radius(c, "ALA","N") - 1.55) < 1e-5);
+    ck_assert_str_eq(freesasa_classifier_class2str(c, freesasa_classifier_class(c, "ALA","CB")), "Apolar");
+    ck_assert_str_eq(freesasa_classifier_class2str(c, freesasa_classifier_class(c, "ALA","O")), "Polar");
+      // compare oons.config and built in classification (should be identical for standard atoms)
     for (int i = 0; i < 188; ++i) {
         const char *res_name = atoms[i].a, *atom_name = atoms[i].b;
         if (strcmp(atom_name," X  ") == 0) continue;
         if (strcmp(atom_name," Y  ") == 0) continue;
-        ck_assert(fabs(c->radius(res_name, atom_name, c) -
-                       oons_c->radius(res_name, atom_name, oons_c)) < 1e-5);
-        char *c1 = strdup(oons_c->class2str(oons_c->sasa_class(res_name, atom_name, oons_c), oons_c));
-        char *c2 = strdup(c->class2str(c->sasa_class(res_name, atom_name, c), c));
+        ck_assert(fabs(freesasa_classifier_radius(c, res_name, atom_name) -
+                       freesasa_classifier_radius(oons_c, res_name, atom_name)) < 1e-5);
+        char *c1 = strdup(freesasa_classifier_class2str(oons_c, freesasa_classifier_class(oons_c, res_name, atom_name)));
+        char *c2 = strdup(freesasa_classifier_class2str(c, freesasa_classifier_class(c, res_name, atom_name)));
         for (int i = 0; c1[i]; ++i) c1[i] = tolower(c1[i]); 
         for (int i = 0; c2[i]; ++i) c2[i] = tolower(c2[i]); 
         ck_assert_str_eq(c1,c2);
     }
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert(c->radius("ALA","X",c) < 0);
-    ck_assert(c->radius("X","CB",c) > 0);
-    ck_assert(c->radius("X","X",c) < 0);
-    ck_assert(c->sasa_class("ALA","X",c) == FREESASA_WARN);
-    ck_assert(c->sasa_class("X","CB",c) >= 0);
-    ck_assert(c->sasa_class("X","X",c) == FREESASA_WARN);
+    ck_assert(freesasa_classifier_radius(c, "ALA", "X") < 0);
+    ck_assert(freesasa_classifier_radius(c, "X", "CB") > 0);
+    ck_assert(freesasa_classifier_radius(c, "X", "X") < 0);
+    ck_assert(freesasa_classifier_class(c, "ALA", "X") == FREESASA_WARN);
+    ck_assert(freesasa_classifier_class(c, "X", "CB") >= 0);
+    ck_assert(freesasa_classifier_class(c, "X", "X") == FREESASA_WARN);
     freesasa_classifier_free(c);
     
     f = fopen(DATADIR "empty.pdb", "r");
@@ -413,18 +413,6 @@ START_TEST (test_backbone)
     ck_assert(freesasa_atom_is_backbone("OXT"));
     ck_assert(freesasa_atom_is_backbone("") == 0);
     ck_assert(freesasa_atom_is_backbone("X") == 0);
-
-    const freesasa_classifier *bb = &freesasa_backbone_classifier;
-    ck_assert(bb->sasa_class("ALA","C",bb) == 1);
-    ck_assert(bb->sasa_class("ALA","CA",bb) == 1);
-    ck_assert(bb->sasa_class("ALA","O",bb) == 1);
-    ck_assert(bb->sasa_class("ALA","N",bb) == 1);
-    ck_assert(bb->sasa_class("ALA","OXT",bb) == 1);
-    ck_assert(bb->sasa_class("ALA","X",bb) == 0);
-    ck_assert(bb->sasa_class("ALA","OXT",bb) == 1);
-    ck_assert_str_eq(bb->class2str(0,bb),"side-chain");
-    ck_assert_str_eq(bb->class2str(1,bb),"main-chain");
-    ck_assert_ptr_eq(bb->class2str(2,bb),NULL);
 }
 END_TEST
 

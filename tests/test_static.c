@@ -155,7 +155,7 @@ START_TEST (test_classifier)
     char *dummy_str = NULL;
     struct classifier_types *types = classifier_types_new();
     struct classifier_residue *residue_cfg = classifier_residue_new("ALA");
-    struct classifier_config *config = classifier_config_new();
+    struct freesasa_classifier *clf = freesasa_classifier_new();
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
 
@@ -228,38 +228,38 @@ START_TEST (test_classifier)
     ck_assert(fabs(residue_cfg->atom_radius[1]-2.0) < 1e-10);
     classifier_residue_free(residue_cfg);
 
-    ck_assert_int_eq(add_residue(config,"A"),0);
-    ck_assert_int_eq(add_residue(config,"B"),1);
-    ck_assert_int_eq(add_residue(config,"B"),1);
-    ck_assert_int_eq(config->n_residues,2);
-    ck_assert_str_eq(config->residue_name[0],"A");
-    ck_assert_str_eq(config->residue_name[1],"B");
-    ck_assert_str_eq(config->residue[0]->name,"A");
+    ck_assert_int_eq(add_residue(clf,"A"),0);
+    ck_assert_int_eq(add_residue(clf,"B"),1);
+    ck_assert_int_eq(add_residue(clf,"B"),1);
+    ck_assert_int_eq(clf->n_residues,2);
+    ck_assert_str_eq(clf->residue_name[0],"A");
+    ck_assert_str_eq(clf->residue_name[1],"B");
+    ck_assert_str_eq(clf->residue[0]->name,"A");
 
-    classifier_config_free(config);
-    config = classifier_config_new();
+    freesasa_classifier_free(clf);
+    clf = freesasa_classifier_new();
     
-    ck_assert_int_eq(read_atoms_line(config,types,"A A"),FREESASA_FAIL);
-    ck_assert_int_eq(read_atoms_line(config,types,"A A A"),FREESASA_FAIL);
-    ck_assert_int_eq(read_atoms_line(config,types,"ALA CA a"),FREESASA_SUCCESS);
-    ck_assert_int_eq(read_atoms_line(config,types,"ALA CB b"),FREESASA_SUCCESS);
-    ck_assert_int_eq(read_atoms_line(config,types,"ARG CA a"),FREESASA_SUCCESS);
-    ck_assert_int_eq(read_atoms_line(config,types,"ARG CB b"),FREESASA_SUCCESS);
-    ck_assert_int_eq(read_atoms_line(config,types,"ARG CG c"),FREESASA_FAIL);
-    config_copy_classes(config, types);
-    ck_assert_int_eq(config->n_residues,2);
-    ck_assert_int_eq(config->n_classes,2);
-    ck_assert_str_eq(config->residue_name[0],"ALA");
-    ck_assert_str_eq(config->residue_name[1],"ARG");
-    ck_assert_str_eq(config->class_name[0],"C");
-    ck_assert_str_eq(config->class_name[1],"D");
-    ck_assert_int_eq(config->residue[0]->n_atoms,2);
-    ck_assert_str_eq(config->residue[0]->atom_name[0],"CA");
-    ck_assert_str_eq(config->residue[0]->atom_name[1],"CB");
-    ck_assert(fabs(config->residue[0]->atom_radius[0]-1.0) < 1e-5);
-    ck_assert(fabs(config->residue[0]->atom_radius[1]-2.0) < 1e-5);
+    ck_assert_int_eq(read_atoms_line(clf,types,"A A"),FREESASA_FAIL);
+    ck_assert_int_eq(read_atoms_line(clf,types,"A A A"),FREESASA_FAIL);
+    ck_assert_int_eq(read_atoms_line(clf,types,"ALA CA a"),FREESASA_SUCCESS);
+    ck_assert_int_eq(read_atoms_line(clf,types,"ALA CB b"),FREESASA_SUCCESS);
+    ck_assert_int_eq(read_atoms_line(clf,types,"ARG CA a"),FREESASA_SUCCESS);
+    ck_assert_int_eq(read_atoms_line(clf,types,"ARG CB b"),FREESASA_SUCCESS);
+    ck_assert_int_eq(read_atoms_line(clf,types,"ARG CG c"),FREESASA_FAIL);
+    classifier_copy_classes(clf, types);
+    ck_assert_int_eq(clf->n_residues,2);
+    ck_assert_int_eq(clf->n_classes,2);
+    ck_assert_str_eq(clf->residue_name[0],"ALA");
+    ck_assert_str_eq(clf->residue_name[1],"ARG");
+    ck_assert_str_eq(clf->class_name[0],"C");
+    ck_assert_str_eq(clf->class_name[1],"D");
+    ck_assert_int_eq(clf->residue[0]->n_atoms,2);
+    ck_assert_str_eq(clf->residue[0]->atom_name[0],"CA");
+    ck_assert_str_eq(clf->residue[0]->atom_name[1],"CB");
+    ck_assert(fabs(clf->residue[0]->atom_radius[0]-1.0) < 1e-5);
+    ck_assert(fabs(clf->residue[0]->atom_radius[1]-2.0) < 1e-5);
     
-    classifier_config_free(config);
+    freesasa_classifier_free(clf);
     classifier_types_free(types);
 
     freesasa_set_verbosity(FREESASA_V_NORMAL);

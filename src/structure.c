@@ -279,7 +279,7 @@ structure_check_atom_radius(double *radius,
                             const freesasa_classifier* classifier,
                             int options)
 {
-    *radius = classifier->radius(a->res_name, a->atom_name, classifier);
+    *radius = freesasa_classifier_radius(classifier, a->res_name, a->atom_name);
     if (*radius < 0) {
         if (options & FREESASA_HALT_AT_UNKNOWN) {
             return freesasa_fail("in %s(): atom '%s %s' unknown.",

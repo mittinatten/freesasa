@@ -5,9 +5,9 @@
 static const char *naccess_residue_name[] = {"A", "ANY", "ARG", "ASN", "ASP", "C", "CYS", "DA", "DC", "DG", "DI", "DT", "DU", "G", "GLN", "GLU", "HIS", "I", "ILE", "LEU", "LYS", "MET", "PHE", "PRO", "SEC", "SER", "T", "THR", "TRP", "TYR", "U", "VAL", };
 static const char *naccess_class_name[] = {"apolar", "polar", };
 
-static const char *naccess_A_atom_name[] = {"C4", "N9", "C2", "N3", "N1", "N7", "C5", "C6", "N6", "C8", };
-static double naccess_A_atom_radius[] = {1.80, 1.60, 1.80, 1.60, 1.60, 1.60, 1.80, 1.80, 1.60, 1.80, };
-static int naccess_A_atom_class[] = {0, 1, 0, 1, 1, 1, 0, 0, 1, 0, };
+static const char *naccess_A_atom_name[] = {"N6", "N1", "C6", "C8", "C4", "N3", "N7", "N9", "C5", "C2", };
+static double naccess_A_atom_radius[] = {1.60, 1.60, 1.80, 1.80, 1.80, 1.60, 1.60, 1.60, 1.80, 1.80, };
+static int naccess_A_atom_class[] = {1, 1, 0, 0, 0, 1, 1, 1, 0, 0, };
 static struct classifier_residue naccess_A_cfg = {
     .name = "A", .n_atoms = 10,
     .atom_name = (char**) naccess_A_atom_name,
@@ -16,9 +16,9 @@ static struct classifier_residue naccess_A_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *naccess_ANY_atom_name[] = {"C3'", "CA", "C5'", "C", "N", "C2'", "OXT", "P", "OP2", "C4'", "C1'", "OP3", "O3'", "O2'", "CB", "OP1", "O", "O5'", "O4'", };
-static double naccess_ANY_atom_radius[] = {1.80, 1.87, 1.80, 1.76, 1.65, 1.80, 1.40, 1.90, 1.40, 1.80, 1.80, 1.40, 1.40, 1.40, 1.87, 1.40, 1.40, 1.40, 1.40, };
-static int naccess_ANY_atom_class[] = {0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, };
+static const char *naccess_ANY_atom_name[] = {"OP1", "C2'", "O2'", "N", "C5'", "C3'", "CA", "CB", "C", "C1'", "P", "O5'", "C4'", "O4'", "OP3", "O3'", "OXT", "O", "OP2", };
+static double naccess_ANY_atom_radius[] = {1.40, 1.80, 1.40, 1.65, 1.80, 1.80, 1.87, 1.87, 1.76, 1.80, 1.90, 1.40, 1.80, 1.40, 1.40, 1.40, 1.40, 1.40, 1.40, };
+static int naccess_ANY_atom_class[] = {1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, };
 static struct classifier_residue naccess_ANY_cfg = {
     .name = "ANY", .n_atoms = 19,
     .atom_name = (char**) naccess_ANY_atom_name,
@@ -27,9 +27,9 @@ static struct classifier_residue naccess_ANY_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *naccess_ARG_atom_name[] = {"CD", "NH2", "CZ", "CG", "NE", "NH1", };
-static double naccess_ARG_atom_radius[] = {1.87, 1.65, 1.76, 1.87, 1.65, 1.65, };
-static int naccess_ARG_atom_class[] = {0, 1, 0, 0, 1, 1, };
+static const char *naccess_ARG_atom_name[] = {"NH2", "CG", "CD", "NH1", "CZ", "NE", };
+static double naccess_ARG_atom_radius[] = {1.65, 1.87, 1.87, 1.65, 1.76, 1.65, };
+static int naccess_ARG_atom_class[] = {1, 0, 0, 1, 0, 1, };
 static struct classifier_residue naccess_ARG_cfg = {
     .name = "ARG", .n_atoms = 6,
     .atom_name = (char**) naccess_ARG_atom_name,
@@ -38,8 +38,8 @@ static struct classifier_residue naccess_ARG_cfg = {
     .max_area = {.name = "ARG", .total = 232.08, .main_chain = 45.58, .side_chain = 186.50, .polar = 148.95, .apolar = 83.13},
 };
 
-static const char *naccess_ASN_atom_name[] = {"CG", "ND2", "OD1", };
-static double naccess_ASN_atom_radius[] = {1.76, 1.65, 1.40, };
+static const char *naccess_ASN_atom_name[] = {"CG", "OD1", "ND2", };
+static double naccess_ASN_atom_radius[] = {1.76, 1.40, 1.65, };
 static int naccess_ASN_atom_class[] = {0, 1, 1, };
 static struct classifier_residue naccess_ASN_cfg = {
     .name = "ASN", .n_atoms = 3,
@@ -49,7 +49,7 @@ static struct classifier_residue naccess_ASN_cfg = {
     .max_area = {.name = "ASN", .total = 137.97, .main_chain = 44.26, .side_chain = 93.71, .polar = 87.92, .apolar = 50.05},
 };
 
-static const char *naccess_ASP_atom_name[] = {"OD2", "OD1", "CG", };
+static const char *naccess_ASP_atom_name[] = {"OD1", "OD2", "CG", };
 static double naccess_ASP_atom_radius[] = {1.40, 1.40, 1.76, };
 static int naccess_ASP_atom_class[] = {1, 1, 0, };
 static struct classifier_residue naccess_ASP_cfg = {
@@ -60,9 +60,9 @@ static struct classifier_residue naccess_ASP_cfg = {
     .max_area = {.name = "ASP", .total = 134.50, .main_chain = 45.25, .side_chain = 89.25, .polar = 81.36, .apolar = 53.14},
 };
 
-static const char *naccess_C_atom_name[] = {"C4", "N3", "C2", "O2", "N1", "C5", "N4", "C6", };
-static double naccess_C_atom_radius[] = {1.80, 1.60, 1.80, 1.40, 1.60, 1.80, 1.60, 1.80, };
-static int naccess_C_atom_class[] = {0, 1, 0, 1, 1, 0, 1, 0, };
+static const char *naccess_C_atom_name[] = {"C2", "C5", "N4", "N3", "C4", "C6", "O2", "N1", };
+static double naccess_C_atom_radius[] = {1.80, 1.80, 1.60, 1.60, 1.80, 1.80, 1.40, 1.60, };
+static int naccess_C_atom_class[] = {0, 0, 1, 1, 0, 0, 1, 1, };
 static struct classifier_residue naccess_C_cfg = {
     .name = "C", .n_atoms = 8,
     .atom_name = (char**) naccess_C_atom_name,
@@ -82,9 +82,9 @@ static struct classifier_residue naccess_CYS_cfg = {
     .max_area = {.name = "CYS", .total = 127.09, .main_chain = 45.71, .side_chain = 81.38, .polar = 28.51, .apolar = 98.58},
 };
 
-static const char *naccess_DA_atom_name[] = {"N3", "C2", "N9", "C4", "N7", "N1", "C6", "N6", "C5", "C8", };
-static double naccess_DA_atom_radius[] = {1.60, 1.80, 1.60, 1.80, 1.60, 1.60, 1.80, 1.60, 1.80, 1.80, };
-static int naccess_DA_atom_class[] = {1, 0, 1, 0, 1, 1, 0, 1, 0, 0, };
+static const char *naccess_DA_atom_name[] = {"C2", "C5", "N9", "N7", "C4", "N3", "C8", "C6", "N1", "N6", };
+static double naccess_DA_atom_radius[] = {1.80, 1.80, 1.60, 1.60, 1.80, 1.60, 1.80, 1.80, 1.60, 1.60, };
+static int naccess_DA_atom_class[] = {0, 0, 1, 1, 0, 1, 0, 0, 1, 1, };
 static struct classifier_residue naccess_DA_cfg = {
     .name = "DA", .n_atoms = 10,
     .atom_name = (char**) naccess_DA_atom_name,
@@ -93,9 +93,9 @@ static struct classifier_residue naccess_DA_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *naccess_DC_atom_name[] = {"N1", "C4", "O2", "N3", "C2", "C5", "C6", "N4", };
-static double naccess_DC_atom_radius[] = {1.60, 1.80, 1.40, 1.60, 1.80, 1.80, 1.80, 1.60, };
-static int naccess_DC_atom_class[] = {1, 0, 1, 1, 0, 0, 0, 1, };
+static const char *naccess_DC_atom_name[] = {"C2", "C5", "N3", "C4", "N4", "C6", "O2", "N1", };
+static double naccess_DC_atom_radius[] = {1.80, 1.80, 1.60, 1.80, 1.60, 1.80, 1.40, 1.60, };
+static int naccess_DC_atom_class[] = {0, 0, 1, 0, 1, 0, 1, 1, };
 static struct classifier_residue naccess_DC_cfg = {
     .name = "DC", .n_atoms = 8,
     .atom_name = (char**) naccess_DC_atom_name,
@@ -104,9 +104,9 @@ static struct classifier_residue naccess_DC_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *naccess_DG_atom_name[] = {"C6", "C5", "C8", "N3", "C2", "O6", "N2", "N9", "C4", "N7", "N1", };
-static double naccess_DG_atom_radius[] = {1.80, 1.80, 1.80, 1.60, 1.80, 1.40, 1.60, 1.60, 1.80, 1.60, 1.60, };
-static int naccess_DG_atom_class[] = {0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, };
+static const char *naccess_DG_atom_name[] = {"N1", "C6", "C8", "N7", "C4", "N3", "N2", "N9", "C5", "O6", "C2", };
+static double naccess_DG_atom_radius[] = {1.60, 1.80, 1.80, 1.60, 1.80, 1.60, 1.60, 1.60, 1.80, 1.40, 1.80, };
+static int naccess_DG_atom_class[] = {1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, };
 static struct classifier_residue naccess_DG_cfg = {
     .name = "DG", .n_atoms = 11,
     .atom_name = (char**) naccess_DG_atom_name,
@@ -115,9 +115,9 @@ static struct classifier_residue naccess_DG_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *naccess_DI_atom_name[] = {"C4", "N9", "O6", "N3", "C2", "N1", "N7", "C5", "C6", "C8", };
-static double naccess_DI_atom_radius[] = {1.80, 1.60, 1.40, 1.60, 1.80, 1.60, 1.60, 1.80, 1.80, 1.80, };
-static int naccess_DI_atom_class[] = {0, 1, 1, 1, 0, 1, 1, 0, 0, 0, };
+static const char *naccess_DI_atom_name[] = {"C8", "C6", "N1", "C2", "O6", "N3", "C4", "N7", "N9", "C5", };
+static double naccess_DI_atom_radius[] = {1.80, 1.80, 1.60, 1.80, 1.40, 1.60, 1.80, 1.60, 1.60, 1.80, };
+static int naccess_DI_atom_class[] = {0, 0, 1, 0, 1, 1, 0, 1, 1, 0, };
 static struct classifier_residue naccess_DI_cfg = {
     .name = "DI", .n_atoms = 10,
     .atom_name = (char**) naccess_DI_atom_name,
@@ -126,9 +126,9 @@ static struct classifier_residue naccess_DI_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *naccess_DT_atom_name[] = {"C5", "O4", "C6", "N1", "C7", "C4", "N3", "O2", "C2", };
-static double naccess_DT_atom_radius[] = {1.80, 1.40, 1.80, 1.60, 1.80, 1.80, 1.60, 1.40, 1.80, };
-static int naccess_DT_atom_class[] = {0, 1, 0, 1, 0, 0, 1, 1, 0, };
+static const char *naccess_DT_atom_name[] = {"N1", "O4", "C6", "C7", "O2", "C5", "N3", "C4", "C2", };
+static double naccess_DT_atom_radius[] = {1.60, 1.40, 1.80, 1.80, 1.40, 1.80, 1.60, 1.80, 1.80, };
+static int naccess_DT_atom_class[] = {1, 1, 0, 0, 1, 0, 1, 0, 0, };
 static struct classifier_residue naccess_DT_cfg = {
     .name = "DT", .n_atoms = 9,
     .atom_name = (char**) naccess_DT_atom_name,
@@ -137,8 +137,8 @@ static struct classifier_residue naccess_DT_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *naccess_DU_atom_name[] = {"C5", "C6", "O4", "C4", "O2", "N3", "C2", "N1", };
-static double naccess_DU_atom_radius[] = {1.80, 1.80, 1.40, 1.80, 1.40, 1.60, 1.80, 1.60, };
+static const char *naccess_DU_atom_name[] = {"C5", "C4", "N3", "C2", "O4", "N1", "C6", "O2", };
+static double naccess_DU_atom_radius[] = {1.80, 1.80, 1.60, 1.80, 1.40, 1.60, 1.80, 1.40, };
 static int naccess_DU_atom_class[] = {0, 0, 1, 0, 1, 1, 0, 1, };
 static struct classifier_residue naccess_DU_cfg = {
     .name = "DU", .n_atoms = 8,
@@ -148,9 +148,9 @@ static struct classifier_residue naccess_DU_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *naccess_G_atom_name[] = {"N7", "N1", "C4", "N3", "C2", "O6", "N2", "N9", "C8", "C5", "C6", };
-static double naccess_G_atom_radius[] = {1.60, 1.60, 1.80, 1.60, 1.80, 1.40, 1.60, 1.60, 1.80, 1.80, 1.80, };
-static int naccess_G_atom_class[] = {1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, };
+static const char *naccess_G_atom_name[] = {"O6", "C2", "N2", "C4", "N3", "N7", "C5", "N9", "C8", "C6", "N1", };
+static double naccess_G_atom_radius[] = {1.40, 1.80, 1.60, 1.80, 1.60, 1.60, 1.80, 1.60, 1.80, 1.80, 1.60, };
+static int naccess_G_atom_class[] = {1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, };
 static struct classifier_residue naccess_G_cfg = {
     .name = "G", .n_atoms = 11,
     .atom_name = (char**) naccess_G_atom_name,
@@ -159,9 +159,9 @@ static struct classifier_residue naccess_G_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *naccess_GLN_atom_name[] = {"CD", "CG", "NE2", "OE1", };
-static double naccess_GLN_atom_radius[] = {1.76, 1.87, 1.65, 1.40, };
-static int naccess_GLN_atom_class[] = {0, 0, 1, 1, };
+static const char *naccess_GLN_atom_name[] = {"NE2", "CG", "CD", "OE1", };
+static double naccess_GLN_atom_radius[] = {1.65, 1.87, 1.76, 1.40, };
+static int naccess_GLN_atom_class[] = {1, 0, 0, 1, };
 static struct classifier_residue naccess_GLN_cfg = {
     .name = "GLN", .n_atoms = 4,
     .atom_name = (char**) naccess_GLN_atom_name,
@@ -170,9 +170,9 @@ static struct classifier_residue naccess_GLN_cfg = {
     .max_area = {.name = "GLN", .total = 172.15, .main_chain = 45.58, .side_chain = 126.57, .polar = 117.24, .apolar = 54.91},
 };
 
-static const char *naccess_GLU_atom_name[] = {"OE1", "OE2", "CG", "CD", };
-static double naccess_GLU_atom_radius[] = {1.40, 1.40, 1.87, 1.76, };
-static int naccess_GLU_atom_class[] = {1, 1, 0, 0, };
+static const char *naccess_GLU_atom_name[] = {"CG", "OE2", "CD", "OE1", };
+static double naccess_GLU_atom_radius[] = {1.87, 1.40, 1.76, 1.40, };
+static int naccess_GLU_atom_class[] = {0, 1, 0, 1, };
 static struct classifier_residue naccess_GLU_cfg = {
     .name = "GLU", .n_atoms = 4,
     .atom_name = (char**) naccess_GLU_atom_name,
@@ -181,9 +181,9 @@ static struct classifier_residue naccess_GLU_cfg = {
     .max_area = {.name = "GLU", .total = 166.09, .main_chain = 45.60, .side_chain = 120.49, .polar = 103.10, .apolar = 63.00},
 };
 
-static const char *naccess_HIS_atom_name[] = {"CD2", "CG", "ND1", "CE1", "NE2", };
-static double naccess_HIS_atom_radius[] = {1.76, 1.76, 1.65, 1.76, 1.65, };
-static int naccess_HIS_atom_class[] = {0, 0, 1, 0, 1, };
+static const char *naccess_HIS_atom_name[] = {"CD2", "ND1", "NE2", "CG", "CE1", };
+static double naccess_HIS_atom_radius[] = {1.76, 1.65, 1.65, 1.76, 1.76, };
+static int naccess_HIS_atom_class[] = {0, 1, 1, 0, 0, };
 static struct classifier_residue naccess_HIS_cfg = {
     .name = "HIS", .n_atoms = 5,
     .atom_name = (char**) naccess_HIS_atom_name,
@@ -192,9 +192,9 @@ static struct classifier_residue naccess_HIS_cfg = {
     .max_area = {.name = "HIS", .total = 173.15, .main_chain = 44.71, .side_chain = 128.44, .polar = 68.23, .apolar = 104.92},
 };
 
-static const char *naccess_I_atom_name[] = {"N3", "C2", "O6", "N9", "C4", "N7", "N1", "C6", "C5", "C8", };
-static double naccess_I_atom_radius[] = {1.60, 1.80, 1.40, 1.60, 1.80, 1.60, 1.60, 1.80, 1.80, 1.80, };
-static int naccess_I_atom_class[] = {1, 0, 1, 1, 0, 1, 1, 0, 0, 0, };
+static const char *naccess_I_atom_name[] = {"N1", "C8", "C6", "N7", "C4", "N3", "N9", "C5", "O6", "C2", };
+static double naccess_I_atom_radius[] = {1.60, 1.80, 1.80, 1.60, 1.80, 1.60, 1.60, 1.80, 1.40, 1.80, };
+static int naccess_I_atom_class[] = {1, 0, 0, 1, 0, 1, 1, 0, 1, 0, };
 static struct classifier_residue naccess_I_cfg = {
     .name = "I", .n_atoms = 10,
     .atom_name = (char**) naccess_I_atom_name,
@@ -203,7 +203,7 @@ static struct classifier_residue naccess_I_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *naccess_ILE_atom_name[] = {"CG1", "CG2", "CD1", };
+static const char *naccess_ILE_atom_name[] = {"CG2", "CG1", "CD1", };
 static double naccess_ILE_atom_radius[] = {1.87, 1.87, 1.87, };
 static int naccess_ILE_atom_class[] = {0, 0, 0, };
 static struct classifier_residue naccess_ILE_cfg = {
@@ -214,7 +214,7 @@ static struct classifier_residue naccess_ILE_cfg = {
     .max_area = {.name = "ILE", .total = 166.62, .main_chain = 38.94, .side_chain = 127.68, .polar = 24.25, .apolar = 142.37},
 };
 
-static const char *naccess_LEU_atom_name[] = {"CD2", "CG", "CD1", };
+static const char *naccess_LEU_atom_name[] = {"CD2", "CD1", "CG", };
 static double naccess_LEU_atom_radius[] = {1.87, 1.87, 1.87, };
 static int naccess_LEU_atom_class[] = {0, 0, 0, };
 static struct classifier_residue naccess_LEU_cfg = {
@@ -225,9 +225,9 @@ static struct classifier_residue naccess_LEU_cfg = {
     .max_area = {.name = "LEU", .total = 159.40, .main_chain = 45.05, .side_chain = 114.35, .polar = 28.51, .apolar = 130.89},
 };
 
-static const char *naccess_LYS_atom_name[] = {"NZ", "CG", "CE", "CD", };
-static double naccess_LYS_atom_radius[] = {1.50, 1.87, 1.87, 1.87, };
-static int naccess_LYS_atom_class[] = {1, 0, 0, 0, };
+static const char *naccess_LYS_atom_name[] = {"CE", "CG", "NZ", "CD", };
+static double naccess_LYS_atom_radius[] = {1.87, 1.87, 1.50, 1.87, };
+static int naccess_LYS_atom_class[] = {0, 0, 1, 0, };
 static struct classifier_residue naccess_LYS_cfg = {
     .name = "LYS", .n_atoms = 4,
     .atom_name = (char**) naccess_LYS_atom_name,
@@ -236,7 +236,7 @@ static struct classifier_residue naccess_LYS_cfg = {
     .max_area = {.name = "LYS", .total = 192.51, .main_chain = 45.59, .side_chain = 146.93, .polar = 77.19, .apolar = 115.32},
 };
 
-static const char *naccess_MET_atom_name[] = {"CG", "SD", "CE", };
+static const char *naccess_MET_atom_name[] = {"CE", "SD", "CG", };
 static double naccess_MET_atom_radius[] = {1.87, 1.85, 1.87, };
 static int naccess_MET_atom_class[] = {0, 0, 0, };
 static struct classifier_residue naccess_MET_cfg = {
@@ -247,7 +247,7 @@ static struct classifier_residue naccess_MET_cfg = {
     .max_area = {.name = "MET", .total = 185.85, .main_chain = 45.57, .side_chain = 140.28, .polar = 28.51, .apolar = 157.34},
 };
 
-static const char *naccess_PHE_atom_name[] = {"CD2", "CG", "CE2", "CZ", "CD1", "CE1", };
+static const char *naccess_PHE_atom_name[] = {"CD2", "CD1", "CE2", "CG", "CE1", "CZ", };
 static double naccess_PHE_atom_radius[] = {1.76, 1.76, 1.76, 1.76, 1.76, 1.76, };
 static int naccess_PHE_atom_class[] = {0, 0, 0, 0, 0, 0, };
 static struct classifier_residue naccess_PHE_cfg = {
@@ -258,7 +258,7 @@ static struct classifier_residue naccess_PHE_cfg = {
     .max_area = {.name = "PHE", .total = 193.15, .main_chain = 44.02, .side_chain = 149.13, .polar = 28.51, .apolar = 164.64},
 };
 
-static const char *naccess_PRO_atom_name[] = {"CG", "CD", };
+static const char *naccess_PRO_atom_name[] = {"CD", "CG", };
 static double naccess_PRO_atom_radius[] = {1.87, 1.87, };
 static int naccess_PRO_atom_class[] = {0, 0, };
 static struct classifier_residue naccess_PRO_cfg = {
@@ -291,9 +291,9 @@ static struct classifier_residue naccess_SER_cfg = {
     .max_area = {.name = "SER", .total = 109.82, .main_chain = 46.67, .side_chain = 63.15, .polar = 54.97, .apolar = 54.85},
 };
 
-static const char *naccess_T_atom_name[] = {"O4", "C6", "C5", "N3", "O2", "C2", "C4", "C7", "N1", };
-static double naccess_T_atom_radius[] = {1.40, 1.80, 1.80, 1.60, 1.40, 1.80, 1.80, 1.80, 1.60, };
-static int naccess_T_atom_class[] = {1, 0, 0, 1, 1, 0, 0, 0, 1, };
+static const char *naccess_T_atom_name[] = {"C7", "C6", "O2", "N1", "O4", "C2", "C5", "N3", "C4", };
+static double naccess_T_atom_radius[] = {1.80, 1.80, 1.40, 1.60, 1.40, 1.80, 1.80, 1.60, 1.80, };
+static int naccess_T_atom_class[] = {0, 0, 1, 1, 1, 0, 0, 1, 0, };
 static struct classifier_residue naccess_T_cfg = {
     .name = "T", .n_atoms = 9,
     .atom_name = (char**) naccess_T_atom_name,
@@ -313,9 +313,9 @@ static struct classifier_residue naccess_THR_cfg = {
     .max_area = {.name = "THR", .total = 131.81, .main_chain = 40.30, .side_chain = 91.51, .polar = 47.59, .apolar = 84.22},
 };
 
-static const char *naccess_TRP_atom_name[] = {"CG", "CD2", "CE2", "CZ3", "CH2", "CZ2", "CE3", "CD1", "NE1", };
-static double naccess_TRP_atom_radius[] = {1.76, 1.76, 1.76, 1.76, 1.76, 1.76, 1.76, 1.76, 1.65, };
-static int naccess_TRP_atom_class[] = {0, 0, 0, 0, 0, 0, 0, 0, 1, };
+static const char *naccess_TRP_atom_name[] = {"CZ2", "CD2", "CZ3", "NE1", "CG", "CE3", "CD1", "CE2", "CH2", };
+static double naccess_TRP_atom_radius[] = {1.76, 1.76, 1.76, 1.65, 1.76, 1.76, 1.76, 1.76, 1.76, };
+static int naccess_TRP_atom_class[] = {0, 0, 0, 1, 0, 0, 0, 0, 0, };
 static struct classifier_residue naccess_TRP_cfg = {
     .name = "TRP", .n_atoms = 9,
     .atom_name = (char**) naccess_TRP_atom_name,
@@ -324,9 +324,9 @@ static struct classifier_residue naccess_TRP_cfg = {
     .max_area = {.name = "TRP", .total = 226.33, .main_chain = 40.90, .side_chain = 185.43, .polar = 58.94, .apolar = 167.40},
 };
 
-static const char *naccess_TYR_atom_name[] = {"CE1", "CE2", "OH", "CD2", "CG", "CD1", "CZ", };
-static double naccess_TYR_atom_radius[] = {1.76, 1.76, 1.40, 1.76, 1.76, 1.76, 1.76, };
-static int naccess_TYR_atom_class[] = {0, 0, 1, 0, 0, 0, 0, };
+static const char *naccess_TYR_atom_name[] = {"OH", "CD2", "CZ", "CE1", "CE2", "CD1", "CG", };
+static double naccess_TYR_atom_radius[] = {1.40, 1.76, 1.76, 1.76, 1.76, 1.76, 1.76, };
+static int naccess_TYR_atom_class[] = {1, 0, 0, 0, 0, 0, 0, };
 static struct classifier_residue naccess_TYR_cfg = {
     .name = "TYR", .n_atoms = 7,
     .atom_name = (char**) naccess_TYR_atom_name,
@@ -335,9 +335,9 @@ static struct classifier_residue naccess_TYR_cfg = {
     .max_area = {.name = "TYR", .total = 206.14, .main_chain = 43.99, .side_chain = 162.14, .polar = 70.47, .apolar = 135.66},
 };
 
-static const char *naccess_U_atom_name[] = {"C5", "O4", "C6", "C4", "N3", "C2", "O2", "N1", };
-static double naccess_U_atom_radius[] = {1.80, 1.40, 1.80, 1.80, 1.60, 1.80, 1.40, 1.60, };
-static int naccess_U_atom_class[] = {0, 1, 0, 0, 1, 0, 1, 1, };
+static const char *naccess_U_atom_name[] = {"C2", "C5", "C4", "N3", "C6", "O2", "N1", "O4", };
+static double naccess_U_atom_radius[] = {1.80, 1.80, 1.80, 1.60, 1.80, 1.40, 1.60, 1.40, };
+static int naccess_U_atom_class[] = {0, 0, 0, 1, 0, 1, 1, 1, };
 static struct classifier_residue naccess_U_cfg = {
     .name = "U", .n_atoms = 8,
     .atom_name = (char**) naccess_U_atom_name,
@@ -360,23 +360,12 @@ static struct classifier_residue naccess_VAL_cfg = {
 static struct classifier_residue *naccess_residue_cfg[] = {
     &naccess_A_cfg, &naccess_ANY_cfg, &naccess_ARG_cfg, &naccess_ASN_cfg, &naccess_ASP_cfg, &naccess_C_cfg, &naccess_CYS_cfg, &naccess_DA_cfg, &naccess_DC_cfg, &naccess_DG_cfg, &naccess_DI_cfg, &naccess_DT_cfg, &naccess_DU_cfg, &naccess_G_cfg, &naccess_GLN_cfg, &naccess_GLU_cfg, &naccess_HIS_cfg, &naccess_I_cfg, &naccess_ILE_cfg, &naccess_LEU_cfg, &naccess_LYS_cfg, &naccess_MET_cfg, &naccess_PHE_cfg, &naccess_PRO_cfg, &naccess_SEC_cfg, &naccess_SER_cfg, &naccess_T_cfg, &naccess_THR_cfg, &naccess_TRP_cfg, &naccess_TYR_cfg, &naccess_U_cfg, &naccess_VAL_cfg, };
 
-static struct classifier_config naccess_auto_config = {
+const freesasa_classifier freesasa_naccess_classifier = {
     .n_residues = 32, .n_classes = 2,
     .residue_name = (char**) naccess_residue_name,
     .class_name = (char**) naccess_class_name,
     .residue = (struct classifier_residue **) naccess_residue_cfg,
-};
-
-static void naccess_dummy_free(void *arg) {}
-
-const freesasa_classifier freesasa_naccess_classifier = {
     .name = "naccess",
-    .config = &naccess_auto_config,
-    .n_classes = 2,
-    .radius = freesasa_classifier_radius,
-    .sasa_class =freesasa_classifier_class,
-    .class2str = freesasa_classifier_class2str,
-    .residue_reference = freesasa_classifier_residue_reference,
-    // Since this object is const, calling free should emit compiler warnings.
-    .free_config = naccess_dummy_free,
+    .the_class = NULL,
 };
+

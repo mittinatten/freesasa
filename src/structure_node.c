@@ -316,7 +316,7 @@ freesasa_atom_subarea(freesasa_subarea *area,
         area->main_chain = a;
     else area->side_chain = a;
 
-    if (polar_classifier->sasa_class(resn, area->name, polar_classifier))
+    if (freesasa_classifier_class(polar_classifier, resn, area->name))
         area->polar = a;
     else area->apolar = a;
 }

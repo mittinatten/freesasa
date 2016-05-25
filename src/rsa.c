@@ -17,17 +17,15 @@ freesasa_residue_rel_subarea(freesasa_subarea *rel,
                              const freesasa_subarea *abs,
                              const freesasa_classifier *classifier)
 {
-    if (classifier->residue_reference) {
-        const freesasa_subarea *ref = classifier->residue_reference(abs->name, classifier);
-        if (ref != NULL && ref->name != NULL) {
-            rel->total = 100. * abs->total / ref->total;
-            rel->side_chain = 100. * abs->side_chain / ref->side_chain;
-            rel->main_chain = 100. * abs->main_chain / ref->main_chain;
-            rel->polar = 100. * abs->polar / ref->polar;
-            rel->apolar = 100. * abs->apolar / ref->apolar;
-            rel->name = abs->name;
-            return FREESASA_SUCCESS;
-        }
+    const freesasa_subarea *ref = freesasa_classifier_residue_reference(classifier, abs->name);
+    if (ref != NULL && ref->name != NULL) {
+        rel->total = 100. * abs->total / ref->total;
+        rel->side_chain = 100. * abs->side_chain / ref->side_chain;
+        rel->main_chain = 100. * abs->main_chain / ref->main_chain;
+        rel->polar = 100. * abs->polar / ref->polar;
+        rel->apolar = 100. * abs->apolar / ref->apolar;
+        rel->name = abs->name;
+        return FREESASA_SUCCESS;
     }
     *rel = freesasa_subarea_null;
     return FREESASA_WARN;
