@@ -223,12 +223,6 @@ freesasa_classifier_from_filename(const char *filename);
 void
 freesasa_classifier_free(freesasa_classifier *classifier);
 
-int
-freesasa_structure_chain_residues(const freesasa_structure *structure,
-                                  char chain,
-                                  int *first,
-                                  int *last);
-
 double
 freesasa_classifier_radius(const freesasa_classifier *classifier,
                            const char *res_name,
@@ -942,6 +936,7 @@ freesasa_structure_chain_atoms(const freesasa_structure *structure,
                                char chain,
                                int *first,
                                int *last);
+
 /**
     Get indices of first and last residues of a chain
 
@@ -951,6 +946,11 @@ freesasa_structure_chain_atoms(const freesasa_structure *structure,
     @param last Last residue of `chain` will be stored here.
     @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if `chain` not found.
  */
+int
+freesasa_structure_chain_residues(const freesasa_structure *structure,
+                                  char chain,
+                                  int *first,
+                                  int *last);
 
 #ifdef __cplusplus
 }
