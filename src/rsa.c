@@ -12,23 +12,17 @@
 #  include <config.h>
 #endif
 
-int
+void
 freesasa_residue_rel_subarea(freesasa_subarea *rel,
                              const freesasa_subarea *abs,
-                             const freesasa_classifier *classifier)
+                             const freesasa_subarea *ref)
 {
-    const freesasa_subarea *ref = freesasa_classifier_residue_reference(classifier, abs->name);
-    if (ref != NULL && ref->name != NULL) {
-        rel->total = 100. * abs->total / ref->total;
-        rel->side_chain = 100. * abs->side_chain / ref->side_chain;
-        rel->main_chain = 100. * abs->main_chain / ref->main_chain;
-        rel->polar = 100. * abs->polar / ref->polar;
-        rel->apolar = 100. * abs->apolar / ref->apolar;
-        rel->name = abs->name;
-        return FREESASA_SUCCESS;
-    }
-    *rel = freesasa_subarea_null;
-    return FREESASA_WARN;
+    rel->total = 100. * abs->total / ref->total;
+    rel->side_chain = 100. * abs->side_chain / ref->side_chain;
+    rel->main_chain = 100. * abs->main_chain / ref->main_chain;
+    rel->polar = 100. * abs->polar / ref->polar;
+    rel->apolar = 100. * abs->apolar / ref->apolar;
+    rel->name = abs->name;
 }
 
 static void
@@ -106,7 +100,7 @@ freesasa_write_rsa(FILE *output,
 
     const freesasa_structure *structure = freesasa_structure_node_structure(tree);
     freesasa_structure_node *residue, *chain = freesasa_structure_node_children(tree);
-    const freesasa_subarea *abs;
+    const freesasa_subarea *abs, *reference;
     freesasa_subarea rel;
     int res_index, chain_index;
 
@@ -119,7 +113,12 @@ freesasa_write_rsa(FILE *output,
         residue = freesasa_structure_node_children(chain);
         while (residue) {
             abs = freesasa_structure_node_area(residue);
-            freesasa_residue_rel_subarea(&rel, abs, classifier);
+            reference = freesasa_structure_node_residue_reference(residue);
+            if (reference) {
+                freesasa_residue_rel_subarea(&rel, abs, reference);
+            } else {
+                rel = freesasa_subarea_null;
+            }
             rsa_print_residue(output, res_index, abs, &rel, structure);
             ++res_index;
             residue = freesasa_structure_node_next(residue);

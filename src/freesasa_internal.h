@@ -40,7 +40,6 @@ typedef struct {
 //! A ::freesasa_subarea with `name == NULL` and all values 0
 extern const freesasa_subarea freesasa_subarea_null;
 
-
 /**
     Calculate SASA using S&R algorithm.
     
@@ -53,7 +52,7 @@ extern const freesasa_subarea freesasa_subarea_null;
     @return ::FREESASA_SUCCESS on success, ::FREESASA_WARN if multiple
     threads are requested when compiled in single-threaded mode (with
     error message). ::FREESASA_FAIL if memory allocation failure.
-*/
+ */
 int
 freesasa_shrake_rupley(double *sasa,
                        const coord_t *c,
@@ -80,7 +79,7 @@ freesasa_shrake_rupley(double *sasa,
     multiple threads are requested when compiled in single-threaded
     mode (with error message). ::FREESASA_FAIL if memory allocation 
     failure.
-*/
+ */
 int freesasa_lee_richards(double* sasa,
                           const coord_t *c,
                           const double *radii,
@@ -135,6 +134,14 @@ freesasa_structure_tree_free(freesasa_structure_node *root);
 const freesasa_subarea *
 freesasa_structure_node_area(const freesasa_structure_node *node);
 
+/**
+    The reference area for a node from the classifier used to generate the tree.
+
+    @param node The node (has to be of type ::FREESASA_NODE_RESIDUE)
+    @return The reference area. NULL if area not available or if node is not a residue.
+ */
+const freesasa_subarea *
+freesasa_structure_node_residue_reference(const freesasa_structure_node *node);
 /**
     The children of a node.
 
@@ -217,13 +224,24 @@ freesasa_structure_xyz(const freesasa_structure *s);
     Format: "A    1 ALA  CA " 
     (chain label, residue number, residue type, atom name)
 
-    @param s A structure.
-    @param i Atom index
-    @return Descriptor string. 
+    @param s A structure.s
+    @param i Atom index.
+    @return Descriptor string.
  */
 const char*
 freesasa_structure_atom_descriptor(const freesasa_structure *s,
                                    int i);
+
+/**
+   The class of an atom, in the classifier used to initialize the structure.
+
+   @param structure A structure.
+   @param i Atom index.
+   @return The class.
+ */
+int
+freesasa_structure_atom_class(const freesasa_structure *structure,
+                              int i);
 
 /**
     Get the index of a chain.
@@ -302,33 +320,12 @@ freesasa_add_subarea(freesasa_subarea *sum,
 
     @param rel Store results here, will have same name as `abs`
     @param abs Absolute SASA for residue
-    @param classifier Classifier that provides reference SASAs
-    @return ::FREESASA_SUCCESS. ::FREESASA_WARN if the name of the
-       residue in `abs` does not have a reference value in
-       `classifier`.
+    @param reference Reference SASA for the residue
  */
-int
+void
 freesasa_residue_rel_subarea(freesasa_subarea *rel,
                              const freesasa_subarea *abs,
-                             const freesasa_classifier *classifier);
-/**
-    Calculates the absolute and relative SASA values for a given residue
-
-    @param abs Where to write absolute SASA
-    @param rel Where to write relative SASA
-    @param residue_index Index of residue
-    @param structure The structure
-    @param result The SASA values
-    @param classifier Classifier that provides reference SASAs
-    @return ::FREESASA_SUCCESS. ::FREEESASA_FAIL if inconsistencies in structure.
- */
-int
-freesasa_rsa_val(freesasa_subarea *abs,
-                 freesasa_subarea *rel,
-                 int residue_index,
-                 const freesasa_structure *structure,
-                 const freesasa_result *result,
-                 const freesasa_classifier *classifier);
+                             const freesasa_subarea *reference);
 
 /**
     Print RSA-file

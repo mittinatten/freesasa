@@ -101,4 +101,5 @@ freesasa_classifier_residue_reference(const freesasa_classifier *classifier,
                                       const char *res_name);
 
 
+
 #endif /* CLASSIFIER_H */

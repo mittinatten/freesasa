@@ -17,6 +17,7 @@ struct atom {
     char *line;
     int res_index;
     char chain_label;
+    int the_class;
 };
 
 static const struct atom empty_atom =
@@ -80,6 +81,7 @@ atom_new(const char *residue_name,
     a->res_number = strdup(residue_number);
     a->atom_name = strdup(atom_name);
     a->symbol = strdup(symbol);
+    a->the_class = 0;
 
     dlen = strlen(residue_number) + strlen(residue_name)
         + strlen(atom_name) + 4;
@@ -365,6 +367,7 @@ structure_add_atom(freesasa_structure *s,
         if (structure_add_residue(s, a, na - 1)) return mem_fail();
     }
     a->res_index = s->number_residues - 1;
+    a->the_class = freesasa_classifier_class(classifier, a->res_name, a->atom_name);
 
     // by doing this last, we can free as much memory as possible if anything fails
     s->a[na-1] = a;

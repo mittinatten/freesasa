@@ -68,7 +68,8 @@ freesasa_json_residue(freesasa_structure_node *node,
     json_object *obj = json_object_new_object();
     const freesasa_structure *structure = freesasa_structure_node_structure(node);
     const char *name = freesasa_structure_node_name(node), *number;
-    const freesasa_subarea *abs = freesasa_structure_node_area(node);
+    const freesasa_subarea *abs = freesasa_structure_node_area(node),
+        *reference = freesasa_structure_node_residue_reference(node);
     freesasa_subarea rel;
     int first, last;
 
@@ -82,8 +83,9 @@ freesasa_json_residue(freesasa_structure_node *node,
     json_object_object_add(obj, "name", json_object_new_string(name));
     json_object_object_add(obj, "number", json_object_new_string(trim_number));
     json_object_object_add(obj, "abs", freesasa_json_subarea(abs));
-    freesasa_residue_rel_subarea(&rel, abs, classifier);
-    if (rel.name) {
+
+    if (reference != NULL) {
+        freesasa_residue_rel_subarea(&rel, abs, reference);
         json_object_object_add(obj, "rel", freesasa_json_subarea(&rel));
     }
     
