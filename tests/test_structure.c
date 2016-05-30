@@ -394,7 +394,7 @@ START_TEST (test_structure_node)
     }
     freesasa_result *result = freesasa_calc_structure(s, NULL);
     freesasa_structure_node *next, *tree =
-        freesasa_structure_tree(s, result, NULL, "test");
+        freesasa_result2tree(result, s, NULL, "test");
     freesasa_structure_node *chain, *residue, *atom;
     
     const freesasa_subarea *area;
@@ -440,7 +440,7 @@ START_TEST (test_structure_node)
     ck_assert_ptr_ne((area = freesasa_structure_node_area(next)), NULL);
     ck_assert(float_eq(result->sasa[1], area->total, 1e-10));
 
-    freesasa_structure_tree_free(tree);
+    freesasa_structure_node_free(tree);
     freesasa_structure_free(s);
     freesasa_result_free(result);
 }

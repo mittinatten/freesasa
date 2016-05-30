@@ -226,10 +226,10 @@ structure_tree_add_areas(freesasa_structure_node *node,
 }
 
 freesasa_structure_node *
-freesasa_structure_tree(const freesasa_structure *structure,
-                        const freesasa_result *result,
-                        const freesasa_classifier *polar_classifier,
-                        const char *name)
+freesasa_result2tree(const freesasa_result *result,
+                     const freesasa_structure *structure,
+                     const freesasa_classifier *polar_classifier,
+                     const char *name)
 {
     freesasa_structure_node *root = structure_node_new(name);
     int n_chains = freesasa_structure_n_chains(structure);
@@ -255,7 +255,7 @@ freesasa_structure_tree(const freesasa_structure *structure,
 }
 
 int
-freesasa_structure_tree_free(freesasa_structure_node *root) 
+freesasa_structure_node_free(freesasa_structure_node *root) 
 {
     if (root->parent) return fail_msg("Can't free node that isn't the root of its tree");
     

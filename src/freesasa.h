@@ -1013,18 +1013,18 @@ freesasa_structure_chain_residues(const freesasa_structure *structure,
     and freesasa_node_name() to explore the properties of each node.
 
     The tree should be freed using freesasa_structure_tree_free().
-    @param structure The structure to use
     @param result SASA values for the structure
+    @param structure The structure to use
     @param polar_classifier Classifier to determine which atoms are
       polar and apolar
     @param name The name of the structure
     @return The root node of the tree. NULL if memory allocation fails.
  */
 freesasa_structure_node *
-freesasa_structure_tree(const freesasa_structure *structure,
-                        const freesasa_result *result,
-                        const freesasa_classifier *polar_classifier,
-                        const char *name);
+freesasa_result2tree(const freesasa_result *result,
+                     const freesasa_structure *structure,
+                     const freesasa_classifier *polar_classifier,
+                     const char *name);
 
 /**
     Free ::freesasa_structure_node-tree.
@@ -1037,7 +1037,7 @@ freesasa_structure_tree(const freesasa_structure *structure,
       parent.
  */
 int
-freesasa_structure_tree_free(freesasa_structure_node *root);
+freesasa_structure_node_free(freesasa_structure_node *root);
 
 
 /**
