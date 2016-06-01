@@ -22,7 +22,7 @@ include_HEADERS = freesasa.h
 libfreesasa_a_SOURCES = classifier.c classifier.h \
 	classifier_protor.c classifier_oons.c classifier_naccess.c \
 	coord.c coord.h pdb.c pdb.h \
-	sasa_lr.c sasa_sr.c structure.c \
+	sasa_lr.c sasa_sr.c structure.c structure_node.c \
 	freesasa.c freesasa.h freesasa_internal.h \
 	nb.h nb.c util.c rsa.c \
 	selection.h selection.c $(lp_output)
@@ -32,6 +32,10 @@ freesasa_LDADD = libfreesasa.a
 example_LDADD = libfreesasa.a
 
 lp_output = lexer.c lexer.h parser.c parser.h
+
+if USE_JSON
+libfreesasa_a_SOURCES += json.c freesasa_json.h
+endif # USE_JSON
 
 if GENERATE_PARSER
 $(lp_output): lexer.l parser.y

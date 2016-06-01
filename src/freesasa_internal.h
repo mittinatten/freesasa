@@ -8,23 +8,14 @@
 //! The name of the library, to be used in error messages and logging
 extern const char *freesasa_name;
 
-/**
-    This classifier only has the sasa_class function, which returns 1
-    for protien backbone atoms, and 0 else. Backbone atoms are CA, N,
-    C and O. All other member functions are NULL.
- */
-extern const freesasa_classifier freesasa_backbone_classifier;
-
-//! Classifier that classifies each atom according to residue
-extern const freesasa_classifier freesasa_residue_classifier;
-
+//! A ::freesasa_subarea with `name == NULL` and all values 0
+extern const freesasa_subarea freesasa_subarea_null;
 
 //! Shortcut for memory error generation
 #define mem_fail() freesasa_mem_fail(__func__,__FILE__,__LINE__) 
 
 //! Shortcut for error message with position information
 #define fail_msg(msg) freesasa_fail_wloc(__func__,__FILE__,__LINE__,msg)
-
 
 /**
     Calculate SASA using S&R algorithm.
@@ -38,12 +29,12 @@ extern const freesasa_classifier freesasa_residue_classifier;
     @return ::FREESASA_SUCCESS on success, ::FREESASA_WARN if multiple
     threads are requested when compiled in single-threaded mode (with
     error message). ::FREESASA_FAIL if memory allocation failure.
-*/
+ */
 int
 freesasa_shrake_rupley(double *sasa,
                        const coord_t *c,
                        const double *radii,
-		       const freesasa_parameters *param);
+                       const freesasa_parameters *param);
 
 /**
     Calculate SASA using L&R algorithm.
@@ -65,12 +56,24 @@ freesasa_shrake_rupley(double *sasa,
     multiple threads are requested when compiled in single-threaded
     mode (with error message). ::FREESASA_FAIL if memory allocation 
     failure.
-*/
+ */
 int freesasa_lee_richards(double* sasa,
                           const coord_t *c,
                           const double *radii,
-			  const freesasa_parameters *param);
+                          const freesasa_parameters *param);
 
+
+/**
+    Print RSA-file
+
+    @param output Output-file
+    @param root A tree with stored results
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
+      writing to file.
+ */
+int
+freesasa_write_rsa(FILE *output,
+                   const freesasa_structure_node *root);
 
 /**
     Get coordinates.
@@ -86,13 +89,24 @@ freesasa_structure_xyz(const freesasa_structure *s);
     Format: "A    1 ALA  CA " 
     (chain label, residue number, residue type, atom name)
 
-    @param s A structure.
-    @param i Atom index
-    @return Descriptor string. 
+    @param s A structure.s
+    @param i Atom index.
+    @return Descriptor string.
  */
 const char*
 freesasa_structure_atom_descriptor(const freesasa_structure *s,
                                    int i);
+
+/**
+   The class of an atom, in the classifier used to initialize the structure.
+
+   @param structure A structure.
+   @param i Atom index.
+   @return The class.
+ */
+int
+freesasa_structure_atom_class(const freesasa_structure *structure,
+                              int i);
 
 /**
     Get the index of a chain.
@@ -127,12 +141,66 @@ freesasa_structure_residue_descriptor(const freesasa_structure *s,
     @param s The structure
     @param r_i Index of residue
     @return The SASA of the residue
-*/
+ */
 double
 freesasa_single_residue_sasa(const freesasa_result *r,
                              const freesasa_structure *s, 
                              int r_i);
 
+/**
+    Extract area to provided ::freesasa_subarea object
+
+    Main-chain / side-chain atoms are defined by
+    ::freesasa_backbone_classifier.
+
+    @param area Area will be stored here
+    @param structure Structure to use for classification
+    @param result The areas to use
+    @param polar_classifier Classifier to use to determine if 
+      the atom is polar or not
+    @param atom_index Index of atom in question  
+ */
+void
+freesasa_atom_subarea(freesasa_subarea *area,
+                      const freesasa_structure *structure,
+                      const freesasa_result *result,
+                      const freesasa_classifier *polar_classifier,
+                      int atom_index);
+
+/**
+    Adds all members of term to corresponding members of sum
+
+    @param sum Object to add to
+    @param term Object to add
+ */
+void
+freesasa_add_subarea(freesasa_subarea *sum,
+                     const freesasa_subarea *term);
+
+/**
+    Calculate relative SASA values for a residue
+
+    If the array `ref_values` does not have an entry that has the same
+    `name` as `abs`, `rel->name` will be `NULL`.
+
+    @param rel Store results here, will have same name as `abs`
+    @param abs Absolute SASA for residue
+    @param reference Reference SASA for the residue
+ */
+void
+freesasa_residue_rel_subarea(freesasa_subarea *rel,
+                             const freesasa_subarea *abs,
+                             const freesasa_subarea *reference);
+
+/**
+    Is an atom a backbone atom
+   
+    @param atom_name Name of atom
+    @return 1 if the atom_name equals CA, N, O or C after whitespace
+    is trimmed, 0 else. (i.e. does not check if it is an actual atom)
+ */
+int
+freesasa_atom_is_backbone(const char *atom_name);
 
 /**
     Holds range in a file, to be initalized with ftell() and used
@@ -211,6 +279,5 @@ freesasa_fail_wloc(const char* func,
                    const char* file,
                    int line,
                    const char *msg);
-                
 
 #endif /* FREESASA_INTERNAL_H */

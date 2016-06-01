@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <errno.h>
 #include "classifier.h"
 #include "freesasa_internal.h"
 
@@ -12,9 +13,9 @@
 
 static const struct classifier_types empty_types = {0, 0, NULL, NULL, NULL, NULL};
 
-const struct classifier_residue empty_residue = {0,NULL,NULL,NULL,NULL};
+static const struct classifier_residue empty_residue = {0, NULL, NULL, NULL, NULL, {NULL, 0, 0, 0, 0, 0}};
 
-const struct classifier_config empty_config = {0, 0, NULL, NULL, NULL};
+static const struct freesasa_classifier empty_config = {0, 0, NULL, NULL, NULL, NULL, NULL};
 
 static struct classifier_types*
 classifier_types_new()
@@ -84,10 +85,47 @@ classifier_residue_free(struct classifier_residue* res)
     free(res);
 }
 
-static struct classifier_config* 
-classifier_config_new()
+// Not tested!
+static struct classifier_residue*
+classifier_residue_clone(const struct classifier_residue *residue)
 {
-    struct classifier_config *cfg = malloc(sizeof(struct classifier_config));
+    struct classifier_residue *clone = classifier_residue_new(residue->name);
+
+    if (!clone) {
+        fail_msg("");
+        return NULL;
+    }
+    clone->n_atoms = residue->n_atoms;
+    clone->max_area = residue->max_area;
+    clone->atom_name = malloc(clone->n_atoms * sizeof(char*));
+    clone->atom_radius = malloc(clone->n_atoms * sizeof(double));
+    clone->atom_class = malloc(clone->n_atoms * sizeof(int));
+    if (!clone->atom_name || !clone->atom_radius || !clone->atom_class) {
+        goto memerr;
+    }
+    
+    for (int i = 0; i < clone->n_atoms; ++i) clone->atom_name[i] = NULL;
+    for (int i = 0; i < clone->n_atoms; ++i) {
+        clone->atom_name[i] = strdup(residue->atom_name[i]);
+        if (!clone->atom_name[i]) goto memerr;
+    }
+
+    memcpy(clone->atom_radius, residue->atom_radius, sizeof(double)*clone->n_atoms);
+    memcpy(clone->atom_class, residue->atom_class, sizeof(int)*clone->n_atoms);
+    
+    return clone;
+ memerr:
+    mem_fail();
+    classifier_residue_free(clone);
+    return NULL;
+}
+
+
+
+static freesasa_classifier* 
+freesasa_classifier_new()
+{
+    struct freesasa_classifier *cfg = malloc(sizeof(struct freesasa_classifier));
     if (cfg == NULL) {
         mem_fail();
         return NULL;
@@ -96,11 +134,50 @@ classifier_config_new()
     return cfg;
 }
 
-static void
-classifier_config_free(void *p)
+// Not tested!!
+freesasa_classifier *
+freesasa_classifier_clone(const freesasa_classifier *classifier)
 {
-    if (p == NULL) return;
-    struct classifier_config *c = p;
+    freesasa_classifier *clone = freesasa_classifier_new();
+
+    if (!clone) {
+        fail_msg("");
+        return NULL;
+    }
+    memcpy(clone, classifier, sizeof(freesasa_classifier)); 
+    clone->residue_name = malloc(clone->n_residues*sizeof(char*));
+    clone->residue = malloc(clone->n_residues*sizeof(struct classifier_residue*));
+    clone->class_name = malloc(clone->n_classes*sizeof(char*));
+    clone->name = strdup(classifier->name);
+    
+    if (!clone->residue_name || !clone->residue ||
+        !clone->class_name || !clone->name)
+        goto memerr;
+    for (int i = 0; i < clone->n_residues; ++i) {
+        clone->residue_name[i] = NULL;
+        clone->class_name[i] = NULL;
+        clone->residue[i] = NULL;
+    }
+    for (int i = 0; i < clone->n_residues; ++i) {
+        clone->residue_name[i] = strdup(classifier->residue_name[i]);
+        clone->class_name[i] = strdup(classifier->class_name[i]);
+        clone->residue[i] = classifier_residue_clone(classifier->residue[i]);
+        if (!clone->residue_name[i] || !clone->class_name[i] || clone->residue[i])
+            goto memerr;
+    }
+    
+    return clone;
+
+ memerr:
+    mem_fail();
+    freesasa_classifier_free(clone);
+    return NULL;
+}
+
+void
+freesasa_classifier_free(freesasa_classifier *c)
+{
+    if (c == NULL) return;
 
     if (c->class_name)
         for (int i = 0; i < c->n_classes; ++i)
@@ -187,7 +264,7 @@ check_file(FILE *input,
    whitespace. Returns the length of the stripped line on success,
    FREESASA_FAIL if malloc/realloc fails.
  */
-int
+static int
 strip_line(char **line,
            const char *input) 
 {
@@ -429,29 +506,29 @@ add_atom(struct classifier_residue *res,
     residue. Returns FREESASA_FAILURE if realloc/strdup fails.
  */
 static int
-add_residue(struct classifier_config *config,
+add_residue(struct freesasa_classifier *c,
             const char* name)
 {
-    char **rn = config->residue_name;
-    struct classifier_residue **cr = config->residue;
-    int res = find_string(config->residue_name, name, config->n_residues);
+    char **rn = c->residue_name;
+    struct classifier_residue **cr = c->residue;
+    int res = find_string(c->residue_name, name, c->n_residues);
 
     if (res >= 0) return res;
 
-    res = config->n_residues + 1;
-    if ((config->residue_name = realloc(rn, sizeof(char*) * res)) == NULL) {
-        config->residue_name = rn;
+    res = c->n_residues + 1;
+    if ((c->residue_name = realloc(rn, sizeof(char*) * res)) == NULL) {
+        c->residue_name = rn;
         return mem_fail();
     }
-    if ((config->residue = realloc(cr, sizeof(struct classifier_residue *) * res)) == NULL) {
-        config->residue = cr;
+    if ((c->residue = realloc(cr, sizeof(struct classifier_residue *) * res)) == NULL) {
+        c->residue = cr;
         return mem_fail();
     }
-    if ((config->residue[res-1] = classifier_residue_new(name)) == NULL) {
+    if ((c->residue[res-1] = classifier_residue_new(name)) == NULL) {
         return mem_fail();
     }
-    ++config->n_residues;
-    config->residue_name[res-1] = config->residue[res-1]->name;
+    ++c->n_residues;
+    c->residue_name[res-1] = c->residue[res-1]->name;
     return res-1;
 }
 
@@ -462,7 +539,7 @@ add_residue(struct classifier_config *config,
     errors or memory allocation errors. FREESASA_SUCCESS else.
  */
 static int
-read_atoms_line(struct classifier_config *config,
+read_atoms_line(struct freesasa_classifier *c,
                 const struct classifier_types *types,
                 const char* line)
 {
@@ -474,9 +551,9 @@ read_atoms_line(struct classifier_config *config,
         if (type < 0) 
             return freesasa_fail("Unknown atom type '%s' in configuration, line '%s'",
                                  buf3, line);
-        res = add_residue(config,buf1);
+        res = add_residue(c, buf1);
         if (res == FREESASA_FAIL) return fail_msg("");
-        atom = add_atom(config->residue[res],
+        atom = add_atom(c->residue[res],
                         buf2,
                         types->type_radius[type],
                         types->type_class[type]);
@@ -499,7 +576,7 @@ read_atoms_line(struct classifier_config *config,
     been stored in the config struct.
  */
 static int
-read_atoms(struct classifier_config *config,
+read_atoms(struct freesasa_classifier *c,
            struct classifier_types *types,
            FILE *input,
            struct file_range fi)
@@ -515,7 +592,7 @@ read_atoms(struct classifier_config *config,
         nl = next_line(&line, input);
         if (nl == 0) continue;
         if (nl == FREESASA_FAIL) return fail_msg("");
-        ret = read_atoms_line(config, types, line);
+        ret = read_atoms_line(c, types, line);
         if (ret == FREESASA_FAIL) break;
     }
     free(line);
@@ -524,8 +601,8 @@ read_atoms(struct classifier_config *config,
 }
 
 static int
-config_copy_classes(struct classifier_config *config,
-                    const struct classifier_types *types) 
+classifier_copy_classes(struct freesasa_classifier *c,
+                        const struct classifier_types *types) 
 {
     char **names = malloc(sizeof(char*)*types->n_classes);
     if (names == NULL) return mem_fail();
@@ -535,31 +612,31 @@ config_copy_classes(struct classifier_config *config,
         names[i] = strdup(types->class_name[i]);
         if (names[i] == NULL) return mem_fail();
     }
-    config->n_classes = types->n_classes;
-    config->class_name = names;
+    c->n_classes = types->n_classes;
+    c->class_name = names;
     return FREESASA_SUCCESS;
 }
 
-static struct classifier_config*
+static struct freesasa_classifier*
 read_config(FILE *input) 
 {
     assert(input);
     struct file_range types_section, atoms_section; 
-    struct classifier_config *config = NULL;
+    struct freesasa_classifier *classifier = NULL;
     struct classifier_types *types = NULL;
 
     if (!(types = classifier_types_new()) ||
-        !(config = classifier_config_new()) ||
+        !(classifier = freesasa_classifier_new()) ||
         check_file(input, &types_section, &atoms_section) ||
         read_types(types, input, types_section) ||
-        read_atoms(config, types, input, atoms_section) ||
-        config_copy_classes(config, types)) {
-        classifier_config_free(config);
-        config = NULL;
+        read_atoms(classifier, types, input, atoms_section) ||
+        classifier_copy_classes(classifier, types)) {
+        freesasa_classifier_free(classifier);
+        classifier = NULL;
     }
     classifier_types_free(types);
     
-    return config;
+    return classifier;
 }
 
 /**
@@ -567,15 +644,15 @@ read_config(FILE *input)
     indices to the provided pointers).
  */
 static void 
-find_any(const struct classifier_config *config,
+find_any(const struct freesasa_classifier *c,
          const char *atom_name,
          int *res, int *atom)
 {
-    *res = find_string(config->residue_name,"ANY",config->n_residues);
+    *res = find_string(c->residue_name,"ANY",c->n_residues);
     if (*res >= 0) {
-        *atom = find_string(config->residue[*res]->atom_name,
+        *atom = find_string(c->residue[*res]->atom_name,
                             atom_name,
-                            config->residue[*res]->n_atoms); 
+                            c->residue[*res]->n_atoms); 
     }
 }
 /**
@@ -584,21 +661,21 @@ find_any(const struct classifier_config *config,
     found.
  */
 static int 
-find_atom(const struct classifier_config *config, 
+find_atom(const struct freesasa_classifier *c, 
           const char *res_name,
           const char *atom_name,
           int* res,
           int* atom)
 {
     *atom = -1;
-    *res = find_string(config->residue_name,res_name,config->n_residues);
+    *res = find_string(c->residue_name, res_name, c->n_residues);
     if (*res < 0) {
-        find_any(config,atom_name,res,atom);
+        find_any(c, atom_name, res, atom);
     } else {        
-        const struct classifier_residue *residue = config->residue[*res];
-        *atom = find_string(residue->atom_name,atom_name,residue->n_atoms);
+        const struct classifier_residue *residue = c->residue[*res];
+        *atom = find_string(residue->atom_name, atom_name, residue->n_atoms);
         if (*atom < 0) {
-            find_any(config,atom_name,res,atom);
+            find_any(c, atom_name, res, atom);
         }
     }
     if (*atom < 0) {
@@ -607,91 +684,103 @@ find_atom(const struct classifier_config *config,
     return FREESASA_SUCCESS;
 }
 
-/** To be linked to a Classifier struct */
 double
-freesasa_classifier_config_radius(const char *res_name,
-                                  const char *atom_name,
-                                  const freesasa_classifier *classifier)
+freesasa_classifier_radius(const freesasa_classifier *classifier,
+                           const char *res_name,
+                           const char *atom_name)                           
 {
     assert(classifier); assert(res_name); assert(atom_name);
     
     int res, atom, status;
-    const struct classifier_config *config = classifier->config;
-    
-    status = find_atom(config,res_name,atom_name,&res,&atom);
+
+    status = find_atom(classifier, res_name, atom_name, &res,&atom);
     if (status == FREESASA_SUCCESS)
-        return config->residue[res]->atom_radius[atom];
+        return classifier->residue[res]->atom_radius[atom];
     return -1.0;
 }
 
-/** To be linked to a Classifier struct */
 int
-freesasa_classifier_config_class(const char *res_name, 
-                                 const char *atom_name,
-                                 const freesasa_classifier *classifier)
+freesasa_classifier_class(const freesasa_classifier *classifier,
+                          const char *res_name, 
+                          const char *atom_name)
 {
     assert(classifier); assert(res_name); assert(atom_name);
     int res, atom, status;
-    const struct classifier_config* config = classifier->config;
-    status = find_atom(config,res_name,atom_name,&res,&atom);
+
+    // temporary solution for refactoring
+    if (classifier->the_class) return classifier->the_class(res_name, atom_name);
+    
+    status = find_atom(classifier, res_name, atom_name, &res, &atom);
     if (status == FREESASA_SUCCESS)
-        return config->residue[res]->atom_class[atom];
+        return classifier->residue[res]->atom_class[atom];
     return FREESASA_WARN;
 }
 
-/** To be linked to a Classifier struct */
 const char*
-freesasa_classifier_config_class2str(int the_class,
-                                     const freesasa_classifier *classifier)
+freesasa_classifier_class2str(const freesasa_classifier *classifier,
+                              int the_class)
+                              
 {
     assert(classifier);
-    const struct classifier_config *config = classifier->config;
-    if (the_class < 0 || the_class >= config->n_classes) return NULL;
-    return config->class_name[the_class];
+    if (the_class < 0 || the_class >= classifier->n_classes) return NULL;
+    return classifier->class_name[the_class];
 }
 
-static freesasa_classifier*
-init_classifier(struct classifier_config *config)
+static
+freesasa_classifier*
+classifier_from_file(FILE *file, const char *name)
 {
-   freesasa_classifier* c = malloc(sizeof(freesasa_classifier));
-    if (c == NULL) {
+    struct freesasa_classifier *classifier = read_config(file);
+    if (classifier == NULL) {
+        fail_msg("");
+        return NULL;
+    }
+    classifier->name = strdup(name);
+    if (classifier->name == NULL) {
         mem_fail();
         return NULL;
     }
-
-    c->config = config;
-    c->n_classes = config->n_classes;
-    c->radius = freesasa_classifier_config_radius;
-    c->sasa_class = freesasa_classifier_config_class;
-    c->class2str = freesasa_classifier_config_class2str;
-    c->free_config = classifier_config_free;
-
-    return c;
+    return classifier;
 }
 
 freesasa_classifier*
 freesasa_classifier_from_file(FILE *file)
 {
     assert(file);
-
-    struct classifier_config *config = read_config(file);
-    if (config == NULL) {
-        fail_msg("");
-        return NULL;
-    }
-    return init_classifier(config);
+    return classifier_from_file(file, "from-unknown-file");
 }
 
-void
-freesasa_classifier_free(freesasa_classifier *classifier)
+freesasa_classifier*
+freesasa_classifier_from_filename(const char *filename)
 {
-    if (classifier != NULL) {
-        if (classifier->free_config != NULL &&
-            classifier->config != NULL) {
-            classifier->free_config(classifier->config);
+    FILE *file = fopen(filename, "r");
+    if (file) {
+        freesasa_classifier *c = classifier_from_file(file, filename);
+        fclose(file);
+        if (c == NULL) {
+            fail_msg("");
         }
-        free(classifier);
+        return c;
     }
+    freesasa_fail("Error: could not open file '%s'; %s",
+                  filename, strerror(errno));
+    return NULL;
+}
+
+const freesasa_subarea *
+freesasa_classifier_residue_reference(const freesasa_classifier *classifier,
+                                      const char *res_name)                                      
+{
+    int res = find_string(classifier->residue_name, res_name, classifier->n_residues);
+    if (res < 0) return NULL;
+    
+    return &classifier->residue[res]->max_area;
+}
+
+const char*
+freesasa_classifier_name(const freesasa_classifier *classifier)
+{
+    return classifier->name;
 }
 
 struct symbol_radius {
@@ -781,8 +870,7 @@ static const char *residue_names[] = {
 
 static int
 residue(const char *res_name,
-        const char *atom_name,
-        const freesasa_classifier *c)
+        const char *atom_name)
 {
     int len = strlen(res_name);
     char cpy[len+1];
@@ -794,32 +882,17 @@ residue(const char *res_name,
     return RES_UNK;
 }
 
-static const char*
-residue2str(int the_residue,
-            const freesasa_classifier *c)
-{
-    assert(the_residue >= ALA && the_residue <= NN);
-    return residue_names[the_residue];
-}
-
 const freesasa_classifier freesasa_residue_classifier = {
-    .radius = NULL,
-    .sasa_class = residue,
-    .class2str = residue2str,
-    .n_classes = NN+1,
-    .free_config = NULL,
-    .config = NULL
+    .name = "Residue-classifier",
+    .residue_name = (char **)residue_names,
+    .class_name = (char **)residue_names,
+    .residue = NULL,
+    .n_classes = sizeof (residue_names) / sizeof (char*),
+    .the_class = residue,
 };
 
-/**
-    Returns 1 if the atom_name equals CA, N, O or C after whitespace
-    is trimmed, 0 else. (i.e. does not check if it is an actual atom,
-    no such strings should be able to reach this point).
- */
-static int
-classifier_is_backbone(const char *res_name,
-                       const char *atom_name,
-                       const freesasa_classifier *classifier)
+int
+freesasa_atom_is_backbone(const char *atom_name)
 {
     int n = strlen(atom_name);
     char name[n+1];
@@ -835,12 +908,3 @@ classifier_is_backbone(const char *res_name,
         return 1;
     return 0;
 }
-
-const freesasa_classifier freesasa_backbone_classifier = {
-    .radius = NULL,
-    .sasa_class = classifier_is_backbone,
-    .class2str = NULL,
-    .n_classes = 2,
-    .free_config = NULL,
-    .config = NULL
-};

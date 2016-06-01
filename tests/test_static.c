@@ -155,7 +155,7 @@ START_TEST (test_classifier)
     char *dummy_str = NULL;
     struct classifier_types *types = classifier_types_new();
     struct classifier_residue *residue_cfg = classifier_residue_new("ALA");
-    struct classifier_config *config = classifier_config_new();
+    struct freesasa_classifier *clf = freesasa_classifier_new();
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
 
@@ -228,38 +228,38 @@ START_TEST (test_classifier)
     ck_assert(fabs(residue_cfg->atom_radius[1]-2.0) < 1e-10);
     classifier_residue_free(residue_cfg);
 
-    ck_assert_int_eq(add_residue(config,"A"),0);
-    ck_assert_int_eq(add_residue(config,"B"),1);
-    ck_assert_int_eq(add_residue(config,"B"),1);
-    ck_assert_int_eq(config->n_residues,2);
-    ck_assert_str_eq(config->residue_name[0],"A");
-    ck_assert_str_eq(config->residue_name[1],"B");
-    ck_assert_str_eq(config->residue[0]->name,"A");
+    ck_assert_int_eq(add_residue(clf,"A"),0);
+    ck_assert_int_eq(add_residue(clf,"B"),1);
+    ck_assert_int_eq(add_residue(clf,"B"),1);
+    ck_assert_int_eq(clf->n_residues,2);
+    ck_assert_str_eq(clf->residue_name[0],"A");
+    ck_assert_str_eq(clf->residue_name[1],"B");
+    ck_assert_str_eq(clf->residue[0]->name,"A");
 
-    classifier_config_free(config);
-    config = classifier_config_new();
+    freesasa_classifier_free(clf);
+    clf = freesasa_classifier_new();
     
-    ck_assert_int_eq(read_atoms_line(config,types,"A A"),FREESASA_FAIL);
-    ck_assert_int_eq(read_atoms_line(config,types,"A A A"),FREESASA_FAIL);
-    ck_assert_int_eq(read_atoms_line(config,types,"ALA CA a"),FREESASA_SUCCESS);
-    ck_assert_int_eq(read_atoms_line(config,types,"ALA CB b"),FREESASA_SUCCESS);
-    ck_assert_int_eq(read_atoms_line(config,types,"ARG CA a"),FREESASA_SUCCESS);
-    ck_assert_int_eq(read_atoms_line(config,types,"ARG CB b"),FREESASA_SUCCESS);
-    ck_assert_int_eq(read_atoms_line(config,types,"ARG CG c"),FREESASA_FAIL);
-    config_copy_classes(config, types);
-    ck_assert_int_eq(config->n_residues,2);
-    ck_assert_int_eq(config->n_classes,2);
-    ck_assert_str_eq(config->residue_name[0],"ALA");
-    ck_assert_str_eq(config->residue_name[1],"ARG");
-    ck_assert_str_eq(config->class_name[0],"C");
-    ck_assert_str_eq(config->class_name[1],"D");
-    ck_assert_int_eq(config->residue[0]->n_atoms,2);
-    ck_assert_str_eq(config->residue[0]->atom_name[0],"CA");
-    ck_assert_str_eq(config->residue[0]->atom_name[1],"CB");
-    ck_assert(fabs(config->residue[0]->atom_radius[0]-1.0) < 1e-5);
-    ck_assert(fabs(config->residue[0]->atom_radius[1]-2.0) < 1e-5);
+    ck_assert_int_eq(read_atoms_line(clf,types,"A A"),FREESASA_FAIL);
+    ck_assert_int_eq(read_atoms_line(clf,types,"A A A"),FREESASA_FAIL);
+    ck_assert_int_eq(read_atoms_line(clf,types,"ALA CA a"),FREESASA_SUCCESS);
+    ck_assert_int_eq(read_atoms_line(clf,types,"ALA CB b"),FREESASA_SUCCESS);
+    ck_assert_int_eq(read_atoms_line(clf,types,"ARG CA a"),FREESASA_SUCCESS);
+    ck_assert_int_eq(read_atoms_line(clf,types,"ARG CB b"),FREESASA_SUCCESS);
+    ck_assert_int_eq(read_atoms_line(clf,types,"ARG CG c"),FREESASA_FAIL);
+    classifier_copy_classes(clf, types);
+    ck_assert_int_eq(clf->n_residues,2);
+    ck_assert_int_eq(clf->n_classes,2);
+    ck_assert_str_eq(clf->residue_name[0],"ALA");
+    ck_assert_str_eq(clf->residue_name[1],"ARG");
+    ck_assert_str_eq(clf->class_name[0],"C");
+    ck_assert_str_eq(clf->class_name[1],"D");
+    ck_assert_int_eq(clf->residue[0]->n_atoms,2);
+    ck_assert_str_eq(clf->residue[0]->atom_name[0],"CA");
+    ck_assert_str_eq(clf->residue[0]->atom_name[1],"CB");
+    ck_assert(fabs(clf->residue[0]->atom_radius[0]-1.0) < 1e-5);
+    ck_assert(fabs(clf->residue[0]->atom_radius[1]-2.0) < 1e-5);
     
-    classifier_config_free(config);
+    freesasa_classifier_free(clf);
     classifier_types_free(types);
 
     freesasa_set_verbosity(FREESASA_V_NORMAL);
@@ -343,79 +343,6 @@ START_TEST (test_expression)
 }
 END_TEST
 
-START_TEST (test_rsa)
-{
-    freesasa_residue_sasa rs, rs2;
-    const freesasa_residue_sasa *rsa_default_ref = freesasa_default_rsa.max;
-    freesasa_structure *structure = freesasa_structure_new();
-    freesasa_structure_add_atom(structure," CA ","ALA","   1",'A',0,0,0);
-    freesasa_structure_add_atom(structure," O  ","ALA","   1",'A',1,1,1);
-    freesasa_structure_add_atom(structure," CB ","ALA","   1",'A',2,2,2);
-    freesasa_structure_add_atom(structure," CA ","ALA","   1",'B',10,10,10);
-    freesasa_structure_add_atom(structure," O  ","ALA","   1",'B',11,11,11);
-    freesasa_structure_add_atom(structure," CB ","ALA","   1",'B',12,12,12);
-    freesasa_result *result = freesasa_calc_structure(structure, NULL);
-    struct rsa_config cfg = {
-        .polar_classifier = freesasa_default_rsa.polar_classifier,
-        .bb_classifier = freesasa_default_rsa.bb_classifier,
-        .result = result,
-        .structure = structure,
-        .sasa_ref = rsa_default_ref
-    };
-
-    for (int i = 0; i < 6; ++i) {
-        rs = zero_rs;
-        rs.name = "ALA";
-        rsa_abs_add_atom(&rs, i, &cfg);
-        ck_assert(float_eq(rs.total, result->sasa[i], 1e-10));
-    }
-
-    // Check get abs
-    rs = zero_rs;
-    rs.name = "ALA";
-    rsa_get_abs(&rs, 0, &cfg);
-    ck_assert(float_eq(rs.total, result->sasa[0] + result->sasa[1] + result->sasa[2], 1e-10));
-    ck_assert(float_eq(rs.polar, result->sasa[1], 1e-10));
-    ck_assert(float_eq(rs.apolar, result->sasa[0] + result->sasa[2], 1e-10));
-    ck_assert(float_eq(rs.main_chain, result->sasa[0] + result->sasa[1], 1e-10));
-    ck_assert(float_eq(rs.side_chain, result->sasa[2], 1e-10));
-
-    rs2 = zero_rs;
-    rs2.name = "ALA";
-    rsa_get_abs(&rs2, 1, &cfg);
-    ck_assert(float_eq(rs2.total, result->sasa[3] + result->sasa[4] + result->sasa[5], 1e-10));
-
-    // Check adding of residue_sasas
-    rsa_add_residue_sasa(&rs, &rs2);
-    ck_assert(float_eq(rs.total, result->total, 1e-10));
-    ck_assert(float_eq(rs.polar, 2*rs2.polar, 1e-10));
-    ck_assert(float_eq(rs.apolar, 2*rs2.apolar, 1e-10));
-    ck_assert(float_eq(rs.main_chain, 2*rs2.main_chain, 1e-10));
-    ck_assert(float_eq(rs.side_chain, 2*rs2.side_chain, 1e-10));
-
-    // Check relative sasa
-    rsa_get_rel(&rs, &rs2, rsa_default_ref);
-    ck_assert(float_eq(rs.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_default_ref[0].total, 1e-10));
-    ck_assert(float_eq(rs.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_default_ref[0].main_chain, 1e-10));
-    ck_assert(float_eq(rs.side_chain, 100*(result->sasa[2])/rsa_default_ref[0].side_chain, 1e-10));
-    ck_assert(float_eq(rs.polar, 100*(result->sasa[1])/rsa_default_ref[0].polar, 1e-10));
-    ck_assert(float_eq(rs.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_default_ref[0].apolar, 1e-10));
-
-    // Check that compound function gives same results
-    rsa_calc_rs(&rs, &rs2, 0, &cfg);
-    ck_assert(float_eq(rs2.total, 100*(result->sasa[0] + result->sasa[1] + result->sasa[2])/rsa_default_ref[0].total, 1e-10));
-    ck_assert(float_eq(rs2.main_chain, 100*(result->sasa[0] + result->sasa[1])/rsa_default_ref[0].main_chain, 1e-10));
-    ck_assert(float_eq(rs2.side_chain, 100*(result->sasa[2])/rsa_default_ref[0].side_chain, 1e-10));
-    ck_assert(float_eq(rs2.polar, 100*(result->sasa[1])/rsa_default_ref[0].polar, 1e-10));
-    ck_assert(float_eq(rs2.apolar, 100*(result->sasa[0] + result->sasa[2])/rsa_default_ref[0].apolar, 1e-10));
-    ck_assert(float_eq(rs.total, result->sasa[0] + result->sasa[1] + result->sasa[2], 1e-10));
-    ck_assert(float_eq(rs.polar, result->sasa[1], 1e-10));
-    ck_assert(float_eq(rs.apolar, result->sasa[0] + result->sasa[2], 1e-10));
-    ck_assert(float_eq(rs.main_chain, result->sasa[0] + result->sasa[1], 1e-10));
-    ck_assert(float_eq(rs.side_chain, result->sasa[2], 1e-10));
-}
-END_TEST
-
 int main(int argc, char **argv) 
 {
     Suite *s = suite_create("Tests of static functions");
@@ -442,10 +369,6 @@ int main(int argc, char **argv)
     tcase_add_test(selector,test_expression);
     suite_add_tcase(s, selector);
 
-    TCase *rsa = tcase_create("rsa.c");
-    tcase_add_test(rsa, test_rsa);
-    suite_add_tcase(s, rsa);
-    
     SRunner *sr = srunner_create(s);
     srunner_run_all(sr,CK_VERBOSE);
 

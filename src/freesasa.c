@@ -20,6 +20,12 @@
 #include "pdb.h"
 #include "classifier.h"
 
+#if USE_JSON
+  #include <json-c/json_object.h>
+  extern json_object *
+  freesasa_node2json(const freesasa_structure_node *node);
+#endif
+
 #ifdef PACKAGE_VERSION
 const char *freesasa_version = PACKAGE_VERSION;
 #else
@@ -75,7 +81,7 @@ freesasa_result_classify(const freesasa_result *result,
     if (strvp == NULL) {mem_fail(); return NULL;}
 
     for(int i = 0; i < n_classes; ++i) {
-        strvp->string[i] = strdup(classifier->class2str(i,classifier));
+        strvp->string[i] = strdup(freesasa_classifier_class2str(classifier, i));
         if (strvp->string[i] == NULL) {mem_fail(); return NULL;}
         strvp->value[i] = 0;
     }
@@ -86,7 +92,7 @@ freesasa_result_classify(const freesasa_result *result,
     for (int i = 0; i < n_atoms; ++i) {
         const char *res_name = freesasa_structure_atom_res_name(structure,i);
         const char *atom_name = freesasa_structure_atom_name(structure,i);
-        int c = classifier->sasa_class(res_name,atom_name,classifier);
+        int c = freesasa_classifier_class(classifier, res_name, atom_name);
         if (c == FREESASA_WARN) c = n_classes; // unknown
         strvp->value[c] += result->sasa[i];
     }
@@ -183,6 +189,7 @@ freesasa_calc_structure(const freesasa_structure* structure,
                          freesasa_structure_radius(structure),
                          parameters);
 }
+
 int
 freesasa_log(FILE *log,
              freesasa_result *result,
@@ -399,6 +406,29 @@ freesasa_strvp_free(freesasa_strvp *svp)
             free(svp->string);
         }
         free(svp);
+    }
+}
+
+int
+freesasa_export_tree(FILE *file,
+                     const freesasa_structure_node *root,
+                     int options)
+{
+    if (options & FREESASA_RSA)
+        return freesasa_write_rsa(file, root);
+    if (options & FREESASA_JSON) {
+#if USE_JSON
+        json_object *obj = freesasa_node2json(root);
+        if (obj) {
+            fprintf(file, json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY));
+            json_object_put(obj);
+            return FREESASA_SUCCESS;
+        } else {
+            return FREESASA_FAIL;
+        }
+#else // USE_JSON
+        return fail_msg("Library was built without support for JSON output.");
+#endif // USE_JSON
     }
 }
 

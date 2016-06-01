@@ -15,7 +15,9 @@ struct atom {
     char *symbol;
     char *descriptor;
     char *line;
+    int res_index;
     char chain_label;
+    int the_class;
 };
 
 static const struct atom empty_atom =
@@ -73,11 +75,13 @@ atom_new(const char *residue_name,
 
     a->line = NULL;
     a->chain_label = chain_label;
+    a->res_index = -1;
 
     a->res_name = strdup(residue_name);
     a->res_number = strdup(residue_number);
     a->atom_name = strdup(atom_name);
     a->symbol = strdup(symbol);
+    a->the_class = 0;
 
     dlen = strlen(residue_number) + strlen(residue_name)
         + strlen(atom_name) + 4;
@@ -277,7 +281,7 @@ structure_check_atom_radius(double *radius,
                             const freesasa_classifier* classifier,
                             int options)
 {
-    *radius = classifier->radius(a->res_name, a->atom_name, classifier);
+    *radius = freesasa_classifier_radius(classifier, a->res_name, a->atom_name);
     if (*radius < 0) {
         if (options & FREESASA_HALT_AT_UNKNOWN) {
             return freesasa_fail("in %s(): atom '%s %s' unknown.",
@@ -362,6 +366,8 @@ structure_add_atom(freesasa_structure *s,
            a->chain_label != s->a[na-2]->chain_label) )) {
         if (structure_add_residue(s, a, na - 1)) return mem_fail();
     }
+    a->res_index = s->number_residues - 1;
+    a->the_class = freesasa_classifier_class(classifier, a->res_name, a->atom_name);
 
     // by doing this last, we can free as much memory as possible if anything fails
     s->a[na-1] = a;
@@ -740,6 +746,14 @@ freesasa_structure_atom_set_radius(freesasa_structure *structure,
     structure->radius[i] = radius;
 }
 
+int
+freesasa_structure_atom_class(const freesasa_structure *structure,
+                              int i)
+{
+    assert(structure);
+    assert(i < structure->number_atoms && i >= 0);
+    return structure->a[i]->the_class;
+}
 
 const char*
 freesasa_structure_atom_descriptor(const freesasa_structure *structure,
@@ -842,6 +856,20 @@ freesasa_structure_chain_atoms(const freesasa_structure *structure,
 }
 
 int
+freesasa_structure_chain_residues(const freesasa_structure *structure,
+                                  char chain,
+                                  int *first,
+                                  int *last)
+{
+   assert(structure);
+   int first_atom, last_atom;
+   if (freesasa_structure_chain_atoms(structure, chain, &first_atom, &last_atom))
+       return fail_msg("");
+   *first = structure->a[first_atom]->res_index;
+   *last = structure->a[last_atom]->res_index;
+   return FREESASA_SUCCESS;
+}
+int
 freesasa_write_pdb(FILE *output,
                    freesasa_result *result,
                    const freesasa_structure *structure)
@@ -913,3 +941,4 @@ freesasa_structure_set_radius(freesasa_structure *structure,
     assert(radii);
     memcpy(structure->radius, radii, structure->number_atoms*sizeof(double));
 }
+

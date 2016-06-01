@@ -260,10 +260,10 @@ cdef class Classifier:
       #  @param atomName (str) Atom name (`"CA"`,`"C"`,...).
       #  @return A string describing the class
       def classify(self,residueName,atomName):
-            classIndex = self._c_classifier.sasa_class(residueName,atomName,self._c_classifier)
+            classIndex = freesasa_classifier_class(residueName,atomName,self._c_classifier)
             if classIndex is FREESASA_WARN:
                   return 'Unknown'
-            return self._c_classifier.class2str(classIndex,self._c_classifier)
+            return freesasa_classifier_class2str(classIndex,self._c_classifier)
 
       ## Radius of atom.
       #
@@ -275,7 +275,7 @@ cdef class Classifier:
       #  @param atomName (str) Atom name (`"CA"`, `"C"`, ...).
       #  @return The radius in Å.
       def radius(self,residueName,atomName):
-            return self._c_classifier.radius(residueName,atomName,self._c_classifier)
+            return freesasa_classifier_radius(residueName,atomName,self._c_classifier)
 
       def _get_address(self, size_t ptr2ptr):
             cdef freesasa_classifier **p = <freesasa_classifier**> ptr2ptr

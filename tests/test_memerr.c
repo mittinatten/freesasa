@@ -161,13 +161,13 @@ START_TEST (test_classifier)
     set_fail_freq(1);
     ck_assert_ptr_eq(classifier_types_new(),NULL);
     ck_assert_ptr_eq(classifier_residue_new("A"),NULL);
-    ck_assert_ptr_eq(classifier_config_new(),NULL);
+    ck_assert_ptr_eq(freesasa_classifier_new(),NULL);
 
     for (int i = 1; i < 5; ++i) {
         set_fail_freq(10000);
         struct classifier_types *types = classifier_types_new();
         struct classifier_residue *res = classifier_residue_new("ALA");
-        struct classifier_config *cfg = classifier_config_new();
+        struct freesasa_classifier *clf = freesasa_classifier_new();
 
         if (i < 3) {
             set_fail_freq(i);
@@ -178,10 +178,10 @@ START_TEST (test_classifier)
         set_fail_freq(i);
         ck_assert_int_eq(add_atom(res,"A",1.0,0),FREESASA_FAIL);
         set_fail_freq(i);
-        ck_assert_int_eq(add_residue(cfg,"A"),FREESASA_FAIL);
+        ck_assert_int_eq(add_residue(clf,"A"),FREESASA_FAIL);
         classifier_types_free(types);
         classifier_residue_free(res);
-        classifier_config_free(cfg);
+        freesasa_classifier_free(clf);
     }
     // don't test all levels, but make sure errors in low level
     // allocation propagates to the interface

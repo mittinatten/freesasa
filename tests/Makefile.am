@@ -26,11 +26,16 @@ test_api_LDADD = ../src/libfreesasa.a -lcheck
 test_static_LDADD = ../src/parser.o ../src/lexer.o -lcheck 
 test_memerr_LDADD = ../src/parser.o ../src/lexer.o -lcheck 
 
+if USE_JSON
+test_api_SOURCES += test_json.c
+endif # USE_JSON
+
 endif # USE_CHECK
 
 if RUN_CLI_TESTS # on by default
 TESTS += test-cli
 endif # RUN_CLI_TESTS
+
 
 CLEANFILES = tmp/*  $(GCOV_FILES) *~
 
