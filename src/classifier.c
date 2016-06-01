@@ -88,43 +88,6 @@ classifier_residue_free(struct classifier_residue* res)
     free(res);
 }
 
-// Not tested!
-static struct classifier_residue*
-classifier_residue_clone(const struct classifier_residue *residue)
-{
-    struct classifier_residue *clone = classifier_residue_new(residue->name);
-
-    if (!clone) {
-        fail_msg("");
-        return NULL;
-    }
-    clone->n_atoms = residue->n_atoms;
-    clone->max_area = residue->max_area;
-    clone->atom_name = malloc(clone->n_atoms * sizeof(char*));
-    clone->atom_radius = malloc(clone->n_atoms * sizeof(double));
-    clone->atom_class = malloc(clone->n_atoms * sizeof(int));
-    if (!clone->atom_name || !clone->atom_radius || !clone->atom_class) {
-        goto memerr;
-    }
-    
-    for (int i = 0; i < clone->n_atoms; ++i) clone->atom_name[i] = NULL;
-    for (int i = 0; i < clone->n_atoms; ++i) {
-        clone->atom_name[i] = strdup(residue->atom_name[i]);
-        if (!clone->atom_name[i]) goto memerr;
-    }
-
-    memcpy(clone->atom_radius, residue->atom_radius, sizeof(double)*clone->n_atoms);
-    memcpy(clone->atom_class, residue->atom_class, sizeof(int)*clone->n_atoms);
-    
-    return clone;
- memerr:
-    mem_fail();
-    classifier_residue_free(clone);
-    return NULL;
-}
-
-
-
 static freesasa_classifier* 
 freesasa_classifier_new()
 {
@@ -135,46 +98,6 @@ freesasa_classifier_new()
     }
     *cfg = empty_config;
     return cfg;
-}
-
-// Not tested!!
-freesasa_classifier *
-freesasa_classifier_clone(const freesasa_classifier *classifier)
-{
-    freesasa_classifier *clone = freesasa_classifier_new();
-
-    if (!clone) {
-        fail_msg("");
-        return NULL;
-    }
-    memcpy(clone, classifier, sizeof(freesasa_classifier)); 
-    clone->residue_name = malloc(clone->n_residues*sizeof(char*));
-    clone->residue = malloc(clone->n_residues*sizeof(struct classifier_residue*));
-    clone->class_name = malloc(clone->n_classes*sizeof(char*));
-    clone->name = strdup(classifier->name);
-    
-    if (!clone->residue_name || !clone->residue ||
-        !clone->class_name || !clone->name)
-        goto memerr;
-    for (int i = 0; i < clone->n_residues; ++i) {
-        clone->residue_name[i] = NULL;
-        clone->class_name[i] = NULL;
-        clone->residue[i] = NULL;
-    }
-    for (int i = 0; i < clone->n_residues; ++i) {
-        clone->residue_name[i] = strdup(classifier->residue_name[i]);
-        clone->class_name[i] = strdup(classifier->class_name[i]);
-        clone->residue[i] = classifier_residue_clone(classifier->residue[i]);
-        if (!clone->residue_name[i] || !clone->class_name[i] || clone->residue[i])
-            goto memerr;
-    }
-    
-    return clone;
-
- memerr:
-    mem_fail();
-    freesasa_classifier_free(clone);
-    return NULL;
 }
 
 void
