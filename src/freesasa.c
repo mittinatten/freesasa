@@ -429,6 +429,7 @@ freesasa_export_tree(FILE *file,
         return fail_msg("Library was built without support for JSON output.");
 #endif // USE_JSON
     }
+    return fail_msg("No valid options given");
 }
 
 int
