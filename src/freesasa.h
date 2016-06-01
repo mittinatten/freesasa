@@ -77,6 +77,12 @@ enum freesasa_structure_options {
     FREESASA_RADIUS_FROM_OCCUPANCY=128, //!< Read atom radius from occupancy field.
 };
 
+//! Controls output format
+enum freesasa_output_options {
+    FREESASA_RSA=1, //! Write RSA output
+    FREESASA_JSON=2, //! Write JSON output
+};
+
 //! The maximum length of a selection name @see freesasa_select_area()
 #define FREESASA_MAX_SELECTION_NAME 50
 
@@ -495,31 +501,6 @@ freesasa_write_result(FILE *log,
 int freesasa_write_parameters(FILE *log,
                               const freesasa_parameters *parameters);
 
-/**
-    Print RSA-file
-
-    Uses reference SASA values calculated using the default
-    configuration (ProtOr radii; Carbon is apolar, all other elements
-    polar; probe radius = 1.4 Å). The Ala-X-Ala configurations
-    supplied in the directory `rsa` were used as input (the reference
-    values themselves are stored statically in the code). At the
-    moment there is no support for outputting RSA files for other
-    configurations.
-
-    @remark This is still an experimental feature, and the interface
-      may still be subject to change without warning.
-
-    @param output Output-file @param tree A tree with stored results
-    @param classifier A classifier to determine which atoms are polar,
-      and to provide maximum reference areas for each residue. If
-      `classifier->residue_reference` is NULL the REL columns will be
-      filled with the value 'N/A'.
-    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
-      writing to file.
- */
-int
-freesasa_write_rsa(FILE *output,
-                   freesasa_structure_node *tree);
 /**
     Set the global verbosity level.
 
@@ -1073,6 +1054,11 @@ freesasa_result2tree(const freesasa_result *result,
                      const freesasa_classifier *polar_classifier,
                      const char *name);
 
+int
+freesasa_export_tree(FILE *output,
+                     const freesasa_structure_node *root,
+                     int options);
+
 /**
     Free ::freesasa_structure_node-tree.
 
@@ -1108,8 +1094,8 @@ freesasa_structure_node_area(const freesasa_structure_node *node);
     @return Pointer to the first child of a node. NULL if the node has no
       children.
  */
-freesasa_structure_node *
-freesasa_structure_node_children(freesasa_structure_node *node);
+const freesasa_structure_node *
+freesasa_structure_node_children(const freesasa_structure_node *node);
 
 /**
     Next sibling of a node.
@@ -1117,8 +1103,8 @@ freesasa_structure_node_children(freesasa_structure_node *node);
     @param node The node.
     @return The next node, NULL if this is the last node.
  */
-freesasa_structure_node *
-freesasa_structure_node_next(freesasa_structure_node *node);
+const freesasa_structure_node *
+freesasa_structure_node_next(const freesasa_structure_node *node);
 
 /**
     The parent of a node.
@@ -1126,8 +1112,8 @@ freesasa_structure_node_next(freesasa_structure_node *node);
     @param node The node.
     @return The parent node. NULL if the node has no parent.
  */
-freesasa_structure_node *
-freesasa_structure_node_parent(freesasa_structure_node *node);
+const freesasa_structure_node *
+freesasa_structure_node_parent(const freesasa_structure_node *node);
 
 /**
     The type of a node.

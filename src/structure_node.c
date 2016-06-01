@@ -128,6 +128,7 @@ structure_residue_node(const freesasa_structure* structure,
                        int residue_index)
 {
     freesasa_structure_node *residue = NULL;
+    const freesasa_subarea *ref;
     int first, last;
 
     residue = 
@@ -144,6 +145,16 @@ structure_residue_node(const freesasa_structure* structure,
     residue->structure = structure;
     residue->first_atom = first;
     residue->last_atom = last;
+    ref = freesasa_classifier_residue_reference(classifier, residue->name);
+    if (ref != NULL) {
+        residue->reference = malloc(sizeof(freesasa_subarea));
+        if (residue->reference == NULL) {
+            mem_fail();
+            structure_node_free(residue);
+            return NULL;
+        }
+        *residue->reference = *ref;
+    }
     
     if (!structure_node_gen_children(residue, structure, classifier,
                                      first, last, structure_atom_node)) {
@@ -291,20 +302,20 @@ freesasa_structure_node_residue_reference(const freesasa_structure_node *node)
     return node->reference;
 }
 
-freesasa_structure_node *
-freesasa_structure_node_children(freesasa_structure_node *node)
+const freesasa_structure_node *
+freesasa_structure_node_children(const freesasa_structure_node *node)
 {
     return node->children;
 }
 
-freesasa_structure_node *
-freesasa_structure_node_next(freesasa_structure_node *node)
+const freesasa_structure_node *
+freesasa_structure_node_next(const freesasa_structure_node *node)
 {
     return node->next;
 }
 
-freesasa_structure_node *
-freesasa_structure_node_parent(freesasa_structure_node *node)
+const freesasa_structure_node *
+freesasa_structure_node_parent(const freesasa_structure_node *node)
 {
     return node->parent;
 }

@@ -63,6 +63,17 @@ int freesasa_lee_richards(double* sasa,
                           const freesasa_parameters *param);
 
 
+/**
+    Print RSA-file
+
+    @param output Output-file
+    @param root A tree with stored results
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
+      writing to file.
+ */
+int
+freesasa_write_rsa(FILE *output,
+                   const freesasa_structure_node *root);
 
 /**
     Get coordinates.
@@ -268,6 +279,5 @@ freesasa_fail_wloc(const char* func,
                    const char* file,
                    int line,
                    const char *msg);
-
 
 #endif /* FREESASA_INTERNAL_H */

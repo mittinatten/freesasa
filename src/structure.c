@@ -746,6 +746,14 @@ freesasa_structure_atom_set_radius(freesasa_structure *structure,
     structure->radius[i] = radius;
 }
 
+int
+freesasa_structure_atom_class(const freesasa_structure *structure,
+                              int i)
+{
+    assert(structure);
+    assert(i < structure->number_atoms && i >= 0);
+    return structure->a[i]->the_class;
+}
 
 const char*
 freesasa_structure_atom_descriptor(const freesasa_structure *structure,

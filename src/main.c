@@ -39,6 +39,7 @@ FILE *output_pdb = NULL;
 FILE *per_residue_type_file = NULL;
 FILE *per_residue_file = NULL;
 FILE *rsa_file = NULL;
+FILE *json_file = NULL;
 FILE *output = NULL;
 FILE *errlog;
 
@@ -48,6 +49,7 @@ int per_residue = 0;
 int printlog = 1;
 int printpdb = 0;
 int printrsa = 0;
+int printjson = 0;
 int static_config = 0;
 
 // chain groups
@@ -146,6 +148,11 @@ help(void)
             "                        This option might give confusing output when used in\n"
             "                        conjuction with the options -C and -g.\n"
             "\n"
+#if USE_JSON
+            "  --json  or  --json-file=<file>\n"
+            "                        Print results in JSON format\n"
+            "\n"
+#endif
             "  --rsa   or  --rsa-file=<file>\n"
             "                        Print relative SASA values in RSA format (same as\n"
             "                        NACCESS). The reference amino acid SASAs are calculated\n"
@@ -179,6 +186,7 @@ void release_resources()
     if (per_residue_type_file) fclose(per_residue_type_file);
     if (per_residue_file) fclose(per_residue_file);
     if (rsa_file) fclose(rsa_file);
+    if (json_file) fclose(json_file);
     if (errlog) fclose(errlog);
     if (chain_groups) {
         for (int i = 0; i < n_chain_groups; ++i) {
@@ -315,10 +323,11 @@ run_analysis(FILE *input,
                 }
             }
         }
-        if (printrsa) {
+        if (printrsa || printjson) {
             freesasa_structure_node *tree =
                 freesasa_result2tree(result, structures[i], classifier, name_i);
-            freesasa_write_rsa(rsa_file, tree);
+            if (printrsa) freesasa_export_tree(rsa_file, tree, FREESASA_RSA);
+            if (printjson) freesasa_export_tree(json_file, tree, FREESASA_JSON);
             freesasa_structure_node_free(tree);
         }
         freesasa_result_free(result);
@@ -421,7 +430,8 @@ main(int argc,
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
-    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN, RSA_FILE, RSA, RADII};
+    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN,
+          RSA_FILE, RSA, JSON_FILE, JSON, RADII};
     parameters = freesasa_default_parameters;
     memset(opt_set, 0, n_opt);
     program_name = "freesasa";
@@ -456,6 +466,8 @@ main(int argc,
         {"unknown",              required_argument, &option_flag, UNKNOWN},
         {"rsa-file",             required_argument, &option_flag, RSA_FILE},
         {"rsa",                  no_argument,       &option_flag, RSA},
+        {"json-file",            required_argument, &option_flag, JSON_FILE},
+        {"json",                 no_argument,       &option_flag, JSON},
         {"radii",                required_argument, &option_flag, RADII},
         {0,0,0,0}
     };
@@ -498,6 +510,13 @@ main(int argc,
             case RSA_FILE:
                 printrsa = 1;
                 rsa_file = fopen_werr(optarg, "w");
+                break;
+            case JSON:
+                printjson = 1;
+                break;
+            case JSON_FILE:
+                printjson = 1;
+                json_file = fopen_werr(optarg, "w");
                 break;
             case RADII:
                 static_config = 1;
@@ -615,6 +634,7 @@ main(int argc,
     if (per_residue_file == NULL) per_residue_file = output;
     if (output_pdb == NULL) output_pdb = output;
     if (rsa_file == NULL) rsa_file = output;
+    if (json_file == NULL) json_file = output;
     if (alg_set > 1) abort_msg("Multiple algorithms specified.");
     if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.");
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.");

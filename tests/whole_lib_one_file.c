@@ -14,3 +14,6 @@
 #include <classifier_oons.c>
 #include <selection.c>
 #include <rsa.c>
+#if USE_JSON
+  #include <json.c>
+#endif

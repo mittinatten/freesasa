@@ -393,9 +393,9 @@ START_TEST (test_structure_node)
         freesasa_structure_add_atom(s,an[i],rna[i],rnu[i],cl[i],i,i,i);
     }
     freesasa_result *result = freesasa_calc_structure(s, NULL);
-    freesasa_structure_node *next, *tree =
+    freesasa_structure_node *tree =
         freesasa_result2tree(result, s, NULL, "test");
-    freesasa_structure_node *chain, *residue, *atom;
+    const freesasa_structure_node *next, *chain, *residue, *atom;
     
     const freesasa_subarea *area;
     ck_assert_ptr_ne(tree, NULL);
