@@ -1,4 +1,7 @@
 // By including this file we get access to static functions
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
 #include <freesasa.c>
 #include <structure.c>
 #include <structure_node.c>
@@ -14,6 +17,6 @@
 #include <classifier_oons.c>
 #include <selection.c>
 #include <rsa.c>
-#if HAVE_LIBJSONC
+#if USE_JSON
   #include <json.c>
 #endif
