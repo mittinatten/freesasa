@@ -1,7 +1,9 @@
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include <check.h>
 #include <json-c/json_object.h>
 #include <json-c/json_object_iterator.h>
-#include <json-c/json_util.h>
 #include <freesasa.h>
 #include "tools.h"
 

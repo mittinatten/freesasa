@@ -1,3 +1,6 @@
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -6,9 +9,6 @@
 #include <string.h>
 #include <getopt.h>
 #include <stdarg.h>
-#if HAVE_CONFIG_H
-#  include <config.h>
-#endif
 
 #include "freesasa.h"
 #include "freesasa_internal.h"

@@ -1,16 +1,16 @@
-#include "freesasa.h"
-#include "freesasa_internal.h"
-#include "classifier.h"
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <math.h>
-#include <pdb.h>
-#if HAVE_CONFIG_H
-#  include <config.h>
-#endif
+
+#include "pdb.h"
+#include "freesasa_internal.h"
+#include "classifier.h"
 
 void
 freesasa_residue_rel_subarea(freesasa_subarea *rel,

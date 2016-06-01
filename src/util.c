@@ -1,9 +1,12 @@
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
 #include <errno.h>
-#include "freesasa.h"
+
 #include "freesasa_internal.h"
 
 #ifdef PACKAGE_NAME

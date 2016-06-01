@@ -14,6 +14,6 @@
 #include <classifier_oons.c>
 #include <selection.c>
 #include <rsa.c>
-#if USE_JSON
+#if HAVE_LIBJSONC
   #include <json.c>
 #endif

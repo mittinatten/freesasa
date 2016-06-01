@@ -1,16 +1,15 @@
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-#if HAVE_CONFIG_H
-# include <config.h>
-#endif
 #if USE_THREADS
 # include <pthread.h>
 #endif
 
-#include "freesasa.h"
 #include "freesasa_internal.h"
 #include "nb.h"
 

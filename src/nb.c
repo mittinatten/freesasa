@@ -1,7 +1,9 @@
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
-#include "freesasa.h"
 #include "freesasa_internal.h"
 #include "nb.h"
 

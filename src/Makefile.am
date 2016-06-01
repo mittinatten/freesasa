@@ -12,7 +12,6 @@ CLEANFILES = $(GCOV_FILES) *~
 clean-local:
 	-rm -rf *.dSYM
 
-
 EXTRA_DIST = lexer.l parser.y
 
 bin_PROGRAMS = freesasa
@@ -34,7 +33,7 @@ example_LDADD = libfreesasa.a
 lp_output = lexer.c lexer.h parser.c parser.h
 
 if USE_JSON
-libfreesasa_a_SOURCES += json.c freesasa_json.h
+libfreesasa_a_SOURCES += json.c
 endif # USE_JSON
 
 if GENERATE_PARSER
@@ -45,5 +44,3 @@ $(lp_output): lexer.l parser.y
 CLEANFILES += $(lp_output)
 
 endif # GENERATE_PARSER
-
-

@@ -1,3 +1,6 @@
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
 #include <json-c/json_object.h>
 #include <assert.h>
 #include <string.h>

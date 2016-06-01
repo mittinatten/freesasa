@@ -15,11 +15,10 @@ AC_PROG_INSTALL
 
 # Checks for libraries.
 AC_CHECK_LIB([m], [sqrt])
-AC_CHECK_LIB([pthread], [pthread_create])
 
 # Checks for header files.
 AC_FUNC_ALLOCA
-AC_CHECK_HEADERS([inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h sys/time.h unistd.h pthread.h])
+AC_CHECK_HEADERS([inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h sys/time.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
@@ -53,13 +52,18 @@ AC_ARG_ENABLE([threads],
   AS_HELP_STRING([--disable-threads],
     [Build without support for multiple threads]))
 
-if test "x$enable_threads" != "xno" && \
-   test -z $HAVE_PTHREAD_H && test -z $HAVE_LIBPTHREAD; then
-  AC_DEFINE([USE_THREADS],[1],[Define if threads should be used.])
-  AM_CONDITIONAL([USE_THREADS],true)
+if test "x$enable_threads" != "xno"; then
+  AC_CHECK_LIB([pthread], [pthread_create])
+  AC_CHECK_HEADER([pthread.h])
+fi
+if test "$ac_cv_header_pthread_h" != yes || \
+   test "$ac_cv_lib_pthread_pthread_create" != yes; then
+  AC_DEFINE([USE_THREADS], [0], [])
+  AM_CONDITIONAL([USE_THREADS], false)
+  echo "Building without thread support"
 else
-  AC_DEFINE([USE_THREADS],[0],[])
-  AM_CONDITIONAL([USE_THREADS],false)
+  AC_DEFINE([USE_THREADS], [1], [Define if threads should be used.])
+  AM_CONDITIONAL([USE_THREADS], true)
 fi
 
 # Disable json-c
@@ -71,13 +75,14 @@ if test "x$enable_json" != "xno" ; then
   AC_CHECK_LIB([json-c], [json_object_get])
   AC_CHECK_HEADER([json-c/json_object.h])
 fi
-if test -z $HAVE_LIBJSONC && test -z $HAVE_JSON_OBJECT_H ; then
-  AC_DEFINE([USE_JSON],[1],[Define if json should be included.])
-  AM_CONDITIONAL([USE_JSON],true)
-else
-  AC_DEFINE([USE_JSON],[0],[])
-  AM_CONDITIONAL([USE_JSON],false)
+if test "$ac_cv_lib_json_c_json_object_get" != yes || \
+   test "$ac_cv_header_json_c_json_object_h" != yes ; then
+  AC_DEFINE([USE_JSON], [0], [])
+  AM_CONDITIONAL([USE_JSON], false)
   echo "Building without support for JSON output."
+else
+  AC_DEFINE([USE_JSON], [1], [Define if json should be included.])
+  AM_CONDITIONAL([USE_JSON], true)
 fi
 
 # Which Python
