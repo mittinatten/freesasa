@@ -318,7 +318,7 @@ run_analysis(FILE *input,
         if (printrsa) {
             freesasa_structure_node *tree =
                 freesasa_result2tree(result, structures[i], classifier, name_i);
-            freesasa_write_rsa(rsa_file, tree, classifier);
+            freesasa_write_rsa(rsa_file, tree);
             freesasa_structure_node_free(tree);
         }
         freesasa_result_free(result);

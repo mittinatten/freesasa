@@ -747,7 +747,7 @@ freesasa_classifier*
 freesasa_classifier_from_file(FILE *file)
 {
     assert(file);
-    return classifier_from_file(file, "unknown");
+    return classifier_from_file(file, "from-unknown-file");
 }
 
 freesasa_classifier*
@@ -775,6 +775,12 @@ freesasa_classifier_residue_reference(const freesasa_classifier *classifier,
     if (res < 0) return NULL;
     
     return &classifier->residue[res]->max_area;
+}
+
+const char*
+freesasa_classifier_name(const freesasa_classifier *classifier)
+{
+    return classifier->name;
 }
 
 struct symbol_radius {

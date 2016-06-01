@@ -148,7 +148,11 @@ typedef struct {
 
 /**
     Struct that can be used to determine classes (polar/apolar) and
-    radii of atoms. Initiated from freesasa_classifier_from_filename(). A few 
+    radii of atoms. Initiated from
+    freesasa_classifier_from_filename(). The classifiers
+    ::freesasa_default_classifier, ::freesasa_protor_classifier,
+    ::freesasa_naccess_classifier and ::freesasa_classifier are const
+    classifiers that can be used directly.
  */
 typedef struct freesasa_classifier freesasa_classifier;
 
@@ -219,7 +223,9 @@ freesasa_result_free(freesasa_result *result);
 
     @see @ref Config-file
 
-    @deprecated Use freesasa_classifier_from_filename() instead;
+    @deprecated Use freesasa_classifier_from_filename() instead. The
+      name returned by freesasa_classifier_name() will be
+      "from-unknown-file" here.
  */
 freesasa_classifier*
 freesasa_classifier_from_file(FILE *file);
@@ -228,6 +234,9 @@ freesasa_classifier_from_file(FILE *file);
     Generate a classifier from a config-file
 
     Input file format described in @ref Config-file
+
+    The name returned by freesasa_classifier_name() will be the same
+    as the filename.
 
     Return value is dynamically allocated, should be freed with
     freesasa_classifier_free().
@@ -249,20 +258,51 @@ freesasa_classifier_from_filename(const char *filename);
 void
 freesasa_classifier_free(freesasa_classifier *classifier);
 
+/**
+    Use a classifier to determine the radius of a given atom.
+
+    @param classifier The classifier.
+    @param res_name The residue name (ALA/VAL/U/C/...)
+    @param atom_name The atom name (CA/N/CB/...)
+    @return The radius, negative if atom unknown.
+ */
 double
 freesasa_classifier_radius(const freesasa_classifier *classifier,
                            const char *res_name,
                            const char *atom_name);
 
+/**
+    Use a classifier to determine the class of a given atom.
 
+    @param classifier The classifier.
+    @param res_name The residue name (ALA/VAL/U/C/...)
+    @param atom_name The atom name (CA/N/CB/...)
+    @return The class (>= 0). ::FREESASA_WARN if atom unknown.
+ */
 int
 freesasa_classifier_class(const freesasa_classifier *classifier,
                           const char *res_name, 
                           const char *atom_name);
 
+/**
+    Name of a class returned by freesasa_classifier_class()
+
+    @param classifier The classifier.
+    @param the_class The class.
+    @return Name of class. NULL if `the_class` unknown.
+ */
 const char*
 freesasa_classifier_class2str(const freesasa_classifier *classifier,
                               int the_class);
+
+/**
+    The name of a classifier.
+
+    @param classifier The classifier.
+    @return The name of the classifier.
+ */
+const char*
+freesasa_classifier_name(const freesasa_classifier *classifier);
 
 /**
     Sums up the SASA for groups of atoms defined by a classifier.
@@ -479,8 +519,7 @@ int freesasa_write_parameters(FILE *log,
  */
 int
 freesasa_write_rsa(FILE *output,
-                   freesasa_structure_node *tree,
-                   const freesasa_classifier *classifier);
+                   freesasa_structure_node *tree);
 /**
     Set the global verbosity level.
 
@@ -1013,10 +1052,18 @@ freesasa_structure_chain_residues(const freesasa_structure *structure,
     and freesasa_node_name() to explore the properties of each node.
 
     The tree should be freed using freesasa_structure_tree_free().
+
     @param result SASA values for the structure
-    @param structure The structure to use
+    @param structure The structure to use. The nodes will store a
+      reference to the structure they were initialized from. Therefore
+      if the structure is later changed or freed, the tree is no
+      longer valid.
     @param polar_classifier Classifier to determine which atoms are
-      polar and apolar
+      polar and apolar. It is assumed that freesasa_classifier_class()
+      is 0 for apolar atoms using this classifier, and > 0 for polar
+      atoms. The const classifiers declared in this header all have
+      this property. If NULL ::freesasa_default_classifier will be
+      used.
     @param name The name of the structure
     @return The root node of the tree. NULL if memory allocation fails.
  */
@@ -1121,14 +1168,24 @@ const freesasa_structure*
 freesasa_structure_node_structure(const freesasa_structure_node *node);
 
  /**
-    The reference area for a node from the classifier used to generate the tree.
+     The reference area for a node from the classifier used to
+     generate the tree.
 
-    @param node The node (has to be of type ::FREESASA_NODE_RESIDUE)
-    @return The reference area. NULL if area not available or if node is not a residue.
+     @param node The node (has to be of type ::FREESASA_NODE_RESIDUE)
+     @return The reference area. NULL if area not available or if node
+       is not a residue.
  */
 const freesasa_subarea *
 freesasa_structure_node_residue_reference(const freesasa_structure_node *node);
 
+/**
+    The name of the classifier used to generate the node.
+
+    @param node The node
+    @return The name of the classifier
+ */
+const char*
+freesasa_structure_node_classified_by(const freesasa_structure_node *node);
 
 #ifdef __cplusplus
 }

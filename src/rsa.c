@@ -92,8 +92,7 @@ rsa_print_residue(FILE *output,
 
 int
 freesasa_write_rsa(FILE *output,
-                   freesasa_structure_node *tree,
-                   const freesasa_classifier *classifier)
+                   freesasa_structure_node *tree)
 {
     assert(output);
     assert(tree);
@@ -104,9 +103,8 @@ freesasa_write_rsa(FILE *output,
     freesasa_subarea rel;
     int res_index, chain_index;
 
-    if (!classifier) classifier = &freesasa_default_classifier;
-
-    rsa_print_header(output, classifier->name, freesasa_structure_node_name(tree));
+    rsa_print_header(output, freesasa_structure_node_classified_by(tree),
+                     freesasa_structure_node_name(tree));
 
     res_index = chain_index = 0;
     while(chain) {
