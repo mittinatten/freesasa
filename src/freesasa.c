@@ -419,7 +419,7 @@ freesasa_export_tree(FILE *file,
 #if USE_JSON
         json_object *obj = freesasa_node2json(root);
         if (obj) {
-            fprintf(file, json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY));
+            fputs(json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY), file);
             json_object_put(obj);
             return FREESASA_SUCCESS;
         } else {
