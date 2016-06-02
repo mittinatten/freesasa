@@ -39,17 +39,7 @@ cdef extern from "freesasa.h":
         int n
 
     ctypedef struct freesasa_classifier:
-        int n_classes
-        void *config
-        double (*radius)(const char* res_name,
-                         const char* atom_name,
-                         const freesasa_classifier *c)
-        int (*sasa_class)(const char* res_name,
-                          const char* atom_name,
-                          const freesasa_classifier *c)
-        const char* (*class2str)(int the_class,
-                                 const freesasa_classifier *c)
-        void (*free_config)(void*)
+        pass
 
     ctypedef struct freesasa_structure:
         pass
@@ -76,20 +66,19 @@ cdef extern from "freesasa.h":
     int freesasa_structure_chain_residues(const freesasa_structure *structure,
                                           char chain,
                                           int *first,
-                                             int *last)
+                                          int *last)
 
-    double freesasa_classifier_radius(const char *res_name,
-                                      const char *atom_name,
-                                      const freesasa_classifier *classifier)
+    double freesasa_classifier_radius(const freesasa_classifier *classifier,
+                                      const char *res_name,
+                                      const char *atom_name)
 
-    int freesasa_classifier_class(const char *res_name, 
-                                  const char *atom_name,
-                                  const freesasa_classifier *classifier)
-
-    const char* freesasa_classifier_class2str(int the_class,
-                                              const freesasa_classifier *classifier)
+    int freesasa_classifier_class(const freesasa_classifier *classifier,
+                                  const char *res_name,
+                                  const char *atom_name)
     
-    
+    const char* freesasa_classifier_class2str(const freesasa_classifier *classifier,
+                                              int the_class)
+
     freesasa_strvp* freesasa_result_classify(freesasa_result *result,
                                              const freesasa_structure *structure,
                                              const freesasa_classifier *classifier)

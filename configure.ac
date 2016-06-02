@@ -78,10 +78,12 @@ fi
 if test "$ac_cv_lib_json_c_json_object_get" != yes || \
    test "$ac_cv_header_json_c_json_object_h" != yes ; then
   AC_DEFINE([USE_JSON], [0], [])
+  AC_SUBST([JSONC_FOR_PY_BINDINGS], [])
   AM_CONDITIONAL([USE_JSON], false)
   echo "Building without support for JSON output."
 else
   AC_DEFINE([USE_JSON], [1], [Define if json should be included.])
+  AC_SUBST([JSONC_FOR_PY_BINDINGS], ['"json-c"'])
   AM_CONDITIONAL([USE_JSON], true)
 fi
 

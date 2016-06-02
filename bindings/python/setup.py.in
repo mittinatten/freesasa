@@ -6,6 +6,7 @@ extensions = [
     Extension("*", ["*.pyx"],
               include_dirs = ["../../src"],
               language='c',
+              libraries=[@JSONC_FOR_PY_BINDINGS@],
               extra_objects = ["../../src/libfreesasa.a"],
               extra_compile_args = ["-w"] 
               )
