@@ -18,7 +18,7 @@ matrix:
   include:
     ## Coverage test
     - compiler: gcc
-      env: ENABLE_COVERAGE=--enable-gcov
+      env: ENABLE="--enable-gcov --enable-json"
       before_install:
         - pip install --user cpp-coveralls
         - sudo apt-get update -qq
@@ -26,9 +26,10 @@ matrix:
       after_success:
         - coveralls --exclude tests --exclude src/lexer.l --exclude src/lexer.c --exclude src/parser.c --exclude src/parser.y --exclude src/example.c --exclude src/util.c  --gcov-options '\-lp'
 
-    ## Python bindings test (not compatible with gcov)
+    ## Python bindings test w/o JSON (not compatible with gcov)
+    ## also checks if everything works when JSON-C not present on machine
     - compiler: gcc
-      env: ENABLE_PYTHON=--enable-python-bindings
+      env: ENABLE="--enable-python-bindings"
       before_install:
         - pip install --user cython
         - pip install --user biopython
@@ -36,12 +37,28 @@ matrix:
         - sudo apt-get install -qq check
       after_failure: cat bindings/check-python.log
 
+    ## Python bindings test w JSON (not compatible with gcov)
+    - compiler: gcc
+      env: ENABLE="--enable-python-bindings --enable-json"
+      before_install:
+        - pip install --user cython
+        - pip install --user biopython
+        - sudo apt-get update -qq
+        - sudo apt-get install -qq check libjson-c-dev
+      after_failure: cat bindings/check-python.log
+
     ## Test C library with clang
-    - compiler: clang    
+    - compiler: clang
+
+    ## test that configuration works when JSON-C is disabled (but present)
+    - compiler: clang
+      env: ENABLE="--disable-json"
+    - compiler: gcc
+      env: ENABLE="--disable-json"
 
 before_script:
   - autoreconf -i
-  - ./configure --enable-check CFLAGS="-fPIC -O2" $ENABLE_COVERAGE $ENABLE_PYTHON
+  - ./configure --enable-check CFLAGS="-fPIC -O2" $ENABLE
 
 script: make && make check
 
