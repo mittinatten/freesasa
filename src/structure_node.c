@@ -113,13 +113,12 @@ structure_atom_node(const freesasa_structure *structure,
         structure_node_new(freesasa_structure_atom_name(structure, atom_index),
                            freesasa_classifier_name(classifier));
     
-    if (!atom) {
-        fail_msg("");
-        return NULL;
+    if (!atom) fail_msg("");
+    else {
+        atom->type = FREESASA_NODE_ATOM;
+        atom->structure = structure;
+        atom->first_atom = atom->last_atom = atom_index;
     }
-    atom->type = FREESASA_NODE_ATOM;
-    atom->structure = structure;
-    atom->first_atom = atom->last_atom = atom_index;
     
     return atom;
 }
@@ -152,19 +151,21 @@ structure_residue_node(const freesasa_structure* structure,
         residue->reference = malloc(sizeof(freesasa_subarea));
         if (residue->reference == NULL) {
             mem_fail();
-            structure_node_free(residue);
-            return NULL;
+            goto cleanup;
         }
         *residue->reference = *ref;
     }
     
     if (!structure_node_gen_children(residue, structure, classifier,
                                      first, last, structure_atom_node)) {
-        structure_node_free(residue);
-        return NULL;
+        goto cleanup;
     }
     
     return residue;
+
+ cleanup:
+    structure_node_free(residue);
+    return NULL;
 }
 
 static freesasa_structure_node *

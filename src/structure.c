@@ -50,14 +50,15 @@ guess_symbol(char *symbol,
 static void
 atom_free(struct atom *a)
 {
-    if (a == NULL) return;
-    free(a->res_name);
-    free(a->res_number);
-    free(a->atom_name);
-    free(a->symbol);
-    free(a->descriptor);
-    free(a->line);
-    free(a);
+    if (a != NULL) {
+        free(a->res_name);
+        free(a->res_number);
+        free(a->atom_name);
+        free(a->symbol);
+        free(a->descriptor);
+        free(a->line);
+        free(a);
+    }
 }
 
 static struct atom *
@@ -69,10 +70,7 @@ atom_new(const char *residue_name,
 {
     struct atom *a = malloc(sizeof(struct atom));
     int dlen = 0;
-    if (a == NULL) { 
-        mem_fail(); 
-        return NULL; 
-    }
+    if (a == NULL) goto memerr;
 
     *a = empty_atom;
 
@@ -92,15 +90,18 @@ atom_new(const char *residue_name,
 
     if (!a->res_name || !a->res_number || !a->atom_name ||
         !a->symbol || !a->descriptor) {
-        mem_fail();
-        atom_free(a);
-        return NULL;
+        goto memerr;
     }
 
     sprintf(a->descriptor,"%c %s %s %s",
             chain_label,residue_number,residue_name,atom_name);
 
     return a;
+    
+ memerr:
+    mem_fail();
+    atom_free(a);
+    return NULL;
 }
 
 static struct atom *
@@ -124,14 +125,13 @@ atom_new_from_line(const char *line,
 
     a = atom_new(rname, rnumber, aname, symbol, freesasa_pdb_get_chain_label(line));
     
-    if (a == NULL) return NULL;
-
-    a->line = strdup(line);
-    
-    if (a->line == NULL) {
-        mem_fail();
-        atom_free(a);
-        return NULL;
+    if (a != NULL) {
+        a->line = strdup(line);
+        if (a->line == NULL) {
+            mem_fail();
+            atom_free(a);
+            a = NULL;
+        }
     }
 
     return a;
@@ -142,10 +142,7 @@ freesasa_structure_new(void)
 {
     freesasa_structure *s = malloc(sizeof(freesasa_structure));
 
-    if (s == NULL) {
-        mem_fail();
-        return NULL;
-    }
+    if (s == NULL) goto memerr;
 
     *s = empty_structure;
 
@@ -153,37 +150,38 @@ freesasa_structure_new(void)
     s->a = malloc(sizeof(struct atom*));
     s->xyz = freesasa_coord_new();
 
-    if (!s->chains || !s->a || !s->xyz) {
-        freesasa_structure_free(s);
-        mem_fail();
-        return NULL;
-    }
+    if (!s->chains || !s->a || !s->xyz) goto memerr;
 
     s->chains[0] = '\0';
 
     return s;
+ memerr:
+    freesasa_structure_free(s);
+    mem_fail();
+    return NULL;
 }
 
 void
 freesasa_structure_free(freesasa_structure *s)
 {
-    if (s == NULL) return;
-    if (s->a) {
-        for (int i = 0; i < s->number_atoms; ++i) 
-            if (s->a[i]) atom_free(s->a[i]);
-        free(s->a);
+    if (s != NULL) {
+        if (s->a) {
+            for (int i = 0; i < s->number_atoms; ++i) 
+                if (s->a[i]) atom_free(s->a[i]);
+            free(s->a);
+        }
+        if (s->xyz) freesasa_coord_free(s->xyz);
+        if (s->res_desc) {
+            for (int i = 0; i < s->number_residues; ++i)
+                if (s->res_desc[i]) free(s->res_desc[i]);
+            free(s->res_desc);
+        }
+        free(s->radius);
+        free(s->res_first_atom);
+        free(s->chain_first_atom);
+        free(s->chains);
+        free(s);
     }
-    if (s->xyz) freesasa_coord_free(s->xyz);
-    if (s->res_desc) {
-        for (int i = 0; i < s->number_residues; ++i)
-            if (s->res_desc[i]) free(s->res_desc[i]);
-       free(s->res_desc);
-    }
-    free(s->radius);
-    free(s->res_first_atom);
-    free(s->chain_first_atom);
-    free(s->chains);
-    free(s);
 }
 
 /**

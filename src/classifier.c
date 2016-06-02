@@ -24,32 +24,29 @@ static struct classifier_types*
 classifier_types_new()
 {
     struct classifier_types *t = malloc(sizeof(struct classifier_types));
-    if (t == NULL) {
-        mem_fail();
-        return NULL;
-    }
-    *t = empty_types;
+    if (t == NULL) mem_fail();
+    else *t = empty_types;
     return t;
 }
 
 static void
 classifier_types_free(struct classifier_types* t)
 {
-    if (t == NULL) return;
-    free(t->type_radius);
-    free(t->type_class);
+    if (t != NULL) {
+        free(t->type_radius);
+        free(t->type_class);
+        if (t->name)
+            for (int i = 0; i < t->n_types; ++i)
+                free(t->name[i]);
+        free(t->name);
 
-    if (t->name)
-        for (int i = 0; i < t->n_types; ++i)
-            free(t->name[i]);
-    free(t->name);
+        if (t->class_name)
+            for (int i = 0; i < t->n_classes; ++i)
+                free(t->class_name[i]);
+        free(t->class_name);
 
-    if (t->class_name)
-        for (int i = 0; i < t->n_classes; ++i)
-            free(t->class_name[i]);
-    free(t->class_name);
-
-    free(t);
+        free(t);
+    }
 }
 
 static struct classifier_residue*
@@ -57,16 +54,15 @@ classifier_residue_new(const char* name)
 {
     assert(strlen(name) > 0);
     struct classifier_residue *res = malloc(sizeof(struct classifier_residue));
-    if (res == NULL) {
-        mem_fail();
-        return NULL;
-    }
-    *res = empty_residue;
-    res->name = strdup(name);
-    if (res->name == NULL) {
-        mem_fail();
-        free(res);
-        return NULL;
+    if (res == NULL) mem_fail();
+    else {
+        *res = empty_residue;
+        res->name = strdup(name);
+        if (res->name == NULL) {
+            mem_fail();
+            free(res);
+            res = NULL;
+        }
     }
     return res;
 }
@@ -74,49 +70,47 @@ classifier_residue_new(const char* name)
 static void
 classifier_residue_free(struct classifier_residue* res)
 {
-    if (res == NULL) return;
-    free(res->name);
+    if (res != NULL) {
+        free(res->name);
 
-    if (res->atom_name)
-        for (int i = 0; i < res->n_atoms; ++i)
-            free(res->atom_name[i]);
-    free(res->atom_name);
+        if (res->atom_name)
+            for (int i = 0; i < res->n_atoms; ++i)
+                free(res->atom_name[i]);
+        free(res->atom_name);
 
-    free(res->atom_radius);
-    free(res->atom_class);
+        free(res->atom_radius);
+        free(res->atom_class);
 
-    free(res);
+        free(res);
+    }
 }
 
 static freesasa_classifier* 
 freesasa_classifier_new()
 {
     struct freesasa_classifier *cfg = malloc(sizeof(struct freesasa_classifier));
-    if (cfg == NULL) {
-        mem_fail();
-        return NULL;
-    }
-    *cfg = empty_config;
+    if (cfg == NULL) mem_fail();
+    else *cfg = empty_config;
     return cfg;
 }
 
 void
 freesasa_classifier_free(freesasa_classifier *c)
 {
-    if (c == NULL) return;
+    if (c != NULL) {
+        if (c->class_name)
+            for (int i = 0; i < c->n_classes; ++i)
+                free(c->class_name[i]);
+        free(c->class_name);
 
-    if (c->class_name)
-        for (int i = 0; i < c->n_classes; ++i)
-            free(c->class_name[i]);
-    free(c->class_name);
+        if (c->residue)
+            for (int i = 0; i < c->n_residues; ++i)
+                classifier_residue_free(c->residue[i]);
+        free(c->residue);
+        free(c->residue_name);
 
-    if (c->residue)
-        for (int i = 0; i < c->n_residues; ++i)
-            classifier_residue_free(c->residue[i]);
-    free(c->residue);
-    free(c->residue_name);
-
-    free(c);
+        free(c);
+    }
 }
 
 //! check if array of strings has a string that matches key, ignores trailing and leading whitespace
@@ -680,17 +674,16 @@ freesasa_classifier*
 freesasa_classifier_from_filename(const char *filename)
 {
     FILE *file = fopen(filename, "r");
+    freesasa_classifier *c = NULL;
     if (file) {
-        freesasa_classifier *c = classifier_from_file(file, filename);
+        c = classifier_from_file(file, filename);
         fclose(file);
-        if (c == NULL) {
-            fail_msg("");
-        }
-        return c;
-    }
-    freesasa_fail("Error: could not open file '%s'; %s",
-                  filename, strerror(errno));
-    return NULL;
+        if (c == NULL) fail_msg("");
+    } else {
+        freesasa_fail("Error: could not open file '%s'; %s",
+                      filename, strerror(errno));
+    }       
+    return c;
 }
 
 const freesasa_subarea *

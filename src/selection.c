@@ -46,13 +46,13 @@ expression_new()
 {
     struct expression *e = malloc(sizeof(expression));
 
-    if (e == NULL) {mem_fail(); return NULL; }
-    
-    e->type = E_SELECTION;
-    e->left = NULL;
-    e->right = NULL;
-    e->value = NULL;
-   
+    if (e == NULL) mem_fail();
+    else {
+        e->type = E_SELECTION;
+        e->left = NULL;
+        e->right = NULL;
+        e->value = NULL;
+    }   
     return e;
 }
 
@@ -73,19 +73,19 @@ freesasa_selection_atom(expression_type type,
 {
     assert(val);
     expression *e = expression_new();
-    if (e == NULL) return NULL;
-
-    e->type = type;
-    e->value = strdup(val);
-
-    if (e->value == NULL) {
-        mem_fail();
-        expression_free(e);
-        return NULL;
+    if (e != NULL) {
+        e->type = type;
+        e->value = strdup(val);
+        
+        if (e->value == NULL) {
+            mem_fail();
+            expression_free(e);
+            return NULL;
+        }
+        
+        for (int i = 0; i < strlen(val); ++i)
+            e->value[i] = toupper(val[i]);
     }
-
-    for (int i = 0; i < strlen(val); ++i) e->value[i] = toupper(val[i]);
-    
     return e;
 }
 
@@ -95,19 +95,17 @@ freesasa_selection_create(expression *selection,
 {
     assert(id);
     expression *e = expression_new();
-    if (e == NULL) {
-        expression_free(selection);
-        return NULL;
-    }
+    if (e == NULL) expression_free(selection);
+    else {
+        e->type = E_SELECTION;
+        e->left = selection;
+        e->value = strdup(id);
 
-    e->type = E_SELECTION;
-    e->left = selection;
-    e->value = strdup(id);
-    
-    if (e->value == NULL) {
-        mem_fail();
-        expression_free(e);
-        return NULL;
+        if (e->value == NULL) {
+            mem_fail();
+            expression_free(e);
+            e = NULL;
+        }
     }
     
     return e;
@@ -118,13 +116,11 @@ freesasa_selection_selector(expression_type type,
                             expression *list)
 {
     expression *e = expression_new();
-    if (e == NULL) {
-        expression_free(list);
-        return NULL;
+    if (e == NULL) expression_free(list);
+    else {
+        e->type = type;
+        e->left = list;
     }
-    e->type = type;
-    e->left = list;
-    
     return e;
 }
 
@@ -137,12 +133,11 @@ freesasa_selection_operation(expression_type type,
     if (e == NULL) {
         expression_free(left);
         expression_free(right);
-        return NULL;
+    } else {
+        e->type = type;
+        e->left = left;
+        e->right = right;
     }
-    e->type = type;
-    e->left = left;
-    e->right = right;
-
     return e;
 }
 
@@ -154,23 +149,20 @@ get_expression(const char *selector)
    YY_BUFFER_STATE state;
    int err;
    expression *expression = NULL;
-   if (freesasa_yylex_init(&scanner)) {
-       fail_msg("Lexer failed");
-       return NULL;
+   if (freesasa_yylex_init(&scanner)) fail_msg("Lexer failed");
+   else{
+       state = freesasa_yy_scan_string(selector, scanner);
+       err = freesasa_yyparse(&expression, scanner);
+       if (err) {
+           if (err == 1) fail_msg("Parser failed");
+           if (err == 2) mem_fail();
+           expression_free(expression);
+           expression = NULL;
+       }
+       freesasa_yy_delete_buffer(state, scanner);
+       freesasa_yylex_destroy(scanner);
    }
-   state = freesasa_yy_scan_string(selector, scanner);
-   err = freesasa_yyparse(&expression, scanner);
-   if (err) {
-       if (err == 1) fail_msg("Parser failed");
-       if (err == 2) mem_fail();
-       expression_free(expression);
-   }
-   freesasa_yy_delete_buffer(state, scanner);
-
-   freesasa_yylex_destroy(scanner);
-
-   if (err) return NULL;
-
+   
    return expression;
 }
 
@@ -179,18 +171,16 @@ selection_new(int n)
 {
     struct selection *selection = malloc(sizeof(struct selection));
     
-    if (selection == NULL) { 
-        mem_fail(); 
-        return NULL; 
-    }
+    if (selection == NULL) mem_fail(); 
+    else {
+        selection->size = n;
+        selection->atom = calloc(n,sizeof(int));
     
-    selection->size = n;
-    selection->atom = calloc(n,sizeof(int));
-    
-    if (selection->atom == NULL) {
-        free(selection);
-        mem_fail();
-        return NULL;
+        if (selection->atom == NULL) {
+            free(selection);
+            mem_fail();
+            selection = NULL;
+        }
     }
 
     return selection;
