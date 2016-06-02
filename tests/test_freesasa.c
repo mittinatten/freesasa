@@ -210,7 +210,12 @@ START_TEST (test_sasa_1ubq)
     ck_assert(freesasa_per_residue_type(devnull,res,st) == FREESASA_SUCCESS);
     ck_assert(freesasa_per_residue(devnull,res,st) == FREESASA_SUCCESS);
     ck_assert(freesasa_export_tree(devnull, tree, FREESASA_RSA) == FREESASA_SUCCESS);
-    ck_assert(freesasa_export_tree(devnull, tree, FREESASA_JSON) == FREESASA_SUCCESS);
+    ck_assert(freesasa_export_tree(devnull, tree, FREESASA_RSA) == FREESASA_SUCCESS);
+    if (USE_JSON) {
+        ck_assert(freesasa_export_tree(devnull, tree, FREESASA_JSON) == FREESASA_SUCCESS);
+    } else {
+        ck_assert(freesasa_export_tree(devnull, tree, FREESASA_JSON) == FREESASA_FAIL);
+    }
     fclose(devnull);
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
