@@ -3,6 +3,7 @@
 #endif
 #include <json-c/json_object.h>
 #include <assert.h>
+#include <errno.h>
 #include <string.h>
 #include "freesasa.h"
 #include "freesasa_internal.h"
@@ -164,4 +165,22 @@ freesasa_node2json(const freesasa_structure_node *node)
     return obj;
 }
 
+int
+freesasa_write_json(FILE *output,
+                    const freesasa_structure_node *root)
+{
+    json_object *obj = freesasa_node2json(root);
+    if (obj) {
+        fputs(json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY), output);
+        json_object_put(obj);
+    } else {
+        return FREESASA_FAIL;
+    }
+
+    fflush(output);
+    if (ferror(output)) {
+        return fail_msg(strerror(errno));
+    }
+    return FREESASA_SUCCESS;
+}
 

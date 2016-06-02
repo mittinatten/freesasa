@@ -66,14 +66,26 @@ int freesasa_lee_richards(double* sasa,
 /**
     Print RSA-file
 
-    @param output Output-file
-    @param root A tree with stored results
+    @param output Output-file.
+    @param root A tree with stored results.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
       writing to file.
  */
 int
 freesasa_write_rsa(FILE *output,
                    const freesasa_structure_node *root);
+
+/**
+    Export to JSON
+
+    @param output Output-file.
+    @param root A tree with stored results.
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
+      writing to file.
+ */
+int
+freesasa_write_json(FILE *ouput,
+                    const freesasa_structure_node *root);
 
 /**
     Get coordinates.

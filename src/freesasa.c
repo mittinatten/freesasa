@@ -19,12 +19,6 @@
 #include "pdb.h"
 #include "classifier.h"
 
-#if USE_JSON
-  #include <json-c/json_object.h>
-  extern json_object *
-  freesasa_node2json(const freesasa_structure_node *node);
-#endif
-
 #ifdef PACKAGE_VERSION
 const char *freesasa_version = PACKAGE_VERSION;
 #else
@@ -167,12 +161,8 @@ freesasa_calc_coord(const double *xyz,
 
     coord = freesasa_coord_new_linked(xyz,n);
     if (coord != NULL) result = freesasa_calc(coord,radii,parameters);
-    if (coord == NULL || result == NULL) {
-       freesasa_result_free(result);
-        freesasa_coord_free(coord);
-        mem_fail();
-        result = NULL;
-    }
+    if (result == NULL) fail_msg("");
+    
     freesasa_coord_free(coord);
 
     return result;
@@ -413,21 +403,10 @@ freesasa_export_tree(FILE *file,
                      const freesasa_structure_node *root,
                      int options)
 {
-    if (options & FREESASA_RSA)
-        return freesasa_write_rsa(file, root);
+    if (options & FREESASA_RSA) return freesasa_write_rsa(file, root);
     if (options & FREESASA_JSON) {
-#if USE_JSON
-        json_object *obj = freesasa_node2json(root);
-        if (obj) {
-            fputs(json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY), file);
-            json_object_put(obj);
-            return FREESASA_SUCCESS;
-        } else {
-            return FREESASA_FAIL;
-        }
-#else // USE_JSON
-        return fail_msg("Library was built without support for JSON output.");
-#endif // USE_JSON
+        if (USE_JSON) return freesasa_write_json(file, root);
+        else return fail_msg("Library was built without support for JSON output.");
     }
     return fail_msg("No valid options given");
 }
