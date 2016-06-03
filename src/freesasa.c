@@ -405,7 +405,7 @@ freesasa_export_tree(FILE *file,
 {
     if (options & FREESASA_RSA) return freesasa_write_rsa(file, root);
     if (options & FREESASA_JSON) {
-        if (USE_JSON) return freesasa_write_json(file, root);
+        if (USE_JSON) return freesasa_write_json(file, root, options);
         else return fail_msg("Library was built without support for JSON output.");
     }
     return fail_msg("No valid options given");

@@ -85,7 +85,8 @@ freesasa_write_rsa(FILE *output,
  */
 int
 freesasa_write_json(FILE *ouput,
-                    const freesasa_structure_node *root);
+                    const freesasa_structure_node *root,
+                    int options);
 
 /**
     Get coordinates.

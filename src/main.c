@@ -327,7 +327,7 @@ run_analysis(FILE *input,
             freesasa_structure_node *tree =
                 freesasa_result2tree(result, structures[i], classifier, name_i);
             if (printrsa) freesasa_export_tree(rsa_file, tree, FREESASA_RSA);
-            if (printjson) freesasa_export_tree(json_file, tree, FREESASA_JSON);
+            if (printjson) freesasa_export_tree(json_file, tree, FREESASA_JSON | FREESASA_OUTPUT_CHAIN);
             freesasa_structure_node_free(tree);
         }
         freesasa_result_free(result);

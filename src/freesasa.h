@@ -81,6 +81,10 @@ enum freesasa_structure_options {
 enum freesasa_output_options {
     FREESASA_RSA=1, //! Write RSA output
     FREESASA_JSON=2, //! Write JSON output
+    FREESASA_OUTPUT_ATOM=4,
+    FREESASA_OUTPUT_RESIDUE=8,
+    FREESASA_OUTPUT_CHAIN=16,
+    FREESASA_OUTPUT_STRUCTURE=32,
 };
 
 //! The maximum length of a selection name @see freesasa_select_area()
@@ -125,12 +129,11 @@ typedef struct {
     double apolar;     //!< Apolar SASA
 } freesasa_subarea;
 
-//! @deprecated The typename freesasa_residue_sasa is no longer used
-//#typedef freesasa_residue_sasa freesasa_subarea
-
+//! Node types
 typedef enum {
     FREESASA_NODE_ATOM, FREESASA_NODE_RESIDUE,
-    FREESASA_NODE_CHAIN, FREESASA_NODE_STRUCTURE
+    FREESASA_NODE_CHAIN, FREESASA_NODE_STRUCTURE,
+    FREESASA_NODE_NONE //!< for specifying not a valid node
 } freesasa_node_type;
 
 /**

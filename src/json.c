@@ -130,25 +130,28 @@ freesasa_json_structure(const freesasa_structure_node *node)
 }
 
 json_object *
-freesasa_node2json(const freesasa_structure_node *node)
+freesasa_node2json(const freesasa_structure_node *node, int exclude_type)
 {
     json_object *obj, *array;
+    int lowest = 0;
     const freesasa_structure_node *child = freesasa_structure_node_children(node);
-
-    if (child) array = json_object_new_array();
+    if (child) {
+        if (freesasa_structure_node_type(child) == exclude_type) lowest = 1;
+        if (!lowest) array = json_object_new_array();
+    }
 
     switch (freesasa_structure_node_type(node)) {
     case FREESASA_NODE_STRUCTURE:
         obj = freesasa_json_structure(node);
-        json_object_object_add(obj, "chains", array);
+        if (!lowest) json_object_object_add(obj, "chains", array);
         break;
     case FREESASA_NODE_CHAIN:
         obj = freesasa_json_chain(node);
-        json_object_object_add(obj, "residues", array);
+        if (!lowest) json_object_object_add(obj, "residues", array);
         break;
     case FREESASA_NODE_RESIDUE:
         obj = freesasa_json_residue(node);
-        json_object_object_add(obj, "atoms", array);
+        if (!lowest) json_object_object_add(obj, "atoms", array);
         break;
     case FREESASA_NODE_ATOM:
         obj = freesasa_json_atom(node);
@@ -156,20 +159,29 @@ freesasa_node2json(const freesasa_structure_node *node)
     default:
         assert(0 && "Tree illegal");
     }
-
-    while (child) {
-        json_object_array_add(array, freesasa_node2json(child));
-        child = freesasa_structure_node_next(child);
+    
+    if (!lowest) {
+        while (child) {
+            json_object_array_add(array, freesasa_node2json(child, exclude_type));
+            child = freesasa_structure_node_next(child);
+        }
     }
-
     return obj;
 }
 
 int
 freesasa_write_json(FILE *output,
-                    const freesasa_structure_node *root)
+                    const freesasa_structure_node *root,
+                    int options)
 {
-    json_object *obj = freesasa_node2json(root);
+    json_object *obj;
+    freesasa_node_type exclude_type = FREESASA_NODE_NONE;
+    
+    if (options & FREESASA_OUTPUT_STRUCTURE) exclude_type = FREESASA_NODE_CHAIN;
+    if (options & FREESASA_OUTPUT_CHAIN) exclude_type = FREESASA_NODE_RESIDUE;
+    if (options & FREESASA_OUTPUT_RESIDUE) exclude_type = FREESASA_NODE_ATOM;
+    
+    obj = freesasa_node2json(root, exclude_type);
     if (obj) {
         fputs(json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY), output);
         json_object_put(obj);
