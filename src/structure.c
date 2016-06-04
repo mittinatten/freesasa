@@ -23,8 +23,17 @@ struct atom {
     int the_class;
 };
 
-static const struct atom empty_atom =
-     {NULL, NULL, NULL, NULL, NULL, NULL, '\0'};
+static const struct atom empty_atom = {
+    .res_name = NULL,
+    .res_number = NULL,
+    .atom_name = NULL,
+    .symbol = NULL,
+    .descriptor = NULL,
+    .line = NULL,
+    .res_index = -1,
+    .chain_label = '\0',
+    .the_class = -1
+};
 
 struct freesasa_structure {
     struct atom **a;
@@ -40,8 +49,19 @@ struct freesasa_structure {
     char **res_desc;
 };
 
-static const struct freesasa_structure empty_structure = 
-    {NULL,NULL,NULL,0,0,0,0,NULL,NULL,NULL,NULL};
+static const struct freesasa_structure empty_structure = {
+    .a = NULL,
+    .xyz = NULL,
+    .radius = NULL,
+    .number_atoms = 0,
+    .number_residues = 0,
+    .number_chains = 0,
+    .model = 0,
+    .chains = NULL,
+    .res_first_atom = NULL,
+    .chain_first_atom = NULL,
+    .res_desc = NULL
+};
 
 static int
 guess_symbol(char *symbol,
@@ -228,15 +248,20 @@ structure_add_chain(freesasa_structure *s,
         char *sc = s->chains;
         int *cfa = s->chain_first_atom;
         int n = ++s->number_chains;
-        s->chains = realloc(s->chains,n + 1);
-        s->chain_first_atom = realloc(s->chain_first_atom, n*sizeof(int));
-        if (s->chains && s->chain_first_atom) {
+        s->chains = realloc(s->chains, n + 1);
+        if (s->chains) {
             s->chains[n-1] = chain_label;
             s->chains[n] = '\0';
-            assert (strlen(s->chains) == s->number_chains);
-            s->chain_first_atom[n-1] = i_latest_atom;
         } else {
             s->chains = sc;
+            return mem_fail();
+        }
+        assert (strlen(s->chains) == s->number_chains);
+
+        s->chain_first_atom = realloc(s->chain_first_atom, n*sizeof(int));
+        if ( s->chain_first_atom) {
+            s->chain_first_atom[n-1] = i_latest_atom;
+        } else {
             s->chain_first_atom = cfa;
             return mem_fail();
         }
