@@ -169,10 +169,12 @@ freesasa_structure_new(void)
     s->chains = malloc(1);
     s->a = malloc(sizeof(struct atom*));
     s->xyz = freesasa_coord_new();
+    s->res_desc = malloc(sizeof(char*));
 
-    if (!s->chains || !s->a || !s->xyz) goto memerr;
+    if (!s->chains || !s->a || !s->xyz || !s->res_desc) goto memerr;
 
     s->chains[0] = '\0';
+    s->res_desc[0] = NULL;
 
     return s;
  memerr:
@@ -193,7 +195,7 @@ freesasa_structure_free(freesasa_structure *s)
         if (s->xyz) freesasa_coord_free(s->xyz);
         if (s->res_desc) {
             for (int i = 0; i < s->number_residues; ++i)
-                if (s->res_desc[i]) free(s->res_desc[i]);
+                free(s->res_desc[i]);
             free(s->res_desc);
         }
         free(s->radius);
@@ -273,25 +275,30 @@ static int
 structure_add_residue(freesasa_structure *s, const struct atom *a, int i)
 {
     int n = s->number_residues+1;
-    int *rfa = s->res_first_atom;
-    char **rd = s->res_desc;
+    char **rd;
+    int *rfa = realloc(s->res_first_atom, sizeof(int) * n);
 
-    rfa = realloc(rfa, sizeof(int) * n);
-    if (!rfa) return mem_fail();
+    if (rfa == NULL) {
+        free(s->res_first_atom);
+        s->res_first_atom = NULL;
+        return mem_fail();
+    }
     rfa[n-1] = i;
     s->res_first_atom = rfa;
 
-    rd = realloc(rd, sizeof(char*)*n);
-    if (!rd) return mem_fail();
-
-    rd[n-1] = malloc(strlen(a->res_number) + strlen(a->res_name)+4);
-    if (!rd[n-1]) {
-        free(rd);
+    rd = realloc(s->res_desc, sizeof(char*) * n);
+    if (rd == NULL) {
+        free(s->res_desc);
+        s->res_desc = NULL;
         return mem_fail();
     }
-    sprintf(rd[n-1], "%c %s %s", a->chain_label, a->res_number, a->res_name);
-
     s->res_desc = rd;
+
+    s->res_desc[n-1] = malloc(strlen(a->res_number) + strlen(a->res_name)+4);
+    if (!s->res_desc[n-1]) return mem_fail();
+
+    sprintf(s->res_desc[n-1], "%c %s %s", a->chain_label, a->res_number, a->res_name);
+
     ++s->number_residues;
 
     return FREESASA_SUCCESS;
