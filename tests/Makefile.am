@@ -19,7 +19,7 @@ test_api_SOURCES = libtest.c test_pdb.c test_freesasa.c test_structure.c \
 	test_classifier.c test_coord.c test_nb.c test_selection.c tools.h tools.c
 test_static_SOURCES = test_static.c tools.h tools.c
 
-AM_CFLAGS += -I$(top_srcdir)/src -DDATADIR=\"$(top_srcdir)/tests/data/\" -DSHAREDIR=\"$(top_srcdir)/share/\" -DUNIT_TESTING  
+AM_CFLAGS += -I$(top_srcdir)/src -DDATADIR=\"$(top_srcdir)/tests/data/\" -DSHAREDIR=\"$(top_srcdir)/share/\"
 
 test_api_LDADD = ../src/libfreesasa.a -lcheck
 test_api_LDFLAGS =  -Wl,-wrap,malloc -Wl,-wrap,realloc -Wl,-wrap,strdup
