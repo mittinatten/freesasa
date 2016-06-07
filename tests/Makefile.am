@@ -2,7 +2,7 @@ EXTRA_DIST = data test-cli.in whole_lib_one_file.c
 check_PROGRAMS =
 TESTS = 
 AM_CFLAGS =
-AM_LDFLAGS =
+AM_LDFLAGS = 
 
 if COND_GCOV
 AM_CFLAGS += --coverage
@@ -20,10 +20,11 @@ test_api_SOURCES = libtest.c test_pdb.c test_freesasa.c test_structure.c \
 test_static_SOURCES = test_static.c tools.h tools.c
 
 AM_CFLAGS += -I$(top_srcdir)/src -DDATADIR=\"$(top_srcdir)/tests/data/\" -DSHAREDIR=\"$(top_srcdir)/share/\"
+AM_LDFLAGS += -ldl -lcheck
 
-test_api_LDADD = ../src/libfreesasa.a -lcheck
-test_api_CFLAGS = -DCHECK_MEMERR ${AM_CFLAGS} -ldl
-test_static_LDADD = ../src/parser.o ../src/lexer.o -lcheck 
+test_api_LDADD = ../src/libfreesasa.a
+test_api_CFLAGS = -DCHECK_MEMERR ${AM_CFLAGS}
+test_static_LDADD = ../src/parser.o ../src/lexer.o
 
 if USE_JSON
 test_api_SOURCES += test_json.c
