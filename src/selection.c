@@ -551,7 +551,8 @@ freesasa_select_area(const char *command,
                 name[maxlen] = '\0';
             }
             else {
-                strcpy(name,selection->name);
+                strncpy(name,selection->name,len);
+                name[len] = '\0';
             }
             
             break;
