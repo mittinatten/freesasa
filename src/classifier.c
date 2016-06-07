@@ -188,37 +188,35 @@ static int
 strip_line(char **line,
            const char *input) 
 {
-    char *linebuf = malloc(strlen(input)+1), *line_bkp,
-        *comment, *first, *last;
-    if (linebuf == NULL) return mem_fail();
+    int n = strlen(input);
+    char linebuf[n+1];
+    char *comment, *first, *last, *tmp;
     
-    strcpy(linebuf,input);
-    comment = strchr(linebuf,'#');
+    strncpy(linebuf, input, strlen(input)+1);
+    comment = strchr(linebuf, '#');
     if (comment) *comment = '\0'; // skip comments
-    
+
     first = linebuf;
     last = linebuf + strlen(linebuf) - 1;
     while (*first == ' ' || *first == '\t') ++first;
     
     if (last > first) 
         while (*last == ' ' || *last == '\t' || *last == '\n') --last;
-    line_bkp = *line;
-    *line = realloc(*line,strlen(first)+1);
-    if (*line == NULL) {
-        free(linebuf);
-        free(line_bkp);
+
+    tmp = realloc(*line,strlen(first)+1);
+    if (tmp == NULL) {
+        free(line);
         return mem_fail();
     }
+    *line = tmp;
     
     if (first >= last) {
         **line = '\0';
-        free(linebuf);
         return 0;
     }
     
     *(last+1) = '\0';
     strcpy(*line,first);
-    free(linebuf);
     
     return strlen(*line);
 }
