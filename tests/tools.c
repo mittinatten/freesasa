@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <dlfcn.h>
 #include "tools.h"
 
 #ifdef CHECK_MEMERR
@@ -7,40 +8,43 @@
 static int n_fails = 0;
 static int fail_after = 0;
 
-extern void *__real_malloc(size_t size);
-extern void *__real_realloc(void *ptr, size_t size);
-extern void *__real_strdup(const char *s);
+//extern void *__real_malloc(size_t size);
+//extern void *__real_realloc(void *ptr, size_t size);
+//extern void *__real_strdup(const char *s);
 
 void*
-__wrap_malloc(size_t s)
+malloc(size_t s)
 {
     if (fail_after > 0) {
         ++n_fails;
         if (n_fails >= fail_after) return NULL;
     }
-    return __real_malloc(s);
+    void *(*real_malloc)(size_t) = dlsym(RTLD_NEXT, "malloc");
+    return real_malloc(s);
 }
 
 
 void*
-__wrap_realloc(void * ptr, size_t s)
+realloc(void * ptr, size_t s)
 {
     if (fail_after > 0) {
         ++n_fails;
         if (n_fails >= fail_after)
             return NULL;
     }
-    return __real_realloc(ptr, s);
+    void *(*real_realloc)(void *, size_t) = dlsym(RTLD_NEXT, "realloc");
+    return real_realloc(ptr, s);
 }
 
 static void*
-__wrap_strdup(const char *s)
+strdup(const char *s)
 {
     if (fail_after > 0) {
         ++n_fails;
         if (n_fails >= fail_after) return NULL;
     }
-    return __real_strdup(s);
+    void *(*real_strdup)(const char*) = dlsym(RTLD_NEXT, "strdup");
+    return real_strdup(s);
 }
 
 void
