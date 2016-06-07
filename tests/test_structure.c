@@ -463,6 +463,14 @@ START_TEST (test_memerr)
         set_fail_after(0);
         ck_assert_ptr_eq(ptr, NULL);
     }
+    freesasa_structure *structure = freesasa_structure_from_pdb(file, NULL, 0);
+    freesasa_result *result = freesasa_calc_structure(structure, NULL);
+    for (int i = 1; i < 100; ++i) {
+        set_fail_after(i);
+        ptr = freesasa_result2tree(result, structure, NULL, "test");
+        set_fail_after(0);
+        ck_assert_ptr_eq(ptr, NULL);
+    }
     fclose(file);
 
     file = fopen(DATADIR "2jo4.pdb", "r");
