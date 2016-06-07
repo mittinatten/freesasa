@@ -20,8 +20,8 @@ static const struct classifier_residue empty_residue = {0, NULL, NULL, NULL, NUL
 
 static const struct freesasa_classifier empty_config = {0, 0, NULL, NULL, NULL, NULL, NULL};
 
-static struct classifier_types*
-classifier_types_new()
+struct classifier_types*
+freesasa_classifier_types_new()
 {
     struct classifier_types *t = malloc(sizeof(struct classifier_types));
     if (t == NULL) mem_fail();
@@ -29,8 +29,8 @@ classifier_types_new()
     return t;
 }
 
-static void
-classifier_types_free(struct classifier_types* t)
+void
+freesasa_classifier_types_free(struct classifier_types* t)
 {
     if (t != NULL) {
         free(t->type_radius);
@@ -49,8 +49,8 @@ classifier_types_free(struct classifier_types* t)
     }
 }
 
-static struct classifier_residue*
-classifier_residue_new(const char* name)
+struct classifier_residue*
+freesasa_classifier_residue_new(const char* name)
 {
     assert(strlen(name) > 0);
     struct classifier_residue *res = malloc(sizeof(struct classifier_residue));
@@ -67,8 +67,8 @@ classifier_residue_new(const char* name)
     return res;
 }
 
-static void
-classifier_residue_free(struct classifier_residue* res)
+void
+freesasa_classifier_residue_free(struct classifier_residue* res)
 {
     if (res != NULL) {
         free(res->name);
@@ -85,7 +85,7 @@ classifier_residue_free(struct classifier_residue* res)
     }
 }
 
-static freesasa_classifier* 
+freesasa_classifier* 
 freesasa_classifier_new()
 {
     struct freesasa_classifier *cfg = malloc(sizeof(struct freesasa_classifier));
@@ -105,7 +105,7 @@ freesasa_classifier_free(freesasa_classifier *c)
 
         if (c->residue)
             for (int i = 0; i < c->n_residues; ++i)
-                classifier_residue_free(c->residue[i]);
+                freesasa_classifier_residue_free(c->residue[i]);
         free(c->residue);
         free(c->residue_name);
 
@@ -205,7 +205,8 @@ strip_line(char **line,
 
     tmp = realloc(*line,strlen(first)+1);
     if (tmp == NULL) {
-        free(line);
+        free(*line);
+        *line = NULL;
         return mem_fail();
     }
     *line = tmp;
@@ -247,9 +248,9 @@ next_line(char **line,
     Add class to type-registry. Returns the index of the new class on
     success, FREESASA_FAILURE if realloc/strdup fails.
  */
-static int
-add_class(struct classifier_types *types,
-          const char *name)
+int
+freesasa_classifier_add_class(struct classifier_types *types,
+                              const char *name)
 {
     int the_class = find_string(types->class_name, name, types->n_classes),
         n = types->n_classes + 1;
@@ -275,11 +276,11 @@ add_class(struct classifier_types *types,
     FREESASA_FAIL if realloc/strdup fails, FREESASA_WARN if type
     already known (ignore duplicates).
  */
-static int
-add_type(struct classifier_types *types,
-         const char *type_name,
-         const char *class_name, 
-         double r)
+int
+freesasa_classifier_add_type(struct classifier_types *types,
+                             const char *type_name,
+                             const char *class_name, 
+                             double r)
 {
     int the_class, n = types->n_types + 1;
     char **tn = types->name;
@@ -289,7 +290,7 @@ add_type(struct classifier_types *types,
     if (find_string(types->name, type_name, types->n_types) >= 0)
         return freesasa_warn("Ignoring duplicate configuration entry for '%s'.", type_name);
     
-    the_class = add_class(types,class_name);
+    the_class = freesasa_classifier_add_class(types,class_name);
     if (the_class == FREESASA_FAIL) {
         return mem_fail();
     }
@@ -333,7 +334,7 @@ read_types_line(struct classifier_types *types,
     int the_type;
     double r;
     if (sscanf(line,"%s %lf %s",buf1,&r,buf2) == 3) {
-        the_type = add_type(types, buf1, buf2, r);
+        the_type = freesasa_classifier_add_type(types, buf1, buf2, r);
         if (the_type == FREESASA_FAIL) return fail_msg("");
         if (the_type == FREESASA_WARN) return FREESASA_WARN;
     } else {
@@ -380,11 +381,11 @@ read_types(struct classifier_types *types,
     success. FREESASA_FAIL if memory allocation fails. FREESASA_WARN
     if the atom has already been added.
  */
-static int
-add_atom(struct classifier_residue *res,
-         const char *name,
-         double radius,
-         int the_class)
+int
+freesasa_classifier_add_atom(struct classifier_residue *res,
+                             const char *name,
+                             double radius,
+                             int the_class)
 {
     int n;
     char **an = res->atom_name;
@@ -423,9 +424,9 @@ add_atom(struct classifier_residue *res,
     the index of that residue, else it returns the index of the new
     residue. Returns FREESASA_FAILURE if realloc/strdup fails.
  */
-static int
-add_residue(struct freesasa_classifier *c,
-            const char* name)
+int
+freesasa_classifier_add_residue(struct freesasa_classifier *c,
+                                const char* name)
 {
     char **rn = c->residue_name;
     struct classifier_residue **cr = c->residue;
@@ -442,7 +443,7 @@ add_residue(struct freesasa_classifier *c,
         c->residue = cr;
         return mem_fail();
     }
-    if ((c->residue[res-1] = classifier_residue_new(name)) == NULL) {
+    if ((c->residue[res-1] = freesasa_classifier_residue_new(name)) == NULL) {
         return mem_fail();
     }
     ++c->n_residues;
@@ -469,12 +470,12 @@ read_atoms_line(struct freesasa_classifier *c,
         if (type < 0) 
             return freesasa_fail("Unknown atom type '%s' in configuration, line '%s'",
                                  buf3, line);
-        res = add_residue(c, buf1);
+        res = freesasa_classifier_add_residue(c, buf1);
         if (res == FREESASA_FAIL) return fail_msg("");
-        atom = add_atom(c->residue[res],
-                        buf2,
-                        types->type_radius[type],
-                        types->type_class[type]);
+        atom = freesasa_classifier_add_atom(c->residue[res],
+                                            buf2,
+                                            types->type_radius[type],
+                                            types->type_class[type]);
 
         if (atom == FREESASA_FAIL) return fail_msg("");
         if (atom == FREESASA_WARN) return FREESASA_WARN;
@@ -543,7 +544,7 @@ read_config(FILE *input)
     struct freesasa_classifier *classifier = NULL;
     struct classifier_types *types = NULL;
 
-    if (!(types = classifier_types_new()) ||
+    if (!(types = freesasa_classifier_types_new()) ||
         !(classifier = freesasa_classifier_new()) ||
         check_file(input, &types_section, &atoms_section) ||
         read_types(types, input, types_section) ||
@@ -552,7 +553,7 @@ read_config(FILE *input)
         freesasa_classifier_free(classifier);
         classifier = NULL;
     }
-    classifier_types_free(types);
+    freesasa_classifier_types_free(types);
     
     return classifier;
 }
@@ -825,3 +826,9 @@ freesasa_atom_is_backbone(const char *atom_name)
         return 1;
     return 0;
 }
+
+#ifdef UNIT_TESTING
+
+
+
+#endif /* UNIT_TESTING */

@@ -32,7 +32,6 @@ int main(int argc, char **argv) {
 #if USE_JSON
     srunner_add_suite(sr,json_suite());
 #endif
-
     srunner_run_all(sr,CK_VERBOSE);
 
     return (srunner_ntests_failed(sr) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;

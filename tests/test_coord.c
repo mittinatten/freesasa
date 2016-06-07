@@ -5,7 +5,9 @@
 #include <errno.h>
 #include <check.h>
 #include <freesasa.h>
+#include <freesasa_internal.h>
 #include <coord.h>
+#include "tools.h"
 
 coord_t *coord;
 
@@ -75,12 +77,38 @@ START_TEST (test_coord)
 }
 END_TEST
 
+START_TEST (test_memerr)
+{
+    set_fail_after(0);
+    static double v[18] = {0,0,0, 1,1,1, -1,1,-1, 2,0,-2, 2,2,0, -5,5,5};
+    struct coord_t coord = {.xyz = v, .n = 6, .is_linked = 0};
+    coord_t *coord_dyn = freesasa_coord_new();
+    set_fail_after(1);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    void *ptr[] = {freesasa_coord_new(),
+                   freesasa_coord_copy(&coord),
+                   freesasa_coord_new_linked(v,1)};
+    int ret[] = {freesasa_coord_append(coord_dyn, v, 1),
+               freesasa_coord_append_xyz(coord_dyn, v, v+1, v+2, 1)};
+    set_fail_after(0);
+    for (int i = 0; i < sizeof(ptr)/sizeof(void*); ++i)
+        ck_assert_ptr_eq(ptr[i],NULL);
+    for (int i = 0; i < sizeof(ret)/sizeof(int); ++i)
+        ck_assert_int_eq(ret[i], FREESASA_FAIL);
+
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+    freesasa_coord_free(coord_dyn);
+    set_fail_after(0);
+}
+END_TEST
+
 Suite* coord_suite()
 {
     Suite *s = suite_create("Coord");
     TCase *tc_core = tcase_create("Core");
     tcase_add_checked_fixture(tc_core,setup,teardown);
     tcase_add_test(tc_core,test_coord);
+    tcase_add_test(tc_core,test_memerr);
     suite_add_tcase(s,tc_core);
     return s;
 }

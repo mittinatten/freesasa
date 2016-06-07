@@ -22,8 +22,20 @@
     array of coordinates and calculate directly using this..
  */
 
-//! Struct to store coordinates
-typedef struct coord_t coord_t;
+/** Store a set of 3-dimensional coordinates in a contiguous array */
+typedef struct coord_t {
+    /** number of 3-vectors */
+    int n; 
+
+    /** If these coordinates are only a link to an externally stored
+        array this is 1, else 0. If it it is set, the coordinates can
+        not be changed and the array not freed. */
+    int is_linked; 
+
+    /** array of all coordinates, dimension 3*n,
+        x_1,y_1,z_1,...,x_n,y_n,z_n. */
+    double *xyz; 
+} coord_t;
 
 /**
     Initialize new ::coord_t object.

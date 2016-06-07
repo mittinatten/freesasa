@@ -100,6 +100,41 @@ const freesasa_subarea *
 freesasa_classifier_residue_reference(const freesasa_classifier *classifier,
                                       const char *res_name);
 
+// The functions below are only exposed to allow testing
+freesasa_classifier* 
+freesasa_classifier_new();
+
+struct classifier_types*
+freesasa_classifier_types_new();
+
+void
+freesasa_classifier_types_free(struct classifier_types* t);
+
+struct classifier_residue*
+freesasa_classifier_residue_new(const char* name);
+
+void
+freesasa_classifier_residue_free(struct classifier_residue* res);
+
+int
+freesasa_classifier_add_residue(struct freesasa_classifier *c,
+                                const char* name);
+
+int
+freesasa_classifier_add_atom(struct classifier_residue *res,
+                             const char *name,
+                             double radius,
+                             int the_class);
+
+int
+freesasa_classifier_add_type(struct classifier_types *types,
+                             const char *type_name,
+                             const char *class_name, 
+                             double r);
+
+int
+freesasa_classifier_add_class(struct classifier_types *types,
+                              const char *name);
 
 
 #endif /* CLASSIFIER_H */

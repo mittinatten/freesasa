@@ -1,7 +1,8 @@
 AM_LDFLAGS = 
+AM_CFLAGS =
 
 if COND_GCOV
-AM_CFLAGS = --coverage
+AM_CFLAGS += --coverage
 AM_LDFLAGS += -lgcov
 endif # COND_GCOV
 

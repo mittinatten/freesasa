@@ -446,12 +446,52 @@ START_TEST (test_structure_node)
 }
 END_TEST
 
+START_TEST (test_memerr)
+{
+    FILE *file = fopen(DATADIR "1ubq.pdb","r");
+    void *ptr;
+    int n;
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    set_fail_after(1);
+    ptr = freesasa_structure_new();
+    set_fail_after(0);
+    ck_assert_ptr_eq(ptr, NULL);
+    for (int i = 1; i < 100; ++i) {
+        rewind(file);
+        set_fail_after(i);
+        ptr = freesasa_structure_from_pdb(file, NULL, 0);
+        set_fail_after(0);
+        ck_assert_ptr_eq(ptr, NULL);
+    }
+    fclose(file);
+
+    file = fopen(DATADIR "2jo4.pdb", "r");
+    for (int i = 1; i < 100; ++i) {
+        rewind(file);
+        set_fail_after(i);
+        ptr = freesasa_structure_array(file, &n, NULL, FREESASA_SEPARATE_MODELS);
+        set_fail_after(0);
+        ck_assert_ptr_eq(ptr,NULL);
+
+        rewind(file);
+        set_fail_after(i);
+        ptr = freesasa_structure_array(file, &n, NULL, FREESASA_SEPARATE_MODELS | FREESASA_SEPARATE_CHAINS);
+        set_fail_after(0);
+        ck_assert_ptr_eq(ptr,NULL);
+    }
+    set_fail_after(0);
+    fclose(file);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+}
+END_TEST
+
 Suite* structure_suite() {
     // what goes in what Case is kind of arbitrary
     Suite *s = suite_create("Structure");
     TCase *tc_core = tcase_create("Core");
     tcase_add_test(tc_core, test_structure_api);
     tcase_add_test(tc_core, test_add_atom);
+    tcase_add_test(tc_core, test_memerr);
 
     TCase *tc_pdb = tcase_create("PDB");
     tcase_add_test(tc_pdb,test_pdb);

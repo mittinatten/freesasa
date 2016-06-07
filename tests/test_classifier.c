@@ -284,7 +284,7 @@ teardown()
     //..
 }
 
-// tests freesasa_classify_radius() and freesasa_classify_oons_radius()
+// tests freesasa_classifier_radius() and freesasa_guess_radius
 START_TEST (test_radius)
 {
     char buf[50];
@@ -296,6 +296,7 @@ START_TEST (test_radius)
         // make sure correct radius is supplied
         ck_assert_msg(fabs(r1 - a.radius) < 1e-10,buf);
     }
+    ck_assert(float_eq(freesasa_guess_radius(" H"), 1.10, 1e-10));
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
@@ -355,9 +356,7 @@ END_TEST
 
 START_TEST (test_user)
 {
-    FILE *f = fopen(SHAREDIR "oons.config","r");
-    freesasa_classifier* c = freesasa_classifier_from_file(f);
-    fclose(f);
+    freesasa_classifier* c = freesasa_classifier_from_filename(SHAREDIR "oons.config");
     ck_assert(c != NULL);
     ck_assert(c->n_classes == 3);
     ck_assert(fabs(freesasa_classifier_radius(c, "ALA","CA") - 2.0) < 1e-5);
@@ -386,7 +385,7 @@ START_TEST (test_user)
     ck_assert(freesasa_classifier_class(c, "X", "X") == FREESASA_WARN);
     freesasa_classifier_free(c);
     
-    f = fopen(DATADIR "empty.pdb", "r");
+    FILE *f = fopen(DATADIR "empty.pdb", "r");
     c = freesasa_classifier_from_file(f);
     ck_assert(c==NULL);
     fclose(f);
@@ -416,6 +415,64 @@ START_TEST (test_backbone)
 }
 END_TEST
 
+START_TEST (test_memerr)
+{
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    set_fail_after(1);
+    void *ptr[] = {freesasa_classifier_types_new(),
+                    freesasa_classifier_residue_new("ALA"),
+                    freesasa_classifier_new()};
+    set_fail_after(0);
+
+    for (int i = 0; i < sizeof(ptr)/sizeof(void*); ++i) {
+        ck_assert_ptr_eq(ptr[i], NULL);
+    }
+
+    for (int i = 1; i < 4; ++i) {
+        struct classifier_types *types = freesasa_classifier_types_new();
+        struct classifier_residue *res = freesasa_classifier_residue_new("ALA");
+        struct freesasa_classifier *clf = freesasa_classifier_new();
+        int ret;
+
+        if (i < 2) {
+            set_fail_after(i);
+            ret = freesasa_classifier_add_class(types,"A");
+            set_fail_after(0);
+            ck_assert_int_eq(ret, FREESASA_FAIL);
+
+            set_fail_after(i);
+            ret = freesasa_classifier_add_type(types,"a","A",1.0);
+            set_fail_after(0);
+            ck_assert_int_eq(ret, FREESASA_FAIL);
+        } 
+        set_fail_after(i);
+        ret = freesasa_classifier_add_atom(res,"A",1.0,0);
+        set_fail_after(0);
+        ck_assert_int_eq(ret, FREESASA_FAIL);
+
+        set_fail_after(i);
+        ret = freesasa_classifier_add_residue(clf,"A");
+        set_fail_after(0);
+        ck_assert_int_eq(ret, FREESASA_FAIL);
+
+        freesasa_classifier_types_free(types);
+        freesasa_classifier_residue_free(res);
+        freesasa_classifier_free(clf);
+    }
+    // don't test all levels, but make sure errors in low level
+    // allocation propagates to the interface
+    FILE *config = fopen(SHAREDIR "naccess.config","r");
+    for (int i = 1; i < 200; ++i) {
+        set_fail_after(i);
+        void *ptr = freesasa_classifier_from_file(config);
+        set_fail_after(0);
+        ck_assert_ptr_eq(ptr,NULL);
+        rewind(config);
+    }
+    fclose(config);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+}
+END_TEST
 
 Suite* classifier_suite()
 {
@@ -426,6 +483,7 @@ Suite* classifier_suite()
     tcase_add_test(tc_core,test_residue);
     tcase_add_test(tc_core,test_user);
     tcase_add_test(tc_core,test_backbone);
+    tcase_add_test(tc_core,test_memerr);
 
     tcase_add_checked_fixture(tc_core,setup,teardown);
 

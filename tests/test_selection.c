@@ -278,6 +278,36 @@ START_TEST (test_complex_syntax)
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 } END_TEST
 
+  // This test fails because the Bison-generated parser breaks
+  // when memory allocation fails
+/* 
+START_TEST (test_memerr) 
+{
+    set_fail_after(0);
+    freesasa_parameters p = freesasa_default_parameters;
+    p.shrake_rupley_n_points = 10;
+    FILE *file = fopen(DATADIR "1ubq.pdb", "r");
+    freesasa_structure *s = freesasa_structure_from_pdb(file, NULL, 0);
+    freesasa_result *result = freesasa_calc_structure(s, &p);
+    double area;
+    char name[FREESASA_MAX_SELECTION_NAME];
+    fclose(file);
+
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    for (int i = 1; i < 17; ++i) { 
+    set_fail_after(i);
+        // this expression should come across most allocations
+        int ret = freesasa_select_area("s, resn ALA and not resi 1-20", name, &area, s, result);
+        set_fail_after(0);
+        ck_assert_int_eq(ret, FREESASA_FAIL);
+    }
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+    freesasa_result_free(result);
+    freesasa_structure_free(s);
+}
+END_TEST
+*/
+
 Suite *selector_suite() {
     Suite *s = suite_create("Selector");
 
@@ -288,6 +318,7 @@ Suite *selector_suite() {
     tcase_add_test(tc_core, test_resn);
     tcase_add_test(tc_core, test_resi);
     tcase_add_test(tc_core, test_chain);
+    //tcase_add_test(tc_core, test_memerr);
     
     TCase *tc_syntax = tcase_create("Syntax");
     // just to avoid passing NULL pointers
