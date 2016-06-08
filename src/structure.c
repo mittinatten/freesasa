@@ -247,24 +247,28 @@ structure_add_chain(freesasa_structure *s,
                     int i_latest_atom)
 {
     if (strchr(s->chains,chain_label) == NULL) {
-        char *sc = s->chains;
-        int *cfa = s->chain_first_atom;
+        char *sc;
+        int *cfa;
         int n = ++s->number_chains;
-        s->chains = realloc(s->chains, n + 1);
-        if (s->chains) {
+        sc = realloc(s->chains, n + 1);
+        if (sc) {
+            s->chains = sc;
             s->chains[n-1] = chain_label;
             s->chains[n] = '\0';
         } else {
-            s->chains = sc;
+            free(s->chains);
+            s->chains = NULL;
             return mem_fail();
         }
         assert (strlen(s->chains) == s->number_chains);
 
-        s->chain_first_atom = realloc(s->chain_first_atom, n*sizeof(int));
-        if ( s->chain_first_atom) {
+        cfa = realloc(s->chain_first_atom, n*sizeof(int));
+        if (cfa) {
+            s->chain_first_atom = cfa;
             s->chain_first_atom[n-1] = i_latest_atom;
         } else {
-            s->chain_first_atom = cfa;
+            free(s->chain_first_atom);
+            s->chain_first_atom = NULL;
             return mem_fail();
         }
     }
@@ -358,6 +362,10 @@ structure_add_atom(freesasa_structure *s,
     int na, ret;
     double r, *pr = s->radius;
     struct atom **pa = s->a;
+
+    // let the stricter option override if both are specified
+    if (options & FREESASA_SKIP_UNKNOWN && options & FREESASA_HALT_AT_UNKNOWN)
+        options &= ~FREESASA_SKIP_UNKNOWN;
     
     if (classifier == NULL) {
         classifier = &freesasa_default_classifier;
@@ -504,7 +512,7 @@ freesasa_structure_add_atom_wopt(freesasa_structure *structure,
     options &= ~FREESASA_RADIUS_FROM_OCCUPANCY;
 
     if (guess_symbol(symbol, atom_name) == FREESASA_WARN &&
-        options & FREESASA_SKIP_UNKNOWN) 
+        options & FREESASA_SKIP_UNKNOWN)
         ++warn;
 
     a = atom_new(residue_name, residue_number, atom_name, symbol, chain_label);
@@ -512,12 +520,11 @@ freesasa_structure_add_atom_wopt(freesasa_structure *structure,
 
     ret = structure_add_atom(structure, a, v, classifier, options);
 
-    if (ret == FREESASA_FAIL) {
+    if (ret == FREESASA_FAIL ||
+        (ret == FREESASA_WARN && options & FREESASA_SKIP_UNKNOWN))
         atom_free(a);
-        return ret;
-    }
 
-    if (warn) return FREESASA_WARN;
+    if (!ret && warn) return FREESASA_WARN;
 
     return ret;
 }
@@ -556,7 +563,7 @@ freesasa_structure_array(FILE *pdb,
     struct file_range *models = NULL, *chains = NULL;
     struct file_range whole_file;
     int n_models = 0, n_chains = 0, j0, n_new_chains;
-    freesasa_structure **ss = NULL, **ssb, *s;
+    freesasa_structure **ss = NULL, **ssb;
 
     if( ! (options & FREESASA_SEPARATE_MODELS ||
            options & FREESASA_SEPARATE_CHAINS) ) {
@@ -607,9 +614,8 @@ freesasa_structure_array(FILE *pdb,
             for (int j = 0; j < n_new_chains; ++j) ss[j0+j] = NULL;
 
             for (int j = 0; j < n_new_chains; ++j) {
-                s = from_pdb_impl(pdb, chains[j], classifier, options);
-                if (s == NULL) goto cleanup;
-                ss[j0+j] = s;
+                ss[j0+j] = from_pdb_impl(pdb, chains[j], classifier, options);
+                if (ss[j0+j] == NULL) goto cleanup;
                 ss[j0+j]->model = ss[n_chains-n_new_chains]->model;
             }
 
@@ -627,9 +633,8 @@ freesasa_structure_array(FILE *pdb,
         *n = n_models;
 
         for (int i = 0; i < n_models; ++i) {
-            s = from_pdb_impl(pdb, models[i], classifier, options);
-            if (s == NULL) goto cleanup;
-            ss[i] = s;
+            ss[i] = from_pdb_impl(pdb, models[i], classifier, options);
+            if (ss[i] == NULL) goto cleanup;
         }
     }
 

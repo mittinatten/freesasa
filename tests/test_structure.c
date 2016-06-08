@@ -253,7 +253,7 @@ START_TEST (test_structure_array)
     ck_assert(n == 1);
     ck_assert(ss[0] != NULL);
     ck_assert(freesasa_structure_n(ss[0]) == 602);
-    free(ss[0]);
+    freesasa_structure_free(ss[0]);
     free(ss);
     
     rewind(pdb);
@@ -366,6 +366,7 @@ START_TEST (test_get_chains) {
     ck_assert(freesasa_structure_atom_chain(s2,129) == 'C');
     ck_assert_str_eq(freesasa_structure_chain_labels(s2),"AC");
     freesasa_structure_free(s2);
+    freesasa_structure_free(s);
 }
 END_TEST
 
@@ -471,7 +472,10 @@ START_TEST (test_memerr)
         set_fail_after(0);
         ck_assert_ptr_eq(ptr, NULL);
     }
+    freesasa_structure_free(structure);
+    freesasa_result_free(result);
     fclose(file);
+
 
     file = fopen(DATADIR "2jo4.pdb", "r");
     for (int i = 1; i < 100; ++i) {
