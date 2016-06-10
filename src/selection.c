@@ -174,12 +174,14 @@ selection_new(int n)
     if (selection == NULL) mem_fail(); 
     else {
         selection->size = n;
-        selection->atom = calloc(n,sizeof(int));
-    
+        selection->atom = malloc(sizeof(int)*n);
+
         if (selection->atom == NULL) {
             free(selection);
             mem_fail();
             selection = NULL;
+        } else {
+            for (int i = 0; i < n; ++i) selection->atom[i] = 0;
         }
     }
 

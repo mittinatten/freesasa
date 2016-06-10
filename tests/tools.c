@@ -44,19 +44,6 @@ strdup(const char *s)
     return real_strdup(s);
 }
 
-void*
-calloc(size_t count, size_t size)
-{
-    if (fail_after > 0) {
-        ++n_fails;
-        if (n_fails >= fail_after) {
-            return NULL;
-        }
-    }
-    void *(*real_calloc)(size_t, size_t) = dlsym(RTLD_NEXT, "calloc");
-    return real_calloc(count, size);
-}
-
 void
 set_fail_after(int limit) {
     if (limit < 0) limit = 0;
