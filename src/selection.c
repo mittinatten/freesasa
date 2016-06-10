@@ -598,3 +598,94 @@ int freesasa_selection_parse_error(expression *e,
     if (freesasa_get_verbosity() == FREESASA_V_NORMAL) fprintf(stderr,"\n");
     return freesasa_fail(msg);
 }
+
+#if USE_CHECK
+#include <check.h>
+
+START_TEST (test_selection) 
+{
+    static const expression empty_expression = {
+        .right = NULL, .left = NULL, .value = NULL, .type = E_SELECTION
+    };
+    freesasa_structure *structure = freesasa_structure_new();
+    freesasa_structure_add_atom(structure," CA ","ALA","   1",'A',0,0,0);
+    freesasa_structure_add_atom(structure," O  ","ALA","   1",'A',10,10,10);
+    struct selection *s1 = selection_new(freesasa_structure_n(structure));
+    struct selection *s2 = selection_new(freesasa_structure_n(structure));
+    struct selection *s3 = selection_new(freesasa_structure_n(structure));
+    struct selection *s4 = selection_new(freesasa_structure_n(structure));
+    expression r,l,e,e_symbol;
+    r = l = e = e_symbol = empty_expression;
+    e.type = E_PLUS;
+    e.right = &r;
+    e.left = &l;
+    r.value = "C"; r.type = E_ID;
+    l.value = "O"; l.type = E_ID;
+    e_symbol.type = E_SYMBOL;
+    e_symbol.left = &e;
+
+    // select_symbol
+    select_list(E_SYMBOL,s1,structure,&r);
+    ck_assert_int_eq(s1->atom[0],1);
+    ck_assert_int_eq(s1->atom[1],0);
+    select_list(E_SYMBOL,s2,structure,&l);
+    ck_assert_int_eq(s2->atom[0],0);
+    ck_assert_int_eq(s2->atom[1],1);
+    select_list(E_SYMBOL,s3,structure,&e);
+    ck_assert_int_eq(s3->atom[0],1);
+    ck_assert_int_eq(s3->atom[1],1);
+    select_atoms(s4,&e_symbol,structure);
+    ck_assert_int_eq(s4->atom[0],1);
+    ck_assert_int_eq(s4->atom[1],1);
+
+    // selection_join
+    selection_join(s3,s1,s2,E_AND);
+    ck_assert_int_eq(s3->atom[0],0);
+    ck_assert_int_eq(s3->atom[1],0);
+    selection_join(s3,s1,s2,E_OR);
+    ck_assert_int_eq(s3->atom[0],1);
+    ck_assert_int_eq(s3->atom[1],1);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    ck_assert_int_eq(selection_join(NULL,s1,s2,E_OR),FREESASA_FAIL);
+    ck_assert_int_eq(selection_join(s3,NULL,s1,E_OR),FREESASA_FAIL);
+    ck_assert_int_eq(selection_join(NULL,NULL,NULL,E_OR),FREESASA_FAIL);
+    
+    //selection_not
+    ck_assert_int_eq(selection_not(s3),FREESASA_SUCCESS);
+    ck_assert_int_eq(s3->atom[0],0);
+    ck_assert_int_eq(s3->atom[1],0);
+    ck_assert_int_eq(selection_not(NULL),FREESASA_FAIL);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+}
+END_TEST
+
+START_TEST (test_expression)
+{
+    expression *e = get_expression("c1, symbol O+C");
+    ck_assert_ptr_ne(e,NULL);
+    ck_assert_int_eq(e->type, E_SELECTION);
+    ck_assert_ptr_ne(e->left, NULL);
+    ck_assert_ptr_eq(e->right, NULL);
+    ck_assert_str_eq(e->value, "c1");
+    ck_assert_int_eq(e->left->type,E_SYMBOL);
+    ck_assert_ptr_ne(e->left->left,NULL);
+    ck_assert_ptr_eq(e->left->right,NULL);
+    ck_assert_int_eq(e->left->left->type,E_PLUS);
+    ck_assert_int_eq(e->left->left->left->type,E_ID);
+    ck_assert_int_eq(e->left->left->right->type,E_ID);
+    ck_assert_str_eq(e->left->left->right->value,"C");
+    ck_assert_str_eq(e->left->left->left->value,"O");
+}
+END_TEST
+
+TCase *
+test_selection_static()
+{
+    TCase *tc = tcase_create("selection.c static");
+    tcase_add_test(tc, test_selection);
+    tcase_add_test(tc, test_expression);
+
+    return tc;
+}
+
+#endif //USE_CHECK

@@ -308,6 +308,8 @@ START_TEST (test_memerr)
 END_TEST
 */
 
+extern TCase * test_selection_static();
+
 Suite *selector_suite() {
     Suite *s = suite_create("Selector");
 
@@ -318,7 +320,8 @@ Suite *selector_suite() {
     tcase_add_test(tc_core, test_resn);
     tcase_add_test(tc_core, test_resi);
     tcase_add_test(tc_core, test_chain);
-    //tcase_add_test(tc_core, test_memerr);
+
+    TCase *tc_static = test_selection_static();
     
     TCase *tc_syntax = tcase_create("Syntax");
     // just to avoid passing NULL pointers
@@ -328,6 +331,7 @@ Suite *selector_suite() {
 
     suite_add_tcase(s, tc_core);
     suite_add_tcase(s, tc_syntax);
+    suite_add_tcase(s, tc_static);
 
     return s;
 }

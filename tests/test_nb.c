@@ -42,6 +42,7 @@ START_TEST (test_memerr)
 }
 END_TEST
 
+extern TCase * test_nb_static();
 
 Suite* nb_suite() {
     Suite *s = suite_create("Neighbor lists");
@@ -49,8 +50,11 @@ Suite* nb_suite() {
     TCase *tc_nb = tcase_create("Basic");
     tcase_add_test(tc_nb,test_nb);
     tcase_add_test(tc_nb,test_memerr);
+
+    TCase *tc_static = test_nb_static();
     
     suite_add_tcase(s, tc_nb);
+    suite_add_tcase(s, tc_static);
     
     return s;
 }

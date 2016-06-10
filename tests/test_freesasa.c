@@ -484,6 +484,7 @@ START_TEST (test_memerr)
 }
 END_TEST
 
+extern TCase * test_LR_static();
 
 Suite *sasa_suite()
 {
@@ -500,6 +501,8 @@ Suite *sasa_suite()
     tcase_add_checked_fixture(tc_lr_basic,setup_lr_precision,teardown_lr_precision);
     tcase_add_test(tc_lr_basic, test_sasa_alg_basic);
 
+    TCase *tc_lr_static = test_LR_static();
+    
     TCase *tc_sr_basic = tcase_create("Basic S&R");
     tcase_add_checked_fixture(tc_sr_basic,setup_sr_precision,teardown_sr_precision);
     tcase_add_test(tc_sr_basic, test_sasa_alg_basic);
@@ -520,6 +523,7 @@ Suite *sasa_suite()
 
     suite_add_tcase(s, tc_basic);
     suite_add_tcase(s, tc_lr_basic);
+    suite_add_tcase(s, tc_lr_static);
     suite_add_tcase(s, tc_sr_basic);
     suite_add_tcase(s, tc_lr);
     suite_add_tcase(s, tc_sr);

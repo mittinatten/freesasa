@@ -474,6 +474,8 @@ START_TEST (test_memerr)
 }
 END_TEST
 
+extern TCase * test_classifier_static();
+
 Suite* classifier_suite()
 {
     Suite *s = suite_create("Classify");
@@ -484,10 +486,12 @@ Suite* classifier_suite()
     tcase_add_test(tc_core,test_user);
     tcase_add_test(tc_core,test_backbone);
     tcase_add_test(tc_core,test_memerr);
-
     tcase_add_checked_fixture(tc_core,setup,teardown);
 
+    TCase *tc_static = test_classifier_static();
+        
     suite_add_tcase(s,tc_core);
+    suite_add_tcase(s,tc_static);
 
     return s;
 }

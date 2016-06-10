@@ -333,3 +333,73 @@ exposed_arc_length(double * restrict arc,
     } 
     return sum + TWOPI - sup;
 }
+
+#if USE_CHECK
+#include <check.h>
+
+static int
+is_identical(const double *l1, const double *l2, int n) {
+    for (int i = 0; i < n; ++i) {
+        if (l1[i] != l2[i]) return 0;
+    }
+    return 1;
+}
+
+static int
+is_sorted(const double *list,int n)
+{
+    for (int i = 0; i < n - 1; ++i) if (list[2*i] > list[2*i+1]) return 0;
+    return 1;
+}
+
+START_TEST (test_sort_arcs) {
+    double a_ref[] = {0,1,2,3}, b_ref[] = {-2,0,-1,0,-1,1};
+    double a1[4] = {0,1,2,3}, a2[4] = {2,3,0,1};
+    double b1[6] = {-2,0,-1,0,-1,1}, b2[6] = {-1,1,-2,0,-1,1};
+    sort_arcs(a1,2);
+    sort_arcs(a2,2);
+    sort_arcs(b1,3);
+    sort_arcs(b2,3);
+    ck_assert(is_sorted(a1,2));
+    ck_assert(is_sorted(a2,2));
+    ck_assert(is_sorted(b1,3));
+    ck_assert(is_sorted(b2,3));
+    ck_assert(is_identical(a_ref,a1,4));
+    ck_assert(is_identical(a_ref,a2,4));
+    ck_assert(is_identical(b_ref,b1,6));
+}
+END_TEST
+
+START_TEST (test_exposed_arc_length) 
+{
+    double a1[4] = {0,0.1*TWOPI,0.9*TWOPI,TWOPI}, a2[4] = {0.9*TWOPI,TWOPI,0,0.1*TWOPI};
+    double a3[4] = {0,TWOPI,1,2}, a4[4] = {1,2,0,TWOPI};
+    double a5[4] = {0.1*TWOPI,0.2*TWOPI,0.5*TWOPI,0.6*TWOPI};
+    double a6[4] = {0.1*TWOPI,0.2*TWOPI,0.5*TWOPI,0.6*TWOPI};
+    double a7[4] = {0.1*TWOPI,0.3*TWOPI,0.15*TWOPI,0.2*TWOPI};
+    double a8[4] = {0.15*TWOPI,0.2*TWOPI,0.1*TWOPI,0.3*TWOPI};
+    double a9[10] = {0.05,0.1, 0.5,0.6, 0,0.15, 0.7,0.8, 0.75,TWOPI};
+    ck_assert(fabs(exposed_arc_length(a1,2) - 0.8*TWOPI) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a2,2) - 0.8*TWOPI) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a3,2)) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a4,2)) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a5,2) - 0.8*TWOPI) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a6,2) - 0.8*TWOPI) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a7,2) - 0.8*TWOPI) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a8,2) - 0.8*TWOPI) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a9,5) - 0.45) < 1e-10);
+    // can't think of anything more qualitatively different here
+}
+END_TEST
+
+TCase *
+test_LR_static()
+{
+    TCase *tc = tcase_create("sasa_lr.c static");
+    tcase_add_test(tc, test_sort_arcs);
+    tcase_add_test(tc, test_exposed_arc_length);
+
+    return tc;
+}
+
+#endif // USE_CHECK
