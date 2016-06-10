@@ -4,7 +4,7 @@
 AC_PREREQ([2.68])
 AC_INIT([FreeSASA], [1.1])
 AM_INIT_AUTOMAKE([foreign])
-AC_CONFIG_SRCDIR([src/freesasa.c])
+AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 m4_include([m4/ax_compare_version.m4])
 
@@ -15,10 +15,11 @@ AC_PROG_INSTALL
 
 # Checks for libraries.
 AC_CHECK_LIB([m], [sqrt])
+AC_CHECK_LIB([dl], [dlsym])
 
 # Checks for header files.
 AC_FUNC_ALLOCA
-AC_CHECK_HEADERS([inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h sys/time.h unistd.h dlfcn.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
