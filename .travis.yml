@@ -52,7 +52,7 @@ matrix:
 
     ## Test C library with clang
     - compiler: clang
-      env. ENABLE="--enable-check"
+      env: ENABLE="--enable-check"
 
     ## test that configuration works when JSON-C is disabled (but present)
     - compiler: clang
