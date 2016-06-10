@@ -153,10 +153,12 @@ if test x$enable_check = xyes ; then
     [echo "Check not availabe, option '--enable-check' ignored"])
   AC_CHECK_LIB(rt, setitimer) # necessary on some platforms
   AC_DEFINE([USE_CHECK],[1],[Build with Check unit testing framework])
+  AC_SUBST([CHECK_FOR_PY_BINDINGS], ['"check"'])
   AM_CONDITIONAL([USE_CHECK],[test x$have_check = xyes])
 else
   AM_CONDITIONAL([USE_CHECK],false)
   AC_DEFINE([USE_CHECK],[0],[])
+  AC_SUBST([CHECK_FOR_PY_BINDINGS], [])
 fi
 
 # Enable gcov

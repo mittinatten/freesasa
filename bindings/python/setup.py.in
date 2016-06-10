@@ -2,11 +2,14 @@ from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Build import cythonize
 
+lib = [@JSONC_FOR_PY_BINDINGS@]
+lib.extend([@CHECK_FOR_PY_BINDINGS@]);
+
 extensions = [
     Extension("*", ["*.pyx"],
               include_dirs = ["../../src"],
               language='c',
-              libraries=[@JSONC_FOR_PY_BINDINGS@],
+              libraries=lib,
               extra_objects = ["../../src/libfreesasa.a"],
               extra_compile_args = ["-w"] 
               )
