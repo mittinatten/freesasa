@@ -21,7 +21,7 @@ matrix:
   include:
     ## Coverage test
     - compiler: gcc
-      env: ENABLE="--enable-gcov --enable-json"
+      env: ENABLE="--enable-check --enable-gcov --enable-json"
       before_install:
         - pip install --user cpp-coveralls
         - sudo apt-get update -qq
@@ -52,16 +52,17 @@ matrix:
 
     ## Test C library with clang
     - compiler: clang
+      env. ENABLE="--enable-check"
 
     ## test that configuration works when JSON-C is disabled (but present)
     - compiler: clang
-      env: ENABLE="--disable-json"
+      env: ENABLE="--enable-check --disable-json"
     - compiler: gcc
-      env: ENABLE="--disable-json"
+      env: ENABLE="--enable-check --disable-json"
 
 before_script:
   - autoreconf -i
-  - ./configure --enable-check CFLAGS="-fPIC -O2" $ENABLE
+  - ./configure CFLAGS="-fPIC -O2" $ENABLE
 
 script: make && make check
 
