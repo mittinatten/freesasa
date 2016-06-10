@@ -453,6 +453,8 @@ select_atoms(struct selection* selection,
              const expression *expr,
              const freesasa_structure *structure)
 {
+    assert(selection);
+    assert(structure);
     int warn = 0, err = 0, n = selection->size, ret;
 
     // this should only happen if memory allocation failed during parsing
@@ -474,7 +476,7 @@ select_atoms(struct selection* selection,
     case E_AND:
     case E_OR: {
         struct selection *sl = selection_new(n), *sr = selection_new(n);
-        if (sl && sr) {
+        if (sl != NULL && sr != NULL) {
             if ((ret = select_atoms(sl,expr->left,structure))) {
                 if (ret == FREESASA_WARN) ++warn;
                 if (ret == FREESASA_FAIL) ++err;
@@ -675,8 +677,24 @@ START_TEST (test_expression)
     ck_assert_int_eq(e->left->left->right->type,E_ID);
     ck_assert_str_eq(e->left->left->right->value,"C");
     ck_assert_str_eq(e->left->left->left->value,"O");
+    for (int i = E_SELECTION; i <= E_RANGE; ++i) {
+        ck_assert_ptr_ne(e_str(i), NULL);
+    }
+    ck_assert_ptr_eq(e_str(E_RANGE+1), NULL);
 }
 END_TEST
+
+struct selection selection_dummy = {.size = 1, .name = NULL, .atom = NULL};
+
+void *freesasa_selection_dummy_ptr = &selection_dummy;
+
+int
+freesasa_wrap_select_atoms(struct selection* selection,
+                           const expression *expr,
+                           const freesasa_structure *structure)
+{
+    return select_atoms(selection, expr, structure);
+}
 
 TCase *
 test_selection_static()

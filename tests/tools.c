@@ -31,15 +31,30 @@ realloc(void * ptr, size_t s)
     return real_realloc(ptr, s);
 }
 
-static void*
+void*
 strdup(const char *s)
 {
     if (fail_after > 0) {
         ++n_fails;
-        if (n_fails >= fail_after) return NULL;
+        if (n_fails >= fail_after) {
+            return NULL;
+        }
     }
     void *(*real_strdup)(const char*) = dlsym(RTLD_NEXT, "strdup");
     return real_strdup(s);
+}
+
+void*
+calloc(size_t count, size_t size)
+{
+    if (fail_after > 0) {
+        ++n_fails;
+        if (n_fails >= fail_after) {
+            return NULL;
+        }
+    }
+    void *(*real_calloc)(size_t, size_t) = dlsym(RTLD_NEXT, "calloc");
+    return real_calloc(count, size);
 }
 
 void

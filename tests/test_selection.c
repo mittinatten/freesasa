@@ -1,7 +1,8 @@
 #include <string.h>
 #include <math.h>
 #include <stdio.h>
-#include <freesasa.h>
+#include <freesasa_internal.h>
+#include <selection.h>
 #include <check.h>
 #include "tools.h"
 
@@ -278,35 +279,47 @@ START_TEST (test_complex_syntax)
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 } END_TEST
 
-  // This test fails because the Bison-generated parser breaks
-  // when memory allocation fails
-/* 
-START_TEST (test_memerr) 
-{
-    set_fail_after(0);
-    freesasa_parameters p = freesasa_default_parameters;
-    p.shrake_rupley_n_points = 10;
-    FILE *file = fopen(DATADIR "1ubq.pdb", "r");
-    freesasa_structure *s = freesasa_structure_from_pdb(file, NULL, 0);
-    freesasa_result *result = freesasa_calc_structure(s, &p);
-    double area;
-    char name[FREESASA_MAX_SELECTION_NAME];
-    fclose(file);
+extern void *freesasa_selection_dummy_ptr;
 
+extern int
+freesasa_wrap_select_atoms(void* selection,
+                           const expression *expr,
+                           const freesasa_structure *structure);
+
+START_TEST (test_memerr)
+{
+    void *ptr1, *ptr2, *ptr3, *ptr4;
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    for (int i = 1; i < 17; ++i) { 
-    set_fail_after(i);
-        // this expression should come across most allocations
-        int ret = freesasa_select_area("s, resn ALA and not resi 1-20", name, &area, s, result);
-        set_fail_after(0);
-        ck_assert_int_eq(ret, FREESASA_FAIL);
+    set_fail_after(1);
+    ptr1 = freesasa_selection_atom(E_SYMBOL, "C");
+    ptr2 = freesasa_selection_create(NULL, "bla");
+    ptr3 = freesasa_selection_selector(E_SYMBOL, NULL);
+    ptr4 = freesasa_selection_operation(E_AND, NULL, NULL);
+    set_fail_after(0);
+    ck_assert_ptr_eq(ptr1, NULL);
+    ck_assert_ptr_eq(ptr2, NULL);
+    ck_assert_ptr_eq(ptr3, NULL);
+    ck_assert_ptr_eq(ptr4, NULL);
+    set_fail_after(2);
+    ptr1 = freesasa_selection_atom(E_SYMBOL, "C");
+    set_fail_after(2);
+    ptr2 = freesasa_selection_create(NULL, "bla");
+    set_fail_after(0);
+    ck_assert_ptr_eq(ptr1, NULL);
+    ck_assert_ptr_eq(ptr2, NULL);
+
+    expression e = {.left = NULL, .right = NULL, .type = E_OR, .value = NULL};
+    
+    for (int i = 1; i < 5; ++i) {
+            set_fail_after(i);
+            int ret = freesasa_wrap_select_atoms(freesasa_selection_dummy_ptr, &e, structure);
+            set_fail_after(0);
+            ck_assert_int_eq(ret, FREESASA_FAIL);
     }
     freesasa_set_verbosity(FREESASA_V_NORMAL);
-    freesasa_result_free(result);
-    freesasa_structure_free(s);
 }
 END_TEST
-*/
+
 
 extern TCase * test_selection_static();
 
@@ -320,6 +333,7 @@ Suite *selector_suite() {
     tcase_add_test(tc_core, test_resn);
     tcase_add_test(tc_core, test_resi);
     tcase_add_test(tc_core, test_chain);
+    tcase_add_test(tc_core, test_memerr);
 
     TCase *tc_static = test_selection_static();
     
