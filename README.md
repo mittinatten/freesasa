@@ -82,6 +82,8 @@ The configuration script can be customized with general options:
 * `--with-python=<python>` specifies which python binary to use
 * `--disable-threads` build without multithreaded calculations
 * `--enable-doxygen` activates building of Doxygen documentation
+* `--disable-json` build without support for JSON-output (will be
+  automatically disabled if json-c library not available)
 
 And some options for developers:
 * `--enable-check` enables unit-testing using the Check framework
@@ -110,13 +112,15 @@ Compatibility and dependencies
 
 The program has been tested successfully with several versions of GNU
 C Compiler and Clang/LLVM. Building the library only requires standard
-C and GNU libraries. Developers who want to do testing need to install
-the Check unit testing framework. Building the full reference manual
-requires Doxygen (version > 1.8.8). Building the Python bindings
-requires Cython. Changing the selection parser and lexer requires Flex 
-and Bison. These build options, which add extra dependencies,
-are disabled by default to simplify installation for users only
-interested in the command line tool and and/or C Library.
+C and GNU libraries. If [json-c](https://github.com/json-c/json-c) is
+available, the library will be built with support for JSON
+output. Developers who want to do testing need to install the Check
+unit testing framework. Building the full reference manual requires
+Doxygen (version > 1.8.8). Building the Python bindings requires
+Cython. Changing the selection parser and lexer requires Flex and
+Bison. These build options, which add extra dependencies, are disabled
+by default to simplify installation for users only interested in the
+command line tool and and/or C Library.
 
 Citing FreeSASA
 ---------------
