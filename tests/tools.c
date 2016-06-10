@@ -4,14 +4,8 @@
 #include <dlfcn.h>
 #include "tools.h"
 
-#ifdef CHECK_MEMERR
-
 static int n_fails = 0;
 static int fail_after = 0;
-
-//extern void *__real_malloc(size_t size);
-//extern void *__real_realloc(void *ptr, size_t size);
-//extern void *__real_strdup(const char *s);
 
 void*
 malloc(size_t s)
@@ -54,8 +48,6 @@ set_fail_after(int limit) {
     fail_after = limit;
     n_fails = 0;
 }
-
-#endif /* CHECK_MEMERR */
 
 int float_eq(double a, double b, double tolerance) 
 {
