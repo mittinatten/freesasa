@@ -1060,6 +1060,7 @@ freesasa_result2tree(const freesasa_result *result,
 int
 freesasa_export_tree(FILE *output,
                      const freesasa_structure_node *root,
+                     const freesasa_parameters *parameters,
                      int options);
 
 /**

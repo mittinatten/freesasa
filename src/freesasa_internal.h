@@ -98,12 +98,19 @@ freesasa_write_rsa(FILE *output,
 
     @param output Output-file.
     @param root A tree with stored results.
+    @param parameters Parameters used in the calculation (NULL means
+      defaults are assumed).
+    @param options Bitfield with options ::FREESASA_OUTPUT_STRUCTURE,
+      ::FREESASA_OUTPUT_CHAIN and ::FREESASA_OUTPUT_RESIDUE, that specify 
+      depth of the tree to output. If `options == 0` all levels are 
+      written.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
       writing to file.
  */
 int
 freesasa_write_json(FILE *ouput,
                     const freesasa_structure_node *root,
+                    const freesasa_parameters *parameters,
                     int options);
 
 /**
