@@ -62,6 +62,24 @@ int freesasa_lee_richards(double* sasa,
                           const double *radii,
                           const freesasa_parameters *param);
 
+/**
+    Calculate SASA based on a coordinate object, radii and parameters
+
+    Wrapper for freesasa_lee_richards() and freesasa_shrake_rupley()
+    that creates a result object.
+
+    Return value is dynamically allocated, should be freed with
+    freesasa_result_free().
+
+    @param c Coordinates
+    @param radii Atomi radii
+    @param parameters Parameters
+    @return Result of calculation, NULL if something went wrong.
+ */
+freesasa_result*
+freesasa_calc(const coord_t *c,
+              const double *radii,
+              const freesasa_parameters *parameters);
 
 /**
     Print RSA-file

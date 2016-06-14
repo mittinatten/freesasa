@@ -8,6 +8,10 @@ typedef enum {
     FREESASA_CLASS_UNKNOWN // neither
 } freesasa_class;
 
-int float_eq(double a, double b, double tolerance);
+int
+float_eq(double a, double b, double tolerance);
+
+void
+set_fail_after(int freq);
 
 #endif

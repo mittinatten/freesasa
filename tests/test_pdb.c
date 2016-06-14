@@ -171,6 +171,8 @@ START_TEST (test_get_chains)
 }
 END_TEST
 
+extern TCase * test_pdb_static();
+
 Suite *pdb_suite() {
     Suite *s = suite_create("PDB-parser");
     TCase *tc_core = tcase_create("Core");
@@ -178,7 +180,11 @@ Suite *pdb_suite() {
     tcase_add_test(tc_core, test_pdb_lines);
     tcase_add_test(tc_core, test_get_models);
     tcase_add_test(tc_core, test_get_chains);
+
+    TCase *tc_static = test_pdb_static();
+
     suite_add_tcase(s, tc_core);
+    suite_add_tcase(s, tc_static);
 
     return s;
 }

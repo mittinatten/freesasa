@@ -443,6 +443,49 @@ START_TEST (test_1d3z)
 }
 END_TEST
 
+START_TEST (test_memerr)
+{
+    freesasa_parameters p = freesasa_default_parameters;
+    double v[18] = {0,0,0, 1,1,1, -1,1,-1, 2,0,-2, 2,2,0, -5,5,5};
+    struct coord_t coord = {.xyz = v, .n = 6, .is_linked = 0};
+    const double r[6]  = {4,2,2,2,2,2};
+    void *ptr;
+    p.shrake_rupley_n_points = 10; // so the loop below will be fast
+
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    for (int i = 1; i < 40; ++i) {
+        p.alg = FREESASA_SHRAKE_RUPLEY;
+        set_fail_after(i);
+        ptr = freesasa_calc(&coord, r, &p);
+        set_fail_after(0);
+        ck_assert_ptr_eq(ptr, NULL);
+        p.alg = FREESASA_LEE_RICHARDS;
+        set_fail_after(i);
+        ptr = freesasa_calc(&coord, r, &p);
+        set_fail_after(0);
+        ck_assert_ptr_eq(ptr, NULL);
+    }
+
+    FILE *file = fopen(DATADIR "1ubq.pdb","r");
+    freesasa_structure *s = freesasa_structure_from_pdb(file, NULL, 0);
+    for (int i = 1; i < 256; i *= 2) { //try to spread it out without doing too many calculations
+        set_fail_after(i);
+        ptr = freesasa_calc_structure(s, NULL);
+        set_fail_after(0);
+        ck_assert_ptr_eq(ptr, NULL);
+        set_fail_after(i);
+        ptr = freesasa_structure_get_chains(s, "A");
+        set_fail_after(0);
+        ck_assert_ptr_eq(ptr, NULL);
+    }
+    freesasa_structure_free(s);
+    fclose(file);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+}
+END_TEST
+
+extern TCase * test_LR_static();
+
 Suite *sasa_suite()
 {
     Suite *s = suite_create("SASA-calculation");
@@ -452,11 +495,14 @@ Suite *sasa_suite()
     tcase_add_test(tc_basic, test_calc_errors);
     tcase_add_test(tc_basic, test_user_classes);
     tcase_add_test(tc_basic, test_write_1ubq);
+    tcase_add_test(tc_basic, test_memerr);
     
     TCase *tc_lr_basic = tcase_create("Basic L&R");
     tcase_add_checked_fixture(tc_lr_basic,setup_lr_precision,teardown_lr_precision);
     tcase_add_test(tc_lr_basic, test_sasa_alg_basic);
 
+    TCase *tc_lr_static = test_LR_static();
+    
     TCase *tc_sr_basic = tcase_create("Basic S&R");
     tcase_add_checked_fixture(tc_sr_basic,setup_sr_precision,teardown_sr_precision);
     tcase_add_test(tc_sr_basic, test_sasa_alg_basic);
@@ -477,6 +523,7 @@ Suite *sasa_suite()
 
     suite_add_tcase(s, tc_basic);
     suite_add_tcase(s, tc_lr_basic);
+    suite_add_tcase(s, tc_lr_static);
     suite_add_tcase(s, tc_sr_basic);
     suite_add_tcase(s, tc_lr);
     suite_add_tcase(s, tc_sr);

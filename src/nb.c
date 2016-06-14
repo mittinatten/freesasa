@@ -491,3 +491,66 @@ freesasa_nb_contact(const nb_list *nb,
     }
     return 0;
 }
+
+#if USE_CHECK
+#include <math.h>
+#include <check.h>
+
+START_TEST (test_cell) {
+    const int n_atoms = 6;
+    const int n_coord = 18;
+    static const double v[] = {0,0,0, 1,1,1, -1,1,-1, 2,0,-2, 2,2,0, -5,5,5};
+    static const double r[]  = {4,2,2,2,2,2};
+    double r_max;
+    cell_list *c;
+    coord_t *coord = freesasa_coord_new();
+    freesasa_coord_append(coord,v,n_atoms);
+    r_max = max_array(r,n_atoms);
+    ck_assert(fabs(r_max-4) < 1e-10);
+    c = cell_list_new(r_max,coord);
+    ck_assert(c != NULL);
+    ck_assert(c->cell != NULL);
+    ck_assert(fabs(c->d - r_max) < 1e-10);
+    // check bounds
+    ck_assert(c->x_min < -5);
+    ck_assert(c->x_max > 2);
+    ck_assert(c->y_min < 0);
+    ck_assert(c->y_max > 5);
+    ck_assert(c->z_min < -2);
+    ck_assert(c->z_max > 5);
+    // check number of cells
+    ck_assert(c->nx*c->d >= 7);
+    ck_assert(c->nx <= ceil(7/r_max)+1);
+    ck_assert(c->ny*c->d >= 5);
+    ck_assert(c->ny <= ceil(5/r_max)+1);
+    ck_assert(c->nz*c->d >= 7);
+    ck_assert(c->nz <= ceil(7/r_max)+1);
+    ck_assert_int_eq(c->n, c->nx*c->ny*c->nz);
+    // check the individual cells
+    int na = 0;
+    ck_assert_int_eq(c->cell[0].n_nb,8);
+    ck_assert_int_eq(c->cell[c->n-1].n_nb,1);
+    for (int i = 0; i < c->n; ++i) {
+        cell ci = c->cell[i];
+        ck_assert(ci.n_atoms >= 0);
+        if (ci.n_atoms > 0) ck_assert(ci.atom != NULL);
+        ck_assert_int_ge(ci.n_nb, 1); 
+        ck_assert_int_le(ci.n_nb, 17);
+        na += ci.n_atoms;
+    }
+    ck_assert_int_eq(na,n_atoms);
+    cell_list_free(c);
+    freesasa_coord_free(coord);
+}
+END_TEST
+
+TCase *
+test_nb_static()
+{
+    TCase *tc = tcase_create("nb.c static");
+    tcase_add_test(tc, test_cell);
+
+    return tc;
+}
+
+#endif //USE_CHECK

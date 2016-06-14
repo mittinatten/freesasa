@@ -4,7 +4,7 @@
 AC_PREREQ([2.68])
 AC_INIT([FreeSASA], [1.1])
 AM_INIT_AUTOMAKE([foreign])
-AC_CONFIG_SRCDIR([src/freesasa.c])
+AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 m4_include([m4/ax_compare_version.m4])
 
@@ -15,10 +15,11 @@ AC_PROG_INSTALL
 
 # Checks for libraries.
 AC_CHECK_LIB([m], [sqrt])
+AC_CHECK_LIB([dl], [dlsym])
 
 # Checks for header files.
 AC_FUNC_ALLOCA
-AC_CHECK_HEADERS([inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h sys/time.h unistd.h dlfcn.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
@@ -152,9 +153,13 @@ if test x$enable_check = xyes ; then
     [have_check=yes],
     [echo "Check not availabe, option '--enable-check' ignored"])
   AC_CHECK_LIB(rt, setitimer) # necessary on some platforms
+  AC_DEFINE([USE_CHECK],[1],[Build with Check unit testing framework])
+  AC_SUBST([CHECK_FOR_PY_BINDINGS], ['"check"'])
   AM_CONDITIONAL([USE_CHECK],[test x$have_check = xyes])
 else
   AM_CONDITIONAL([USE_CHECK],false)
+  AC_DEFINE([USE_CHECK],[0],[])
+  AC_SUBST([CHECK_FOR_PY_BINDINGS], [])
 fi
 
 # Enable gcov

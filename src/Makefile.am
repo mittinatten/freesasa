@@ -1,9 +1,11 @@
 AM_LDFLAGS = 
+AM_CFLAGS =
 
 if COND_GCOV
-AM_CFLAGS = --coverage
+AM_CFLAGS += --coverage
 AM_LDFLAGS += -lgcov
 endif # COND_GCOV
+
 
 GCOV_FILES = *.gcda *.gcno *.gcov
 
@@ -35,6 +37,11 @@ lp_output = lexer.c lexer.h parser.c parser.h
 if USE_JSON
 libfreesasa_a_SOURCES += json.c
 endif # USE_JSON
+
+if USE_CHECK
+freesasa_LDADD += -lcheck
+example_LDADD += -lcheck
+endif
 
 if GENERATE_PARSER
 $(lp_output): lexer.l parser.y

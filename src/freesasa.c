@@ -102,7 +102,7 @@ freesasa_result_free(freesasa_result *r)
     }
 }
 
-static freesasa_result*
+freesasa_result*
 freesasa_calc(const coord_t *c, 
               const double *radii,
               const freesasa_parameters *parameters)
