@@ -199,6 +199,7 @@ freesasa_write_xml(FILE *output,
     freesasa_node_type exclude_type = FREESASA_NODE_NONE;
     xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
     xmlNodePtr xml_root = xmlNewNode(NULL, BAD_CAST "FreeSASAResult");
+    xmlNsPtr ns = xmlNewNs(xml_root, BAD_CAST "http://freesasa.github.io/", BAD_CAST "");
     xmlBufferPtr buf = xmlBufferCreate();
     xmlTextWriterPtr writer = xmlNewTextWriterMemory(buf, 0);
     if (parameters == NULL) parameters = &freesasa_default_parameters;
@@ -216,7 +217,8 @@ freesasa_write_xml(FILE *output,
     xmlNewProp(xml_root, BAD_CAST "lengthUnit", BAD_CAST "Ångström");
     xmlAddChild(xml_root, freesasa_node2xml(root, exclude_type));
 
-    xmlTextWriterStartDocument(writer, "1.0", xmlGetCharEncodingName(XML_CHAR_ENCODING_UTF8), NULL);
+    xmlTextWriterStartDocument(writer, XML_DEFAULT_VERSION,
+                               xmlGetCharEncodingName(XML_CHAR_ENCODING_UTF8), NULL);
 
     xmlTextWriterFlush(writer);
     xmlNodeDump(buf, doc, xml_root, 0, 1);
