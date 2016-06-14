@@ -213,10 +213,18 @@ freesasa_write_xml(FILE *output,
                freesasa_structure_node_classified_by(root));
     xmlNewProp(xml_root, BAD_CAST "input",
                freesasa_structure_node_name(root));
+    xmlNewProp(xml_root, BAD_CAST "lengthUnit", BAD_CAST "Ångström");
     xmlAddChild(xml_root, freesasa_node2xml(root, exclude_type));
+
+    xmlTextWriterStartDocument(writer, "1.0", xmlGetCharEncodingName(XML_CHAR_ENCODING_UTF8), NULL);
+
+    xmlTextWriterFlush(writer);
     xmlNodeDump(buf, doc, xml_root, 0, 1);
+    xmlTextWriterEndDocument(writer);
 
     fprintf(output, "%s", (const char*) buf->content);
+
+    xmlBufferFree(buf);
     
     return FREESASA_SUCCESS;
 }
