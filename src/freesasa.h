@@ -1057,7 +1057,9 @@ freesasa_result2tree(const freesasa_result *result,
                      const freesasa_structure *structure,
                      const freesasa_classifier *polar_classifier,
                      const char *name);
-
+/**
+    Not thread safe
+*/
 int
 freesasa_export_tree(FILE *output,
                      const freesasa_structure_node *root,

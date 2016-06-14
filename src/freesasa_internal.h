@@ -96,6 +96,8 @@ freesasa_write_rsa(FILE *output,
 /**
     Export to JSON
 
+    Not thread-safe.
+
     @param output Output-file.
     @param root A tree with stored results.
     @param parameters Parameters used in the calculation (NULL means
