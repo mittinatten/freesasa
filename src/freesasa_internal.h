@@ -113,6 +113,12 @@ freesasa_write_json(FILE *ouput,
                     const freesasa_parameters *parameters,
                     int options);
 
+int
+freesasa_write_xml(FILE *ouput,
+                   const freesasa_structure_node *root,
+                   const freesasa_parameters *parameters,
+                   int options);
+
 /**
     Get coordinates.
     
