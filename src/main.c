@@ -51,6 +51,7 @@ int printpdb = 0;
 int printrsa = 0;
 int printjson = 0;
 int static_config = 0;
+int output_depth = FREESASA_OUTPUT_CHAIN;
 
 // chain groups
 int n_chain_groups = 0;
@@ -84,12 +85,12 @@ help(void)
             "                          [default: %d]\n"
             "                        depending on which is selected.\n",
             FREESASA_DEF_PROBE_RADIUS, FREESASA_DEF_SR_N, FREESASA_DEF_LR_N);
-#ifdef USE_THREADS
-    fprintf(stderr,
-            "\n  -t <value>  (--n-threads=<value>)\n"
-            "                        Number of threads to use in calculation. [default %d]\n",
-            FREESASA_DEF_NUMBER_THREADS);
-#endif
+    if (USE_THREADS) {
+        fprintf(stderr,
+                "\n  -t <value>  (--n-threads=<value>)\n"
+                "                        Number of threads to use in calculation. [default %d]\n",
+                FREESASA_DEF_NUMBER_THREADS);
+    }
     fprintf(stderr,
             "\n  -O (--radius-from-occupancy)\n"
             "                        Read atomic radii from Occupancy field in the PDB input.\n"
@@ -102,8 +103,7 @@ help(void)
             "                        RSA reference values. Cannot be used in conjunction\n"
             "                        with the option '-c'.\n"
             "                        Default value is 'protor'.\n");
-    fprintf(stderr,
-            "\nINPUT\n"
+    fprintf(stderr, "\nINPUT\n"
             "  -H (--hetatm)         Include HETATM entries from input.\n"
             "  -Y (--hydrogen)       Include hydrogen atoms (skipped by default). Default\n"
             "                        classifier emits warnings. Use with care. To get\n"
@@ -146,13 +146,18 @@ help(void)
             "                        by the atomic radius. Use the -file variant to specify\n"
             "                        an output file.\n"
             "                        This option might give confusing output when used in\n"
-            "                        conjuction with the options -C and -g.\n"
-            "\n"
-#if USE_JSON
-            "  --json  or  --json-file=<file>\n"
-            "                        Print results in JSON format\n"
-            "\n"
-#endif
+        "                        conjuction with the options -C and -g.\n"
+        "\n");
+    if (USE_JSON) {
+        fprintf(stderr, 
+                "  --json  or  --json-file=<file>\n"
+                "                        Print results in JSON format\n"
+                "\n"
+                "  --output-depth=<structure|chain|residue|atom>\n"
+                "                        Level of detail in JSON output [default: chain]\n"
+                "\n");
+    }
+    fprintf(stderr,
             "  --rsa   or  --rsa-file=<file>\n"
             "                        Print relative SASA values in RSA format (same as\n"
             "                        NACCESS). The reference amino acid SASAs are calculated\n"
@@ -328,7 +333,7 @@ run_analysis(FILE *input,
                 freesasa_result2tree(result, structures[i], classifier, name_i);
             if (printrsa) freesasa_export_tree(rsa_file, tree, &parameters, FREESASA_RSA);
             if (printjson) freesasa_export_tree(json_file, tree, &parameters,
-                                                FREESASA_JSON | FREESASA_OUTPUT_CHAIN);
+                                                FREESASA_JSON | output_depth);
             freesasa_structure_node_free(tree);
         }
         freesasa_result_free(result);
@@ -432,7 +437,7 @@ main(int argc,
     int option_index = 0;
     int option_flag;
     enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN,
-          RSA_FILE, RSA, JSON_FILE, JSON, RADII};
+          RSA_FILE, RSA, JSON_FILE, JSON, O_DEPTH, RADII};
     parameters = freesasa_default_parameters;
     memset(opt_set, 0, n_opt);
     program_name = "freesasa";
@@ -469,6 +474,7 @@ main(int argc,
         {"rsa",                  no_argument,       &option_flag, RSA},
         {"json-file",            required_argument, &option_flag, JSON_FILE},
         {"json",                 no_argument,       &option_flag, JSON},
+        {"output-depth",         required_argument, &option_flag, O_DEPTH},
         {"radii",                required_argument, &option_flag, RADII},
         {0,0,0,0}
     };
@@ -518,6 +524,19 @@ main(int argc,
             case JSON_FILE:
                 printjson = 1;
                 json_file = fopen_werr(optarg, "w");
+                break;
+            case O_DEPTH:
+                if (strcmp("structure", optarg) == 0)
+                    output_depth = FREESASA_OUTPUT_STRUCTURE;
+                else if (strcmp("chain", optarg) == 0)
+                    output_depth = FREESASA_OUTPUT_CHAIN;
+                else if (strcmp("residue", optarg) == 0)
+                    output_depth = FREESASA_OUTPUT_RESIDUE;
+                else if (strcmp("atom", optarg) == 0)
+                    output_depth = 0;
+                else abort_msg("Output depth '%s' not allowed, "
+                               "can only be 'structure', 'chain', 'residue' or 'atom'",
+                               optarg);
                 break;
             case RADII:
                 static_config = 1;
