@@ -108,18 +108,18 @@ test_residue(const freesasa_structure_node *node)
         } else if (!strcmp(key, "number")) {
             ck_assert(json_object_is_type(val, json_type_string));
             ck_assert_str_eq(json_object_get_string(val), "1");
-        } else if (!strcmp(key, "n_atoms")) {
+        } else if (!strcmp(key, "n-atoms")) {
             ck_assert(json_object_is_type(val, json_type_int));
             ck_assert_int_eq(json_object_get_int(val), 8);
         } else if (!strcmp(key, "atoms")) {
              ck_assert(json_object_is_type(val, json_type_array));
             //this is checked further by test_atom
-        } else if (!strcmp(key, "abs")) {
+        } else if (!strcmp(key, "area")) {
             ck_assert(compare_subarea(val, resarea, 1));
-        } else if (!strcmp(key, "rel")) {
+        } else if (!strcmp(key, "relative-area")) {
             ck_assert(compare_subarea(val, resarea, 0));
         } else {
-            ck_assert(0);
+            ck_assert_str_eq(key, "unknown-key");
         }
 
         json_object_iter_next(&it);
@@ -146,16 +146,16 @@ test_chain(const freesasa_structure_node *node, const freesasa_result *result)
         if (!strcmp(key, "label")) {
             ck_assert(json_object_is_type(val, json_type_string));
             ck_assert_str_eq(json_object_get_string(val), "A");
-        } else if (!strcmp(key, "n_residues")) {
+        } else if (!strcmp(key, "n-residues")) {
             ck_assert(json_object_is_type(val, json_type_int));
             ck_assert_int_eq(json_object_get_int(val), 76);
-        } else if (!strcmp(key, "abs")) {
+        } else if (!strcmp(key, "area")) {
             ck_assert(compare_subarea(val, chain_area, 1));
         } else if (!strcmp(key, "residues")) {
             ck_assert(json_object_is_type(val, json_type_array));
             // the rest is checked in test_residue
         } else {
-            ck_assert(0);
+            ck_assert_str_eq(key, "unknown-key");
         }
         json_object_iter_next(&it);
     }
@@ -184,19 +184,19 @@ test_structure(const freesasa_structure_node *node)
     while(!json_object_iter_equal(&it, &it_end)) {
         const char *key = json_object_iter_peek_name(&it);
         json_object *val = json_object_iter_peek_value(&it);
-        if (!strcmp(key, "name")) {
+        if (!strcmp(key, "input")) {
             ck_assert(json_object_is_type(val, json_type_string));
             ck_assert_str_eq(json_object_get_string(val), "test");
-        } else if (!strcmp(key, "n_chains")) {
+        } else if (!strcmp(key, "n-chains")) {
             ck_assert(json_object_is_type(val, json_type_int));
             ck_assert_int_eq(json_object_get_int(val), 1);
-        } else if (!strcmp(key, "abs")) {
+        } else if (!strcmp(key, "area")) {
             compare_subarea(val, &structure_area, 1);
         } else if (!strcmp(key, "chains")) {
             ck_assert(json_object_is_type(val, json_type_array));
             // these components are tested in test_chains
         } else {
-            ck_assert(0);
+            ck_assert_str_eq(key, "unknown-key");
         }
 
         json_object_iter_next(&it);

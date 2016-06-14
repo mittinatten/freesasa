@@ -209,12 +209,12 @@ START_TEST (test_sasa_1ubq)
     ck_assert(freesasa_log(devnull,res,"test",NULL,res_class) == FREESASA_SUCCESS);
     ck_assert(freesasa_per_residue_type(devnull,res,st) == FREESASA_SUCCESS);
     ck_assert(freesasa_per_residue(devnull,res,st) == FREESASA_SUCCESS);
-    ck_assert(freesasa_export_tree(devnull, tree, FREESASA_RSA) == FREESASA_SUCCESS);
-    ck_assert(freesasa_export_tree(devnull, tree, FREESASA_RSA) == FREESASA_SUCCESS);
+    ck_assert(freesasa_export_tree(devnull, tree, NULL, FREESASA_RSA) == FREESASA_SUCCESS);
+    ck_assert(freesasa_export_tree(devnull, tree, NULL, FREESASA_RSA) == FREESASA_SUCCESS);
     if (USE_JSON) {
-        ck_assert(freesasa_export_tree(devnull, tree, FREESASA_JSON) == FREESASA_SUCCESS);
+        ck_assert(freesasa_export_tree(devnull, tree, NULL, FREESASA_JSON) == FREESASA_SUCCESS);
     } else {
-        ck_assert(freesasa_export_tree(devnull, tree, FREESASA_JSON) == FREESASA_FAIL);
+        ck_assert(freesasa_export_tree(devnull, tree, NULL, FREESASA_JSON) == FREESASA_FAIL);
     }
     fclose(devnull);
 
@@ -223,8 +223,8 @@ START_TEST (test_sasa_1ubq)
     ck_assert(freesasa_log(nowrite,res, "test", NULL, res_class) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue_type(nowrite, res, st) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue(nowrite, res, st) == FREESASA_FAIL);
-    ck_assert(freesasa_export_tree(nowrite, tree, FREESASA_RSA) == FREESASA_FAIL);
-    ck_assert(freesasa_export_tree(nowrite, tree, FREESASA_JSON) == FREESASA_FAIL);
+    ck_assert(freesasa_export_tree(nowrite, tree, NULL, FREESASA_RSA) == FREESASA_FAIL);
+    ck_assert(freesasa_export_tree(nowrite, tree, NULL, FREESASA_JSON) == FREESASA_FAIL);
     fclose(nowrite);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     
