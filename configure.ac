@@ -67,26 +67,47 @@ else
   AM_CONDITIONAL([USE_THREADS], true)
 fi
 
+# disable XML
+AC_ARG_ENABLE([xml],
+  AS_HELP_STRING([--disable-xml],
+     [Build without support for XML output]))
+
+AC_DEFINE([USE_XML], [0], [Define if XML should be included.])
+AM_CONDITIONAL([USE_XML], false)
+AC_SUBST([LIBXML_FOR_PY_BINDINGS], [])
+
+if test "x$enable_xml" != "xno" ; then
+  PKG_CHECK_EXISTS([libxml-2.0],
+    [PKG_CHECK_MODULES([libxml2], [libxml-2.0],
+      [AC_DEFINE([USE_XML], [1])
+       AC_SUBST([LIBXML_FOR_PY_BINDINGS], ['"xml2"'])
+       AM_CONDITIONAL([USE_XML], true)])],
+    [echo "libxml2 not found"])
+fi
+AM_COND_IF([USE_XML], [],
+           echo ["Building without support for XML output."])
+
 # Disable json-c
 AC_ARG_ENABLE([json],
   AS_HELP_STRING([--disable-json],
     [Build without support for JSON output]))
 
+AC_DEFINE([USE_JSON], [0], [Define if JSON should be included])
+AC_SUBST([JSONC_FOR_PY_BINDINGS], [])
+AM_CONDITIONAL([USE_JSON], false)
+
 if test "x$enable_json" != "xno" ; then
-  AC_CHECK_LIB([json-c], [json_object_get])
-  AC_CHECK_HEADER([json-c/json_object.h])
+  AC_CHECK_LIB([json-c], [json_object_get],
+     [AC_CHECK_HEADER([json-c/json_object.h],
+        [AC_DEFINE([USE_JSON], [1])
+         AC_SUBST([JSONC_FOR_PY_BINDINGS], ['"json-c"'])
+         AM_CONDITIONAL([USE_JSON], true)])
+     ]
+   )
 fi
-if test "$ac_cv_lib_json_c_json_object_get" != yes || \
-   test "$ac_cv_header_json_c_json_object_h" != yes ; then
-  AC_DEFINE([USE_JSON], [0], [])
-  AC_SUBST([JSONC_FOR_PY_BINDINGS], [])
-  AM_CONDITIONAL([USE_JSON], false)
-  echo "Building without support for JSON output."
-else
-  AC_DEFINE([USE_JSON], [1], [Define if json should be included.])
-  AC_SUBST([JSONC_FOR_PY_BINDINGS], ['"json-c"'])
-  AM_CONDITIONAL([USE_JSON], true)
-fi
+
+AM_COND_IF([USE_JSON], [],
+           [echo "Building without support for JSON output."])
 
 # Which Python
 AC_ARG_WITH([python],
@@ -98,13 +119,13 @@ AC_ARG_ENABLE([python-bindings],
   [AS_HELP_STRING([--enable-python-bindings],
     [Build Python bindings using Cython])])
 
+AM_CONDITIONAL([HAVE_CYTHON],false)
+
 if test "x$enable_python_bindings" = "xyes" ; then
   AC_CHECK_PROG(PYTHON, python, $python_bin)
   AC_CHECK_PROG(CYTHON, cython, cython)
   AM_CONDITIONAL([HAVE_CYTHON], [test -n "$CYTHON" && test -n "$PYTHON"])
   AM_COND_IF([HAVE_CYTHON],[],[echo "Cython not available, will not build Python bindings"])
-else
-  AM_CONDITIONAL([HAVE_CYTHON],false)
 fi
 
 # Enable parser generation with Flex/Bison
@@ -112,19 +133,21 @@ AC_ARG_ENABLE([parser-generator],
   [AS_HELP_STRING([--enable-parser-generator],
     [Regenerate parser/lexer using Flex and Bison (for developers)])])
 
+AM_CONDITIONAL([GENERATE_PARSER],false)
+
 if test "x$enable_parser_generator" = "xyes" ; then
   AC_PROG_LEX
   AC_PROG_YACC
   AM_CONDITIONAL([GENERATE_PARSER], [test -n "$LEX" && test -n "$YACC"])
   AM_COND_IF([GENERATE_PARSER],[],[echo "Lexer and/or parser generator missing, won't generate parser source (but parser can still be built from the provided sources)."])
-else
-  AM_CONDITIONAL([GENERATE_PARSER],false)
 fi
 
 # Enable Doxygen
 AC_ARG_ENABLE([doxygen],
   [AS_HELP_STRING([--enable-doxygen],
     [Build Doxygen html-documentation])])
+
+AM_CONDITIONAL([HAVE_DOXYGEN],false)
 
 if test "x$enable_doxygen" = "xyes" ; then
   AC_CHECK_PROG(DOXYGEN, doxygen, doxygen)
@@ -137,8 +160,6 @@ if test "x$enable_doxygen" = "xyes" ; then
      AX_COMPARE_VERSION([$DOXYGEN_V],[lt],[$DOXYGEN_REQ],
        [echo "Warning: Doxygen should preferrably be of version $DOXYGEN_REQ or higher (found $DOXYGEN_V)"])
   fi
-else
-  AM_CONDITIONAL([HAVE_DOXYGEN],false)
 fi
 
 AM_CONDITIONAL([BUILD_DOC],[test -n "$build_doc"])
@@ -148,18 +169,18 @@ AC_ARG_ENABLE([check],
   [AS_HELP_STRING([--enable-check],
     [Enable the Check unit testing framework])])
 
+AM_CONDITIONAL([USE_CHECK],false)
+AC_DEFINE([USE_CHECK],[0],[Build with Check unit testing framework])
+AC_SUBST([CHECK_FOR_PY_BINDINGS], [])
+
 if test x$enable_check = xyes ; then
   AC_CHECK_LIB([check],[suite_create],
     [have_check=yes],
     [echo "Check not availabe, option '--enable-check' ignored"])
   AC_CHECK_LIB(rt, setitimer) # necessary on some platforms
-  AC_DEFINE([USE_CHECK],[1],[Build with Check unit testing framework])
+  AC_DEFINE([USE_CHECK], [1])
   AC_SUBST([CHECK_FOR_PY_BINDINGS], ['"check"'])
-  AM_CONDITIONAL([USE_CHECK],[test x$have_check = xyes])
-else
-  AM_CONDITIONAL([USE_CHECK],false)
-  AC_DEFINE([USE_CHECK],[0],[])
-  AC_SUBST([CHECK_FOR_PY_BINDINGS], [])
+  AM_CONDITIONAL([USE_CHECK], [test x$have_check = xyes])
 fi
 
 # Enable gcov

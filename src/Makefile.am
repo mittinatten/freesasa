@@ -38,6 +38,12 @@ if USE_JSON
 libfreesasa_a_SOURCES += json.c
 endif # USE_JSON
 
+if USE_XML
+libfreesasa_a_SOURCES += xml.c
+AM_CFLAGS += ${libxml2_CFLAGS}
+AM_LDFLAGS += ${libxml2_LIBS}
+endif # USE_XML
+
 if USE_CHECK
 freesasa_LDADD += -lcheck
 example_LDADD += -lcheck
