@@ -77,19 +77,18 @@ AM_CONDITIONAL([USE_XML], false)
 AC_SUBST([LIBXML_FOR_PY_BINDINGS], [])
 
 if test "x$enable_xml" != "xno" ; then
-  PKG_CHECK_EXISTS([libxml-2.0],
-    [PKG_CHECK_MODULES([libxml2], [libxml-2.0],
-      [AC_DEFINE([USE_XML], [1])
-       AC_SUBST([LIBXML_FOR_PY_BINDINGS], ['"xml2"'])
-       AM_CONDITIONAL([USE_XML], true)])],
-    [echo "libxml2 not found"])
+  PKG_CHECK_MODULES([libxml2], [libxml-2.0],
+    [AC_DEFINE([USE_XML], [1])
+     AC_SUBST([LIBXML_FOR_PY_BINDINGS], ['"xml2"'])
+     AM_CONDITIONAL([USE_XML], true)],
+    [AC_MSG_ERROR([Library libxml2 not found, install library or configure with flag --disable-xml.])])
+else
+    AC_MSG_NOTICE([Building without support for XML output.])
 fi
-AM_COND_IF([USE_XML], [],
-           echo ["Building without support for XML output."])
 
 # Disable json-c
 AC_ARG_ENABLE([json],
-  AS_HELP_STRING([--disable-json],
+  AS_HELP_STRING([--enable-json],
     [Build without support for JSON output]))
 
 AC_DEFINE([USE_JSON], [0], [Define if JSON should be included])
@@ -101,13 +100,12 @@ if test "x$enable_json" != "xno" ; then
      [AC_CHECK_HEADER([json-c/json_object.h],
         [AC_DEFINE([USE_JSON], [1])
          AC_SUBST([JSONC_FOR_PY_BINDINGS], ['"json-c"'])
-         AM_CONDITIONAL([USE_JSON], true)])
-     ]
-   )
+         AM_CONDITIONAL([USE_JSON], true)])])
+  AM_COND_IF([USE_JSON],[],
+    [AC_MSG_ERROR([Library JSON-C not found, install library or configure with flag --disable-json])])
+else
+  AC_MSG_NOTICE([Building without support for JSON output.])
 fi
-
-AM_COND_IF([USE_JSON], [],
-           [echo "Building without support for JSON output."])
 
 # Which Python
 AC_ARG_WITH([python],
@@ -122,10 +120,12 @@ AC_ARG_ENABLE([python-bindings],
 AM_CONDITIONAL([HAVE_CYTHON],false)
 
 if test "x$enable_python_bindings" = "xyes" ; then
-  AC_CHECK_PROG(PYTHON, python, $python_bin)
-  AC_CHECK_PROG(CYTHON, cython, cython)
-  AM_CONDITIONAL([HAVE_CYTHON], [test -n "$CYTHON" && test -n "$PYTHON"])
-  AM_COND_IF([HAVE_CYTHON],[],[echo "Cython not available, will not build Python bindings"])
+  AC_CHECK_PROG([PYTHON], [$python_bin], [$python_bin])
+  AC_CHECK_PROG([CYTHON], [cython], [cython])
+  if test $CYTHON && test $PYTHON ; then
+    AM_CONDITIONAL([HAVE_CYTHON], true)
+  fi
+  AM_COND_IF([HAVE_CYTHON],[],[AC_MSG_ERROR([Cython not available, can not build Python bindings])])
 fi
 
 # Enable parser generation with Flex/Bison
@@ -137,9 +137,12 @@ AM_CONDITIONAL([GENERATE_PARSER],false)
 
 if test "x$enable_parser_generator" = "xyes" ; then
   AC_PROG_LEX
-  AC_PROG_YACC
-  AM_CONDITIONAL([GENERATE_PARSER], [test -n "$LEX" && test -n "$YACC"])
-  AM_COND_IF([GENERATE_PARSER],[],[echo "Lexer and/or parser generator missing, won't generate parser source (but parser can still be built from the provided sources)."])
+  AC_CHECK_PROGS([YACC], [bison byacc yacc])
+  if test -n $LEX && test "x$LEX" != "x:" && test -n $YACC ; then
+    AM_CONDITIONAL([GENERATE_PARSER], true)
+  fi
+  AM_COND_IF([GENERATE_PARSER],[],
+    [AC_MSG_ERROR([Lexer and/or parser generator missing. Install Flex/lex and/or Bison/Yacc or configure without flag --enable-parser-generator.])])
 fi
 
 # Enable Doxygen
@@ -152,7 +155,8 @@ AM_CONDITIONAL([HAVE_DOXYGEN],false)
 if test "x$enable_doxygen" = "xyes" ; then
   AC_CHECK_PROG(DOXYGEN, doxygen, doxygen)
   AM_CONDITIONAL([HAVE_DOXYGEN],[test -n "$DOXYGEN"])
-  AM_COND_IF([HAVE_DOXYGEN],[build_doc=yes],[echo "Doxygen not available, can not build documentation."])
+  AM_COND_IF([HAVE_DOXYGEN],[build_doc=yes],
+  [AC_MSG_ERROR([Doxygen not available, can not build documentation. Install library or configure without --enable-doxygen.])])
 
   if test -n "$DOXYGEN"; then
      DOXYGEN_V=`doxygen --version`
@@ -173,10 +177,10 @@ AM_CONDITIONAL([USE_CHECK],false)
 AC_DEFINE([USE_CHECK],[0],[Build with Check unit testing framework])
 AC_SUBST([CHECK_FOR_PY_BINDINGS], [])
 
-if test x$enable_check = xyes ; then
+if test "x$enable_check" = "xyes" ; then
   AC_CHECK_LIB([check],[suite_create],
     [have_check=yes],
-    [echo "Check not availabe, option '--enable-check' ignored"])
+    [AC_MSG_ERROR[Library Check not available, install libary or configure without flag --enable-check]])
   AC_CHECK_LIB(rt, setitimer) # necessary on some platforms
   AC_DEFINE([USE_CHECK], [1])
   AC_SUBST([CHECK_FOR_PY_BINDINGS], ['"check"'])

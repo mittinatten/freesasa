@@ -24,7 +24,12 @@ test_api_LDADD = ../src/libfreesasa.a -ldl -lcheck
 
 if USE_JSON
 test_api_SOURCES += test_json.c
+test_api_LDADD += -ljson-c
 endif # USE_JSON
+
+if USE_XML
+test_api_LDADD += ${libxml2_LIBS}
+endif # USE_XML
 
 endif # USE_CHECK
 
