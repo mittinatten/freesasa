@@ -179,12 +179,12 @@ AC_SUBST([CHECK_FOR_PY_BINDINGS], [])
 
 if test "x$enable_check" = "xyes" ; then
   AC_CHECK_LIB([check],[suite_create],
-    [have_check=yes],
+    [],
     [AC_MSG_ERROR[Library Check not available, install libary or configure without flag --enable-check]])
   AC_CHECK_LIB(rt, setitimer) # necessary on some platforms
   AC_DEFINE([USE_CHECK], [1])
   AC_SUBST([CHECK_FOR_PY_BINDINGS], ['"check"'])
-  AM_CONDITIONAL([USE_CHECK], [test x$have_check = xyes])
+  AM_CONDITIONAL([USE_CHECK], true)
 fi
 
 # Enable gcov

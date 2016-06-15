@@ -46,11 +46,6 @@ AM_CFLAGS += ${libxml2_CFLAGS}
 AM_LDFLAGS += ${libxml2_LIBS}
 endif # USE_XML
 
-if USE_CHECK
-freesasa_LDADD += -lcheck
-example_LDADD += -lcheck
-endif
-
 if GENERATE_PARSER
 $(lp_output): lexer.l parser.y
 	@LEX@ lexer.l
