@@ -28,7 +28,9 @@ test_api_LDADD += -ljson-c
 endif # USE_JSON
 
 if USE_XML
-test_api_LDADD += ${libxml2_LIBS}
+test_api_SOURCES += test_xml.c
+AM_LDFLAGS += ${libxml2_LIBS}
+AM_CFLAGS += ${libxml2_CFLAGS}
 endif # USE_XML
 
 endif # USE_CHECK
