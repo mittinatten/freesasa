@@ -151,12 +151,21 @@ help(void)
         "                        conjuction with the options -C and -g.\n"
         "\n");
     if (USE_JSON) {
-        fprintf(stderr, 
+        fprintf(stderr,
                 "  --json  or  --json-file=<file>\n"
                 "                        Print results in JSON format\n"
-                "\n"
+                "\n");
+    }
+    if (USE_XML) {
+        fprintf(stderr,
+                "  --xml   or  --xml-file=<file>\n"
+                "                        Print results in XML format\n"
+                "\n");
+    }
+    if (USE_JSON || USE_XML) {
+        fprintf(stderr,
                 "  --output-depth=<structure|chain|residue|atom>\n"
-                "                        Level of detail in JSON output [default: chain]\n"
+                "                        Level of detail in JSON and/or XML output [default: chain]\n"
                 "\n");
     }
     fprintf(stderr,
@@ -679,6 +688,7 @@ main(int argc,
     if (printrsa && (opt_set['c'] || opt_set['O'])) { // !!! Fix this
         freesasa_warn("Will skip REL columns in RSA when custom atomic radii selected.");
     }
+    if (printjson || printxml) printlog = 0;
     if (printlog) fprintf(output,"## %s %s ##\n", program_name, version);
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {
