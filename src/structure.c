@@ -433,6 +433,7 @@ from_pdb_impl(FILE *pdb_file,
     char *line = NULL;
     char alt, the_alt = ' ';
     double v[3], r;
+    int ret;
     struct atom *a = NULL;
     freesasa_structure *s = freesasa_structure_new();
  
@@ -453,12 +454,21 @@ from_pdb_impl(FILE *pdb_file,
 
             if ((alt != ' ' && the_alt == ' ') || (alt == ' '))
                 the_alt = alt;
-            else if (alt != ' ' && alt != the_alt)
+            else if (alt != ' ' && alt != the_alt) {
+                atom_free(a);
                 continue;
+            }
 
-            if (freesasa_pdb_get_coord(v, line) == FREESASA_FAIL ||
-                structure_add_atom(s, a, v, classifier, options) == FREESASA_FAIL) 
+            if (freesasa_pdb_get_coord(v, line) == FREESASA_FAIL)
                 goto cleanup;
+            
+            ret = structure_add_atom(s, a, v, classifier, options);
+            if (ret == FREESASA_FAIL) {
+                goto cleanup;
+            } else if (ret == FREESASA_WARN) {
+                atom_free(a);
+                continue;
+            }
 
             if (options & FREESASA_RADIUS_FROM_OCCUPANCY) {
                 if (freesasa_pdb_get_occupancy(&r, line) == FREESASA_FAIL) 
