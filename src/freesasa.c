@@ -409,6 +409,10 @@ freesasa_export_tree(FILE *file,
         if (USE_JSON) return freesasa_write_json(file, root, parameters, options);
         else return fail_msg("Library was built without support for JSON output.");
     }
+    if (options & FREESASA_XML) {
+        if (USE_XML) return freesasa_write_xml(file, root, parameters, options);
+        else return fail_msg("Library was built without support for XML output.");
+    }
     return fail_msg("No valid options given");
 }
 

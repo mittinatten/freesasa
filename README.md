@@ -75,15 +75,17 @@ using the defaults, simply type
 installed.
 
 The configuration script can be customized with general options:
-* `--enable-python-bindings` builds Python bindings, requires 
-    Cython 0.21 or higher. On some platforms the C library needs to be
-    compiled with `CFLAGS=-fPIC` to allow it to be linked to the Python
-    module.
+* `--enable-python-bindings` builds Python bindings, requires Cython
+    0.21 or higher. On some platforms the C library needs to be
+    compiled with `CFLAGS=-fPIC` to allow it to be linked to the
+    Python module.
 * `--with-python=<python>` specifies which python binary to use
 * `--disable-threads` build without multithreaded calculations
 * `--enable-doxygen` activates building of Doxygen documentation
-* `--disable-json` build without support for JSON-output (will be
-  automatically disabled if json-c library not available)
+* `--disable-json` build without support for JSON output (requires
+  JSON-C library)
+* `--disable-xml` build without support for XML output (requires
+  libxml2)
 
 And some options for developers:
 * `--enable-check` enables unit-testing using the Check framework
@@ -112,11 +114,15 @@ Compatibility and dependencies
 
 The program has been tested successfully with several versions of GNU
 C Compiler and Clang/LLVM. Building the library only requires standard
-C and GNU libraries. If [json-c](https://github.com/json-c/json-c) is
-available, the library will be built with support for JSON
-output. Developers who want to do testing need to install the Check
-unit testing framework. Building the full reference manual requires
-Doxygen (version > 1.8.8). Building the Python bindings requires
+C and GNU libraries. Optional dependencies are
+[json-c](https://github.com/json-c/json-c) and
+[libxml2](http://xmlsoft.org/), users who want to build the library
+without either can configure with `--disable-json` and `--disable-xml`
+respectively.
+
+Developers who want to do testing need to install the Check unit
+testing framework. Building the full reference manual requires Doxygen
+(version > 1.8.8). Building the Python bindings requires
 Cython. Changing the selection parser and lexer requires Flex and
 Bison. These build options, which add extra dependencies, are disabled
 by default to simplify installation for users only interested in the
@@ -127,7 +133,10 @@ Citing FreeSASA
 
 FreeSASA can be cited using the following publication
 
-* Simon Mitternacht (2016) FreeSASA: An open source C library for solvent accessible surface area calculations. _F1000Research_ 5:189. (doi: [10.12688/f1000research.7931.1](http://dx.doi.org/10.12688/f1000research.7931.1)) 
+* Simon Mitternacht (2016) FreeSASA: An open source C library for
+  solvent accessible surface area calculations. _F1000Research_
+  5:189. (doi:
+  [10.12688/f1000research.7931.1](http://dx.doi.org/10.12688/f1000research.7931.1))
 
 The [DOI numbers from Zenodo](https://zenodo.org/badge/latestdoi/18467/mittinatten/freesasa)
 can be used to cite a specific version of FreeSASA.

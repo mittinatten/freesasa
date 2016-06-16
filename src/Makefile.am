@@ -36,12 +36,15 @@ lp_output = lexer.c lexer.h parser.c parser.h
 
 if USE_JSON
 libfreesasa_a_SOURCES += json.c
+freesasa_LDADD += -ljson-c
+example_LDADD += -ljson-c
 endif # USE_JSON
 
-if USE_CHECK
-freesasa_LDADD += -lcheck
-example_LDADD += -lcheck
-endif
+if USE_XML
+libfreesasa_a_SOURCES += xml.c
+AM_CFLAGS += ${libxml2_CFLAGS}
+AM_LDFLAGS += ${libxml2_LIBS}
+endif # USE_XML
 
 if GENERATE_PARSER
 $(lp_output): lexer.l parser.y

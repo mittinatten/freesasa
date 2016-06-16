@@ -20,11 +20,18 @@ test_api_SOURCES = test_main.c test_pdb.c test_freesasa.c test_structure.c \
 
 AM_CFLAGS += -I$(top_srcdir)/src -DDATADIR=\"$(top_srcdir)/tests/data/\" -DSHAREDIR=\"$(top_srcdir)/share/\"
 
-test_api_LDADD = ../src/libfreesasa.a -ldl -lcheck
+test_api_LDADD = ../src/libfreesasa.a
 
 if USE_JSON
 test_api_SOURCES += test_json.c
+test_api_LDADD += -ljson-c
 endif # USE_JSON
+
+if USE_XML
+test_api_SOURCES += test_xml.c
+AM_LDFLAGS += ${libxml2_LIBS}
+AM_CFLAGS += ${libxml2_CFLAGS}
+endif # USE_XML
 
 endif # USE_CHECK
 

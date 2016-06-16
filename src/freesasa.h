@@ -81,10 +81,11 @@ enum freesasa_structure_options {
 enum freesasa_output_options {
     FREESASA_RSA=1, //! Write RSA output
     FREESASA_JSON=2, //! Write JSON output
-    FREESASA_OUTPUT_ATOM=4,
-    FREESASA_OUTPUT_RESIDUE=8,
-    FREESASA_OUTPUT_CHAIN=16,
-    FREESASA_OUTPUT_STRUCTURE=32,
+    FREESASA_XML=4, //! Wite XML output
+    FREESASA_OUTPUT_ATOM=8,
+    FREESASA_OUTPUT_RESIDUE=16,
+    FREESASA_OUTPUT_CHAIN=32,
+    FREESASA_OUTPUT_STRUCTURE=64,
 };
 
 //! The maximum length of a selection name @see freesasa_select_area()
@@ -1056,7 +1057,9 @@ freesasa_result2tree(const freesasa_result *result,
                      const freesasa_structure *structure,
                      const freesasa_classifier *polar_classifier,
                      const char *name);
-
+/**
+    Not thread safe
+*/
 int
 freesasa_export_tree(FILE *output,
                      const freesasa_structure_node *root,

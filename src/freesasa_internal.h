@@ -96,6 +96,8 @@ freesasa_write_rsa(FILE *output,
 /**
     Export to JSON
 
+    Not thread-safe.
+
     @param output Output-file.
     @param root A tree with stored results.
     @param parameters Parameters used in the calculation (NULL means
@@ -112,6 +114,12 @@ freesasa_write_json(FILE *ouput,
                     const freesasa_structure_node *root,
                     const freesasa_parameters *parameters,
                     int options);
+
+int
+freesasa_write_xml(FILE *ouput,
+                   const freesasa_structure_node *root,
+                   const freesasa_parameters *parameters,
+                   int options);
 
 /**
     Get coordinates.

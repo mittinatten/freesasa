@@ -4,6 +4,7 @@ from Cython.Build import cythonize
 
 lib = [@JSONC_FOR_PY_BINDINGS@]
 lib.extend([@CHECK_FOR_PY_BINDINGS@]);
+lib.extend([@LIBXML_FOR_PY_BINDINGS@]);
 
 extensions = [
     Extension("*", ["*.pyx"],

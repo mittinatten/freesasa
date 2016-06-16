@@ -9,6 +9,9 @@
 #include "freesasa_internal.h"
 #include "classifier.h"
 
+/** The functions in JSON-C does not seem to have any documented error
+    return values. Therefore these errors are not caught. */
+
 json_object *
 freesasa_json_atom(const freesasa_structure_node *node)
 {
@@ -16,28 +19,24 @@ freesasa_json_atom(const freesasa_structure_node *node)
     json_object *atom = json_object_new_object();
     const freesasa_subarea *area = freesasa_structure_node_area(node);
     const freesasa_structure *structure = freesasa_structure_node_structure(node);
-    int first, last;
-    double radius;
     const char *name = freesasa_structure_node_name(node);
+    int first, last;
     int n_len = strlen(name);
     char trim_name[n_len+1];
-    const char *resn = freesasa_structure_node_name(freesasa_structure_node_parent(node));
-    int is_polar;
-    int is_bb = freesasa_atom_is_backbone(name);
-    double sasa = area->total;
 
     sscanf(name, "%s", trim_name);
 
     freesasa_structure_node_atoms(node, &first, &last);
     assert(first >= 0 && first < freesasa_structure_n(structure));
-    radius = freesasa_structure_atom_radius(structure, first);
-    is_polar = freesasa_structure_atom_class(structure, first);
   
     json_object_object_add(atom, "name", json_object_new_string(trim_name));
-    json_object_object_add(atom, "area", json_object_new_double(sasa));
-    json_object_object_add(atom, "is-polar", json_object_new_boolean(is_polar));
-    json_object_object_add(atom, "is-main-chain", json_object_new_boolean(is_bb));
-    json_object_object_add(atom, "radius", json_object_new_double(radius));
+    json_object_object_add(atom, "area", json_object_new_double(area->total));
+    json_object_object_add(atom, "is-polar",
+                           json_object_new_boolean(freesasa_structure_atom_class(structure, first)));
+    json_object_object_add(atom, "is-main-chain",
+                           json_object_new_boolean(freesasa_atom_is_backbone(name)));
+    json_object_object_add(atom, "radius",
+                           json_object_new_double(freesasa_structure_atom_radius(structure, first)));
 
     return atom;
 }
@@ -118,10 +117,8 @@ freesasa_json_structure(const freesasa_structure_node *node)
 {
     json_object *obj = json_object_new_object();
     const freesasa_structure *structure = freesasa_structure_node_structure(node);
-    const char *name = freesasa_structure_node_name(node);
     int n_chains = freesasa_structure_n_chains(structure);
 
-    json_object_object_add(obj, "input", json_object_new_string(name));
     json_object_object_add(obj, "n-chains", json_object_new_int(n_chains));
     json_object_object_add(obj, "area",
                            freesasa_json_subarea(freesasa_structure_node_area(node)));
@@ -174,6 +171,7 @@ parameters2json(const freesasa_parameters *p)
 {
     json_object *obj = json_object_new_object(), *res;
     extern const char *freesasa_alg_names[];
+
 #ifdef HAVE_CONFIG_H
     json_object_object_add(obj, "source", json_object_new_string(PACKAGE_STRING));
 #endif
@@ -202,22 +200,24 @@ freesasa_write_json(FILE *output,
                     const freesasa_parameters *parameters,
                     int options)
 {
-    json_object *obj;
+    json_object *obj = json_object_new_object(), *json_root = json_object_new_object();
     freesasa_node_type exclude_type = FREESASA_NODE_NONE;
     if (parameters == NULL) parameters = &freesasa_default_parameters;
     
     if (options & FREESASA_OUTPUT_STRUCTURE) exclude_type = FREESASA_NODE_CHAIN;
     if (options & FREESASA_OUTPUT_CHAIN) exclude_type = FREESASA_NODE_RESIDUE;
     if (options & FREESASA_OUTPUT_RESIDUE) exclude_type = FREESASA_NODE_ATOM;
-    
-    obj = freesasa_node2json(root, exclude_type);
+
+    json_object_object_add(json_root, "FreeSASA-result", obj);
+
+    json_object_object_add(obj, "input", json_object_new_string(freesasa_structure_node_name(root)));
+    json_object_object_add(obj, "classifier", json_object_new_string(freesasa_structure_node_classified_by(root)));
+    json_object_object_add(obj, "length-unit", json_object_new_string("Ångström"));
     json_object_object_add(obj, "parameters", parameters2json(parameters));
-    if (obj) {
-        fputs(json_object_to_json_string_ext(obj, JSON_C_TO_STRING_PRETTY), output);
-        json_object_put(obj);
-    } else {
-        return FREESASA_FAIL;
-    }
+    json_object_object_add(obj, "structure", freesasa_node2json(root, exclude_type));
+
+    fputs(json_object_to_json_string_ext(json_root, JSON_C_TO_STRING_PRETTY), output);
+    json_object_put(json_root);
 
     fflush(output);
     if (ferror(output)) {

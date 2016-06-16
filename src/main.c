@@ -40,6 +40,7 @@ FILE *per_residue_type_file = NULL;
 FILE *per_residue_file = NULL;
 FILE *rsa_file = NULL;
 FILE *json_file = NULL;
+FILE *xml_file = NULL;
 FILE *output = NULL;
 FILE *errlog;
 
@@ -50,6 +51,7 @@ int printlog = 1;
 int printpdb = 0;
 int printrsa = 0;
 int printjson = 0;
+int printxml = 0;
 int static_config = 0;
 int output_depth = FREESASA_OUTPUT_CHAIN;
 
@@ -149,12 +151,21 @@ help(void)
         "                        conjuction with the options -C and -g.\n"
         "\n");
     if (USE_JSON) {
-        fprintf(stderr, 
+        fprintf(stderr,
                 "  --json  or  --json-file=<file>\n"
                 "                        Print results in JSON format\n"
-                "\n"
+                "\n");
+    }
+    if (USE_XML) {
+        fprintf(stderr,
+                "  --xml   or  --xml-file=<file>\n"
+                "                        Print results in XML format\n"
+                "\n");
+    }
+    if (USE_JSON || USE_XML) {
+        fprintf(stderr,
                 "  --output-depth=<structure|chain|residue|atom>\n"
-                "                        Level of detail in JSON output [default: chain]\n"
+                "                        Level of detail in JSON and/or XML output [default: chain]\n"
                 "\n");
     }
     fprintf(stderr,
@@ -328,12 +339,14 @@ run_analysis(FILE *input,
                 }
             }
         }
-        if (printrsa || printjson) {
+        if (printrsa || printjson || printxml) {
             freesasa_structure_node *tree =
                 freesasa_result2tree(result, structures[i], classifier, name_i);
             if (printrsa) freesasa_export_tree(rsa_file, tree, &parameters, FREESASA_RSA);
             if (printjson) freesasa_export_tree(json_file, tree, &parameters,
                                                 FREESASA_JSON | output_depth);
+            if (printxml) freesasa_export_tree(xml_file, tree, &parameters,
+                                               FREESASA_XML | output_depth);
             freesasa_structure_node_free(tree);
         }
         freesasa_result_free(result);
@@ -437,7 +450,8 @@ main(int argc,
     int option_index = 0;
     int option_flag;
     enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN,
-          RSA_FILE, RSA, JSON_FILE, JSON, O_DEPTH, RADII};
+          RSA_FILE, RSA, JSON_FILE, JSON, XML_FILE, XML,
+          O_DEPTH, RADII};
     parameters = freesasa_default_parameters;
     memset(opt_set, 0, n_opt);
     program_name = "freesasa";
@@ -474,6 +488,8 @@ main(int argc,
         {"rsa",                  no_argument,       &option_flag, RSA},
         {"json-file",            required_argument, &option_flag, JSON_FILE},
         {"json",                 no_argument,       &option_flag, JSON},
+        {"xml-file",             required_argument, &option_flag, XML_FILE},
+        {"xml",                  no_argument,       &option_flag, XML},
         {"output-depth",         required_argument, &option_flag, O_DEPTH},
         {"radii",                required_argument, &option_flag, RADII},
         {0,0,0,0}
@@ -524,6 +540,13 @@ main(int argc,
             case JSON_FILE:
                 printjson = 1;
                 json_file = fopen_werr(optarg, "w");
+                break;
+            case XML:
+                printxml = 1;
+                break;
+            case XML_FILE:
+                printxml = 1;
+                xml_file = fopen_werr(optarg, "w");
                 break;
             case O_DEPTH:
                 if (strcmp("structure", optarg) == 0)
@@ -655,6 +678,7 @@ main(int argc,
     if (output_pdb == NULL) output_pdb = output;
     if (rsa_file == NULL) rsa_file = output;
     if (json_file == NULL) json_file = output;
+    if (xml_file == NULL) xml_file = output;
     if (alg_set > 1) abort_msg("Multiple algorithms specified.");
     if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.");
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.");
@@ -664,6 +688,7 @@ main(int argc,
     if (printrsa && (opt_set['c'] || opt_set['O'])) { // !!! Fix this
         freesasa_warn("Will skip REL columns in RSA when custom atomic radii selected.");
     }
+    if (printjson || printxml) printlog = 0;
     if (printlog) fprintf(output,"## %s %s ##\n", program_name, version);
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {
