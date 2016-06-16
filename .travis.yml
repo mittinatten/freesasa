@@ -13,9 +13,9 @@ branches:
     - dev
 
 before_install:
-    - sudo apt-get clean
+    - pip install --user demjson
     - sudo apt-get update -qq
-    - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils python-demjson
+    - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils
 
 matrix:
   include:
@@ -24,8 +24,9 @@ matrix:
       env: ENABLE="--enable-check --enable-gcov --enable-json --enable-xml"
       before_install:
         - pip install --user cpp-coveralls
+        - pip install --user demjson
         - sudo apt-get update -qq
-        - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils python-demjson
+        - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils
       after_success:
         - coveralls --exclude tests --exclude src/lexer.l --exclude src/lexer.c --exclude src/parser.c --exclude src/parser.y --exclude src/example.c --exclude src/util.c  --gcov-options '\-lp'
 
@@ -46,8 +47,9 @@ matrix:
       before_install:
         - pip install --user cython
         - pip install --user biopython
+        - pip install --user demjson
         - sudo apt-get update -qq
-        - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils python-demjson
+        - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils
       after_failure: cat bindings/check-python.log
 
     ## Test C library with clang
