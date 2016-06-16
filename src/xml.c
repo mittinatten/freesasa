@@ -11,7 +11,7 @@
 static xmlNodePtr
 xml_subarea(const freesasa_subarea *area, const char *name)
 {
-    xmlNodePtr xml_node = xmlNewNode(NULL, name);
+    xmlNodePtr xml_node = xmlNewNode(NULL, BAD_CAST name);
     char buf[20];
 
     sprintf(buf, "%f", area->total);
@@ -59,7 +59,6 @@ freesasa_xml_atom(const freesasa_structure_node *node)
     const freesasa_subarea *area = freesasa_structure_node_area(node);
     const freesasa_structure *structure = freesasa_structure_node_structure(node);
     const char *name = freesasa_structure_node_name(node);
-    const char *resn = freesasa_structure_node_name(freesasa_structure_node_parent(node));
     int first, last;
     int n_len = strlen(name);
     char trim_name[n_len+1], buf[20];
@@ -127,7 +126,7 @@ freesasa_xml_residue(const freesasa_structure_node *node)
     int n_len = strlen(number);
     char trim_number[n_len+1];
     sscanf(number, "%s", trim_number);
-    xml_node = xmlNewNode(NULL, "residue");
+    xml_node = xmlNewNode(NULL, BAD_CAST "residue");
     if (xml_node == NULL) {
         fail_msg("");
         return NULL;
@@ -258,7 +257,7 @@ freesasa_node2xml(xmlNodePtr *xml_node, const freesasa_structure_node *node, int
     assert(node);
     const freesasa_structure_node *child = freesasa_structure_node_children(node);
     xmlNodePtr xml_child = NULL;
-    *xml_node == NULL;
+    *xml_node = NULL;
 
     if (freesasa_structure_node_type(node) == exclude_type) return FREESASA_SUCCESS;
 
@@ -316,7 +315,7 @@ parameters2xml(const freesasa_parameters *p)
     }
 #endif
 
-    if (xmlNewProp(xml_node, BAD_CAST "algorithm", freesasa_alg_names[p->alg]) == NULL) {
+    if (xmlNewProp(xml_node, BAD_CAST "algorithm", BAD_CAST freesasa_alg_names[p->alg]) == NULL) {
         fail_msg("");
         goto cleanup;
     }
