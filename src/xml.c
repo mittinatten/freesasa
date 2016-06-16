@@ -381,7 +381,7 @@ freesasa_write_xml(FILE *output,
         goto cleanup;
     }
 
-    ns = xmlNewNs(xml_root, BAD_CAST "http://freesasa.github.io/", BAD_CAST "");
+    ns = xmlNewNs(xml_root, BAD_CAST "http://freesasa.github.io/", NULL);
     buf = xmlBufferCreate();
     if (ns == NULL || buf == NULL) {
         fail_msg("");
