@@ -284,15 +284,18 @@ freesasa_node2xml(xmlNodePtr *xml_node, const freesasa_structure_node *node, int
     default:
         assert(0 && "Tree illegal");
     }
-    if (!xml_node) return FREESASA_FAIL;
+    if (*xml_node == NULL)
+        return fail_msg("");
 
     // simplify?
-    while (child) {
-        if (freesasa_node2xml(&xml_child, child, exclude_type) == FREESASA_SUCCESS &&
-            xml_child != NULL && 
+    while (child != NULL) {
+        if (freesasa_node2xml(&xml_child, child, exclude_type) == FREESASA_FAIL)
+            return fail_msg("");
+
+        if (xml_child != NULL &&
             xmlAddChild(*xml_node, xml_child) == NULL) {
-            fail_msg("");
-            return FREESASA_FAIL;
+            xmlFreeNode(xml_child);
+            return fail_msg("");
         }
         child = freesasa_structure_node_next(child);
     }
@@ -409,7 +412,7 @@ freesasa_write_xml(FILE *output,
 
     if (xmlAddChild(xml_root, xml_param) == NULL) {
         fail_msg("");
-        xmlFree(xml_param);
+        xmlFreeNode(xml_param);
         goto cleanup;
     }
 
@@ -453,7 +456,7 @@ freesasa_write_xml(FILE *output,
     }
     
     if (xmlNodeDump(buf, doc, xml_root, 0, 1) == 0) {
-        fail_msg(buf->content);
+        fail_msg("");
         goto cleanup;
     }
 

@@ -17,6 +17,9 @@ extern Suite* selector_suite();
 #ifdef USE_JSON
 extern Suite* json_suite();
 #endif
+#ifdef USE_XML
+extern Suite* xml_suite();
+#endif
 
 int main(int argc, char **argv) {
     mkdir("./tmp/",S_IRWXU);
@@ -31,6 +34,9 @@ int main(int argc, char **argv) {
     srunner_add_suite(sr,selector_suite());
 #if USE_JSON
     srunner_add_suite(sr,json_suite());
+#endif
+#if USE_XML
+    srunner_add_suite(sr,xml_suite());
 #endif
     srunner_run_all(sr,CK_VERBOSE);
 

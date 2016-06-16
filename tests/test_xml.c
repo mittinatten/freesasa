@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <freesasa_internal.h>
 #include <check.h>
 #include <libxml/tree.h>
@@ -54,13 +55,12 @@ xmlTextWriterPtr xmlNewTextWriterMemory(xmlBufferPtr a, int b)
     xmlTextWriterPtr (*real_ntwm)(xmlBufferPtr, int) = dlsym(RTLD_NEXT, "xmlNewTextWriterMemory");
     return real_ntwm(a,b);
 }
-/* causes segfaults, unclear if it's libxml or freesasa that's at fault
+
 xmlNodePtr xmlAddChild(xmlNodePtr a, xmlNodePtr b) {
     fail_counter(NULL);
-    xmlNodePtr (*real_add)(xmlNodePtr, xmlNodePtr) = dlsym(RTLD_NEXT, "xmlNodeAddChild");
+    xmlNodePtr (*real_add)(xmlNodePtr, xmlNodePtr) = dlsym(RTLD_NEXT, "xmlAddChild");
     return real_add(a, b);
 }
-*/
 
 xmlAttrPtr xmlNewProp(xmlNodePtr a, const xmlChar *b, const xmlChar *c)
 {
@@ -88,11 +88,10 @@ int xmlNodeDump(xmlBufferPtr a, xmlDocPtr b, xmlNodePtr c, int d, int e)
 {
     fail_counter(0);
     int (*real_nd)(xmlBufferPtr, xmlDocPtr, xmlNodePtr, int, int) =
-        dlsym(RTLD_NEXT, "xmlBufNodeDump");
+        dlsym(RTLD_NEXT, "xmlNodeDump");
     return real_nd(a, b, c, d, e);
 }
 
-// not called, needs fixing
 int xmlTextWriterEndDocument(xmlTextWriterPtr a) {
     fail_counter(-1);
     int (*real_twed)(xmlTextWriterPtr) = dlsym(RTLD_NEXT, "xmlTextWriterEndDocument");
@@ -108,14 +107,14 @@ START_TEST (test_libxmlerr)
     freesasa_result *result = freesasa_calc_structure(ubq, NULL);
     freesasa_structure_node *root = freesasa_result2tree(result, ubq, NULL, "test");
     int ret;
-    //freesasa_set_verbosity(FREESASA_V_SILENT);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 1; i < 100; ++i) {
         local_set_fail_after(i);
         ret = freesasa_write_xml(devnull, root, NULL, FREESASA_OUTPUT_ATOM);
         local_set_fail_after(0);
         ck_assert_int_eq(ret, FREESASA_FAIL);
     }
-    for (int i = 1; i < 26; ++i) {
+    for (int i = 1; i < 29; ++i) {
         local_set_fail_after(i);
         ret = freesasa_write_xml(devnull, root, NULL, FREESASA_OUTPUT_STRUCTURE);
         local_set_fail_after(0);
