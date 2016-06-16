@@ -15,6 +15,10 @@ nofile=nonexistent-file
 nodir=nonexistent-dir/file
 #global errors
 errors=0
+use_xmllint=0
+if [[ "x@XMLLINT@" -eq "xxmllint" ]] ; then
+    use_xmllint=1
+fi
 
 function assert_pass
 {
@@ -222,6 +226,15 @@ do
         fi
     done
 done
+if [[ use_xmllint -eq 1 ]] ; then
+    echo
+    echo "== Testing XML =="
+    xml_file=tmp/1ubq.xml
+    assert_pass "$cli --xml-file=$xml_file $datadir/1ubq.pdb"
+    assert_pass "xmllint $xml_file > $dump"
+    assert_pass "$cli --xml-file=$xml_file --output-depth=atom $datadir/1ubq.pdb"
+    assert_pass "xmllint $xml_file > $dump"
+fi
 echo
 echo "== Testing multithreading =="
 assert_pass "$cli -t 1 -S -n 10 < $datadir/1ubq.pdb > $dump"

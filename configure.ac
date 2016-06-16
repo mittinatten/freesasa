@@ -77,6 +77,7 @@ AM_CONDITIONAL([USE_XML], false)
 AC_SUBST([LIBXML_FOR_PY_BINDINGS], [])
 
 if test "x$enable_xml" != "xno" ; then
+  AC_CHECK_PROG([XMLLINT],[xmllint],[xmllint],[]) 
   PKG_CHECK_MODULES([libxml2], [libxml-2.0],
     [AC_DEFINE([USE_XML], [1])
      AC_SUBST([LIBXML_FOR_PY_BINDINGS], ['"xml2"'])
