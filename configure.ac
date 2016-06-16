@@ -104,6 +104,7 @@ if test "x$enable_json" != "xno" ; then
          AM_CONDITIONAL([USE_JSON], true)])])
   AM_COND_IF([USE_JSON],[],
     [AC_MSG_ERROR([Library JSON-C not found, install library or configure with flag --disable-json])])
+  AC_CHECK_PROG([JSONLINT],[jsonlint],[jsonlint],[])
 else
   AC_MSG_NOTICE([Building without support for JSON output.])
 fi

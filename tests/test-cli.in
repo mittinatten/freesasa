@@ -19,6 +19,11 @@ use_xmllint=0
 if [[ "x@XMLLINT@" = "xxmllint" ]] ; then
     use_xmllint=1
 fi
+use_jsonlint=0
+if [[ "x@JSONLINT@" = "xjsonlint" ]] ; then
+    use_jsonlint=1
+fi
+
 
 function assert_pass
 {
@@ -232,8 +237,17 @@ if [[ use_xmllint -eq 1 ]] ; then
     xml_file=tmp/1ubq.xml
     assert_pass "$cli --xml-file=$xml_file $datadir/1ubq.pdb"
     assert_pass "xmllint $xml_file > $dump"
-    assert_pass "$cli --xml-file=$xml_file --output-depth=atom $datadir/1ubq.pdb"
+    assert_pass "$cli --xml --output-depth=atom $datadir/1ubq.pdb > $xml_file"
     assert_pass "xmllint $xml_file > $dump"
+fi
+if [[ use_jsonlint -eq 1 ]] ; then
+    echo
+    echo "== Testing JSON =="
+    json_file=tmp/1ubq.json
+    assert_pass "$cli --json-file=$json_file $datadir/1ubq.pdb"
+    assert_pass "jsonlint $xml_file > $dump"
+    assert_pass "$cli --json --output-depth=atom $datadir/1ubq.pdb > $json_file"
+    assert_pass "jsonlint $json_file > $dump"
 fi
 echo
 echo "== Testing multithreading =="
