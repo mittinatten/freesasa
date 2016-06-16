@@ -16,7 +16,7 @@ nodir=nonexistent-dir/file
 #global errors
 errors=0
 use_xmllint=0
-if [[ "x@XMLLINT@" -eq "xxmllint" ]] ; then
+if [[ "x@XMLLINT@" = "xxmllint" ]] ; then
     use_xmllint=1
 fi
 
