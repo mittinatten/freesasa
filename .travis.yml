@@ -13,7 +13,6 @@ branches:
     - dev
 
 before_install:
-    - pip install --user demjson
     - sudo apt-get update -qq
     - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils
 
@@ -24,7 +23,6 @@ matrix:
       env: ENABLE="--enable-check --enable-gcov --enable-json --enable-xml"
       before_install:
         - pip install --user cpp-coveralls
-        - pip install --user demjson
         - sudo apt-get update -qq
         - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils
       after_success:
@@ -47,7 +45,6 @@ matrix:
       before_install:
         - pip install --user cython
         - pip install --user biopython
-        - pip install --user demjson
         - sudo apt-get update -qq
         - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils
       after_failure: cat bindings/check-python.log
