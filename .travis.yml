@@ -66,4 +66,4 @@ before_script:
 
 script: make && make check
 
-after_failure: cat test-api.log test-static.log test-memerr.log test-cli.log
+after_failure: cat test-api.log test-cli.log

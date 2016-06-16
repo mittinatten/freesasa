@@ -6,7 +6,6 @@ AM_LDFLAGS =
 
 if COND_GCOV
 AM_CFLAGS += --coverage
-AM_LDFLAGS += -lgcov
 endif # COND_GCOV
 
 GCOV_FILES = *.gcda *.gcno *.gcov
@@ -29,7 +28,7 @@ endif # USE_JSON
 
 if USE_XML
 test_api_SOURCES += test_xml.c
-AM_LDFLAGS += ${libxml2_LIBS}
+test_api_LDADD += ${libxml2_LIBS}
 AM_CFLAGS += ${libxml2_CFLAGS}
 endif # USE_XML
 

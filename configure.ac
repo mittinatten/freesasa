@@ -191,7 +191,12 @@ fi
 AC_ARG_ENABLE([gcov],
   [AS_HELP_STRING([--enable-gcov],
     [Compile with Gcov to measure coverage])])
-AM_CONDITIONAL([COND_GCOV],[test "x$enable_gcov" = "xyes"])
+AM_CONDITIONAL([COND_GCOV],false)
+
+if test "x$enable_gcov" = "xyes" ; then
+  AC_CHECK_LIB([gcov], [__gcov_init], [], [AC_MSG_ERROR([Missing gcov library])])
+  AM_CONDITIONAL([COND_GCOV],true)
+fi
 
 # Disable test for CLI
 AC_ARG_ENABLE([CLI-tests],

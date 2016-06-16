@@ -1,11 +1,10 @@
 AM_LDFLAGS = 
 AM_CFLAGS =
+freesasa_LDADD =
 
 if COND_GCOV
 AM_CFLAGS += --coverage
-AM_LDFLAGS += -lgcov
 endif # COND_GCOV
-
 
 GCOV_FILES = *.gcda *.gcno *.gcov
 
@@ -29,7 +28,7 @@ libfreesasa_a_SOURCES = classifier.c classifier.h \
 	selection.h selection.c $(lp_output)
 freesasa_SOURCES = main.c 
 example_SOURCES = example.c
-freesasa_LDADD = libfreesasa.a
+freesasa_LDADD += libfreesasa.a
 example_LDADD = libfreesasa.a
 
 lp_output = lexer.c lexer.h parser.c parser.h
@@ -43,7 +42,8 @@ endif # USE_JSON
 if USE_XML
 libfreesasa_a_SOURCES += xml.c
 AM_CFLAGS += ${libxml2_CFLAGS}
-AM_LDFLAGS += ${libxml2_LIBS}
+freesasa_LDADD += ${libxml2_LIBS}
+example_LDADD += ${libxml2_LIBS}
 endif # USE_XML
 
 if GENERATE_PARSER
