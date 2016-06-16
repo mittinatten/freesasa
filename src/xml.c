@@ -58,20 +58,14 @@ freesasa_xml_atom(const freesasa_structure_node *node)
     xmlNodePtr xml_node = NULL;
     const freesasa_subarea *area = freesasa_structure_node_area(node);
     const freesasa_structure *structure = freesasa_structure_node_structure(node);
-    int first, last;
-    double radius;
     const char *name = freesasa_structure_node_name(node);
+    const char *resn = freesasa_structure_node_name(freesasa_structure_node_parent(node));
+    int first, last;
     int n_len = strlen(name);
     char trim_name[n_len+1], buf[20];
-    const char *resn = freesasa_structure_node_name(freesasa_structure_node_parent(node));
-    int is_polar;
-    int is_bb = freesasa_atom_is_backbone(name);
-    double sasa = area->total;
 
     sscanf(name, "%s", trim_name);
     freesasa_structure_node_atoms(node, &first, &last);
-    radius = freesasa_structure_atom_radius(structure, first);
-    is_polar = freesasa_structure_atom_class(structure, first);
 
     xml_node = xmlNewNode(NULL, BAD_CAST "atom");
     if (xml_node == NULL) {
@@ -84,25 +78,25 @@ freesasa_xml_atom(const freesasa_structure_node *node)
         goto cleanup;
     }
 
-    sprintf(buf, "%f", sasa);
+    sprintf(buf, "%f", area->total);
     if (xmlNewProp(xml_node, BAD_CAST "area", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
     }
 
-    sprintf(buf, "%s", is_polar ? "yes" : "no");
+    sprintf(buf, "%s", freesasa_structure_atom_class(structure, first) ? "yes" : "no");
     if (xmlNewProp(xml_node, BAD_CAST "isPolar", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
     }
 
-    sprintf(buf, "%s", is_bb ? "yes" : "no");
+    sprintf(buf, "%s", freesasa_atom_is_backbone(name) ? "yes" : "no");
     if (xmlNewProp(xml_node, BAD_CAST "isMainChain", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
     }
 
-    sprintf(buf, "%f", radius);
+    sprintf(buf, "%f", freesasa_structure_atom_radius(structure, first));
     if (xmlNewProp(xml_node, BAD_CAST "radius", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
