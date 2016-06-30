@@ -11,6 +11,21 @@
 #include "classifier.h"
 #include "coord.h"
 
+/**
+   This file contains the functions that turn lines in PDB files to
+   atom records. It's all pretty messy because one needs to keep track
+   of when a new chain/new residue is encountered, and skip atoms that
+   are duplicates (only first of alt coordinates are used). It is both
+   possible to add atoms one by one, or by reading a whole file at
+   once, and the user can supply some options about what to do when
+   encountering atoms that are not recognized, whether to include
+   hydrogrens, hetatm, etc. The current implementation results in a
+   rather convoluted logic, that is difficult to maintain, debug and
+   extend.
+
+   TODO: Refactor. 
+*/
+
 struct atom {
     char *res_name;
     char *res_number;
@@ -299,7 +314,8 @@ structure_add_residue(freesasa_structure *s, const struct atom *a, int i)
     s->res_desc = rd;
 
     s->res_desc[n-1] = malloc(strlen(a->res_number) + strlen(a->res_name)+4);
-    if (!s->res_desc[n-1]) return mem_fail();
+    if (!s->res_desc[n-1])
+        return mem_fail();
 
     sprintf(s->res_desc[n-1], "%c %s %s", a->chain_label, a->res_number, a->res_name);
 
@@ -383,20 +399,24 @@ structure_add_atom(freesasa_structure *s,
 
     // if it's a keeper store the radius
     na = s->number_atoms+1;
-    if ((s->radius = realloc(s->radius,sizeof(double)*na)) == NULL) {
+    s->radius = realloc(s->radius,sizeof(double)*na);
+    if (s->radius == NULL) {
         s->radius = pr;
         return mem_fail();
     }
     s->radius[na-1] = r;
 
     // allocate memory for atom, add chain
-    if ((s->a = realloc(s->a,sizeof(struct atom*)*na)) == NULL) {
+    s->a = realloc(s->a,sizeof(struct atom*)*na);
+    if (s->a == NULL) {
         s->a = pa;
         return mem_fail();
     }
 
-    if (freesasa_coord_append(s->xyz, xyz, 1)) return mem_fail();
-    if (structure_add_chain(s, a->chain_label, na - 1)) return mem_fail();
+    if (freesasa_coord_append(s->xyz, xyz, 1))
+        return mem_fail();
+    if (structure_add_chain(s, a->chain_label, na - 1))
+        return mem_fail();
 
     /* register a new residue if it's the first atom, or if the
        residue number or chain label of the current atom is different
@@ -445,33 +465,38 @@ from_pdb_impl(FILE *pdb_file,
         
         if (strncmp("ATOM",line,4)==0 || ( (options & FREESASA_INCLUDE_HETATM) &&
                                            (strncmp("HETATM", line, 6) == 0) )) {
-
             if (freesasa_pdb_ishydrogen(line) &&
                 !(options & FREESASA_INCLUDE_HYDROGEN))
                 continue;
 
-            if (!(a = atom_new_from_line(line, &alt))) goto cleanup;
+            a = atom_new_from_line(line, &alt);
+            if (a == NULL)
+                goto cleanup;
 
             if ((alt != ' ' && the_alt == ' ') || (alt == ' '))
                 the_alt = alt;
             else if (alt != ' ' && alt != the_alt) {
                 atom_free(a);
+                a = NULL;
                 continue;
             }
 
-            if (freesasa_pdb_get_coord(v, line) == FREESASA_FAIL)
+            ret = freesasa_pdb_get_coord(v, line);
+            if (ret == FREESASA_FAIL)
                 goto cleanup;
-            
+
             ret = structure_add_atom(s, a, v, classifier, options);
             if (ret == FREESASA_FAIL) {
                 goto cleanup;
             } else if (ret == FREESASA_WARN) {
                 atom_free(a);
+                a = NULL;
                 continue;
             }
 
             if (options & FREESASA_RADIUS_FROM_OCCUPANCY) {
-                if (freesasa_pdb_get_occupancy(&r, line) == FREESASA_FAIL) 
+                ret = freesasa_pdb_get_occupancy(&r, line);
+                if (ret == FREESASA_FAIL)
                     goto cleanup;
                 s->radius[s->number_atoms-1] = r;
             }
