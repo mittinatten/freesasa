@@ -421,7 +421,8 @@ freesasa_set_verbosity(freesasa_verbosity s)
 {
     if (s == FREESASA_V_NORMAL ||
         s == FREESASA_V_NOWARNINGS ||
-        s == FREESASA_V_SILENT) {
+        s == FREESASA_V_SILENT ||
+        s == FREESASA_V_DEBUG) {
         verbosity = s;
         return FREESASA_SUCCESS;
     }
