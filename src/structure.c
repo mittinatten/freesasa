@@ -291,18 +291,30 @@ structure_add_chain(freesasa_structure *s,
 }
 
 static int
-structure_add_residue(freesasa_structure *s, const struct atom *a, int i)
+structure_add_residue(freesasa_structure *s, const struct atom *a, int i_latest_atom)
 {
     int n = s->number_residues+1;
-    char **rd;
-    int *rfa = realloc(s->res_first_atom, sizeof(int) * n);
+    char **rd = NULL;
+    int *rfa = NULL;
+
+    /* register a new residue if it's the first atom, or if the
+       residue number or chain label of the current atom is different
+       from the previous one */
+    if (!( s->number_residues == 0 ||
+         (i_latest_atom > 0 &&
+          (strcmp(a->res_number, s->a[i_latest_atom-1]->res_number) ||
+           a->chain_label != s->a[i_latest_atom-1]->chain_label) ))) {
+        return FREESASA_SUCCESS;
+    }
+
+    rfa = realloc(s->res_first_atom, sizeof(int) * n);
 
     if (rfa == NULL) {
         free(s->res_first_atom);
         s->res_first_atom = NULL;
         return mem_fail();
     }
-    rfa[n-1] = i;
+    rfa[n-1] = i_latest_atom;
     s->res_first_atom = rfa;
 
     rd = realloc(s->res_desc, sizeof(char*) * n);
@@ -413,20 +425,16 @@ structure_add_atom(freesasa_structure *s,
         return mem_fail();
     }
 
-    if (freesasa_coord_append(s->xyz, xyz, 1))
-        return mem_fail();
-    if (structure_add_chain(s, a->chain_label, na - 1))
+    if (freesasa_coord_append(s->xyz, xyz, 1) == FREESASA_FAIL)
         return mem_fail();
 
-    /* register a new residue if it's the first atom, or if the
-       residue number or chain label of the current atom is different
-       from the previous one */
-    if ( s->number_residues == 0 ||
-         (na > 1 && 
-          (strcmp(a->res_number, s->a[na-2]->res_number) ||
-           a->chain_label != s->a[na-2]->chain_label) )) {
-        if (structure_add_residue(s, a, na - 1)) return mem_fail();
-    }
+    // Check if this is a new chain and if so add it
+    if (structure_add_chain(s, a->chain_label, na-1) == FREESASA_FAIL)
+        return mem_fail();
+
+    // Check if this is a new residue, and if so add it
+    if (structure_add_residue(s, a, na-1) == FREESASA_FAIL)
+        return mem_fail();
     a->res_index = s->number_residues - 1;
     a->the_class = freesasa_classifier_class(classifier, a->res_name, a->atom_name);
 
