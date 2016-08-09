@@ -68,24 +68,24 @@ enum freesasa_error_codes {
  */
 enum freesasa_structure_options {
     FREESASA_INCLUDE_HETATM=1, //!< Include HETATM entries
-    FREESASA_INCLUDE_HYDROGEN=2, //!< Include hydrogen atoms
-    FREESASA_SEPARATE_MODELS=4, //!< Read MODELs as separate structures
-    FREESASA_SEPARATE_CHAINS=8, //!< Read separate chains as separate structures
-    FREESASA_JOIN_MODELS=16, //!< Read MODELs as part of one big structure
-    FREESASA_HALT_AT_UNKNOWN=32, //!< Halt reading when unknown atom is encountered.
-    FREESASA_SKIP_UNKNOWN=64, //!< Skip atom when unknown atom is encountered.
-    FREESASA_RADIUS_FROM_OCCUPANCY=128, //!< Read atom radius from occupancy field.
+    FREESASA_INCLUDE_HYDROGEN=1<<2, //!< Include hydrogen atoms
+    FREESASA_SEPARATE_MODELS=1<<3, //!< Read MODELs as separate structures
+    FREESASA_SEPARATE_CHAINS=1<<4, //!< Read separate chains as separate structures
+    FREESASA_JOIN_MODELS=1<<5, //!< Read MODELs as part of one big structure
+    FREESASA_HALT_AT_UNKNOWN=1<<6, //!< Halt reading when unknown atom is encountered.
+    FREESASA_SKIP_UNKNOWN=1<<7, //!< Skip atom when unknown atom is encountered.
+    FREESASA_RADIUS_FROM_OCCUPANCY=1<<8, //!< Read atom radius from occupancy field.
 };
 
-//! Controls output format
+//! Controls output format, can be combined in options bitfield in freesasa_export_tree()
 enum freesasa_output_options {
-    FREESASA_RSA=1, //! Write RSA output
-    FREESASA_JSON=2, //! Write JSON output
-    FREESASA_XML=4, //! Wite XML output
-    FREESASA_OUTPUT_ATOM=8,
-    FREESASA_OUTPUT_RESIDUE=16,
-    FREESASA_OUTPUT_CHAIN=32,
-    FREESASA_OUTPUT_STRUCTURE=64,
+    FREESASA_OUTPUT_ATOM=1, //!< Output data for atoms, residues, chains and structure
+    FREESASA_OUTPUT_RESIDUE=1<<2, //!< Output data for residues, chains and structure
+    FREESASA_OUTPUT_CHAIN=1<<3, //!< Output data for chains and structure
+    FREESASA_OUTPUT_STRUCTURE=1<<4, //!< Output data only for the whole structure
+    FREESASA_RSA=1<<5, //!< Write RSA output (not affected by atom, residue, etc above)
+    FREESASA_JSON=1<<6, //!< Write JSON output
+    FREESASA_XML=1<<7, //!< Wite XML output
 };
 
 //! The maximum length of a selection name @see freesasa_select_area()
@@ -132,8 +132,10 @@ typedef struct {
 
 //! Node types
 typedef enum {
-    FREESASA_NODE_ATOM, FREESASA_NODE_RESIDUE,
-    FREESASA_NODE_CHAIN, FREESASA_NODE_STRUCTURE,
+    FREESASA_NODE_ATOM, //!< Atom node
+    FREESASA_NODE_RESIDUE, //!< Residue node
+    FREESASA_NODE_CHAIN, //!< Chain node
+    FREESASA_NODE_STRUCTURE, //!< Structure (root) node
     FREESASA_NODE_NONE //!< for specifying not a valid node
 } freesasa_node_type;
 
@@ -1058,7 +1060,15 @@ freesasa_result2tree(const freesasa_result *result,
                      const freesasa_classifier *polar_classifier,
                      const char *name);
 /**
-    Not thread safe
+    Outputs result in format specified by options.
+
+    @param output Output file.
+    @param root Structure tree containing results (generated using 
+      freesasa_result2tree()).
+    @param parameters Parameters used in the calculated, printed for 
+      reference in some formats.
+    @param options Bitfield specifying output format, see 
+      ::freesasa_output_options.
 */
 int
 freesasa_export_tree(FILE *output,
