@@ -27,10 +27,10 @@ struct atom {
 #define phos 1.80
 #define unk_P 1.5
 #define r_unk -1.0
-#define APO FREESASA_APOLAR
-#define POL FREESASA_POLAR
-#define NUC FREESASA_NUCLEICACID
-#define UNK FREESASA_CLASS_UNKNOWN
+#define APO FREESASA_ATOM_APOLAR
+#define POL FREESASA_ATOM_POLAR
+#define UNK FREESASA_ATOM_UNKNOWN
+#define NUC 3
 
 #define naa 20
 const char *aa[naa] = {"ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU",
@@ -270,7 +270,6 @@ const struct atom atoms[] = {
 const int n_atom_types = sizeof(atoms)/sizeof(struct atom);
 
 static const freesasa_classifier *oons_c = &freesasa_oons_classifier;
-extern const freesasa_classifier freesasa_residue_classifier;
 
 static void
 setup() 
@@ -314,7 +313,7 @@ START_TEST (test_class)
         ck_assert_msg(c == a.class, buf);
     }
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert(freesasa_classifier_class(oons_c, "ABC", " X  ") == FREESASA_WARN);
+    ck_assert(freesasa_classifier_class(oons_c, "ABC", " X  ") == FREESASA_ATOM_UNKNOWN);
     
     ck_assert(freesasa_classifier_class2str(oons_c, 100) == NULL);
     ck_assert(freesasa_classifier_class2str(oons_c, -1) == NULL);
@@ -326,30 +325,28 @@ END_TEST
 START_TEST (test_residue)
 {
     // check consistency of classification and string output
-    const freesasa_classifier *rc = &freesasa_residue_classifier;
-    int nrt = rc->n_classes;
-    const char **res = (const char**) malloc(nrt*sizeof(char*));
+    int nrt = freesasa_classify_n_residue_types();
     for (int i = 0; i < nrt; ++i) {
-        res[i] = freesasa_classifier_class2str(rc, i);
-        ck_assert_int_eq(freesasa_classifier_class(rc, res[i], ""),i);
+        const char *res = freesasa_classify_residue_name(i);
+        ck_assert_int_eq(freesasa_classify_residue(res),i);
     }
 
     // check numbering
     for (int i = 0; i < naa; ++i) {
-        ck_assert_int_lt(freesasa_classifier_class(rc, aa[i], ""), naa);
+        ck_assert_int_lt(freesasa_classify_residue(aa[i]), naa);
     }
 
-    ck_assert_int_ge(freesasa_classifier_class(rc, "UNK", ""), naa);
-    ck_assert_int_ge(freesasa_classifier_class(rc, "XXX", ""), naa);
+    ck_assert_int_ge(freesasa_classify_residue("UNK"), naa);
+    ck_assert_int_ge(freesasa_classify_residue("XXX"), naa);
 
     for (int i = 0; i < n_other; ++i) {
-        ck_assert_int_ge(freesasa_classifier_class(rc, other_aa[i], ""), naa);
+        ck_assert_int_ge(freesasa_classify_residue(other_aa[i]), naa);
     }
     for (int i = 0; i < n_capping; ++i) {
-        ck_assert_int_ge(freesasa_classifier_class(rc, capping[i], ""), naa);
+        ck_assert_int_ge(freesasa_classify_residue(capping[i]), naa);
     }
     for (int i = 0; i < n_nuc; ++i) {
-        ck_assert_int_ge(freesasa_classifier_class(rc, nuc[i], ""), naa);
+        ck_assert_int_ge(freesasa_classify_residue(nuc[i]), naa);
     }
 }
 END_TEST
@@ -358,7 +355,6 @@ START_TEST (test_user)
 {
     freesasa_classifier* c = freesasa_classifier_from_filename(SHAREDIR "oons.config");
     ck_assert(c != NULL);
-    ck_assert(c->n_classes == 3);
     ck_assert(fabs(freesasa_classifier_radius(c, "ALA","CA") - 2.0) < 1e-5);
     ck_assert(fabs(freesasa_classifier_radius(c, "ALA","N") - 1.55) < 1e-5);
     ck_assert_str_eq(freesasa_classifier_class2str(c, freesasa_classifier_class(c, "ALA","CB")), "Apolar");
@@ -380,9 +376,9 @@ START_TEST (test_user)
     ck_assert(freesasa_classifier_radius(c, "ALA", "X") < 0);
     ck_assert(freesasa_classifier_radius(c, "X", "CB") > 0);
     ck_assert(freesasa_classifier_radius(c, "X", "X") < 0);
-    ck_assert(freesasa_classifier_class(c, "ALA", "X") == FREESASA_WARN);
+    ck_assert(freesasa_classifier_class(c, "ALA", "X") == FREESASA_ATOM_UNKNOWN);
     ck_assert(freesasa_classifier_class(c, "X", "CB") >= 0);
-    ck_assert(freesasa_classifier_class(c, "X", "X") == FREESASA_WARN);
+    ck_assert(freesasa_classifier_class(c, "X", "X") == FREESASA_ATOM_UNKNOWN);
     freesasa_classifier_free(c);
     
     FILE *f = fopen(DATADIR "empty.pdb", "r");
@@ -435,11 +431,6 @@ START_TEST (test_memerr)
         int ret;
 
         if (i < 2) {
-            set_fail_after(i);
-            ret = freesasa_classifier_add_class(types,"A");
-            set_fail_after(0);
-            ck_assert_int_eq(ret, FREESASA_FAIL);
-
             set_fail_after(i);
             ret = freesasa_classifier_add_type(types,"a","A",1.0);
             set_fail_after(0);

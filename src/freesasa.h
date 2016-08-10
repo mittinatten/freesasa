@@ -60,6 +60,13 @@ enum freesasa_error_codes {
     FREESASA_WARN=-2, //!< Something went wrong, but results might still be meaningful (value will always be negative).
 };
 
+//! Atoms can be of the classes Apolar, Polar or Unknown.
+typedef enum {
+    FREESASA_ATOM_APOLAR=0,
+    FREESASA_ATOM_POLAR=1,
+    FREESASA_ATOM_UNKNOWN=2,
+} freesasa_atom_class;
+
 /**
     Options for reading structure from PDB.  To be combined in options
     bitfield in freesasa_structure_from_pdb(),
@@ -289,9 +296,9 @@ freesasa_classifier_radius(const freesasa_classifier *classifier,
     @param classifier The classifier.
     @param res_name The residue name (ALA/VAL/U/C/...)
     @param atom_name The atom name (CA/N/CB/...)
-    @return The class (>= 0). ::FREESASA_WARN if atom unknown.
+    @return The class.
  */
-int
+freesasa_atom_class
 freesasa_classifier_class(const freesasa_classifier *classifier,
                           const char *res_name, 
                           const char *atom_name);
@@ -435,7 +442,7 @@ freesasa_per_chain(FILE *output,
  */
 int
 freesasa_per_residue_type(FILE *output,
-                          freesasa_result *result,
+                          const freesasa_result *result,
                           const freesasa_structure *structure);
 
 /**

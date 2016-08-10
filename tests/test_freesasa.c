@@ -201,8 +201,8 @@ START_TEST (test_sasa_1ubq)
 
     // The reference values were the output of FreeSASA on 2014-02-10
     ck_assert(fabs(res->total - total_ref) < 1e-5);
-    ck_assert(fabs(res_class->value[FREESASA_POLAR] - polar_ref) < 1e-5);
-    ck_assert(fabs(res_class->value[FREESASA_APOLAR] - apolar_ref) < 1e-5);
+    ck_assert(fabs(res_class->value[FREESASA_ATOM_POLAR] - polar_ref) < 1e-5);
+    ck_assert(fabs(res_class->value[FREESASA_ATOM_APOLAR] - apolar_ref) < 1e-5);
     
     FILE *devnull = fopen("/dev/null","w");
     ck_assert(freesasa_write_pdb(devnull,res,st) == FREESASA_SUCCESS);
@@ -294,8 +294,8 @@ START_TEST (test_trimmed_pdb)
     ck_assert(res_class != NULL);
     
     ck_assert(fabs(result->total - total_ref) < 1e-5);
-    ck_assert(fabs(res_class->value[FREESASA_POLAR] - polar_ref) < 1e-5);
-    ck_assert(fabs(res_class->value[FREESASA_APOLAR] - apolar_ref) < 1e-5);
+    ck_assert(fabs(res_class->value[FREESASA_ATOM_POLAR] - polar_ref) < 1e-5);
+    ck_assert(fabs(res_class->value[FREESASA_ATOM_APOLAR] - apolar_ref) < 1e-5);
     
     freesasa_structure_free(st);
     freesasa_result_free(result);

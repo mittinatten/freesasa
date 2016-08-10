@@ -60,7 +60,7 @@ freesasa_result_classify(const freesasa_result *result,
     assert(structure);
 
     int n_atoms;
-    int n_classes;
+    int n_classes = FREESASA_ATOM_UNKNOWN+1;
     freesasa_strvp *strvp;
 
     if (classifier == NULL) {
@@ -69,8 +69,7 @@ freesasa_result_classify(const freesasa_result *result,
     }
 
     n_atoms = freesasa_structure_n(structure);
-    n_classes = classifier->n_classes;
-    strvp = freesasa_strvp_new(n_classes+1);
+    strvp = freesasa_strvp_new(n_classes);
     if (strvp == NULL) {mem_fail(); return NULL;}
 
     for(int i = 0; i < n_classes; ++i) {
@@ -78,9 +77,6 @@ freesasa_result_classify(const freesasa_result *result,
         if (strvp->string[i] == NULL) {mem_fail(); return NULL;}
         strvp->value[i] = 0;
     }
-    strvp->string[n_classes] = strdup("Unknown");
-    if (strvp->string[n_classes] == NULL) {mem_fail(); return NULL;}
-    strvp->value[n_classes] = 0;
 
     for (int i = 0; i < n_atoms; ++i) {
         const char *res_name = freesasa_structure_atom_res_name(structure,i);
@@ -187,8 +183,8 @@ freesasa_log(FILE *log,
              const freesasa_strvp* class_sasa)
 {
     assert(log);
-    if (freesasa_write_parameters(log,parameters) != FREESASA_FAIL &&
-        freesasa_write_result(log,result,name,NULL,class_sasa)
+    if (freesasa_write_parameters(log, parameters) != FREESASA_FAIL &&
+        freesasa_write_result(log, result, name, NULL, class_sasa)
         != FREESASA_FAIL)
         return FREESASA_SUCCESS;
     return fail_msg("");
@@ -295,22 +291,28 @@ freesasa_per_chain(FILE *output,
 }
 
 int
-freesasa_per_residue_type(FILE *output, 
-                          freesasa_result *result,
+freesasa_per_residue_type(FILE *output,
+                          const freesasa_result *result,
                           const freesasa_structure *structure)
 {
     assert(output);
     assert(structure);
 
-    const freesasa_classifier *c = &freesasa_residue_classifier;
-    freesasa_strvp *residue_area
-        = freesasa_result_classify(result,structure,c);
+    int n_res = freesasa_classify_n_residue_types()+1, i_res;
+    freesasa_strvp *residue_area = freesasa_strvp_new(n_res);
+    if (residue_area == NULL) return FREESASA_FAIL;
 
-    for (int i = 0; i < c->n_classes; ++i) {
-        double sasa = residue_area->value[i];
-        if (i < 20 || sasa > 0) {
+    for (int i = 0; i < result->n_atoms; ++i) {
+        i_res = freesasa_classify_residue(freesasa_structure_atom_res_name(structure, i));
+        residue_area->value[i_res] += result->sasa[i];
+    }
+
+    for (int i_res = 0; i_res < n_res; ++i_res) {
+        double sasa = residue_area->value[i_res];
+        if (i_res < 20 || sasa > 0) {
             fprintf(output,"RES %s : %10.2f\n",
-                    residue_area->string[i],sasa);
+                    freesasa_classify_residue_name(i_res),
+                    sasa);
         }
     }
     freesasa_strvp_free(residue_area);
@@ -382,7 +384,10 @@ freesasa_strvp_new(int n)
         return NULL;
     }
     svp->n = n;
-    for (int i = 0; i < n; ++i) svp->string[i] = NULL;
+    for (int i = 0; i < n; ++i) {
+        svp->string[i] = NULL;
+        svp->value[i] = 0;
+    }
     return svp;
 }
 

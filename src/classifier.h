@@ -29,12 +29,10 @@ extern const freesasa_classifier freesasa_residue_classifier;
     Struct to store information about the types-section in a user-config.
  */
 struct classifier_types {
-    int n_classes; //!< number of classes
     int n_types; //!< number of types
     char **name; //!< names of types
     double *type_radius; //!< radius of type
-    int *type_class; //!< class of each type
-    char **class_name; //!< name of each type
+    freesasa_atom_class *type_class; //!< class of each type
 };
 
 
@@ -46,7 +44,7 @@ struct classifier_residue {
     char *name; //!< Name of residue
     char **atom_name; //!< Names of atoms
     double *atom_radius; //!< Atomic radii
-    int *atom_class; //!< Classes of atoms
+    freesasa_atom_class *atom_class; //!< Classes of atoms
     freesasa_subarea max_area; //!< Maximum area (for RSA)
 };
 
@@ -80,14 +78,9 @@ struct classifier_residue {
  */
 struct freesasa_classifier {
     int n_residues; //!< Number of residues
-    int n_classes; //!< Number of classes
     char **residue_name; //!< Names of residues
-    char **class_name; //!< Names of classes
-    struct classifier_residue **residue;
     char *name;
-    // temporary solution to allow refactoring
-    int (*the_class)(const char *res_name,
-                     const char *atom_name);
+    struct classifier_residue **residue;
 };
 
 /**
@@ -136,5 +129,16 @@ int
 freesasa_classifier_add_class(struct classifier_types *types,
                               const char *name);
 
+
+// These three are used to calculate residue type areas
+
+int
+freesasa_classify_n_residue_types();
+
+int
+freesasa_classify_residue(const char *res_name);
+
+const char *
+freesasa_classify_residue_name(int residue_type);
 
 #endif /* CLASSIFIER_H */

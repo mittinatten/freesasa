@@ -19,7 +19,7 @@ AC_CHECK_LIB([dl], [dlsym])
 
 # Checks for header files.
 AC_FUNC_ALLOCA
-AC_CHECK_HEADERS([inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h sys/time.h unistd.h dlfcn.h])
+AC_CHECK_HEADERS([inttypes.h libintl.h malloc.h stddef.h stdlib.h string.h strings.h sys/time.h unistd.h dlfcn.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
@@ -40,7 +40,7 @@ AC_C_INLINE
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([memset mkdir sqrt strchr strdup strerror getopt_long getline])
+AC_CHECK_FUNCS([memset mkdir sqrt strchr strdup strerror strncasecmp getopt_long getline])
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile
                  tests/Makefile bindings/Makefile share/Makefile
