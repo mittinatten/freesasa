@@ -21,22 +21,17 @@ freesasa_structure *s;
 
 START_TEST (test_structure_api)
 {
-    char buf[20];
     s = freesasa_structure_new();
     for (int i = 0; i < N; ++i) {
         ck_assert_int_eq(freesasa_structure_add_atom(s,an[i],rna[i],rnu[i],cl[i],i,i,i),
                          FREESASA_SUCCESS);
     }
-    sprintf(buf,"%c %s %s",cl[0],rnu[0],rna[0]);
-    ck_assert_str_eq(freesasa_structure_residue_descriptor(s,0),buf);
     for (int i = 0; i < N; ++i) {
         ck_assert_str_eq(freesasa_structure_atom_name(s,i),an[i]);
         ck_assert_str_eq(freesasa_structure_atom_res_name(s,i),rna[i]);
         ck_assert_str_eq(freesasa_structure_atom_res_number(s,i),rnu[i]);
         ck_assert_str_eq(freesasa_structure_atom_symbol(s,i),symbol[i]);
         ck_assert_int_eq(freesasa_structure_atom_chain(s,i),cl[i]);
-        sprintf(buf,"%c %s %s %s",cl[i],rnu[i],rna[i],an[i]);
-        ck_assert_str_eq(freesasa_structure_atom_descriptor(s,i),buf);
     }
     freesasa_structure_atom_set_radius(s, 0, 10.0);
     ck_assert(float_eq(freesasa_structure_atom_radius(s, 0), 10.0, 1e-10));

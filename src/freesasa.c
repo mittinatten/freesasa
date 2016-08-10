@@ -351,13 +351,16 @@ freesasa_per_residue(FILE *output,
 {
     assert(output);
     assert(structure);
-    
+
     const int naa = freesasa_structure_n_residues(structure);
+
     for (int i = 0; i < naa; ++i) {
         int area =
-            fprintf(output,"SEQ %s : %7.2f\n",
-                    freesasa_structure_residue_descriptor(structure,i),
-                    freesasa_single_residue_sasa(result,structure,i));
+            fprintf(output,"SEQ %c %s %s : %7.2f\n",
+                    freesasa_structure_residue_chain(structure, i),
+                    freesasa_structure_residue_number(structure, i),
+                    freesasa_structure_residue_name(structure, i),
+                    freesasa_single_residue_sasa(result, structure, i));
         if (area < 0)
             return fail_msg(strerror(errno));
     }

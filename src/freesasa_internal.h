@@ -131,19 +131,6 @@ const coord_t *
 freesasa_structure_xyz(const freesasa_structure *s);
 
 /**
-    Get a string describing an atom. 
-    Format: "A    1 ALA  CA " 
-    (chain label, residue number, residue type, atom name)
-
-    @param s A structure.s
-    @param i Atom index.
-    @return Descriptor string.
- */
-const char*
-freesasa_structure_atom_descriptor(const freesasa_structure *s,
-                                   int i);
-
-/**
    The class of an atom, in the classifier used to initialize the structure.
 
    @param structure A structure.
@@ -166,19 +153,6 @@ freesasa_structure_atom_class(const freesasa_structure *structure,
 int
 freesasa_structure_chain_index(const freesasa_structure *s,
                                char chain);
-
-/**
-    Get a string describing a residue.
-    Format: "A    1 ALA" (chain label, residue number, residue type)
-    
-    @param s A structure.
-    @param r_i atom index
-    @return Descriptor string
- */
-const char*
-freesasa_structure_residue_descriptor(const freesasa_structure *s,
-                                      int r_i);
-
 
 /**
     Returns the SASA for a given residue

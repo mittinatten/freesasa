@@ -988,7 +988,7 @@ freesasa_structure_coord_array(const freesasa_structure *structure);
 /**
     Get indices of first and last atoms of a residue
  
-    @param structure A structure.
+o    @param structure A structure.
     @param r_i Residue index.
     @param first First atom of residue `r_i` will be stored here.
     @param last Last atom of residue `r_i` will be stored here.
