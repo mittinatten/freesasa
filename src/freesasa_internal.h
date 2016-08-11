@@ -176,7 +176,7 @@ freesasa_single_residue_sasa(const freesasa_result *r,
     @param area Area will be stored here
     @param structure Structure to use for classification
     @param result The areas to use
-    @param polar_classifier Classifier to use to determine if 
+    @param classifier Classifier to use to determine if 
       the atom is polar or not
     @param atom_index Index of atom in question  
  */
@@ -184,7 +184,7 @@ void
 freesasa_atom_subarea(freesasa_subarea *area,
                       const freesasa_structure *structure,
                       const freesasa_result *result,
-                      const freesasa_classifier *polar_classifier,
+                      const freesasa_classifier *classifier,
                       int atom_index);
 
 /**
@@ -196,6 +196,17 @@ freesasa_atom_subarea(freesasa_subarea *area,
 void
 freesasa_add_subarea(freesasa_subarea *sum,
                      const freesasa_subarea *term);
+
+/**
+    Compute subarea for a range of atoms
+ */
+void
+freesasa_range_subarea(freesasa_subarea *area,
+                       const freesasa_structure *structure,
+                       const freesasa_result *result,
+                       const freesasa_classifier *classifier,
+                       int first_atom,
+                       int last_atom);
 
 /**
     Calculate relative SASA values for a residue

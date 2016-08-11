@@ -287,7 +287,7 @@ run_analysis(FILE *input,
 {
     int name_len = strlen(name);
     freesasa_result *result = NULL;
-    freesasa_strvp *classes = NULL;
+    freesasa_subarea classes;
     freesasa_structure **structures = NULL;
     int n = 0;
 
@@ -304,15 +304,14 @@ run_analysis(FILE *input,
         char name_i[name_len+10];
         result = freesasa_calc_structure(structures[i], &parameters);
         if (result == NULL)        abort_msg("Can't calculate SASA.");
-        classes = freesasa_result_classify(result, structures[i], classifier);
-        if (classes == NULL)       abort_msg("Can't determine atom classes. Aborting.");
+        classes = freesasa_classifier_classify_result(classifier, structures[i], result);
         strcpy(name_i,name);
         if (n > 1 && (structure_options & FREESASA_SEPARATE_MODELS))
             sprintf(name_i+strlen(name_i), ":%d", freesasa_structure_model(structures[i]));
         if (printlog) {
             if (n > 1) fprintf(output,"\n\n####################\n");
             freesasa_write_result(output, result, name_i, 
-                                  freesasa_structure_chain_labels(structures[i]), classes);
+                                  freesasa_structure_chain_labels(structures[i]), &classes);
             freesasa_per_chain(output, result, structures[i]);
         }
         if (per_residue_type) {
@@ -350,7 +349,6 @@ run_analysis(FILE *input,
             freesasa_structure_node_free(tree);
         }
         freesasa_result_free(result);
-        freesasa_strvp_free(classes);
         freesasa_structure_free(structures[i]);
     }
     free(structures);

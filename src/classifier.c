@@ -628,6 +628,18 @@ freesasa_classifier_class2str(const freesasa_classifier *classifier,
     return NULL;
 }
 
+freesasa_subarea
+freesasa_classifier_classify_result(const freesasa_classifier *classifier,
+                                    const freesasa_structure *structure,
+                                    const freesasa_result *result)
+{
+    freesasa_subarea area = {"whole-structure", 0, 0, 0, 0, 0};
+    if (classifier == NULL) classifier = &freesasa_default_classifier;
+    freesasa_range_subarea(&area, structure, result, classifier,
+                           0, freesasa_structure_n(structure) - 1);
+    return area;
+}
+
 static
 freesasa_classifier*
 classifier_from_file(FILE *file, const char *name)

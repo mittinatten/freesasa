@@ -195,7 +195,10 @@ START_TEST (test_sasa_1ubq)
     freesasa_result *res;
     freesasa_structure_node *tree;
     ck_assert((res = freesasa_calc_structure(st,&parameters)) != NULL);
+
+    // deprecated
     freesasa_strvp* res_class = freesasa_result_classify(res,st,NULL);
+
     tree = freesasa_result2tree(res, st, NULL, "test");
     fclose(pdb);
 
@@ -206,7 +209,6 @@ START_TEST (test_sasa_1ubq)
     
     FILE *devnull = fopen("/dev/null","w");
     ck_assert(freesasa_write_pdb(devnull,res,st) == FREESASA_SUCCESS);
-    ck_assert(freesasa_log(devnull,res,"test",NULL,res_class) == FREESASA_SUCCESS);
     ck_assert(freesasa_per_residue_type(devnull,res,st) == FREESASA_SUCCESS);
     ck_assert(freesasa_per_residue(devnull,res,st) == FREESASA_SUCCESS);
     ck_assert(freesasa_export_tree(devnull, tree, NULL, FREESASA_RSA) == FREESASA_SUCCESS);
@@ -220,7 +222,6 @@ START_TEST (test_sasa_1ubq)
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
     FILE *nowrite = fopen("/dev/null","r");
-    ck_assert(freesasa_log(nowrite,res, "test", NULL, res_class) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue_type(nowrite, res, st) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue(nowrite, res, st) == FREESASA_FAIL);
     ck_assert(freesasa_export_tree(nowrite, tree, NULL, FREESASA_RSA) == FREESASA_FAIL);
@@ -228,9 +229,9 @@ START_TEST (test_sasa_1ubq)
     fclose(nowrite);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     
-    freesasa_strvp_free(res_class);
     freesasa_structure_free(st);
     freesasa_result_free(res);
+    freesasa_strvp_free(res_class);
     freesasa_structure_node_free(tree);
 }
 END_TEST

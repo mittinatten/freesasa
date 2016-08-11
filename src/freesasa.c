@@ -51,44 +51,6 @@ const char *freesasa_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
 freesasa_strvp*
 freesasa_strvp_new(int n);
 
-freesasa_strvp*
-freesasa_result_classify(const freesasa_result *result, 
-                         const freesasa_structure *structure,
-                         const freesasa_classifier *classifier) 
-{
-    assert(result);
-    assert(structure);
-
-    int n_atoms;
-    int n_classes = FREESASA_ATOM_UNKNOWN+1;
-    freesasa_strvp *strvp;
-
-    if (classifier == NULL) {
-        classifier = &freesasa_default_classifier;
-        if (classifier == NULL) return NULL;
-    }
-
-    n_atoms = freesasa_structure_n(structure);
-    strvp = freesasa_strvp_new(n_classes);
-    if (strvp == NULL) {mem_fail(); return NULL;}
-
-    for(int i = 0; i < n_classes; ++i) {
-        strvp->string[i] = strdup(freesasa_classifier_class2str(classifier, i));
-        if (strvp->string[i] == NULL) {mem_fail(); return NULL;}
-        strvp->value[i] = 0;
-    }
-
-    for (int i = 0; i < n_atoms; ++i) {
-        const char *res_name = freesasa_structure_atom_res_name(structure,i);
-        const char *atom_name = freesasa_structure_atom_name(structure,i);
-        int c = freesasa_classifier_class(classifier, res_name, atom_name);
-        if (c == FREESASA_WARN) c = n_classes; // unknown
-        strvp->value[c] += result->sasa[i];
-    }
-
-    return strvp;
-}
-
 void
 freesasa_result_free(freesasa_result *r)
 {
@@ -176,29 +138,14 @@ freesasa_calc_structure(const freesasa_structure* structure,
 }
 
 int
-freesasa_log(FILE *log,
-             freesasa_result *result,
-             const char *name,
-             const freesasa_parameters *parameters,
-             const freesasa_strvp* class_sasa)
-{
-    assert(log);
-    if (freesasa_write_parameters(log, parameters) != FREESASA_FAIL &&
-        freesasa_write_result(log, result, name, NULL, class_sasa)
-        != FREESASA_FAIL)
-        return FREESASA_SUCCESS;
-    return fail_msg("");
-}
-
-int
 freesasa_write_result(FILE *log,
                       freesasa_result *result,
                       const char *name,
                       const char *chains,
-                      const freesasa_strvp* class_area)
+                      const freesasa_subarea *class_area)
 {
     assert(log);
-
+    
     fprintf(log,"\nINPUT\n");
     if (name == NULL) fprintf(log,"source  : unknown\n");
     else              fprintf(log,"source  : %s\n",name);
@@ -206,23 +153,12 @@ freesasa_write_result(FILE *log,
     fprintf(log,"atoms   : %d\n",result->n_atoms);
     
     fprintf(log,"\nRESULTS (A^2)\n");
-    if (class_area == NULL) {
-        fprintf(log,"Total : %10.2f\n",result->total);
-    } else {
-        int m = 6;
-        char fmt[21];
-        for (int i = 0; i < class_area->n; ++i) {
-            int l = strlen(class_area->string[i]);
-            m = (l > m) ? l : m;
-        }
-        sprintf(fmt,"%%-%ds : %%10.2f\n",m);
-        fprintf(log,fmt,"Total",result->total);
-        for (int i = 0; i < class_area->n; ++i) {
-            if (class_area->value[i] > 0)
-                fprintf(log,fmt,
-                        class_area->string[i],
-                        class_area->value[i]);
-        }
+    fprintf(log,"Total   : %10.2f\n",result->total);
+    if (class_area != NULL) {
+        fprintf(log,"Apolar  : %10.2f\n",class_area->apolar);
+        fprintf(log,"Polar   : %10.2f\n",class_area->polar);
+        if (class_area->unknown > 0)
+            fprintf(log,"Unknown : %10.2f\n",class_area->unknown);
     }
 
     fflush(log);
@@ -369,43 +305,6 @@ freesasa_per_residue(FILE *output,
     return FREESASA_SUCCESS;
 }
 
-freesasa_strvp*
-freesasa_strvp_new(int n)
-{
-    freesasa_strvp* svp = malloc(sizeof(freesasa_strvp));
-    if (svp == NULL) {mem_fail(); return NULL;}
-    svp->value = malloc(sizeof(double)*n);
-    svp->string = malloc(sizeof(char*)*n);
-    if (!svp->value || !svp->string) {
-        free(svp->value);  svp->value = NULL;
-        free(svp->string); svp->string = NULL;
-        freesasa_strvp_free(svp);
-        mem_fail();
-        return NULL;
-    }
-    svp->n = n;
-    for (int i = 0; i < n; ++i) {
-        svp->string[i] = NULL;
-        svp->value[i] = 0;
-    }
-    return svp;
-}
-
-void
-freesasa_strvp_free(freesasa_strvp *svp)
-{
-    if (svp) {
-        if (svp->value) free(svp->value);
-        if (svp->string) {
-            for (int i = 0; i < svp->n; ++i) {
-                if (svp->string[i]) free(svp->string[i]);
-            }
-            free(svp->string);
-        }
-        free(svp);
-    }
-}
-
 int
 freesasa_export_tree(FILE *file,
                      const freesasa_structure_node *root,
@@ -442,3 +341,82 @@ freesasa_get_verbosity(void)
 {
     return verbosity;
 }
+
+// deprecated
+freesasa_strvp*
+freesasa_strvp_new(int n)
+{
+    freesasa_strvp* svp = malloc(sizeof(freesasa_strvp));
+    if (svp == NULL) {mem_fail(); return NULL;}
+    svp->value = malloc(sizeof(double)*n);
+    svp->string = malloc(sizeof(char*)*n);
+    if (!svp->value || !svp->string) {
+        free(svp->value);  svp->value = NULL;
+        free(svp->string); svp->string = NULL;
+        freesasa_strvp_free(svp);
+        mem_fail();
+        return NULL;
+    }
+    svp->n = n;
+    for (int i = 0; i < n; ++i) {
+        svp->string[i] = NULL;
+        svp->value[i] = 0;
+    }
+    return svp;
+}
+
+//deprecated
+freesasa_strvp*
+freesasa_result_classify(const freesasa_result *result, 
+                         const freesasa_structure *structure,
+                         const freesasa_classifier *classifier) 
+{
+    assert(result);
+    assert(structure);
+
+    int n_atoms;
+    int n_classes = FREESASA_ATOM_UNKNOWN+1;
+    freesasa_strvp *strvp;
+
+    if (classifier == NULL) {
+        classifier = &freesasa_default_classifier;
+        if (classifier == NULL) return NULL;
+    }
+
+    n_atoms = freesasa_structure_n(structure);
+    strvp = freesasa_strvp_new(n_classes);
+    if (strvp == NULL) {mem_fail(); return NULL;}
+
+    for(int i = 0; i < n_classes; ++i) {
+        strvp->string[i] = strdup(freesasa_classifier_class2str(classifier, i));
+        if (strvp->string[i] == NULL) {mem_fail(); return NULL;}
+        strvp->value[i] = 0;
+    }
+
+    for (int i = 0; i < n_atoms; ++i) {
+        const char *res_name = freesasa_structure_atom_res_name(structure,i);
+        const char *atom_name = freesasa_structure_atom_name(structure,i);
+        int c = freesasa_classifier_class(classifier, res_name, atom_name);
+        if (c == FREESASA_WARN) c = n_classes; // unknown
+        strvp->value[c] += result->sasa[i];
+    }
+
+    return strvp;
+}
+
+//deprecated
+void
+freesasa_strvp_free(freesasa_strvp *svp)
+{
+    if (svp) {
+        if (svp->value) free(svp->value);
+        if (svp->string) {
+            for (int i = 0; i < svp->n; ++i) {
+                if (svp->string[i]) free(svp->string[i]);
+            }
+            free(svp->string);
+        }
+        free(svp);
+    }
+}
+

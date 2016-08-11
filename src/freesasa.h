@@ -135,6 +135,7 @@ typedef struct {
     double side_chain; //!< Side-chain SASA
     double polar;      //!< Polar SASA
     double apolar;     //!< Apolar SASA
+    double unknown;
 } freesasa_subarea;
 
 //! Node types
@@ -154,16 +155,6 @@ typedef enum {
  */
 typedef struct freesasa_structure_node freesasa_structure_node;
 
-/**
-    Struct used to store n string-value-pairs (strvp) in arrays of
-    doubles and strings. freesasa_strvp_free() assumes both arrays
-    and strings are dynamically allocated.
- */
-typedef struct {
-    double *value; //!< Array of values
-    char **string; //!< Array of strings
-    int n;         //!< Number of values and strings
-} freesasa_strvp;
 
 /**
     Struct that can be used to determine classes (polar/apolar) and
@@ -227,27 +218,6 @@ freesasa_calc_coord(const double *xyz,
  */
 void
 freesasa_result_free(freesasa_result *result);
-
-/**
-    Generate a classifier from a config-file.
-
-    Input file format described in @ref Config-file
-
-    Return value is dynamically allocated, should be freed with
-    freesasa_classifier_free().
-
-    @param file File containing configuration
-    @return The generated classifier. NULL if there were problems
-      parsing or reading the file or memory allocation problem.
-
-    @see @ref Config-file
-
-    @deprecated Use freesasa_classifier_from_filename() instead. The
-      name returned by freesasa_classifier_name() will be
-      "from-unknown-file" here.
- */
-freesasa_classifier*
-freesasa_classifier_from_file(FILE *file);
 
 /**
     Generate a classifier from a config-file
@@ -323,24 +293,10 @@ freesasa_classifier_class2str(const freesasa_classifier *classifier,
 const char*
 freesasa_classifier_name(const freesasa_classifier *classifier);
 
-/**
-    Sums up the SASA for groups of atoms defined by a classifier.
-
-    Return value is dynamically allocated, should be freed with
-    freesasa_strvp_free().
-
-    @param result The results to be analyzed.
-    @param structure Structure to be used to determine atom types.
-    @param classifier The classifier. If NULL, default is used.
-    @return A new set of string-value-pairs if classifications was
-    successful. NULL if classifier was not compatible with structure
-    or memory allocation failure.
- */
-freesasa_strvp*
-freesasa_result_classify(const freesasa_result *result,
-                         const freesasa_structure *structure,
-                         const freesasa_classifier *classifier);
-
+freesasa_subarea
+freesasa_classifier_classify_result(const freesasa_classifier *classifier,
+                                    const freesasa_structure *structure,
+                                    const freesasa_result *result);
 
 /**
     Get area of a selection.
@@ -376,14 +332,6 @@ freesasa_select_area(const char *command,
                      double *area,
                      const freesasa_structure *structure,
                      const freesasa_result *result);
-
-/**
-    Frees a ::freesasa_strvp object
-
-    @param strvp the object to be freed
- */
-void
-freesasa_strvp_free(freesasa_strvp *strvp);
 
 /**
     Write SASA values and atomic radii to new PDB-file.
@@ -462,37 +410,13 @@ freesasa_per_residue(FILE *output,
                      const freesasa_structure *structure);
 
 /**
-    Log calculation results.
-
-    Prints log of calculation to specified file, equivalent of calling
-    first freesasa_write_parameters() and then freesasa_write_result()
-
-    @param log Output-file.
-    @param result SASA values.
-    @param parameters Parameters to print, if NULL defaults are used
-    @param name Name of the protein, if NULL "unknown" used.
-    @param class_sasa The SASA values for each class, if NULL
-      only total SASA printed
-    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
-      writing to file.
-
-    @deprecated Use freesasa_write_parameters() and
-    freesasa_write_result() instead.
- */
-int
-freesasa_log(FILE *log,
-             freesasa_result *result,
-             const char *name,
-             const freesasa_parameters *parameters,
-             const freesasa_strvp* class_sasa);
-/**
     Write results of claculation to file.
 
     @param log Output-file.
     @param result SASA values.
     @param name Name of the protein, if NULL "unknown" used.
     @param chains The chains used in the calculation, can be NULL
-    @param class_sasa The SASA values for each class, if NULL
+    @param class_area The SASA values for each class, if NULL
       only total SASA printed
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
       writing to file.
@@ -502,7 +426,7 @@ freesasa_write_result(FILE *log,
                       freesasa_result *result,
                       const char *name,
                       const char *chains,
-                      const freesasa_strvp* class_sasa);
+                      const freesasa_subarea *class_area);
 /**
     Print parameters to file
 
@@ -1196,6 +1120,73 @@ freesasa_structure_node_residue_reference(const freesasa_structure_node *node);
  */
 const char*
 freesasa_structure_node_classified_by(const freesasa_structure_node *node);
+
+    // Deprecated functions below, from 1.x API
+
+/**
+    Generate a classifier from a config-file.
+
+    Input file format described in @ref Config-file
+
+    Return value is dynamically allocated, should be freed with
+    freesasa_classifier_free().
+
+    @param file File containing configuration
+    @return The generated classifier. NULL if there were problems
+      parsing or reading the file or memory allocation problem.
+
+    @see @ref Config-file
+
+    @deprecated Use freesasa_classifier_from_filename() instead. The
+      name returned by freesasa_classifier_name() will be
+      "from-unknown-file" here.
+ */
+freesasa_classifier*
+freesasa_classifier_from_file(FILE *file);
+
+/**
+    Struct used to store n string-value-pairs (strvp) in arrays of
+    doubles and strings. freesasa_strvp_free() assumes both arrays
+    and strings are dynamically allocated.
+
+    @deprecated
+ */
+typedef struct {
+    double *value; //!< Array of values
+    char **string; //!< Array of strings
+    int n;         //!< Number of values and strings
+} freesasa_strvp;
+
+/**
+    Sums up the SASA for groups of atoms defined by a classifier.
+
+    Return value is dynamically allocated, should be freed with
+    freesasa_strvp_free().
+
+    @param result The results to be analyzed.
+    @param structure Structure to be used to determine atom types.
+    @param classifier The classifier. If NULL, default is used.
+    @return A new set of string-value-pairs if classifications was
+    successful. NULL if classifier was not compatible with structure
+    or memory allocation failure.
+
+    @deprecated Use freesasa_classifier_classify_result() instead.
+ */
+freesasa_strvp*
+freesasa_result_classify(const freesasa_result *result,
+                         const freesasa_structure *structure,
+                         const freesasa_classifier *classifier);
+
+
+/**
+    Frees a ::freesasa_strvp object
+
+    @param strvp the object to be freed
+
+    @deprecated
+ */
+void
+freesasa_strvp_free(freesasa_strvp *strvp);
 
 #ifdef __cplusplus
 }

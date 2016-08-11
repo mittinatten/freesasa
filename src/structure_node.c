@@ -20,7 +20,7 @@ struct freesasa_structure_node {
     freesasa_structure_node *next;
 };
 
-const freesasa_subarea freesasa_subarea_null = {NULL, 0, 0, 0, 0, 0};
+const freesasa_subarea freesasa_subarea_null = {NULL, 0, 0, 0, 0, 0, 0};
 
 static freesasa_structure_node *
 structure_node_new(const char *name, const char *classified_by)
@@ -360,11 +360,12 @@ void
 freesasa_atom_subarea(freesasa_subarea *area,
                       const freesasa_structure *structure,
                       const freesasa_result *result,
-                      const freesasa_classifier *polar_classifier,
+                      const freesasa_classifier *classifier,
                       int atom_index)
 {
     const char *resn = freesasa_structure_atom_res_name(structure, atom_index);
     double a = result->sasa[atom_index];
+    freesasa_atom_class atom_class;
 
     area->main_chain = area->side_chain = area->polar = area->apolar = 0;
 
@@ -375,9 +376,18 @@ freesasa_atom_subarea(freesasa_subarea *area,
         area->main_chain = a;
     else area->side_chain = a;
 
-    if (freesasa_classifier_class(polar_classifier, resn, area->name))
+    switch(freesasa_classifier_class(classifier, resn, area->name)) {
+    case FREESASA_ATOM_APOLAR:
+        area->apolar = a;
+        break;
+    case FREESASA_ATOM_POLAR:
         area->polar = a;
-    else area->apolar = a;
+        break;
+    case FREESASA_ATOM_UNKNOWN:
+        area->unknown = a;
+        break;
+    }
+    
 }
 
 void
@@ -389,4 +399,24 @@ freesasa_add_subarea(freesasa_subarea *sum,
     sum->main_chain += term->main_chain;
     sum->polar += term->polar;
     sum->apolar += term->apolar;
+    sum->unknown += term->unknown;
+}
+
+void
+freesasa_range_subarea(freesasa_subarea *area,
+                       const freesasa_structure *structure,
+                       const freesasa_result *result,
+                       const freesasa_classifier *classifier,
+                       int first_atom,
+                       int last_atom)
+{
+    assert(area);
+    assert(structure); assert(result); assert(classifier);
+    assert(first_atom <= last_atom);
+
+    freesasa_subarea term = freesasa_subarea_null;
+    for (int i = first_atom; i <= last_atom; ++i) {
+        freesasa_atom_subarea(&term, structure, result, classifier, i);
+        freesasa_add_subarea(area, &term);
+    }
 }
