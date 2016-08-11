@@ -135,7 +135,7 @@ typedef struct {
     double side_chain; //!< Side-chain SASA
     double polar;      //!< Polar SASA
     double apolar;     //!< Apolar SASA
-    double unknown;
+    double unknown;    //!< SASA of unknown class (neither polar nor apolar)
 } freesasa_subarea;
 
 //! Node types
@@ -293,6 +293,18 @@ freesasa_classifier_class2str(const freesasa_classifier *classifier,
 const char*
 freesasa_classifier_name(const freesasa_classifier *classifier);
 
+/**
+    Classify results.
+
+    Adds up the SASA of Polar/Apolar/Unknown atoms, and
+    main-chain/side-chain atoms for the whole protein. Use
+    freesasa_result2tree() for a more fine-grained analysis.
+
+    @param classifier The classifier to use
+    @param structure The structure the results are based on
+    @param result The results
+    @return A struct with all the results.
+ */
 freesasa_subarea
 freesasa_classifier_classify_result(const freesasa_classifier *classifier,
                                     const freesasa_structure *structure,
