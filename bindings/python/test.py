@@ -65,8 +65,8 @@ class FreeSASATestCase(unittest.TestCase):
         setVerbosity(normal)
 
         c = Classifier("data/test.config")
-        self.assertTrue(c.classify("AA","aa") == "a")
-        self.assertTrue(c.classify("BB","bb") == "b")
+        self.assertTrue(c.classify("AA","aa") == "Polar")
+        self.assertTrue(c.classify("BB","bb") == "Apolar")
         self.assertTrue(c.radius("AA","aa") == 1.0)
         self.assertTrue(c.radius("BB","bb") == 2.0)
 
