@@ -18,6 +18,7 @@ example
 test
 .DS_Store
 *~
+*\#*
 a.out
 *Makefile.in
 *Makefile
@@ -41,10 +42,6 @@ bindings/python/setup.py
 bindings/python/share
 bindings/python/data
 bindings/check-python
-doc/doxygen
 doc/html/
-doc/doxygen
 doc/Doxyfile
 doc/doxyfile.stamp
-doc/manual.xml
-doc/LaTeXML.cache
