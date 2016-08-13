@@ -11,7 +11,7 @@ extern json_object *
 freesasa_node2json(const freesasa_structure_node *node, int exclude_type);
 
 static int
-compare_subarea(json_object *obj, const freesasa_subarea *ref, int is_abs)
+compare_nodearea(json_object *obj, const freesasa_nodearea *ref, int is_abs)
 {
     struct json_object_iterator it = json_object_iter_begin(obj),
         it_end = json_object_iter_end(obj);
@@ -95,7 +95,7 @@ test_residue(const freesasa_structure_node *node)
     ck_assert_ptr_ne(node, NULL);
     json_object *residue = freesasa_node2json(node, FREESASA_NODE_NONE);
     ck_assert_ptr_ne(residue, NULL);
-    const freesasa_subarea *resarea = freesasa_structure_node_area(node);
+    const freesasa_nodearea *resarea = freesasa_structure_node_area(node);
     struct json_object_iterator it = json_object_iter_begin(residue),
         it_end = json_object_iter_end(residue);
 
@@ -115,9 +115,9 @@ test_residue(const freesasa_structure_node *node)
              ck_assert(json_object_is_type(val, json_type_array));
             //this is checked further by test_atom
         } else if (!strcmp(key, "area")) {
-            ck_assert(compare_subarea(val, resarea, 1));
+            ck_assert(compare_nodearea(val, resarea, 1));
         } else if (!strcmp(key, "relative-area")) {
-            ck_assert(compare_subarea(val, resarea, 0));
+            ck_assert(compare_nodearea(val, resarea, 0));
         } else {
             ck_assert_str_eq(key, "unknown-key");
         }
@@ -134,7 +134,7 @@ test_chain(const freesasa_structure_node *node, const freesasa_result *result)
 {
     ck_assert_ptr_ne(node, NULL);
     json_object *chain = freesasa_node2json(node, FREESASA_NODE_NONE);
-    const freesasa_subarea *chain_area = freesasa_structure_node_area(node);
+    const freesasa_nodearea *chain_area = freesasa_structure_node_area(node);
     ck_assert_ptr_ne(chain, NULL);
     ck_assert(float_eq(chain_area->total, result->total, 1e-10));
 
@@ -150,7 +150,7 @@ test_chain(const freesasa_structure_node *node, const freesasa_result *result)
             ck_assert(json_object_is_type(val, json_type_int));
             ck_assert_int_eq(json_object_get_int(val), 76);
         } else if (!strcmp(key, "area")) {
-            ck_assert(compare_subarea(val, chain_area, 1));
+            ck_assert(compare_nodearea(val, chain_area, 1));
         } else if (!strcmp(key, "residues")) {
             ck_assert(json_object_is_type(val, json_type_array));
             // the rest is checked in test_residue
@@ -168,7 +168,7 @@ int
 test_structure(const freesasa_structure_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
-    freesasa_subarea structure_area = {
+    freesasa_nodearea structure_area = {
         .name = "1ubq",
         .total = 4804.0556411417447,
         .polar = 2504.2173023011442,
@@ -191,7 +191,7 @@ test_structure(const freesasa_structure_node *node)
             ck_assert(json_object_is_type(val, json_type_int));
             ck_assert_int_eq(json_object_get_int(val), 1);
         } else if (!strcmp(key, "area")) {
-            compare_subarea(val, &structure_area, 1);
+            compare_nodearea(val, &structure_area, 1);
         } else if (!strcmp(key, "chains")) {
             ck_assert(json_object_is_type(val, json_type_array));
             // these components are tested in test_chains

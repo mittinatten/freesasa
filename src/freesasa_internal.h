@@ -8,8 +8,8 @@
 //! The name of the library, to be used in error messages and logging
 extern const char *freesasa_name;
 
-//! A ::freesasa_subarea with `name == NULL` and all values 0
-extern const freesasa_subarea freesasa_subarea_null;
+//! A ::freesasa_nodearea with `name == NULL` and all values 0
+extern const freesasa_nodearea freesasa_nodearea_null;
 
 //! Shortcut for memory error generation
 #define mem_fail() freesasa_mem_fail(__func__,__FILE__,__LINE__) 
@@ -168,7 +168,7 @@ freesasa_single_residue_sasa(const freesasa_result *r,
                              int r_i);
 
 /**
-    Extract area to provided ::freesasa_subarea object
+    Extract area to provided ::freesasa_nodearea object
 
     Main-chain / side-chain atoms are defined by
     ::freesasa_backbone_classifier.
@@ -181,11 +181,11 @@ freesasa_single_residue_sasa(const freesasa_result *r,
     @param atom_index Index of atom in question  
  */
 void
-freesasa_atom_subarea(freesasa_subarea *area,
-                      const freesasa_structure *structure,
-                      const freesasa_result *result,
-                      const freesasa_classifier *classifier,
-                      int atom_index);
+freesasa_atom_nodearea(freesasa_nodearea *area,
+                       const freesasa_structure *structure,
+                       const freesasa_result *result,
+                       const freesasa_classifier *classifier,
+                       int atom_index);
 
 /**
     Adds all members of term to corresponding members of sum
@@ -194,19 +194,19 @@ freesasa_atom_subarea(freesasa_subarea *area,
     @param term Object to add
  */
 void
-freesasa_add_subarea(freesasa_subarea *sum,
-                     const freesasa_subarea *term);
+freesasa_add_nodearea(freesasa_nodearea *sum,
+                      const freesasa_nodearea *term);
 
 /**
-    Compute subarea for a range of atoms
+    Compute nodearea for a range of atoms
  */
 void
-freesasa_range_subarea(freesasa_subarea *area,
-                       const freesasa_structure *structure,
-                       const freesasa_result *result,
-                       const freesasa_classifier *classifier,
-                       int first_atom,
-                       int last_atom);
+freesasa_range_nodearea(freesasa_nodearea *area,
+                        const freesasa_structure *structure,
+                        const freesasa_result *result,
+                        const freesasa_classifier *classifier,
+                        int first_atom,
+                        int last_atom);
 
 /**
     Calculate relative SASA values for a residue
@@ -219,9 +219,9 @@ freesasa_range_subarea(freesasa_subarea *area,
     @param reference Reference SASA for the residue
  */
 void
-freesasa_residue_rel_subarea(freesasa_subarea *rel,
-                             const freesasa_subarea *abs,
-                             const freesasa_subarea *reference);
+freesasa_residue_rel_nodearea(freesasa_nodearea *rel,
+                              const freesasa_nodearea *abs,
+                              const freesasa_nodearea *reference);
 
 /**
     Is an atom a backbone atom

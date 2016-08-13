@@ -13,14 +13,14 @@ struct freesasa_structure_node {
     freesasa_node_type type;
     int first_atom, last_atom;
     const freesasa_structure *structure;
-    freesasa_subarea *area;
-    freesasa_subarea *reference; //! can be NULL
+    freesasa_nodearea *area;
+    freesasa_nodearea *reference; //! can be NULL
     freesasa_structure_node *parent;
     freesasa_structure_node *children;
     freesasa_structure_node *next;
 };
 
-const freesasa_subarea freesasa_subarea_null = {NULL, 0, 0, 0, 0, 0, 0};
+const freesasa_nodearea freesasa_nodearea_null = {NULL, 0, 0, 0, 0, 0, 0};
 
 static freesasa_structure_node *
 structure_node_new(const char *name, const char *classified_by)
@@ -129,7 +129,7 @@ structure_residue_node(const freesasa_structure* structure,
                        int residue_index)
 {
     freesasa_structure_node *residue = NULL;
-    const freesasa_subarea *ref;
+    const freesasa_nodearea *ref;
     int first, last;
 
     residue = 
@@ -148,7 +148,7 @@ structure_residue_node(const freesasa_structure* structure,
     residue->last_atom = last;
     ref = freesasa_classifier_residue_reference(classifier, residue->name);
     if (ref != NULL) {
-        residue->reference = malloc(sizeof(freesasa_subarea));
+        residue->reference = malloc(sizeof(freesasa_nodearea));
         if (residue->reference == NULL) {
             mem_fail();
             goto cleanup;
@@ -215,23 +215,23 @@ structure_tree_add_areas(freesasa_structure_node *node,
 
     if (polar_classifier == NULL) polar_classifier = &freesasa_default_classifier;
     freesasa_structure_node *child = node->children;
-    freesasa_subarea atom,  *area = malloc(sizeof(freesasa_subarea));
+    freesasa_nodearea atom,  *area = malloc(sizeof(freesasa_nodearea));
     if (!area) return mem_fail();
 
-    *area = freesasa_subarea_null;
+    *area = freesasa_nodearea_null;
     area->name = node->name;
     node->area = area;
 
     if (child) {
         while(child) {
             structure_tree_add_areas(child, result, polar_classifier);
-            freesasa_add_subarea(node->area, child->area);
+            freesasa_add_nodearea(node->area, child->area);
             // store reference areas
             if (child->type == FREESASA_NODE_RESIDUE) {
-                const freesasa_subarea *ref =
+                const freesasa_nodearea *ref =
                     freesasa_classifier_residue_reference(polar_classifier, node->name);
                 if (ref != NULL) {
-                    node->reference = malloc(sizeof(freesasa_subarea));
+                    node->reference = malloc(sizeof(freesasa_nodearea));
                     if (node->reference) *node->reference = *ref;
                     else {
                         free(area);
@@ -244,9 +244,9 @@ structure_tree_add_areas(freesasa_structure_node *node,
         }
     } else {
         for (int i = node->first_atom; i <= node->last_atom; ++i) {
-            freesasa_atom_subarea(&atom, node->structure, result,
+            freesasa_atom_nodearea(&atom, node->structure, result,
                                   polar_classifier, i);
-            freesasa_add_subarea(node->area, &atom);
+            freesasa_add_nodearea(node->area, &atom);
         }
     }
     return FREESASA_SUCCESS;
@@ -293,13 +293,13 @@ freesasa_structure_node_free(freesasa_structure_node *root)
     return FREESASA_SUCCESS;
 }
 
-const freesasa_subarea *
+const freesasa_nodearea *
 freesasa_structure_node_area(const freesasa_structure_node *node)
 {
     return node->area;
 }
 
-const freesasa_subarea *
+const freesasa_nodearea *
 freesasa_structure_node_residue_reference(const freesasa_structure_node *node)
 {
     return node->reference;
@@ -357,11 +357,11 @@ freesasa_structure_node_atoms(const freesasa_structure_node *node,
 }
 
 void
-freesasa_atom_subarea(freesasa_subarea *area,
-                      const freesasa_structure *structure,
-                      const freesasa_result *result,
-                      const freesasa_classifier *classifier,
-                      int atom_index)
+freesasa_atom_nodearea(freesasa_nodearea *area,
+                       const freesasa_structure *structure,
+                       const freesasa_result *result,
+                       const freesasa_classifier *classifier,
+                       int atom_index)
 {
     const char *resn = freesasa_structure_atom_res_name(structure, atom_index);
     double a = result->sasa[atom_index];
@@ -391,8 +391,8 @@ freesasa_atom_subarea(freesasa_subarea *area,
 }
 
 void
-freesasa_add_subarea(freesasa_subarea *sum,
-                     const freesasa_subarea *term)
+freesasa_add_nodearea(freesasa_nodearea *sum,
+                      const freesasa_nodearea *term)
 {
     sum->total += term->total;
     sum->side_chain += term->side_chain;
@@ -403,20 +403,20 @@ freesasa_add_subarea(freesasa_subarea *sum,
 }
 
 void
-freesasa_range_subarea(freesasa_subarea *area,
-                       const freesasa_structure *structure,
-                       const freesasa_result *result,
-                       const freesasa_classifier *classifier,
-                       int first_atom,
-                       int last_atom)
+freesasa_range_nodearea(freesasa_nodearea *area,
+                        const freesasa_structure *structure,
+                        const freesasa_result *result,
+                        const freesasa_classifier *classifier,
+                        int first_atom,
+                        int last_atom)
 {
     assert(area);
     assert(structure); assert(result); assert(classifier);
     assert(first_atom <= last_atom);
 
-    freesasa_subarea term = freesasa_subarea_null;
+    freesasa_nodearea term = freesasa_nodearea_null;
     for (int i = first_atom; i <= last_atom; ++i) {
-        freesasa_atom_subarea(&term, structure, result, classifier, i);
-        freesasa_add_subarea(area, &term);
+        freesasa_atom_nodearea(&term, structure, result, classifier, i);
+        freesasa_add_nodearea(area, &term);
     }
 }

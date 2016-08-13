@@ -287,7 +287,7 @@ run_analysis(FILE *input,
 {
     int name_len = strlen(name);
     freesasa_result *result = NULL;
-    freesasa_subarea classes;
+    freesasa_nodearea classes;
     freesasa_structure **structures = NULL;
     int n = 0;
 

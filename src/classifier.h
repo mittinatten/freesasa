@@ -45,7 +45,7 @@ struct classifier_residue {
     char **atom_name; //!< Names of atoms
     double *atom_radius; //!< Atomic radii
     freesasa_atom_class *atom_class; //!< Classes of atoms
-    freesasa_subarea max_area; //!< Maximum area (for RSA)
+    freesasa_nodearea max_area; //!< Maximum area (for RSA)
 };
 
 /* (merge with doc below) 
@@ -89,7 +89,7 @@ struct freesasa_classifier {
 double
 freesasa_guess_radius(const char* symbol);
 
-const freesasa_subarea *
+const freesasa_nodearea *
 freesasa_classifier_residue_reference(const freesasa_classifier *classifier,
                                       const char *res_name);
 

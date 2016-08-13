@@ -393,7 +393,7 @@ START_TEST (test_structure_node)
         freesasa_result2tree(result, s, NULL, "test");
     const freesasa_structure_node *next, *chain, *residue, *atom;
     
-    const freesasa_subarea *area;
+    const freesasa_nodearea *area;
     ck_assert_ptr_ne(tree, NULL);
     ck_assert_ptr_eq(freesasa_structure_node_parent(tree), NULL);
     ck_assert_int_eq(freesasa_structure_node_type(tree), FREESASA_NODE_STRUCTURE);

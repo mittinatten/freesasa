@@ -13,9 +13,9 @@
 #include "classifier.h"
 
 void
-freesasa_residue_rel_subarea(freesasa_subarea *rel,
-                             const freesasa_subarea *abs,
-                             const freesasa_subarea *ref)
+freesasa_residue_rel_nodearea(freesasa_nodearea *rel,
+                              const freesasa_nodearea *abs,
+                              const freesasa_nodearea *ref)
 {
     rel->total = 100. * abs->total / ref->total;
     rel->side_chain = 100. * abs->side_chain / ref->side_chain;
@@ -62,8 +62,8 @@ rsa_print_abs_only(FILE *output,
 static int
 rsa_print_residue(FILE *output, 
                   int iaa,
-                  const freesasa_subarea *abs,
-                  const freesasa_subarea *rel,
+                  const freesasa_nodearea *abs,
+                  const freesasa_nodearea *rel,
                   const freesasa_structure *structure)
 {
     const char *resi_str;
@@ -99,8 +99,8 @@ freesasa_write_rsa(FILE *output,
 
     const freesasa_structure *structure = freesasa_structure_node_structure(tree);
     const freesasa_structure_node *residue, *chain = freesasa_structure_node_children(tree);
-    const freesasa_subarea *abs, *reference;
-    freesasa_subarea rel;
+    const freesasa_nodearea *abs, *reference;
+    freesasa_nodearea rel;
     int res_index, chain_index;
 
     rsa_print_header(output, freesasa_structure_node_classified_by(tree),
@@ -113,9 +113,9 @@ freesasa_write_rsa(FILE *output,
             abs = freesasa_structure_node_area(residue);
             reference = freesasa_structure_node_residue_reference(residue);
             if (reference) {
-                freesasa_residue_rel_subarea(&rel, abs, reference);
+                freesasa_residue_rel_nodearea(&rel, abs, reference);
             } else {
-                rel = freesasa_subarea_null;
+                rel = freesasa_nodearea_null;
             }
             rsa_print_residue(output, res_index, abs, &rel, structure);
             ++res_index;

@@ -628,14 +628,14 @@ freesasa_classifier_class2str(const freesasa_classifier *classifier,
     return NULL;
 }
 
-freesasa_subarea
+freesasa_nodearea
 freesasa_classifier_classify_result(const freesasa_classifier *classifier,
                                     const freesasa_structure *structure,
                                     const freesasa_result *result)
 {
-    freesasa_subarea area = {"whole-structure", 0, 0, 0, 0, 0};
+    freesasa_nodearea area = {"whole-structure", 0, 0, 0, 0, 0};
     if (classifier == NULL) classifier = &freesasa_default_classifier;
-    freesasa_range_subarea(&area, structure, result, classifier,
+    freesasa_range_nodearea(&area, structure, result, classifier,
                            0, freesasa_structure_n(structure) - 1);
     return area;
 }
@@ -680,7 +680,7 @@ freesasa_classifier_from_filename(const char *filename)
     return c;
 }
 
-const freesasa_subarea *
+const freesasa_nodearea *
 freesasa_classifier_residue_reference(const freesasa_classifier *classifier,
                                       const char *res_name)                                      
 {

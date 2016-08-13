@@ -142,7 +142,7 @@ freesasa_write_result(FILE *log,
                       freesasa_result *result,
                       const char *name,
                       const char *chains,
-                      const freesasa_subarea *class_area)
+                      const freesasa_nodearea *class_area)
 {
     assert(log);
     

@@ -127,7 +127,15 @@ typedef struct {
     int n_atoms;  //!< Number of atoms
 } freesasa_result;
 
-//! Struct to store SASA values for a named substructure
+/**
+    Struct to store integrated SASA values for either a full structure
+    or a subset thereof.
+
+    Use freesasa_classifier_classify_result() to turn a
+    ::freesasa_result into a ::freesasa_nodearea. Each
+    ::freesasa_structure_node is associated with a
+    ::freesasa_nodearea.
+ */
 typedef struct {
     const char *name;  //!< Name of substructure
     double total;      //!< Total SASA
@@ -136,7 +144,7 @@ typedef struct {
     double polar;      //!< Polar SASA
     double apolar;     //!< Apolar SASA
     double unknown;    //!< SASA of unknown class (neither polar nor apolar)
-} freesasa_subarea;
+} freesasa_nodearea;
 
 //! Node types
 typedef enum {
@@ -305,7 +313,7 @@ freesasa_classifier_name(const freesasa_classifier *classifier);
     @param result The results
     @return A struct with all the results.
  */
-freesasa_subarea
+freesasa_nodearea
 freesasa_classifier_classify_result(const freesasa_classifier *classifier,
                                     const freesasa_structure *structure,
                                     const freesasa_result *result);
@@ -438,7 +446,7 @@ freesasa_write_result(FILE *log,
                       freesasa_result *result,
                       const char *name,
                       const char *chains,
-                      const freesasa_subarea *class_area);
+                      const freesasa_nodearea *class_area);
 /**
     Print parameters to file
 
@@ -1034,7 +1042,7 @@ freesasa_structure_node_free(freesasa_structure_node *root);
 
 
 /**
-    The ::freesasa_subarea of all atoms belonging to a node.
+    The ::freesasa_nodearea of all atoms belonging to a node.
 
     Only works if the areas have been added using
     freesasa_structure_tree_fill().
@@ -1042,7 +1050,7 @@ freesasa_structure_node_free(freesasa_structure_node *root);
     @param node The node. 
     @return The area. NULL if no area has been attached to this node.
  */
-const freesasa_subarea *
+const freesasa_nodearea *
 freesasa_structure_node_area(const freesasa_structure_node *node);
 
 /**
@@ -1121,7 +1129,7 @@ freesasa_structure_node_structure(const freesasa_structure_node *node);
      @return The reference area. NULL if area not available or if node
        is not a residue.
  */
-const freesasa_subarea *
+const freesasa_nodearea *
 freesasa_structure_node_residue_reference(const freesasa_structure_node *node);
 
 /**
