@@ -282,15 +282,13 @@ freesasa_classifier_class(const freesasa_classifier *classifier,
                           const char *atom_name);
 
 /**
-    Name of a class returned by freesasa_classifier_class()
+    Names for ::freesasa_atom_class.
 
-    @param classifier The classifier.
-    @param the_class The class.
-    @return Name of class. NULL if `the_class` unknown.
+    @param atom_class The class.
+    @return Name of class.
  */
 const char*
-freesasa_classifier_class2str(const freesasa_classifier *classifier,
-                              int the_class);
+freesasa_classifier_class2str(freesasa_atom_class atom_class);
 
 /**
     The name of a classifier.

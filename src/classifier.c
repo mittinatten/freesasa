@@ -612,12 +612,9 @@ freesasa_classifier_class(const freesasa_classifier *classifier,
 }
 
 const char*
-freesasa_classifier_class2str(const freesasa_classifier *classifier,
-                              int the_class)
-                              
+freesasa_classifier_class2str(freesasa_atom_class atom_class)
 {
-    assert(classifier);
-    switch (the_class) {
+    switch (atom_class) {
     case FREESASA_ATOM_APOLAR:
         return "Apolar";
     case FREESASA_ATOM_POLAR:
@@ -625,6 +622,7 @@ freesasa_classifier_class2str(const freesasa_classifier *classifier,
     case FREESASA_ATOM_UNKNOWN:
         return "Unknown";
     }
+    fail_msg("Invalid atom class");
     return NULL;
 }
 

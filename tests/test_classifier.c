@@ -271,18 +271,6 @@ const int n_atom_types = sizeof(atoms)/sizeof(struct atom);
 
 static const freesasa_classifier *oons_c = &freesasa_oons_classifier;
 
-static void
-setup() 
-{
-    //..
-}
-
-static void
-teardown()
-{
-    //..
-}
-
 // tests freesasa_classifier_radius() and freesasa_guess_radius
 START_TEST (test_radius)
 {
@@ -308,15 +296,18 @@ START_TEST (test_class)
         int c = freesasa_classifier_class(oons_c, a.a, a.b);
         if (c == FREESASA_WARN) { ck_assert(a.class == UNK); continue; }
         sprintf(buf,"Classification error for %s %s %s %s",
-                a.a, a.b, freesasa_classifier_class2str(oons_c, c),
-                freesasa_classifier_class2str(oons_c, a.class));
+                a.a, a.b, freesasa_classifier_class2str(c),
+                freesasa_classifier_class2str(a.class));
         ck_assert_msg(c == a.class, buf);
     }
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert(freesasa_classifier_class(oons_c, "ABC", " X  ") == FREESASA_ATOM_UNKNOWN);
     
-    ck_assert(freesasa_classifier_class2str(oons_c, 100) == NULL);
-    ck_assert(freesasa_classifier_class2str(oons_c, -1) == NULL);
+    ck_assert(freesasa_classifier_class2str(100) == NULL);
+    ck_assert(freesasa_classifier_class2str(-1) == NULL);
+    ck_assert_str_eq(freesasa_classifier_class2str(FREESASA_ATOM_APOLAR), "Apolar");
+    ck_assert_str_eq(freesasa_classifier_class2str(FREESASA_ATOM_POLAR), "Polar");
+    ck_assert_str_eq(freesasa_classifier_class2str(FREESASA_ATOM_UNKNOWN), "Unknown");
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
@@ -355,10 +346,10 @@ START_TEST (test_user)
 {
     freesasa_classifier* c = freesasa_classifier_from_filename(SHAREDIR "oons.config");
     ck_assert(c != NULL);
+    ck_assert(freesasa_classifier_class(c, "ALA", "CA") == FREESASA_ATOM_APOLAR);
+    ck_assert(freesasa_classifier_class(c, "ALA", "O") == FREESASA_ATOM_POLAR);
     ck_assert(fabs(freesasa_classifier_radius(c, "ALA","CA") - 2.0) < 1e-5);
     ck_assert(fabs(freesasa_classifier_radius(c, "ALA","N") - 1.55) < 1e-5);
-    ck_assert_str_eq(freesasa_classifier_class2str(c, freesasa_classifier_class(c, "ALA","CB")), "Apolar");
-    ck_assert_str_eq(freesasa_classifier_class2str(c, freesasa_classifier_class(c, "ALA","O")), "Polar");
       // compare oons.config and built in classification (should be identical for standard atoms)
     for (int i = 0; i < 188; ++i) {
         const char *res_name = atoms[i].a, *atom_name = atoms[i].b;
@@ -366,18 +357,15 @@ START_TEST (test_user)
         if (strcmp(atom_name," Y  ") == 0) continue;
         ck_assert(fabs(freesasa_classifier_radius(c, res_name, atom_name) -
                        freesasa_classifier_radius(oons_c, res_name, atom_name)) < 1e-5);
-        char *c1 = strdup(freesasa_classifier_class2str(oons_c, freesasa_classifier_class(oons_c, res_name, atom_name)));
-        char *c2 = strdup(freesasa_classifier_class2str(c, freesasa_classifier_class(c, res_name, atom_name)));
-        for (int i = 0; c1[i]; ++i) c1[i] = tolower(c1[i]); 
-        for (int i = 0; c2[i]; ++i) c2[i] = tolower(c2[i]); 
-        ck_assert_str_eq(c1,c2);
+        ck_assert(freesasa_classifier_class(c, res_name, atom_name) ==
+                  freesasa_classifier_class(oons_c, res_name, atom_name));
     }
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert(freesasa_classifier_radius(c, "ALA", "X") < 0);
     ck_assert(freesasa_classifier_radius(c, "X", "CB") > 0);
     ck_assert(freesasa_classifier_radius(c, "X", "X") < 0);
     ck_assert(freesasa_classifier_class(c, "ALA", "X") == FREESASA_ATOM_UNKNOWN);
-    ck_assert(freesasa_classifier_class(c, "X", "CB") >= 0);
+    ck_assert(freesasa_classifier_class(c, "X", "CB") == FREESASA_ATOM_APOLAR);
     ck_assert(freesasa_classifier_class(c, "X", "X") == FREESASA_ATOM_UNKNOWN);
     freesasa_classifier_free(c);
     
@@ -477,7 +465,6 @@ Suite* classifier_suite()
     tcase_add_test(tc_core,test_user);
     tcase_add_test(tc_core,test_backbone);
     tcase_add_test(tc_core,test_memerr);
-    tcase_add_checked_fixture(tc_core,setup,teardown);
 
     TCase *tc_static = test_classifier_static();
         
