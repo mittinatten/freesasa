@@ -248,6 +248,7 @@ do
     done
 done
 assert_pass "$cli --rsa-file=$dump $datadir/1ubq.pdb"
+assert_pass "$cli --rsa-file=$dump $datadir/1ubq.pdb -c $sharedir/naccess.config"
 # XML
 if [[ use_xml -eq 1 ]] ; then
     echo
