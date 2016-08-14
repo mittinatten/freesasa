@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
     }
     
     /* Print results */
-    printf("Total  : %f A2\n",result->total);
+    printf("Total  : %f A2\n",class_area.total);
     printf("Apolar : %f A2\n",class_area.apolar);
     printf("Polar  : %f A2\n",class_area.polar);
 

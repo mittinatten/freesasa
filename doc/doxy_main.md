@@ -386,13 +386,14 @@ Customizing explains how to configure the calculations.
 
 The function freesasa_structure_from_pdb() reads the atom coordinates
 from a PDB file and assigns a radius to each atom. The second and
-third arguments can be changed to use a custom freesasa_classifier to
+third arguments can be changed to use a custom ::freesasa_classifier to
 define radii and to specify options for what to include in the PDB
 file, respectively.
 
 ~~~{.c}
     FILE *fp = fopen("1abc.pdb");
-    freesasa_structure *structure = freesasa_structure_from_pdb(fp, NULL, 0);
+    const freesasa_classifier *classifier = &freesasa_default_classifier;
+    freesasa_structure *structure = freesasa_structure_from_pdb(fp, classifier, 0);
 ~~~
 
 @subsubsection API-Calc Perform calculation and get total SASA
@@ -409,17 +410,17 @@ structure we just generated, and then print the total area. The argument
 @subsubsection API-Classes Get polar and apolar area
 
 We are commonly interested in the polar and apolar areas of a
-molecule, this can be calculated by freesasa_result_classify(). Again,
-passing a NULL freesasa_classifier uses the default. To get other
-classes of atoms we can either define our own classifier, or use
+molecule, this can be calculated by freesasa_result_classify(). To get
+other classes of atoms we can either define our own classifier, or use
 freesasa_select_area() defined in the next section. The return type
-freesasa_strvp contains arrays of strings and values describing the
-different classes, as illustrated below.
+::freesasa_nodearea is a struct contains the total area and the area
+of all apolar and polar atoms, and main-chain and side-chain atoms.
 
 ~~~{.c}
-    freesasa_strvp *class_area = freesasa_result_classify(result, structure, NULL);
-    for (int i = 0; i < class_area->n; ++i)
-        printf("%s: %f A2\n", class_area->string[i], class_area->value[i]);
+    freesasa_nodearea class_area = freesasa_classifier_classify_result(classifier, structure, result);
+    printf("Total  : %f A2\n",class_area.total);
+    printf("Apolar : %f A2\n",class_area.apolar);
+    printf("Polar  : %f A2\n",class_area.polar);
 ~~~
 
 @see @ref Classification
@@ -437,8 +438,48 @@ takes a selection definition uses a subset of the Pymol select syntax
     printf("Area of selection '%s': %f A2\n", name, area);
 ~~~
 
-@see @ref Selection.
+@see @ref Selection
 
+
+@subsubsection structure-node Navigating the results as a tree
+
+In addition to the flat array of results in ::freesasa_result, and the
+global values returned by freesasa_classifier_classify_result(),
+FreeSASA has an interface for navigating the structure as a tree. The
+leaf nodes are individual atoms, and there are parent nodes at the residue,
+chain, and structure levels. The function
+freesasa_result2tree() generates a such a tree and populates each node
+with the ::freesasa_nodearea of all its atoms. It returns the root
+node. The resulting tree can be traversed with
+freesasa_structure_node_children(), freesasa_structure_node_parent()
+and freesasa_structure_node_next(), and the area, type and name using
+freesasa_structure_node_area(), freesasa_structure_node_type() and
+freesasa_structure_node_name(). The tree keeps an internal reference
+to the structure used, available via
+freesasa_structure_node_structure(), and
+freesasa_structure_node_atoms() can be used to find out which atoms in
+that structure belong to a node, allowing the user to get more
+detailed information about those atoms if needed. This also means that
+the structure should not be changed as long as the tree is in use.
+
+@subsubsection export-tree Exporting to RSA, JSON and XML
+
+The tree structure can also be exported to an RSA, JSON or XML file
+using freesasa_export_tree(). The RSA format is fixed, but the user
+can select which levels of the tree to include in JSON and XML. The
+following illustrates how one would generate a tree and export it to
+XML, including nodes for the whole structure, chains and residues (but
+excluding individual atoms).
+
+~~~~{.c}
+    freesasa_structure_node *tree = freesasa_result2tree(result, structure, classifier, "A protein");
+    FILE *fp = fopen("output.xml", "w");
+    freesasa_export_tree(fp, tree, parameters, FREESASA_XML | FREESASA_OUTPUT_RESIDUES);
+    fclose(fp);
+    freesasa_structure_node_free(tree);
+~~~~
+
+    
 @subsection Coordinates
 
 If users wish to supply their own coordinates and radii, these are
@@ -452,6 +493,7 @@ coordinates in the order `x1,y1,z1,x2,y2,z2,...,xn,yn,zn`.
     freesasa_result *result = freesasa_calc_coord(coord, radius, 1, NULL);
 ~~~
 
+    
 @subsection Error-handling
 
 The principle for error handling is that unpredictable errors should
@@ -515,23 +557,14 @@ freesasa_result *result = freesasa_calc_structure(structure,radii,param);
 
 @subsection Classification Specifying atomic radii and classes
 
-The type ::freesasa_classifier has function pointers to functions that
-take residue and atom names as argument (pairs such as "ALA","CA"),
-and returns a radius or a class (polar, apolar, etc). The classifier
-can be passed to freesasa_structure_from_pdb(),
-freesasa_structure_array() or freesasa_structure_add_atom_wopt() to
-customize the radii assigned to atoms, which can then be used to
-calculate the SASA of the structure. It can also be used in
-freesasa_result_classify() to get the SASA integrated over the
-different classes of atoms, i.e. the SASA of all polar atoms, etc.
-
-Users of the API can provide their own classification by writing their
-own functions and providing them via a ::freesasa_classifier object. A
-classifier-configuration can also be read from a file using
-freesasa_classifier_from_file() (see @ref Config-file).
+Classifiers are used to determine which atoms are polar or apolar, and
+to specify atomic radii. In addition the three standard classifiers
+(see below) have reference values for the maximum areas of the 20
+standard amino acids which can be used to calculate relative areas of
+residues, as in the RSA output of NACCESS.
 
 The default classifier is available through the const variable
-::freesasa_default_classifier. This uses the radii, defined in the
+::freesasa_default_classifier. This uses the ProtOr radii, defined in the
 paper by Tsai et al. ([JMB 1999, 290:
 253](http://www.ncbi.nlm.nih.gov/pubmed/10388571)) for the standard
 amino acids (20 regular plus SEC, PYL, ASX and GLX), for some capping
@@ -541,31 +574,34 @@ all carbons as *apolar* and all other known atoms as *polar*.
 
 Early versions of FreeSASA used the atomic radii by Ooi et al. ([PNAS
 1987, 84: -3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/),
-this classifier is still available through freesasa_classifier_oons().
+this classifier is still available through ::freesasa_oons_classifier.
+
+Users can provide their own classifiers through @ref Config-file. At
+the moment these do not allow the user to specify reference values to
+calculate relatative SASA values for RSA output.
 
 The default behavior of freesasa_structure_from_pdb(),
 freesasa_structure_array(), freesasa_structure_add_atom() and
-freesasa_structure_add_atom_wopt() is to first try the default
+freesasa_structure_add_atom_wopt() is to first try the provided
 classifier and then guess the radius if necessary (emitting warnings
 if this is done, uses VdW radii defined by [Mantina et al. J Phys Chem
-2009,
-113:5806](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3658832/)).
+2009, 113:5806](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3658832/)).
 
-See the documentation for these functions for what
-parameters to use to change the default behavior.
+See the documentation for these functions for what parameters to use
+to change the default behavior.
 
 @page Config-file Classifier configuration files
 
-The configuration files read by freesasa_classifier_from_file() or the
+The configuration files read by freesasa_classifier_from_filename() or the
 command-line option `-c` should have two sections: `types:` and
 `atoms:`. 
 
 The types-section defines what types of atoms are available
 (aliphatic, aromatic, hydroxyl, ...), what the radius of that type is
-and what class a type belongs to (polar, apolar, ...). The types are
-just shorthands to associate an atom with a given combination of class
-and radius. The user is free to define as many types and classes as
-necessary.
+and what class a type belongs to ('polar' or 'apolar', case
+insensitive). The types are just shorthands to associate an atom with
+a given combination of class and radius. The user is free to define as
+many types and classes as necessary.
 
 The atoms-section consists of triplets of residue-name, atom-name (as
 in the corresponding PDB entries) and type. A prototype file would be
@@ -610,6 +646,10 @@ popular programs, such as
 [NACCESS](https://github.com/mittinatten/freesasa/tree/master/share/naccess.config)
 and
 [DSSP](https://github.com/mittinatten/freesasa/tree/master/share/dssp.config).
+
+The static classifiers in the API were generated using
+[scripts/config2c.pl]((https://github.com/mittinatten/freesasa/tree/master/scripts/)
+to convert the correspoding configurations in `share` to C code.
 
 @page Selection Selection syntax
 

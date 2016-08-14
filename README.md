@@ -82,10 +82,8 @@ The configuration script can be customized with general options:
 * `--with-python=<python>` specifies which python binary to use
 * `--disable-threads` build without multithreaded calculations
 * `--enable-doxygen` activates building of Doxygen documentation
-* `--disable-json` build without support for JSON output (requires
-  JSON-C library)
-* `--disable-xml` build without support for XML output (requires
-  libxml2)
+* `--disable-json` build without support for JSON output.
+* `--disable-xml` build without support for XML output.
 
 And some options for developers:
 * `--enable-check` enables unit-testing using the Check framework

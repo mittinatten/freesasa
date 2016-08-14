@@ -82,7 +82,7 @@ if test "x$enable_xml" != "xno" ; then
     [AC_DEFINE([USE_XML], [1])
      AC_SUBST([LIBXML_FOR_PY_BINDINGS], ['"xml2"'])
      AM_CONDITIONAL([USE_XML], true)],
-    [AC_MSG_ERROR([Library libxml2 not found, install library or configure with flag --disable-xml.])])
+    [AC_MSG_ERROR([Library libxml2 not found, install library or build without (using --disable-xml).])])
 else
     AC_MSG_NOTICE([Building without support for XML output.])
 fi
@@ -103,7 +103,7 @@ if test "x$enable_json" != "xno" ; then
          AC_SUBST([JSONC_FOR_PY_BINDINGS], ['"json-c"'])
          AM_CONDITIONAL([USE_JSON], true)])])
   AM_COND_IF([USE_JSON],[],
-    [AC_MSG_ERROR([Library JSON-C not found, install library or configure with flag --disable-json])])
+    [AC_MSG_ERROR([Library JSON-C not found, install library or build without (using --disable-json).])])
   AC_CHECK_PROG([JSONLINT],[jsonlint],[jsonlint],[])
 else
   AC_MSG_NOTICE([Building without support for JSON output.])

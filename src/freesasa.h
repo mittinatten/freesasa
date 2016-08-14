@@ -240,7 +240,7 @@ freesasa_result_free(freesasa_result *result);
 
     @param filename Path to file containing configuration
     @return The generated classifier. NULL if there were problems
-      parsing or reading the file or memory allocation problem.
+      parsing or reading trhe file or memory allocation problem.
 
     @see @ref Config-file
  */
@@ -1167,7 +1167,7 @@ freesasa_classifier_from_file(FILE *file);
     doubles and strings. freesasa_strvp_free() assumes both arrays
     and strings are dynamically allocated.
 
-    @deprecated
+    @deprecated use freesasa_nodearea instead
  */
 typedef struct {
     double *value; //!< Array of values
