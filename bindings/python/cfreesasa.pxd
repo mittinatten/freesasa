@@ -7,6 +7,9 @@ cdef extern from "freesasa.h":
     ctypedef enum freesasa_verbosity:
         FREESASA_V_NORMAL, FREESASA_V_NOWARNINGS, FREESASA_V_SILENT, FREESASA_V_DEBUG
 
+    ctypedef enum freesasa_atom_class:
+        FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_UNKNOWN
+
     cdef int FREESASA_SUCCESS
     cdef int FREESASA_FAIL
     cdef int FREESASA_WARN
@@ -33,10 +36,14 @@ cdef extern from "freesasa.h":
         double *sasa
         int n_atoms
 
-    ctypedef struct freesasa_strvp:
-        double *value
-        char **string
-        int n
+    ctypedef struct freesasa_nodearea:
+        const char *name
+        double total
+        double main_chain
+        double side_chain
+        double polar
+        double apolar
+        double unknown
 
     ctypedef struct freesasa_classifier:
         pass
@@ -72,24 +79,17 @@ cdef extern from "freesasa.h":
                                       const char *res_name,
                                       const char *atom_name)
 
-    int freesasa_classifier_class(const freesasa_classifier *classifier,
-                                  const char *res_name,
-                                  const char *atom_name)
-    
-    const char* freesasa_classifier_class2str(const freesasa_classifier *classifier,
-                                              int the_class)
+    freesasa_atom_class freesasa_classifier_class(const freesasa_classifier *classifier,
+                                                  const char *res_name,
+                                                  const char *atom_name)
 
-    freesasa_strvp* freesasa_result_classify(freesasa_result *result,
-                                             const freesasa_structure *structure,
-                                             const freesasa_classifier *classifier)
+    const char* freesasa_classifier_class2str(freesasa_atom_class the_class)
 
     int freesasa_select_area(const char *command,
                              char *name,
                              double *area,
                              const freesasa_structure *structure,
                              const freesasa_result *result)
-
-    void freesasa_strvp_free(freesasa_strvp *strvp)
 
     int freesasa_write_pdb(FILE *output,
                            freesasa_result *result,

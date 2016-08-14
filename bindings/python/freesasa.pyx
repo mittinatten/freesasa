@@ -261,9 +261,7 @@ cdef class Classifier:
       #  @return A string describing the class
       def classify(self,residueName,atomName):
             classIndex = freesasa_classifier_class(self._c_classifier, residueName, atomName)
-            if classIndex is FREESASA_WARN:
-                  return 'Unknown'
-            return freesasa_classifier_class2str(self._c_classifier, classIndex)
+            return freesasa_classifier_class2str(classIndex)
 
       ## Radius of atom.
       #
