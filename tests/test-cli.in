@@ -83,11 +83,17 @@ assert_fail "$cli < $datadir/1ubq.pdb > $nodir"
 assert_fail "$cli --B-value-file $nodir < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli --residue-type-file $nodir < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli --residue-file $nodir < $datadir/1ubq.pdb > $dump"
+assert_fail "$cli -e $nodir $datadir/1ubq.pdb"
+assert_fail "$cli -o $nodir $datadir/1ubq.pdb"
 echo
 echo "== General options =="
+# unknown options
+assert_fail "$cli --blablabla $datadir/1ubq.pdb"
+assert_fail "$cli -x $datadir/1ubq.pdb"
+# help message
 assert_pass "$cli -h > $dump 2> /dev/null"
-version=`$cli -v | head -n 1`
 # check that it's a valid version number
+version=`$cli -v | head -n 1`
 assert_pass "echo $version | perl -ne 'if (m/FreeSASA (\d+\.)*\d$/) {exit 0} else  {exit 1}'"
 echo
 echo "== Testing S&R =="
@@ -160,7 +166,7 @@ assert_pass "$cli -S -l --B-value-file tmp/bfactor.pdb < $datadir/1ubq.pdb"
 assert_pass "diff tmp/bfactor.pdb $datadir/1ubq.B.pdb"
 echo
 echo "== Testing probe radius =="
-assert_fail "$cli -S -n 10 -p -1 < $datadir/1ubq.pdb > $dump"
+assert_fail "$cli -S -n 10 -p=-1 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -S -n 10 -p 1 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -S -p 1.4 --B-value-file tmp/bfactor.pdb < $datadir/1ubq.pdb > $dump"
 assert_pass "diff tmp/bfactor.pdb $datadir/1ubq.B.pdb"
