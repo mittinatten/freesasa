@@ -74,6 +74,7 @@ AC_ARG_ENABLE([xml],
 
 AC_DEFINE([USE_XML], [0], [Define if XML should be included.])
 AM_CONDITIONAL([USE_XML], false)
+AC_SUBST([USE_XML], [yes])
 AC_SUBST([LIBXML_FOR_PY_BINDINGS], [])
 
 if test "x$enable_xml" != "xno" ; then
@@ -81,6 +82,7 @@ if test "x$enable_xml" != "xno" ; then
   PKG_CHECK_MODULES([libxml2], [libxml-2.0],
     [AC_DEFINE([USE_XML], [1])
      AC_SUBST([LIBXML_FOR_PY_BINDINGS], ['"xml2"'])
+     AC_SUBST([USE_XML], [yes])
      AM_CONDITIONAL([USE_XML], true)],
     [AC_MSG_ERROR([Library libxml2 not found, install library or build without (using --disable-xml).])])
 else
