@@ -191,21 +191,22 @@ START_TEST (test_sasa_1ubq)
     errno = 0;
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
     ck_assert(pdb != NULL);
-    freesasa_structure *st = freesasa_structure_from_pdb(pdb,NULL,0);
+    const freesasa_classifier *classifier = &freesasa_default_classifier;
+    freesasa_structure *st = freesasa_structure_from_pdb(pdb, classifier, 0);
     freesasa_result *res;
     freesasa_structure_node *tree;
-    ck_assert((res = freesasa_calc_structure(st,&parameters)) != NULL);
+    freesasa_strvp *strvp;
+    ck_assert((res = freesasa_calc_structure(st, &parameters)) != NULL);
 
-    // deprecated
-    freesasa_strvp* res_class = freesasa_result_classify(res,st,NULL);
+    freesasa_nodearea res_class = freesasa_classifier_classify_result(classifier, st, res);
 
     tree = freesasa_result2tree(res, st, NULL, "test");
     fclose(pdb);
 
     // The reference values were the output of FreeSASA on 2014-02-10
-    ck_assert(fabs(res->total - total_ref) < 1e-5);
-    ck_assert(fabs(res_class->value[FREESASA_ATOM_POLAR] - polar_ref) < 1e-5);
-    ck_assert(fabs(res_class->value[FREESASA_ATOM_APOLAR] - apolar_ref) < 1e-5);
+    ck_assert(float_eq(res->total, total_ref, 1e-5));
+    ck_assert(float_eq(res_class.polar, polar_ref, 1e-5));
+    ck_assert(float_eq(res_class.apolar, apolar_ref, 1e-5));
     
     FILE *devnull = fopen("/dev/null","w");
     ck_assert(freesasa_write_pdb(devnull,res,st) == FREESASA_SUCCESS);
@@ -218,20 +219,38 @@ START_TEST (test_sasa_1ubq)
     } else {
         ck_assert(freesasa_export_tree(devnull, tree, NULL, FREESASA_JSON) == FREESASA_FAIL);
     }
+    if (USE_XML) {
+        ck_assert(freesasa_export_tree(devnull, tree, NULL, FREESASA_XML) == FREESASA_SUCCESS);
+    } else {
+        ck_assert(freesasa_export_tree(devnull, tree, NULL, FREESASA_XML) == FREESASA_FAIL);
+    }
     fclose(devnull);
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
     FILE *nowrite = fopen("/dev/null","r");
+    ck_assert(freesasa_write_parameters(nowrite, &freesasa_default_parameters) == FREESASA_FAIL);
+    ck_assert(freesasa_write_result(nowrite, res, "bla", NULL, &res_class) == FREESASA_FAIL);
+    ck_assert(freesasa_per_chain(nowrite, res, st) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue_type(nowrite, res, st) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue(nowrite, res, st) == FREESASA_FAIL);
     ck_assert(freesasa_export_tree(nowrite, tree, NULL, FREESASA_RSA) == FREESASA_FAIL);
     ck_assert(freesasa_export_tree(nowrite, tree, NULL, FREESASA_JSON) == FREESASA_FAIL);
+    if (USE_JSON) {
+        ck_assert(freesasa_export_tree(nowrite, tree, NULL, FREESASA_JSON) == FREESASA_FAIL);
+    }
+    if (USE_XML) {
+        ck_assert(freesasa_export_tree(nowrite, tree, NULL, FREESASA_XML) == FREESASA_FAIL);
+    }
     fclose(nowrite);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
+
+    // deprecated section
+    strvp = freesasa_result_classify(res, st, classifier);
+    ck_assert_ptr_ne(strvp, NULL);
+    freesasa_strvp_free(strvp);
     
     freesasa_structure_free(st);
     freesasa_result_free(res);
-    freesasa_strvp_free(res_class);
     freesasa_structure_node_free(tree);
 }
 END_TEST
@@ -278,73 +297,73 @@ START_TEST (test_trimmed_pdb)
     double polar_ref = 7432.608118;
     double apolar_ref = 8701.259006;
     freesasa_parameters param = freesasa_default_parameters;
+    const freesasa_classifier *classifier = &freesasa_default_classifier;
     freesasa_result *result;
     freesasa_structure *st;
+    freesasa_nodearea res_class;
     FILE *pdb;
-    freesasa_strvp *res_class;
     param.alg = FREESASA_SHRAKE_RUPLEY;
-    
+
     errno = 0;
     pdb = fopen(DATADIR "3bzd_trimmed.pdb","r");
     ck_assert(pdb != NULL);
-    st = freesasa_structure_from_pdb(pdb,NULL,0);
+    st = freesasa_structure_from_pdb(pdb, classifier, 0);
     fclose(pdb);
 
-    ck_assert((result = freesasa_calc_structure(st,&param)) != NULL);
-    res_class = freesasa_result_classify(result,st,NULL);
-    ck_assert(res_class != NULL);
-    
-    ck_assert(fabs(result->total - total_ref) < 1e-5);
-    ck_assert(fabs(res_class->value[FREESASA_ATOM_POLAR] - polar_ref) < 1e-5);
-    ck_assert(fabs(res_class->value[FREESASA_ATOM_APOLAR] - apolar_ref) < 1e-5);
-    
+    result = freesasa_calc_structure(st,&param);
+    ck_assert_ptr_ne(result, NULL);
+    res_class = freesasa_classifier_classify_result(classifier, st, result);
+
+    ck_assert(float_eq(result->total, total_ref, 1e-5));
+    ck_assert(float_eq(res_class.polar, polar_ref, 1e-5));
+    ck_assert(float_eq(res_class.apolar, apolar_ref, 1e-5));
+
     freesasa_structure_free(st);
     freesasa_result_free(result);
-    freesasa_strvp_free(res_class);
 }
 END_TEST
 
 START_TEST (test_user_classes)
 {
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
-    FILE *config = fopen(SHAREDIR "protor.config", "r");
     freesasa_structure *st, *st_ref;
     freesasa_classifier *user_classifier;
-    freesasa_result *res;
-    freesasa_strvp *res_class, *res_class_ref;
+    freesasa_result *res, *res_ref;
+    freesasa_nodearea res_class, res_class_ref;
     const double *radii, *radii_ref;
 
     ck_assert(pdb != NULL);
-    ck_assert(config != NULL);
 
-    user_classifier = freesasa_classifier_from_file(config);
+    user_classifier = freesasa_classifier_from_filename(SHAREDIR "protor.config");
     ck_assert(user_classifier != NULL);
-    fclose(config);
 
     st = freesasa_structure_from_pdb(pdb, user_classifier, 0);
     ck_assert(st != NULL);
     rewind(pdb);
-    st_ref = freesasa_structure_from_pdb(pdb, NULL, 0);
+    st_ref = freesasa_structure_from_pdb(pdb, &freesasa_protor_classifier, 0);
     ck_assert(st_ref != NULL);
     fclose(pdb);
-    
+
     radii = freesasa_structure_radius(st);
     radii_ref = freesasa_structure_radius(st_ref);
     ck_assert(radii != NULL);
     ck_assert(radii_ref != NULL);
     for (int i = 0; i < freesasa_structure_n(st); ++i) {
-        ck_assert(fabs(radii[i] - radii_ref[i]) < 1e-5);
+        ck_assert(float_eq(radii[i], radii_ref[i], 1e-10));
     }
-    ck_assert((res = freesasa_calc_structure(st,NULL)) != NULL);
-    res_class = freesasa_result_classify(res,st,user_classifier);
-    res_class_ref = freesasa_result_classify(res,st,NULL);
-    ck_assert_int_eq(res_class->n, res_class_ref->n);
-    for (int i = 0; i < res_class->n; ++i) {
-        ck_assert(fabs(res_class->value[i] - res_class_ref->value[i]) < 1e-10);
-    }
-    
-    freesasa_strvp_free(res_class);
-    freesasa_strvp_free(res_class_ref);
+    res = freesasa_calc_structure(st, NULL);
+    res_ref = freesasa_calc_structure(st_ref, NULL);
+    ck_assert_ptr_ne(res, NULL);
+    ck_assert_ptr_ne(res, NULL);
+    res_class = freesasa_classifier_classify_result(user_classifier, st, res);
+    res_class_ref = freesasa_classifier_classify_result(&freesasa_protor_classifier, st_ref, res_ref);
+    ck_assert(float_eq(res_class.total, res_class_ref.total, 1e-10));
+    ck_assert(float_eq(res_class.polar, res_class_ref.polar, 1e-10));
+    ck_assert(float_eq(res_class.apolar, res_class_ref.apolar, 1e-10));
+    ck_assert(float_eq(res_class.unknown, res_class_ref.unknown, 1e-10));
+    ck_assert(float_eq(res_class.side_chain, res_class_ref.side_chain, 1e-10));
+    ck_assert(float_eq(res_class.main_chain, res_class_ref.main_chain, 1e-10));
+
     freesasa_structure_free(st);
     freesasa_classifier_free(user_classifier);
     freesasa_result_free(res);

@@ -462,9 +462,11 @@ freesasa_write_xml(FILE *output,
     fflush(output);
     if (ferror(output)) {
         fail_msg(strerror(errno));
+        goto cleanup;
     }
-    ret = FREESASA_SUCCESS;
     
+    ret = FREESASA_SUCCESS;
+
  cleanup:
     xmlFreeDoc(doc);
     xmlFreeTextWriter(writer);
