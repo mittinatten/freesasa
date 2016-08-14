@@ -74,7 +74,6 @@ AC_ARG_ENABLE([xml],
 
 AC_DEFINE([USE_XML], [0], [Define if XML should be included.])
 AM_CONDITIONAL([USE_XML], false)
-AC_SUBST([USE_XML], [yes])
 AC_SUBST([LIBXML_FOR_PY_BINDINGS], [])
 
 if test "x$enable_xml" != "xno" ; then
