@@ -32,7 +32,7 @@ freesasa_json_atom(const freesasa_structure_node *node)
     json_object_object_add(atom, "name", json_object_new_string(trim_name));
     json_object_object_add(atom, "area", json_object_new_double(area->total));
     json_object_object_add(atom, "is-polar",
-                           json_object_new_boolean(freesasa_structure_atom_class(structure, first)));
+                           json_object_new_boolean(freesasa_structure_atom_class(structure, first) == FREESASA_ATOM_POLAR));
     json_object_object_add(atom, "is-main-chain",
                            json_object_new_boolean(freesasa_atom_is_backbone(name)));
     json_object_object_add(atom, "radius",

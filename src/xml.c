@@ -83,7 +83,7 @@ freesasa_xml_atom(const freesasa_structure_node *node)
         goto cleanup;
     }
 
-    sprintf(buf, "%s", freesasa_structure_atom_class(structure, first) ? "yes" : "no");
+    sprintf(buf, "%s", freesasa_structure_atom_class(structure, first) == FREESASA_ATOM_POLAR ? "yes" : "no");
     if (xmlNewProp(xml_node, BAD_CAST "isPolar", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;

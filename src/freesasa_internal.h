@@ -137,7 +137,7 @@ freesasa_structure_xyz(const freesasa_structure *s);
    @param i Atom index.
    @return The class.
  */
-int
+freesasa_atom_class
 freesasa_structure_atom_class(const freesasa_structure *structure,
                               int i);
 

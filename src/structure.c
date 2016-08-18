@@ -34,7 +34,7 @@ struct atom {
     char *line;
     int res_index;
     char chain_label;
-    int the_class;
+    freesasa_atom_class the_class;
 };
 
 static const struct atom empty_atom = {
@@ -45,7 +45,7 @@ static const struct atom empty_atom = {
     .line = NULL,
     .res_index = -1,
     .chain_label = '\0',
-    .the_class = -1
+    .the_class = FREESASA_ATOM_UNKNOWN
 };
 
 struct freesasa_structure {
@@ -112,7 +112,7 @@ atom_new(const char *residue_name,
     a->res_number = strdup(residue_number);
     a->atom_name = strdup(atom_name);
     a->symbol = strdup(symbol);
-    a->the_class = 0;
+    a->the_class = FREESASA_ATOM_UNKNOWN;
 
     if (!a->res_name || !a->res_number || !a->atom_name ||
         !a->symbol) {
@@ -795,7 +795,7 @@ freesasa_structure_atom_set_radius(freesasa_structure *structure,
     structure->radius[i] = radius;
 }
 
-int
+freesasa_atom_class
 freesasa_structure_atom_class(const freesasa_structure *structure,
                               int i)
 {
