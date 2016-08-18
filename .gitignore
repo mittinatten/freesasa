@@ -45,3 +45,4 @@ bindings/check-python
 doc/html/
 doc/Doxyfile
 doc/doxyfile.stamp
+doc/doxygen
