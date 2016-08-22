@@ -322,6 +322,23 @@ freesasa_result2tree(const freesasa_result *result,
     return NULL;
 }
 
+void
+freesasa_structure_node_join_trees(freesasa_structure_node *tree1,
+                                   freesasa_structure_node **tree2)
+{
+    assert(tree1); assert(tree2); assert(*tree2);
+    assert(tree1->type == FREESASA_NODE_ROOT);
+    assert((*tree2)->type == FREESASA_NODE_ROOT);
+
+    freesasa_structure_node *child = tree1->children;
+    if (child != NULL) {
+        while (child->next) child = child->next;
+    }
+    child->next = (*tree2)->children;
+    // tree1 takes over ownership, tree2 is invalidated.
+    *tree2 = NULL;
+}
+
 int
 freesasa_structure_node_free(freesasa_structure_node *root) 
 {

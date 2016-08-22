@@ -1009,6 +1009,20 @@ freesasa_result2tree(const freesasa_result *result,
                      const freesasa_structure *structure,
                      const freesasa_classifier *polar_classifier,
                      const char *name);
+
+/**
+    Join two ::structure_node-trees.
+
+    Allows joining several calculations into one output file.
+
+    @param tree1 The joint tree will be stored here
+    @param tree2 Will be added to tree1, and then changed to NULL,
+      since ownership of its contents have been transferred to tree1.
+ */
+void
+freesasa_structure_node_join_trees(freesasa_structure_node *tree1,
+                                   freesasa_structure_node **tree2);
+
 /**
     Outputs result in format specified by options.
 
