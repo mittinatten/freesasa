@@ -151,7 +151,8 @@ typedef enum {
     FREESASA_NODE_ATOM, //!< Atom node
     FREESASA_NODE_RESIDUE, //!< Residue node
     FREESASA_NODE_CHAIN, //!< Chain node
-    FREESASA_NODE_STRUCTURE, //!< Structure (root) node
+    FREESASA_NODE_STRUCTURE, //!< Structure node
+    FREESASA_NODE_ROOT, //!< Root node, wraps one or more structures
     FREESASA_NODE_NONE //!< for specifying not a valid node
 } freesasa_node_type;
 

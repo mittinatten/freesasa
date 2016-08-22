@@ -250,6 +250,7 @@ freesasa_xml_structure(const freesasa_structure_node *node)
     return NULL;
 }
 
+// Root is not converted to xmlNodePtr, we skip immediately to children
 int
 freesasa_node2xml(xmlNodePtr *xml_node, const freesasa_structure_node *node, int exclude_type)
 {
@@ -262,6 +263,11 @@ freesasa_node2xml(xmlNodePtr *xml_node, const freesasa_structure_node *node, int
     if (freesasa_structure_node_type(node) == exclude_type) return FREESASA_SUCCESS;
 
     switch (freesasa_structure_node_type(node)) {
+    case FREESASA_NODE_ROOT:
+        node = child;
+        child = freesasa_structure_node_children(node);
+        *xml_node = freesasa_xml_structure(node);
+        break;
     case FREESASA_NODE_STRUCTURE:
         *xml_node = freesasa_xml_structure(node);
         break;
@@ -355,6 +361,8 @@ freesasa_write_xml(FILE *output,
                    const freesasa_parameters *parameters,
                    int options)
 {
+    assert(freesasa_structure_node_type(root) == FREESASA_NODE_ROOT);
+
     freesasa_node_type exclude_type = FREESASA_NODE_NONE;
     xmlDocPtr doc = NULL; 
     xmlNodePtr xml_root = NULL, xml_structure = NULL, xml_param = NULL;

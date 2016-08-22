@@ -131,13 +131,17 @@ freesasa_node2json(const freesasa_structure_node *node, int exclude_type)
 {
     json_object *obj, *array;
     int lowest = 0;
+    int type = freesasa_structure_node_type(node);
     const freesasa_structure_node *child = freesasa_structure_node_children(node);
     if (child) {
         if (freesasa_structure_node_type(child) == exclude_type) lowest = 1;
         if (!lowest) array = json_object_new_array();
     }
 
-    switch (freesasa_structure_node_type(node)) {
+    switch (type) {
+    case FREESASA_NODE_ROOT:
+        obj = json_object_new_array();
+        break;
     case FREESASA_NODE_STRUCTURE:
         obj = freesasa_json_structure(node);
         if (!lowest) json_object_object_add(obj, "chains", array);
@@ -159,7 +163,11 @@ freesasa_node2json(const freesasa_structure_node *node, int exclude_type)
     
     if (!lowest) {
         while (child) {
-            json_object_array_add(array, freesasa_node2json(child, exclude_type));
+            if (type != FREESASA_NODE_ROOT) {
+                json_object_array_add(array, freesasa_node2json(child, exclude_type));
+            } else {
+                json_object_array_add(obj, freesasa_node2json(child, exclude_type));
+            }
             child = freesasa_structure_node_next(child);
         }
     }
@@ -199,7 +207,10 @@ freesasa_write_json(FILE *output,
                     const freesasa_structure_node *root,
                     const freesasa_parameters *parameters,
                     int options)
+
 {
+    assert(freesasa_structure_node_type(root) == FREESASA_NODE_ROOT);
+
     json_object *obj = json_object_new_object(), *json_root = json_object_new_object();
     freesasa_node_type exclude_type = FREESASA_NODE_NONE;
     if (parameters == NULL) parameters = &freesasa_default_parameters;
@@ -214,7 +225,7 @@ freesasa_write_json(FILE *output,
     json_object_object_add(obj, "classifier", json_object_new_string(freesasa_structure_node_classified_by(root)));
     json_object_object_add(obj, "length-unit", json_object_new_string("Ångström"));
     json_object_object_add(obj, "parameters", parameters2json(parameters));
-    json_object_object_add(obj, "structure", freesasa_node2json(root, exclude_type));
+    json_object_object_add(obj, "structures", freesasa_node2json(root, exclude_type));
 
     fputs(json_object_to_json_string_ext(json_root, JSON_C_TO_STRING_PRETTY), output);
     json_object_put(json_root);

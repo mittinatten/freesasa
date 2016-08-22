@@ -382,6 +382,7 @@ START_TEST (test_occupancy)
 }
 END_TEST
 
+
 START_TEST (test_structure_node)
 {
     s = freesasa_structure_new();
@@ -391,26 +392,33 @@ START_TEST (test_structure_node)
     freesasa_result *result = freesasa_calc_structure(s, NULL);
     freesasa_structure_node *tree =
         freesasa_result2tree(result, s, NULL, "test");
-    const freesasa_structure_node *next, *chain, *residue, *atom;
+    const freesasa_structure_node *next, *structure, *chain, *residue, *atom;
     
     const freesasa_nodearea *area;
     ck_assert_ptr_ne(tree, NULL);
     ck_assert_ptr_eq(freesasa_structure_node_parent(tree), NULL);
-    ck_assert_int_eq(freesasa_structure_node_type(tree), FREESASA_NODE_STRUCTURE);
+    ck_assert_int_eq(freesasa_structure_node_type(tree), FREESASA_NODE_ROOT);
     ck_assert_str_eq(freesasa_structure_node_name(tree), "test");
-    ck_assert_ptr_ne((chain = freesasa_structure_node_children(tree)), NULL);
+    ck_assert_ptr_ne((structure = freesasa_structure_node_children(tree)), NULL);
+    ck_assert_ptr_ne((chain = freesasa_structure_node_children(structure)), NULL);
     ck_assert_ptr_ne((residue = freesasa_structure_node_children(chain)), NULL);
     ck_assert_ptr_ne((atom = freesasa_structure_node_children(residue)), NULL);
 
+    ck_assert_int_eq(freesasa_structure_node_type(structure), FREESASA_NODE_STRUCTURE);
     ck_assert_int_eq(freesasa_structure_node_type(chain), FREESASA_NODE_CHAIN);
     ck_assert_int_eq(freesasa_structure_node_type(residue), FREESASA_NODE_RESIDUE);
     ck_assert_int_eq(freesasa_structure_node_type(atom), FREESASA_NODE_ATOM);
-    
+
+    ck_assert_str_eq(freesasa_structure_node_name(structure), "A");
     ck_assert_str_eq(freesasa_structure_node_name(chain), "A");
     ck_assert_str_eq(freesasa_structure_node_name(residue), "MET");
     ck_assert_str_eq(freesasa_structure_node_name(atom), " C  ");
 
     // iterate
+    next = freesasa_structure_node_next(tree);
+    ck_assert_ptr_eq(next, NULL);
+    next = freesasa_structure_node_next(structure);
+    ck_assert_ptr_eq(next, NULL);
     next = freesasa_structure_node_next(chain);
     ck_assert_ptr_eq(next, NULL);
     next = freesasa_structure_node_next(residue);
@@ -421,8 +429,8 @@ START_TEST (test_structure_node)
     next = freesasa_structure_node_next(atom);
     ck_assert_str_eq(freesasa_structure_node_name(next), " CA ");
 
-    //ck_assert_int_eq(freesasa_structure_tree_fill(tree, result, NULL), FREESASA_SUCCESS);
-    ck_assert_ptr_ne((area = freesasa_structure_node_area(tree)), NULL);
+    ck_assert_ptr_eq(freesasa_structure_node_area(tree), NULL);
+    ck_assert_ptr_ne((area = freesasa_structure_node_area(structure)), NULL);
     ck_assert(float_eq(result->total, area->total, 1e-10));
     ck_assert_ptr_ne((area = freesasa_structure_node_area(chain)), NULL);
     ck_assert(float_eq(result->total, area->total, 1e-10));

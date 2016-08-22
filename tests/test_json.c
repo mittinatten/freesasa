@@ -214,14 +214,15 @@ START_TEST (test_json)
     fclose(pdb);
     freesasa_result *result = freesasa_calc_structure(ubq, NULL);
     freesasa_structure_node *root = freesasa_result2tree(result, ubq, NULL, "test");
-    const freesasa_structure_node *chains = freesasa_structure_node_children(root);
+    const freesasa_structure_node *structures = freesasa_structure_node_children(root);
+    const freesasa_structure_node *chains = freesasa_structure_node_children(structures);
     const freesasa_structure_node *residues = freesasa_structure_node_children(chains);
     const freesasa_structure_node *atoms = freesasa_structure_node_children(residues);
 
     ck_assert(test_atom(atoms));
     ck_assert(test_residue(residues));
     ck_assert(test_chain(chains, result));
-    ck_assert(test_structure(root));
+    ck_assert(test_structure(structures));
     
     freesasa_structure_free(ubq);
     freesasa_result_free(result);
