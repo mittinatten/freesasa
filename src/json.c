@@ -30,7 +30,7 @@ freesasa_json_atom(const freesasa_structure_node *node, int options)
     assert(first >= 0 && first < freesasa_structure_n(structure));
   
     json_object_object_add(atom, "name", json_object_new_string(trim_name));
-    json_object_object_add(atom, "area", json_object_new_double(area->total));
+    json_object_object_add(atom, "SASA", json_object_new_double(area->total));
     json_object_object_add(atom, "is-polar",
                            json_object_new_boolean(freesasa_structure_atom_class(structure, first) == FREESASA_ATOM_POLAR));
     json_object_object_add(atom, "is-main-chain",
@@ -83,7 +83,7 @@ freesasa_json_residue(const freesasa_structure_node *node, int options)
 
     json_object_object_add(obj, "name", json_object_new_string(name));
     json_object_object_add(obj, "number", json_object_new_string(trim_number));
-    json_object_object_add(obj, "area", freesasa_json_nodearea(abs));
+    json_object_object_add(obj, "SASA", freesasa_json_nodearea(abs));
 
     if ((reference != NULL) && !(options & FREESASA_OUTPUT_SKIP_REL)) {
         freesasa_residue_rel_nodearea(&rel, abs, reference);
@@ -106,7 +106,7 @@ freesasa_json_chain(const freesasa_structure_node *node, int options)
     freesasa_structure_chain_residues(structure, name[0], &first, &last);
     json_object_object_add(obj, "n-residues", json_object_new_int(last - first + 1));
 
-    json_object_object_add(obj, "area",
+    json_object_object_add(obj, "SASA",
                            freesasa_json_nodearea(freesasa_structure_node_area(node)));
 
     return obj;
@@ -120,7 +120,7 @@ freesasa_json_structure(const freesasa_structure_node *node, int options)
     const char *chains = freesasa_structure_chain_labels(structure);
 
     json_object_object_add(obj, "chain-labels", json_object_new_string(chains));
-    json_object_object_add(obj, "area",
+    json_object_object_add(obj, "SASA",
                            freesasa_json_nodearea(freesasa_structure_node_area(node)));
 
     return obj;

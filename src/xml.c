@@ -78,7 +78,7 @@ freesasa_xml_atom(const freesasa_structure_node *node, int options)
     }
 
     sprintf(buf, "%f", area->total);
-    if (xmlNewProp(xml_node, BAD_CAST "area", BAD_CAST buf) == NULL) {
+    if (xmlNewProp(xml_node, BAD_CAST "SASA", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
     }
@@ -138,7 +138,7 @@ freesasa_xml_residue(const freesasa_structure_node *node, int options)
         goto cleanup;
     }
 
-    xml_area = xml_nodearea(abs, "area");
+    xml_area = xml_nodearea(abs, "SASA");
     if (xml_area == NULL) {
         fail_msg("");
         goto cleanup;
@@ -197,7 +197,7 @@ freesasa_xml_chain(const freesasa_structure_node *node, int options)
         goto cleanup;
     }
 
-    xml_area = xml_nodearea(freesasa_structure_node_area(node), "area");
+    xml_area = xml_nodearea(freesasa_structure_node_area(node), "SASA");
     if (xml_area == NULL) {
         fail_msg("");
         goto cleanup;
@@ -234,7 +234,7 @@ freesasa_xml_structure(const freesasa_structure_node *node, int options)
         goto cleanup;
     }
 
-    xml_area = xml_nodearea(freesasa_structure_node_area(node), "area");
+    xml_area = xml_nodearea(freesasa_structure_node_area(node), "SASA");
     if (xmlAddChild(xml_node, xml_area) == NULL) {
         fail_msg("");
         goto cleanup;
