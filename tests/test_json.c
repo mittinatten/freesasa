@@ -67,7 +67,7 @@ test_atom(const freesasa_structure_node *node)
         if (!strcmp(key, "name")) {
             ck_assert(json_object_is_type(val, json_type_string));
             ck_assert_str_eq(json_object_get_string(val), "N");
-        } else if (!strcmp(key, "area")) {
+        } else if (!strcmp(key, "SASA")) {
             ck_assert(json_object_is_type(val, json_type_double));
             ck_assert(json_object_get_double(val) > 0);
         } else if (!strcmp(key, "is-polar")) {
@@ -114,7 +114,7 @@ test_residue(const freesasa_structure_node *node)
         } else if (!strcmp(key, "atoms")) {
              ck_assert(json_object_is_type(val, json_type_array));
             //this is checked further by test_atom
-        } else if (!strcmp(key, "area")) {
+        } else if (!strcmp(key, "SASA")) {
             ck_assert(compare_nodearea(val, resarea, 1));
         } else if (!strcmp(key, "relative-area")) {
             ck_assert(compare_nodearea(val, resarea, 0));
@@ -149,7 +149,7 @@ test_chain(const freesasa_structure_node *node, const freesasa_result *result)
         } else if (!strcmp(key, "n-residues")) {
             ck_assert(json_object_is_type(val, json_type_int));
             ck_assert_int_eq(json_object_get_int(val), 76);
-        } else if (!strcmp(key, "area")) {
+        } else if (!strcmp(key, "SASA")) {
             ck_assert(compare_nodearea(val, chain_area, 1));
         } else if (!strcmp(key, "residues")) {
             ck_assert(json_object_is_type(val, json_type_array));
@@ -190,7 +190,7 @@ test_structure(const freesasa_structure_node *node)
         } else if (!strcmp(key, "chain-labels")) {
             ck_assert(json_object_is_type(val, json_type_string));
             ck_assert_str_eq(json_object_get_string(val), "A");
-        } else if (!strcmp(key, "area")) {
+        } else if (!strcmp(key, "SASA")) {
             compare_nodearea(val, &structure_area, 1);
         } else if (!strcmp(key, "chains")) {
             ck_assert(json_object_is_type(val, json_type_array));
