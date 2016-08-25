@@ -222,7 +222,6 @@ freesasa_xml_structure(const freesasa_structure_node *node)
     assert(node);
     xmlNodePtr xml_node = NULL, xml_area = NULL;
     const freesasa_structure *structure = freesasa_structure_node_structure(node);
-    char buf[20];
 
     xml_node = xmlNewNode(NULL, BAD_CAST "structure");
     if (xml_node == NULL) {
@@ -230,8 +229,7 @@ freesasa_xml_structure(const freesasa_structure_node *node)
         return NULL;
     }
 
-    sprintf(buf, "%d", freesasa_structure_n_chains(structure));
-    if (xmlNewProp(xml_node, BAD_CAST "nChains", BAD_CAST buf) == NULL) {
+    if (xmlNewProp(xml_node, BAD_CAST "chains", BAD_CAST freesasa_structure_chain_labels(structure)) == NULL) {
         fail_msg("");
         goto cleanup;
     }
@@ -263,11 +261,9 @@ freesasa_node2xml(xmlNodePtr *xml_node, const freesasa_structure_node *node, int
     if (freesasa_structure_node_type(node) == exclude_type) return FREESASA_SUCCESS;
 
     switch (freesasa_structure_node_type(node)) {
-    case FREESASA_NODE_ROOT:
-        node = child;
-        child = freesasa_structure_node_children(node);
+        /*case FREESASA_NODE_ROOT:
         *xml_node = freesasa_xml_structure(node);
-        break;
+        break;*/
     case FREESASA_NODE_STRUCTURE:
         *xml_node = freesasa_xml_structure(node);
         break;
@@ -364,6 +360,7 @@ freesasa_write_xml(FILE *output,
     assert(freesasa_structure_node_type(root) == FREESASA_NODE_ROOT);
 
     freesasa_node_type exclude_type = FREESASA_NODE_NONE;
+    const freesasa_structure_node *child;
     xmlDocPtr doc = NULL; 
     xmlNodePtr xml_root = NULL, xml_structure = NULL, xml_param = NULL;
     xmlNsPtr ns = NULL;
@@ -434,15 +431,20 @@ freesasa_write_xml(FILE *output,
         goto cleanup;
     }
 
-    if (freesasa_node2xml(&xml_structure, root, exclude_type) == FREESASA_FAIL) {
-        fail_msg("");
-        goto cleanup;
-    }
-
-    if (xmlAddChild(xml_root, xml_structure) == NULL) {
-        fail_msg("");
-        goto cleanup;
-    }
+    child = freesasa_structure_node_children(root);
+    assert(child);
+    
+    do {
+        if (freesasa_node2xml(&xml_structure, child, exclude_type) == FREESASA_FAIL) {
+            fail_msg("");
+            goto cleanup;
+        }        
+        if (xmlAddChild(xml_root, xml_structure) == NULL) {
+            fail_msg("");
+            goto cleanup;
+        }
+        child = freesasa_structure_node_next(child);
+    } while(child);
 
     if (xmlTextWriterStartDocument(writer, XML_DEFAULT_VERSION,
                                    xmlGetCharEncodingName(XML_CHAR_ENCODING_UTF8), NULL)

@@ -187,9 +187,9 @@ test_structure(const freesasa_structure_node *node)
         if (!strcmp(key, "input")) {
             ck_assert(json_object_is_type(val, json_type_string));
             ck_assert_str_eq(json_object_get_string(val), "test");
-        } else if (!strcmp(key, "n-chains")) {
-            ck_assert(json_object_is_type(val, json_type_int));
-            ck_assert_int_eq(json_object_get_int(val), 1);
+        } else if (!strcmp(key, "chain-labels")) {
+            ck_assert(json_object_is_type(val, json_type_string));
+            ck_assert_str_eq(json_object_get_string(val), "A");
         } else if (!strcmp(key, "area")) {
             compare_nodearea(val, &structure_area, 1);
         } else if (!strcmp(key, "chains")) {

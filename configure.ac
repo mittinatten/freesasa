@@ -102,6 +102,7 @@ if test "x$enable_json" != "xno" ; then
      [AC_CHECK_HEADER([json-c/json_object.h],
         [AC_DEFINE([USE_JSON], [1])
          AC_SUBST([JSONC_FOR_PY_BINDINGS], ['"json-c"'])
+         AC_SUBST([USE_JSON], [yes])
          AM_CONDITIONAL([USE_JSON], true)])])
   AM_COND_IF([USE_JSON],[],
     [AC_MSG_ERROR([Library JSON-C not found, install library or build without (using --disable-json).])])

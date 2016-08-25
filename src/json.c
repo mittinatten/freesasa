@@ -117,9 +117,9 @@ freesasa_json_structure(const freesasa_structure_node *node)
 {
     json_object *obj = json_object_new_object();
     const freesasa_structure *structure = freesasa_structure_node_structure(node);
-    int n_chains = freesasa_structure_n_chains(structure);
+    const char *chains = freesasa_structure_chain_labels(structure);
 
-    json_object_object_add(obj, "n-chains", json_object_new_int(n_chains));
+    json_object_object_add(obj, "chain-labels", json_object_new_string(chains));
     json_object_object_add(obj, "area",
                            freesasa_json_nodearea(freesasa_structure_node_area(node)));
 

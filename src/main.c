@@ -289,6 +289,7 @@ run_analysis(FILE *input,
     freesasa_result *result = NULL;
     freesasa_nodearea classes;
     freesasa_structure **structures = NULL;
+    freesasa_structure_node *tree = NULL, *tmp_tree;
     int n = 0;
 
     // read PDB file
@@ -339,18 +340,19 @@ run_analysis(FILE *input,
             }
         }
         if (printrsa || printjson || printxml) {
-            freesasa_structure_node *tree =
-                freesasa_result2tree(result, structures[i], classifier, name_i);
-            if (printrsa) freesasa_export_tree(rsa_file, tree, &parameters, FREESASA_RSA);
-            if (printjson) freesasa_export_tree(json_file, tree, &parameters,
-                                                FREESASA_JSON | output_depth);
-            if (printxml) freesasa_export_tree(xml_file, tree, &parameters,
-                                               FREESASA_XML | output_depth);
-            freesasa_structure_node_free(tree);
+            tmp_tree = freesasa_result2tree(result, structures[i], classifier, name_i);
+            if (tree == NULL) tree = tmp_tree;
+            else freesasa_structure_node_join_trees(tree, &tmp_tree);
         }
         freesasa_result_free(result);
-        freesasa_structure_free(structures[i]);
     }
+
+    if (printrsa)  freesasa_export_tree(rsa_file,  tree, &parameters, FREESASA_RSA);
+    if (printjson) freesasa_export_tree(json_file, tree, &parameters, FREESASA_JSON | output_depth);
+    if (printxml)  freesasa_export_tree(xml_file,  tree, &parameters, FREESASA_XML | output_depth);
+
+    freesasa_structure_node_free(tree);
+    for (int i = 0; i < n; ++i) freesasa_structure_free(structures[i]);
     free(structures);
 }
 
@@ -686,6 +688,9 @@ main(int argc,
     if (printrsa && (opt_set['c'] || opt_set['O'])) { // !!! Fix this
         freesasa_warn("Will skip REL columns in RSA when custom atomic radii selected.");
     }
+    if (printrsa && (opt_set['C'] || opt_set['M']))
+        abort_msg("The option --rsa can not be combined with -C or -M. "
+                  "The RSA format does not support several results in one file.");
     if (printjson || printxml) printlog = 0;
     if (printlog) fprintf(output,"## %s %s ##\n", program_name, version);
     if (argc > optind) {

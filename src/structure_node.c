@@ -342,10 +342,11 @@ freesasa_structure_node_join_trees(freesasa_structure_node *tree1,
 int
 freesasa_structure_node_free(freesasa_structure_node *root) 
 {
-    if (root->parent) return fail_msg("Can't free node that isn't the root of its tree");
-    
-    structure_node_free(root);
-
+    if (root) {
+        if (root->parent)
+            return fail_msg("Can't free node that isn't the root of its tree");
+        structure_node_free(root);
+    }
     return FREESASA_SUCCESS;
 }
 
