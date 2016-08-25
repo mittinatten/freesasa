@@ -46,8 +46,6 @@ const freesasa_parameters freesasa_default_parameters = {
     .n_threads = DEF_NUMBER_THREADS,
 };
 
-const char *freesasa_alg_names[] = {"Lee & Richards", "Shrake & Rupley"};
-
 freesasa_strvp*
 freesasa_strvp_new(int n);
 
@@ -178,7 +176,7 @@ int freesasa_write_parameters(FILE *log,
 
     fprintf(log,"\nPARAMETERS\n");
 
-    fprintf(log,"algorithm    : %s\n",freesasa_alg_names[p->alg]);
+    fprintf(log,"algorithm    : %s\n",freesasa_alg_name(p->alg));
     fprintf(log,"probe-radius : %.3f\n", p->probe_radius);
     if (USE_THREADS)
         fprintf(log,"threads      : %d\n",p->n_threads);
@@ -311,7 +309,11 @@ freesasa_export_tree(FILE *file,
                      const freesasa_parameters *parameters,
                      int options)
 {
-    if (options & FREESASA_RSA) return freesasa_write_rsa(file, root, options);
+    if (parameters == NULL) parameters = &freesasa_default_parameters;
+
+    if (options & FREESASA_RSA) {
+        return freesasa_write_rsa(file, root, parameters, options);
+    }
     if (options & FREESASA_JSON) {
         if (USE_JSON) return freesasa_write_json(file, root, parameters, options);
         else return fail_msg("Library was built without support for JSON output.");
@@ -321,6 +323,18 @@ freesasa_export_tree(FILE *file,
         else return fail_msg("Library was built without support for XML output.");
     }
     return fail_msg("No valid options given");
+}
+
+const char*
+freesasa_alg_name(freesasa_algorithm alg)
+{
+    switch(alg) {
+    case FREESASA_SHRAKE_RUPLEY:
+        return "Shrake & Rupley";
+    case FREESASA_LEE_RICHARDS:
+        return "Lee & Richards";
+    }
+    assert(0 && "Illegal algorithm");
 }
 
 int

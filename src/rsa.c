@@ -28,15 +28,28 @@ freesasa_residue_rel_nodearea(freesasa_nodearea *rel,
 static void
 rsa_print_header(FILE *output,
                  const char *config_name,
-                 const char *protein_name)
+                 const char *protein_name,
+                 const freesasa_parameters *parameters,
+                 int options)
 {
+    freesasa_algorithm alg = parameters->alg;
 #ifdef PACKAGE_VERSION
     fprintf(output, "REM  FreeSASA " PACKAGE_VERSION "\n");
 #else
     fprintf(output, "REM  FreeSASA\n");
 #endif
     fprintf(output, "REM  Absolute and relative SASAs for %s\n", protein_name);
-    fprintf(output, "REM  Reference values calculated using %s radii\n", config_name);
+    if (!(options & FREESASA_OUTPUT_SKIP_REL))
+        fprintf(output, "REM  Atomic radii and reference values for relative SASA: %s\n", config_name);
+    else
+        fprintf(output, "REM  No reference values available to calculate relative SASA\n");
+    fprintf(output, "REM  Algorithm: %s\n", freesasa_alg_name(alg));
+    fprintf(output, "REM  Probe-radius: %.2f\n", parameters->probe_radius);
+    if (alg == FREESASA_LEE_RICHARDS) {
+        fprintf(output, "REM  Slices: %d\n", parameters->lee_richards_n_slices);
+    } else if (alg == FREESASA_SHRAKE_RUPLEY) {
+        fprintf(output, "REM  Test-points: %d\n", parameters->shrake_rupley_n_points);
+    }
     fprintf(output, "REM RES _ NUM      All-atoms   Total-Side   Main-Chain    Non-polar    All polar\n");
     fprintf(output, "REM                ABS   REL    ABS   REL    ABS   REL    ABS   REL    ABS   REL\n");
 }
@@ -93,6 +106,7 @@ rsa_print_residue(FILE *output,
 int
 freesasa_write_rsa(FILE *output,
                    const freesasa_structure_node *tree,
+                   const freesasa_parameters *parameters,
                    int options)
 {
     assert(output);
@@ -108,7 +122,7 @@ freesasa_write_rsa(FILE *output,
     chain = freesasa_structure_node_children(structure_node);
 
     rsa_print_header(output, freesasa_structure_node_classified_by(structure_node),
-                     freesasa_structure_node_name(structure_node));
+                     freesasa_structure_node_name(tree), parameters, options);
 
     res_index = chain_index = 0;
     while(chain) {

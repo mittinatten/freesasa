@@ -178,12 +178,11 @@ static json_object *
 parameters2json(const freesasa_parameters *p)
 {
     json_object *obj = json_object_new_object(), *res;
-    extern const char *freesasa_alg_names[];
 
 #ifdef HAVE_CONFIG_H
     json_object_object_add(obj, "source", json_object_new_string(PACKAGE_STRING));
 #endif
-    json_object_object_add(obj, "algorithm", json_object_new_string(freesasa_alg_names[p->alg]));
+    json_object_object_add(obj, "algorithm", json_object_new_string(freesasa_alg_name(p->alg)));
     json_object_object_add(obj, "probe-radius", json_object_new_double(p->probe_radius));
 
     switch(p->alg) {

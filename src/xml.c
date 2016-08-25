@@ -264,9 +264,6 @@ freesasa_node2xml(xmlNodePtr *xml_node,
     if (freesasa_structure_node_type(node) == exclude_type) return FREESASA_SUCCESS;
 
     switch (freesasa_structure_node_type(node)) {
-        /*case FREESASA_NODE_ROOT:
-        *xml_node = freesasa_xml_structure(node);
-        break;*/
     case FREESASA_NODE_STRUCTURE:
         *xml_node = freesasa_xml_structure(node, options);
         break;
@@ -279,6 +276,7 @@ freesasa_node2xml(xmlNodePtr *xml_node,
     case FREESASA_NODE_ATOM:
         *xml_node = freesasa_xml_atom(node, options);
         break;
+    case FREESASA_NODE_ROOT:
     default:
         assert(0 && "Tree illegal");
     }
@@ -306,7 +304,6 @@ parameters2xml(const freesasa_parameters *p)
 {
     xmlNodePtr xml_node = xmlNewNode(NULL, BAD_CAST "parameters");
     char buf[20];
-    extern const char *freesasa_alg_names[];
 
     if (xml_node == NULL) {
         fail_msg("");
@@ -320,7 +317,7 @@ parameters2xml(const freesasa_parameters *p)
     }
 #endif
 
-    if (xmlNewProp(xml_node, BAD_CAST "algorithm", BAD_CAST freesasa_alg_names[p->alg]) == NULL) {
+    if (xmlNewProp(xml_node, BAD_CAST "algorithm", BAD_CAST freesasa_alg_name(p->alg)) == NULL) {
         fail_msg("");
         goto cleanup;
     }

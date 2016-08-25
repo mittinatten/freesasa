@@ -95,6 +95,7 @@ freesasa_calc(const coord_t *c,
 int
 freesasa_write_rsa(FILE *output,
                    const freesasa_structure_node *root,
+                   const freesasa_parameters *parameters,
                    int options);
 
 /**
@@ -271,6 +272,15 @@ struct file_range {
  */
 struct file_range
 freesasa_whole_file(FILE* file);
+
+/**
+    Algorithm name
+
+    @param algorithm The algorithm
+    @return Name
+ */
+const char*
+freesasa_alg_name(freesasa_algorithm algorithm);
 
 /**
     Print failure message using format string and arguments.

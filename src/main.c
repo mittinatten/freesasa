@@ -694,7 +694,7 @@ main(int argc,
     if (printrsa && (opt_set['C'] || opt_set['M']))
         abort_msg("The option --rsa can not be combined with -C or -M. "
                   "The RSA format does not support several results in one file.");
-    if (printjson || printxml) printlog = 0;
+    if (printrsa || printjson || printxml) printlog = 0;
     if (printlog) fprintf(output,"## %s %s ##\n", program_name, version);
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {
