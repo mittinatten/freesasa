@@ -93,6 +93,9 @@ enum freesasa_output_options {
     FREESASA_RSA=1<<5, //!< Write RSA output (not affected by atom, residue, etc above)
     FREESASA_JSON=1<<6, //!< Write JSON output
     FREESASA_XML=1<<7, //!< Wite XML output
+    //! Don't output relative areas, for example if structure has
+    //! manually set radii, invalidating reference values
+    FREESASA_OUTPUT_SKIP_REL=1<<8,
 };
 
 //! The maximum length of a selection name @see freesasa_select_area()

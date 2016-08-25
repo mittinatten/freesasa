@@ -92,7 +92,8 @@ rsa_print_residue(FILE *output,
 
 int
 freesasa_write_rsa(FILE *output,
-                   const freesasa_structure_node *tree)
+                   const freesasa_structure_node *tree,
+                   int options)
 {
     assert(output);
     assert(tree);
@@ -115,7 +116,7 @@ freesasa_write_rsa(FILE *output,
         while (residue) {
             abs = freesasa_structure_node_area(residue);
             reference = freesasa_structure_node_residue_reference(residue);
-            if (reference) {
+            if (reference && !(options & FREESASA_OUTPUT_SKIP_REL)) {
                 freesasa_residue_rel_nodearea(&rel, abs, reference);
             } else {
                 rel = freesasa_nodearea_null;

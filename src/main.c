@@ -54,6 +54,7 @@ int printjson = 0;
 int printxml = 0;
 int static_config = 0;
 int output_depth = FREESASA_OUTPUT_CHAIN;
+int no_rel = 0;
 
 // chain groups
 int n_chain_groups = 0;
@@ -290,7 +291,7 @@ run_analysis(FILE *input,
     freesasa_nodearea classes;
     freesasa_structure **structures = NULL;
     freesasa_structure_node *tree = NULL, *tmp_tree;
-    int n = 0;
+    int n = 0, rel = (no_rel ? FREESASA_OUTPUT_SKIP_REL : 0);
 
     // read PDB file
     structures = get_structures(input, &n);
@@ -346,10 +347,10 @@ run_analysis(FILE *input,
         }
         freesasa_result_free(result);
     }
-
-    if (printrsa)  freesasa_export_tree(rsa_file,  tree, &parameters, FREESASA_RSA);
-    if (printjson) freesasa_export_tree(json_file, tree, &parameters, FREESASA_JSON | output_depth);
-    if (printxml)  freesasa_export_tree(xml_file,  tree, &parameters, FREESASA_XML | output_depth);
+    
+    if (printrsa)  freesasa_export_tree(rsa_file,  tree, &parameters, FREESASA_RSA | rel);
+    if (printjson) freesasa_export_tree(json_file, tree, &parameters, FREESASA_JSON | output_depth | rel);
+    if (printxml)  freesasa_export_tree(xml_file,  tree, &parameters, FREESASA_XML | output_depth | rel);
 
     freesasa_structure_node_free(tree);
     for (int i = 0; i < n; ++i) freesasa_structure_free(structures[i]);
@@ -603,6 +604,7 @@ main(int argc,
         case 'c': {
             classifier = classifier_from_file = freesasa_classifier_from_filename(optarg);
             if (classifier_from_file == NULL) abort_msg("Can't read file '%s'.", optarg);
+            no_rel = 1;
             break;
         }
         case 'n':
@@ -632,6 +634,7 @@ main(int argc,
             break;
         case 'O':
             structure_options |= FREESASA_RADIUS_FROM_OCCUPANCY;
+            no_rel = 1;
             break;
         case 'M':
             structure_options |= FREESASA_SEPARATE_MODELS;
@@ -685,7 +688,7 @@ main(int argc,
     if (opt_set['c'] && static_config) abort_msg("The options -c and --radii cannot be combined");
     if (opt_set['O'] && static_config) abort_msg("The options -O and --radii cannot be combined");
     if (opt_set['c'] && opt_set['O']) abort_msg("The option -c and -O can't be combined");
-    if (printrsa && (opt_set['c'] || opt_set['O'])) { // !!! Fix this
+    if (printrsa && (opt_set['c'] || opt_set['O'])) {
         freesasa_warn("Will skip REL columns in RSA when custom atomic radii selected.");
     }
     if (printrsa && (opt_set['C'] || opt_set['M']))

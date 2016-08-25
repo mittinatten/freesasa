@@ -86,12 +86,16 @@ freesasa_calc(const coord_t *c,
 
     @param output Output-file.
     @param root A tree with stored results.
+    @param options Bitfield with option ::FREESASA_OUTPUT_SKIP_REL to specify
+      if REL column should be populated or not. If the classifier has no
+      reference values, it will be left empty either way.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
       writing to file.
  */
 int
 freesasa_write_rsa(FILE *output,
-                   const freesasa_structure_node *root);
+                   const freesasa_structure_node *root,
+                   int options);
 
 /**
     Export to JSON
@@ -105,7 +109,9 @@ freesasa_write_rsa(FILE *output,
     @param options Bitfield with options ::FREESASA_OUTPUT_STRUCTURE,
       ::FREESASA_OUTPUT_CHAIN and ::FREESASA_OUTPUT_RESIDUE, that specify 
       depth of the tree to output. If `options == 0` all levels are 
-      written.
+      written. The options ::FREESASA_OUTPUT_SKIP_REL specifies
+      if REL column should be populated or not. If the classifier has no
+      reference values, it will be left empty either way.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
       writing to file.
  */
@@ -114,7 +120,22 @@ freesasa_write_json(FILE *ouput,
                     const freesasa_structure_node *root,
                     const freesasa_parameters *parameters,
                     int options);
+/**
+    Export to XML
 
+    @param output Output-file.
+    @param root A tree with stored results.
+    @param parameters Parameters used in the calculation (NULL means
+      defaults are assumed).
+    @param options Bitfield with options ::FREESASA_OUTPUT_STRUCTURE,
+      ::FREESASA_OUTPUT_CHAIN and ::FREESASA_OUTPUT_RESIDUE, that specify 
+      depth of the tree to output. If `options == 0` all levels 
+      written. The options ::FREESASA_OUTPUT_SKIP_REL specifies
+      if REL column should be populated or not. If the classifier has no
+      reference values, it will be left empty either way.
+    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
+      writing to file.
+ */
 int
 freesasa_write_xml(FILE *ouput,
                    const freesasa_structure_node *root,
