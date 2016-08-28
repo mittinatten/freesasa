@@ -76,6 +76,7 @@ struct freesasa_structure {
     struct residues residues;
     struct chains chains;
     coord_t *xyz;
+    freesasa_classifier *classifier;
     int model; // model number
 };
 

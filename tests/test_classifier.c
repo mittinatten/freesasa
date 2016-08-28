@@ -342,10 +342,9 @@ START_TEST (test_residue)
 }
 END_TEST
 
-START_TEST (test_user)
+// used by several tests
+int test_oons_classifier(const freesasa_classifier *c)
 {
-    freesasa_classifier* c = freesasa_classifier_from_filename(SHAREDIR "oons.config");
-    ck_assert(c != NULL);
     ck_assert(freesasa_classifier_class(c, "ALA", "CA") == FREESASA_ATOM_APOLAR);
     ck_assert(freesasa_classifier_class(c, "ALA", "O") == FREESASA_ATOM_POLAR);
     ck_assert(fabs(freesasa_classifier_radius(c, "ALA","CA") - 2.0) < 1e-5);
@@ -367,6 +366,14 @@ START_TEST (test_user)
     ck_assert(freesasa_classifier_class(c, "ALA", "X") == FREESASA_ATOM_UNKNOWN);
     ck_assert(freesasa_classifier_class(c, "X", "CB") == FREESASA_ATOM_APOLAR);
     ck_assert(freesasa_classifier_class(c, "X", "X") == FREESASA_ATOM_UNKNOWN);
+    return 1;
+}
+
+START_TEST (test_user)
+{
+    freesasa_classifier* c = freesasa_classifier_from_filename(SHAREDIR "oons.config");
+    ck_assert(c != NULL);
+    ck_assert(test_oons_classifier(c) == 1);
     freesasa_classifier_free(c);
     
     FILE *f = fopen(DATADIR "empty.pdb", "r");
@@ -399,13 +406,46 @@ START_TEST (test_backbone)
 }
 END_TEST
 
+START_TEST (test_clone)
+{
+    freesasa_classifier *cpy = freesasa_classifier_clone(&freesasa_oons_classifier);
+    ck_assert_ptr_ne(cpy, NULL);
+    ck_assert(test_oons_classifier(cpy) == 1);
+    freesasa_classifier_free(cpy);
+}
+END_TEST
+
+START_TEST (test_clone_residue)
+{
+    const struct classifier_residue *src = freesasa_default_classifier.residue[0];
+    struct classifier_residue *cpy = freesasa_classifier_residue_clone(src);
+    const int n_atoms = src->n_atoms;
+    
+    ck_assert_ptr_ne(cpy, NULL);
+    ck_assert_int_eq(cpy->n_atoms, n_atoms);
+    ck_assert_ptr_ne(cpy->atom_name, NULL);
+    for (int i = 0; i < n_atoms; ++i) {
+        ck_assert_str_eq(cpy->atom_name[i], src->atom_name[i]);
+        ck_assert(float_eq(cpy->atom_radius[i], src->atom_radius[i], 1e-10));
+        ck_assert_int_eq(cpy->atom_class[i], src->atom_class[i]);
+        ck_assert(float_eq(cpy->max_area.total, src->max_area.total, 1e-10));
+        ck_assert(float_eq(cpy->max_area.polar, src->max_area.polar, 1e-10));
+        ck_assert(float_eq(cpy->max_area.apolar, src->max_area.apolar, 1e-10));
+        ck_assert(float_eq(cpy->max_area.main_chain, src->max_area.main_chain, 1e-10));
+        ck_assert(float_eq(cpy->max_area.side_chain, src->max_area.side_chain, 1e-10));
+    }
+    
+    
+}
+END_TEST
+
 START_TEST (test_memerr)
 {
     freesasa_set_verbosity(FREESASA_V_SILENT);
     set_fail_after(1);
     void *ptr[] = {freesasa_classifier_types_new(),
-                    freesasa_classifier_residue_new("ALA"),
-                    freesasa_classifier_new()};
+                   freesasa_classifier_residue_new("ALA"),
+                   freesasa_classifier_new()};
     set_fail_after(0);
 
     for (int i = 0; i < sizeof(ptr)/sizeof(void*); ++i) {
@@ -417,13 +457,15 @@ START_TEST (test_memerr)
         struct classifier_residue *res = freesasa_classifier_residue_new("ALA");
         struct freesasa_classifier *clf = freesasa_classifier_new();
         int ret;
+        void *pret;
 
         if (i < 2) {
             set_fail_after(i);
             ret = freesasa_classifier_add_type(types,"a","A",1.0);
             set_fail_after(0);
             ck_assert_int_eq(ret, FREESASA_FAIL);
-        } 
+        }
+        
         set_fail_after(i);
         ret = freesasa_classifier_add_atom(res,"A",1.0,0);
         set_fail_after(0);
@@ -437,6 +479,21 @@ START_TEST (test_memerr)
         freesasa_classifier_types_free(types);
         freesasa_classifier_residue_free(res);
         freesasa_classifier_free(clf);
+    }
+    for (int i = 1; i < 42; ++i) { // the number 42 was determined using gcov
+        set_fail_after(i);
+        struct classifier_residue *cpy =
+            freesasa_classifier_residue_clone(freesasa_oons_classifier.residue[1]);
+        ck_assert_ptr_eq(cpy, NULL);
+        set_fail_after(0);
+    }
+
+    for (int i = 1; i < 45; ++i) { // the number 45 was determined using gcov
+        set_fail_after(i);
+        freesasa_classifier *cpy =
+            freesasa_classifier_clone(&freesasa_default_classifier);
+        ck_assert_ptr_eq(cpy, NULL);
+        set_fail_after(0);
     }
     // don't test all levels, but make sure errors in low level
     // allocation propagates to the interface
@@ -463,6 +520,8 @@ Suite* classifier_suite()
     tcase_add_test(tc_core,test_class);
     tcase_add_test(tc_core,test_residue);
     tcase_add_test(tc_core,test_user);
+    tcase_add_test(tc_core,test_clone);
+    tcase_add_test(tc_core,test_clone_residue);
     tcase_add_test(tc_core,test_backbone);
     tcase_add_test(tc_core,test_memerr);
 

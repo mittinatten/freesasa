@@ -167,7 +167,6 @@ typedef enum {
  */
 typedef struct freesasa_structure_node freesasa_structure_node;
 
-
 /**
     Struct that can be used to determine classes (polar/apolar) and
     radii of atoms. Initiated from
@@ -497,7 +496,7 @@ freesasa_set_err_out(FILE *err);
     @return The error file.
  */
 FILE *
-freesasa_get_err_out();
+freesasa_get_err_out(void);
 
 /**
     Allocate empty structure.
