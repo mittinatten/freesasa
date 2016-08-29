@@ -998,19 +998,17 @@ freesasa_structure_chain_residues(const freesasa_structure *structure,
       reference to the structure they were initialized from. Therefore
       if the structure is later changed or freed, the tree is no
       longer valid.
-    @param polar_classifier Classifier to determine which atoms are
-      polar and apolar. It is assumed that freesasa_classifier_class()
-      is 0 for apolar atoms using this classifier, and > 0 for polar
-      atoms. The const classifiers declared in this header all have
-      this property. If NULL ::freesasa_default_classifier will be
-      used.
+    @param classifier Classifier to determine which atoms are polar
+      and apolar, and, if available, give reference values to
+      calculate relative SASAs for residues. If NULL
+      ::freesasa_default_classifier will be used.
     @param name The name of the structure
     @return The root node of the tree. NULL if memory allocation fails.
  */
 freesasa_structure_node *
 freesasa_result2tree(const freesasa_result *result,
                      const freesasa_structure *structure,
-                     const freesasa_classifier *polar_classifier,
+                     const freesasa_classifier *classifier,
                      const char *name);
 
 /**
