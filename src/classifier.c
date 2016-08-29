@@ -66,7 +66,7 @@ freesasa_classifier_residue_new(const char* name)
 }
 
 void
-freesasa_classifier_residue_free(struct classifier_residue *res)
+freesasa_classifier_residue_free(struct classifier_residue* res)
 {
     if (res != NULL) {
         free(res->name);
@@ -138,13 +138,8 @@ freesasa_classifier *
 freesasa_classifier_new()
 {
     struct freesasa_classifier *cfg = malloc(sizeof(struct freesasa_classifier));
-
-    if (cfg == NULL) {
-        mem_fail();
-    } else {
-        *cfg = empty_config;
-    }
-
+    if (cfg == NULL) mem_fail();
+    else *cfg = empty_config;
     return cfg;
 }
 
@@ -161,65 +156,6 @@ freesasa_classifier_free(freesasa_classifier *c)
         free(c);
     }
 }
-
-freesasa_classifier*
-freesasa_classifier_clone(const freesasa_classifier *src)
-{
-    assert(src != NULL);
-    freesasa_classifier *cpy = freesasa_classifier_new();
-
-    if (cpy == NULL) {
-        fail_msg("");
-    } else {
-        int n = src->n_residues;
-        cpy->n_residues = n;
-        
-        cpy->name = strdup(src->name);
-        if (cpy->name == NULL) {
-            mem_fail();
-            goto cleanup;
-        }
-
-        cpy->residue_name = malloc(n * sizeof(*cpy->residue_name));
-        if (cpy->residue_name == NULL) {
-            mem_fail();
-            goto cleanup;
-        }
-        
-        for (int i = 0; i < n; ++i) cpy->residue_name[i] = NULL;
-        for (int i = 0; i < n; ++i) {
-            cpy->residue_name[i] = strdup(src->residue_name[i]);
-            if (cpy->residue_name[i] == NULL) {
-                mem_fail();
-                goto cleanup;
-            }
-        }
-        
-        cpy->residue = malloc(n * sizeof(*cpy->residue));
-        if (cpy->residue == NULL) {
-            mem_fail();
-            goto cleanup;
-        }
-        
-        for (int i = 0; i < n; ++i) cpy->residue[i] = NULL;
-        for (int i = 0; i < n; ++i) {
-            cpy->residue[i] = freesasa_classifier_residue_clone(src->residue[i]);
-            if (cpy->residue[i] == NULL) {
-                fail_msg("");
-                goto cleanup;
-            }
-        }
-    }
-    
-    return cpy;
-    
- cleanup:
-    mem_fail();
-    freesasa_classifier_free(cpy);
-    return NULL;
-}
-
-
 
 //! check if array of strings has a string that matches key, ignores trailing and leading whitespace
 static int 
