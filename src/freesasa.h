@@ -993,14 +993,13 @@ freesasa_structure_chain_residues(const freesasa_structure *structure,
     The tree should be freed using freesasa_structure_tree_free().
 
     @param result SASA values for the structure
-    @param structure The structure to use. The nodes will store a
-      reference to the structure they were initialized from. Therefore
-      if the structure is later changed or freed, the tree is no
-      longer valid.
+    @param structure The structure the results are based.
     @param classifier Classifier to determine which atoms are polar
       and apolar, and, if available, give reference values to
       calculate relative SASAs for residues. If NULL
-      ::freesasa_default_classifier will be used.
+      ::freesasa_default_classifier will be used. For consistent 
+      results this should be the same classifier used to determine
+      atomic radii when the structure was created.
     @param name The name of the structure
     @return The root node of the tree. NULL if memory allocation fails.
  */
@@ -1018,8 +1017,10 @@ freesasa_result2tree(const freesasa_result *result,
     @param tree1 The joint tree will be stored here
     @param tree2 Will be added to tree1, and then changed to NULL,
       since ownership of its contents have been transferred to tree1.
+    @return ::FREESASA_SUCCESS upon sucecss. ::FREESASA_WARN if tree1
+      and tree2 were created using different classifiers.
  */
-void
+int
 freesasa_structure_node_join_trees(freesasa_structure_node *tree1,
                                    freesasa_structure_node **tree2);
 
@@ -1052,7 +1053,6 @@ freesasa_export_tree(FILE *output,
  */
 int
 freesasa_structure_node_free(freesasa_structure_node *root);
-
 
 /**
     The ::freesasa_nodearea of all atoms belonging to a node.
@@ -1115,46 +1115,98 @@ const char *
 freesasa_structure_node_name(const freesasa_structure_node *node);
 
 /**
-    The atoms that a node spans.
-
-    @param node The node.
-    @param first Index of first atom will be stored here.
-    @param last Index of last atom will be stored here.
- */
-void
-freesasa_structure_node_atoms(const freesasa_structure_node *node,
-                              int *first,
-                              int *last);
-/**
-    The structure a node is associated with
-
-    @param node The node.
-    @return The structure.
- */
-const freesasa_structure*
-freesasa_structure_node_structure(const freesasa_structure_node *node);
-
- /**
-     The reference area for a node from the classifier used to
-     generate the tree.
-
-     @param node The node (has to be of type ::FREESASA_NODE_RESIDUE)
-     @return The reference area. NULL if area not available or if node
-       is not a residue.
- */
-const freesasa_nodearea *
-freesasa_structure_node_residue_reference(const freesasa_structure_node *node);
-
-/**
     The name of the classifier used to generate the node.
 
-    @param node The node
+    @param node The node (has to be of type ::FREESASA_NODE_ROOT)
     @return The name of the classifier
  */
 const char*
 freesasa_structure_node_classified_by(const freesasa_structure_node *node);
 
-    // Deprecated functions below, from 1.x API
+/**
+    Is atom polar.
+
+    @param node The atom (has to be of type ::FREESASA_NODE_ATOM).
+    @return 1 if polar, 0 else.
+ */
+int
+freesasa_structure_node_atom_is_polar(const freesasa_structure_node *node);
+
+/**
+    Does atom belong to the main chain/backbone.
+
+    @param node The atom (has to be of type ::FREESASA_NODE_ATOM).
+    @return 1 if mainchain, 0 else.
+ */
+int
+freesasa_structure_node_atom_is_mainchain(const freesasa_structure_node *node);
+
+/**
+    Atom radius.
+
+    @param node The atom (has to be of type ::FREESASA_NODE_ATOM).
+    @return The radius.
+ */
+double
+freesasa_structure_node_atom_radius(const freesasa_structure_node *node);
+
+/**
+    Residue number.
+
+    @param node The residue (has to be of type ::FREESASA_NODE_RESIDUE).
+    @return String with residue number.
+ */
+const char *
+freesasa_structure_node_residue_number(const freesasa_structure_node *node);
+
+/**
+    Number of atoms in a residue.
+
+    @param node The residue (has to be of type ::FREESASA_NODE_RESIDUE).
+    @return Number of atoms.
+ */
+int
+freesasa_structure_node_residue_n_atoms(const freesasa_structure_node *node);
+
+/**
+    The reference area for a node from the classifier used to
+    generate the tree.
+
+    @param node The node (has to be of type ::FREESASA_NODE_RESIDUE)
+    @return The reference area. NULL if area not available or if node
+      is not a residue.
+ */
+const freesasa_nodearea *
+freesasa_structure_node_residue_reference(const freesasa_structure_node *node);
+
+/**
+    The number of residues in a chain.
+
+    @param node The chain (has to be of type ::FREESASA_NODE_CHAIN).
+    @return Number of residues.
+ */
+int
+freesasa_structure_node_chain_n_residues(const freesasa_structure_node *node);
+
+/**
+    The number of chains in a structure.
+
+    @param node The structure (has to be of type ::FREESASA_NODE_STRUCTURE).
+    @return Number of chains.
+ */
+int
+freesasa_structure_node_structure_n_chains(const freesasa_structure_node *node);
+
+/**
+    All chain labels in a structure.
+
+    @param node The structure (has to be of type ::FREESASA_NODE_STRUCTURE).
+    @return Chain labels as null-terminated string.
+ */
+const char *
+freesasa_structure_node_structure_chain_labels(const freesasa_structure_node *node);
+
+// Deprecated functions below, from 1.x API
 
 /**
     Generate a classifier from a config-file.

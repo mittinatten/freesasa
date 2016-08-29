@@ -57,14 +57,11 @@ freesasa_xml_atom(const freesasa_structure_node *node, int options)
     assert(node);
     xmlNodePtr xml_node = NULL;
     const freesasa_nodearea *area = freesasa_structure_node_area(node);
-    const freesasa_structure *structure = freesasa_structure_node_structure(node);
     const char *name = freesasa_structure_node_name(node);
-    int first, last;
     int n_len = strlen(name);
     char trim_name[n_len+1], buf[20];
 
     sscanf(name, "%s", trim_name);
-    freesasa_structure_node_atoms(node, &first, &last);
 
     xml_node = xmlNewNode(NULL, BAD_CAST "atom");
     if (xml_node == NULL) {
@@ -83,7 +80,7 @@ freesasa_xml_atom(const freesasa_structure_node *node, int options)
         goto cleanup;
     }
 
-    sprintf(buf, "%s", freesasa_structure_atom_class(structure, first) == FREESASA_ATOM_POLAR ? "yes" : "no");
+    sprintf(buf, "%s", freesasa_structure_node_atom_is_polar(node) == FREESASA_ATOM_POLAR ? "yes" : "no");
     if (xmlNewProp(xml_node, BAD_CAST "isPolar", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
@@ -95,7 +92,7 @@ freesasa_xml_atom(const freesasa_structure_node *node, int options)
         goto cleanup;
     }
 
-    sprintf(buf, "%f", freesasa_structure_atom_radius(structure, first));
+    sprintf(buf, "%f", freesasa_structure_node_atom_radius(node));
     if (xmlNewProp(xml_node, BAD_CAST "radius", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
@@ -113,15 +110,12 @@ freesasa_xml_residue(const freesasa_structure_node *node, int options)
 {
     assert(node);
     xmlNodePtr xml_node = NULL, xml_area = NULL, xml_relarea = NULL;
-    const freesasa_structure *structure = freesasa_structure_node_structure(node);
     const char *name = freesasa_structure_node_name(node), *number;
     const freesasa_nodearea *abs = freesasa_structure_node_area(node),
         *reference = freesasa_structure_node_residue_reference(node);
     freesasa_nodearea rel;
-    int first, last;
 
-    freesasa_structure_node_atoms(node, &first, &last);
-    number = freesasa_structure_atom_res_number(structure, first);
+    number = freesasa_structure_node_residue_number(node);
 
     int n_len = strlen(number);
     char trim_number[n_len+1];
@@ -173,11 +167,8 @@ xmlNodePtr
 freesasa_xml_chain(const freesasa_structure_node *node, int options)
 {
     xmlNodePtr xml_node = NULL, xml_area = NULL;
-    const freesasa_structure *structure = freesasa_structure_node_structure(node);
     const char *name = freesasa_structure_node_name(node);
     char buf[20];
-    int first, last;
-    freesasa_structure_chain_residues(structure, name[0], &first, &last);
 
     xml_node = xmlNewNode(NULL, BAD_CAST "chain");
     if (xml_node == NULL) {
@@ -191,7 +182,7 @@ freesasa_xml_chain(const freesasa_structure_node *node, int options)
         goto cleanup;
     }
 
-    sprintf(buf, "%d", last - first + 1);
+    sprintf(buf, "%d", freesasa_structure_node_chain_n_residues(node));
     if (xmlNewProp(xml_node, BAD_CAST "nResidues", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
@@ -221,7 +212,6 @@ freesasa_xml_structure(const freesasa_structure_node *node, int options)
 {
     assert(node);
     xmlNodePtr xml_node = NULL, xml_area = NULL;
-    const freesasa_structure *structure = freesasa_structure_node_structure(node);
 
     xml_node = xmlNewNode(NULL, BAD_CAST "structure");
     if (xml_node == NULL) {
@@ -229,7 +219,7 @@ freesasa_xml_structure(const freesasa_structure_node *node, int options)
         return NULL;
     }
 
-    if (xmlNewProp(xml_node, BAD_CAST "chains", BAD_CAST freesasa_structure_chain_labels(structure)) == NULL) {
+    if (xmlNewProp(xml_node, BAD_CAST "chains", BAD_CAST freesasa_structure_node_structure_chain_labels(node)) == NULL) {
         fail_msg("");
         goto cleanup;
     }

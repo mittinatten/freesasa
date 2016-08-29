@@ -95,7 +95,7 @@ freesasa_classifier_residue_clone(const struct classifier_residue *src)
         int n = src->n_atoms;
         cpy->n_atoms = n;
 
-        cpy->atom_name = malloc(n * sizeof(cpy->atom_name));
+        cpy->atom_name = malloc(n * sizeof(*cpy->atom_name));
         if (cpy->atom_name == NULL) {
             mem_fail();
             goto cleanup;
@@ -110,19 +110,19 @@ freesasa_classifier_residue_clone(const struct classifier_residue *src)
             }
         }
 
-        cpy->atom_radius = malloc(n * sizeof(cpy->atom_radius));
+        cpy->atom_radius = malloc(n * sizeof(*cpy->atom_radius));
         if (cpy->atom_radius == NULL) {
             mem_fail();
             goto cleanup;
         }
-        memcpy(cpy->atom_radius, src->atom_radius, n * sizeof(cpy->atom_radius));
+        memcpy(cpy->atom_radius, src->atom_radius, n * sizeof(*cpy->atom_radius));
 
         cpy->atom_class = malloc(n * sizeof(cpy->atom_class));
         if (cpy->atom_class == NULL) {
             mem_fail();
             goto cleanup;
         }
-        memcpy(cpy->atom_class, src->atom_class, n * sizeof(cpy->atom_class));
+        memcpy(cpy->atom_class, src->atom_class, n * sizeof(*cpy->atom_class));
 
         cpy->max_area = src->max_area;
     }
@@ -180,7 +180,7 @@ freesasa_classifier_clone(const freesasa_classifier *src)
             goto cleanup;
         }
 
-        cpy->residue_name = malloc(n * sizeof(cpy->residue_name));
+        cpy->residue_name = malloc(n * sizeof(*cpy->residue_name));
         if (cpy->residue_name == NULL) {
             mem_fail();
             goto cleanup;
@@ -195,7 +195,7 @@ freesasa_classifier_clone(const freesasa_classifier *src)
             }
         }
         
-        cpy->residue = malloc(n * sizeof(cpy->residue));
+        cpy->residue = malloc(n * sizeof(*cpy->residue));
         if (cpy->residue == NULL) {
             mem_fail();
             goto cleanup;

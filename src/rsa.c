@@ -77,13 +77,13 @@ rsa_print_residue(FILE *output,
                   int iaa,
                   const freesasa_nodearea *abs,
                   const freesasa_nodearea *rel,
-                  const freesasa_structure *structure)
+                  const freesasa_structure_node *residue)
 {
     const char *resi_str;
     char chain;
 
-    resi_str = freesasa_structure_residue_number(structure, iaa);
-    chain = freesasa_structure_residue_chain(structure, iaa);
+    resi_str = freesasa_structure_node_residue_number(residue);
+    chain = freesasa_structure_node_name(freesasa_structure_node_parent(residue))[0];
 
     fprintf(output, "RES %s %c%s  ", abs->name, chain, resi_str);
     if (rel->name != NULL) {
@@ -113,7 +113,6 @@ freesasa_write_rsa(FILE *output,
     assert(tree);
 
     const freesasa_structure_node *residue, *chain, *structure_node = freesasa_structure_node_children(tree);
-    const freesasa_structure *structure = freesasa_structure_node_structure(structure_node);
 
     const freesasa_nodearea *abs, *reference;
     freesasa_nodearea rel;
@@ -121,7 +120,7 @@ freesasa_write_rsa(FILE *output,
 
     chain = freesasa_structure_node_children(structure_node);
 
-    rsa_print_header(output, freesasa_structure_node_classified_by(structure_node),
+    rsa_print_header(output, freesasa_structure_node_classified_by(tree),
                      freesasa_structure_node_name(tree), parameters, options);
 
     res_index = chain_index = 0;
@@ -135,7 +134,7 @@ freesasa_write_rsa(FILE *output,
             } else {
                 rel = freesasa_nodearea_null;
             }
-            rsa_print_residue(output, res_index, abs, &rel, structure);
+            rsa_print_residue(output, res_index, abs, &rel, residue);
             ++res_index;
             residue = freesasa_structure_node_next(residue);
         }

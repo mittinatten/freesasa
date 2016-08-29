@@ -449,7 +449,6 @@ START_TEST (test_structure_node)
     ck_assert_int_eq(freesasa_structure_node_type(tree), FREESASA_NODE_ROOT);
     ck_assert_str_eq(freesasa_structure_node_name(tree), "test");
     ck_assert_ptr_eq(freesasa_structure_node_next(tree), NULL);
-    ck_assert_ptr_eq(freesasa_structure_node_area(tree), NULL);
     ck_assert_ptr_ne((structure = freesasa_structure_node_children(tree)), NULL);
     test_tree(structure, result);
     
