@@ -594,7 +594,7 @@ to change the default behavior.
 
 The configuration files read by freesasa_classifier_from_filename() or the
 command-line option `-c` should have two sections: `types:` and
-`atoms:`. 
+`atoms:`, and optionally the section `name:`.
 
 The types-section defines what types of atoms are available
 (aliphatic, aromatic, hydroxyl, ...), what the radius of that type is
@@ -607,13 +607,15 @@ The atoms-section consists of triplets of residue-name, atom-name (as
 in the corresponding PDB entries) and type. A prototype file would be
 
 ~~~
+name: myclassifier  # tag and value must be on the same line (optional)
+
 types:
 C_ALIPHATIC 2.00 apolar
 C_AROMATIC  1.75 apolar
 N 1.55 polar
 
 atoms:
-ANY N  N             
+ANY N  N
 ANY CA C_ALIPHATIC
 ANY CB C_ALIPHATIC
 

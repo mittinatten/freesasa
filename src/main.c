@@ -602,7 +602,8 @@ main(int argc,
             freesasa_set_verbosity(FREESASA_V_NOWARNINGS);
             break;
         case 'c': {
-            classifier = classifier_from_file = freesasa_classifier_from_filename(optarg);
+            FILE *cf = fopen_werr(optarg, "r");
+            classifier = classifier_from_file = freesasa_classifier_from_file(cf);
             if (classifier_from_file == NULL) abort_msg("Can't read file '%s'.", optarg);
             no_rel = 1;
             break;

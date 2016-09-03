@@ -324,7 +324,8 @@ END_TEST
 
 START_TEST (test_user_classes)
 {
-    FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
+    FILE *pdb = fopen(DATADIR "1ubq.pdb","r"),
+        *clf = fopen(SHAREDIR "protor.config", "r");
     freesasa_structure *st, *st_ref;
     freesasa_classifier *user_classifier;
     freesasa_result *res, *res_ref;
@@ -332,8 +333,10 @@ START_TEST (test_user_classes)
     const double *radii, *radii_ref;
 
     ck_assert(pdb != NULL);
+    ck_assert(clf != NULL);
 
-    user_classifier = freesasa_classifier_from_filename(SHAREDIR "protor.config");
+    user_classifier = freesasa_classifier_from_file(clf);
+    fclose(clf);
     ck_assert(user_classifier != NULL);
 
     st = freesasa_structure_from_pdb(pdb, user_classifier, 0);

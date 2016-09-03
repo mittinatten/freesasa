@@ -232,24 +232,21 @@ void
 freesasa_result_free(freesasa_result *result);
 
 /**
-    Generate a classifier from a config-file
+    Generate a classifier from a config-file.
 
     Input file format described in @ref Config-file
-
-    The name returned by freesasa_classifier_name() will be the same
-    as the filename.
 
     Return value is dynamically allocated, should be freed with
     freesasa_classifier_free().
 
-    @param filename Path to file containing configuration
+    @param file File containing configuration
     @return The generated classifier. NULL if there were problems
-      parsing or reading trhe file or memory allocation problem.
+      parsing or reading the file or memory allocation problem.
 
     @see @ref Config-file
  */
 freesasa_classifier*
-freesasa_classifier_from_filename(const char *filename);
+freesasa_classifier_from_file(FILE *file);
 
 /**
     Frees a classifier object
@@ -1208,27 +1205,6 @@ const char *
 freesasa_structure_node_structure_chain_labels(const freesasa_structure_node *node);
 
 // Deprecated functions below, from 1.x API
-
-/**
-    Generate a classifier from a config-file.
-
-    Input file format described in @ref Config-file
-
-    Return value is dynamically allocated, should be freed with
-    freesasa_classifier_free().
-
-    @param file File containing configuration
-    @return The generated classifier. NULL if there were problems
-      parsing or reading the file or memory allocation problem.
-
-    @see @ref Config-file
-
-    @deprecated Use freesasa_classifier_from_filename() instead. The
-      name returned by freesasa_classifier_name() will be
-      "from-unknown-file" here.
- */
-freesasa_classifier*
-freesasa_classifier_from_file(FILE *file);
 
 /**
     Struct used to store n string-value-pairs (strvp) in arrays of

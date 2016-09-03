@@ -28,6 +28,7 @@ my %types;
 my %atoms;
 my %residues;
 my %rsa;
+my $name;
 my $n_classes = 0;
 my $n_residues = 0;
 my $atom_flag = 0;
@@ -41,6 +42,7 @@ open(my $input, "<$config_file") or die "Can't open $config_file. $!";
 
 while (<$input>) {
     next if (/^#/);
+    chomp;
     $_ =~ s/^(.*)#.*/$1/; # strip comments
     next if (/^\s*$/);
     if (/^types:/) {
@@ -51,6 +53,11 @@ while (<$input>) {
     if (/^atoms:/) {
         $type_flag = 0;
         $atom_flag = 1;
+        next;
+    }
+    if (/^name:/) {
+        $_ =~ s/name:\s+(\S+)/$1/;
+        $name = $_;
         next;
     }
     if ($type_flag) {
@@ -174,7 +181,7 @@ print "const freesasa_classifier freesasa_$prefix\_classifier = {\n";
 print "    .n_residues = $n_residues,";
 print "    .residue_name = (char**) $prefix\_residue_name,\n";
 print "    .residue = (struct classifier_residue **) $prefix\_residue_cfg,\n";
-print "    .name = \"$prefix\",\n";
+print "    .name = \"$name\",\n";
 print "};\n\n";
 
 

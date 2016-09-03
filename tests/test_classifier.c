@@ -344,7 +344,10 @@ END_TEST
 
 START_TEST (test_user)
 {
-    freesasa_classifier* c = freesasa_classifier_from_filename(SHAREDIR "oons.config");
+    FILE *clf = fopen(SHAREDIR "oons.config", "r");
+    ck_assert(clf != NULL);
+    
+    freesasa_classifier* c = freesasa_classifier_from_file(clf);
     ck_assert(c != NULL);
     ck_assert(freesasa_classifier_class(c, "ALA", "CA") == FREESASA_ATOM_APOLAR);
     ck_assert(freesasa_classifier_class(c, "ALA", "O") == FREESASA_ATOM_POLAR);

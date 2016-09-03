@@ -14,9 +14,9 @@ static struct classifier_residue oons_ACE_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *oons_ANY_atom_name[] = {"N9", "N3", "N", "N2", "CB", "CM2", "C8", "C2", "C6", "C5", "O3'", "C4", "C4'", "O5'", "OP3", "O4", "OP1", "C3'", "C", "CA", "N1", "O", "N6", "O2", "C1'", "P", "N7", "C7", "O4'", "C5'", "OP2", "C2'", "O2'", "O6", "OXT", "N4", };
-static double oons_ANY_atom_radius[] = {1.55, 1.55, 1.55, 1.55, 2.00, 2.00, 1.75, 1.75, 1.75, 1.75, 1.40, 1.75, 1.75, 1.40, 1.40, 1.40, 1.40, 1.75, 1.55, 2.00, 1.55, 1.40, 1.55, 1.40, 1.75, 1.80, 1.55, 1.75, 1.40, 2.00, 1.40, 1.75, 1.40, 1.40, 1.40, 1.55, };
-static int oons_ANY_atom_class[] = {FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, };
+static const char *oons_ANY_atom_name[] = {"OXT", "O5'", "C7", "P", "O2'", "N9", "C3'", "N", "C4'", "N4", "C", "N2", "C5'", "C5", "OP1", "C2'", "CM2", "N6", "C8", "C6", "O2", "OP2", "O6", "C4", "CB", "C1'", "O4", "O4'", "OP3", "O", "O3'", "CA", "N7", "C2", "N3", "N1", };
+static double oons_ANY_atom_radius[] = {1.40, 1.40, 1.75, 1.80, 1.40, 1.55, 1.75, 1.55, 1.75, 1.55, 1.55, 1.55, 2.00, 1.75, 1.40, 1.75, 2.00, 1.55, 1.75, 1.75, 1.40, 1.40, 1.40, 1.75, 2.00, 1.75, 1.40, 1.40, 1.40, 1.40, 1.40, 2.00, 1.55, 1.75, 1.55, 1.55, };
+static int oons_ANY_atom_class[] = {FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, };
 static struct classifier_residue oons_ANY_cfg = {
     .name = "ANY", .n_atoms = 36,
     .atom_name = (char**) oons_ANY_atom_name,
@@ -25,9 +25,9 @@ static struct classifier_residue oons_ANY_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *oons_ARG_atom_name[] = {"CD", "CZ", "NE", "CG", "NH2", "NH1", };
-static double oons_ARG_atom_radius[] = {2.00, 2.00, 1.55, 2.00, 1.55, 1.55, };
-static int oons_ARG_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, };
+static const char *oons_ARG_atom_name[] = {"NH1", "NE", "CZ", "CD", "NH2", "CG", };
+static double oons_ARG_atom_radius[] = {1.55, 1.55, 2.00, 2.00, 1.55, 2.00, };
+static int oons_ARG_atom_class[] = {FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, };
 static struct classifier_residue oons_ARG_cfg = {
     .name = "ARG", .n_atoms = 6,
     .atom_name = (char**) oons_ARG_atom_name,
@@ -36,8 +36,8 @@ static struct classifier_residue oons_ARG_cfg = {
     .max_area = {.name = "ARG", .total = 228.79, .main_chain = 41.90, .side_chain = 186.89, .polar = 115.26, .apolar = 113.52},
 };
 
-static const char *oons_ASN_atom_name[] = {"OD1", "CG", "ND2", };
-static double oons_ASN_atom_radius[] = {1.40, 1.55, 1.55, };
+static const char *oons_ASN_atom_name[] = {"CG", "ND2", "OD1", };
+static double oons_ASN_atom_radius[] = {1.55, 1.55, 1.40, };
 static int oons_ASN_atom_class[] = {FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, };
 static struct classifier_residue oons_ASN_cfg = {
     .name = "ASN", .n_atoms = 3,
@@ -47,8 +47,8 @@ static struct classifier_residue oons_ASN_cfg = {
     .max_area = {.name = "ASN", .total = 136.22, .main_chain = 41.04, .side_chain = 95.18, .polar = 86.37, .apolar = 49.85},
 };
 
-static const char *oons_ASP_atom_name[] = {"OD2", "OD1", "CG", };
-static double oons_ASP_atom_radius[] = {1.40, 1.40, 1.55, };
+static const char *oons_ASP_atom_name[] = {"OD2", "CG", "OD1", };
+static double oons_ASP_atom_radius[] = {1.40, 1.55, 1.40, };
 static int oons_ASP_atom_class[] = {FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, };
 static struct classifier_residue oons_ASP_cfg = {
     .name = "ASP", .n_atoms = 3,
@@ -58,7 +58,7 @@ static struct classifier_residue oons_ASP_cfg = {
     .max_area = {.name = "ASP", .total = 134.24, .main_chain = 41.82, .side_chain = 92.43, .polar = 84.12, .apolar = 50.13},
 };
 
-static const char *oons_ASX_atom_name[] = {"XD2", "CG", "AD1", "AD2", "XD1", };
+static const char *oons_ASX_atom_name[] = {"AD2", "CG", "XD2", "AD1", "XD1", };
 static double oons_ASX_atom_radius[] = {1.5, 1.55, 1.5, 1.5, 1.5, };
 static int oons_ASX_atom_class[] = {FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, };
 static struct classifier_residue oons_ASX_cfg = {
@@ -91,9 +91,9 @@ static struct classifier_residue oons_CYS_cfg = {
     .max_area = {.name = "CYS", .total = 132.58, .main_chain = 41.94, .side_chain = 90.64, .polar = 85.30, .apolar = 47.28},
 };
 
-static const char *oons_GLN_atom_name[] = {"CD", "NE2", "OE1", "CG", };
-static double oons_GLN_atom_radius[] = {1.55, 1.55, 1.40, 2.00, };
-static int oons_GLN_atom_class[] = {FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, };
+static const char *oons_GLN_atom_name[] = {"CD", "CG", "NE2", "OE1", };
+static double oons_GLN_atom_radius[] = {1.55, 2.00, 1.55, 1.40, };
+static int oons_GLN_atom_class[] = {FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, };
 static struct classifier_residue oons_GLN_cfg = {
     .name = "GLN", .n_atoms = 4,
     .atom_name = (char**) oons_GLN_atom_name,
@@ -102,9 +102,9 @@ static struct classifier_residue oons_GLN_cfg = {
     .max_area = {.name = "GLN", .total = 169.64, .main_chain = 41.90, .side_chain = 127.74, .polar = 115.00, .apolar = 54.64},
 };
 
-static const char *oons_GLU_atom_name[] = {"OE2", "CD", "OE1", "CG", };
-static double oons_GLU_atom_radius[] = {1.40, 1.55, 1.40, 2.00, };
-static int oons_GLU_atom_class[] = {FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, };
+static const char *oons_GLU_atom_name[] = {"OE1", "OE2", "CG", "CD", };
+static double oons_GLU_atom_radius[] = {1.40, 1.40, 2.00, 1.55, };
+static int oons_GLU_atom_class[] = {FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, };
 static struct classifier_residue oons_GLU_cfg = {
     .name = "GLU", .n_atoms = 4,
     .atom_name = (char**) oons_GLU_atom_name,
@@ -113,9 +113,9 @@ static struct classifier_residue oons_GLU_cfg = {
     .max_area = {.name = "GLU", .total = 166.01, .main_chain = 41.93, .side_chain = 124.09, .polar = 108.99, .apolar = 57.02},
 };
 
-static const char *oons_GLX_atom_name[] = {"AE1", "CD", "XE2", "CG", "AE2", "XE1", };
-static double oons_GLX_atom_radius[] = {1.5, 1.55, 1.5, 2.00, 1.5, 1.5, };
-static int oons_GLX_atom_class[] = {FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, };
+static const char *oons_GLX_atom_name[] = {"XE2", "CG", "CD", "AE1", "AE2", "XE1", };
+static double oons_GLX_atom_radius[] = {1.5, 2.00, 1.55, 1.5, 1.5, 1.5, };
+static int oons_GLX_atom_class[] = {FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, };
 static struct classifier_residue oons_GLX_cfg = {
     .name = "GLX", .n_atoms = 6,
     .atom_name = (char**) oons_GLX_atom_name,
@@ -124,9 +124,9 @@ static struct classifier_residue oons_GLX_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *oons_HIS_atom_name[] = {"CD2", "NE2", "CE1", "CG", "ND1", };
-static double oons_HIS_atom_radius[] = {1.75, 1.55, 1.75, 1.75, 1.55, };
-static int oons_HIS_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, };
+static const char *oons_HIS_atom_name[] = {"CG", "NE2", "ND1", "CD2", "CE1", };
+static double oons_HIS_atom_radius[] = {1.75, 1.55, 1.55, 1.75, 1.75, };
+static int oons_HIS_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, };
 static struct classifier_residue oons_HIS_cfg = {
     .name = "HIS", .n_atoms = 5,
     .atom_name = (char**) oons_HIS_atom_name,
@@ -146,7 +146,7 @@ static struct classifier_residue oons_HOH_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *oons_ILE_atom_name[] = {"CD1", "CG2", "CG1", };
+static const char *oons_ILE_atom_name[] = {"CG1", "CG2", "CD1", };
 static double oons_ILE_atom_radius[] = {2.00, 2.00, 2.00, };
 static int oons_ILE_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, };
 static struct classifier_residue oons_ILE_cfg = {
@@ -157,7 +157,7 @@ static struct classifier_residue oons_ILE_cfg = {
     .max_area = {.name = "ILE", .total = 173.24, .main_chain = 36.90, .side_chain = 136.34, .polar = 20.58, .apolar = 152.66},
 };
 
-static const char *oons_LEU_atom_name[] = {"CD2", "CD1", "CG", };
+static const char *oons_LEU_atom_name[] = {"CD1", "CG", "CD2", };
 static double oons_LEU_atom_radius[] = {2.00, 2.00, 2.00, };
 static int oons_LEU_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, };
 static struct classifier_residue oons_LEU_cfg = {
@@ -168,9 +168,9 @@ static struct classifier_residue oons_LEU_cfg = {
     .max_area = {.name = "LEU", .total = 166.51, .main_chain = 41.95, .side_chain = 124.56, .polar = 25.02, .apolar = 141.50},
 };
 
-static const char *oons_LYS_atom_name[] = {"CD", "CG", "CE", "NZ", };
-static double oons_LYS_atom_radius[] = {2.00, 2.00, 2.00, 1.55, };
-static int oons_LYS_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, };
+static const char *oons_LYS_atom_name[] = {"CG", "NZ", "CE", "CD", };
+static double oons_LYS_atom_radius[] = {2.00, 1.55, 2.00, 2.00, };
+static int oons_LYS_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, };
 static struct classifier_residue oons_LYS_cfg = {
     .name = "LYS", .n_atoms = 4,
     .atom_name = (char**) oons_LYS_atom_name,
@@ -179,9 +179,9 @@ static struct classifier_residue oons_LYS_cfg = {
     .max_area = {.name = "LYS", .total = 197.76, .main_chain = 41.90, .side_chain = 155.86, .polar = 72.37, .apolar = 125.39},
 };
 
-static const char *oons_MET_atom_name[] = {"CG", "CE", "SD", };
+static const char *oons_MET_atom_name[] = {"SD", "CG", "CE", };
 static double oons_MET_atom_radius[] = {2.00, 2.00, 2.00, };
-static int oons_MET_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, };
+static int oons_MET_atom_class[] = {FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, };
 static struct classifier_residue oons_MET_cfg = {
     .name = "MET", .n_atoms = 3,
     .atom_name = (char**) oons_MET_atom_name,
@@ -201,7 +201,7 @@ static struct classifier_residue oons_NH2_cfg = {
     .max_area = {NULL, 0, 0, 0, 0, 0},
 };
 
-static const char *oons_PHE_atom_name[] = {"CD2", "CD1", "CZ", "CE1", "CG", "CE2", };
+static const char *oons_PHE_atom_name[] = {"CG", "CE2", "CZ", "CD2", "CD1", "CE1", };
 static double oons_PHE_atom_radius[] = {1.75, 1.75, 1.75, 1.75, 1.75, 1.75, };
 static int oons_PHE_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, };
 static struct classifier_residue oons_PHE_cfg = {
@@ -212,7 +212,7 @@ static struct classifier_residue oons_PHE_cfg = {
     .max_area = {.name = "PHE", .total = 192.02, .main_chain = 40.38, .side_chain = 151.64, .polar = 25.21, .apolar = 166.81},
 };
 
-static const char *oons_PRO_atom_name[] = {"CD", "CG", "CB", };
+static const char *oons_PRO_atom_name[] = {"CG", "CB", "CD", };
 static double oons_PRO_atom_radius[] = {1.75, 1.75, 1.75, };
 static int oons_PRO_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, };
 static struct classifier_residue oons_PRO_cfg = {
@@ -223,9 +223,9 @@ static struct classifier_residue oons_PRO_cfg = {
     .max_area = {.name = "PRO", .total = 123.92, .main_chain = 33.48, .side_chain = 90.44, .polar = 14.54, .apolar = 109.38},
 };
 
-static const char *oons_PYL_atom_name[] = {"CA2", "O2", "N2", "CB2", "CE", "CE2", "CD2", "CG2", "CD", "CG", "NZ", "C2", };
-static double oons_PYL_atom_radius[] = {1.75, 1.40, 1.55, 2.00, 2.00, 1.75, 1.75, 1.75, 2.00, 2.00, 1.55, 1.55, };
-static int oons_PYL_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, };
+static const char *oons_PYL_atom_name[] = {"CG", "CD2", "CB2", "CE", "CD", "O2", "N2", "CG2", "NZ", "CE2", "CA2", "C2", };
+static double oons_PYL_atom_radius[] = {2.00, 1.75, 2.00, 2.00, 2.00, 1.40, 1.55, 1.75, 1.55, 1.75, 1.75, 1.55, };
+static int oons_PYL_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, };
 static struct classifier_residue oons_PYL_cfg = {
     .name = "PYL", .n_atoms = 12,
     .atom_name = (char**) oons_PYL_atom_name,
@@ -267,9 +267,9 @@ static struct classifier_residue oons_THR_cfg = {
     .max_area = {.name = "THR", .total = 135.14, .main_chain = 38.84, .side_chain = 96.29, .polar = 41.22, .apolar = 93.91},
 };
 
-static const char *oons_TRP_atom_name[] = {"CZ2", "CE2", "NE1", "CD1", "CD2", "CH2", "CG", "CE3", "CZ3", };
-static double oons_TRP_atom_radius[] = {1.75, 1.75, 1.55, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, };
-static int oons_TRP_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, };
+static const char *oons_TRP_atom_name[] = {"CG", "CZ3", "CD2", "CZ2", "CD1", "CH2", "CE2", "CE3", "NE1", };
+static double oons_TRP_atom_radius[] = {1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.55, };
+static int oons_TRP_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, };
 static struct classifier_residue oons_TRP_cfg = {
     .name = "TRP", .n_atoms = 9,
     .atom_name = (char**) oons_TRP_atom_name,
@@ -278,9 +278,9 @@ static struct classifier_residue oons_TRP_cfg = {
     .max_area = {.name = "TRP", .total = 222.80, .main_chain = 37.17, .side_chain = 185.63, .polar = 50.57, .apolar = 172.24},
 };
 
-static const char *oons_TYR_atom_name[] = {"CD2", "CD1", "CZ", "CE1", "CG", "OH", "CE2", };
-static double oons_TYR_atom_radius[] = {1.75, 1.75, 1.75, 1.75, 1.75, 1.40, 1.75, };
-static int oons_TYR_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, };
+static const char *oons_TYR_atom_name[] = {"CD2", "OH", "CE2", "CZ", "CG", "CE1", "CD1", };
+static double oons_TYR_atom_radius[] = {1.75, 1.40, 1.75, 1.75, 1.75, 1.75, 1.75, };
+static int oons_TYR_atom_class[] = {FREESASA_ATOM_APOLAR, FREESASA_ATOM_POLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, FREESASA_ATOM_APOLAR, };
 static struct classifier_residue oons_TYR_cfg = {
     .name = "TYR", .n_atoms = 7,
     .atom_name = (char**) oons_TYR_atom_name,
@@ -306,6 +306,6 @@ static struct classifier_residue *oons_residue_cfg[] = {
 const freesasa_classifier freesasa_oons_classifier = {
     .n_residues = 27,    .residue_name = (char**) oons_residue_name,
     .residue = (struct classifier_residue **) oons_residue_cfg,
-    .name = "oons",
+    .name = "OONS",
 };
 
