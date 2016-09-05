@@ -203,7 +203,6 @@ START_TEST (test_sasa_1ubq)
     tree = freesasa_result2tree(res, st, NULL, "test");
     fclose(pdb);
 
-    // The reference values were the output of FreeSASA on 2014-02-10
     ck_assert(float_eq(res->total, total_ref, 1e-5));
     ck_assert(float_eq(res_class.polar, polar_ref, 1e-5));
     ck_assert(float_eq(res_class.apolar, apolar_ref, 1e-5));
@@ -254,10 +253,11 @@ START_TEST (test_sasa_1ubq)
 }
 END_TEST
 
-START_TEST (test_write_1ubq) {
+START_TEST (test_write_pdb) {
     FILE *tf = fopen("tmp/dummy_bfactors.pdb","w+"),
         *ref = fopen(DATADIR "reference_bfactors.pdb","r"),
-        *pdb = fopen(DATADIR "1ubq.pdb","r");
+        *pdb = fopen(DATADIR "1ubq.pdb","r"),
+        *devnull = fopen("/dev/null", "w");
     ck_assert(tf != NULL);
     ck_assert(ref != NULL);
     ck_assert(pdb != NULL);
@@ -283,8 +283,21 @@ START_TEST (test_write_1ubq) {
     }
     free(buf_tf);
     free(buf_ref);
+
+    freesasa_structure_free(s);
+
+    // Can't write pdb from structure not initialized from pdb
+    s = freesasa_structure_new();
+    freesasa_structure_add_atom(s,"C","ALA","   1",'C',0,0,0);
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    ck_assert_int_eq(freesasa_write_pdb(devnull, &res, s), FREESASA_FAIL);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+    freesasa_structure_free(s);
+
+    fclose(devnull);
     fclose(ref);
     fclose(tf);
+
 }
 END_TEST
 
@@ -516,7 +529,7 @@ Suite *sasa_suite()
     tcase_add_test(tc_basic, test_minimal_calc);
     tcase_add_test(tc_basic, test_calc_errors);
     tcase_add_test(tc_basic, test_user_classes);
-    tcase_add_test(tc_basic, test_write_1ubq);
+    tcase_add_test(tc_basic, test_write_pdb);
     tcase_add_test(tc_basic, test_memerr);
     
     TCase *tc_lr_basic = tcase_create("Basic L&R");

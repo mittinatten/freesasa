@@ -101,6 +101,11 @@ START_TEST (test_add_atom)
     ck_assert_int_eq(freesasa_structure_add_atom_wopt(s,"CL  ","ABC","   1",'A',0,0,0,NULL,FREESASA_HALT_AT_UNKNOWN | FREESASA_SKIP_UNKNOWN), FREESASA_FAIL);
     ck_assert_int_eq(freesasa_structure_n(s), 9);
 
+    for (int i = 0; i < freesasa_structure_n(s); ++i) {
+        ck_assert_int_eq(freesasa_structure_atom_class(s, i),
+                         freesasa_classifier_class(&freesasa_default_classifier, freesasa_structure_atom_res_name(s, i), freesasa_structure_atom_name(s,i)));
+    }
+
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 
     freesasa_structure_free(s);
