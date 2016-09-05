@@ -383,7 +383,7 @@ freesasa_structure_node_join_trees(freesasa_structure_node *tree1,
 
     int ret = FREESASA_SUCCESS;
 
-    if (strcmp(tree1->tree_prop.classified_by, (*tree2)->tree_prop.classified_by) == 0) {
+    if (strcmp(tree1->tree_prop.classified_by, (*tree2)->tree_prop.classified_by) != 0) {
         ret = freesasa_warn("Joining tree classified by different classifiers: '%s' and '%s', output may be inconsistent\n",
                             tree1->tree_prop.classified_by,
                             (*tree2)->tree_prop.classified_by);
