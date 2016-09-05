@@ -103,7 +103,7 @@ freesasa_classifier_free(freesasa_classifier *c)
                 freesasa_classifier_residue_free(c->residue[i]);
         free(c->residue);
         free(c->residue_name);
-
+        free(c->name);
         free(c);
     }
 }
@@ -231,21 +231,29 @@ locate_string(const char *line,
 {
     assert(line);
     assert(str);
-    char *loc, *comment;
-    size_t max_len = strlen(line);
+    int NOT_FOUND = -1;
+    size_t len = strlen(line) + 1;
+    char buf[len], *loc;
+
+    if (len == 0) {
+        return NOT_FOUND;
+    }
+    strcpy(buf, line);
 
     // skip comments
-    comment = strstr(line, "#");
-    if (comment != NULL)
-        max_len = comment - line;
+    loc = strstr(buf, "#");
+    if (loc == buf) {
+        return NOT_FOUND;
+    } else if (loc != NULL) {
+        *loc = '\0';
+    }
 
-    if (max_len == 0)
-        return -1;
+    loc = strstr(buf, str);
+    if (loc != NULL) {
+        return loc - buf;
+    }
 
-    loc = strnstr(line, str, max_len);
-    if (loc != NULL) return loc - line;
-
-    return -1;
+    return NOT_FOUND;
 }
 
 /**
@@ -259,8 +267,8 @@ try_register_stringloc(const char *line,
                        struct file_range *this_range,
                        struct file_range **prev_range)
 {
-    if (strlen(line) == 0) return -1;
-    int pos;
+    int pos, NOT_FOUND = -1;
+    if (strlen(line) == 0) return NOT_FOUND;
     pos = locate_string(line, str);
     if (pos >= 0) {
         this_range->begin = last_tell + pos;
@@ -268,7 +276,7 @@ try_register_stringloc(const char *line,
         (*prev_range) = this_range;
         return last_tell + pos;
     }
-    return -1;
+    return NOT_FOUND;
 }
 
 /**
