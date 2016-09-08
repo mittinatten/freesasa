@@ -48,22 +48,6 @@ struct classifier_residue {
     freesasa_nodearea max_area; //!< Maximum area (for RSA)
 };
 
-/* (merge with doc below) 
-
-   Struct used for calculating classes and radii for atoms given their
-   residue-names ('ALA','ARG',...) and atom-names ('CA','N',...). Some
-   functions depend on classifiers where freesasa_classifier_class()
-   returns 0 for apolar atoms and non-zero for polar atoms, for
-   example freesasa_write_rsa() and freesasa_json_result(). Such
-   classifiers will be referred to as polar classifiers. The static
-   classifiers ::freesasa_protor_classifier (also known as
-   ::freesasa_default_classifier), ::freesasa_naccess_classifier, and
-   ::freesasa_oons_classifier are all polar classifier. The classifier
-   interface allows for other configurations because there is
-   sometimes need for more than two classes, or one might want to
-   classify atoms along some other divide.
- */
-
 /**
     Stores a user-configuration as extracted from a configuration
     file. No info about types, since those are only a tool used
