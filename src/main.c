@@ -290,7 +290,7 @@ run_analysis(FILE *input,
     freesasa_result *result = NULL;
     freesasa_nodearea classes;
     freesasa_structure **structures = NULL;
-    freesasa_structure_node *tree = NULL, *tmp_tree;
+    freesasa_result_node *tree = freesasa_result_tree_new();
     int n = 0, rel = (no_rel ? FREESASA_OUTPUT_SKIP_REL : 0);
 
     // read PDB file
@@ -341,9 +341,10 @@ run_analysis(FILE *input,
             }
         }
         if (printrsa || printjson || printxml) {
-            tmp_tree = freesasa_result2tree(result, structures[i], name_i);
-            if (tree == NULL) tree = tmp_tree;
-            else freesasa_structure_node_join_trees(tree, &tmp_tree);
+            if (freesasa_result_tree_add_result(tree, result, structures[i], name_i)
+                != FREESASA_SUCCESS) {
+                abort_msg("Error generating result-tree");
+            }
         }
         freesasa_result_free(result);
     }
@@ -352,7 +353,7 @@ run_analysis(FILE *input,
     if (printjson) freesasa_export_tree(json_file, tree, &parameters, FREESASA_JSON | output_depth | rel);
     if (printxml)  freesasa_export_tree(xml_file,  tree, &parameters, FREESASA_XML | output_depth | rel);
 
-    freesasa_structure_node_free(tree);
+    freesasa_result_node_free(tree);
     for (int i = 0; i < n; ++i) freesasa_structure_free(structures[i]);
     free(structures);
 }

@@ -8,7 +8,7 @@
 #include "tools.h"
 
 extern json_object *
-freesasa_node2json(const freesasa_structure_node *node, int exclude_type);
+freesasa_node2json(const freesasa_result_node *node, int exclude_type);
 
 static int
 compare_nodearea(json_object *obj, const freesasa_nodearea *ref, int is_abs)
@@ -53,7 +53,7 @@ compare_nodearea(json_object *obj, const freesasa_nodearea *ref, int is_abs)
 }
 
 int
-test_atom(const freesasa_structure_node *node)
+test_atom(const freesasa_result_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
     json_object *atom = freesasa_node2json(node, FREESASA_NODE_NONE);
@@ -67,7 +67,7 @@ test_atom(const freesasa_structure_node *node)
         if (!strcmp(key, "name")) {
             ck_assert(json_object_is_type(val, json_type_string));
             ck_assert_str_eq(json_object_get_string(val), "N");
-        } else if (!strcmp(key, "SASA")) {
+        } else if (!strcmp(key, "area")) {
             ck_assert(json_object_is_type(val, json_type_double));
             ck_assert(json_object_get_double(val) > 0);
         } else if (!strcmp(key, "is-polar")) {
@@ -90,12 +90,12 @@ test_atom(const freesasa_structure_node *node)
 }
 
 int
-test_residue(const freesasa_structure_node *node)
+test_residue(const freesasa_result_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
     json_object *residue = freesasa_node2json(node, FREESASA_NODE_NONE);
     ck_assert_ptr_ne(residue, NULL);
-    const freesasa_nodearea *resarea = freesasa_structure_node_area(node);
+    const freesasa_nodearea *resarea = freesasa_result_node_area(node);
     struct json_object_iterator it = json_object_iter_begin(residue),
         it_end = json_object_iter_end(residue);
 
@@ -114,7 +114,7 @@ test_residue(const freesasa_structure_node *node)
         } else if (!strcmp(key, "atoms")) {
              ck_assert(json_object_is_type(val, json_type_array));
             //this is checked further by test_atom
-        } else if (!strcmp(key, "SASA")) {
+        } else if (!strcmp(key, "area")) {
             ck_assert(compare_nodearea(val, resarea, 1));
         } else if (!strcmp(key, "relative-area")) {
             ck_assert(compare_nodearea(val, resarea, 0));
@@ -130,11 +130,11 @@ test_residue(const freesasa_structure_node *node)
 }
 
 int
-test_chain(const freesasa_structure_node *node, const freesasa_result *result)
+test_chain(const freesasa_result_node *node, const freesasa_result *result)
 {
     ck_assert_ptr_ne(node, NULL);
     json_object *chain = freesasa_node2json(node, FREESASA_NODE_NONE);
-    const freesasa_nodearea *chain_area = freesasa_structure_node_area(node);
+    const freesasa_nodearea *chain_area = freesasa_result_node_area(node);
     ck_assert_ptr_ne(chain, NULL);
     ck_assert(float_eq(chain_area->total, result->total, 1e-10));
 
@@ -149,7 +149,7 @@ test_chain(const freesasa_structure_node *node, const freesasa_result *result)
         } else if (!strcmp(key, "n-residues")) {
             ck_assert(json_object_is_type(val, json_type_int));
             ck_assert_int_eq(json_object_get_int(val), 76);
-        } else if (!strcmp(key, "SASA")) {
+        } else if (!strcmp(key, "area")) {
             ck_assert(compare_nodearea(val, chain_area, 1));
         } else if (!strcmp(key, "residues")) {
             ck_assert(json_object_is_type(val, json_type_array));
@@ -165,7 +165,7 @@ test_chain(const freesasa_structure_node *node, const freesasa_result *result)
 }
 
 int
-test_structure(const freesasa_structure_node *node)
+test_structure(const freesasa_result_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
     freesasa_nodearea structure_area = {
@@ -190,7 +190,7 @@ test_structure(const freesasa_structure_node *node)
         } else if (!strcmp(key, "chain-labels")) {
             ck_assert(json_object_is_type(val, json_type_string));
             ck_assert_str_eq(json_object_get_string(val), "A");
-        } else if (!strcmp(key, "SASA")) {
+        } else if (!strcmp(key, "area")) {
             compare_nodearea(val, &structure_area, 1);
         } else if (!strcmp(key, "chains")) {
             ck_assert(json_object_is_type(val, json_type_array));
@@ -213,11 +213,13 @@ START_TEST (test_json)
         freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
     fclose(pdb);
     freesasa_result *result = freesasa_calc_structure(ubq, NULL);
-    freesasa_structure_node *root = freesasa_result2tree(result, ubq, "test");
-    const freesasa_structure_node *structures = freesasa_structure_node_children(root);
-    const freesasa_structure_node *chains = freesasa_structure_node_children(structures);
-    const freesasa_structure_node *residues = freesasa_structure_node_children(chains);
-    const freesasa_structure_node *atoms = freesasa_structure_node_children(residues);
+    freesasa_result_node *tree = freesasa_result_tree_new();
+    freesasa_result_tree_add_result(tree, result, ubq, "test");
+    const freesasa_result_node *result_node = freesasa_result_node_children(tree);
+    const freesasa_result_node *structures = freesasa_result_node_children(result_node);
+    const freesasa_result_node *chains = freesasa_result_node_children(structures);
+    const freesasa_result_node *residues = freesasa_result_node_children(chains);
+    const freesasa_result_node *atoms = freesasa_result_node_children(residues);
 
     ck_assert(test_atom(atoms));
     ck_assert(test_residue(residues));
@@ -226,7 +228,7 @@ START_TEST (test_json)
     
     freesasa_structure_free(ubq);
     freesasa_result_free(result);
-    freesasa_structure_node_free(root);
+    freesasa_result_node_free(tree);
 }
 END_TEST
 

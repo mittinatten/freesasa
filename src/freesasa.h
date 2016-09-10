@@ -131,6 +131,7 @@ typedef struct {
     double total; //!< Total SASA in Ångström^2
     double *sasa; //!< SASA of each atom in Ångström^2
     int n_atoms;  //!< Number of atoms
+    freesasa_parameters parameters; //!< Parameters used in calculation
 } freesasa_result;
 
 /**
@@ -139,7 +140,7 @@ typedef struct {
 
     Use freesasa_result_classes() to turn a
     ::freesasa_result into a ::freesasa_nodearea. Each
-    ::freesasa_structure_node is associated with a
+    ::freesasa_result_node is associated with a
     ::freesasa_nodearea.
  */
 typedef struct {
@@ -158,7 +159,8 @@ typedef enum {
     FREESASA_NODE_RESIDUE, //!< Residue node
     FREESASA_NODE_CHAIN, //!< Chain node
     FREESASA_NODE_STRUCTURE, //!< Structure node
-    FREESASA_NODE_ROOT, //!< Root node, wraps one or more structures
+    FREESASA_NODE_RESULT, //!< Result node, wraps results for one or more related structures
+    FREESASA_NODE_ROOT, //!< Root node, wraps one or more unrelated results
     FREESASA_NODE_NONE //!< for specifying not a valid node
 } freesasa_node_type;
 
@@ -168,7 +170,7 @@ typedef enum {
     tree created by freesasa_structure_tree(), freed by
     freesasa_structure_tree_free().
  */
-typedef struct freesasa_structure_node freesasa_structure_node;
+typedef struct freesasa_result_node freesasa_result_node;
 
 
 /**
@@ -992,46 +994,54 @@ freesasa_structure_chain_residues(const freesasa_structure *structure,
  */
 const char *
 freesasa_structure_classifier_name(const freesasa_structure *structure);
+
+/**
+    Generates empty ::freesasa_result_node of type FREESASA_NODE_ROOT.
+
+    To be populated by freesasa_result_tree_add_result()
+
+    @return A ::freesasa_result_node. NULL if memory allocation fails.
+*/
+freesasa_result_node *
+freesasa_result_tree_new(void);
+
 /**
     Generates a tree that represents the structure, with the levels
     described by ::freesasa_node_type. 
 
-    Use freesasa_structure_node_children() to traverse the tree, and
-    freesasa_structure_node_type(), freesasa_structure_node_area(),
+    Use freesasa_result_node_children() to traverse the tree, and
+    freesasa_result_node_type(), freesasa_result_node_area(),
     and freesasa_node_name() to explore the properties of each node.
 
     The tree should be freed using freesasa_structure_tree_free().
 
+    @param tree Tree to add results too (must be node of type
+      ::FREESASA_NODE_ROOT)
     @param result SASA values for the structure
     @param structure The structure the results are based.
-    @param classifier Classifier to determine which atoms are polar
-      and apolar, and, if available, give reference values to
-      calculate relative SASAs for residues. If NULL
-      ::freesasa_default_classifier will be used. For consistent 
-      results this should be the same classifier used to determine
-      atomic radii when the structure was created.
-    @param name The name of the structure
-    @return The root node of the tree. NULL if memory allocation fails.
+    @param name The name to use for the result
+    @return ::FREESASA_SUCCESS upon success. ::FREESASA_FAIL if memory
+      allocation fails.
  */
-freesasa_structure_node *
-freesasa_result2tree(const freesasa_result *result,
-                     const freesasa_structure *structure,
-                     const char *name);
+int
+freesasa_result_tree_add_result(freesasa_result_node *tree,
+                                const freesasa_result *result,
+                                const freesasa_structure *structure,
+                                const char *name);
 
 /**
-    Join two ::structure_node-trees.
+    Join two ::result_node-trees.
 
     Allows joining several calculations into one output file.
 
     @param tree1 The joint tree will be stored here
     @param tree2 Will be added to tree1, and then changed to NULL,
       since ownership of its contents have been transferred to tree1.
-    @return ::FREESASA_SUCCESS upon sucecss. ::FREESASA_WARN if tree1
-      and tree2 were created using different classifiers.
+    @return ::FREESASA_SUCCESS.
  */
 int
-freesasa_structure_node_join_trees(freesasa_structure_node *tree1,
-                                   freesasa_structure_node **tree2);
+freesasa_result_tree_join(freesasa_result_node *tree1,
+                          freesasa_result_node **tree2);
 
 /**
     Outputs result in format specified by options.
@@ -1046,12 +1056,12 @@ freesasa_structure_node_join_trees(freesasa_structure_node *tree1,
 */
 int
 freesasa_export_tree(FILE *output,
-                     const freesasa_structure_node *root,
+                     const freesasa_result_node *root,
                      const freesasa_parameters *parameters,
                      int options);
 
 /**
-    Free ::freesasa_structure_node-tree.
+    Free ::freesasa_result_node-tree.
 
     Will not free anything if the node has a parent, i.e. if this node
     is the not the root of the tree it belongs too.
@@ -1061,7 +1071,7 @@ freesasa_export_tree(FILE *output,
       parent.
  */
 int
-freesasa_structure_node_free(freesasa_structure_node *root);
+freesasa_result_node_free(freesasa_result_node *root);
 
 /**
     The ::freesasa_nodearea of all atoms belonging to a node.
@@ -1073,19 +1083,19 @@ freesasa_structure_node_free(freesasa_structure_node *root);
     @return The area. NULL if no area has been attached to this node.
  */
 const freesasa_nodearea *
-freesasa_structure_node_area(const freesasa_structure_node *node);
+freesasa_result_node_area(const freesasa_result_node *node);
 
 /**
     The children of a node.
 
-    Use freesasa_structure_node_next() to access next sibling.
+    Use freesasa_result_node_next() to access next sibling.
 
     @param node The node.  
     @return Pointer to the first child of a node. NULL if the node has no
       children.
  */
-const freesasa_structure_node *
-freesasa_structure_node_children(const freesasa_structure_node *node);
+const freesasa_result_node *
+freesasa_result_node_children(const freesasa_result_node *node);
 
 /**
     Next sibling of a node.
@@ -1093,8 +1103,8 @@ freesasa_structure_node_children(const freesasa_structure_node *node);
     @param node The node.
     @return The next node, NULL if this is the last node.
  */
-const freesasa_structure_node *
-freesasa_structure_node_next(const freesasa_structure_node *node);
+const freesasa_result_node *
+freesasa_result_node_next(const freesasa_result_node *node);
 
 /**
     The parent of a node.
@@ -1102,8 +1112,8 @@ freesasa_structure_node_next(const freesasa_structure_node *node);
     @param node The node.
     @return The parent node. NULL if the node has no parent.
  */
-const freesasa_structure_node *
-freesasa_structure_node_parent(const freesasa_structure_node *node);
+const freesasa_result_node *
+freesasa_result_node_parent(const freesasa_result_node *node);
 
 /**
     The type of a node.
@@ -1112,7 +1122,7 @@ freesasa_structure_node_parent(const freesasa_structure_node *node);
     @return The ::freesasa_node_type.
  */
 freesasa_node_type
-freesasa_structure_node_type(const freesasa_structure_node *node);
+freesasa_result_node_type(const freesasa_result_node *node);
 
 /**
     The name of a node.
@@ -1121,7 +1131,7 @@ freesasa_structure_node_type(const freesasa_structure_node *node);
     @return The name. NULL if the node has no name.
  */
 const char *
-freesasa_structure_node_name(const freesasa_structure_node *node);
+freesasa_result_node_name(const freesasa_result_node *node);
 
 /**
     The name of the classifier used to generate the node.
@@ -1130,7 +1140,7 @@ freesasa_structure_node_name(const freesasa_structure_node *node);
     @return The name of the classifier
  */
 const char*
-freesasa_structure_node_classified_by(const freesasa_structure_node *node);
+freesasa_result_node_classified_by(const freesasa_result_node *node);
 
 /**
     Is atom polar.
@@ -1139,7 +1149,7 @@ freesasa_structure_node_classified_by(const freesasa_structure_node *node);
     @return 1 if polar, 0 else.
  */
 int
-freesasa_structure_node_atom_is_polar(const freesasa_structure_node *node);
+freesasa_result_node_atom_is_polar(const freesasa_result_node *node);
 
 /**
     Does atom belong to the main chain/backbone.
@@ -1148,7 +1158,7 @@ freesasa_structure_node_atom_is_polar(const freesasa_structure_node *node);
     @return 1 if mainchain, 0 else.
  */
 int
-freesasa_structure_node_atom_is_mainchain(const freesasa_structure_node *node);
+freesasa_result_node_atom_is_mainchain(const freesasa_result_node *node);
 
 /**
     Atom radius.
@@ -1157,7 +1167,7 @@ freesasa_structure_node_atom_is_mainchain(const freesasa_structure_node *node);
     @return The radius.
  */
 double
-freesasa_structure_node_atom_radius(const freesasa_structure_node *node);
+freesasa_result_node_atom_radius(const freesasa_result_node *node);
 
 /**
     Residue number.
@@ -1166,7 +1176,7 @@ freesasa_structure_node_atom_radius(const freesasa_structure_node *node);
     @return String with residue number.
  */
 const char *
-freesasa_structure_node_residue_number(const freesasa_structure_node *node);
+freesasa_result_node_residue_number(const freesasa_result_node *node);
 
 /**
     Number of atoms in a residue.
@@ -1175,7 +1185,7 @@ freesasa_structure_node_residue_number(const freesasa_structure_node *node);
     @return Number of atoms.
  */
 int
-freesasa_structure_node_residue_n_atoms(const freesasa_structure_node *node);
+freesasa_result_node_residue_n_atoms(const freesasa_result_node *node);
 
 /**
     The reference area for a node from the classifier used to
@@ -1186,7 +1196,7 @@ freesasa_structure_node_residue_n_atoms(const freesasa_structure_node *node);
       is not a residue.
  */
 const freesasa_nodearea *
-freesasa_structure_node_residue_reference(const freesasa_structure_node *node);
+freesasa_result_node_residue_reference(const freesasa_result_node *node);
 
 /**
     The number of residues in a chain.
@@ -1195,7 +1205,7 @@ freesasa_structure_node_residue_reference(const freesasa_structure_node *node);
     @return Number of residues.
  */
 int
-freesasa_structure_node_chain_n_residues(const freesasa_structure_node *node);
+freesasa_result_node_chain_n_residues(const freesasa_result_node *node);
 
 /**
     The number of chains in a structure.
@@ -1204,7 +1214,7 @@ freesasa_structure_node_chain_n_residues(const freesasa_structure_node *node);
     @return Number of chains.
  */
 int
-freesasa_structure_node_structure_n_chains(const freesasa_structure_node *node);
+freesasa_result_node_structure_n_chains(const freesasa_result_node *node);
 
 /**
     All chain labels in a structure.
@@ -1213,7 +1223,7 @@ freesasa_structure_node_structure_n_chains(const freesasa_structure_node *node);
     @return Chain labels as null-terminated string.
  */
 const char *
-freesasa_structure_node_structure_chain_labels(const freesasa_structure_node *node);
+freesasa_result_node_structure_chain_labels(const freesasa_result_node *node);
 
 // Deprecated functions below, from 1.x API
 

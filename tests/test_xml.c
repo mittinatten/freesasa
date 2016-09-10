@@ -105,22 +105,25 @@ START_TEST (test_libxmlerr)
         freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
     fclose(pdb);
     freesasa_result *result = freesasa_calc_structure(ubq, NULL);
-    freesasa_structure_node *root = freesasa_result2tree(result, ubq, "test");
+    freesasa_result_node *tree = freesasa_result_tree_new();
     int ret;
+    freesasa_result_tree_add_result(tree, result, ubq, "test");
+
     freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 1; i < 100; ++i) {
         local_set_fail_after(i);
-        ret = freesasa_write_xml(devnull, root, NULL, FREESASA_OUTPUT_ATOM);
+        ret = freesasa_write_xml(devnull, tree, NULL, FREESASA_OUTPUT_ATOM);
         local_set_fail_after(0);
         ck_assert_int_eq(ret, FREESASA_FAIL);
     }
     for (int i = 1; i < 29; ++i) {
         local_set_fail_after(i);
-        ret = freesasa_write_xml(devnull, root, NULL, FREESASA_OUTPUT_STRUCTURE);
+        ret = freesasa_write_xml(devnull, tree, NULL, FREESASA_OUTPUT_STRUCTURE);
         local_set_fail_after(0);
         ck_assert_int_eq(ret, FREESASA_FAIL);
     }
     freesasa_set_verbosity(FREESASA_V_NORMAL);
+    freesasa_result_node_free(tree);
 }
 END_TEST
 

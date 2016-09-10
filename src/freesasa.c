@@ -75,6 +75,7 @@ freesasa_calc(const coord_t *c,
     if (p == NULL) p = &freesasa_default_parameters;
 
     result->n_atoms = freesasa_coord_n(c);
+    //result->parameters = *parameters;
     result->sasa = malloc(sizeof(double)*result->n_atoms);
     if(result->sasa == NULL) { mem_fail(); freesasa_result_free(result); return NULL; }
 
@@ -305,7 +306,7 @@ freesasa_per_residue(FILE *output,
 
 int
 freesasa_export_tree(FILE *file,
-                     const freesasa_structure_node *root,
+                     const freesasa_result_node *root,
                      const freesasa_parameters *parameters,
                      int options)
 {

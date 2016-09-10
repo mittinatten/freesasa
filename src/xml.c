@@ -52,12 +52,12 @@ xml_nodearea(const freesasa_nodearea *area, const char *name)
 }
 
 xmlNodePtr
-freesasa_xml_atom(const freesasa_structure_node *node, int options)
+freesasa_xml_atom(const freesasa_result_node *node, int options)
 {
     assert(node);
     xmlNodePtr xml_node = NULL;
-    const freesasa_nodearea *area = freesasa_structure_node_area(node);
-    const char *name = freesasa_structure_node_name(node);
+    const freesasa_nodearea *area = freesasa_result_node_area(node);
+    const char *name = freesasa_result_node_name(node);
     int n_len = strlen(name);
     char trim_name[n_len+1], buf[20];
 
@@ -75,12 +75,12 @@ freesasa_xml_atom(const freesasa_structure_node *node, int options)
     }
 
     sprintf(buf, "%f", area->total);
-    if (xmlNewProp(xml_node, BAD_CAST "SASA", BAD_CAST buf) == NULL) {
+    if (xmlNewProp(xml_node, BAD_CAST "area", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
     }
 
-    sprintf(buf, "%s", freesasa_structure_node_atom_is_polar(node) == FREESASA_ATOM_POLAR ? "yes" : "no");
+    sprintf(buf, "%s", freesasa_result_node_atom_is_polar(node) == FREESASA_ATOM_POLAR ? "yes" : "no");
     if (xmlNewProp(xml_node, BAD_CAST "isPolar", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
@@ -92,7 +92,7 @@ freesasa_xml_atom(const freesasa_structure_node *node, int options)
         goto cleanup;
     }
 
-    sprintf(buf, "%f", freesasa_structure_node_atom_radius(node));
+    sprintf(buf, "%f", freesasa_result_node_atom_radius(node));
     if (xmlNewProp(xml_node, BAD_CAST "radius", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
@@ -106,16 +106,16 @@ freesasa_xml_atom(const freesasa_structure_node *node, int options)
 }
 
 xmlNodePtr
-freesasa_xml_residue(const freesasa_structure_node *node, int options)
+freesasa_xml_residue(const freesasa_result_node *node, int options)
 {
     assert(node);
     xmlNodePtr xml_node = NULL, xml_area = NULL, xml_relarea = NULL;
-    const char *name = freesasa_structure_node_name(node), *number;
-    const freesasa_nodearea *abs = freesasa_structure_node_area(node),
-        *reference = freesasa_structure_node_residue_reference(node);
+    const char *name = freesasa_result_node_name(node), *number;
+    const freesasa_nodearea *abs = freesasa_result_node_area(node),
+        *reference = freesasa_result_node_residue_reference(node);
     freesasa_nodearea rel;
 
-    number = freesasa_structure_node_residue_number(node);
+    number = freesasa_result_node_residue_number(node);
 
     int n_len = strlen(number);
     char trim_number[n_len+1];
@@ -132,7 +132,7 @@ freesasa_xml_residue(const freesasa_structure_node *node, int options)
         goto cleanup;
     }
 
-    xml_area = xml_nodearea(abs, "SASA");
+    xml_area = xml_nodearea(abs, "area");
     if (xml_area == NULL) {
         fail_msg("");
         goto cleanup;
@@ -164,10 +164,10 @@ freesasa_xml_residue(const freesasa_structure_node *node, int options)
 }
 
 xmlNodePtr
-freesasa_xml_chain(const freesasa_structure_node *node, int options)
+freesasa_xml_chain(const freesasa_result_node *node, int options)
 {
     xmlNodePtr xml_node = NULL, xml_area = NULL;
-    const char *name = freesasa_structure_node_name(node);
+    const char *name = freesasa_result_node_name(node);
     char buf[20];
 
     xml_node = xmlNewNode(NULL, BAD_CAST "chain");
@@ -177,18 +177,18 @@ freesasa_xml_chain(const freesasa_structure_node *node, int options)
     }
 
     if (xmlNewProp(xml_node, BAD_CAST "label",
-                   BAD_CAST freesasa_structure_node_name(node)) == NULL) {
+                   BAD_CAST freesasa_result_node_name(node)) == NULL) {
         fail_msg("");
         goto cleanup;
     }
 
-    sprintf(buf, "%d", freesasa_structure_node_chain_n_residues(node));
+    sprintf(buf, "%d", freesasa_result_node_chain_n_residues(node));
     if (xmlNewProp(xml_node, BAD_CAST "nResidues", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
     }
 
-    xml_area = xml_nodearea(freesasa_structure_node_area(node), "SASA");
+    xml_area = xml_nodearea(freesasa_result_node_area(node), "area");
     if (xml_area == NULL) {
         fail_msg("");
         goto cleanup;
@@ -208,7 +208,7 @@ freesasa_xml_chain(const freesasa_structure_node *node, int options)
 }
 
 xmlNodePtr
-freesasa_xml_structure(const freesasa_structure_node *node, int options)
+freesasa_xml_structure(const freesasa_result_node *node, int options)
 {
     assert(node);
     xmlNodePtr xml_node = NULL, xml_area = NULL;
@@ -219,12 +219,12 @@ freesasa_xml_structure(const freesasa_structure_node *node, int options)
         return NULL;
     }
 
-    if (xmlNewProp(xml_node, BAD_CAST "chains", BAD_CAST freesasa_structure_node_structure_chain_labels(node)) == NULL) {
+    if (xmlNewProp(xml_node, BAD_CAST "chains", BAD_CAST freesasa_result_node_structure_chain_labels(node)) == NULL) {
         fail_msg("");
         goto cleanup;
     }
 
-    xml_area = xml_nodearea(freesasa_structure_node_area(node), "SASA");
+    xml_area = xml_nodearea(freesasa_result_node_area(node), "area");
     if (xmlAddChild(xml_node, xml_area) == NULL) {
         fail_msg("");
         goto cleanup;
@@ -241,19 +241,19 @@ freesasa_xml_structure(const freesasa_structure_node *node, int options)
 // Root is not converted to xmlNodePtr, we skip immediately to children
 int
 freesasa_node2xml(xmlNodePtr *xml_node,
-                  const freesasa_structure_node *node,
+                  const freesasa_result_node *node,
                   int exclude_type,
                   int options)
 {
     assert(xml_node);
     assert(node);
-    const freesasa_structure_node *child = freesasa_structure_node_children(node);
+    const freesasa_result_node *child = freesasa_result_node_children(node);
     xmlNodePtr xml_child = NULL;
     *xml_node = NULL;
 
-    if (freesasa_structure_node_type(node) == exclude_type) return FREESASA_SUCCESS;
+    if (freesasa_result_node_type(node) == exclude_type) return FREESASA_SUCCESS;
 
-    switch (freesasa_structure_node_type(node)) {
+    switch (freesasa_result_node_type(node)) {
     case FREESASA_NODE_STRUCTURE:
         *xml_node = freesasa_xml_structure(node, options);
         break;
@@ -283,7 +283,7 @@ freesasa_node2xml(xmlNodePtr *xml_node,
             xmlFreeNode(xml_child);
             return fail_msg("");
         }
-        child = freesasa_structure_node_next(child);
+        child = freesasa_result_node_next(child);
     }
 
     return FREESASA_SUCCESS;
@@ -341,27 +341,93 @@ parameters2xml(const freesasa_parameters *p)
     return NULL;
 }
 
+static xmlNodePtr
+xml_result(const freesasa_result_node *result,
+           const freesasa_parameters *parameters,
+           int options)
+{
+    assert(freesasa_result_node_type(result) == FREESASA_NODE_RESULT);
+    xmlNodePtr xml_result_node = NULL, xml_structure = NULL, xml_param = NULL;
+    const freesasa_result_node *child = NULL;
+    int exclude_type = FREESASA_NODE_NONE;
+
+    if (options & FREESASA_OUTPUT_STRUCTURE) exclude_type = FREESASA_NODE_CHAIN;
+    if (options & FREESASA_OUTPUT_CHAIN) exclude_type = FREESASA_NODE_RESIDUE;
+    if (options & FREESASA_OUTPUT_RESIDUE) exclude_type = FREESASA_NODE_ATOM;
+
+    xml_result_node = xmlNewNode(NULL, BAD_CAST "result");
+    if (xml_result_node == NULL) {
+        fail_msg("");
+        return NULL;
+    }
+
+    xml_param = parameters2xml(parameters);
+    if (xml_param == NULL) {
+        fail_msg("");
+        goto cleanup;
+    }
+
+    if (xmlAddChild(xml_result_node, xml_param) == NULL) {
+        fail_msg("");
+        xmlFreeNode(xml_param);
+        goto cleanup;
+    }
+
+    if (xmlNewProp(xml_result_node, BAD_CAST "classifier",
+                   BAD_CAST freesasa_result_node_classified_by(result)) == NULL) {
+        fail_msg("");
+        goto cleanup;
+    }
+
+    if (xmlNewProp(xml_result_node, BAD_CAST "input",
+                   BAD_CAST freesasa_result_node_name(result)) == NULL) {
+        fail_msg("");
+        goto cleanup;
+    }
+
+    if (xmlNewProp(xml_result_node, BAD_CAST "lengthUnit", BAD_CAST "Ångström") == NULL) {
+        fail_msg("");
+        goto cleanup;
+    }
+
+    child = freesasa_result_node_children(result);
+    assert(child);
+
+    while(child) {
+        if (freesasa_node2xml(&xml_structure, child, exclude_type, options) == FREESASA_FAIL) {
+            fail_msg("");
+            goto cleanup;
+        }
+        if (xmlAddChild(xml_result_node, xml_structure) == NULL) {
+            fail_msg("");
+            goto cleanup;
+        }
+        child = freesasa_result_node_next(child);
+    };
+
+    return xml_result_node;
+ cleanup:
+    xmlFreeNode(xml_result_node);
+    return NULL;
+}
+
 int
 freesasa_write_xml(FILE *output,
-                   const freesasa_structure_node *root,
+                   const freesasa_result_node *root,
                    const freesasa_parameters *parameters,
                    int options)
 {
-    assert(freesasa_structure_node_type(root) == FREESASA_NODE_ROOT);
+    assert(freesasa_result_node_type(root) == FREESASA_NODE_ROOT);
 
-    freesasa_node_type exclude_type = FREESASA_NODE_NONE;
-    const freesasa_structure_node *child;
-    xmlDocPtr doc = NULL; 
-    xmlNodePtr xml_root = NULL, xml_structure = NULL, xml_param = NULL;
+    const freesasa_result_node *child = NULL;
+    xmlDocPtr doc = NULL;
+    xmlNodePtr xml_root = NULL, xml_result_node = NULL;
     xmlNsPtr ns = NULL;
     xmlBufferPtr buf = NULL;
     xmlTextWriterPtr writer = NULL;
     int ret = FREESASA_FAIL;
-    
+
     if (parameters == NULL) parameters = &freesasa_default_parameters;
-    if (options & FREESASA_OUTPUT_STRUCTURE) exclude_type = FREESASA_NODE_CHAIN;
-    if (options & FREESASA_OUTPUT_CHAIN) exclude_type = FREESASA_NODE_RESIDUE;
-    if (options & FREESASA_OUTPUT_RESIDUE) exclude_type = FREESASA_NODE_ATOM;
 
     doc = xmlNewDoc(BAD_CAST "1.0");
     if (doc == NULL) {
@@ -369,7 +435,7 @@ freesasa_write_xml(FILE *output,
         goto cleanup;
     }
 
-    xml_root = xmlNewNode(NULL, BAD_CAST "FreeSASAResult");
+    xml_root = xmlNewNode(NULL, BAD_CAST "results");
     if (xml_root == NULL) {
         fail_msg("");
         goto cleanup;
@@ -386,55 +452,26 @@ freesasa_write_xml(FILE *output,
 
     xmlDocSetRootElement(doc, xml_root);
 
+    child = freesasa_result_node_children(root);
+    while (child) {
+        xml_result_node = xml_result(child, parameters, options);
+        if (xml_result_node == NULL) {
+            fail_msg("");
+            goto cleanup;
+        }
+        if (xmlAddChild(xml_root, xml_result_node) == NULL) {
+            fail_msg("");
+            xmlFreeNode(xml_result_node);
+            goto cleanup;
+        }
+        child = freesasa_result_node_next(child);
+    }
+
     writer = xmlNewTextWriterMemory(buf, 0);
     if (writer == NULL) {
         fail_msg("");
         goto cleanup;
     }
-
-    xml_param = parameters2xml(parameters);
-    if (xml_param == NULL) {
-        fail_msg("");
-        goto cleanup;
-    }
-
-    if (xmlAddChild(xml_root, xml_param) == NULL) {
-        fail_msg("");
-        xmlFreeNode(xml_param);
-        goto cleanup;
-    }
-
-    if (xmlNewProp(xml_root, BAD_CAST "classifier",
-                   BAD_CAST freesasa_structure_node_classified_by(root)) == NULL) {
-        fail_msg("");
-        goto cleanup;
-    }
-    
-    if (xmlNewProp(xml_root, BAD_CAST "input",
-                   BAD_CAST freesasa_structure_node_name(root)) == NULL) {
-        fail_msg("");
-        goto cleanup;
-    }
-
-    if (xmlNewProp(xml_root, BAD_CAST "lengthUnit", BAD_CAST "Ångström") == NULL) {
-        fail_msg("");
-        goto cleanup;
-    }
-
-    child = freesasa_structure_node_children(root);
-    assert(child);
-    
-    do {
-        if (freesasa_node2xml(&xml_structure, child, exclude_type, options) == FREESASA_FAIL) {
-            fail_msg("");
-            goto cleanup;
-        }        
-        if (xmlAddChild(xml_root, xml_structure) == NULL) {
-            fail_msg("");
-            goto cleanup;
-        }
-        child = freesasa_structure_node_next(child);
-    } while(child);
 
     if (xmlTextWriterStartDocument(writer, XML_DEFAULT_VERSION,
                                    xmlGetCharEncodingName(XML_CHAR_ENCODING_UTF8), NULL)

@@ -194,13 +194,13 @@ START_TEST (test_sasa_1ubq)
     const freesasa_classifier *classifier = &freesasa_default_classifier;
     freesasa_structure *st = freesasa_structure_from_pdb(pdb, classifier, 0);
     freesasa_result *res;
-    freesasa_structure_node *tree;
+    freesasa_result_node *tree = freesasa_result_tree_new();
     freesasa_strvp *strvp;
     ck_assert((res = freesasa_calc_structure(st, &parameters)) != NULL);
 
     freesasa_nodearea res_class = freesasa_result_classes(st, res);
 
-    tree = freesasa_result2tree(res, st, "test");
+    freesasa_result_tree_add_result(tree, res, st, "test");
     fclose(pdb);
 
     ck_assert(float_eq(res->total, total_ref, 1e-5));
@@ -249,7 +249,7 @@ START_TEST (test_sasa_1ubq)
     
     freesasa_structure_free(st);
     freesasa_result_free(res);
-    freesasa_structure_node_free(tree);
+    freesasa_result_node_free(tree);
 }
 END_TEST
 

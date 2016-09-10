@@ -94,7 +94,7 @@ freesasa_calc(const coord_t *c,
  */
 int
 freesasa_write_rsa(FILE *output,
-                   const freesasa_structure_node *root,
+                   const freesasa_result_node *root,
                    const freesasa_parameters *parameters,
                    int options);
 
@@ -118,7 +118,7 @@ freesasa_write_rsa(FILE *output,
  */
 int
 freesasa_write_json(FILE *ouput,
-                    const freesasa_structure_node *root,
+                    const freesasa_result_node *root,
                     const freesasa_parameters *parameters,
                     int options);
 /**
@@ -139,7 +139,7 @@ freesasa_write_json(FILE *ouput,
  */
 int
 freesasa_write_xml(FILE *ouput,
-                   const freesasa_structure_node *root,
+                   const freesasa_result_node *root,
                    const freesasa_parameters *parameters,
                    int options);
 

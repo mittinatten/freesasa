@@ -77,13 +77,13 @@ rsa_print_residue(FILE *output,
                   int iaa,
                   const freesasa_nodearea *abs,
                   const freesasa_nodearea *rel,
-                  const freesasa_structure_node *residue)
+                  const freesasa_result_node *residue)
 {
     const char *resi_str;
     char chain;
 
-    resi_str = freesasa_structure_node_residue_number(residue);
-    chain = freesasa_structure_node_name(freesasa_structure_node_parent(residue))[0];
+    resi_str = freesasa_result_node_residue_number(residue);
+    chain = freesasa_result_node_name(freesasa_result_node_parent(residue))[0];
 
     fprintf(output, "RES %s %c%s  ", abs->name, chain, resi_str);
     if (rel->name != NULL) {
@@ -105,30 +105,32 @@ rsa_print_residue(FILE *output,
 
 int
 freesasa_write_rsa(FILE *output,
-                   const freesasa_structure_node *tree,
+                   const freesasa_result_node *tree,
                    const freesasa_parameters *parameters,
                    int options)
 {
     assert(output);
     assert(tree);
 
-    const freesasa_structure_node *residue, *chain, *structure_node = freesasa_structure_node_children(tree);
+    const freesasa_result_node *residue, *chain, *structure_node,
+        *result_node = freesasa_result_node_children(tree);
 
     const freesasa_nodearea *abs, *reference;
     freesasa_nodearea rel;
     int res_index, chain_index;
 
-    chain = freesasa_structure_node_children(structure_node);
+    structure_node = freesasa_result_node_children(result_node);
+    chain = freesasa_result_node_children(structure_node);
 
-    rsa_print_header(output, freesasa_structure_node_classified_by(tree),
-                     freesasa_structure_node_name(tree), parameters, options);
+    rsa_print_header(output, freesasa_result_node_classified_by(result_node),
+                     freesasa_result_node_name(structure_node), parameters, options);
 
     res_index = chain_index = 0;
     while(chain) {
-        residue = freesasa_structure_node_children(chain);
+        residue = freesasa_result_node_children(chain);
         while (residue) {
-            abs = freesasa_structure_node_area(residue);
-            reference = freesasa_structure_node_residue_reference(residue);
+            abs = freesasa_result_node_area(residue);
+            reference = freesasa_result_node_residue_reference(residue);
             if (reference && !(options & FREESASA_OUTPUT_SKIP_REL)) {
                 freesasa_residue_rel_nodearea(&rel, abs, reference);
             } else {
@@ -136,28 +138,28 @@ freesasa_write_rsa(FILE *output,
             }
             rsa_print_residue(output, res_index, abs, &rel, residue);
             ++res_index;
-            residue = freesasa_structure_node_next(residue);
+            residue = freesasa_result_node_next(residue);
         }
-        chain = freesasa_structure_node_next(chain);
+        chain = freesasa_result_node_next(chain);
     }
 
     fprintf(output, "END  Absolute sums over single chains surface\n");
 
-    chain = freesasa_structure_node_children(tree);
+    chain = freesasa_result_node_children(structure_node);
     chain_index = 0;
     while(chain) {
-        const char *name = freesasa_structure_node_name(chain);
-        abs = freesasa_structure_node_area(chain);
+        const char *name = freesasa_result_node_name(chain);
+        abs = freesasa_result_node_area(chain);
         
         fprintf(output,"CHAIN%3d %c %10.1f   %10.1f   %10.1f   %10.1f   %10.1f\n",
                 chain_index+1, name[0], abs->total, abs->side_chain,
                 abs->main_chain, abs->apolar, abs->polar);
 
         ++chain_index;
-        chain = freesasa_structure_node_next(chain);
+        chain = freesasa_result_node_next(chain);
     }
 
-    abs = freesasa_structure_node_area(structure_node);
+    abs = freesasa_result_node_area(structure_node);
     fprintf(output, "END  Absolute sums over all chains\n");
     fprintf(output,"TOTAL      %10.1f   %10.1f   %10.1f   %10.1f   %10.1f\n",
             abs->total, abs->side_chain, abs->main_chain, abs->apolar, abs->polar);

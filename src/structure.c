@@ -495,7 +495,7 @@ structure_register_classifier(freesasa_structure *structure,
         if (structure->classifier_name == NULL) {
             return mem_fail();
         }
-    } else if (strcmp(structure->classifier_name, freesasa_classifier_name(classifier)) == 0) {
+    } else if (strcmp(structure->classifier_name, freesasa_classifier_name(classifier)) != 0) {
         structure->classifier_name = strdup(FREESASA_CONFLICTING_CLASSIFIERS);
         if (structure->classifier_name == NULL) {
             return mem_fail();
