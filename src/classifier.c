@@ -767,14 +767,12 @@ freesasa_classifier_class2str(freesasa_atom_class atom_class)
 }
 
 freesasa_nodearea
-freesasa_classifier_classify_result(const freesasa_classifier *classifier,
-                                    const freesasa_structure *structure,
-                                    const freesasa_result *result)
+freesasa_result_classes(const freesasa_structure *structure,
+                        const freesasa_result *result)
 {
     freesasa_nodearea area = {"whole-structure", 0, 0, 0, 0, 0};
-    if (classifier == NULL) classifier = &freesasa_default_classifier;
-    freesasa_range_nodearea(&area, structure, result, classifier,
-                           0, freesasa_structure_n(structure) - 1);
+    freesasa_range_nodearea(&area, structure, result,
+                            0, freesasa_structure_n(structure) - 1);
     return area;
 }
 

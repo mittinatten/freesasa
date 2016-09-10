@@ -198,9 +198,9 @@ START_TEST (test_sasa_1ubq)
     freesasa_strvp *strvp;
     ck_assert((res = freesasa_calc_structure(st, &parameters)) != NULL);
 
-    freesasa_nodearea res_class = freesasa_classifier_classify_result(classifier, st, res);
+    freesasa_nodearea res_class = freesasa_result_classes(st, res);
 
-    tree = freesasa_result2tree(res, st, NULL, "test");
+    tree = freesasa_result2tree(res, st, "test");
     fclose(pdb);
 
     ck_assert(float_eq(res->total, total_ref, 1e-5));
@@ -324,7 +324,7 @@ START_TEST (test_trimmed_pdb)
 
     result = freesasa_calc_structure(st,&param);
     ck_assert_ptr_ne(result, NULL);
-    res_class = freesasa_classifier_classify_result(classifier, st, result);
+    res_class = freesasa_result_classes(st, result);
 
     ck_assert(float_eq(result->total, total_ref, 1e-5));
     ck_assert(float_eq(res_class.polar, polar_ref, 1e-5));
@@ -370,8 +370,8 @@ START_TEST (test_user_classes)
     res_ref = freesasa_calc_structure(st_ref, NULL);
     ck_assert_ptr_ne(res, NULL);
     ck_assert_ptr_ne(res, NULL);
-    res_class = freesasa_classifier_classify_result(user_classifier, st, res);
-    res_class_ref = freesasa_classifier_classify_result(&freesasa_protor_classifier, st_ref, res_ref);
+    res_class = freesasa_result_classes(st, res);
+    res_class_ref = freesasa_result_classes(st_ref, res_ref);
     ck_assert(float_eq(res_class.total, res_class_ref.total, 1e-10));
     ck_assert(float_eq(res_class.polar, res_class_ref.polar, 1e-10));
     ck_assert(float_eq(res_class.apolar, res_class_ref.apolar, 1e-10));

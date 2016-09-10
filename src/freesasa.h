@@ -47,6 +47,9 @@ typedef enum {
 //! Default ::freesasa_classifier
 #define freesasa_default_classifier freesasa_protor_classifier
 
+//! String returned by freesasa_structure_classifier_name() when structure was initialized by several different classifiers.
+#define FREESASA_CONFLICTING_CLASSIFIERS "conflicting-classifiers"
+
 //! Default number of threads. Value will depend on if library was
 //! compiled with or without thread support. (2 with threads, 1
 //! without)
@@ -134,7 +137,7 @@ typedef struct {
     Struct to store integrated SASA values for either a full structure
     or a subset thereof.
 
-    Use freesasa_classifier_classify_result() to turn a
+    Use freesasa_result_classes() to turn a
     ::freesasa_result into a ::freesasa_nodearea. Each
     ::freesasa_structure_node is associated with a
     ::freesasa_nodearea.
@@ -224,6 +227,22 @@ freesasa_calc_coord(const double *xyz,
                     const freesasa_parameters *parameters);
 
 /**
+    Results by classes.
+
+    Adds up the SASA of Polar/Apolar/Unknown atoms, and
+    main-chain/side-chain atoms for the whole protein. Uses the
+    classes defined by the classifier used when generating the
+    structure.
+
+    @param structure The structure the results are based on
+    @param result The results
+    @return A struct with all the results.
+ */
+freesasa_nodearea
+freesasa_result_classes(const freesasa_structure *structure,
+                        const freesasa_result *result);
+
+/**
     Frees a ::freesasa_result object.
 
     @param result the object to be freed.
@@ -299,23 +318,6 @@ freesasa_classifier_class2str(freesasa_atom_class atom_class);
  */
 const char*
 freesasa_classifier_name(const freesasa_classifier *classifier);
-
-/**
-    Classify results.
-
-    Adds up the SASA of Polar/Apolar/Unknown atoms, and
-    main-chain/side-chain atoms for the whole protein. Use
-    freesasa_result2tree() for a more fine-grained analysis.
-
-    @param classifier The classifier to use
-    @param structure The structure the results are based on
-    @param result The results
-    @return A struct with all the results.
- */
-freesasa_nodearea
-freesasa_classifier_classify_result(const freesasa_classifier *classifier,
-                                    const freesasa_structure *structure,
-                                    const freesasa_result *result);
 
 /**
     Get area of a selection.
@@ -981,6 +983,16 @@ freesasa_structure_chain_residues(const freesasa_structure *structure,
                                   int *last);
 
 /**
+    Name of classifier used to generate structure.
+
+    @param structure A structure.
+    @return Name of classifier. Name will equal
+      ::FREESASA_CONFLICTING_CLASSIFIERS if several different
+      classifiers were used.
+ */
+const char *
+freesasa_structure_classifier_name(const freesasa_structure *structure);
+/**
     Generates a tree that represents the structure, with the levels
     described by ::freesasa_node_type. 
 
@@ -1004,7 +1016,6 @@ freesasa_structure_chain_residues(const freesasa_structure *structure,
 freesasa_structure_node *
 freesasa_result2tree(const freesasa_result *result,
                      const freesasa_structure *structure,
-                     const freesasa_classifier *classifier,
                      const char *name);
 
 /**

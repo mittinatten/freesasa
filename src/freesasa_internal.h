@@ -150,7 +150,7 @@ freesasa_write_xml(FILE *ouput,
     @return The coordinates of the structure as a ::coord_t struct.
  */
 const coord_t *
-freesasa_structure_xyz(const freesasa_structure *s);
+freesasa_structure_xyz(const freesasa_structure *structure);
 
 /**
    The class of an atom, in the classifier used to initialize the structure.
@@ -163,6 +163,9 @@ freesasa_atom_class
 freesasa_structure_atom_class(const freesasa_structure *structure,
                               int i);
 
+const freesasa_nodearea *
+freesasa_structure_residue_reference(const freesasa_structure *structure,
+                                     int r_i);
 /**
     Get the index of a chain.
 
@@ -173,7 +176,7 @@ freesasa_structure_atom_class(const freesasa_structure *structure,
     
  */
 int
-freesasa_structure_chain_index(const freesasa_structure *s,
+freesasa_structure_chain_index(const freesasa_structure *structure,
                                char chain);
 
 /**
@@ -198,15 +201,12 @@ freesasa_single_residue_sasa(const freesasa_result *r,
     @param area Area will be stored here
     @param structure Structure to use for classification
     @param result The areas to use
-    @param classifier Classifier to use to determine if 
-      the atom is polar or not
     @param atom_index Index of atom in question  
  */
 void
 freesasa_atom_nodearea(freesasa_nodearea *area,
                        const freesasa_structure *structure,
                        const freesasa_result *result,
-                       const freesasa_classifier *classifier,
                        int atom_index);
 
 /**
@@ -226,7 +226,6 @@ void
 freesasa_range_nodearea(freesasa_nodearea *area,
                         const freesasa_structure *structure,
                         const freesasa_result *result,
-                        const freesasa_classifier *classifier,
                         int first_atom,
                         int last_atom);
 

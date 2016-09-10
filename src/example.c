@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 
     /* Calculate area of classes (Polar/Apolar/..) */
     if (result) {
-        class_area = freesasa_classifier_classify_result(classifier, structure, result);
+        class_area = freesasa_result_classes(structure, result);
     } else {
         /* If there was an error at any step, we will end up here */
         printf("Error calculating SASA\n");

@@ -306,7 +306,7 @@ run_analysis(FILE *input,
         char name_i[name_len+10];
         result = freesasa_calc_structure(structures[i], &parameters);
         if (result == NULL)        abort_msg("Can't calculate SASA.");
-        classes = freesasa_classifier_classify_result(classifier, structures[i], result);
+        classes = freesasa_result_classes(structures[i], result);
         strcpy(name_i,name);
         if (n > 1 && (structure_options & FREESASA_SEPARATE_MODELS))
             sprintf(name_i+strlen(name_i), ":%d", freesasa_structure_model(structures[i]));
@@ -341,7 +341,7 @@ run_analysis(FILE *input,
             }
         }
         if (printrsa || printjson || printxml) {
-            tmp_tree = freesasa_result2tree(result, structures[i], classifier, name_i);
+            tmp_tree = freesasa_result2tree(result, structures[i], name_i);
             if (tree == NULL) tree = tmp_tree;
             else freesasa_structure_node_join_trees(tree, &tmp_tree);
         }

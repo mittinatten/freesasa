@@ -445,8 +445,8 @@ START_TEST (test_structure_node)
     }
     freesasa_result *result = freesasa_calc_structure(s, NULL);
     freesasa_structure_node *tree =
-        freesasa_result2tree(result, s, NULL, "test"),
-        *tree2 = freesasa_result2tree(result, s, NULL, "test2");
+        freesasa_result2tree(result, s, "test"),
+        *tree2 = freesasa_result2tree(result, s, "test2");
     const freesasa_structure_node *structure;
 
     ck_assert_ptr_ne(tree, NULL);
@@ -489,7 +489,7 @@ START_TEST (test_memerr)
     freesasa_result *result = freesasa_calc_structure(structure, NULL);
     for (int i = 1; i < 100; ++i) {
         set_fail_after(i);
-        ptr = freesasa_result2tree(result, structure, NULL, "test");
+        ptr = freesasa_result2tree(result, structure, "test");
         set_fail_after(0);
         ck_assert_ptr_eq(ptr, NULL);
     }

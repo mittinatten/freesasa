@@ -62,6 +62,7 @@ struct residues {
     int n;
     int n_alloc;
     int *first_atom;
+    freesasa_nodearea **reference_area;
 };
 
 struct chains {
@@ -75,6 +76,7 @@ struct freesasa_structure {
     struct atoms atoms;
     struct residues residues;
     struct chains chains;
+    char *classifier_name;
     coord_t *xyz;
     int model; // model number
 };
@@ -113,7 +115,7 @@ atoms_alloc(struct atoms *atoms)
         int new_size = atoms->n_alloc + ATOMS_CHUNK;
         void *aa = atoms->atom, *ar = atoms->radius;
 
-        atoms->atom = realloc(atoms->atom, sizeof(atoms->atom) * new_size);
+        atoms->atom = realloc(atoms->atom, sizeof(struct atom*) * new_size);
         if (atoms->atom == NULL) {
             atoms->atom = aa;
             return mem_fail();
@@ -123,7 +125,7 @@ atoms_alloc(struct atoms *atoms)
             atoms->atom[i] = NULL;
         }
 
-        atoms->radius = realloc(atoms->radius, sizeof(atoms->radius) * new_size);
+        atoms->radius = realloc(atoms->radius, sizeof(double) * new_size);
         if (atoms->radius == NULL) {
             atoms->radius = ar;
             return mem_fail();
@@ -222,7 +224,8 @@ atom_new_from_line(const char *line,
 static struct residues
 residues_init()
 {
-    return (struct residues) {.n = 0, .n_alloc = 0, .first_atom = NULL};
+    return (struct residues)
+        {.n = 0, .n_alloc = 0, .first_atom = NULL, .reference_area = NULL};
 }
 
 static int
@@ -233,14 +236,22 @@ residues_alloc(struct residues *residues)
 
     if (residues->n == residues->n_alloc) {
         int new_size = residues->n_alloc + RESIDUES_CHUNK;
-        void *fa = residues->first_atom;
+        void *fa = residues->first_atom, *ra = residues->reference_area;
 
         residues->first_atom = realloc(residues->first_atom,
-                                       sizeof(residues->first_atom) * new_size);
+                                       sizeof(int) * new_size);
         if (residues->first_atom == NULL) {
             residues->first_atom = fa;
             return mem_fail();
         }
+
+        residues->reference_area = realloc(residues->reference_area,
+                                           sizeof(freesasa_nodearea*) * new_size);
+        if (residues->reference_area == NULL) {
+            residues->reference_area = ra;
+            return mem_fail();
+        }
+
         residues->n_alloc = new_size;
     }
     ++residues->n;
@@ -252,6 +263,12 @@ residues_dealloc(struct residues *residues)
 {
     if (residues) {
         free(residues->first_atom);
+        if (residues->reference_area) {
+            for (int i = 0; i < residues->n; ++i) {
+                free(residues->reference_area[i]);
+            }
+        }
+        free(residues->reference_area);
         *residues = residues_init();
     }
 }
@@ -273,7 +290,7 @@ chains_alloc(struct chains *chains)
         void *fa = chains->first_atom, *lbl = chains->labels;
 
         chains->first_atom = realloc(chains->first_atom,
-                                     sizeof(chains->first_atom) * new_size);
+                                     sizeof(int) * new_size);
         if (chains->first_atom == NULL) {
             chains->first_atom = fa;
             return mem_fail();
@@ -314,6 +331,7 @@ freesasa_structure_new(void)
     s->chains = chains_init();
     s->xyz = freesasa_coord_new();
     s->model = 0;
+    s->classifier_name = NULL;
 
     if (s->xyz == NULL) goto memerr;
 
@@ -332,6 +350,7 @@ freesasa_structure_free(freesasa_structure *s)
         residues_dealloc(&s->residues);
         chains_dealloc(&s->chains);
         if (s->xyz != NULL) freesasa_coord_free(s->xyz);
+        free(s->classifier_name);
         free(s);
     }
 }
@@ -394,11 +413,15 @@ structure_add_chain(freesasa_structure *s,
 }
 
 static int
-structure_add_residue(freesasa_structure *s, const struct atom *a, int i_latest_atom)
+structure_add_residue(freesasa_structure *s,
+                      const freesasa_classifier *classifier,
+                      const struct atom *a,
+                      int i_latest_atom)
 {
     int n = s->residues.n+1;
     char **rd = NULL;
     int *rfa = NULL;
+    const freesasa_nodearea *reference = NULL;
 
     /* register a new residue if it's the first atom, or if the
        residue number or chain label of the current atom is different
@@ -414,6 +437,15 @@ structure_add_residue(freesasa_structure *s, const struct atom *a, int i_latest_
         return fail_msg("");
     }
     s->residues.first_atom[n-1] = i_latest_atom;
+
+    s->residues.reference_area[n-1] = NULL;
+    reference = freesasa_classifier_residue_reference(classifier, a->res_name);
+    if (reference != NULL) {
+        s->residues.reference_area[n-1] = malloc(sizeof(freesasa_nodearea));
+        if (s->residues.reference_area[n-1] == NULL)
+            return mem_fail();
+        *s->residues.reference_area[n-1] = *reference;
+    }
 
     return FREESASA_SUCCESS;
 }
@@ -455,6 +487,25 @@ structure_check_atom_radius(double *radius,
     return FREESASA_SUCCESS;
 }
 
+static int
+structure_register_classifier(freesasa_structure *structure,
+                              const freesasa_classifier *classifier) {
+    if (structure->classifier_name == NULL) {
+        structure->classifier_name = strdup(freesasa_classifier_name(classifier));
+        if (structure->classifier_name == NULL) {
+            return mem_fail();
+        }
+    } else if (strcmp(structure->classifier_name, freesasa_classifier_name(classifier)) == 0) {
+        structure->classifier_name = strdup(FREESASA_CONFLICTING_CLASSIFIERS);
+        if (structure->classifier_name == NULL) {
+            return mem_fail();
+        }
+        return FREESASA_WARN;
+    }
+    
+    return FREESASA_SUCCESS;
+}
+
 /**
    Adds an atom to the structure using the rules specified by
    'options'. If it includes FREESASA_RADIUS_FROM_* a dummy radius is
@@ -464,13 +515,13 @@ structure_check_atom_radius(double *radius,
    The atom a should be a pointer to a heap address, this will not be cloned.
  */
 static int
-structure_add_atom(freesasa_structure *s,
-                   struct atom *a,
+structure_add_atom(freesasa_structure *structure,
+                   struct atom *atom,
                    double *xyz,
                    const freesasa_classifier* classifier,
                    int options)
 {
-    assert(s); assert(a); assert(xyz);
+    assert(structure); assert(atom); assert(xyz);
     int na, ret;
     double r;
 
@@ -481,38 +532,39 @@ structure_add_atom(freesasa_structure *s,
     if (classifier == NULL) {
         classifier = &freesasa_default_classifier;
     }
+    structure_register_classifier(structure, classifier);
 
     // calculate radius and check if we should keep the atom (based on options)
     if (options & FREESASA_RADIUS_FROM_OCCUPANCY) {
         r = 1; // fix it later
     } else {
-        ret = structure_check_atom_radius(&r, a, classifier, options);
+        ret = structure_check_atom_radius(&r, atom, classifier, options);
         if (ret == FREESASA_FAIL) return fail_msg("Halting at unknown atom.");
         if (ret == FREESASA_WARN) return FREESASA_WARN;
     }
     assert(r >= 0);
 
     // If it's a keeper, allocate memory
-    if (atoms_alloc(&s->atoms) == FREESASA_FAIL)
+    if (atoms_alloc(&structure->atoms) == FREESASA_FAIL)
         return fail_msg("");
-    na = s->atoms.n;
+    na = structure->atoms.n;
 
     // Store coordinates
-    if (freesasa_coord_append(s->xyz, xyz, 1) == FREESASA_FAIL)
+    if (freesasa_coord_append(structure->xyz, xyz, 1) == FREESASA_FAIL)
         return mem_fail();
 
     // Check if this is a new chain and if so add it
-    if (structure_add_chain(s, a->chain_label, na-1) == FREESASA_FAIL)
+    if (structure_add_chain(structure, atom->chain_label, na-1) == FREESASA_FAIL)
         return mem_fail();
 
     // Check if this is a new residue, and if so add it
-    if (structure_add_residue(s, a, na-1) == FREESASA_FAIL)
+    if (structure_add_residue(structure, classifier, atom, na-1) == FREESASA_FAIL)
         return mem_fail();
 
-    a->the_class = freesasa_classifier_class(classifier, a->res_name, a->atom_name);
-    a->res_index = s->residues.n - 1;
-    s->atoms.radius[na-1] = r;
-    s->atoms.atom[na-1] = a;
+    atom->the_class = freesasa_classifier_class(classifier, atom->res_name, atom->atom_name);
+    atom->res_index = structure->residues.n - 1;
+    structure->atoms.radius[na-1] = r;
+    structure->atoms.atom[na-1] = atom;
 
     return FREESASA_SUCCESS;
 }
@@ -908,6 +960,16 @@ freesasa_structure_atom_class(const freesasa_structure *structure,
     return structure->atoms.atom[i]->the_class;
 }
 
+const freesasa_nodearea *
+freesasa_structure_residue_reference(const freesasa_structure *structure,
+                                     int r_i)
+{
+    assert(structure);
+    assert(r_i >= 0 && r_i < structure->residues.n);
+
+    return structure->residues.reference_area[r_i];
+
+}
 int
 freesasa_structure_residue_atoms(const freesasa_structure *structure,
                                  int r_i,
@@ -1004,6 +1066,14 @@ freesasa_structure_chain_residues(const freesasa_structure *structure,
    *last = structure->atoms.atom[last_atom]->res_index;
    return FREESASA_SUCCESS;
 }
+
+const char *
+freesasa_structure_classifier_name(const freesasa_structure *structure)
+{
+    assert(structure);
+    return structure->classifier_name;
+}
+
 int
 freesasa_write_pdb(FILE *output,
                    freesasa_result *result,

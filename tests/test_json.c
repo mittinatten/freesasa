@@ -213,7 +213,7 @@ START_TEST (test_json)
         freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
     fclose(pdb);
     freesasa_result *result = freesasa_calc_structure(ubq, NULL);
-    freesasa_structure_node *root = freesasa_result2tree(result, ubq, NULL, "test");
+    freesasa_structure_node *root = freesasa_result2tree(result, ubq, "test");
     const freesasa_structure_node *structures = freesasa_structure_node_children(root);
     const freesasa_structure_node *chains = freesasa_structure_node_children(structures);
     const freesasa_structure_node *residues = freesasa_structure_node_children(chains);
