@@ -98,9 +98,9 @@ START_TEST (test_memerr) {
     freesasa_result *result = freesasa_calc_structure(structure, NULL);
     freesasa_result_node *rn;
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    for (int i = 1; i < 100; ++i) {
-        set_fail_after(i);
+    for (int i = 1; i < 200; ++i) {
         rn = freesasa_result_tree_new();
+        set_fail_after(i);
         ck_assert_int_eq(freesasa_result_tree_add_result(rn, result, structure, "test"), FREESASA_FAIL);
         set_fail_after(0);
     }
