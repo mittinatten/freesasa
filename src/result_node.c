@@ -389,14 +389,6 @@ freesasa_result_tree_join(freesasa_result_node *tree1,
     assert(tree1->type == FREESASA_NODE_ROOT);
     assert((*tree2)->type == FREESASA_NODE_ROOT);
 
-    int ret = FREESASA_SUCCESS;
-
-    if (strcmp(tree1->result_prop.classified_by, (*tree2)->result_prop.classified_by) != 0) {
-        ret = freesasa_warn("Joining results classified by different classifiers: '%s' and '%s', output may be inconsistent\n",
-                            tree1->result_prop.classified_by,
-                            (*tree2)->result_prop.classified_by);
-    }
-
     freesasa_result_node *child = tree1->children;
     if (child != NULL) {
         while (child->next) child = child->next;
@@ -405,7 +397,7 @@ freesasa_result_tree_join(freesasa_result_node *tree1,
     // tree1 takes over ownership, tree2 is invalidated.
     *tree2 = NULL;
 
-    return ret;
+    return FREESASA_SUCCESS;
 }
 
 int

@@ -13,6 +13,7 @@ extern Suite* structure_suite();
 extern Suite* sasa_suite();
 extern Suite* nb_suite();
 extern Suite* selector_suite();
+extern Suite* result_node_suite();
 
 #ifdef USE_JSON
 extern Suite* json_suite();
@@ -32,6 +33,7 @@ int main(int argc, char **argv) {
     srunner_add_suite(sr,sasa_suite());
     srunner_add_suite(sr,nb_suite());
     srunner_add_suite(sr,selector_suite());
+    srunner_add_suite(sr,result_node_suite());
 #if USE_JSON
     srunner_add_suite(sr,json_suite());
 #endif

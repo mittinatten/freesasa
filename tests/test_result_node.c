@@ -22,7 +22,7 @@ test_tree(const freesasa_result_node *structure,
     ck_assert_str_eq(freesasa_result_node_name(structure), "A");
     ck_assert_str_eq(freesasa_result_node_name(chain), "A");
     ck_assert_str_eq(freesasa_result_node_name(residue), "MET");
-    ck_assert_str_eq(freesasa_result_node_name(atom), " C  ");
+    ck_assert_str_eq(freesasa_result_node_name(atom), " N  ");
 
     // iterate
     next = freesasa_result_node_next(structure);
@@ -31,9 +31,7 @@ test_tree(const freesasa_result_node *structure,
     ck_assert_ptr_eq(next, NULL);
     next = freesasa_result_node_next(residue);
     ck_assert_ptr_ne(next, NULL);
-    ck_assert_str_eq(freesasa_result_node_name(next), "SEC");
-    next = freesasa_result_node_next(next);
-    ck_assert_ptr_eq(next, NULL);
+    ck_assert_str_eq(freesasa_result_node_name(next), "GLN");
     next = freesasa_result_node_next(atom);
     ck_assert_str_eq(freesasa_result_node_name(next), " CA ");
 
@@ -43,14 +41,11 @@ test_tree(const freesasa_result_node *structure,
     ck_assert(float_eq(result->total, area->total, 1e-10));
     next = freesasa_result_node_next(residue);
     ck_assert_ptr_ne((area = freesasa_result_node_area(next)), NULL);
-    ck_assert(float_eq(result->sasa[5], area->total, 1e-10));
-    ck_assert_str_eq(area->name, "SEC");
     ck_assert_ptr_ne((area = freesasa_result_node_area(atom)), NULL);
     ck_assert(float_eq(result->sasa[0], area->total, 1e-10));
     next = freesasa_result_node_next(atom);
     ck_assert_ptr_ne((area = freesasa_result_node_area(next)), NULL);
     ck_assert(float_eq(result->sasa[1], area->total, 1e-10));
-
 }
 
 START_TEST (test_result_node)
@@ -70,16 +65,27 @@ START_TEST (test_result_node)
     ck_assert_ptr_ne(tree, NULL);
     ck_assert_ptr_eq(freesasa_result_node_parent(tree), NULL);
     ck_assert_int_eq(freesasa_result_node_type(tree), FREESASA_NODE_ROOT);
-    ck_assert_str_eq(freesasa_result_node_name(tree), "test");
+    ck_assert_ptr_eq(freesasa_result_node_name(tree), NULL);
     ck_assert_ptr_eq(freesasa_result_node_next(tree), NULL);
     ck_assert_ptr_ne((rn = freesasa_result_node_children(tree)), NULL);
+    ck_assert_str_eq(freesasa_result_node_name(rn), "test");
+    ck_assert_int_eq(freesasa_result_node_type(rn), FREESASA_NODE_RESULT);
+    ck_assert_ptr_ne((rn = freesasa_result_node_children(rn)), NULL);
     test_tree(rn, result);
     
     freesasa_result_tree_join(tree, &tree2);
     ck_assert(tree2 == NULL);
-    ck_assert_ptr_ne((rn = freesasa_result_node_next(rn)), NULL);
+    rn = freesasa_result_node_children(tree); // result in tree
+    ck_assert_ptr_ne(rn, NULL);
+    rn = freesasa_result_node_children(rn); // structure in tree
     test_tree(rn, result);
-    
+    rn = freesasa_result_node_children(tree);
+    rn = freesasa_result_node_next(rn); // result in tree2
+    ck_assert_ptr_ne(rn, NULL);
+    rn = freesasa_result_node_children(rn); // structure in tree2
+    ck_assert_ptr_ne(rn, NULL);
+    test_tree(rn, result);
+
     freesasa_result_node_free(tree);
     freesasa_structure_free(structure);
     freesasa_result_free(result);
@@ -91,12 +97,14 @@ START_TEST (test_memerr) {
     freesasa_structure *structure = freesasa_structure_from_pdb(file, NULL, 0);
     freesasa_result *result = freesasa_calc_structure(structure, NULL);
     freesasa_result_node *rn;
+    freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 1; i < 100; ++i) {
         set_fail_after(i);
         rn = freesasa_result_tree_new();
         ck_assert_int_eq(freesasa_result_tree_add_result(rn, result, structure, "test"), FREESASA_FAIL);
         set_fail_after(0);
     }
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
     freesasa_structure_free(structure);
     freesasa_result_free(result);
     fclose(file);
