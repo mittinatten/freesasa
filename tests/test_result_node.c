@@ -98,11 +98,13 @@ START_TEST (test_memerr) {
     freesasa_result *result = freesasa_calc_structure(structure, NULL);
     freesasa_result_node *rn;
     freesasa_set_verbosity(FREESASA_V_SILENT);
+    rn = freesasa_result_tree_new();
     for (int i = 1; i < 200; ++i) {
-        rn = freesasa_result_tree_new();
+        int ret;
         set_fail_after(i);
-        ck_assert_int_eq(freesasa_result_tree_add_result(rn, result, structure, "test"), FREESASA_FAIL);
+        ret = freesasa_result_tree_add_result(rn, result, structure, "test");
         set_fail_after(0);
+        ck_assert_int_eq(ret, FREESASA_FAIL);
     }
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     freesasa_structure_free(structure);
