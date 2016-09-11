@@ -441,12 +441,10 @@ freesasa_write_xml(FILE *output,
     xmlDocSetRootElement(doc, xml_root);
 
     // global attributes
-#ifdef HAVE_CONFIG_H
-    if (xmlNewProp(xml_root, BAD_CAST "source", BAD_CAST PACKAGE_STRING) == NULL) {
+    if (xmlNewProp(xml_root, BAD_CAST "source", BAD_CAST freesasa_string) == NULL) {
         fail_msg("");
         goto cleanup;
     }
-#endif
     if (xmlNewProp(xml_root, BAD_CAST "lengthUnit", BAD_CAST "Ångström") == NULL) {
         fail_msg("");
         goto cleanup;

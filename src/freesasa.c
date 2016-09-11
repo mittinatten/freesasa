@@ -25,6 +25,12 @@ const char *freesasa_version = PACKAGE_VERSION;
 const char *freesasa_version = "";
 #endif
 
+#ifdef PACKAGE_STRING
+const char *freesasa_string = PACKAGE_STRING;
+#else
+const char *freesasa_string = "FreeSASA";
+#endif
+
 // to control error messages (used for debugging and testing)
 static freesasa_verbosity verbosity;
 
@@ -49,6 +55,29 @@ const freesasa_parameters freesasa_default_parameters = {
 freesasa_strvp*
 freesasa_strvp_new(int n);
 
+static freesasa_result *
+result_new(int n)
+{
+    freesasa_result *result = malloc(sizeof(freesasa_result));
+
+    if (result == NULL) {
+        mem_fail();
+        return NULL;
+    }
+
+    result->sasa = malloc(sizeof(double)  * n);
+
+    if (result->sasa == NULL) {
+        mem_fail();
+        freesasa_result_free(result);
+        return NULL;
+    }
+
+    result->n_atoms = n;
+
+    return result;
+}
+
 void
 freesasa_result_free(freesasa_result *r)
 {
@@ -67,21 +96,19 @@ freesasa_calc(const coord_t *c,
     assert(c);
     assert(radii);
 
-    freesasa_result *result = malloc(sizeof(freesasa_result));
+    freesasa_result *result = result_new(freesasa_coord_n(c));
     int ret;
-    const freesasa_parameters *p = parameters;
-    
-    if (result == NULL) { mem_fail(); return NULL; }    
-    if (p == NULL) p = &freesasa_default_parameters;
 
-    result->n_atoms = freesasa_coord_n(c);
-    //result->parameters = *parameters;
-    result->sasa = malloc(sizeof(double)*result->n_atoms);
-    if(result->sasa == NULL) { mem_fail(); freesasa_result_free(result); return NULL; }
+    if (result == NULL) {
+        fail_msg("");
+        return NULL;
+    }
 
-    switch(p->alg) {
+    if (parameters == NULL) parameters = &freesasa_default_parameters;
+
+    switch(parameters->alg) {
     case FREESASA_SHRAKE_RUPLEY:
-      ret = freesasa_shrake_rupley(result->sasa, c, radii, parameters);
+        ret = freesasa_shrake_rupley(result->sasa, c, radii, parameters);
         break;
     case FREESASA_LEE_RICHARDS:
         ret = freesasa_lee_richards(result->sasa, c, radii, parameters);
@@ -99,6 +126,7 @@ freesasa_calc(const coord_t *c,
     for (int i = 0; i < freesasa_coord_n(c); ++i) {
         result->total += result->sasa[i];
     }
+    result->parameters = *parameters;
 
     return result;
 }
@@ -117,7 +145,7 @@ freesasa_calc_coord(const double *xyz,
     freesasa_result *result = NULL;
 
     coord = freesasa_coord_new_linked(xyz,n);
-    if (coord != NULL) result = freesasa_calc(coord,radii,parameters);
+    if (coord != NULL) result = freesasa_calc(coord, radii, parameters);
     if (result == NULL) fail_msg("");
     
     freesasa_coord_free(coord);
@@ -136,28 +164,70 @@ freesasa_calc_structure(const freesasa_structure* structure,
                          parameters);
 }
 
-int
-freesasa_write_result(FILE *log,
-                      freesasa_result *result,
-                      const char *name,
-                      const char *chains,
-                      const freesasa_nodearea *class_area)
+freesasa_result_node *
+freesasa_calc_tree(const freesasa_structure *structure,
+                   const freesasa_parameters *parameters,
+                   const char *name)
+{
+    assert(structure);
+
+    freesasa_result_node *tree = NULL;
+    freesasa_result *result = freesasa_calc(freesasa_structure_xyz(structure),
+                                            freesasa_structure_radius(structure),
+                                            parameters);
+
+    if (result != NULL) {
+        tree = freesasa_result_tree_init(result, structure, name);
+    } else {
+        fail_msg("");
+    }
+
+    if (tree == NULL) {
+        fail_msg("");
+    }
+
+    freesasa_result_free(result);
+
+    return tree;
+}
+
+static int
+write_result(FILE *log,
+             const freesasa_result_node *result)
 {
     assert(log);
-    
+    assert(freesasa_result_node_type(result) == FREESASA_NODE_RESULT);
+
+    const char *name = NULL;
+    const freesasa_result_node *structure = NULL, *chain = NULL;
+    const freesasa_nodearea *area = NULL;
+
+    name = freesasa_result_node_name(result);
+    structure = freesasa_result_node_children(result);
+    assert(structure);
+    area = freesasa_result_node_area(structure);
+    assert(area);
+
     fprintf(log,"\nINPUT\n");
     if (name == NULL) fprintf(log,"source  : unknown\n");
     else              fprintf(log,"source  : %s\n",name);
-    if (chains != NULL) fprintf(log,"chains  : %s\n",chains);
-    fprintf(log,"atoms   : %d\n",result->n_atoms);
-    
+    fprintf(log,"chains  : %s\n", freesasa_result_node_structure_chain_labels(structure));
+    fprintf(log,"atoms   : %d\n", freesasa_result_node_structure_n_atoms(structure));
+
     fprintf(log,"\nRESULTS (A^2)\n");
-    fprintf(log,"Total   : %10.2f\n",result->total);
-    if (class_area != NULL) {
-        fprintf(log,"Apolar  : %10.2f\n",class_area->apolar);
-        fprintf(log,"Polar   : %10.2f\n",class_area->polar);
-        if (class_area->unknown > 0)
-            fprintf(log,"Unknown : %10.2f\n",class_area->unknown);
+    fprintf(log,"Total   : %10.2f\n", area->total);
+    fprintf(log,"Apolar  : %10.2f\n", area->apolar);
+    fprintf(log,"Polar   : %10.2f\n", area->polar);
+    if (area->unknown > 0) {
+        fprintf(log,"Unknown : %10.2f\n",area->unknown);
+    }
+
+    chain = freesasa_result_node_children(structure);
+    while (chain) {
+        area = freesasa_result_node_area(chain);
+        assert(area);
+        fprintf(log, "CHAIN %s : %10.2f\n",freesasa_result_node_name(chain), area->total);
+        chain = freesasa_result_node_next(chain);
     }
 
     fflush(log);
@@ -168,8 +238,30 @@ freesasa_write_result(FILE *log,
     return FREESASA_SUCCESS;
 }
 
-int freesasa_write_parameters(FILE *log,
-                              const freesasa_parameters *parameters)
+static int
+write_results(FILE *log,
+              const freesasa_result_node *root)
+{
+    assert(log);
+    assert(freesasa_result_node_type(root) == FREESASA_NODE_ROOT);
+
+    const freesasa_result_node *result = freesasa_result_node_children(root);
+    int ret;
+
+    //int several = (freesasa_result_node_next(result) != NULL); // are there more than one result
+    while(result) {
+        //if (several) fprintf(log, "\n\n####################\n");
+        ret = write_result(log, result);
+        if (ret != FREESASA_SUCCESS) return ret;
+        result = freesasa_result_node_next(result);
+    }
+
+    return FREESASA_SUCCESS;
+}
+
+int
+freesasa_write_parameters(FILE *log,
+                          const freesasa_parameters *parameters)
 {
     assert(log);
     const freesasa_parameters *p = parameters;
@@ -283,7 +375,7 @@ freesasa_single_residue_sasa(const freesasa_result *r,
 
 int
 freesasa_per_residue(FILE *output,
-                     freesasa_result *result,
+                     const freesasa_result *result,
                      const freesasa_structure *structure)
 {
     assert(output);
@@ -310,8 +402,14 @@ freesasa_export_tree(FILE *file,
                      const freesasa_parameters *parameters,
                      int options)
 {
+    assert(freesasa_result_node_type(root) == FREESASA_NODE_ROOT);
     if (parameters == NULL) parameters = &freesasa_default_parameters;
-
+    if (options & FREESASA_LOG) {
+        return freesasa_write_log(file, root);
+    }
+    if (options & FREESASA_PDB) {
+        return freesasa_write_pdb(file, root);
+    }
     if (options & FREESASA_RSA) {
         return freesasa_write_rsa(file, root, parameters, options);
     }
@@ -324,6 +422,23 @@ freesasa_export_tree(FILE *file,
         else return fail_msg("Library was built without support for XML output.");
     }
     return fail_msg("No valid options given");
+}
+
+freesasa_result *
+freesasa_result_clone(const freesasa_result *result)
+{
+    freesasa_result *clone = result_new(result->n_atoms);
+    if (clone == NULL) {
+        fail_msg("");
+        return NULL;
+    }
+
+    clone->n_atoms = result->n_atoms;
+    clone->total = result->total;
+    clone->parameters = result->parameters;
+    memcpy(clone->sasa, result->sasa, sizeof(double) * clone->n_atoms);
+
+    return clone;
 }
 
 const char*
@@ -355,6 +470,15 @@ freesasa_verbosity
 freesasa_get_verbosity(void) 
 {
     return verbosity;
+}
+
+int
+freesasa_write_log(FILE *log,
+                   const freesasa_result_node *root)
+{
+    // leave it this way until we have a way of loggin after all
+    // calculations are done.
+    return write_results(log, root);
 }
 
 // deprecated

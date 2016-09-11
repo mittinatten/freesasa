@@ -221,9 +221,8 @@ freesasa_write_json(FILE *output,
     const freesasa_result_node *child = freesasa_result_node_children(root);
 
     if (parameters == NULL) parameters = &freesasa_default_parameters;
-#ifdef HAVE_CONFIG_H
-    json_object_object_add(json_root, "source", json_object_new_string(PACKAGE_STRING));
-#endif
+
+    json_object_object_add(json_root, "source", json_object_new_string(freesasa_string));
     json_object_object_add(json_root, "length-unit", json_object_new_string("Ångström"));
     json_object_object_add(json_root, "results", results);
     while (child) {

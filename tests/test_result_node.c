@@ -24,6 +24,12 @@ test_tree(const freesasa_result_node *structure,
     ck_assert_str_eq(freesasa_result_node_name(residue), "MET");
     ck_assert_str_eq(freesasa_result_node_name(atom), " N  ");
 
+    ck_assert_int_eq(freesasa_result_node_structure_n_chains(structure), 1);
+    ck_assert_int_eq(freesasa_result_node_structure_n_atoms(structure), 602);
+    ck_assert_str_eq(freesasa_result_node_structure_chain_labels(structure), "A");
+
+    ck_assert_int_eq(freesasa_result_node_chain_n_residues(chain), 76);
+    
     // iterate
     next = freesasa_result_node_next(structure);
     ck_assert_ptr_eq(next, NULL);

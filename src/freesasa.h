@@ -93,12 +93,14 @@ enum freesasa_output_options {
     FREESASA_OUTPUT_RESIDUE=1<<2, //!< Output data for residues, chains and structure
     FREESASA_OUTPUT_CHAIN=1<<3, //!< Output data for chains and structure
     FREESASA_OUTPUT_STRUCTURE=1<<4, //!< Output data only for the whole structure
-    FREESASA_RSA=1<<5, //!< Write RSA output (not affected by atom, residue, etc above)
-    FREESASA_JSON=1<<6, //!< Write JSON output
-    FREESASA_XML=1<<7, //!< Wite XML output
+    FREESASA_LOG=1<<5, //!< Simple plain text results
+    FREESASA_RSA=1<<6, //!< RSA output (not affected by atom, residue, etc above)
+    FREESASA_JSON=1<<7, //!< JSON output
+    FREESASA_XML=1<<8, //!< XML output
+    FREESASA_PDB=1<<9, //!< PDB output (with B-factors replaced by SASA values, and occupancy by radius)
     //! Don't output relative areas, for example if structure has
     //! manually set radii, invalidating reference values
-    FREESASA_OUTPUT_SKIP_REL=1<<8,
+    FREESASA_OUTPUT_SKIP_REL=1<<10,
 };
 
 //! The maximum length of a selection name @see freesasa_select_area()
@@ -122,7 +124,7 @@ extern const freesasa_parameters freesasa_default_parameters;
     The struct includes the coordinates and radius of each atom, and
     its name, residue-name, etc. If it was initiated from a PDB file
     enough info will be stored so that a PDB-file can be printed using
-    the original one as template (see freesasa_write_pdb()).
+    the original one as template.
  */
 typedef struct freesasa_structure freesasa_structure;
 
@@ -131,7 +133,7 @@ typedef struct {
     double total; //!< Total SASA in Ångström^2
     double *sasa; //!< SASA of each atom in Ångström^2
     int n_atoms;  //!< Number of atoms
-    freesasa_parameters parameters; //!< Parameters used in calculation
+    freesasa_parameters parameters;
 } freesasa_result;
 
 /**
@@ -144,7 +146,7 @@ typedef struct {
     ::freesasa_nodearea.
  */
 typedef struct {
-    const char *name;  //!< Name of substructure
+    char *name;        //!< Name of substructure
     double total;      //!< Total SASA
     double main_chain; //!< Main-chain/Backbone SASA
     double side_chain; //!< Side-chain SASA
@@ -228,6 +230,10 @@ freesasa_calc_coord(const double *xyz,
                     int n,
                     const freesasa_parameters *parameters);
 
+freesasa_result_node *
+freesasa_calc_tree(const freesasa_structure *structure,
+                   const freesasa_parameters *parameters,
+                   const char *name);
 /**
     Results by classes.
 
@@ -356,29 +362,6 @@ freesasa_select_area(const char *command,
                      const freesasa_structure *structure,
                      const freesasa_result *result);
 
-/**
-    Write SASA values and atomic radii to new PDB-file.
-
-    Takes PDB information from the provided structure and writes a new
-    PDB-file to output, where the B-factors have been replaced with
-    the atom's SASA values in the results, and the occupancy
-    factors with the radii.
-
-    Will only work if the structure was initialized from a PDB-file, i.e.
-    using freesasa_structure_from_pdb() or freesasa_structure_array().
-
-    @param output File to write to.
-    @param result SASA values.
-    @param structure Structure to use to print PDB.
-
-    @return ::FREESASA_SUCCESS if file written successfully.
-    ::FREESASA_FAIL if there is no previous PDB input to base output
-    on or if there were problems writing to the file.
- */
-int
-freesasa_write_pdb(FILE *output, 
-                   freesasa_result *result,
-                   const freesasa_structure *structure);
 
 /**
     Print SASA for each chain.
@@ -429,37 +412,9 @@ freesasa_per_residue_type(FILE *output,
  */
 int
 freesasa_per_residue(FILE *output,
-                     freesasa_result *result,
+                     const freesasa_result *result,
                      const freesasa_structure *structure);
 
-/**
-    Write results of claculation to file.
-
-    @param log Output-file.
-    @param result SASA values.
-    @param name Name of the protein, if NULL "unknown" used.
-    @param chains The chains used in the calculation, can be NULL
-    @param class_area The SASA values for each class, if NULL
-      only total SASA printed
-    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
-      writing to file.
- */
-int
-freesasa_write_result(FILE *log,
-                      freesasa_result *result,
-                      const char *name,
-                      const char *chains,
-                      const freesasa_nodearea *class_area);
-/**
-    Print parameters to file
-
-    @param log Output-file
-    @param parameters Parameters to print, if NULL defaults are used
-    @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
-      writing to file.
-*/
-int freesasa_write_parameters(FILE *log,
-                              const freesasa_parameters *parameters);
 
 /**
     Set the global verbosity level.
@@ -1001,9 +956,17 @@ freesasa_structure_classifier_name(const freesasa_structure *structure);
     To be populated by freesasa_result_tree_add_result()
 
     @return A ::freesasa_result_node. NULL if memory allocation fails.
-*/
+ */
 freesasa_result_node *
 freesasa_result_tree_new(void);
+
+/**
+    Docs to come ...
+*/
+freesasa_result_node *
+freesasa_result_tree_init(const freesasa_result *result,
+                          const freesasa_structure *structure,
+                          const char *name);
 
 /**
     Generates a tree that represents the structure, with the levels
@@ -1170,6 +1133,15 @@ double
 freesasa_result_node_atom_radius(const freesasa_result_node *node);
 
 /**
+    Line in PDB atom was generated from.
+
+    @param node The atom (has to be of type ::FREESASA_NODE_ATOM).
+    @return The line. NULL if atom wasn't taken from PDB file.
+ */
+const char*
+freesasa_result_node_atom_pdb_line(const freesasa_result_node *node);
+
+/**
     Residue number.
 
     @param node The residue (has to be of type ::FREESASA_NODE_RESIDUE).
@@ -1217,6 +1189,15 @@ int
 freesasa_result_node_structure_n_chains(const freesasa_result_node *node);
 
 /**
+    The number of atoms in a structure.
+
+    @param node The structure (has to be of type ::FREESASA_NODE_STRUCTURE).
+    @return Number of atoms.
+ */
+int
+freesasa_result_node_structure_n_atoms(const freesasa_result_node *node);
+
+/**
     All chain labels in a structure.
 
     @param node The structure (has to be of type ::FREESASA_NODE_STRUCTURE).
@@ -1224,6 +1205,27 @@ freesasa_result_node_structure_n_chains(const freesasa_result_node *node);
  */
 const char *
 freesasa_result_node_structure_chain_labels(const freesasa_result_node *node);
+
+/**
+    Model number of a structure (from input PDB)
+
+    @param node The structure (has to be of type ::FREESASA_NODE_STRUCTURE).
+    @return Model number.
+ */
+int
+freesasa_result_node_structure_model(const freesasa_result_node *node);
+
+/**
+    Raw results for a structure
+
+    Useful for legacy code that depends on the ::freesasa_result-type
+    for output, etc.
+
+    @param node The structure (has to be of type ::FREESASA_NODE_STRUCTURE).
+    @return The results.
+ */
+const freesasa_result *
+freesasa_result_node_structure_result(const freesasa_result_node *node);
 
 // Deprecated functions below, from 1.x API
 

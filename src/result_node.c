@@ -11,12 +11,13 @@ struct atom_properties {
     int is_polar;
     int is_bb;
     double radius;
+    char *pdb_line;
 };
 
 struct residue_properties {
-    freesasa_nodearea *reference;
-    char *number;
     int n_atoms;
+    char *number;
+    freesasa_nodearea *reference;
 };
 
 struct chain_properties {
@@ -25,7 +26,10 @@ struct chain_properties {
 
 struct structure_properties {
     int n_chains;
+    int n_atoms;
+    int model;
     char *chain_labels;
+    freesasa_result *result;
 };
 
 struct result_properties {
@@ -37,13 +41,13 @@ struct result_properties {
 struct freesasa_result_node {
     char *name;
     freesasa_node_type type;
-    union {
-        struct atom_properties atom_prop;
-        struct residue_properties residue_prop;
-        struct chain_properties chain_prop;
-        struct structure_properties structure_prop;
-        struct result_properties result_prop;
-    };
+    union properties {
+        struct atom_properties atom;
+        struct residue_properties residue;
+        struct chain_properties chain;
+        struct structure_properties structure;
+        struct result_properties result;
+    } properties;
     freesasa_nodearea *area;
     freesasa_result_node *parent;
     freesasa_result_node *children;
@@ -97,15 +101,19 @@ result_node_free(freesasa_result_node *node)
         free(node->name);
         free(node->area);
         switch(node->type) {
+        case FREESASA_NODE_ATOM:
+            free(node->properties.atom.pdb_line);
+            break;
         case FREESASA_NODE_RESIDUE:
-            free(node->residue_prop.reference);
-            free(node->residue_prop.number);
+            free(node->properties.residue.reference);
+            free(node->properties.residue.number);
             break;
         case FREESASA_NODE_STRUCTURE:
-            free(node->structure_prop.chain_labels);
+            free(node->properties.structure.chain_labels);
+            freesasa_result_free(node->properties.structure.result);
             break;
         case FREESASA_NODE_RESULT:
-            free(node->result_prop.classified_by);
+            free(node->properties.result.classified_by);
             break;
         default:
             break;
@@ -188,27 +196,43 @@ result_node_atom(const freesasa_structure *structure,
 {
     freesasa_result_node *atom = 
         result_node_new(freesasa_structure_atom_name(structure, atom_index));
-                  
+    const char *line;
+    
     if (atom == NULL) {
         fail_msg("");
         return NULL;
-    } 
+    }
+
     atom->type = FREESASA_NODE_ATOM;
-    atom->atom_prop = (struct atom_properties) {
+    atom->properties.atom = (struct atom_properties) {
         .is_polar = freesasa_structure_atom_class(structure, atom_index) == FREESASA_ATOM_POLAR,
         .is_bb = freesasa_atom_is_backbone(atom->name),
-        .radius = freesasa_structure_atom_radius(structure, atom_index)
+        .radius = freesasa_structure_atom_radius(structure, atom_index),
+        .pdb_line = NULL,
     };
 
+    line = freesasa_structure_atom_pdb_line(structure, atom_index);
+    if (line != NULL) {
+        atom->properties.atom.pdb_line = strdup(line);
+        if (atom->properties.atom.pdb_line == NULL) {
+            mem_fail();
+            goto cleanup;
+        }
+    }
+    
     atom->area = malloc(sizeof(freesasa_nodearea));
     if (atom->area == NULL) {
         mem_fail();
-        result_node_free(atom);
-        return NULL;
+        goto cleanup;
     }
+
     freesasa_atom_nodearea(atom->area, structure, result, atom_index);
     
     return atom;
+
+ cleanup:
+    result_node_free(atom);
+    return NULL;
 }
 
 static freesasa_result_node *
@@ -230,28 +254,27 @@ result_node_residue(const freesasa_structure *structure,
     residue->type = FREESASA_NODE_RESIDUE;
 
     freesasa_structure_residue_atoms(structure, residue_index, &first, &last);
-    residue->residue_prop.n_atoms = last - first + 1;
+    residue->properties.residue.n_atoms = last - first + 1;
 
-    residue->residue_prop.number = strdup(freesasa_structure_residue_number(structure, residue_index));
-    if (residue->residue_prop.number == NULL) {
+    residue->properties.residue.number = strdup(freesasa_structure_residue_number(structure, residue_index));
+    if (residue->properties.residue.number == NULL) {
         mem_fail();
         goto cleanup;
     }
 
     ref = freesasa_structure_residue_reference(structure, residue_index);
     if (ref != NULL) {
-        residue->residue_prop.reference = malloc(sizeof(freesasa_nodearea));
-        if (residue->residue_prop.reference == NULL) {
+        residue->properties.residue.reference = malloc(sizeof(freesasa_nodearea));
+        if (residue->properties.residue.reference == NULL) {
             mem_fail();
             goto cleanup;
         }
-        *residue->residue_prop.reference = *ref;
-    } else {
-        residue->residue_prop.reference = NULL;
+        // TODO copy name string too
+        *residue->properties.residue.reference = *ref;
     }
 
     if (result_node_gen_children(residue, structure, result, first,
-                                    last, result_node_atom) == NULL) {
+                                 last, result_node_atom) == NULL) {
         goto cleanup;
     }
 
@@ -286,7 +309,7 @@ result_node_chain(const freesasa_structure *structure,
     chain->type = FREESASA_NODE_CHAIN;
     freesasa_structure_chain_residues(structure, name[0],
                                       &first_residue, &last_residue);    
-    chain->chain_prop.n_residues = last_residue - first_residue + 1;
+    chain->properties.chain.n_residues = last_residue - first_residue + 1;
     
     if (result_node_gen_children(chain, structure, result,
                                     first_residue, last_residue,
@@ -305,7 +328,6 @@ result_node_structure(const freesasa_structure *structure,
                       int dummy_index)
 {
     freesasa_result_node *result_node = NULL;
-
     result_node = result_node_new(freesasa_structure_chain_labels(structure));
     
     if (result_node == NULL) {
@@ -314,10 +336,19 @@ result_node_structure(const freesasa_structure *structure,
     }
 
     result_node->type = FREESASA_NODE_STRUCTURE;
-    result_node->structure_prop.n_chains = freesasa_structure_n_chains(structure);
-    result_node->structure_prop.chain_labels = strdup(freesasa_structure_chain_labels(structure));
+    result_node->properties.structure.n_chains = freesasa_structure_n_chains(structure);
+    result_node->properties.structure.n_atoms = freesasa_structure_n(structure);
+    result_node->properties.structure.result = NULL;
+    result_node->properties.structure.chain_labels = strdup(freesasa_structure_chain_labels(structure));
 
-    if (result_node->structure_prop.chain_labels == NULL) {
+    if (result_node->properties.structure.chain_labels == NULL) {
+        fail_msg("");
+        goto cleanup;
+    }
+
+    result_node->properties.structure.result = freesasa_result_clone(result);
+
+    if (result_node->properties.structure.result == NULL) {
         fail_msg("");
         goto cleanup;
     }
@@ -345,6 +376,26 @@ freesasa_result_tree_new(void)
     return tree;
 }
 
+freesasa_result_node *
+freesasa_result_tree_init(const freesasa_result *result,
+                          const freesasa_structure *structure,
+                          const char *name)
+{
+    freesasa_result_node *tree = result_node_new(NULL);
+
+    tree->type = FREESASA_NODE_ROOT;
+
+    if (tree == NULL) {
+        fail_msg("");
+    } else if (freesasa_result_tree_add_result(tree, result, structure, name) == FREESASA_FAIL) {
+        fail_msg("");
+        freesasa_result_node_free(tree);
+        tree = NULL;
+    }
+
+    return tree;
+}
+
 int
 freesasa_result_tree_add_result(freesasa_result_node *tree,
                                 const freesasa_result *result,
@@ -352,15 +403,15 @@ freesasa_result_tree_add_result(freesasa_result_node *tree,
                                 const char *name)
 {
     freesasa_result_node *result_node = result_node_new(name);
-
+    
     if (result_node == NULL) {
         goto cleanup;
     }
 
     result_node->type = FREESASA_NODE_RESULT;
-    result_node->result_prop.n_structures = 1;
-    result_node->result_prop.classified_by = strdup(freesasa_structure_classifier_name(structure));
-    if (result_node->result_prop.classified_by == NULL) {
+    result_node->properties.result.n_structures = 1;
+    result_node->properties.result.classified_by = strdup(freesasa_structure_classifier_name(structure));
+    if (result_node->properties.result.classified_by == NULL) {
         mem_fail();
         goto cleanup;
     }
@@ -392,8 +443,10 @@ freesasa_result_tree_join(freesasa_result_node *tree1,
     freesasa_result_node *child = tree1->children;
     if (child != NULL) {
         while (child->next) child = child->next;
+        child->next = (*tree2)->children;
+    } else {
+        tree1->children = (*tree2)->children;
     }
-    child->next = (*tree2)->children;
     // tree1 takes over ownership, tree2 is invalidated.
     *tree2 = NULL;
 
@@ -452,84 +505,113 @@ const char*
 freesasa_result_node_classified_by(const freesasa_result_node *node)
 {
     assert(node->type == FREESASA_NODE_RESULT);
-    return node->result_prop.classified_by;
+    return node->properties.result.classified_by;
 }
 
 int
 freesasa_result_node_atom_is_polar(const freesasa_result_node *node)
 {
     assert(node->type == FREESASA_NODE_ATOM);
-    return node->atom_prop.is_polar;
+    return node->properties.atom.is_polar;
 }
 
 int
 freesasa_result_node_atom_is_mainchain(const freesasa_result_node *node)
 {
     assert(node->type == FREESASA_NODE_ATOM);
-    return node->atom_prop.is_bb;
+    return node->properties.atom.is_bb;
 }
 
 double
 freesasa_result_node_atom_radius(const freesasa_result_node *node)
 {
     assert(node->type == FREESASA_NODE_ATOM);
-    return node->atom_prop.radius;
+    return node->properties.atom.radius;
+}
+
+const char *
+freesasa_result_node_atom_pdb_line(const freesasa_result_node *node)
+{
+    assert(node->type == FREESASA_NODE_ATOM);
+    return node->properties.atom.pdb_line;
 }
 
 int
 freesasa_result_node_residue_n_atoms(const freesasa_result_node *node)
 {
     assert(node->type == FREESASA_NODE_RESIDUE);
-    return node->residue_prop.n_atoms;
+    return node->properties.residue.n_atoms;
 }
 
 const char *
 freesasa_result_node_residue_number(const freesasa_result_node *node)
 {
     assert(node->type == FREESASA_NODE_RESIDUE);
-    return node->residue_prop.number;
+    return node->properties.residue.number;
 }
 
 const freesasa_nodearea *
 freesasa_result_node_residue_reference(const freesasa_result_node *node)
 {
     assert(node->type == FREESASA_NODE_RESIDUE);
-    return node->residue_prop.reference;
+    return node->properties.residue.reference;
 }
 
 int
 freesasa_result_node_chain_n_residues(const freesasa_result_node *node)
 {
     assert(node->type == FREESASA_NODE_CHAIN);
-    return node->chain_prop.n_residues;
+    return node->properties.chain.n_residues;
 }
 
 int
 freesasa_result_node_structure_n_chains(const freesasa_result_node *node)
 {
     assert(node->type == FREESASA_NODE_STRUCTURE);
-    return node->structure_prop.n_chains;
+    return node->properties.structure.n_chains;
+}
+
+int
+freesasa_result_node_structure_n_atoms(const freesasa_result_node *node)
+{
+    assert(node->type == FREESASA_NODE_STRUCTURE);
+    return node->properties.structure.n_atoms;
+}
+
+int
+freesasa_result_node_structure_model(const freesasa_result_node *node)
+{
+    assert(node->type == FREESASA_NODE_STRUCTURE);
+    return node->properties.structure.model;
 }
 
 const char *
 freesasa_result_node_structure_chain_labels(const freesasa_result_node *node)
 {
     assert(node->type == FREESASA_NODE_STRUCTURE);
-    return node->structure_prop.chain_labels;
+    return node->properties.structure.chain_labels;
 }
 
-void
+const freesasa_result *
+freesasa_result_node_structure_result(const freesasa_result_node *node)
+{
+    assert(node->type == FREESASA_NODE_STRUCTURE);
+    return node->properties.structure.result;
+}
+
+int
 freesasa_atom_nodearea(freesasa_nodearea *area,
                        const freesasa_structure *structure,
                        const freesasa_result *result,
                        int atom_index)
 {
-    const char *resn = freesasa_structure_atom_res_name(structure, atom_index);
     double a = result->sasa[atom_index];
+    *area = freesasa_nodearea_null;
 
-    area->main_chain = area->side_chain = area->polar = area->apolar = 0;
-
-    area->name = freesasa_structure_atom_name(structure, atom_index);
+    area->name = strdup(freesasa_structure_atom_name(structure, atom_index));
+    if (area->name == NULL) {
+        return FREESASA_FAIL;
+    }
     area->total = a; 
 
     if (freesasa_atom_is_backbone(area->name))
@@ -547,7 +629,8 @@ freesasa_atom_nodearea(freesasa_nodearea *area,
         area->unknown = a;
         break;
     }
-    
+
+    return FREESASA_SUCCESS;
 }
 
 void

@@ -960,6 +960,14 @@ freesasa_structure_atom_class(const freesasa_structure *structure,
     return structure->atoms.atom[i]->the_class;
 }
 
+const char *
+freesasa_structure_atom_pdb_line(const freesasa_structure *structure,
+                                 int i)
+{
+    assert(structure);
+    assert(i < structure->atoms.n && i >= 0);
+    return structure->atoms.atom[i]->line;
+}
 const freesasa_nodearea *
 freesasa_structure_residue_reference(const freesasa_structure *structure,
                                      int r_i)
@@ -1072,51 +1080,6 @@ freesasa_structure_classifier_name(const freesasa_structure *structure)
 {
     assert(structure);
     return structure->classifier_name;
-}
-
-int
-freesasa_write_pdb(FILE *output,
-                   freesasa_result *result,
-                   const freesasa_structure *structure)
-{
-    assert(structure);
-    assert(output);
-    assert(result);
-    assert(result->sasa);
-
-    const double* values = result->sasa;
-    const double* radii = structure->atoms.radius;
-    char buf[PDB_LINE_STRL+1], buf2[6];
-    int n = freesasa_structure_n(structure);
-    if (structure->model > 0) 
-        fprintf(output,"MODEL     %4d\n",structure->model);
-    else fprintf(output,             "MODEL        1\n");
-
-    // Write ATOM entries
-    for (int i = 0; i < n; ++i) {
-        if (structure->atoms.atom[i]->line == NULL) {
-            return freesasa_fail("in %s(): PDB input not valid or not present.",
-                                 __func__);
-        }
-        strncpy(buf, structure->atoms.atom[i]->line, PDB_LINE_STRL);
-        sprintf(&buf[54], "%6.2f%6.2f", radii[i], values[i]);
-        fprintf(output, "%s\n", buf);
-    }
-
-    // Write TER  and ENDMDL lines
-    errno = 0;
-    strncpy(buf2,&buf[6],5);
-    buf2[5]='\0';
-    fprintf(output,"TER   %5d     %4s %c%4s\nENDMDL\n",
-            atoi(buf2)+1, structure->atoms.atom[n-1]->res_name,
-            structure->atoms.atom[n-1]->chain_label, structure->atoms.atom[n-1]->res_number);
-
-    fflush(output);
-    if (ferror(output)) {
-        return fail_msg(strerror(errno));
-    }
-
-    return FREESASA_SUCCESS;
 }
 
 int

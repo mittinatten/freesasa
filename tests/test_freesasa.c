@@ -140,12 +140,12 @@ END_TEST
 
 START_TEST (test_minimal_calc)
 {
-    freesasa_result *result;
-    
     double coord[3] = {0,0,0};
     double r[1] = {1.0};
 
-    ck_assert((result = freesasa_calc_coord(coord,r,1,NULL)) != NULL);
+    freesasa_result *result = freesasa_calc_coord(coord, r, 1, NULL);
+
+    ck_assert_ptr_ne(result, NULL);
 
     // access areas
     ck_assert(fabs(result->sasa[0] - result->total) < 1e-10);
@@ -208,7 +208,7 @@ START_TEST (test_sasa_1ubq)
     ck_assert(float_eq(res_class.apolar, apolar_ref, 1e-5));
     
     FILE *devnull = fopen("/dev/null","w");
-    ck_assert(freesasa_write_pdb(devnull,res,st) == FREESASA_SUCCESS);
+    ck_assert(freesasa_write_pdb(devnull, tree) == FREESASA_SUCCESS);
     ck_assert(freesasa_per_residue_type(devnull,res,st) == FREESASA_SUCCESS);
     ck_assert(freesasa_per_residue(devnull,res,st) == FREESASA_SUCCESS);
     ck_assert(freesasa_export_tree(devnull, tree, NULL, FREESASA_RSA) == FREESASA_SUCCESS);
@@ -227,7 +227,7 @@ START_TEST (test_sasa_1ubq)
     freesasa_set_verbosity(FREESASA_V_SILENT);
     FILE *nowrite = fopen("/dev/null","r");
     ck_assert(freesasa_write_parameters(nowrite, &freesasa_default_parameters) == FREESASA_FAIL);
-    ck_assert(freesasa_write_result(nowrite, res, "bla", NULL, &res_class) == FREESASA_FAIL);
+    ck_assert(freesasa_write_log(nowrite, tree) == FREESASA_FAIL);
     ck_assert(freesasa_per_chain(nowrite, res, st) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue_type(nowrite, res, st) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue(nowrite, res, st) == FREESASA_FAIL);
@@ -264,13 +264,17 @@ START_TEST (test_write_pdb) {
     freesasa_structure *s = freesasa_structure_from_pdb(pdb, NULL, 0);
     const int n = freesasa_structure_n(s);
     freesasa_result res;
+    freesasa_result_node *root;
     fclose(pdb);
 
     res.sasa = malloc(sizeof(double)*n);
     for (int i = 0; i < n; ++i) res.sasa[i] = 1.23;
+    res.parameters = freesasa_default_parameters;
+    res.n_atoms = n;
     
     freesasa_structure_set_radius(s, res.sasa);
-    ck_assert(freesasa_write_pdb(tf, &res, s) == FREESASA_SUCCESS);
+    root = freesasa_result_tree_init(&res, s, "bla");
+    ck_assert(freesasa_write_pdb(tf, root) == FREESASA_SUCCESS);
 
     rewind(tf);
     free(res.sasa);
@@ -285,15 +289,18 @@ START_TEST (test_write_pdb) {
     free(buf_ref);
 
     freesasa_structure_free(s);
+    freesasa_result_node_free(root);
 
     // Can't write pdb from structure not initialized from pdb
     s = freesasa_structure_new();
     freesasa_structure_add_atom(s,"C","ALA","   1",'C',0,0,0);
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert_int_eq(freesasa_write_pdb(devnull, &res, s), FREESASA_FAIL);
+    root = freesasa_result_tree_init(&res, s, "bla");
+    ck_assert_int_eq(freesasa_write_pdb(devnull, root), FREESASA_FAIL);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
-    freesasa_structure_free(s);
 
+    freesasa_structure_free(s);
+    freesasa_result_node_free(root);
     fclose(devnull);
     fclose(ref);
     fclose(tf);

@@ -19,13 +19,7 @@ extern int optind, optopt;
 extern char *optarg;
 #endif
 
-#ifdef PACKAGE_VERSION
-const char *version = PACKAGE_VERSION;
-#else
-const char* version = "unknown";
-#endif
-
-char *program_name;
+char *program_name = "freesasa";
 const char* options_string;
 
 // configuration
@@ -64,6 +58,11 @@ char** chain_groups = NULL;
 int n_select = 0;
 char** select_cmd = NULL;
 
+struct analysis_results {
+    freesasa_result_node *tree;
+    freesasa_structure **structures;
+    int n_structures;
+};
 
 void
 help(void)
@@ -281,40 +280,42 @@ get_structures(FILE *input, int *n)
    return structures;
 }
 
-
-void
+freesasa_result_node *
 run_analysis(FILE *input,
              const char *name)
 {
     int name_len = strlen(name);
-    freesasa_result *result = NULL;
-    freesasa_nodearea classes;
     freesasa_structure **structures = NULL;
     freesasa_result_node *tree = freesasa_result_tree_new();
-    int n = 0, rel = (no_rel ? FREESASA_OUTPUT_SKIP_REL : 0);
+    int n = 0;
+
+    if (tree == NULL) abort_msg("Failed to initialize result-tree.");
 
     // read PDB file
     structures = get_structures(input, &n);
     if (n == 0) abort_msg("Invalid input.");
-    
-    if (printlog) {
-        freesasa_write_parameters(output, &parameters);
-    }
+
+    if (printlog) freesasa_write_parameters(output, &parameters);
     
     // perform calculation on each structure and output results
     for (int i = 0; i < n; ++i) {
         char name_i[name_len+10];
-        result = freesasa_calc_structure(structures[i], &parameters);
-        if (result == NULL)        abort_msg("Can't calculate SASA.");
-        classes = freesasa_result_classes(structures[i], result);
+        freesasa_result_node *tmp_tree;
+
         strcpy(name_i,name);
         if (n > 1 && (structure_options & FREESASA_SEPARATE_MODELS))
             sprintf(name_i+strlen(name_i), ":%d", freesasa_structure_model(structures[i]));
+
+        tmp_tree = freesasa_calc_tree(structures[i], &parameters, name_i);
+        if (tmp_tree == NULL) abort_msg("Can't calculate SASA.");
+
+        // log results
+        const freesasa_result_node *structure_node =
+            freesasa_result_node_children(freesasa_result_node_children(tmp_tree));
+        const freesasa_result *result = freesasa_result_node_structure_result(structure_node);
         if (printlog) {
-            if (n > 1) fprintf(output,"\n\n####################\n");
-            freesasa_write_result(output, result, name_i, 
-                                  freesasa_structure_chain_labels(structures[i]), &classes);
-            freesasa_per_chain(output, result, structures[i]);
+            if (n > 1) fprintf(output, "\n\n####################\n");
+            freesasa_export_tree(output, tmp_tree, &parameters, FREESASA_LOG);
         }
         if (per_residue_type) {
             if (n > 1) fprintf(per_residue_type_file, "\n## %s\n", name_i);
@@ -324,15 +325,16 @@ run_analysis(FILE *input,
             if (n > 1) fprintf(per_residue_file, "\n## %s\n", name_i);
             freesasa_per_residue(per_residue_file, result, structures[i]);
         }
-        if (printpdb) {
-            freesasa_write_pdb(output_pdb, result, structures[i]);
-        }
+
+        // output selections (has to be here as long as select
+        // interface doesn't work with trees)
         if (n_select > 0) {
             fprintf(output,"\nSELECTIONS\n");
-            for (int c = 0; c < n_select; ++c) {
+                     for (int c = 0; c < n_select; ++c) {
                 double a;
                 char sel_name[FREESASA_MAX_SELECTION_NAME+1];
-                if (freesasa_select_area(select_cmd[c], sel_name, &a, structures[i], result)
+                if (freesasa_select_area(select_cmd[c], sel_name, &a, structures[i],
+                                         result)
                     == FREESASA_SUCCESS) {
                     fprintf(output, "%s : %10.2f\n", sel_name, a);
                 } else {
@@ -340,22 +342,28 @@ run_analysis(FILE *input,
                 }
             }
         }
-        if (printrsa || printjson || printxml) {
-            if (freesasa_result_tree_add_result(tree, result, structures[i], name_i)
-                != FREESASA_SUCCESS) {
-                abort_msg("Error generating result-tree");
-            }
-        }
-        freesasa_result_free(result);
-    }
-    
-    if (printrsa)  freesasa_export_tree(rsa_file,  tree, &parameters, FREESASA_RSA | rel);
-    if (printjson) freesasa_export_tree(json_file, tree, &parameters, FREESASA_JSON | output_depth | rel);
-    if (printxml)  freesasa_export_tree(xml_file,  tree, &parameters, FREESASA_XML | output_depth | rel);
 
-    freesasa_result_node_free(tree);
-    for (int i = 0; i < n; ++i) freesasa_structure_free(structures[i]);
+        if (freesasa_result_tree_join(tree, &tmp_tree) != FREESASA_SUCCESS) {
+            abort_msg("Failed joining result-trees");
+        }
+
+        freesasa_structure_free(structures[i]);
+    }
+
     free(structures);
+
+    return tree;
+}
+
+static void
+print_results(const freesasa_result_node *tree)
+{
+    int rel = (no_rel ? FREESASA_OUTPUT_SKIP_REL : 0);
+
+    if (printpdb)  freesasa_export_tree(output_pdb, tree, &parameters, FREESASA_PDB);
+    if (printrsa)  freesasa_export_tree(rsa_file,   tree, &parameters, FREESASA_RSA | rel);
+    if (printjson) freesasa_export_tree(json_file,  tree, &parameters, FREESASA_JSON | output_depth | rel);
+    if (printxml)  freesasa_export_tree(xml_file,   tree, &parameters, FREESASA_XML | output_depth | rel);
 }
 
 FILE*
@@ -451,12 +459,13 @@ main(int argc,
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
+    freesasa_result_node *tree = freesasa_result_tree_new();
     enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN,
           RSA_FILE, RSA, JSON_FILE, JSON, XML_FILE, XML,
           O_DEPTH, RADII};
     parameters = freesasa_default_parameters;
     memset(opt_set, 0, n_opt);
-    program_name = "freesasa";
+    if (tree == NULL) abort_msg("Error initializing calculation.");
 
     struct option long_options[] = {
         {"lee-richards",         no_argument,       0, 'L'},
@@ -582,7 +591,7 @@ main(int argc,
             help();
             exit(EXIT_SUCCESS);
         case 'v':
-            printf("FreeSASA %s\n", version);
+            printf("%s\n", freesasa_string);
             printf("License: MIT <http://opensource.org/licenses/MIT>\n");
             printf("If you use this program for research, please cite:\n");
             printf("  Simon Mitternacht (2016) FreeSASA: An open source C\n"
@@ -697,18 +706,27 @@ main(int argc,
         abort_msg("The option --rsa can not be combined with -C or -M. "
                   "The RSA format does not support several results in one file.");
     if (printrsa || printjson || printxml) printlog = 0;
-    if (printlog) fprintf(output,"## %s %s ##\n", program_name, version);
+    if (printlog) fprintf(output, "## %s ##\n", freesasa_string);
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {
+            freesasa_result_node *tmp;
             errno = 0;
             input = fopen_werr(argv[i],"r");
-            run_analysis(input, argv[i]);
+            tmp = run_analysis(input, argv[i]);
+            freesasa_result_tree_join(tree, &tmp);
             fclose(input);
         }
     } else {
-        if (!isatty(STDIN_FILENO)) run_analysis(stdin, "stdin");
+        if (!isatty(STDIN_FILENO)) {
+            freesasa_result_node *tmp;
+            tmp = run_analysis(stdin, "stdin");
+            freesasa_result_tree_join(tree, &tmp);
+        }
         else abort_msg("No input.", program_name);
     }
+
+    print_results(tree);
+    freesasa_result_node_free(tree);
 
     release_resources();
 

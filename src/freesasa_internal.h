@@ -5,8 +5,11 @@
 #include "freesasa.h"
 #include "coord.h"
 
-//! The name of the library, to be used in error messages and logging
+//! The name of the library, to be used in error messages
 extern const char *freesasa_name;
+
+//! The name of the package, to be used in regular output (includes version)
+extern const char *freesasa_string;
 
 //! A ::freesasa_nodearea with `name == NULL` and all values 0
 extern const freesasa_nodearea freesasa_nodearea_null;
@@ -80,6 +83,12 @@ freesasa_result*
 freesasa_calc(const coord_t *c,
               const double *radii,
               const freesasa_parameters *parameters);
+int
+freesasa_write_log(FILE *log,
+                   const freesasa_result_node *root);
+int
+freesasa_write_parameters(FILE *log,
+                          const freesasa_parameters *parameters);
 
 /**
     Print RSA-file
@@ -144,24 +153,60 @@ freesasa_write_xml(FILE *ouput,
                    int options);
 
 /**
+    Write SASA values and atomic radii to new PDB-file.
+
+    Takes PDB information from the provided structure and writes a new
+    PDB-file to output, where the B-factors have been replaced with
+    the atom's SASA values in the results, and the occupancy
+    factors with the radii.
+
+    Will only work if the structure was initialized from a PDB-file, i.e.
+    using freesasa_structure_from_pdb() or freesasa_structure_array().
+
+    @param output Output-file
+    @param structure A ::freesasa_result_node of type ::FREESASA_NODE_STRUCTURE
+    @return ::FREESASA_SUCCESS if file written successfully.
+      ::FREESASA_FAIL if there is no previous PDB input to base output
+      on or if there were problems writing to the file.
+*/
+int
+freesasa_write_pdb(FILE *output,
+                   const freesasa_result_node *structure);
+
+/** Clone results object */
+freesasa_result *
+freesasa_result_clone(const freesasa_result *result);
+
+/**
     Get coordinates.
     
-    @param s A structure.
+    @param structure A structure.
     @return The coordinates of the structure as a ::coord_t struct.
  */
 const coord_t *
 freesasa_structure_xyz(const freesasa_structure *structure);
 
 /**
-   The class of an atom, in the classifier used to initialize the structure.
+    The class of an atom, in the classifier used to initialize the structure.
 
-   @param structure A structure.
-   @param i Atom index.
-   @return The class.
+    @param structure A structure.
+    @param i Atom index.
+    @return The class.
  */
 freesasa_atom_class
 freesasa_structure_atom_class(const freesasa_structure *structure,
                               int i);
+
+/**
+    The PDB line used to generate the atom.
+
+    @param structure A structure.
+    @param i Atom index.
+    @return The line, NULL if structure wasn't generated from a PDB file.
+ */
+const char *
+freesasa_structure_atom_pdb_line(const freesasa_structure *structure,
+                                 int i);
 
 const freesasa_nodearea *
 freesasa_structure_residue_reference(const freesasa_structure *structure,
@@ -169,11 +214,10 @@ freesasa_structure_residue_reference(const freesasa_structure *structure,
 /**
     Get the index of a chain.
 
-    @param s A structure.
+    @param structure A structure.
     @param chain The chain label.
     @return The index of `chain` in the structure. ::FREESASA_FAIL 
-    if `chain` not found.
-    
+      if `chain` not found.
  */
 int
 freesasa_structure_chain_index(const freesasa_structure *structure,
@@ -201,9 +245,11 @@ freesasa_single_residue_sasa(const freesasa_result *r,
     @param area Area will be stored here
     @param structure Structure to use for classification
     @param result The areas to use
-    @param atom_index Index of atom in question  
+    @param atom_index Index of atom in question
+    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if memory
+      allocation for name fails.
  */
-void
+int
 freesasa_atom_nodearea(freesasa_nodearea *area,
                        const freesasa_structure *structure,
                        const freesasa_result *result,
