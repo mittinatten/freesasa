@@ -300,13 +300,6 @@ parameters2xml(const freesasa_parameters *p)
         return NULL;
     }
 
-#ifdef HAVE_CONFIG_H
-    if (xmlNewProp(xml_node, BAD_CAST "source", BAD_CAST PACKAGE_STRING) == NULL) {
-        fail_msg("");
-        goto cleanup;
-    }
-#endif
-
     if (xmlNewProp(xml_node, BAD_CAST "algorithm", BAD_CAST freesasa_alg_name(p->alg)) == NULL) {
         fail_msg("");
         goto cleanup;
@@ -385,11 +378,6 @@ xml_result(const freesasa_result_node *result,
         goto cleanup;
     }
 
-    if (xmlNewProp(xml_result_node, BAD_CAST "lengthUnit", BAD_CAST "Ångström") == NULL) {
-        fail_msg("");
-        goto cleanup;
-    }
-
     child = freesasa_result_node_children(result);
     assert(child);
 
@@ -451,6 +439,18 @@ freesasa_write_xml(FILE *output,
     }
 
     xmlDocSetRootElement(doc, xml_root);
+
+    // global attributes
+#ifdef HAVE_CONFIG_H
+    if (xmlNewProp(xml_root, BAD_CAST "source", BAD_CAST PACKAGE_STRING) == NULL) {
+        fail_msg("");
+        goto cleanup;
+    }
+#endif
+    if (xmlNewProp(xml_root, BAD_CAST "lengthUnit", BAD_CAST "Ångström") == NULL) {
+        fail_msg("");
+        goto cleanup;
+    }
 
     child = freesasa_result_node_children(root);
     while (child) {
