@@ -19,7 +19,6 @@ freesasa_json_atom(const freesasa_result_node *node, int options)
     json_object *atom = json_object_new_object();
     const freesasa_nodearea *area = freesasa_result_node_area(node);
     const char *name = freesasa_result_node_name(node);
-    int first, last;
     int n_len = strlen(name);
     char trim_name[n_len+1];
 
@@ -107,7 +106,6 @@ json_object *
 freesasa_json_structure(const freesasa_result_node *node, int options)
 {
     json_object *obj = json_object_new_object();
-    const char *chains = freesasa_result_node_structure_chain_labels(node);
 
     json_object_object_add(obj, "chain-labels", json_object_new_string(freesasa_result_node_structure_chain_labels(node)));
     json_object_object_add(obj, "area",
@@ -170,9 +168,6 @@ parameters2json(const freesasa_parameters *p)
 {
     json_object *obj = json_object_new_object(), *res;
 
-#ifdef HAVE_CONFIG_H
-    json_object_object_add(obj, "source", json_object_new_string(PACKAGE_STRING));
-#endif
     json_object_object_add(obj, "algorithm", json_object_new_string(freesasa_alg_name(p->alg)));
     json_object_object_add(obj, "probe-radius", json_object_new_double(p->probe_radius));
 
@@ -205,12 +200,12 @@ json_result(const freesasa_result_node *result,
 
     json_object_object_add(obj, "input", json_object_new_string(freesasa_result_node_name(result)));
     json_object_object_add(obj, "classifier", json_object_new_string(freesasa_result_node_classified_by(result)));
-    json_object_object_add(obj, "length-unit", json_object_new_string("Ångström"));
     json_object_object_add(obj, "parameters", parameters2json(parameters));
     json_object_object_add(obj, "structures", freesasa_node2json(result, exclude_type, options));
 
     return obj;
 }
+
 
 int
 freesasa_write_json(FILE *output,
@@ -221,13 +216,18 @@ freesasa_write_json(FILE *output,
 {
     assert(freesasa_result_node_type(root) == FREESASA_NODE_ROOT);
 
-    json_object *results = json_object_new_object(), *json_root = json_object_new_object();
+    json_object *results = json_object_new_array(),
+        *json_root = json_object_new_object();
     const freesasa_result_node *child = freesasa_result_node_children(root);
-    if (parameters == NULL) parameters = &freesasa_default_parameters;
 
-    json_object_object_add(json_root, "FreeSASA-results", results);
+    if (parameters == NULL) parameters = &freesasa_default_parameters;
+#ifdef HAVE_CONFIG_H
+    json_object_object_add(json_root, "source", json_object_new_string(PACKAGE_STRING));
+#endif
+    json_object_object_add(json_root, "length-unit", json_object_new_string("Ångström"));
+    json_object_object_add(json_root, "results", results);
     while (child) {
-        json_object_object_add(results, "result", json_result(child, parameters, options));
+        json_object_array_add(results, json_result(child, parameters, options));
         child = freesasa_result_node_next(child);
     }
 
