@@ -160,7 +160,6 @@ atom_new(const char *residue_name,
          char chain_label)
 {
     struct atom *a = malloc(sizeof(struct atom));
-    int dlen = 0;
     if (a == NULL) goto memerr;
 
     *a = empty_atom;
@@ -419,8 +418,6 @@ structure_add_residue(freesasa_structure *s,
                       int i_latest_atom)
 {
     int n = s->residues.n+1;
-    char **rd = NULL;
-    int *rfa = NULL;
     const freesasa_nodearea *reference = NULL;
 
     /* register a new residue if it's the first atom, or if the

@@ -257,7 +257,7 @@ get_structures(FILE *input, int *n)
            abort_msg("Invalid input.");
        }
    }
-   
+
    // get chain-groups (if requested)
    if (n_chain_groups > 0) {
        int n2 = *n;
@@ -280,7 +280,27 @@ get_structures(FILE *input, int *n)
    return structures;
 }
 
-freesasa_result_node *
+static void
+print_selections(const freesasa_structure *structure,
+                 const freesasa_result *result)
+{
+    if (n_select > 0) {
+        fprintf(output,"\nSELECTIONS\n");
+        for (int c = 0; c < n_select; ++c) {
+            double a;
+            char sel_name[FREESASA_MAX_SELECTION_NAME+1];
+            if (freesasa_select_area(select_cmd[c], sel_name, &a, structure,
+                                     result)
+                == FREESASA_SUCCESS) {
+                fprintf(output, "%s : %10.2f\n", sel_name, a);
+            } else {
+                abort_msg("Illegal selection");
+            }
+        }
+    }
+}
+
+static freesasa_result_node *
 run_analysis(FILE *input,
              const char *name)
 {
@@ -309,10 +329,11 @@ run_analysis(FILE *input,
         tmp_tree = freesasa_calc_tree(structures[i], &parameters, name_i);
         if (tmp_tree == NULL) abort_msg("Can't calculate SASA.");
 
-        // log results
         const freesasa_result_node *structure_node =
             freesasa_result_node_children(freesasa_result_node_children(tmp_tree));
         const freesasa_result *result = freesasa_result_node_structure_result(structure_node);
+
+        // log results
         if (printlog) {
             if (n > 1) fprintf(output, "\n\n####################\n");
             freesasa_export_tree(output, tmp_tree, &parameters, FREESASA_LOG);
@@ -328,20 +349,7 @@ run_analysis(FILE *input,
 
         // output selections (has to be here as long as select
         // interface doesn't work with trees)
-        if (n_select > 0) {
-            fprintf(output,"\nSELECTIONS\n");
-                     for (int c = 0; c < n_select; ++c) {
-                double a;
-                char sel_name[FREESASA_MAX_SELECTION_NAME+1];
-                if (freesasa_select_area(select_cmd[c], sel_name, &a, structures[i],
-                                         result)
-                    == FREESASA_SUCCESS) {
-                    fprintf(output, "%s : %10.2f\n", sel_name, a);
-                } else {
-                    abort_msg("Illegal selection");
-                }
-            }
-        }
+        print_selections(structures[i], result);
 
         if (freesasa_result_tree_join(tree, &tmp_tree) != FREESASA_SUCCESS) {
             abort_msg("Failed joining result-trees");
@@ -366,7 +374,7 @@ print_results(const freesasa_result_node *tree)
     if (printxml)  freesasa_export_tree(xml_file,   tree, &parameters, FREESASA_XML | output_depth | rel);
 }
 
-FILE*
+static FILE*
 fopen_werr(const char* filename,
            const char* mode) 
 {
@@ -379,7 +387,7 @@ fopen_werr(const char* filename,
     return f;
 }
 
-void
+static void
 add_chain_groups(const char* cmd) 
 {
     int err = 0;
@@ -415,7 +423,7 @@ add_chain_groups(const char* cmd)
     }
 }
 
-void
+static void
 add_select(const char* cmd) 
 {
     ++n_select;
@@ -431,7 +439,7 @@ add_select(const char* cmd)
     }
 }
 
-void
+static void
 add_unknown_option(const char *optarg)
 {
     if (strcmp(optarg, "skip") == 0) {
@@ -670,12 +678,12 @@ main(int argc,
             add_chain_groups(optarg);
             break;
         case 't':
-#if USE_THREADS
-            parameters.n_threads = atoi(optarg);
-            if (parameters.n_threads < 1) abort_msg("Number of threads must be 1 or larger.");
-#else
-            abort_msg("Option '-t' only defined if program compiled with thread support.");
-#endif
+            if (USE_THREADS) {
+                parameters.n_threads = atoi(optarg);
+                if (parameters.n_threads < 1) abort_msg("Number of threads must be 1 or larger.");
+            } else {
+                abort_msg("Option '-t' only defined if program compiled with thread support.");
+            }
             break;
         case ':':
             abort_msg("Option '-%c' missing argument.", optopt);
@@ -698,7 +706,7 @@ main(int argc,
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.");
     if (opt_set['c'] && static_config) abort_msg("The options -c and --radii cannot be combined");
     if (opt_set['O'] && static_config) abort_msg("The options -O and --radii cannot be combined");
-    if (opt_set['c'] && opt_set['O']) abort_msg("The option -c and -O can't be combined");
+    if (opt_set['c'] && opt_set['O']) abort_msg("The options -c and -O can't be combined");
     if (printrsa && (opt_set['c'] || opt_set['O'])) {
         freesasa_warn("Will skip REL columns in RSA when custom atomic radii selected.");
     }

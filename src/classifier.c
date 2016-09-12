@@ -582,8 +582,7 @@ read_atoms(struct freesasa_classifier *c,
            FILE *input,
            struct file_range fi)
 {
-    size_t blen = 100;
-    char *line = NULL, buf[blen];
+    char *line = NULL;
     int ret = FREESASA_SUCCESS, nl;
     fseek(input, fi.begin, SEEK_SET);
 
@@ -616,7 +615,6 @@ read_name(struct freesasa_classifier *classifier,
 {
     char *buf = NULL, *line = NULL;
     int ret = FREESASA_FAIL;
-    size_t len;
 
     if (fi.begin < 0)
         return FREESASA_SUCCESS;

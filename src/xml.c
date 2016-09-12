@@ -167,7 +167,6 @@ xmlNodePtr
 freesasa_xml_chain(const freesasa_result_node *node, int options)
 {
     xmlNodePtr xml_node = NULL, xml_area = NULL;
-    const char *name = freesasa_result_node_name(node);
     char buf[20];
 
     xml_node = xmlNewNode(NULL, BAD_CAST "chain");

@@ -498,7 +498,6 @@ freesasa_nb_contact(const nb_list *nb,
 
 START_TEST (test_cell) {
     const int n_atoms = 6;
-    const int n_coord = 18;
     static const double v[] = {0,0,0, 1,1,1, -1,1,-1, 2,0,-2, 2,2,0, -5,5,5};
     static const double r[]  = {4,2,2,2,2,2};
     double r_max;
