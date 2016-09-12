@@ -117,7 +117,7 @@ freesasa_json_structure(const freesasa_result_node *node, int options)
 json_object *
 freesasa_node2json(const freesasa_result_node *node, int exclude_type, int options)
 {
-    json_object *obj, *array;
+    json_object *obj, *array = NULL;
     int lowest = 0;
     int type = freesasa_result_node_type(node);
     const freesasa_result_node *child = freesasa_result_node_children(node);
@@ -128,7 +128,7 @@ freesasa_node2json(const freesasa_result_node *node, int exclude_type, int optio
 
     switch (type) {
     case FREESASA_NODE_RESULT:
-        obj = json_object_new_array();
+        obj = array;
         break;
     case FREESASA_NODE_STRUCTURE:
         obj = freesasa_json_structure(node, options);
@@ -152,11 +152,7 @@ freesasa_node2json(const freesasa_result_node *node, int exclude_type, int optio
     
     if (!lowest) {
         while (child) {
-            if (type != FREESASA_NODE_RESULT) {
-                json_object_array_add(array, freesasa_node2json(child, exclude_type, options));
-            } else {
-                json_object_array_add(obj, freesasa_node2json(child, exclude_type, options));
-            }
+            json_object_array_add(array, freesasa_node2json(child, exclude_type, options));
             child = freesasa_result_node_next(child);
         }
     }
