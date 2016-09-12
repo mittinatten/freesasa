@@ -100,6 +100,7 @@ result_node_free(freesasa_result_node *node)
         }
         free(node->name);
         free(node->area);
+
         switch(node->type) {
         case FREESASA_NODE_ATOM:
             free(node->properties.atom.pdb_line);
@@ -144,6 +145,7 @@ result_node_add_area(freesasa_result_node *node,
 
     *node->area = freesasa_nodearea_null;
     node->area->name = node->name;
+
     child = node->children;
     while (child) {
         freesasa_add_nodearea(node->area, child->area);
@@ -226,8 +228,9 @@ result_node_atom(const freesasa_structure *structure,
         goto cleanup;
     }
 
+    atom->area->name = atom->name;
     freesasa_atom_nodearea(atom->area, structure, result, atom_index);
-    
+
     return atom;
 
  cleanup:
@@ -448,6 +451,7 @@ freesasa_result_tree_join(freesasa_result_node *tree1,
         tree1->children = (*tree2)->children;
     }
     // tree1 takes over ownership, tree2 is invalidated.
+    free(*tree2);
     *tree2 = NULL;
 
     return FREESASA_SUCCESS;
@@ -608,13 +612,9 @@ freesasa_atom_nodearea(freesasa_nodearea *area,
     double a = result->sasa[atom_index];
     *area = freesasa_nodearea_null;
 
-    area->name = strdup(freesasa_structure_atom_name(structure, atom_index));
-    if (area->name == NULL) {
-        return FREESASA_FAIL;
-    }
-    area->total = a; 
+    area->total = a;
 
-    if (freesasa_atom_is_backbone(area->name))
+    if (freesasa_atom_is_backbone(freesasa_structure_atom_name(structure, atom_index)))
         area->main_chain = a;
     else area->side_chain = a;
 

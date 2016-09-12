@@ -146,7 +146,7 @@ typedef struct {
     ::freesasa_nodearea.
  */
 typedef struct {
-    char *name;        //!< Name of substructure
+    const char *name;  //!< Name of substructure
     double total;      //!< Total SASA
     double main_chain; //!< Main-chain/Backbone SASA
     double side_chain; //!< Side-chain SASA
