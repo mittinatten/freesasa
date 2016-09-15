@@ -5,7 +5,7 @@
 #include "freesasa.h"
 #include "coord.h"
 
-//! The name of the library, to be used in error messages
+//! The name of the library, to be used in error messages and logging
 extern const char *freesasa_name;
 
 //! The name of the package, to be used in regular output (includes version)
@@ -21,7 +21,12 @@ extern const freesasa_nodearea freesasa_nodearea_null;
 #define fail_msg(...) freesasa_fail_wloc(__FILE__,__LINE__, __VA_ARGS__)
 
 #ifdef _MSC_VER
-#define restrict __restrict
+# define restrict __restrict
+# define inline __inline
+#endif
+
+#ifndef __func__
+#define __func__ __FUNCTION__
 #endif
 
 /**
