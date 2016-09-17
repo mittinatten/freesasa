@@ -191,11 +191,11 @@ parameters2json(const freesasa_parameters *p)
 
 static json_object *
 json_result(freesasa_result_node *result,
-            const freesasa_parameters *parameters,
             int options)
 {
     json_object *obj = json_object_new_object();
     freesasa_node_type exclude_type = FREESASA_NODE_NONE;
+    const freesasa_parameters *parameters = freesasa_result_node_result_parameters(result);
     if (options & FREESASA_OUTPUT_STRUCTURE) exclude_type = FREESASA_NODE_CHAIN;
     if (options & FREESASA_OUTPUT_CHAIN) exclude_type = FREESASA_NODE_RESIDUE;
     if (options & FREESASA_OUTPUT_RESIDUE) exclude_type = FREESASA_NODE_ATOM;
@@ -211,7 +211,6 @@ json_result(freesasa_result_node *result,
 int
 freesasa_write_json(FILE *output,
                     freesasa_result_node *root,
-                    const freesasa_parameters *parameters,
                     int options)
 
 {
@@ -221,13 +220,11 @@ freesasa_write_json(FILE *output,
         *json_root = json_object_new_object();
     freesasa_result_node *child = freesasa_result_node_children(root);
 
-    if (parameters == NULL) parameters = &freesasa_default_parameters;
-
     json_object_object_add(json_root, "source", json_object_new_string(freesasa_string));
     json_object_object_add(json_root, "length-unit", json_object_new_string("Ångström"));
     json_object_object_add(json_root, "results", results);
     while (child) {
-        json_object_array_add(results, json_result(child, parameters, options));
+        json_object_array_add(results, json_result(child, options));
         child = freesasa_result_node_next(child);
     }
 

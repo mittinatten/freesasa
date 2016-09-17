@@ -83,12 +83,14 @@ freesasa_result*
 freesasa_calc(const coord_t *c,
               const double *radii,
               const freesasa_parameters *parameters);
-int
-freesasa_write_log(FILE *log,
-                   freesasa_result_node *root);
+
 int
 freesasa_write_parameters(FILE *log,
                           const freesasa_parameters *parameters);
+
+int
+freesasa_write_log(FILE *log,
+                   freesasa_result_node *root);
 
 /**
     Print RSA-file
@@ -104,7 +106,6 @@ freesasa_write_parameters(FILE *log,
 int
 freesasa_write_rsa(FILE *output,
                    freesasa_result_node *root,
-                   const freesasa_parameters *parameters,
                    int options);
 
 /**
@@ -128,7 +129,6 @@ freesasa_write_rsa(FILE *output,
 int
 freesasa_write_json(FILE *ouput,
                     freesasa_result_node *root,
-                    const freesasa_parameters *parameters,
                     int options);
 /**
     Export to XML
@@ -149,7 +149,6 @@ freesasa_write_json(FILE *ouput,
 int
 freesasa_write_xml(FILE *ouput,
                    freesasa_result_node *root,
-                   const freesasa_parameters *parameters,
                    int options);
 
 /**

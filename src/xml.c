@@ -340,12 +340,12 @@ parameters2xml(const freesasa_parameters *p)
 
 static xmlNodePtr
 xml_result(freesasa_result_node *result,
-           const freesasa_parameters *parameters,
            int options)
 {
     assert(freesasa_result_node_type(result) == FREESASA_NODE_RESULT);
     xmlNodePtr xml_result_node = NULL, xml_structure = NULL, xml_param = NULL;
     freesasa_result_node *child = NULL;
+    const freesasa_parameters *parameters = freesasa_result_node_result_parameters(result);
     int exclude_type = FREESASA_NODE_NONE;
 
     if (options & FREESASA_OUTPUT_STRUCTURE) exclude_type = FREESASA_NODE_CHAIN;
@@ -406,7 +406,6 @@ xml_result(freesasa_result_node *result,
 int
 freesasa_write_xml(FILE *output,
                    freesasa_result_node *root,
-                   const freesasa_parameters *parameters,
                    int options)
 {
     assert(freesasa_result_node_type(root) == FREESASA_NODE_ROOT);
@@ -418,8 +417,6 @@ freesasa_write_xml(FILE *output,
     xmlBufferPtr buf = NULL;
     xmlTextWriterPtr writer = NULL;
     int ret = FREESASA_FAIL;
-
-    if (parameters == NULL) parameters = &freesasa_default_parameters;
 
     doc = xmlNewDoc(BAD_CAST "1.0");
     if (doc == NULL) {
@@ -456,7 +453,7 @@ freesasa_write_xml(FILE *output,
 
     child = freesasa_result_node_children(root);
     while (child) {
-        xml_result_node = xml_result(child, parameters, options);
+        xml_result_node = xml_result(child, options);
         if (xml_result_node == NULL) {
             fail_msg("");
             goto cleanup;

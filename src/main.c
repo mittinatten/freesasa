@@ -343,15 +343,15 @@ print_results(freesasa_result_node *tree)
 {
     int rel = (no_rel ? FREESASA_OUTPUT_SKIP_REL : 0);
 
-    if (printlog)  freesasa_export_tree(output,     tree, &parameters, FREESASA_LOG);
+    if (printlog)  freesasa_export_tree(output,     tree, FREESASA_LOG);
     if (per_residue_type)
-        freesasa_export_tree(per_residue_type_file, tree, &parameters, FREESASA_RES);
+        freesasa_export_tree(per_residue_type_file, tree, FREESASA_RES);
     if (per_residue)
-        freesasa_export_tree(per_residue_file,      tree, &parameters, FREESASA_SEQ);
-    if (printpdb)  freesasa_export_tree(output_pdb, tree, &parameters, FREESASA_PDB);
-    if (printrsa)  freesasa_export_tree(rsa_file,   tree, &parameters, FREESASA_RSA | rel);
-    if (printjson) freesasa_export_tree(json_file,  tree, &parameters, FREESASA_JSON | output_depth | rel);
-    if (printxml)  freesasa_export_tree(xml_file,   tree, &parameters, FREESASA_XML | output_depth | rel);
+        freesasa_export_tree(per_residue_file,      tree, FREESASA_SEQ);
+    if (printpdb)  freesasa_export_tree(output_pdb, tree, FREESASA_PDB);
+    if (printrsa)  freesasa_export_tree(rsa_file,   tree, FREESASA_RSA | rel);
+    if (printjson) freesasa_export_tree(json_file,  tree, FREESASA_JSON | output_depth | rel);
+    if (printxml)  freesasa_export_tree(xml_file,   tree, FREESASA_XML | output_depth | rel);
 }
 
 static FILE*

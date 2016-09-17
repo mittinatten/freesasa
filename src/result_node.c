@@ -423,6 +423,7 @@ freesasa_result_tree_add_result(freesasa_result_node *tree,
 
     result_node->type = FREESASA_NODE_RESULT;
     result_node->properties.result.n_structures = 1;
+    result_node->properties.result.parameters = result->parameters;
     result_node->properties.result.classified_by = strdup(freesasa_structure_classifier_name(structure));
     if (result_node->properties.result.classified_by == NULL) {
         mem_fail();
@@ -651,6 +652,13 @@ freesasa_result_node_structure_selections(const freesasa_result_node *node)
 {
     assert(node->type == FREESASA_NODE_STRUCTURE);
     return (const freesasa_selection **) node->properties.structure.selection;
+}
+
+const freesasa_parameters *
+freesasa_result_node_result_parameters(const freesasa_result_node *node)
+{
+    assert(node->type == FREESASA_NODE_RESULT);
+    return &node->properties.result.parameters;
 }
 
 int

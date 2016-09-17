@@ -106,7 +106,6 @@ rsa_print_residue(FILE *output,
 int
 freesasa_write_rsa(FILE *output,
                    freesasa_result_node *tree,
-                   const freesasa_parameters *parameters,
                    int options)
 {
     assert(output);
@@ -118,7 +117,9 @@ freesasa_write_rsa(FILE *output,
     const freesasa_nodearea *abs, *reference;
     freesasa_nodearea rel;
     int res_index, chain_index;
+    const freesasa_parameters *parameters;
 
+    parameters = freesasa_result_node_result_parameters(result_node);
     structure_node = freesasa_result_node_children(result_node);
     chain = freesasa_result_node_children(structure_node);
 

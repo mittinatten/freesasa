@@ -417,11 +417,9 @@ freesasa_write_log(FILE *log,
 int
 freesasa_export_tree(FILE *file,
                      freesasa_result_node *root,
-                     const freesasa_parameters *parameters,
                      int options)
 {
     assert(freesasa_result_node_type(root) == FREESASA_NODE_ROOT);
-    if (parameters == NULL) parameters = &freesasa_default_parameters;
     if (options & FREESASA_LOG) {
         return freesasa_write_log(file, root);
     }
@@ -435,14 +433,14 @@ freesasa_export_tree(FILE *file,
         return freesasa_write_pdb(file, root);
     }
     if (options & FREESASA_RSA) {
-        return freesasa_write_rsa(file, root, parameters, options);
+        return freesasa_write_rsa(file, root, options);
     }
     if (options & FREESASA_JSON) {
-        if (USE_JSON) return freesasa_write_json(file, root, parameters, options);
+        if (USE_JSON) return freesasa_write_json(file, root, options);
         else return fail_msg("Library was built without support for JSON output.");
     }
     if (options & FREESASA_XML) {
-        if (USE_XML) return freesasa_write_xml(file, root, parameters, options);
+        if (USE_XML) return freesasa_write_xml(file, root, options);
         else return fail_msg("Library was built without support for XML output.");
     }
     return fail_msg("No valid options given");

@@ -1022,7 +1022,7 @@ freesasa_result_tree_join(freesasa_result_node *tree1,
 
     @param output Output file.
     @param root Structure tree containing results (generated using 
-      freesasa_result2tree()).
+      freesasa_result2tree()). Node of type ::FREESASA_NODE_ROOT.
     @param parameters Parameters used in the calculated, printed for 
       reference in some formats.
     @param options Bitfield specifying output format, see 
@@ -1031,7 +1031,6 @@ freesasa_result_tree_join(freesasa_result_node *tree1,
 int
 freesasa_export_tree(FILE *output,
                      freesasa_result_node *root,
-                     const freesasa_parameters *parameters,
                      int options);
 
 /**
@@ -1110,7 +1109,7 @@ freesasa_result_node_name(const freesasa_result_node *node);
 /**
     The name of the classifier used to generate the node.
 
-    @param node The node (has to be of type ::FREESASA_NODE_ROOT)
+    @param node A node of type ::FREESASA_NODE_RESULT.
     @return The name of the classifier
  */
 const char*
@@ -1119,7 +1118,7 @@ freesasa_result_node_classified_by(const freesasa_result_node *node);
 /**
     Is atom polar.
 
-    @param node The atom (has to be of type ::FREESASA_NODE_ATOM).
+    @param node A node of type ::FREESASA_NODE_ATOM.
     @return 1 if polar, 0 else.
  */
 int
@@ -1128,7 +1127,7 @@ freesasa_result_node_atom_is_polar(const freesasa_result_node *node);
 /**
     Does atom belong to the main chain/backbone.
 
-    @param node The atom (has to be of type ::FREESASA_NODE_ATOM).
+    @param node A node of type ::FREESASA_NODE_ATOM.
     @return 1 if mainchain, 0 else.
  */
 int
@@ -1137,7 +1136,7 @@ freesasa_result_node_atom_is_mainchain(const freesasa_result_node *node);
 /**
     Atom radius.
 
-    @param node The atom (has to be of type ::FREESASA_NODE_ATOM).
+    @param node A node of type ::FREESASA_NODE_ATOM.
     @return The radius.
  */
 double
@@ -1146,7 +1145,7 @@ freesasa_result_node_atom_radius(const freesasa_result_node *node);
 /**
     Line in PDB atom was generated from.
 
-    @param node The atom (has to be of type ::FREESASA_NODE_ATOM).
+    @param node A node of type ::FREESASA_NODE_ATOM.
     @return The line. NULL if atom wasn't taken from PDB file.
  */
 const char*
@@ -1155,7 +1154,7 @@ freesasa_result_node_atom_pdb_line(const freesasa_result_node *node);
 /**
     Residue number.
 
-    @param node The residue (has to be of type ::FREESASA_NODE_RESIDUE).
+    @param node A node of type ::FREESASA_NODE_RESIDUE.
     @return String with residue number.
  */
 const char *
@@ -1164,7 +1163,7 @@ freesasa_result_node_residue_number(const freesasa_result_node *node);
 /**
     Number of atoms in a residue.
 
-    @param node The residue (has to be of type ::FREESASA_NODE_RESIDUE).
+    @param node A node of type ::FREESASA_NODE_RESIDUE.
     @return Number of atoms.
  */
 int
@@ -1174,7 +1173,7 @@ freesasa_result_node_residue_n_atoms(const freesasa_result_node *node);
     The reference area for a node from the classifier used to
     generate the tree.
 
-    @param node The node (has to be of type ::FREESASA_NODE_RESIDUE)
+    @param node A node of type ::FREESASA_NODE_RESIDUE.
     @return The reference area. NULL if area not available or if node
       is not a residue.
  */
@@ -1184,7 +1183,7 @@ freesasa_result_node_residue_reference(const freesasa_result_node *node);
 /**
     The number of residues in a chain.
 
-    @param node The chain (has to be of type ::FREESASA_NODE_CHAIN).
+    @param node A node of type ::FREESASA_NODE_CHAIN.
     @return Number of residues.
  */
 int
@@ -1193,7 +1192,7 @@ freesasa_result_node_chain_n_residues(const freesasa_result_node *node);
 /**
     The number of chains in a structure.
 
-    @param node The structure (has to be of type ::FREESASA_NODE_STRUCTURE).
+    @param node A node of type ::FREESASA_NODE_STRUCTURE.
     @return Number of chains.
  */
 int
@@ -1202,7 +1201,7 @@ freesasa_result_node_structure_n_chains(const freesasa_result_node *node);
 /**
     The number of atoms in a structure.
 
-    @param node The structure (has to be of type ::FREESASA_NODE_STRUCTURE).
+    @param node A node of type ::FREESASA_NODE_STRUCTURE.
     @return Number of atoms.
  */
 int
@@ -1211,7 +1210,7 @@ freesasa_result_node_structure_n_atoms(const freesasa_result_node *node);
 /**
     All chain labels in a structure.
 
-    @param node The structure (has to be of type ::FREESASA_NODE_STRUCTURE).
+    @param node A node of type ::FREESASA_NODE_STRUCTURE.
     @return Chain labels as null-terminated string.
  */
 const char *
@@ -1220,7 +1219,7 @@ freesasa_result_node_structure_chain_labels(const freesasa_result_node *node);
 /**
     Model number of a structure (from input PDB)
 
-    @param node The structure (has to be of type ::FREESASA_NODE_STRUCTURE).
+    @param node A node of type ::FREESASA_NODE_STRUCTURE.
     @return Model number.
  */
 int
@@ -1232,7 +1231,7 @@ freesasa_result_node_structure_model(const freesasa_result_node *node);
     Useful for legacy code that depends on the ::freesasa_result-type
     for output, etc.
 
-    @param node The structure (has to be of type ::FREESASA_NODE_STRUCTURE).
+    @param node A node of type ::FREESASA_NODE_STRUCTURE.
     @return The results.
  */
 const freesasa_result *
@@ -1265,6 +1264,14 @@ freesasa_result_node_structure_selections(const freesasa_result_node *node);
 int
 freesasa_result_node_structure_add_selection(freesasa_result_node *node,
                                              const freesasa_selection *selection);
+/**
+    Parameter values used to calculate result.
+
+    @param node A node of type ::FREESASA_NODE_RESULT
+    @return The parameters.
+ */
+const freesasa_parameters *
+freesasa_result_node_result_parameters(const freesasa_result_node *node);
 
 // Deprecated functions below, from 1.x API
 

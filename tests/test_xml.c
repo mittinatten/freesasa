@@ -112,13 +112,13 @@ START_TEST (test_libxmlerr)
     freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 1; i < 100; ++i) {
         local_set_fail_after(i);
-        ret = freesasa_write_xml(devnull, tree, NULL, FREESASA_OUTPUT_ATOM);
+        ret = freesasa_write_xml(devnull, tree, FREESASA_OUTPUT_ATOM);
         local_set_fail_after(0);
         ck_assert_int_eq(ret, FREESASA_FAIL);
     }
     for (int i = 1; i < 29; ++i) {
         local_set_fail_after(i);
-        ret = freesasa_write_xml(devnull, tree, NULL, FREESASA_OUTPUT_STRUCTURE);
+        ret = freesasa_write_xml(devnull, tree, FREESASA_OUTPUT_STRUCTURE);
         local_set_fail_after(0);
         ck_assert_int_eq(ret, FREESASA_FAIL);
     }
