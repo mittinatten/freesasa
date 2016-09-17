@@ -280,26 +280,6 @@ get_structures(FILE *input, int *n)
    return structures;
 }
 
-static void
-print_selections(const freesasa_structure *structure,
-                 const freesasa_result *result)
-{
-    if (n_select > 0) {
-        fprintf(output,"\nSELECTIONS\n");
-        for (int c = 0; c < n_select; ++c) {
-            double a;
-            char sel_name[FREESASA_MAX_SELECTION_NAME+1];
-            if (freesasa_select_area(select_cmd[c], sel_name, &a, structure,
-                                     result)
-                == FREESASA_SUCCESS) {
-                fprintf(output, "%s : %10.2f\n", sel_name, a);
-            } else {
-                abort_msg("Illegal selection");
-            }
-        }
-    }
-}
-
 static freesasa_result_node *
 run_analysis(FILE *input,
              const char *name)
@@ -329,15 +309,11 @@ run_analysis(FILE *input,
         tmp_tree = freesasa_calc_tree(structures[i], &parameters, name_i);
         if (tmp_tree == NULL) abort_msg("Can't calculate SASA.");
 
-        const freesasa_result_node *structure_node =
+        freesasa_result_node *structure_node =
             freesasa_result_node_children(freesasa_result_node_children(tmp_tree));
         const freesasa_result *result = freesasa_result_node_structure_result(structure_node);
 
-        // log results
-        if (printlog) {
-            if (n > 1) fprintf(output, "\n\n####################\n");
-            freesasa_export_tree(output, tmp_tree, &parameters, FREESASA_LOG);
-        }
+        // Log results, these should be moved out eventually
         if (per_residue_type) {
             if (n > 1) fprintf(per_residue_type_file, "\n## %s\n", name_i);
             freesasa_per_residue_type(per_residue_type_file, result, structures[i]);
@@ -347,9 +323,17 @@ run_analysis(FILE *input,
             freesasa_per_residue(per_residue_file, result, structures[i]);
         }
 
-        // output selections (has to be here as long as select
-        // interface doesn't work with trees)
-        print_selections(structures[i], result);
+        if (n_select > 0) {
+            for (int c = 0; c < n_select; ++c) {
+                freesasa_selection *sel = freesasa_selection_new(select_cmd[c], structures[i], result);
+                if (sel != NULL) {
+                    freesasa_result_node_structure_add_selection(structure_node, sel);
+                } else {
+                    abort_msg("Illegal selection");
+                }
+                freesasa_selection_free(sel);
+            }
+        }
 
         if (freesasa_result_tree_join(tree, &tmp_tree) != FREESASA_SUCCESS) {
             abort_msg("Failed joining result-trees");
@@ -364,10 +348,11 @@ run_analysis(FILE *input,
 }
 
 static void
-print_results(const freesasa_result_node *tree)
+print_results(freesasa_result_node *tree)
 {
     int rel = (no_rel ? FREESASA_OUTPUT_SKIP_REL : 0);
 
+    if (printlog)  freesasa_export_tree(output,     tree, &parameters, FREESASA_LOG);
     if (printpdb)  freesasa_export_tree(output_pdb, tree, &parameters, FREESASA_PDB);
     if (printrsa)  freesasa_export_tree(rsa_file,   tree, &parameters, FREESASA_RSA | rel);
     if (printjson) freesasa_export_tree(json_file,  tree, &parameters, FREESASA_JSON | output_depth | rel);

@@ -77,7 +77,7 @@ rsa_print_residue(FILE *output,
                   int iaa,
                   const freesasa_nodearea *abs,
                   const freesasa_nodearea *rel,
-                  const freesasa_result_node *residue)
+                  freesasa_result_node *residue)
 {
     const char *resi_str;
     char chain;
@@ -105,14 +105,14 @@ rsa_print_residue(FILE *output,
 
 int
 freesasa_write_rsa(FILE *output,
-                   const freesasa_result_node *tree,
+                   freesasa_result_node *tree,
                    const freesasa_parameters *parameters,
                    int options)
 {
     assert(output);
     assert(tree);
 
-    const freesasa_result_node *residue, *chain, *structure_node,
+    freesasa_result_node *residue, *chain, *structure_node,
         *result_node = freesasa_result_node_children(tree);
 
     const freesasa_nodearea *abs, *reference;

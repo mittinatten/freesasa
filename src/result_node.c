@@ -30,6 +30,7 @@ struct structure_properties {
     int model;
     char *chain_labels;
     freesasa_result *result;
+    freesasa_selection **selection; // NULL terminated array
 };
 
 struct result_properties {
@@ -112,6 +113,14 @@ result_node_free(freesasa_result_node *node)
         case FREESASA_NODE_STRUCTURE:
             free(node->properties.structure.chain_labels);
             freesasa_result_free(node->properties.structure.result);
+            freesasa_selection **sel = node->properties.structure.selection;
+            if (sel) {
+                while(*sel) {
+                    freesasa_selection_free(*sel);
+                    ++sel;
+                }
+            }
+            free(node->properties.structure.selection);
             break;
         case FREESASA_NODE_RESULT:
             free(node->properties.result.classified_by);
@@ -342,10 +351,11 @@ result_node_structure(const freesasa_structure *structure,
     result_node->properties.structure.n_chains = freesasa_structure_n_chains(structure);
     result_node->properties.structure.n_atoms = freesasa_structure_n(structure);
     result_node->properties.structure.result = NULL;
+    result_node->properties.structure.selection = NULL;
     result_node->properties.structure.chain_labels = strdup(freesasa_structure_chain_labels(structure));
 
     if (result_node->properties.structure.chain_labels == NULL) {
-        fail_msg("");
+        mem_fail();
         goto cleanup;
     }
 
@@ -355,7 +365,7 @@ result_node_structure(const freesasa_structure *structure,
         fail_msg("");
         goto cleanup;
     }
-    
+
     if (result_node_gen_children(result_node, structure, result, 0,
                                     freesasa_structure_n_chains(structure)-1,
                                     result_node_chain) == NULL) {
@@ -475,20 +485,20 @@ freesasa_result_node_area(const freesasa_result_node *node)
     return node->area;
 }
 
-const freesasa_result_node *
-freesasa_result_node_children(const freesasa_result_node *node)
+freesasa_result_node *
+freesasa_result_node_children(freesasa_result_node *node)
 {
     return node->children;
 }
 
-const freesasa_result_node *
-freesasa_result_node_next(const freesasa_result_node *node)
+freesasa_result_node *
+freesasa_result_node_next(freesasa_result_node *node)
 {
     return node->next;
 }
 
-const freesasa_result_node *
-freesasa_result_node_parent(const freesasa_result_node *node)
+freesasa_result_node *
+freesasa_result_node_parent(freesasa_result_node *node)
 {
     return node->parent;
 }
@@ -601,6 +611,46 @@ freesasa_result_node_structure_result(const freesasa_result_node *node)
 {
     assert(node->type == FREESASA_NODE_STRUCTURE);
     return node->properties.structure.result;
+}
+
+int
+freesasa_result_node_structure_add_selection(freesasa_result_node *node,
+                                             const freesasa_selection *selection)
+{
+    assert(node->type == FREESASA_NODE_STRUCTURE);
+
+    int n_selections = 0;
+    freesasa_selection **sel = node->properties.structure.selection, **sel2;
+
+    // count number of selections
+    if (sel) {
+        sel2 = sel;
+        while(*sel2) {
+            ++n_selections;
+            ++sel2;
+        }
+    }
+
+    sel = realloc(sel, sizeof(freesasa_selection*) * (n_selections + 2));
+    if (sel == NULL) {
+        return mem_fail();
+    }
+
+    sel[n_selections] = freesasa_selection_clone(selection);
+    if (sel[n_selections] == NULL) {
+        return fail_msg("");
+    }
+    sel[n_selections+1] = NULL;
+    node->properties.structure.selection = sel;
+
+    return FREESASA_SUCCESS;
+}
+
+const freesasa_selection **
+freesasa_result_node_structure_selections(const freesasa_result_node *node)
+{
+    assert(node->type == FREESASA_NODE_STRUCTURE);
+    return (const freesasa_selection **) node->properties.structure.selection;
 }
 
 int

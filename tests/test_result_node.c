@@ -4,10 +4,10 @@
 #include "tools.h"
 
 static void
-test_tree(const freesasa_result_node *structure,
+test_tree(freesasa_result_node *structure,
           const freesasa_result *result)
 {
-    const freesasa_result_node *next, *chain, *residue, *atom;
+    freesasa_result_node *next, *chain, *residue, *atom;
     
     const freesasa_nodearea *area;
     ck_assert_ptr_ne((chain = freesasa_result_node_children(structure)), NULL);
@@ -60,7 +60,7 @@ START_TEST (test_result_node)
     freesasa_structure *structure = freesasa_structure_from_pdb(file, NULL, 0);
     freesasa_result *result = freesasa_calc_structure(structure, NULL);
     freesasa_result_node *tree = freesasa_result_tree_new(), *tree2 = freesasa_result_tree_new();
-    const freesasa_result_node *rn;
+    freesasa_result_node *rn;
 
     ck_assert_ptr_ne(tree, NULL);
     ck_assert_ptr_ne(tree2, NULL);

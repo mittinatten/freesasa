@@ -8,7 +8,7 @@
 #include "tools.h"
 
 extern json_object *
-freesasa_node2json(const freesasa_result_node *node, int exclude_type);
+freesasa_node2json(freesasa_result_node *node, int exclude_type);
 
 static int
 compare_nodearea(json_object *obj, const freesasa_nodearea *ref, int is_abs)
@@ -53,7 +53,7 @@ compare_nodearea(json_object *obj, const freesasa_nodearea *ref, int is_abs)
 }
 
 int
-test_atom(const freesasa_result_node *node)
+test_atom(freesasa_result_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
     json_object *atom = freesasa_node2json(node, FREESASA_NODE_NONE);
@@ -90,7 +90,7 @@ test_atom(const freesasa_result_node *node)
 }
 
 int
-test_residue(const freesasa_result_node *node)
+test_residue(freesasa_result_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
     json_object *residue = freesasa_node2json(node, FREESASA_NODE_NONE);
@@ -130,7 +130,7 @@ test_residue(const freesasa_result_node *node)
 }
 
 int
-test_chain(const freesasa_result_node *node, const freesasa_result *result)
+test_chain(freesasa_result_node *node, const freesasa_result *result)
 {
     ck_assert_ptr_ne(node, NULL);
     json_object *chain = freesasa_node2json(node, FREESASA_NODE_NONE);
@@ -165,7 +165,7 @@ test_chain(const freesasa_result_node *node, const freesasa_result *result)
 }
 
 int
-test_structure(const freesasa_result_node *node)
+test_structure(freesasa_result_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
     freesasa_nodearea structure_area = {
@@ -215,11 +215,11 @@ START_TEST (test_json)
     freesasa_result *result = freesasa_calc_structure(ubq, NULL);
     freesasa_result_node *tree = freesasa_result_tree_new();
     freesasa_result_tree_add_result(tree, result, ubq, "test");
-    const freesasa_result_node *result_node = freesasa_result_node_children(tree);
-    const freesasa_result_node *structures = freesasa_result_node_children(result_node);
-    const freesasa_result_node *chains = freesasa_result_node_children(structures);
-    const freesasa_result_node *residues = freesasa_result_node_children(chains);
-    const freesasa_result_node *atoms = freesasa_result_node_children(residues);
+    freesasa_result_node *result_node = freesasa_result_node_children(tree);
+    freesasa_result_node *structures = freesasa_result_node_children(result_node);
+    freesasa_result_node *chains = freesasa_result_node_children(structures);
+    freesasa_result_node *residues = freesasa_result_node_children(chains);
+    freesasa_result_node *atoms = freesasa_result_node_children(residues);
 
     ck_assert(test_atom(atoms));
     ck_assert(test_residue(residues));

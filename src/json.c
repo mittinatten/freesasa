@@ -13,7 +13,8 @@
     return values. Therefore these errors are not caught. */
 
 json_object *
-freesasa_json_atom(const freesasa_result_node *node, int options)
+freesasa_json_atom(freesasa_result_node *node,
+                   int options)
 {
     assert(node);
     json_object *atom = json_object_new_object();
@@ -56,7 +57,8 @@ freesasa_json_nodearea(const freesasa_nodearea *area)
 }
 
 json_object *
-freesasa_json_residue(const freesasa_result_node *node, int options)
+freesasa_json_residue(freesasa_result_node *node,
+                      int options)
 {
     assert(node);
     assert(freesasa_result_node_type(node) == FREESASA_NODE_RESIDUE);
@@ -88,7 +90,8 @@ freesasa_json_residue(const freesasa_result_node *node, int options)
 }
 
 json_object *
-freesasa_json_chain(const freesasa_result_node *node, int options)
+freesasa_json_chain(freesasa_result_node *node,
+                    int options)
 {
     json_object *obj = json_object_new_object();
     const char *name = freesasa_result_node_name(node);
@@ -103,7 +106,8 @@ freesasa_json_chain(const freesasa_result_node *node, int options)
 }
 
 json_object *
-freesasa_json_structure(const freesasa_result_node *node, int options)
+freesasa_json_structure(freesasa_result_node *node,
+                        int options)
 {
     json_object *obj = json_object_new_object();
 
@@ -115,12 +119,14 @@ freesasa_json_structure(const freesasa_result_node *node, int options)
 }
 
 json_object *
-freesasa_node2json(const freesasa_result_node *node, int exclude_type, int options)
+freesasa_node2json(freesasa_result_node *node,
+                   int exclude_type,
+                   int options)
 {
     json_object *obj, *array = NULL;
     int lowest = 0;
     int type = freesasa_result_node_type(node);
-    const freesasa_result_node *child = freesasa_result_node_children(node);
+    freesasa_result_node *child = freesasa_result_node_children(node);
     if (child) {
         if (freesasa_result_node_type(child) == exclude_type) lowest = 1;
         if (!lowest) array = json_object_new_array();
@@ -184,7 +190,7 @@ parameters2json(const freesasa_parameters *p)
 }
 
 static json_object *
-json_result(const freesasa_result_node *result,
+json_result(freesasa_result_node *result,
             const freesasa_parameters *parameters,
             int options)
 {
@@ -202,10 +208,9 @@ json_result(const freesasa_result_node *result,
     return obj;
 }
 
-
 int
 freesasa_write_json(FILE *output,
-                    const freesasa_result_node *root,
+                    freesasa_result_node *root,
                     const freesasa_parameters *parameters,
                     int options)
 
@@ -214,7 +219,7 @@ freesasa_write_json(FILE *output,
 
     json_object *results = json_object_new_array(),
         *json_root = json_object_new_object();
-    const freesasa_result_node *child = freesasa_result_node_children(root);
+    freesasa_result_node *child = freesasa_result_node_children(root);
 
     if (parameters == NULL) parameters = &freesasa_default_parameters;
 

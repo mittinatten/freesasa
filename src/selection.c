@@ -11,6 +11,13 @@
 #include "freesasa_internal.h"
 #include "pdb.h"
 
+struct freesasa_selection {
+    char *name;
+    char *command;
+    double area;
+    int n_atoms;
+};
+
 struct selection {
     const char* name;
     int *atom;
@@ -515,12 +522,12 @@ select_atoms(struct selection* selection,
     return FREESASA_SUCCESS;
 }
 
-int
-freesasa_select_area(const char *command,
-                     char *name,
-                     double *area,
-                     const freesasa_structure *structure,
-                     const freesasa_result *result)
+static int
+select_area_impl(const char *command,
+                 char *name,
+                 double *area,
+                 const freesasa_structure *structure,
+                 const freesasa_result *result)
 {
     assert(name); assert(area); 
     assert(command); assert(structure); assert(result);
@@ -529,7 +536,7 @@ freesasa_select_area(const char *command,
     struct expression *expression = NULL;
     const int maxlen = FREESASA_MAX_SELECTION_NAME;
     double sasa = 0;
-    int err = 0, warn = 0;
+    int err = 0, warn = 0, n_atoms = 0;
     *area = 0;
     name[0] = '\0';
     
@@ -545,6 +552,7 @@ freesasa_select_area(const char *command,
             warn = 1; // proceed with calculation, print warning later
         case FREESASA_SUCCESS: {
             for (int j = 0; j < selection->size; ++j) {
+                ++n_atoms;
                 sasa += selection->atom[j]*result->sasa[j];
             }
             
@@ -574,7 +582,139 @@ freesasa_select_area(const char *command,
         return freesasa_fail("in %s(): Problems parsing expression '%s'.",__func__,command);
     if (warn)
         return freesasa_warn("in %s(): There were warnings.",__func__);
-    return FREESASA_SUCCESS;
+    return n_atoms;
+}
+
+static freesasa_selection *
+freesasa_selection_alloc(const char *name, const char *command)
+{
+    freesasa_selection *selection = malloc(sizeof(freesasa_selection));
+
+    if (selection == NULL) {
+        mem_fail();
+        return NULL;
+    }
+
+    selection->name = NULL;
+    selection->command = NULL;
+    selection->area = 0;
+    selection->n_atoms = 0;
+
+    selection->name = strdup(name);
+    if (selection->name == NULL) {
+        mem_fail();
+        goto cleanup;
+    }
+
+    selection->command = strdup(command);
+    if (selection->command == NULL) {
+        mem_fail();
+        goto cleanup;
+    }
+
+    return selection;
+
+ cleanup:
+    freesasa_selection_free(selection);
+    return NULL;
+}
+
+void
+freesasa_selection_free(freesasa_selection *selection)
+{
+    if (selection != NULL) {
+        free(selection->name);
+        free(selection->command);
+        free(selection);
+    }
+}
+
+freesasa_selection *
+freesasa_selection_clone(const freesasa_selection *src)
+{
+    freesasa_selection *cpy = freesasa_selection_alloc(src->name, src->command);
+    if (cpy == NULL) {
+        fail_msg("");
+        goto cleanup;
+    }
+    cpy->area = src->area;
+    cpy->n_atoms = src->n_atoms;
+
+    return cpy;
+
+ cleanup:
+    freesasa_selection_free(cpy);
+    return NULL;
+}
+
+const char *
+freesasa_selection_name(const freesasa_selection* selection)
+{
+    assert(selection);
+    return selection->name;
+}
+
+const char *
+freesasa_selection_command(const freesasa_selection* selection)
+{
+    assert(selection);
+    return selection->name;
+}
+
+double
+freesasa_selection_area(const freesasa_selection *selection)
+{
+    assert(selection);
+    return selection->area;
+}
+
+int
+freesasa_selection_n_atoms(const freesasa_selection* selection)
+{
+    assert(selection);
+    return selection->area;
+}
+
+freesasa_selection *
+freesasa_selection_new(const char *command,
+                       const freesasa_structure *structure,
+                       const freesasa_result *result)
+{
+    char name[FREESASA_MAX_SELECTION_NAME];
+    double area;
+    freesasa_selection *selection;
+    int n_atoms;
+
+    n_atoms = select_area_impl(command, name, &area, structure, result);
+
+    if (n_atoms == FREESASA_FAIL) {
+        fail_msg("");
+        return NULL;
+    }
+
+    selection = freesasa_selection_alloc(name, command);
+    if (selection == NULL) {
+        mem_fail();
+        return NULL;
+    }
+
+    selection->area = area;
+    selection->n_atoms = n_atoms;
+
+    return selection;
+}
+
+
+int
+freesasa_select_area(const char *command,
+                     char *name,
+                     double *area,
+                     const freesasa_structure *structure,
+                     const freesasa_result *result)
+{
+    int ret = select_area_impl(command,name, area, structure, result);
+    if (ret >= 0) return FREESASA_SUCCESS;
+    return ret;
 }
 
 //for debugging

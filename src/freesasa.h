@@ -174,7 +174,7 @@ typedef enum {
  */
 typedef struct freesasa_result_node freesasa_result_node;
 
-
+typedef struct freesasa_selection freesasa_selection;
 /**
     Struct that can be used to determine classes (polar/apolar) and
     radii of atoms. Initiated from
@@ -341,27 +341,61 @@ freesasa_classifier_name(const freesasa_classifier *classifier);
     specified by the command the area of those atoms is summed up
     using the ::freesasa_result pointer.
 
+    The return value should be freed with freesasa_selection_free().
+
     @see @ref Selection
 
     @param command The selection
-    @param name The name of the selection is stored here, it should be
-      able to store a string of length ::FREESASA_MAX_SELECTION_NAME.
-    @param area The area of the selection is stored here
     @param structure The structure to select from
     @param result The results to integrate
+    @return The selection. NULL if something went wrong. Use
+      freesasa_selection_name(), freesasa_selection_command(),
+      freesasa_selection_area() and freesasa_selection_n_atoms() to
+      access results of selection.
+*/
+freesasa_selection *
+freesasa_selection_new(const char *command,
+                       const freesasa_structure *structure,
+                       const freesasa_result *result);
 
-    @return ::FREESASA_SUCCESS upon successful selection.
-       ::FREESASA_WARN if some illegal selections that could be
-       ignored were encountered (see printed
-       warnings). ::FREESASA_FAIL if syntax error or memory failure.
+void
+freesasa_selection_free(freesasa_selection *selection);
+
+/**
+    Name of the selection
+
+    @param selection The selection
+    @return the name
+ */
+const char *
+freesasa_selection_name(const freesasa_selection* selection);
+
+/**
+    Command that was used to generate the selection
+
+    @param selection The selection
+    @return The command
+ */
+const char *
+freesasa_selection_command(const freesasa_selection* selection);
+
+/**
+    Area of the selection
+
+    @param selection The selection
+    @return The area
+ */
+double
+freesasa_selection_area(const freesasa_selection* selection);
+
+/**
+    Number of atoms that matched the selection
+
+    @param selection The selection
+    @return Number of atoms
  */
 int
-freesasa_select_area(const char *command,
-                     char *name,
-                     double *area,
-                     const freesasa_structure *structure,
-                     const freesasa_result *result);
-
+freesasa_selection_n_atoms(const freesasa_selection* selection);
 
 /**
     Print SASA for each chain.
@@ -1019,7 +1053,7 @@ freesasa_result_tree_join(freesasa_result_node *tree1,
 */
 int
 freesasa_export_tree(FILE *output,
-                     const freesasa_result_node *root,
+                     freesasa_result_node *root,
                      const freesasa_parameters *parameters,
                      int options);
 
@@ -1057,8 +1091,8 @@ freesasa_result_node_area(const freesasa_result_node *node);
     @return Pointer to the first child of a node. NULL if the node has no
       children.
  */
-const freesasa_result_node *
-freesasa_result_node_children(const freesasa_result_node *node);
+freesasa_result_node *
+freesasa_result_node_children(freesasa_result_node *node);
 
 /**
     Next sibling of a node.
@@ -1066,8 +1100,8 @@ freesasa_result_node_children(const freesasa_result_node *node);
     @param node The node.
     @return The next node, NULL if this is the last node.
  */
-const freesasa_result_node *
-freesasa_result_node_next(const freesasa_result_node *node);
+freesasa_result_node *
+freesasa_result_node_next(freesasa_result_node *node);
 
 /**
     The parent of a node.
@@ -1075,8 +1109,8 @@ freesasa_result_node_next(const freesasa_result_node *node);
     @param node The node.
     @return The parent node. NULL if the node has no parent.
  */
-const freesasa_result_node *
-freesasa_result_node_parent(const freesasa_result_node *node);
+freesasa_result_node *
+freesasa_result_node_parent(freesasa_result_node *node);
 
 /**
     The type of a node.
@@ -1227,6 +1261,34 @@ freesasa_result_node_structure_model(const freesasa_result_node *node);
 const freesasa_result *
 freesasa_result_node_structure_result(const freesasa_result_node *node);
 
+/**
+    Selection results for a structure
+
+    Generated using freesasa_result_node_structure_add_selection().
+
+    @param node A node of type ::FREESASA_NODE_STRUCTURE.
+    @return A null-terminated array of pointers to selections. NULL if
+      no selections were associated with structure.
+ */
+const freesasa_selection **
+freesasa_result_node_structure_selections(const freesasa_result_node *node);
+
+/**
+    Add a selection result to a structure node
+
+    The selection is cloned, so the user can call
+    freesasa_selection_free() on the provided selection at the time of
+    their chosing.
+
+    @param node A node of type ::FREESASA_NODE_STRUCTURE.
+    @param selection A selection.
+    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if cloning fails
+      (i.e. memory allocation failure).
+ */
+int
+freesasa_result_node_structure_add_selection(freesasa_result_node *node,
+                                             const freesasa_selection *selection);
+
 // Deprecated functions below, from 1.x API
 
 /**
@@ -1248,14 +1310,14 @@ typedef struct {
     Return value is dynamically allocated, should be freed with
     freesasa_strvp_free().
 
+    @deprecated Use freesasa_classifier_classify_result() instead.
+
     @param result The results to be analyzed.
     @param structure Structure to be used to determine atom types.
     @param classifier The classifier. If NULL, default is used.
     @return A new set of string-value-pairs if classifications was
     successful. NULL if classifier was not compatible with structure
     or memory allocation failure.
-
-    @deprecated Use freesasa_classifier_classify_result() instead.
  */
 freesasa_strvp*
 freesasa_result_classify(const freesasa_result *result,
@@ -1266,12 +1328,36 @@ freesasa_result_classify(const freesasa_result *result,
 /**
     Frees a ::freesasa_strvp object
 
-    @param strvp the object to be freed
-
     @deprecated
+
+    @param strvp the object to be freed
  */
 void
 freesasa_strvp_free(freesasa_strvp *strvp);
+
+/**
+    Get area of a selection.
+
+    @deprecated Use freesasa_select() instead.
+
+    @param command The selection
+    @param name The name of the selection is stored here, it should be
+      able to store a string of length ::FREESASA_MAX_SELECTION_NAME.
+    @param area The area of the selection is stored here
+    @param structure The structure to select from
+    @param result The results to integrate
+
+    @return ::FREESASA_SUCCESS upon successful selection.
+      ::FREESASA_WARN if some illegal selections that could be
+      ignored were encountered (see printed
+      warnings). ::FREESASA_FAIL if syntax error or memory failure.
+ */
+int
+freesasa_select_area(const char *command,
+                     char *name,
+                     double *area,
+                     const freesasa_structure *structure,
+                     const freesasa_result *result);
 
 #ifdef __cplusplus
 }

@@ -193,13 +193,13 @@ freesasa_calc_tree(const freesasa_structure *structure,
 
 static int
 write_result(FILE *log,
-             const freesasa_result_node *result)
+             freesasa_result_node *result)
 {
     assert(log);
     assert(freesasa_result_node_type(result) == FREESASA_NODE_RESULT);
 
     const char *name = NULL;
-    const freesasa_result_node *structure = NULL, *chain = NULL;
+    freesasa_result_node *structure = NULL, *chain = NULL;
     const freesasa_nodearea *area = NULL;
 
     name = freesasa_result_node_name(result);
@@ -239,20 +239,48 @@ write_result(FILE *log,
 }
 
 static int
+write_selections(FILE *log,
+                 freesasa_result_node *result)
+{
+    freesasa_result_node *structure = freesasa_result_node_children(result);
+    while (structure) {
+        const freesasa_selection **selection = freesasa_result_node_structure_selections(structure);
+        if (selection && *selection) {
+            fprintf(log, "\nSELECTIONS\n");
+            while(*selection) {
+                fprintf(log, "%s : %10.2f\n",
+                        freesasa_selection_name(*selection),
+                        freesasa_selection_area(*selection));
+                ++selection;
+            }
+        }
+        structure = freesasa_result_node_next(structure);
+    }
+
+    fflush(log);
+    if (ferror(log)) {
+        return fail_msg(strerror(errno));
+    }
+
+    return FREESASA_SUCCESS;
+}
+
+static int
 write_results(FILE *log,
-              const freesasa_result_node *root)
+              freesasa_result_node *root)
 {
     assert(log);
     assert(freesasa_result_node_type(root) == FREESASA_NODE_ROOT);
 
-    const freesasa_result_node *result = freesasa_result_node_children(root);
+    freesasa_result_node *result = freesasa_result_node_children(root);
     int ret;
 
-    //int several = (freesasa_result_node_next(result) != NULL); // are there more than one result
+    int several = (freesasa_result_node_next(result) != NULL); // are there more than one result
     while(result) {
-        //if (several) fprintf(log, "\n\n####################\n");
+        if (several) fprintf(log, "\n\n####################\n");
         ret = write_result(log, result);
         if (ret != FREESASA_SUCCESS) return ret;
+        ret = write_selections(log, result);
         result = freesasa_result_node_next(result);
     }
 
@@ -398,7 +426,7 @@ freesasa_per_residue(FILE *output,
 
 int
 freesasa_export_tree(FILE *file,
-                     const freesasa_result_node *root,
+                     freesasa_result_node *root,
                      const freesasa_parameters *parameters,
                      int options)
 {
@@ -474,7 +502,7 @@ freesasa_get_verbosity(void)
 
 int
 freesasa_write_log(FILE *log,
-                   const freesasa_result_node *root)
+                   freesasa_result_node *root)
 {
     // leave it this way until we have a way of loggin after all
     // calculations are done.

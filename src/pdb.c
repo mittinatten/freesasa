@@ -272,7 +272,7 @@ freesasa_pdb_ishydrogen(const char* line)
 
 static int
 write_pdb_impl(FILE *output,
-               const freesasa_result_node *structure)
+               freesasa_result_node *structure)
 {
     assert(freesasa_result_node_type(structure) == FREESASA_NODE_STRUCTURE);
 
@@ -280,7 +280,7 @@ write_pdb_impl(FILE *output,
     int model;
     double radius;
     const char *line = NULL;
-    const freesasa_result_node *chain = NULL, *residue = NULL, *atom = NULL;
+    freesasa_result_node *chain = NULL, *residue = NULL, *atom = NULL;
     const freesasa_nodearea *area = NULL;
     const char *last_res_name = NULL, *last_res_number = NULL, *last_chain = NULL;
 
@@ -335,13 +335,13 @@ write_pdb_impl(FILE *output,
 
 int
 freesasa_write_pdb(FILE *output,
-                   const freesasa_result_node *root)
+                   freesasa_result_node *root)
 {
     assert(output);
     assert(root);
     assert(freesasa_result_node_type(root) == FREESASA_NODE_ROOT);
 
-    const freesasa_result_node *structure =
+    freesasa_result_node *structure =
         freesasa_result_node_children(freesasa_result_node_children(root));
 
     while(structure) {

@@ -85,7 +85,7 @@ freesasa_calc(const coord_t *c,
               const freesasa_parameters *parameters);
 int
 freesasa_write_log(FILE *log,
-                   const freesasa_result_node *root);
+                   freesasa_result_node *root);
 int
 freesasa_write_parameters(FILE *log,
                           const freesasa_parameters *parameters);
@@ -103,7 +103,7 @@ freesasa_write_parameters(FILE *log,
  */
 int
 freesasa_write_rsa(FILE *output,
-                   const freesasa_result_node *root,
+                   freesasa_result_node *root,
                    const freesasa_parameters *parameters,
                    int options);
 
@@ -127,7 +127,7 @@ freesasa_write_rsa(FILE *output,
  */
 int
 freesasa_write_json(FILE *ouput,
-                    const freesasa_result_node *root,
+                    freesasa_result_node *root,
                     const freesasa_parameters *parameters,
                     int options);
 /**
@@ -148,7 +148,7 @@ freesasa_write_json(FILE *ouput,
  */
 int
 freesasa_write_xml(FILE *ouput,
-                   const freesasa_result_node *root,
+                   freesasa_result_node *root,
                    const freesasa_parameters *parameters,
                    int options);
 
@@ -171,11 +171,19 @@ freesasa_write_xml(FILE *ouput,
 */
 int
 freesasa_write_pdb(FILE *output,
-                   const freesasa_result_node *structure);
+                   freesasa_result_node *structure);
 
-/** Clone results object */
+/**
+    Clone results object
+*/
 freesasa_result *
 freesasa_result_clone(const freesasa_result *result);
+
+/**
+    Clone selection object
+*/
+freesasa_selection *
+freesasa_selection_clone(const freesasa_selection *selection);
 
 /**
     Get coordinates.
