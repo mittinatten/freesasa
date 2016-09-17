@@ -313,16 +313,7 @@ run_analysis(FILE *input,
             freesasa_result_node_children(freesasa_result_node_children(tmp_tree));
         const freesasa_result *result = freesasa_result_node_structure_result(structure_node);
 
-        // Log results, these should be moved out eventually
-        if (per_residue_type) {
-            if (n > 1) fprintf(per_residue_type_file, "\n## %s\n", name_i);
-            freesasa_per_residue_type(per_residue_type_file, result, structures[i]);
-        }
-        if (per_residue) {
-            if (n > 1) fprintf(per_residue_file, "\n## %s\n", name_i);
-            freesasa_per_residue(per_residue_file, result, structures[i]);
-        }
-
+        // Calculate selections for each structure
         if (n_select > 0) {
             for (int c = 0; c < n_select; ++c) {
                 freesasa_selection *sel = freesasa_selection_new(select_cmd[c], structures[i], result);
@@ -353,6 +344,10 @@ print_results(freesasa_result_node *tree)
     int rel = (no_rel ? FREESASA_OUTPUT_SKIP_REL : 0);
 
     if (printlog)  freesasa_export_tree(output,     tree, &parameters, FREESASA_LOG);
+    if (per_residue_type)
+        freesasa_export_tree(per_residue_type_file, tree, &parameters, FREESASA_RES);
+    if (per_residue)
+        freesasa_export_tree(per_residue_file,      tree, &parameters, FREESASA_SEQ);
     if (printpdb)  freesasa_export_tree(output_pdb, tree, &parameters, FREESASA_PDB);
     if (printrsa)  freesasa_export_tree(rsa_file,   tree, &parameters, FREESASA_RSA | rel);
     if (printjson) freesasa_export_tree(json_file,  tree, &parameters, FREESASA_JSON | output_depth | rel);

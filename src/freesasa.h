@@ -98,9 +98,13 @@ enum freesasa_output_options {
     FREESASA_JSON=1<<7, //!< JSON output
     FREESASA_XML=1<<8, //!< XML output
     FREESASA_PDB=1<<9, //!< PDB output (with B-factors replaced by SASA values, and occupancy by radius)
+    FREESASA_RES=1<<10, //! A list of the integrated SASA of each residue type
+    FREESASA_SEQ=1<<11, //!< The SASA of each residue in the sequence
+
     //! Don't output relative areas, for example if structure has
     //! manually set radii, invalidating reference values
-    FREESASA_OUTPUT_SKIP_REL=1<<10,
+    FREESASA_OUTPUT_SKIP_REL=1<<12,
+
 };
 
 //! The maximum length of a selection name @see freesasa_select_area()
@@ -396,59 +400,6 @@ freesasa_selection_area(const freesasa_selection* selection);
  */
 int
 freesasa_selection_n_atoms(const freesasa_selection* selection);
-
-/**
-    Print SASA for each chain.
-
-    Prints the contribution of each chain to the total SASA. Each line
-    in the output is prefixed by the string `CHAIN`.
-
-    @param output Output file.
-    @param result SASA values.
-    @param structure The structure. 
-    @return ::FREESASA_FAIL if problems writing to
-    output. ::FREESASA_SUCCESS else.
- */
-int
-freesasa_per_chain(FILE *output,
-                   freesasa_result *result,
-                   const freesasa_structure *structure);
-
-/**
-    Print SASA for all residue types to file.
-
-    Prints name/value-pairs with the total SASA of each residue
-    type. The standard 20 amino acids are always included in output,
-    non-standard ones and nucleotides only if they were present in
-    input. Each line in the output is prefixed by the string "`RES`".
-
-    @param output Output file.
-    @param result SASA values.
-    @param structure The structure.
-    @return ::FREESASA_FAIL if problems writing to
-      `output`. ::FREESASA_SUCCESS else.
- */
-int
-freesasa_per_residue_type(FILE *output,
-                          const freesasa_result *result,
-                          const freesasa_structure *structure);
-
-/**
-    Print SASA for each residue in the sequence to file.
-
-    Each line in the output is prefixed by the string "`SEQ`".
-
-    @param output Output file.
-    @param result SASA values.
-    @param structure The structure.
-    @return ::FREESASA_FAIL if problems writing to
-      `output`. ::FREESASA_SUCCESS else.
- */
-int
-freesasa_per_residue(FILE *output,
-                     const freesasa_result *result,
-                     const freesasa_structure *structure);
-
 
 /**
     Set the global verbosity level.
@@ -1334,6 +1285,65 @@ freesasa_result_classify(const freesasa_result *result,
  */
 void
 freesasa_strvp_free(freesasa_strvp *strvp);
+
+/**
+    Print SASA for all residue types to file.
+
+    Prints name/value-pairs with the total SASA of each residue
+    type. The standard 20 amino acids are always included in output,
+    non-standard ones and nucleotides only if they were present in
+    input. Each line in the output is prefixed by the string "`RES`".
+
+    @param output Output file.
+    @param result SASA values.
+    @param structure The structure.
+    @return ::FREESASA_FAIL if problems writing to
+      `output`. ::FREESASA_SUCCESS else.
+
+    @deprecated use freesasa_export_tree() instead
+ */
+int
+freesasa_per_residue_type(FILE *output,
+                          const freesasa_result *result,
+                          const freesasa_structure *structure);
+
+/**
+    Print SASA for each residue in the sequence to file.
+
+    Each line in the output is prefixed by the string "`SEQ`".
+
+    @param output Output file.
+    @param result SASA values.
+    @param structure The structure.
+    @return ::FREESASA_FAIL if problems writing to `output`.
+      ::FREESASA_SUCCESS else.
+
+    @deprecated use freesasa_export_tree() instead
+ */
+int
+freesasa_per_residue(FILE *output,
+                     const freesasa_result *result,
+                     const freesasa_structure *structure);
+    
+/**
+    Print SASA for each chain.
+
+    Prints the contribution of each chain to the total SASA. Each line
+    in the output is prefixed by the string `CHAIN`.
+
+    @param output Output file.
+    @param result SASA values.
+    @param structure The structure. 
+    
+    @return ::FREESASA_FAIL if problems writing to output.
+      ::FREESASA_SUCCESS else.
+
+    @deprecated Part of standard log in freesasa_export_tree().
+ */
+int
+freesasa_per_chain(FILE *output,
+                   freesasa_result *result,
+                   const freesasa_structure *structure);
 
 /**
     Get area of a selection.

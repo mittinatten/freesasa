@@ -232,19 +232,6 @@ freesasa_structure_chain_index(const freesasa_structure *structure,
                                char chain);
 
 /**
-    Returns the SASA for a given residue
-
-    @param r The SASA results
-    @param s The structure
-    @param r_i Index of residue
-    @return The SASA of the residue
- */
-double
-freesasa_single_residue_sasa(const freesasa_result *r,
-                             const freesasa_structure *s, 
-                             int r_i);
-
-/**
     Extract area to provided ::freesasa_nodearea object
 
     Main-chain / side-chain atoms are defined by
