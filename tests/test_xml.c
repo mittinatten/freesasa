@@ -105,7 +105,7 @@ START_TEST (test_libxmlerr)
         freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
     fclose(pdb);
     freesasa_result *result = freesasa_calc_structure(ubq, NULL);
-    freesasa_result_node *tree = freesasa_result_tree_new();
+    freesasa_node *tree = freesasa_result_tree_new();
     int ret;
     freesasa_result_tree_add_result(tree, result, ubq, "test");
 
@@ -123,7 +123,7 @@ START_TEST (test_libxmlerr)
         ck_assert_int_eq(ret, FREESASA_FAIL);
     }
     freesasa_set_verbosity(FREESASA_V_NORMAL);
-    freesasa_result_node_free(tree);
+    freesasa_node_free(tree);
 }
 END_TEST
 

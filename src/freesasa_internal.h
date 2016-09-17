@@ -90,7 +90,7 @@ freesasa_write_parameters(FILE *log,
 
 int
 freesasa_write_log(FILE *log,
-                   freesasa_result_node *root);
+                   freesasa_node *root);
 
 /**
     Print RSA-file
@@ -105,7 +105,7 @@ freesasa_write_log(FILE *log,
  */
 int
 freesasa_write_rsa(FILE *output,
-                   freesasa_result_node *root,
+                   freesasa_node *root,
                    int options);
 
 /**
@@ -128,7 +128,7 @@ freesasa_write_rsa(FILE *output,
  */
 int
 freesasa_write_json(FILE *ouput,
-                    freesasa_result_node *root,
+                    freesasa_node *root,
                     int options);
 /**
     Export to XML
@@ -148,7 +148,7 @@ freesasa_write_json(FILE *ouput,
  */
 int
 freesasa_write_xml(FILE *ouput,
-                   freesasa_result_node *root,
+                   freesasa_node *root,
                    int options);
 
 /**
@@ -163,14 +163,14 @@ freesasa_write_xml(FILE *ouput,
     using freesasa_structure_from_pdb() or freesasa_structure_array().
 
     @param output Output-file
-    @param structure A ::freesasa_result_node of type ::FREESASA_NODE_STRUCTURE
+    @param structure A ::freesasa_node of type ::FREESASA_NODE_STRUCTURE
     @return ::FREESASA_SUCCESS if file written successfully.
       ::FREESASA_FAIL if there is no previous PDB input to base output
       on or if there were problems writing to the file.
 */
 int
 freesasa_write_pdb(FILE *output,
-                   freesasa_result_node *structure);
+                   freesasa_node *structure);
 
 /**
     Clone results object

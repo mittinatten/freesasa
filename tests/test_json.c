@@ -8,7 +8,7 @@
 #include "tools.h"
 
 extern json_object *
-freesasa_node2json(freesasa_result_node *node, int exclude_type);
+freesasa_node2json(freesasa_node *node, int exclude_type);
 
 static int
 compare_nodearea(json_object *obj, const freesasa_nodearea *ref, int is_abs)
@@ -53,7 +53,7 @@ compare_nodearea(json_object *obj, const freesasa_nodearea *ref, int is_abs)
 }
 
 int
-test_atom(freesasa_result_node *node)
+test_atom(freesasa_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
     json_object *atom = freesasa_node2json(node, FREESASA_NODE_NONE);
@@ -90,12 +90,12 @@ test_atom(freesasa_result_node *node)
 }
 
 int
-test_residue(freesasa_result_node *node)
+test_residue(freesasa_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
     json_object *residue = freesasa_node2json(node, FREESASA_NODE_NONE);
     ck_assert_ptr_ne(residue, NULL);
-    const freesasa_nodearea *resarea = freesasa_result_node_area(node);
+    const freesasa_nodearea *resarea = freesasa_node_area(node);
     struct json_object_iterator it = json_object_iter_begin(residue),
         it_end = json_object_iter_end(residue);
 
@@ -130,11 +130,11 @@ test_residue(freesasa_result_node *node)
 }
 
 int
-test_chain(freesasa_result_node *node, const freesasa_result *result)
+test_chain(freesasa_node *node, const freesasa_result *result)
 {
     ck_assert_ptr_ne(node, NULL);
     json_object *chain = freesasa_node2json(node, FREESASA_NODE_NONE);
-    const freesasa_nodearea *chain_area = freesasa_result_node_area(node);
+    const freesasa_nodearea *chain_area = freesasa_node_area(node);
     ck_assert_ptr_ne(chain, NULL);
     ck_assert(float_eq(chain_area->total, result->total, 1e-10));
 
@@ -165,7 +165,7 @@ test_chain(freesasa_result_node *node, const freesasa_result *result)
 }
 
 int
-test_structure(freesasa_result_node *node)
+test_structure(freesasa_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
     freesasa_nodearea structure_area = {
@@ -213,13 +213,13 @@ START_TEST (test_json)
         freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
     fclose(pdb);
     freesasa_result *result = freesasa_calc_structure(ubq, NULL);
-    freesasa_result_node *tree = freesasa_result_tree_new();
+    freesasa_node *tree = freesasa_result_tree_new();
     freesasa_result_tree_add_result(tree, result, ubq, "test");
-    freesasa_result_node *result_node = freesasa_result_node_children(tree);
-    freesasa_result_node *structures = freesasa_result_node_children(result_node);
-    freesasa_result_node *chains = freesasa_result_node_children(structures);
-    freesasa_result_node *residues = freesasa_result_node_children(chains);
-    freesasa_result_node *atoms = freesasa_result_node_children(residues);
+    freesasa_node *result_node = freesasa_node_children(tree);
+    freesasa_node *structures = freesasa_node_children(result_node);
+    freesasa_node *chains = freesasa_node_children(structures);
+    freesasa_node *residues = freesasa_node_children(chains);
+    freesasa_node *atoms = freesasa_node_children(residues);
 
     ck_assert(test_atom(atoms));
     ck_assert(test_residue(residues));
@@ -228,7 +228,7 @@ START_TEST (test_json)
     
     freesasa_structure_free(ubq);
     freesasa_result_free(result);
-    freesasa_result_node_free(tree);
+    freesasa_node_free(tree);
 }
 END_TEST
 

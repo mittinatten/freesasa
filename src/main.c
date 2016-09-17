@@ -59,7 +59,7 @@ int n_select = 0;
 char** select_cmd = NULL;
 
 struct analysis_results {
-    freesasa_result_node *tree;
+    freesasa_node *tree;
     freesasa_structure **structures;
     int n_structures;
 };
@@ -280,13 +280,13 @@ get_structures(FILE *input, int *n)
    return structures;
 }
 
-static freesasa_result_node *
+static freesasa_node *
 run_analysis(FILE *input,
              const char *name)
 {
     int name_len = strlen(name);
     freesasa_structure **structures = NULL;
-    freesasa_result_node *tree = freesasa_result_tree_new();
+    freesasa_node *tree = freesasa_result_tree_new();
     int n = 0;
 
     if (tree == NULL) abort_msg("Failed to initialize result-tree.");
@@ -300,7 +300,7 @@ run_analysis(FILE *input,
     // perform calculation on each structure and output results
     for (int i = 0; i < n; ++i) {
         char name_i[name_len+10];
-        freesasa_result_node *tmp_tree;
+        freesasa_node *tmp_tree;
 
         strcpy(name_i,name);
         if (n > 1 && (structure_options & FREESASA_SEPARATE_MODELS))
@@ -309,16 +309,16 @@ run_analysis(FILE *input,
         tmp_tree = freesasa_calc_tree(structures[i], &parameters, name_i);
         if (tmp_tree == NULL) abort_msg("Can't calculate SASA.");
 
-        freesasa_result_node *structure_node =
-            freesasa_result_node_children(freesasa_result_node_children(tmp_tree));
-        const freesasa_result *result = freesasa_result_node_structure_result(structure_node);
+        freesasa_node *structure_node =
+            freesasa_node_children(freesasa_node_children(tmp_tree));
+        const freesasa_result *result = freesasa_node_structure_result(structure_node);
 
         // Calculate selections for each structure
         if (n_select > 0) {
             for (int c = 0; c < n_select; ++c) {
                 freesasa_selection *sel = freesasa_selection_new(select_cmd[c], structures[i], result);
                 if (sel != NULL) {
-                    freesasa_result_node_structure_add_selection(structure_node, sel);
+                    freesasa_node_structure_add_selection(structure_node, sel);
                 } else {
                     abort_msg("Illegal selection");
                 }
@@ -339,7 +339,7 @@ run_analysis(FILE *input,
 }
 
 static void
-print_results(freesasa_result_node *tree)
+print_results(freesasa_node *tree)
 {
     int rel = (no_rel ? FREESASA_OUTPUT_SKIP_REL : 0);
 
@@ -447,7 +447,7 @@ main(int argc,
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
-    freesasa_result_node *tree = freesasa_result_tree_new();
+    freesasa_node *tree = freesasa_result_tree_new();
     enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN,
           RSA_FILE, RSA, JSON_FILE, JSON, XML_FILE, XML,
           O_DEPTH, RADII};
@@ -697,7 +697,7 @@ main(int argc,
     if (printlog) fprintf(output, "## %s ##\n", freesasa_string);
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {
-            freesasa_result_node *tmp;
+            freesasa_node *tmp;
             errno = 0;
             input = fopen_werr(argv[i],"r");
             tmp = run_analysis(input, argv[i]);
@@ -706,7 +706,7 @@ main(int argc,
         }
     } else {
         if (!isatty(STDIN_FILENO)) {
-            freesasa_result_node *tmp;
+            freesasa_node *tmp;
             tmp = run_analysis(stdin, "stdin");
             freesasa_result_tree_join(tree, &tmp);
         }
@@ -714,7 +714,7 @@ main(int argc,
     }
 
     print_results(tree);
-    freesasa_result_node_free(tree);
+    freesasa_node_free(tree);
 
     release_resources();
 

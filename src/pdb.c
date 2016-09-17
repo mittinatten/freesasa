@@ -272,33 +272,33 @@ freesasa_pdb_ishydrogen(const char* line)
 
 static int
 write_pdb_impl(FILE *output,
-               freesasa_result_node *structure)
+               freesasa_node *structure)
 {
-    assert(freesasa_result_node_type(structure) == FREESASA_NODE_STRUCTURE);
+    assert(freesasa_node_type(structure) == FREESASA_NODE_STRUCTURE);
 
     char buf[PDB_LINE_STRL+1], buf2[6];
     int model;
     double radius;
     const char *line = NULL;
-    freesasa_result_node *chain = NULL, *residue = NULL, *atom = NULL;
+    freesasa_node *chain = NULL, *residue = NULL, *atom = NULL;
     const freesasa_nodearea *area = NULL;
     const char *last_res_name = NULL, *last_res_number = NULL, *last_chain = NULL;
 
-    model = freesasa_result_node_structure_model(structure);
+    model = freesasa_node_structure_model(structure);
     if (model > 0) fprintf(output, "MODEL     %4d\n", model);
     else fprintf(output,           "MODEL        1\n");
 
-    chain = freesasa_result_node_children(structure);
+    chain = freesasa_node_children(structure);
 
     // Write ATOM entries
     while (chain) {
-        residue = freesasa_result_node_children(chain);
+        residue = freesasa_node_children(chain);
         while (residue) {
-            atom = freesasa_result_node_children(residue);
+            atom = freesasa_node_children(residue);
             while (atom) {
-                line = freesasa_result_node_atom_pdb_line(atom);
-                area = freesasa_result_node_area(atom);
-                radius = freesasa_result_node_atom_radius(atom);
+                line = freesasa_node_atom_pdb_line(atom);
+                area = freesasa_node_area(atom);
+                radius = freesasa_node_atom_radius(atom);
 
                 if (line == NULL) {
                     return fail_msg("PDB input not valid or not present.");
@@ -308,14 +308,14 @@ write_pdb_impl(FILE *output,
                 sprintf(&buf[54], "%6.2f%6.2f", radius, area->total);
                 fprintf(output, "%s\n", buf);
 
-                atom = freesasa_result_node_next(atom);
+                atom = freesasa_node_next(atom);
             }
-            last_res_name = freesasa_result_node_name(residue);
-            last_res_number = freesasa_result_node_residue_number(residue);
-            residue = freesasa_result_node_next(residue);
+            last_res_name = freesasa_node_name(residue);
+            last_res_number = freesasa_node_residue_number(residue);
+            residue = freesasa_node_next(residue);
         }
-        last_chain = freesasa_result_node_name(chain);
-        chain = freesasa_result_node_next(chain);
+        last_chain = freesasa_node_name(chain);
+        chain = freesasa_node_next(chain);
     }
 
     // Write TER  and ENDMDL lines
@@ -335,20 +335,20 @@ write_pdb_impl(FILE *output,
 
 int
 freesasa_write_pdb(FILE *output,
-                   freesasa_result_node *root)
+                   freesasa_node *root)
 {
     assert(output);
     assert(root);
-    assert(freesasa_result_node_type(root) == FREESASA_NODE_ROOT);
+    assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
 
-    freesasa_result_node *structure =
-        freesasa_result_node_children(freesasa_result_node_children(root));
+    freesasa_node *structure =
+        freesasa_node_children(freesasa_node_children(root));
 
     while(structure) {
         if (write_pdb_impl(output, structure) == FREESASA_FAIL) {
             return fail_msg("");
         }
-        structure = freesasa_result_node_next(structure);
+        structure = freesasa_node_next(structure);
     }
 
     return FREESASA_SUCCESS;

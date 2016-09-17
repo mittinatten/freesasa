@@ -194,7 +194,7 @@ START_TEST (test_sasa_1ubq)
     const freesasa_classifier *classifier = &freesasa_default_classifier;
     freesasa_structure *st = freesasa_structure_from_pdb(pdb, classifier, 0);
     freesasa_result *res;
-    freesasa_result_node *tree = freesasa_result_tree_new();
+    freesasa_node *tree = freesasa_result_tree_new();
     freesasa_strvp *strvp;
     ck_assert((res = freesasa_calc_structure(st, &parameters)) != NULL);
 
@@ -253,7 +253,7 @@ START_TEST (test_sasa_1ubq)
     
     freesasa_structure_free(st);
     freesasa_result_free(res);
-    freesasa_result_node_free(tree);
+    freesasa_node_free(tree);
 }
 END_TEST
 
@@ -268,7 +268,7 @@ START_TEST (test_write_pdb) {
     freesasa_structure *s = freesasa_structure_from_pdb(pdb, NULL, 0);
     const int n = freesasa_structure_n(s);
     freesasa_result res;
-    freesasa_result_node *root;
+    freesasa_node *root;
     fclose(pdb);
 
     res.sasa = malloc(sizeof(double)*n);
@@ -293,7 +293,7 @@ START_TEST (test_write_pdb) {
     free(buf_ref);
 
     freesasa_structure_free(s);
-    freesasa_result_node_free(root);
+    freesasa_node_free(root);
 
     // Can't write pdb from structure not initialized from pdb
     s = freesasa_structure_new();
@@ -304,7 +304,7 @@ START_TEST (test_write_pdb) {
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 
     freesasa_structure_free(s);
-    freesasa_result_node_free(root);
+    freesasa_node_free(root);
     fclose(devnull);
     fclose(ref);
     fclose(tf);

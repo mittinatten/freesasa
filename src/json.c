@@ -13,13 +13,13 @@
     return values. Therefore these errors are not caught. */
 
 json_object *
-freesasa_json_atom(freesasa_result_node *node,
+freesasa_json_atom(freesasa_node *node,
                    int options)
 {
     assert(node);
     json_object *atom = json_object_new_object();
-    const freesasa_nodearea *area = freesasa_result_node_area(node);
-    const char *name = freesasa_result_node_name(node);
+    const freesasa_nodearea *area = freesasa_node_area(node);
+    const char *name = freesasa_node_name(node);
     int n_len = strlen(name);
     char trim_name[n_len+1];
 
@@ -28,11 +28,11 @@ freesasa_json_atom(freesasa_result_node *node,
     json_object_object_add(atom, "name", json_object_new_string(trim_name));
     json_object_object_add(atom, "area", json_object_new_double(area->total));
     json_object_object_add(atom, "is-polar",
-                           json_object_new_boolean(freesasa_result_node_atom_is_polar(node)));
+                           json_object_new_boolean(freesasa_node_atom_is_polar(node)));
     json_object_object_add(atom, "is-main-chain",
                            json_object_new_boolean(freesasa_atom_is_backbone(name)));
     json_object_object_add(atom, "radius",
-                           json_object_new_double(freesasa_result_node_atom_radius(node)));
+                           json_object_new_double(freesasa_node_atom_radius(node)));
 
     return atom;
 }
@@ -57,19 +57,19 @@ freesasa_json_nodearea(const freesasa_nodearea *area)
 }
 
 json_object *
-freesasa_json_residue(freesasa_result_node *node,
+freesasa_json_residue(freesasa_node *node,
                       int options)
 {
     assert(node);
-    assert(freesasa_result_node_type(node) == FREESASA_NODE_RESIDUE);
+    assert(freesasa_node_type(node) == FREESASA_NODE_RESIDUE);
 
     json_object *obj = json_object_new_object();
-    const char *name = freesasa_result_node_name(node), *number;
-    const freesasa_nodearea *abs = freesasa_result_node_area(node),
-        *reference = freesasa_result_node_residue_reference(node);
+    const char *name = freesasa_node_name(node), *number;
+    const freesasa_nodearea *abs = freesasa_node_area(node),
+        *reference = freesasa_node_residue_reference(node);
     freesasa_nodearea rel;
     
-    number = freesasa_result_node_residue_number(node);
+    number = freesasa_node_residue_number(node);
 
     int n_len = strlen(number);
     char trim_number[n_len+1];
@@ -85,50 +85,50 @@ freesasa_json_residue(freesasa_result_node *node,
     }
     
     json_object_object_add(obj, "n-atoms",
-                           json_object_new_int(freesasa_result_node_residue_n_atoms(node)));
+                           json_object_new_int(freesasa_node_residue_n_atoms(node)));
     return obj;
 }
 
 json_object *
-freesasa_json_chain(freesasa_result_node *node,
+freesasa_json_chain(freesasa_node *node,
                     int options)
 {
     json_object *obj = json_object_new_object();
-    const char *name = freesasa_result_node_name(node);
+    const char *name = freesasa_node_name(node);
 
     json_object_object_add(obj, "label", json_object_new_string(name));
-    json_object_object_add(obj, "n-residues", json_object_new_int(freesasa_result_node_chain_n_residues(node)));
+    json_object_object_add(obj, "n-residues", json_object_new_int(freesasa_node_chain_n_residues(node)));
 
     json_object_object_add(obj, "area",
-                           freesasa_json_nodearea(freesasa_result_node_area(node)));
+                           freesasa_json_nodearea(freesasa_node_area(node)));
 
     return obj;
 }
 
 json_object *
-freesasa_json_structure(freesasa_result_node *node,
+freesasa_json_structure(freesasa_node *node,
                         int options)
 {
     json_object *obj = json_object_new_object();
 
-    json_object_object_add(obj, "chain-labels", json_object_new_string(freesasa_result_node_structure_chain_labels(node)));
+    json_object_object_add(obj, "chain-labels", json_object_new_string(freesasa_node_structure_chain_labels(node)));
     json_object_object_add(obj, "area",
-                           freesasa_json_nodearea(freesasa_result_node_area(node)));
+                           freesasa_json_nodearea(freesasa_node_area(node)));
 
     return obj;
 }
 
 json_object *
-freesasa_node2json(freesasa_result_node *node,
+freesasa_node2json(freesasa_node *node,
                    int exclude_type,
                    int options)
 {
     json_object *obj, *array = NULL;
     int lowest = 0;
-    int type = freesasa_result_node_type(node);
-    freesasa_result_node *child = freesasa_result_node_children(node);
+    int type = freesasa_node_type(node);
+    freesasa_node *child = freesasa_node_children(node);
     if (child) {
-        if (freesasa_result_node_type(child) == exclude_type) lowest = 1;
+        if (freesasa_node_type(child) == exclude_type) lowest = 1;
         if (!lowest) array = json_object_new_array();
     }
 
@@ -159,7 +159,7 @@ freesasa_node2json(freesasa_result_node *node,
     if (!lowest) {
         while (child) {
             json_object_array_add(array, freesasa_node2json(child, exclude_type, options));
-            child = freesasa_result_node_next(child);
+            child = freesasa_node_next(child);
         }
     }
     return obj;
@@ -190,18 +190,18 @@ parameters2json(const freesasa_parameters *p)
 }
 
 static json_object *
-json_result(freesasa_result_node *result,
+json_result(freesasa_node *result,
             int options)
 {
     json_object *obj = json_object_new_object();
-    freesasa_node_type exclude_type = FREESASA_NODE_NONE;
-    const freesasa_parameters *parameters = freesasa_result_node_result_parameters(result);
+    freesasa_nodetype exclude_type = FREESASA_NODE_NONE;
+    const freesasa_parameters *parameters = freesasa_node_result_parameters(result);
     if (options & FREESASA_OUTPUT_STRUCTURE) exclude_type = FREESASA_NODE_CHAIN;
     if (options & FREESASA_OUTPUT_CHAIN) exclude_type = FREESASA_NODE_RESIDUE;
     if (options & FREESASA_OUTPUT_RESIDUE) exclude_type = FREESASA_NODE_ATOM;
 
-    json_object_object_add(obj, "input", json_object_new_string(freesasa_result_node_name(result)));
-    json_object_object_add(obj, "classifier", json_object_new_string(freesasa_result_node_classified_by(result)));
+    json_object_object_add(obj, "input", json_object_new_string(freesasa_node_name(result)));
+    json_object_object_add(obj, "classifier", json_object_new_string(freesasa_node_classified_by(result)));
     json_object_object_add(obj, "parameters", parameters2json(parameters));
     json_object_object_add(obj, "structures", freesasa_node2json(result, exclude_type, options));
 
@@ -210,22 +210,22 @@ json_result(freesasa_result_node *result,
 
 int
 freesasa_write_json(FILE *output,
-                    freesasa_result_node *root,
+                    freesasa_node *root,
                     int options)
 
 {
-    assert(freesasa_result_node_type(root) == FREESASA_NODE_ROOT);
+    assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
 
     json_object *results = json_object_new_array(),
         *json_root = json_object_new_object();
-    freesasa_result_node *child = freesasa_result_node_children(root);
+    freesasa_node *child = freesasa_node_children(root);
 
     json_object_object_add(json_root, "source", json_object_new_string(freesasa_string));
     json_object_object_add(json_root, "length-unit", json_object_new_string("Ångström"));
     json_object_object_add(json_root, "results", results);
     while (child) {
         json_object_array_add(results, json_result(child, options));
-        child = freesasa_result_node_next(child);
+        child = freesasa_node_next(child);
     }
 
     fputs(json_object_to_json_string_ext(json_root, JSON_C_TO_STRING_PRETTY), output);
