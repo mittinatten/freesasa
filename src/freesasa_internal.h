@@ -173,6 +173,27 @@ freesasa_write_pdb(FILE *output,
                    freesasa_node *structure);
 
 /**
+    Write per-residue-type output
+ */
+int
+freesasa_write_res(FILE *log,
+                   freesasa_node *root);
+
+/**
+    Write SASA per residue in sequence output
+ */
+int
+freesasa_write_seq(FILE *log,
+                   freesasa_node *root);
+
+/**
+    Write standard log message.
+ */
+int
+freesasa_write_log(FILE *log,
+                   freesasa_node *root);
+
+/**
     Clone results object
 */
 freesasa_result *

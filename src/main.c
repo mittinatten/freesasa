@@ -295,6 +295,7 @@ run_analysis(FILE *input,
     structures = get_structures(input, &n);
     if (n == 0) abort_msg("Invalid input.");
 
+    // Only logging here
     if (printlog) freesasa_write_parameters(output, &parameters);
     
     // perform calculation on each structure and output results
