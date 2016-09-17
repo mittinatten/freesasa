@@ -585,7 +585,7 @@ select_area_impl(const char *command,
     return n_atoms;
 }
 
-static freesasa_selection *
+freesasa_selection *
 freesasa_selection_alloc(const char *name, const char *command)
 {
     freesasa_selection *selection = malloc(sizeof(freesasa_selection));
@@ -658,7 +658,7 @@ const char *
 freesasa_selection_command(const freesasa_selection* selection)
 {
     assert(selection);
-    return selection->name;
+    return selection->command;
 }
 
 double

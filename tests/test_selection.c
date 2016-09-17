@@ -43,9 +43,17 @@ double value[100];
 static void
 test_select(const char **command,int n_commands) 
 {
-    for (int i = 0; i < n_commands; ++i) 
-        ck_assert_int_eq(freesasa_select_area(command[i],selection_name[i],value+i,structure,result),
+    freesasa_selection *sel;
+    for (int i = 0; i < n_commands; ++i) {
+        ck_assert_int_eq(freesasa_select_area(command[i], selection_name[i], value+i, structure, result),
                          FREESASA_SUCCESS);
+        sel = freesasa_selection_new(command[i], structure, result);
+        ck_assert_ptr_ne(sel, NULL);
+        ck_assert_str_eq(freesasa_selection_command(sel), command[i]);
+        ck_assert_str_eq(freesasa_selection_name(sel), selection_name[i]);
+        ck_assert(float_eq(freesasa_selection_area(sel), value[i], 1e-10));
+        freesasa_selection_free(sel);
+    }
 }
 
 static void setup(void) 
@@ -286,6 +294,9 @@ freesasa_wrap_select_atoms(void* selection,
                            const expression *expr,
                            const freesasa_structure *structure);
 
+extern freesasa_selection *
+freesasa_selection_alloc(const char *name, const char *command);
+
 START_TEST (test_memerr)
 {
     void *ptr1, *ptr2, *ptr3, *ptr4;
@@ -311,15 +322,29 @@ START_TEST (test_memerr)
     expression e = {.left = NULL, .right = NULL, .type = E_OR, .value = NULL};
     
     for (int i = 1; i < 5; ++i) {
-            set_fail_after(i);
-            int ret = freesasa_wrap_select_atoms(freesasa_selection_dummy_ptr, &e, structure);
-            set_fail_after(0);
-            ck_assert_int_eq(ret, FREESASA_FAIL);
+        set_fail_after(i);
+        int ret = freesasa_wrap_select_atoms(freesasa_selection_dummy_ptr, &e, structure);
+        set_fail_after(0);
+        ck_assert_int_eq(ret, FREESASA_FAIL);
+    }
+
+    freesasa_selection *sel, *sel2;
+    for (int i = 1; i < 4; ++i) {
+        set_fail_after(i);
+        sel = freesasa_selection_alloc("bla", "bla");
+        set_fail_after(0);
+        ck_assert_ptr_eq(sel, NULL);
+
+        // this one should be valid
+        sel = freesasa_selection_alloc("bla", "bla");
+        set_fail_after(i);
+        sel2 = freesasa_selection_clone(sel);
+        set_fail_after(0);
+        ck_assert_ptr_eq(sel2, NULL);
     }
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
-
 
 extern TCase * test_selection_static();
 
