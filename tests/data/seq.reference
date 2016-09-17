@@ -1,3 +1,4 @@
+# Residues in stdin
 SEQ A    1 MET :   50.77
 SEQ A    2 GLN :   77.34
 SEQ A    3 ILE :    0.00
@@ -74,3 +75,4 @@ SEQ A   73 LEU :  120.89
 SEQ A   74 ARG :  213.93
 SEQ A   75 GLY :   74.19
 SEQ A   76 GLY :  142.20
+

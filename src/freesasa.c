@@ -313,10 +313,10 @@ write_res(FILE *log,
     double *residue_area = malloc(sizeof(double) * n_res);
 
     if (residue_area == NULL) return mem_fail();
-    for (int i = 0; i < n_res; ++i) residue_area[i] = 0;
 
     result = freesasa_result_node_children(root);
     while (result) {
+        for (int i = 0; i < n_res; ++i) residue_area[i] = 0;
         structure = freesasa_result_node_children(result);
         while (structure) {
             chain = freesasa_result_node_children(structure);
@@ -332,16 +332,19 @@ write_res(FILE *log,
             }
             structure = freesasa_result_node_next(structure);
         }
-        result = freesasa_result_node_next(result);
-    }
 
-    for (int i_res = 0; i_res < n_res; ++i_res) {
-        double sasa = residue_area[i_res];
-        if (i_res < 20 || sasa > 0) {
-            fprintf(log, "RES %s : %10.2f\n",
-                    freesasa_classify_residue_name(i_res),
-                    sasa);
+        fprintf(log, "# Residue types in %s\n", freesasa_result_node_name(result));
+        for (int i_res = 0; i_res < n_res; ++i_res) {
+            double sasa = residue_area[i_res];
+            if (i_res < 20 || sasa > 0) {
+                fprintf(log, "RES %s : %10.2f\n",
+                        freesasa_classify_residue_name(i_res),
+                        sasa);
+            }
         }
+        fprintf(log, "\n");
+
+        result = freesasa_result_node_next(result);
     }
 
     fflush(log);
@@ -364,6 +367,7 @@ write_seq(FILE *log,
     result = freesasa_result_node_children(root);
     while (result) {
         structure = freesasa_result_node_children(result);
+        fprintf(log, "# Residues in %s\n", freesasa_result_node_name(result));
         while (structure) {
             chain = freesasa_result_node_children(structure);
             while (chain) {
@@ -381,6 +385,7 @@ write_seq(FILE *log,
             }
             structure = freesasa_result_node_next(structure);
         }
+        fprintf(log,"\n");
         result = freesasa_result_node_next(result);
     }
 

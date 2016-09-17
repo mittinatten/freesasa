@@ -1,3 +1,4 @@
+# Residue types in stdin
 RES ALA :     118.35
 RES ARG :     546.58
 RES ASN :     165.76
@@ -18,3 +19,4 @@ RES THR :     409.79
 RES TRP :       0.00
 RES TYR :      35.63
 RES VAL :      41.91
+
