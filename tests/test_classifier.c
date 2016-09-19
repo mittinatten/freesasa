@@ -1,8 +1,5 @@
 #include <stdlib.h>
-#include <string.h>
-#include <math.h>
 #include <stdio.h>
-#include <ctype.h>
 #include <check.h>
 #include <freesasa.h>
 #include <freesasa_internal.h>
@@ -278,9 +275,7 @@ START_TEST (test_radius)
     for (int i = 0; i < n_atom_types; ++i) {
         const struct atom a = atoms[i];
         double r1 = freesasa_classifier_radius(oons_c, a.a, a.b);
-        sprintf(buf,"%s %s ret=%f ref=%f",a.a,a.b,r1,a.radius);
-        // make sure correct radius is supplied
-        ck_assert_msg(fabs(r1 - a.radius) < 1e-10,buf);
+        ck_assert(float_eq(r1, a.radius, 1e-10));
     }
     ck_assert(float_eq(freesasa_guess_radius(" H"), 1.10, 1e-10));
     freesasa_set_verbosity(FREESASA_V_NORMAL);
@@ -350,15 +345,15 @@ START_TEST (test_user)
     ck_assert(c != NULL);
     ck_assert(freesasa_classifier_class(c, "ALA", "CA") == FREESASA_ATOM_APOLAR);
     ck_assert(freesasa_classifier_class(c, "ALA", "O") == FREESASA_ATOM_POLAR);
-    ck_assert(fabs(freesasa_classifier_radius(c, "ALA","CA") - 2.0) < 1e-5);
-    ck_assert(fabs(freesasa_classifier_radius(c, "ALA","N") - 1.55) < 1e-5);
+    ck_assert(float_eq(freesasa_classifier_radius(c, "ALA","CA"), 2.0, 1e-5));
+    ck_assert(float_eq(freesasa_classifier_radius(c, "ALA","N"), 1.55, 1e-5));
       // compare oons.config and built in classification (should be identical for standard atoms)
     for (int i = 0; i < 188; ++i) {
         const char *res_name = atoms[i].a, *atom_name = atoms[i].b;
         if (strcmp(atom_name," X  ") == 0) continue;
         if (strcmp(atom_name," Y  ") == 0) continue;
-        ck_assert(fabs(freesasa_classifier_radius(c, res_name, atom_name) -
-                       freesasa_classifier_radius(oons_c, res_name, atom_name)) < 1e-5);
+        ck_assert(float_eq(freesasa_classifier_radius(c, res_name, atom_name),
+                           freesasa_classifier_radius(oons_c, res_name, atom_name), 1e-5));
         ck_assert(freesasa_classifier_class(c, res_name, atom_name) ==
                   freesasa_classifier_class(oons_c, res_name, atom_name));
     }
