@@ -286,7 +286,7 @@ run_analysis(FILE *input,
 {
     int name_len = strlen(name);
     freesasa_structure **structures = NULL;
-    freesasa_node *tree = freesasa_result_tree_new();
+    freesasa_node *tree = freesasa_tree_new();
     int n = 0;
 
     if (tree == NULL) abort_msg("Failed to initialize result-tree.");
@@ -327,7 +327,7 @@ run_analysis(FILE *input,
             }
         }
 
-        if (freesasa_result_tree_join(tree, &tmp_tree) != FREESASA_SUCCESS) {
+        if (freesasa_tree_join(tree, &tmp_tree) != FREESASA_SUCCESS) {
             abort_msg("Failed joining result-trees");
         }
 
@@ -344,15 +344,15 @@ print_results(freesasa_node *tree)
 {
     int rel = (no_rel ? FREESASA_OUTPUT_SKIP_REL : 0);
 
-    if (printlog)  freesasa_export_tree(output,     tree, FREESASA_LOG);
+    if (printlog)  freesasa_tree_export(output,     tree, FREESASA_LOG);
     if (per_residue_type)
-        freesasa_export_tree(per_residue_type_file, tree, FREESASA_RES);
+        freesasa_tree_export(per_residue_type_file, tree, FREESASA_RES);
     if (per_residue)
-        freesasa_export_tree(per_residue_file,      tree, FREESASA_SEQ);
-    if (printpdb)  freesasa_export_tree(output_pdb, tree, FREESASA_PDB);
-    if (printrsa)  freesasa_export_tree(rsa_file,   tree, FREESASA_RSA | rel);
-    if (printjson) freesasa_export_tree(json_file,  tree, FREESASA_JSON | output_depth | rel);
-    if (printxml)  freesasa_export_tree(xml_file,   tree, FREESASA_XML | output_depth | rel);
+        freesasa_tree_export(per_residue_file,      tree, FREESASA_SEQ);
+    if (printpdb)  freesasa_tree_export(output_pdb, tree, FREESASA_PDB);
+    if (printrsa)  freesasa_tree_export(rsa_file,   tree, FREESASA_RSA | rel);
+    if (printjson) freesasa_tree_export(json_file,  tree, FREESASA_JSON | output_depth | rel);
+    if (printxml)  freesasa_tree_export(xml_file,   tree, FREESASA_XML | output_depth | rel);
 }
 
 static FILE*
@@ -448,7 +448,7 @@ main(int argc,
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
-    freesasa_node *tree = freesasa_result_tree_new();
+    freesasa_node *tree = freesasa_tree_new();
     enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN,
           RSA_FILE, RSA, JSON_FILE, JSON, XML_FILE, XML,
           O_DEPTH, RADII};
@@ -702,14 +702,14 @@ main(int argc,
             errno = 0;
             input = fopen_werr(argv[i],"r");
             tmp = run_analysis(input, argv[i]);
-            freesasa_result_tree_join(tree, &tmp);
+            freesasa_tree_join(tree, &tmp);
             fclose(input);
         }
     } else {
         if (!isatty(STDIN_FILENO)) {
             freesasa_node *tmp;
             tmp = run_analysis(stdin, "stdin");
-            freesasa_result_tree_join(tree, &tmp);
+            freesasa_tree_join(tree, &tmp);
         }
         else abort_msg("No input.", program_name);
     }

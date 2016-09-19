@@ -10,12 +10,73 @@
     calculations.
 
     This header provides the functions and data types necessary to
-    perform and analyze a SASA calculation using FreeSASA, including
-    facilities to customize assignment of radii to, and classification
-    of, atoms. There are also functions to access properties of a
-    structure, to allow refined analysis of the results. The page @ref
-    API shows how to set up and perform a simple SASA calculation.
+    perform and analyze a SASA calculation using FreeSASA. They are
+    all listed on this page, but also divided into @ref core, @ref
+    structure, @ref classifier, @ref node and @ref selection
+    modules. The page @ref API shows how to set up and perform a
+    simple SASA calculation.
 
+    @defgroup core Core
+
+    The core functions to perform a calculation
+
+    @defgroup node Node
+
+    Represent results as a tree.
+
+    Results are represented hierarchically as a tree with the
+    following levels (see also ::freesasa_node_type)
+
+    - Root: wrapper, to allow joining results of several calculations.
+    - Result: wrapper for an individual result, contains information
+      about calculation parameters, the classifier used and the input.
+    - Structure: an individual molecule, the highest level where
+      actual SASA values are stored.
+    - Chain: an individual chain.
+    - Residue: typically an amino acid or nucleic acid.
+    - Atom: lowest level.
+
+    The tree can be traversed using freesasa_node_children(),
+    freesasa_node_next() and freesasa_node_parent(). The type of a
+    node is determined by freesasa_node_type(). There are some
+    properties that are common to all or most levels of the
+    tree. These accessors simply have the prefix freesasa_node, like
+    for example freesasa_node_name() and the above-mentioned
+    functions. Other properties are specific to a special level, and
+    then the prefix of the accessor functions will be
+    freesasa_node_atom or freesasa_node_structure, etc. The class of
+    an atom can for example be accessed using
+    freesasa_node_atom_is_polar().
+
+    The nodes of a tree are to be considered read only, and changes
+    are made only to the root node, initialized using
+    freesasa_tree_new() or freesasa_tree_init(), and modified using
+    freesasa_tree_add_result(), freesasa_tree_join(). The one
+    exception where a lower level node can be modified is
+    freesasa_node_structure_add_selection().
+
+    @defgroup structure Structure
+
+    @brief Represenation of macromolecular structures.
+
+    Interface for macromolecule structures, either instantiated
+    directly from a PDB file (freesasa_structure_from_PBD()) or atom
+    by atom (freesasa_structure_add_atom()).
+
+    @defgroup classifier Classifier
+
+    Interface for classifying atoms as polar/apolar and determining
+    their radius based on atom name and residue name.
+
+    @defgroup selection Selection
+
+    Interface for selecting a group of atoms and integrating their area.
+
+    @defgroup deprecated Deprecated
+
+    Legacy functions and datatypes from FreeSASA 1.x. Kept because
+    they still work although they have been replaced by other
+    functions. Can disappear at any time in the future.
  */
 
 #include <stdio.h>
@@ -24,7 +85,7 @@
 extern "C"{
 #endif
 
-//! The FreeSASA algorithms. 
+//! The FreeSASA algorithms. @ingroup core
 typedef enum {
     FREESASA_LEE_RICHARDS, //!< Lee & Richards' algorithm
     FREESASA_SHRAKE_RUPLEY //!< Shrake & Rupley's algorithm
@@ -39,20 +100,22 @@ typedef enum {
 } freesasa_verbosity;
 
 // Default parameters
-#define FREESASA_DEF_ALGORITHM FREESASA_LEE_RICHARDS //!< Default algorithm
-#define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångström).
-#define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R.
-#define FREESASA_DEF_LR_N 20 //!< Default number of slices per atom  in L&R.
+#define FREESASA_DEF_ALGORITHM FREESASA_LEE_RICHARDS //!< Default algorithm @ingroup core
+#define FREESASA_DEF_PROBE_RADIUS 1.4 //!< Default probe radius (in Ångström). @ingroup core
+#define FREESASA_DEF_SR_N 100 //!< Default number of test points in S&R. @ingroup core
+#define FREESASA_DEF_LR_N 20 //!< Default number of slices per atom  in L&R. @ingroup core
 
-//! Default ::freesasa_classifier
+//! Default ::freesasa_classifier @ingroup core
 #define freesasa_default_classifier freesasa_protor_classifier
 
-//! String returned by freesasa_structure_classifier_name() when structure was initialized by several different classifiers.
+//! String returned by freesasa_structure_classifier_name() when
+//! structure was initialized by several different
+//! classifiers. @ingroup structure
 #define FREESASA_CONFLICTING_CLASSIFIERS "conflicting-classifiers"
 
 //! Default number of threads. Value will depend on if library was
 //! compiled with or without thread support. (2 with threads, 1
-//! without)
+//! without) @ingroup core
 const extern int FREESASA_DEF_NUMBER_THREADS; 
 
 //! Error codes. Can rely upon FREESASA_SUCCESS being 0 and the errors
@@ -63,7 +126,7 @@ enum freesasa_error_codes {
     FREESASA_WARN=-2, //!< Something went wrong, but results might still be meaningful (value will always be negative).
 };
 
-//! Atoms can be of the classes Apolar, Polar or Unknown.
+//! Atoms can be of the classes Apolar, Polar or Unknown. @ingroup classifier
 typedef enum {
     FREESASA_ATOM_APOLAR=0,
     FREESASA_ATOM_POLAR=1,
@@ -75,6 +138,8 @@ typedef enum {
     bitfield in freesasa_structure_from_pdb(),
     freesasa_structure_array() and freesasa_structure_add_atom_wopt(). 
     See documentation for each function for which options are applicable.
+
+    @ingroup structure
  */
 enum freesasa_structure_options {
     FREESASA_INCLUDE_HETATM=1, //!< Include HETATM entries
@@ -87,7 +152,7 @@ enum freesasa_structure_options {
     FREESASA_RADIUS_FROM_OCCUPANCY=1<<8, //!< Read atom radius from occupancy field.
 };
 
-//! Controls output format, can be combined in options bitfield in freesasa_export_tree()
+//! Controls output format, can be combined in options bitfield in freesasa_tree_export() @ingroup node
 enum freesasa_output_options {
     FREESASA_OUTPUT_ATOM=1, //!< Output data for atoms, residues, chains and structure
     FREESASA_OUTPUT_RESIDUE=1<<2, //!< Output data for residues, chains and structure
@@ -104,13 +169,12 @@ enum freesasa_output_options {
     //! Don't output relative areas, for example if structure has
     //! manually set radii, invalidating reference values
     FREESASA_OUTPUT_SKIP_REL=1<<12,
-
 };
 
-//! The maximum length of a selection name @see freesasa_select_area()
+//! The maximum length of a selection name @see freesasa_select_area() @ingroup selection
 #define FREESASA_MAX_SELECTION_NAME 50
 
-//! Struct to store parameters for SASA calculation @ingroup API
+//! Struct to store parameters for SASA calculation @ingroup core
 typedef struct {
     freesasa_algorithm alg;       //!< Algorithm
     double probe_radius;          //!< Probe radius (in Ångström)
@@ -119,7 +183,7 @@ typedef struct {
     int n_threads;                //!< Number of threads to use, if compiled with thread-support
 } freesasa_parameters;
 
-//! The default parameters for FreeSASA
+//! The default parameters for FreeSASA @ingroup core
 extern const freesasa_parameters freesasa_default_parameters;
 
 /**
@@ -129,10 +193,12 @@ extern const freesasa_parameters freesasa_default_parameters;
     its name, residue-name, etc. If it was initiated from a PDB file
     enough info will be stored so that a PDB-file can be printed using
     the original one as template.
+
+    @ingroup structure
  */
 typedef struct freesasa_structure freesasa_structure;
 
-//! Struct to store results of SASA calculation @ingroup API
+//! Struct to store results of SASA calculation @ingroup core
 typedef struct {
     double total; //!< Total SASA in Ångström^2
     double *sasa; //!< SASA of each atom in Ångström^2
@@ -148,6 +214,8 @@ typedef struct {
     ::freesasa_result into a ::freesasa_nodearea. Each
     ::freesasa_node is associated with a
     ::freesasa_nodearea.
+
+    @ingroup node
  */
 typedef struct {
     const char *name;  //!< Name of substructure
@@ -159,7 +227,7 @@ typedef struct {
     double unknown;    //!< SASA of unknown class (neither polar nor apolar)
 } freesasa_nodearea;
 
-//! Node types
+//! Node types @ingroup node
 typedef enum {
     FREESASA_NODE_ATOM, //!< Atom node
     FREESASA_NODE_RESIDUE, //!< Residue node
@@ -171,35 +239,39 @@ typedef enum {
 } freesasa_nodetype;
 
 /**
-    A node representing a structure, chain, residue or atom in a
-    structure (see ::freesasa_nodetype). These can be linked in a
-    tree created by freesasa_structure_tree(), freed by
-    freesasa_structure_tree_free().
+    A node representing calculation results for a structure, chain,
+    residue or atom in a structure (see @ref node).
+
+    @ingroup node
  */
 typedef struct freesasa_node freesasa_node;
 
 /**
     Struct to store a selection generated by freesasa_selection_new().
+
+    @ingroup selection
 */
 typedef struct freesasa_selection freesasa_selection;
 
 /**
     Struct that can be used to determine classes (polar/apolar) and
     radii of atoms. Initiated from
-    freesasa_classifier_from_filename(). The classifiers
+    freesasa_classifier_from_file(). The classifiers
     ::freesasa_default_classifier, ::freesasa_protor_classifier,
     ::freesasa_naccess_classifier and ::freesasa_classifier are const
     classifiers that can be used directly.
+
+    @ingroup classifier
  */
 typedef struct freesasa_classifier freesasa_classifier;
 
-//! Classifier using ProtOr radii and classes
+//! Classifier using ProtOr radii and classes @ingroup classifier
 extern const freesasa_classifier freesasa_protor_classifier;
 
-//! Classifier using NACCESS radii and classes
+//! Classifier using NACCESS radii and classes @ingroup classifier
 extern const freesasa_classifier freesasa_naccess_classifier;
 
-//! Classifier using OONS radii and classes
+//! Classifier using OONS radii and classes @ingroup classifier
 extern const freesasa_classifier freesasa_oons_classifier;
 
 /**
@@ -216,6 +288,8 @@ extern const freesasa_classifier freesasa_oons_classifier;
       defaults are used.
 
     @return The result of the calculation, NULL if something went wrong.
+
+    @ingroup core
  */
 freesasa_result *
 freesasa_calc_structure(const freesasa_structure *structure,
@@ -234,6 +308,8 @@ freesasa_calc_structure(const freesasa_structure *structure,
     @param n Number of coordinates (i.e. xyz has size 3*n, radii size n).
 
     @return The result of the calculation, NULL if something went wrong.
+
+    @ingroup core
  */
 freesasa_result *
 freesasa_calc_coord(const double *xyz, 
@@ -245,7 +321,7 @@ freesasa_calc_coord(const double *xyz,
     Calculates SASA for a structure and returns as a tree of
     ::freesasa_node.
 
-    Retrun values is dynamically allocated, should be freed with
+    Return value is dynamically allocated, should be freed with
     freesasa_tree_free()
 
     @param structure A structure
@@ -254,11 +330,14 @@ freesasa_calc_coord(const double *xyz,
     @param name Name of input structure to be used in output.
 
     @return The result of the calculation, NULL if something went wrong.
+
+    @ingroup core
  */
 freesasa_node *
 freesasa_calc_tree(const freesasa_structure *structure,
                    const freesasa_parameters *parameters,
                    const char *name);
+
 /**
     Results by classes.
 
@@ -270,6 +349,8 @@ freesasa_calc_tree(const freesasa_structure *structure,
     @param structure The structure the results are based on
     @param result The results
     @return A struct with all the results.
+
+    @ingroup core
  */
 freesasa_nodearea
 freesasa_result_classes(const freesasa_structure *structure,
@@ -279,6 +360,8 @@ freesasa_result_classes(const freesasa_structure *structure,
     Frees a ::freesasa_result object.
 
     @param result the object to be freed.
+
+    @ingroup core
  */
 void
 freesasa_result_free(freesasa_result *result);
@@ -296,6 +379,8 @@ freesasa_result_free(freesasa_result *result);
       parsing or reading the file or memory allocation problem.
 
     @see @ref Config-file
+
+    @ingroup classifier
  */
 freesasa_classifier*
 freesasa_classifier_from_file(FILE *file);
@@ -304,6 +389,8 @@ freesasa_classifier_from_file(FILE *file);
     Frees a classifier object
 
     @param classifier The classifier.
+
+    @ingroup classifier
  */
 void
 freesasa_classifier_free(freesasa_classifier *classifier);
@@ -315,6 +402,8 @@ freesasa_classifier_free(freesasa_classifier *classifier);
     @param res_name The residue name (ALA/VAL/U/C/...)
     @param atom_name The atom name (CA/N/CB/...)
     @return The radius, negative if atom unknown.
+
+    @ingroup classifier
  */
 double
 freesasa_classifier_radius(const freesasa_classifier *classifier,
@@ -328,6 +417,8 @@ freesasa_classifier_radius(const freesasa_classifier *classifier,
     @param res_name The residue name (ALA/VAL/U/C/...)
     @param atom_name The atom name (CA/N/CB/...)
     @return The class.
+
+    @ingroup classifier
  */
 freesasa_atom_class
 freesasa_classifier_class(const freesasa_classifier *classifier,
@@ -339,6 +430,8 @@ freesasa_classifier_class(const freesasa_classifier *classifier,
 
     @param atom_class The class.
     @return Name of class.
+
+    @ingroup classifier
  */
 const char*
 freesasa_classifier_class2str(freesasa_atom_class atom_class);
@@ -348,6 +441,8 @@ freesasa_classifier_class2str(freesasa_atom_class atom_class);
 
     @param classifier The classifier.
     @return The name of the classifier.
+
+    @ingroup classifier
  */
 const char*
 freesasa_classifier_name(const freesasa_classifier *classifier);
@@ -377,6 +472,8 @@ freesasa_classifier_name(const freesasa_classifier *classifier);
       freesasa_selection_name(), freesasa_selection_command(),
       freesasa_selection_area() and freesasa_selection_n_atoms() to
       access results of selection.
+
+    @ingroup selection
 */
 freesasa_selection *
 freesasa_selection_new(const char *command,
@@ -387,6 +484,8 @@ freesasa_selection_new(const char *command,
     Free selection.
 
     @param selection The selection
+
+    @ingroup selection
  */
 void
 freesasa_selection_free(freesasa_selection *selection);
@@ -396,6 +495,8 @@ freesasa_selection_free(freesasa_selection *selection);
 
     @param selection The selection
     @return the name
+
+    @ingroup selection
  */
 const char *
 freesasa_selection_name(const freesasa_selection* selection);
@@ -405,6 +506,8 @@ freesasa_selection_name(const freesasa_selection* selection);
 
     @param selection The selection
     @return The command
+
+    @ingroup selection
  */
 const char *
 freesasa_selection_command(const freesasa_selection* selection);
@@ -414,6 +517,8 @@ freesasa_selection_command(const freesasa_selection* selection);
 
     @param selection The selection
     @return The area
+
+    @ingroup selection
  */
 double
 freesasa_selection_area(const freesasa_selection* selection);
@@ -423,6 +528,8 @@ freesasa_selection_area(const freesasa_selection* selection);
 
     @param selection The selection
     @return Number of atoms
+
+    @ingroup selection
  */
 int
 freesasa_selection_n_atoms(const freesasa_selection* selection);
@@ -433,6 +540,8 @@ freesasa_selection_n_atoms(const freesasa_selection* selection);
     @param v the verbosity level
     @return ::FREESASA_SUCCESS. If v is invalid ::FREESASA_FAIL.
     @see freesasa_verbosity
+
+    @ingroup core
  */
 int
 freesasa_set_verbosity(freesasa_verbosity v);
@@ -440,7 +549,9 @@ freesasa_set_verbosity(freesasa_verbosity v);
 /**
     Get the current verbosity level
 
-    @return the verbosity level. 
+    @return the verbosity level.
+
+    @ingroup core
  */
 freesasa_verbosity
 freesasa_get_verbosity(void);
@@ -452,6 +563,8 @@ freesasa_get_verbosity(void);
     error output elsewhere.
 
     @param err The file to write to. If NULL stderr will be used.
+
+    @ingroup core
  */
 void
 freesasa_set_err_out(FILE *err);
@@ -462,6 +575,8 @@ freesasa_set_err_out(FILE *err);
     NULL means stderr is used.
   
     @return The error file.
+
+    @ingroup core
  */
 FILE *
 freesasa_get_err_out();
@@ -473,6 +588,8 @@ freesasa_get_err_out();
     freesasa_structure_free().
 
     @return Empty structure. NULL if memory allocation failure.
+
+    @ingroup structure
  */
 freesasa_structure*
 freesasa_structure_new(void);
@@ -481,6 +598,8 @@ freesasa_structure_new(void);
     Free structure.
 
     @param structure The structure to free.
+
+    @ingroup structure
  */
 void
 freesasa_structure_free(freesasa_structure* structure);
@@ -540,8 +659,9 @@ freesasa_structure_free(freesasa_structure* structure);
       
     @return The generated structure. Returns `NULL` and prints error
       if input is invalid or  memory allocation failure.
- */
 
+    @ingroup structure
+ */
 freesasa_structure*
 freesasa_structure_from_pdb(FILE *pdb,
                             const freesasa_classifier *classifier,
@@ -572,6 +692,8 @@ freesasa_structure_from_pdb(FILE *pdb,
       NULL if there were problems reading input, if invalid value of
       `options`, or upon a memory allocation
       failure.
+
+    @ingroup structure
  */
 freesasa_structure **
 freesasa_structure_array(FILE *pdb,
@@ -595,6 +717,8 @@ freesasa_structure_array(FILE *pdb,
     @param z z-coordinate of atom.
     @return ::FREESASA_SUCCESS on normal execution. ::FREESASA_FAIL if
       if memory allocation fails.
+
+    @ingroup structure
  */
 int 
 freesasa_structure_add_atom(freesasa_structure *structure,
@@ -648,6 +772,8 @@ freesasa_structure_add_atom(freesasa_structure *structure,
     @return ::FREESASA_SUCCESS on normal execution. ::FREESASA_FAIL if
        if memory allocation fails or if halting at unknown
        atom. ::FREESASA_WARN if skipping atom.
+
+    @ingroup structure
  */
 int 
 freesasa_structure_add_atom_wopt(freesasa_structure *structure,
@@ -675,6 +801,8 @@ freesasa_structure_add_atom_wopt(freesasa_structure *structure,
     @return A new structure consisting only of the specified
     chains. Returns NULL if the input structure doesn't have any
     matching chains or if memory allocation fails.
+
+    @ingroup structure
  */
 freesasa_structure*
 freesasa_structure_get_chains(const freesasa_structure *structure, 
@@ -685,6 +813,8 @@ freesasa_structure_get_chains(const freesasa_structure *structure,
 
     @param structure The structure.
     @return String with all chain labels in structure ("A", "ABC", etc).
+
+    @ingroup structure
  */
 const char*
 freesasa_structure_chain_labels(const freesasa_structure *structure);
@@ -694,6 +824,8 @@ freesasa_structure_chain_labels(const freesasa_structure *structure);
 
     @param structure The structure.
     @return Number of atoms.
+
+    @ingroup structure
  */
 int
 freesasa_structure_n(const freesasa_structure *structure);
@@ -709,6 +841,8 @@ freesasa_structure_n(const freesasa_structure *structure);
 
     @param structure A structure.
     @return Number of residues.
+
+    @ingroup structure
  */
 int
 freesasa_structure_n_residues(const freesasa_structure *structure);
@@ -718,6 +852,8 @@ freesasa_structure_n_residues(const freesasa_structure *structure);
 
     @param structure A structure.
     @return The number of chains in the structure.
+
+    @ingroup structure
  */
 int
 freesasa_structure_n_chains(const freesasa_structure *structure);
@@ -728,6 +864,8 @@ freesasa_structure_n_chains(const freesasa_structure *structure);
     @param structure The structure.  
     @return Array of radii. If NULL structure has not been properly
       initialized.
+
+    @ingroup structure
  */
 const double*
 freesasa_structure_radius(const freesasa_structure *structure);
@@ -740,6 +878,8 @@ freesasa_structure_radius(const freesasa_structure *structure);
     @param structure The structure.
     @param radii An array of radii, should have same dimension
       as the number of atoms in the structure.
+
+    @ingroup structure
  */
 void
 freesasa_structure_set_radius(freesasa_structure *structure,
@@ -757,6 +897,8 @@ freesasa_structure_set_radius(freesasa_structure *structure,
        structure was initialized from a PDB file, or in whatever form
        it was added through freesasa_structure_add_atom() or
        freesasa_structure_add_atom_wopt().
+
+    @ingroup structure
  */
 const char*
 freesasa_structure_atom_name(const freesasa_structure *structure,
@@ -773,6 +915,8 @@ freesasa_structure_atom_name(const freesasa_structure *structure,
        structure was initialized from a PDB file, or in whatever form
        it was added through freesasa_structure_add_atom() or
        freesasa_structure_add_atom_wopt().
+
+    @ingroup structure
  */
 const char*
 freesasa_structure_atom_res_name(const freesasa_structure *structure,
@@ -789,6 +933,8 @@ freesasa_structure_atom_res_name(const freesasa_structure *structure,
        structure was initialized from a PDB file, or in whatever form
        it was added through freesasa_structure_add_atom() or
        freesasa_structure_add_atom_wopt().
+
+    @ingroup structure
  */
 const char*
 freesasa_structure_atom_res_number(const freesasa_structure *structure,
@@ -802,6 +948,8 @@ freesasa_structure_atom_res_number(const freesasa_structure *structure,
     @param structure The structure.
     @param i Atom index.
     @return Chain label (`'A'`, `'B'`, etc.)
+
+    @ingroup structure
  */
 char
 freesasa_structure_atom_chain(const freesasa_structure *structure,
@@ -819,6 +967,8 @@ freesasa_structure_atom_chain(const freesasa_structure *structure,
     @param structure The structure.
     @param i Atom index.
     @return Atom symbol (`" C"`, `" N"`, `"SE"`,etc); 
+
+    @ingroup structure
  */
 const char*
 freesasa_structure_atom_symbol(const freesasa_structure *structure,
@@ -832,6 +982,8 @@ freesasa_structure_atom_symbol(const freesasa_structure *structure,
     @param structure The structure.
     @param i Atom index.
     @return Atom radius.
+
+    @ingroup structure
  */
 double
 freesasa_structure_atom_radius(const freesasa_structure *structure,
@@ -844,6 +996,8 @@ freesasa_structure_atom_radius(const freesasa_structure *structure,
     @param structure The structure.
     @param radius The radius.
     @param i Atom index.
+
+    @ingroup structure
  */
 void
 freesasa_structure_atom_set_radius(freesasa_structure *structure,
@@ -856,6 +1010,8 @@ freesasa_structure_atom_set_radius(freesasa_structure *structure,
     @param structure The structure.
     @param r_i Residue index (in whole structure)
     @return Name of residue
+
+    @ingroup structure
  */
 const char*
 freesasa_structure_residue_name(const freesasa_structure *structure,
@@ -867,6 +1023,8 @@ freesasa_structure_residue_name(const freesasa_structure *structure,
     @param structure The structure.
     @param r_i Residue index (in whole structure).
     @return Residue number as string.
+
+    @ingroup structure
  */
 const char*
 freesasa_structure_residue_number(const freesasa_structure *structure,
@@ -877,6 +1035,8 @@ freesasa_structure_residue_number(const freesasa_structure *structure,
     @param structure The structure.
     @param r_i Residue index (in whole structure).
     @return Chain label.
+
+    @ingroup structure
  */
 char
 freesasa_structure_residue_chain(const freesasa_structure *structure,
@@ -889,6 +1049,8 @@ freesasa_structure_residue_chain(const freesasa_structure *structure,
 
     @param structure The structure.  
     @return The model number. 0 means no model number has been read.
+
+    @ingroup structure
  */
 int
 freesasa_structure_model(const freesasa_structure *structure);
@@ -901,6 +1063,8 @@ freesasa_structure_model(const freesasa_structure *structure);
     @param structure The structure.
     @return Array of coordinates. NULL if structure empty. Size can be
       accessed through freesasa_structure_n() (multiply by three).
+
+    @ingroup structure
  */
 const double*
 freesasa_structure_coord_array(const freesasa_structure *structure);
@@ -908,11 +1072,13 @@ freesasa_structure_coord_array(const freesasa_structure *structure);
 /**
     Get indices of first and last atoms of a residue
  
-o    @param structure A structure.
+    @param structure A structure.
     @param r_i Residue index.
     @param first First atom of residue `r_i` will be stored here.
     @param last Last atom of residue `r_i` will be stored here.
     @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if index `r_i` is invalid.
+
+    @ingroup structure
  */
 int
 freesasa_structure_residue_atoms(const freesasa_structure *structure,
@@ -928,6 +1094,8 @@ freesasa_structure_residue_atoms(const freesasa_structure *structure,
     @param first First atom of `chain` will be stored here.
     @param last Last atom of `chain` will be stored here.
     @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if `chain` not found.
+
+    @ingroup structure
  */
 int
 freesasa_structure_chain_atoms(const freesasa_structure *structure,
@@ -943,6 +1111,8 @@ freesasa_structure_chain_atoms(const freesasa_structure *structure,
     @param first First residue of `chain` will be stored here.
     @param last Last residue of `chain` will be stored here.
     @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if `chain` not found.
+
+    @ingroup structure
  */
 int
 freesasa_structure_chain_residues(const freesasa_structure *structure,
@@ -957,6 +1127,8 @@ freesasa_structure_chain_residues(const freesasa_structure *structure,
     @return Name of classifier. Name will equal
       ::FREESASA_CONFLICTING_CLASSIFIERS if several different
       classifiers were used.
+
+    @ingroup structure
  */
 const char *
 freesasa_structure_classifier_name(const freesasa_structure *structure);
@@ -964,58 +1136,78 @@ freesasa_structure_classifier_name(const freesasa_structure *structure);
 /**
     Generates empty ::freesasa_node of type FREESASA_NODE_ROOT.
 
-    To be populated by freesasa_result_tree_add_result()
+    To be populated by freesasa_tree_add_result().
+
+    The return value is dynamically allocated and should be freed
+    using freesasa_node_free().
 
     @return A ::freesasa_node. NULL if memory allocation fails.
+
+    @ingroup node
  */
 freesasa_node *
-freesasa_result_tree_new(void);
+freesasa_tree_new(void);
 
 /**
-    Docs to come ...
+    Init tree based on result and structure.
+
+    The return value is dynamically allocated and should be freed
+    using freesasa_node_free().
+
+    @param result A result.
+    @param structure A structure.
+    @param name Name of the results (typically filename from
+      which structure is derived)
+
+    @return The root node of the tree. NULL if memory allocation
+      fails.
+
+    @ingroup node
 */
 freesasa_node *
-freesasa_result_tree_init(const freesasa_result *result,
-                          const freesasa_structure *structure,
-                          const char *name);
+freesasa_tree_init(const freesasa_result *result,
+                   const freesasa_structure *structure,
+                   const char *name);
 
 /**
-    Generates a tree that represents the structure, with the levels
-    described by ::freesasa_nodetype. 
+    Add a new set of results to a tree.
 
-    Use freesasa_node_children() to traverse the tree, and
-    freesasa_node_type(), freesasa_node_area(),
-    and freesasa_node_name() to explore the properties of each node.
+    Tree should first be initiated with freesasa_calc_tree(),
+    freesasa_tree_new() or freesasa_tree_init().
 
-    The tree should be freed using freesasa_structure_tree_free().
-
-    @param tree Tree to add results too (must be node of type
-      ::FREESASA_NODE_ROOT)
+    @param tree Node of type ::FREESASA_NODE_ROOT. Tree to add results
+      to.
     @param result SASA values for the structure
     @param structure The structure the results are based.
     @param name The name to use for the result
     @return ::FREESASA_SUCCESS upon success. ::FREESASA_FAIL if memory
       allocation fails.
+
+    @ingroup node
  */
 int
-freesasa_result_tree_add_result(freesasa_node *tree,
-                                const freesasa_result *result,
-                                const freesasa_structure *structure,
-                                const char *name);
+freesasa_tree_add_result(freesasa_node *tree,
+                         const freesasa_result *result,
+                         const freesasa_structure *structure,
+                         const char *name);
 
 /**
     Join two ::freesasa_node-trees.
 
     Allows joining several calculations into one output file.
 
-    @param tree1 The joint tree will be stored here
-    @param tree2 Will be added to tree1, and then changed to NULL,
-      since ownership of its contents have been transferred to tree1.
+    @param tree1 Node of type ::FREESASA_NODE_ROOT. The joint tree
+      will be stored here.
+    @param tree2 Node of type ::FREESASA_NODE_ROOT. Will be added to
+      tree1, and then changed to NULL, since ownership of its contents
+      have been transferred to tree1.
     @return ::FREESASA_SUCCESS.
+
+    @ingroup node
  */
 int
-freesasa_result_tree_join(freesasa_node *tree1,
-                          freesasa_node **tree2);
+freesasa_tree_join(freesasa_node *tree1,
+                   freesasa_node **tree2);
 
 /**
     Outputs result in format specified by options.
@@ -1023,13 +1215,15 @@ freesasa_result_tree_join(freesasa_node *tree1,
     @param output Output file.
     @param root Structure tree containing results (generated using 
       freesasa_result2tree()). Node of type ::FREESASA_NODE_ROOT.
-    @param parameters Parameters used in the calculated, printed for 
-      reference in some formats.
     @param options Bitfield specifying output format, see 
       ::freesasa_output_options.
+    @return ::FREESASA_SUCCESS upon success. ::FREESASA_FAIL if there
+      was an error (see messages).
+
+    @ingroup node
 */
 int
-freesasa_export_tree(FILE *output,
+freesasa_tree_export(FILE *output,
                      freesasa_node *root,
                      int options);
 
@@ -1039,9 +1233,11 @@ freesasa_export_tree(FILE *output,
     Will not free anything if the node has a parent, i.e. if this node
     is the not the root of the tree it belongs too.
 
-    @param root Root of the tree to free
+    @param root Node of type ::FREESASA_NODE_ROOT
     @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if the node hasa a
       parent.
+
+    @ingroup node
  */
 int
 freesasa_node_free(freesasa_node *root);
@@ -1054,6 +1250,8 @@ freesasa_node_free(freesasa_node *root);
 
     @param node The node. 
     @return The area. NULL if no area has been attached to this node.
+
+    @ingroup node
  */
 const freesasa_nodearea *
 freesasa_node_area(const freesasa_node *node);
@@ -1066,6 +1264,8 @@ freesasa_node_area(const freesasa_node *node);
     @param node The node.  
     @return Pointer to the first child of a node. NULL if the node has no
       children.
+
+    @ingroup node
  */
 freesasa_node *
 freesasa_node_children(freesasa_node *node);
@@ -1075,6 +1275,8 @@ freesasa_node_children(freesasa_node *node);
 
     @param node The node.
     @return The next node, NULL if this is the last node.
+
+    @ingroup node
  */
 freesasa_node *
 freesasa_node_next(freesasa_node *node);
@@ -1084,6 +1286,8 @@ freesasa_node_next(freesasa_node *node);
 
     @param node The node.
     @return The parent node. NULL if the node has no parent.
+
+    @ingroup node
  */
 freesasa_node *
 freesasa_node_parent(freesasa_node *node);
@@ -1093,6 +1297,8 @@ freesasa_node_parent(freesasa_node *node);
 
     @param node The node.
     @return The ::freesasa_nodetype.
+
+    @ingroup node
  */
 freesasa_nodetype
 freesasa_node_type(const freesasa_node *node);
@@ -1100,8 +1306,18 @@ freesasa_node_type(const freesasa_node *node);
 /**
     The name of a node.
     
+    The node types will have the following names:
+    - Atom: atom name, i.e. " CA ", " OXT", etc.
+    - Residue: residue name, i.e. "ALA", "ARG", etc.
+    - Chain: chain label, i.e. "A", "B", c
+    - Structure: string of all chain labels in the molecule, i.e. "A", "ABC", etc
+    - Result: name of input (most often input filename or 'stdin')
+    - Root: NULL
+
     @param node The node.
     @return The name. NULL if the node has no name.
+
+    @ingroup node
  */
 const char *
 freesasa_node_name(const freesasa_node *node);
@@ -1111,6 +1327,8 @@ freesasa_node_name(const freesasa_node *node);
 
     @param node A node of type ::FREESASA_NODE_RESULT.
     @return The name of the classifier
+
+    @ingroup node
  */
 const char*
 freesasa_node_classified_by(const freesasa_node *node);
@@ -1120,6 +1338,8 @@ freesasa_node_classified_by(const freesasa_node *node);
 
     @param node A node of type ::FREESASA_NODE_ATOM.
     @return 1 if polar, 0 else.
+
+    @ingroup node
  */
 int
 freesasa_node_atom_is_polar(const freesasa_node *node);
@@ -1129,6 +1349,8 @@ freesasa_node_atom_is_polar(const freesasa_node *node);
 
     @param node A node of type ::FREESASA_NODE_ATOM.
     @return 1 if mainchain, 0 else.
+
+    @ingroup node
  */
 int
 freesasa_node_atom_is_mainchain(const freesasa_node *node);
@@ -1138,6 +1360,8 @@ freesasa_node_atom_is_mainchain(const freesasa_node *node);
 
     @param node A node of type ::FREESASA_NODE_ATOM.
     @return The radius.
+
+    @ingroup node
  */
 double
 freesasa_node_atom_radius(const freesasa_node *node);
@@ -1147,6 +1371,8 @@ freesasa_node_atom_radius(const freesasa_node *node);
 
     @param node A node of type ::FREESASA_NODE_ATOM.
     @return The line. NULL if atom wasn't taken from PDB file.
+
+    @ingroup node
  */
 const char*
 freesasa_node_atom_pdb_line(const freesasa_node *node);
@@ -1156,6 +1382,8 @@ freesasa_node_atom_pdb_line(const freesasa_node *node);
 
     @param node A node of type ::FREESASA_NODE_RESIDUE.
     @return String with residue number.
+
+    @ingroup node
  */
 const char *
 freesasa_node_residue_number(const freesasa_node *node);
@@ -1165,6 +1393,8 @@ freesasa_node_residue_number(const freesasa_node *node);
 
     @param node A node of type ::FREESASA_NODE_RESIDUE.
     @return Number of atoms.
+
+    @ingroup node
  */
 int
 freesasa_node_residue_n_atoms(const freesasa_node *node);
@@ -1176,6 +1406,8 @@ freesasa_node_residue_n_atoms(const freesasa_node *node);
     @param node A node of type ::FREESASA_NODE_RESIDUE.
     @return The reference area. NULL if area not available or if node
       is not a residue.
+
+    @ingroup node
  */
 const freesasa_nodearea *
 freesasa_node_residue_reference(const freesasa_node *node);
@@ -1185,6 +1417,8 @@ freesasa_node_residue_reference(const freesasa_node *node);
 
     @param node A node of type ::FREESASA_NODE_CHAIN.
     @return Number of residues.
+
+    @ingroup node
  */
 int
 freesasa_node_chain_n_residues(const freesasa_node *node);
@@ -1194,6 +1428,8 @@ freesasa_node_chain_n_residues(const freesasa_node *node);
 
     @param node A node of type ::FREESASA_NODE_STRUCTURE.
     @return Number of chains.
+
+    @ingroup node
  */
 int
 freesasa_node_structure_n_chains(const freesasa_node *node);
@@ -1203,6 +1439,8 @@ freesasa_node_structure_n_chains(const freesasa_node *node);
 
     @param node A node of type ::FREESASA_NODE_STRUCTURE.
     @return Number of atoms.
+
+    @ingroup node
  */
 int
 freesasa_node_structure_n_atoms(const freesasa_node *node);
@@ -1212,6 +1450,8 @@ freesasa_node_structure_n_atoms(const freesasa_node *node);
 
     @param node A node of type ::FREESASA_NODE_STRUCTURE.
     @return Chain labels as null-terminated string.
+
+    @ingroup node
  */
 const char *
 freesasa_node_structure_chain_labels(const freesasa_node *node);
@@ -1221,6 +1461,8 @@ freesasa_node_structure_chain_labels(const freesasa_node *node);
 
     @param node A node of type ::FREESASA_NODE_STRUCTURE.
     @return Model number.
+
+    @ingroup node
  */
 int
 freesasa_node_structure_model(const freesasa_node *node);
@@ -1233,6 +1475,8 @@ freesasa_node_structure_model(const freesasa_node *node);
 
     @param node A node of type ::FREESASA_NODE_STRUCTURE.
     @return The results.
+
+    @ingroup node
  */
 const freesasa_result *
 freesasa_node_structure_result(const freesasa_node *node);
@@ -1245,6 +1489,8 @@ freesasa_node_structure_result(const freesasa_node *node);
     @param node A node of type ::FREESASA_NODE_STRUCTURE.
     @return A null-terminated array of pointers to selections. NULL if
       no selections were associated with structure.
+
+    @ingroup node
  */
 const freesasa_selection **
 freesasa_node_structure_selections(const freesasa_node *node);
@@ -1260,6 +1506,8 @@ freesasa_node_structure_selections(const freesasa_node *node);
     @param selection A selection.
     @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if cloning fails
       (i.e. memory allocation failure).
+
+    @ingroup node
  */
 int
 freesasa_node_structure_add_selection(freesasa_node *node,
@@ -1269,6 +1517,8 @@ freesasa_node_structure_add_selection(freesasa_node *node,
 
     @param node A node of type ::FREESASA_NODE_RESULT
     @return The parameters.
+
+    @ingroup node
  */
 const freesasa_parameters *
 freesasa_node_result_parameters(const freesasa_node *node);
@@ -1281,6 +1531,8 @@ freesasa_node_result_parameters(const freesasa_node *node);
     and strings are dynamically allocated.
 
     @deprecated use freesasa_nodearea instead
+
+    @ingroup deprecated
  */
 typedef struct {
     double *value; //!< Array of values
@@ -1302,6 +1554,8 @@ typedef struct {
     @return A new set of string-value-pairs if classifications was
     successful. NULL if classifier was not compatible with structure
     or memory allocation failure.
+
+    @ingroup deprecated
  */
 freesasa_strvp*
 freesasa_result_classify(const freesasa_result *result,
@@ -1315,6 +1569,8 @@ freesasa_result_classify(const freesasa_result *result,
     @deprecated
 
     @param strvp the object to be freed
+
+    @ingroup deprecated
  */
 void
 freesasa_strvp_free(freesasa_strvp *strvp);
@@ -1327,13 +1583,15 @@ freesasa_strvp_free(freesasa_strvp *strvp);
     non-standard ones and nucleotides only if they were present in
     input. Each line in the output is prefixed by the string "`RES`".
 
+    @deprecated use freesasa_tree_export() instead
+
     @param output Output file.
     @param result SASA values.
     @param structure The structure.
     @return ::FREESASA_FAIL if problems writing to
       `output`. ::FREESASA_SUCCESS else.
 
-    @deprecated use freesasa_export_tree() instead
+    @ingroup deprecated
  */
 int
 freesasa_per_residue_type(FILE *output,
@@ -1345,13 +1603,15 @@ freesasa_per_residue_type(FILE *output,
 
     Each line in the output is prefixed by the string "`SEQ`".
 
+    @deprecated use freesasa_tree_export() instead
+
     @param output Output file.
     @param result SASA values.
     @param structure The structure.
     @return ::FREESASA_FAIL if problems writing to `output`.
       ::FREESASA_SUCCESS else.
 
-    @deprecated use freesasa_export_tree() instead
+    @ingroup deprecated
  */
 int
 freesasa_per_residue(FILE *output,
@@ -1364,6 +1624,8 @@ freesasa_per_residue(FILE *output,
     Prints the contribution of each chain to the total SASA. Each line
     in the output is prefixed by the string `CHAIN`.
 
+    @deprecated Part of standard log in freesasa_tree_export().
+
     @param output Output file.
     @param result SASA values.
     @param structure The structure. 
@@ -1371,7 +1633,7 @@ freesasa_per_residue(FILE *output,
     @return ::FREESASA_FAIL if problems writing to output.
       ::FREESASA_SUCCESS else.
 
-    @deprecated Part of standard log in freesasa_export_tree().
+    @ingroup deprecated
  */
 int
 freesasa_per_chain(FILE *output,
@@ -1381,7 +1643,7 @@ freesasa_per_chain(FILE *output,
 /**
     Get area of a selection.
 
-    @deprecated Use freesasa_select() instead.
+    @deprecated Use freesasa_selection_new() instead.
 
     @param command The selection
     @param name The name of the selection is stored here, it should be
@@ -1389,11 +1651,12 @@ freesasa_per_chain(FILE *output,
     @param area The area of the selection is stored here
     @param structure The structure to select from
     @param result The results to integrate
-
     @return ::FREESASA_SUCCESS upon successful selection.
       ::FREESASA_WARN if some illegal selections that could be
       ignored were encountered (see printed
       warnings). ::FREESASA_FAIL if syntax error or memory failure.
+
+    @ingroup deprecated
  */
 int
 freesasa_select_area(const char *command,

@@ -194,13 +194,13 @@ START_TEST (test_sasa_1ubq)
     const freesasa_classifier *classifier = &freesasa_default_classifier;
     freesasa_structure *st = freesasa_structure_from_pdb(pdb, classifier, 0);
     freesasa_result *res;
-    freesasa_node *tree = freesasa_result_tree_new();
+    freesasa_node *tree = freesasa_tree_new();
     freesasa_strvp *strvp;
     ck_assert((res = freesasa_calc_structure(st, &parameters)) != NULL);
 
     freesasa_nodearea res_class = freesasa_result_classes(st, res);
 
-    freesasa_result_tree_add_result(tree, res, st, "test");
+    freesasa_tree_add_result(tree, res, st, "test");
     fclose(pdb);
 
     ck_assert(float_eq(res->total, total_ref, 1e-5));
@@ -211,20 +211,20 @@ START_TEST (test_sasa_1ubq)
     ck_assert(freesasa_write_pdb(devnull, tree) == FREESASA_SUCCESS);
     ck_assert(freesasa_per_residue_type(devnull,res,st) == FREESASA_SUCCESS);
     ck_assert(freesasa_per_residue(devnull,res,st) == FREESASA_SUCCESS);
-    ck_assert(freesasa_export_tree(devnull, tree, FREESASA_PDB) == FREESASA_SUCCESS);
-    ck_assert(freesasa_export_tree(devnull, tree, FREESASA_LOG) == FREESASA_SUCCESS);
-    ck_assert(freesasa_export_tree(devnull, tree, FREESASA_RES) == FREESASA_SUCCESS);
-    ck_assert(freesasa_export_tree(devnull, tree, FREESASA_SEQ) == FREESASA_SUCCESS);
-    ck_assert(freesasa_export_tree(devnull, tree, FREESASA_RSA) == FREESASA_SUCCESS);
+    ck_assert(freesasa_tree_export(devnull, tree, FREESASA_PDB) == FREESASA_SUCCESS);
+    ck_assert(freesasa_tree_export(devnull, tree, FREESASA_LOG) == FREESASA_SUCCESS);
+    ck_assert(freesasa_tree_export(devnull, tree, FREESASA_RES) == FREESASA_SUCCESS);
+    ck_assert(freesasa_tree_export(devnull, tree, FREESASA_SEQ) == FREESASA_SUCCESS);
+    ck_assert(freesasa_tree_export(devnull, tree, FREESASA_RSA) == FREESASA_SUCCESS);
     if (USE_JSON) {
-        ck_assert(freesasa_export_tree(devnull, tree, FREESASA_JSON) == FREESASA_SUCCESS);
+        ck_assert(freesasa_tree_export(devnull, tree, FREESASA_JSON) == FREESASA_SUCCESS);
     } else {
-        ck_assert(freesasa_export_tree(devnull, tree, FREESASA_JSON) == FREESASA_FAIL);
+        ck_assert(freesasa_tree_export(devnull, tree, FREESASA_JSON) == FREESASA_FAIL);
     }
     if (USE_XML) {
-        ck_assert(freesasa_export_tree(devnull, tree, FREESASA_XML) == FREESASA_SUCCESS);
+        ck_assert(freesasa_tree_export(devnull, tree, FREESASA_XML) == FREESASA_SUCCESS);
     } else {
-        ck_assert(freesasa_export_tree(devnull, tree, FREESASA_XML) == FREESASA_FAIL);
+        ck_assert(freesasa_tree_export(devnull, tree, FREESASA_XML) == FREESASA_FAIL);
     }
     fclose(devnull);
 
@@ -235,13 +235,13 @@ START_TEST (test_sasa_1ubq)
     ck_assert(freesasa_per_chain(nowrite, res, st) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue_type(nowrite, res, st) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue(nowrite, res, st) == FREESASA_FAIL);
-    ck_assert(freesasa_export_tree(nowrite, tree, FREESASA_RSA) == FREESASA_FAIL);
-    ck_assert(freesasa_export_tree(nowrite, tree, FREESASA_JSON) == FREESASA_FAIL);
+    ck_assert(freesasa_tree_export(nowrite, tree, FREESASA_RSA) == FREESASA_FAIL);
+    ck_assert(freesasa_tree_export(nowrite, tree, FREESASA_JSON) == FREESASA_FAIL);
     if (USE_JSON) {
-        ck_assert(freesasa_export_tree(nowrite, tree, FREESASA_JSON) == FREESASA_FAIL);
+        ck_assert(freesasa_tree_export(nowrite, tree, FREESASA_JSON) == FREESASA_FAIL);
     }
     if (USE_XML) {
-        ck_assert(freesasa_export_tree(nowrite, tree, FREESASA_XML) == FREESASA_FAIL);
+        ck_assert(freesasa_tree_export(nowrite, tree, FREESASA_XML) == FREESASA_FAIL);
     }
     fclose(nowrite);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
@@ -277,7 +277,7 @@ START_TEST (test_write_pdb) {
     res.n_atoms = n;
     
     freesasa_structure_set_radius(s, res.sasa);
-    root = freesasa_result_tree_init(&res, s, "bla");
+    root = freesasa_tree_init(&res, s, "bla");
     ck_assert(freesasa_write_pdb(tf, root) == FREESASA_SUCCESS);
 
     rewind(tf);
@@ -299,7 +299,7 @@ START_TEST (test_write_pdb) {
     s = freesasa_structure_new();
     freesasa_structure_add_atom(s,"C","ALA","   1",'C',0,0,0);
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    root = freesasa_result_tree_init(&res, s, "bla");
+    root = freesasa_tree_init(&res, s, "bla");
     ck_assert_int_eq(freesasa_write_pdb(devnull, root), FREESASA_FAIL);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 

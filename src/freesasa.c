@@ -165,7 +165,7 @@ freesasa_calc_tree(const freesasa_structure *structure,
                                             parameters);
 
     if (result != NULL) {
-        tree = freesasa_result_tree_init(result, structure, name);
+        tree = freesasa_tree_init(result, structure, name);
     } else {
         fail_msg("");
     }
@@ -180,7 +180,7 @@ freesasa_calc_tree(const freesasa_structure *structure,
 }
 
 int
-freesasa_export_tree(FILE *file,
+freesasa_tree_export(FILE *file,
                      freesasa_node *root,
                      int options)
 {

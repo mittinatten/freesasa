@@ -59,14 +59,14 @@ START_TEST (test_result_node)
     FILE *file = fopen(DATADIR "1ubq.pdb","r");
     freesasa_structure *structure = freesasa_structure_from_pdb(file, NULL, 0);
     freesasa_result *result = freesasa_calc_structure(structure, NULL);
-    freesasa_node *tree = freesasa_result_tree_new(), *tree2 = freesasa_result_tree_new();
+    freesasa_node *tree = freesasa_tree_new(), *tree2 = freesasa_tree_new();
     freesasa_node *rn;
 
     ck_assert_ptr_ne(tree, NULL);
     ck_assert_ptr_ne(tree2, NULL);
 
-    ck_assert_int_eq(freesasa_result_tree_add_result(tree, result, structure, "test"), FREESASA_SUCCESS);
-    ck_assert_int_eq(freesasa_result_tree_add_result(tree2, result, structure, "test2"), FREESASA_SUCCESS);
+    ck_assert_int_eq(freesasa_tree_add_result(tree, result, structure, "test"), FREESASA_SUCCESS);
+    ck_assert_int_eq(freesasa_tree_add_result(tree2, result, structure, "test2"), FREESASA_SUCCESS);
 
     ck_assert_ptr_ne(tree, NULL);
     ck_assert_ptr_eq(freesasa_node_parent(tree), NULL);
@@ -79,7 +79,7 @@ START_TEST (test_result_node)
     ck_assert_ptr_ne((rn = freesasa_node_children(rn)), NULL);
     test_tree(rn, result);
     
-    freesasa_result_tree_join(tree, &tree2);
+    freesasa_tree_join(tree, &tree2);
     ck_assert(tree2 == NULL);
     rn = freesasa_node_children(tree); // result in tree
     ck_assert_ptr_ne(rn, NULL);
@@ -104,11 +104,11 @@ START_TEST (test_memerr) {
     freesasa_result *result = freesasa_calc_structure(structure, NULL);
     freesasa_node *rn;
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    rn = freesasa_result_tree_new();
+    rn = freesasa_tree_new();
     for (int i = 1; i < 200; ++i) {
         int ret;
         set_fail_after(i);
-        ret = freesasa_result_tree_add_result(rn, result, structure, "test");
+        ret = freesasa_tree_add_result(rn, result, structure, "test");
         set_fail_after(0);
         ck_assert_int_eq(ret, FREESASA_FAIL);
     }

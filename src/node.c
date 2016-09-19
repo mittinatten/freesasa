@@ -133,13 +133,13 @@ node_free(freesasa_node *node)
 }
 
 typedef freesasa_node* (*node_generator)(const freesasa_structure*,
-                                                const freesasa_result*,
-                                                int index);
+                                         const freesasa_result*,
+                                         int index);
 
 static int
 node_add_area(freesasa_node *node,
-                     const freesasa_structure *structure,
-                     const freesasa_result *result)
+              const freesasa_structure *structure,
+              const freesasa_result *result)
 {
     freesasa_node *child = NULL;
 
@@ -166,11 +166,11 @@ node_add_area(freesasa_node *node,
 
 static freesasa_node *
 node_gen_children(freesasa_node* parent,
-                         const freesasa_structure *structure,
-                         const freesasa_result *result,
-                         int first,
-                         int last,
-                         node_generator ng)
+                  const freesasa_structure *structure,
+                  const freesasa_result *result,
+                  int first,
+                  int last,
+                  node_generator ng)
 {
     freesasa_node *child, *first_child;
 
@@ -336,8 +336,8 @@ node_chain(const freesasa_structure *structure,
 
 static freesasa_node *
 node_structure(const freesasa_structure *structure,
-                      const freesasa_result *result,
-                      int dummy_index)
+               const freesasa_result *result,
+               int dummy_index)
 {
     freesasa_node *node = NULL;
     node = node_new(freesasa_structure_chain_labels(structure));
@@ -380,7 +380,7 @@ node_structure(const freesasa_structure *structure,
 }
 
 freesasa_node *
-freesasa_result_tree_new(void)
+freesasa_tree_new(void)
 {
     freesasa_node *tree = node_new(NULL);
     if (tree != NULL) {
@@ -390,9 +390,9 @@ freesasa_result_tree_new(void)
 }
 
 freesasa_node *
-freesasa_result_tree_init(const freesasa_result *result,
-                          const freesasa_structure *structure,
-                          const char *name)
+freesasa_tree_init(const freesasa_result *result,
+                   const freesasa_structure *structure,
+                   const char *name)
 {
     freesasa_node *tree = node_new(NULL);
 
@@ -400,7 +400,7 @@ freesasa_result_tree_init(const freesasa_result *result,
 
     if (tree == NULL) {
         fail_msg("");
-    } else if (freesasa_result_tree_add_result(tree, result, structure, name) == FREESASA_FAIL) {
+    } else if (freesasa_tree_add_result(tree, result, structure, name) == FREESASA_FAIL) {
         fail_msg("");
         freesasa_node_free(tree);
         tree = NULL;
@@ -410,10 +410,10 @@ freesasa_result_tree_init(const freesasa_result *result,
 }
 
 int
-freesasa_result_tree_add_result(freesasa_node *tree,
-                                const freesasa_result *result,
-                                const freesasa_structure *structure,
-                                const char *name)
+freesasa_tree_add_result(freesasa_node *tree,
+                         const freesasa_result *result,
+                         const freesasa_structure *structure,
+                         const char *name)
 {
     freesasa_node *node = node_new(name);
     
@@ -447,8 +447,8 @@ freesasa_result_tree_add_result(freesasa_node *tree,
 }
 
 int
-freesasa_result_tree_join(freesasa_node *tree1,
-                          freesasa_node **tree2)
+freesasa_tree_join(freesasa_node *tree1,
+                   freesasa_node **tree2)
 {
     assert(tree1); assert(tree2); assert(*tree2);
     assert(tree1->type == FREESASA_NODE_ROOT);
