@@ -1,8 +1,6 @@
 #include <stdlib.h>
-#include <string.h>
 #include <math.h>
 #include <stdio.h>
-#include <errno.h>
 #include <check.h>
 #include <freesasa.h>
 #include <freesasa_internal.h>
@@ -119,7 +117,6 @@ double a2r(const char *rn, const char *am)
 
 void setup_1ubq(void)
 {
-    errno = 0;
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
     ck_assert(pdb != NULL);
     if (s) freesasa_structure_free(s);

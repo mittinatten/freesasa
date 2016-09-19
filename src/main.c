@@ -359,7 +359,6 @@ static FILE*
 fopen_werr(const char* filename,
            const char* mode) 
 {
-    errno = 0;
     FILE *f = fopen(filename, mode);
     if (f == NULL) {
         abort_msg("could not open file '%s'; %s",
@@ -498,7 +497,6 @@ main(int argc,
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
         opt_set[(int)opt] = 1;
-        errno = 0;
         // Assume arguments starting with dash are actually missing arguments
         if (optarg != NULL && optarg[0] == '-') {
             if (option_index > 0) abort_msg("Missing argument? Value '%s' cannot be argument to '--%s'.\n",
@@ -699,8 +697,7 @@ main(int argc,
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {
             freesasa_node *tmp;
-            errno = 0;
-            input = fopen_werr(argv[i],"r");
+            input = fopen_werr(argv[i], "r");
             tmp = run_analysis(input, argv[i]);
             freesasa_tree_join(tree, &tmp);
             fclose(input);

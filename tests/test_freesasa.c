@@ -1,8 +1,6 @@
-#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include <errno.h>
 #include <check.h>
 #if HAVE_CONFIG_H
 #  include <config.h>
@@ -188,7 +186,6 @@ void teardown_lr(void)
 
 START_TEST (test_sasa_1ubq)
 {
-    errno = 0;
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
     ck_assert(pdb != NULL);
     const freesasa_classifier *classifier = &freesasa_default_classifier;
@@ -327,7 +324,6 @@ START_TEST (test_trimmed_pdb)
     FILE *pdb;
     param.alg = FREESASA_SHRAKE_RUPLEY;
 
-    errno = 0;
     pdb = fopen(DATADIR "3bzd_trimmed.pdb","r");
     ck_assert(pdb != NULL);
     st = freesasa_structure_from_pdb(pdb, classifier, 0);

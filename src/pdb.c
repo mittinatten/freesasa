@@ -319,7 +319,6 @@ write_pdb_impl(FILE *output,
     }
 
     // Write TER  and ENDMDL lines
-    errno = 0;
     strncpy(buf2, &buf[6], 5);
     buf2[5]='\0';
     fprintf(output,"TER   %5d     %4s %c%4s\nENDMDL\n",
