@@ -410,14 +410,14 @@ structure we just generated, and then print the total area. The argument
 @subsubsection API-Classes Get polar and apolar area
 
 We are commonly interested in the polar and apolar areas of a
-molecule, this can be calculated by freesasa_result_classify(). To get
+molecule, this can be calculated by freesasa_result_classes(). To get
 other classes of atoms we can either define our own classifier, or use
 freesasa_select_area() defined in the next section. The return type
 ::freesasa_nodearea is a struct contains the total area and the area
 of all apolar and polar atoms, and main-chain and side-chain atoms.
 
 ~~~{.c}
-    freesasa_nodearea class_area = freesasa_classifier_classify_result(classifier, structure, result);
+    freesasa_nodearea class_area = freesasa_result_classes(structure, result);
     printf("Total  : %f A2\n", class_area.total);
     printf("Apolar : %f A2\n", class_area.apolar);
     printf("Polar  : %f A2\n", class_area.polar);
