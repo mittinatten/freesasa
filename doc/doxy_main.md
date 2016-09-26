@@ -418,9 +418,9 @@ of all apolar and polar atoms, and main-chain and side-chain atoms.
 
 ~~~{.c}
     freesasa_nodearea class_area = freesasa_classifier_classify_result(classifier, structure, result);
-    printf("Total  : %f A2\n",class_area.total);
-    printf("Apolar : %f A2\n",class_area.apolar);
-    printf("Polar  : %f A2\n",class_area.polar);
+    printf("Total  : %f A2\n", class_area.total);
+    printf("Apolar : %f A2\n", class_area.apolar);
+    printf("Polar  : %f A2\n", class_area.polar);
 ~~~
 
 @see @ref Classification
@@ -431,11 +431,11 @@ Groups of atoms can be defined using freesasa_select_area(), which
 takes a selection definition uses a subset of the Pymol select syntax
 
 ~~~{.c}
-    double area;
-    char name[FREESASA_MAX_SELECTION_NAME+1];
-    freesasa_select_area("aromatic, resn phe+tyr+trp+his+pro",
-                         name, &area, structure, result);
-    printf("Area of selection '%s': %f A2\n", name, area);
+    freesasa_selection *selection = 
+        freesasa_selection_new("aromatic, resn phe+tyr+trp+his+pro",
+                               structure, result);
+    printf("Area of selection '%s': %f A2\n",
+           freesasa_selection_name(selection), freesasa_selection_area(selection);
 ~~~
 
 @see @ref Selection
@@ -445,22 +445,20 @@ takes a selection definition uses a subset of the Pymol select syntax
 
 In addition to the flat array of results in ::freesasa_result, and the
 global values returned by freesasa_classifier_classify_result(),
-FreeSASA has an interface for navigating the structure as a tree. The
-leaf nodes are individual atoms, and there are parent nodes at the residue,
-chain, and structure levels. The function
-freesasa_result2tree() generates a such a tree and populates each node
-with the ::freesasa_nodearea of all its atoms. It returns the root
-node. The resulting tree can be traversed with
-freesasa_structure_node_children(), freesasa_structure_node_parent()
-and freesasa_structure_node_next(), and the area, type and name using
-freesasa_structure_node_area(), freesasa_structure_node_type() and
-freesasa_structure_node_name(). The tree keeps an internal reference
-to the structure used, available via
-freesasa_structure_node_structure(), and
-freesasa_structure_node_atoms() can be used to find out which atoms in
-that structure belong to a node, allowing the user to get more
-detailed information about those atoms if needed. This also means that
-the structure should not be changed as long as the tree is in use.
+FreeSASA has an interface for navigating the results as a tree. The
+leaf nodes are individual atoms, and there are parent nodes at the
+residue, chain, and structure levels. The function
+freesasa_calc_tree() does a SASA calculation and returns the root node
+of such a tree. If one already has a ::freesasa_result the function
+freesasa_tree_init() can be used instead. Each node has an associated
+::freesasa_nodearea of all its atoms. The tree can be traversed with
+freesasa_node_children(), freesasa_node_parent() and
+freesasa_node_next(), and the area, type and name using
+freesasa_node_area(), freesasa_node_type() and
+freesasa_node_name(). Additionally there are special properties for
+each level of the tree.
+
+@see node
 
 @subsubsection export-tree Exporting to RSA, JSON and XML
 
@@ -472,11 +470,13 @@ XML, including nodes for the whole structure, chains and residues (but
 excluding individual atoms).
 
 ~~~~{.c}
-    freesasa_structure_node *tree = freesasa_result2tree(result, structure, classifier, "A protein");
-    FILE *fp = fopen("output.xml", "w");
-    freesasa_export_tree(fp, tree, parameters, FREESASA_XML | FREESASA_OUTPUT_RESIDUES);
-    fclose(fp);
-    freesasa_structure_node_free(tree);
+    freesasa_node *tree = freesasa_calc_tree(structure,
+                                             &freesasa_default_parameters,
+                                             &freesasa_default_classifier);
+    FILE *file = fopen("output.xml", "w");
+    freesasa_tree_export(file, tree, FREESASA_XML | FREESASA_OUTPUT_RESIDUE);
+    fclose(file);
+    freesasa_node_free(tree);
 ~~~~
 
     
@@ -592,7 +592,7 @@ to change the default behavior.
 
 @page Config-file Classifier configuration files
 
-The configuration files read by freesasa_classifier_from_filename() or the
+The configuration files read by freesasa_classifier_from_file() or the
 command-line option `-c` should have two sections: `types:` and
 `atoms:`, and optionally the section `name:`.
 
@@ -650,14 +650,14 @@ and
 [DSSP](https://github.com/mittinatten/freesasa/tree/master/share/dssp.config).
 
 The static classifiers in the API were generated using
-[scripts/config2c.pl]((https://github.com/mittinatten/freesasa/tree/master/scripts/)
+[scripts/config2c.pl](https://github.com/mittinatten/freesasa/tree/master/scripts/)
 to convert the correspoding configurations in `share` to C code.
 
 @page Selection Selection syntax
 
 FreeSASA uses a subset of the Pymol select commands to give users an
 easy way of summing up the SASA of groups of atoms. This is done by
-the function freesasa_select_area() in the C API,
+the function freesasa_selection_new() in the C API,
 freesasa.selectArea() in the Python interface and the option
 `--select` for the command line tool. All commands are case
 insensitive. A basic selection has a selection name, a property
@@ -704,10 +704,10 @@ allowed in Pymol but supported by FreeSASA.
 
 If a selection list contains elements not found in the molecule that
 is analyzed, a warning is printed and that part of the list does not
-contribute to the selection. Not finding an a list element can be
-because it specifies a residue that does not exist in the particular
-molecule, or because of typos. The selector does not keep a list of
-valid elements, residue names, etc.
+contribute to the selection. Not finding a list element can be because
+it specifies a residue that does not exist in the particular molecule,
+or because of typos. The selector does not keep a list of valid
+elements, residue names, etc.
 
 @page Python Python interface
 
