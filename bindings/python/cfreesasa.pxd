@@ -51,6 +51,9 @@ cdef extern from "freesasa.h":
     ctypedef struct freesasa_structure:
         pass
 
+    ctypedef struct freesasa_selection:
+        pass
+
     cdef extern const freesasa_parameters freesasa_default_parameters
     cdef extern const freesasa_classifier freesasa_default_classifier
     cdef extern const freesasa_classifier freesasa_residue_classifier
@@ -85,11 +88,19 @@ cdef extern from "freesasa.h":
 
     const char* freesasa_classifier_class2str(freesasa_atom_class the_class)
 
-    int freesasa_select_area(const char *command,
-                             char *name,
-                             double *area,
-                             const freesasa_structure *structure,
-                             const freesasa_result *result)
+    freesasa_selection * freesasa_selection_new(const char *command,
+                                                const freesasa_structure *structure,
+                                                const freesasa_result *result)
+
+    void freesasa_selection_free(freesasa_selection *selection)
+
+    const char * freesasa_selection_name(const freesasa_selection* selection)
+
+    const char * freesasa_selection_command(const freesasa_selection* selection)
+
+    double freesasa_selection_area(const freesasa_selection* selection)
+
+    int freesasa_selection_n_atoms(const freesasa_selection* selection)
 
     int freesasa_write_pdb(FILE *output,
                            freesasa_result *result,

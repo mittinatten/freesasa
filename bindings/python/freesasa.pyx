@@ -12,7 +12,7 @@
 #     print "SASA = %f" % result.totalArea()
 # ~~~
 #
-# See documentation of the classes and functions for how to customize behavior
+# See documentation of the classes and functions for how to customize behavior.
 #
 
 from libc.stdio cimport FILE, fopen, fclose
@@ -626,20 +626,19 @@ def classifyResults(result,structure,classifier=None):
 #   keys, and the corresponding SASA values as values.
 # @exception Exception: Parser failed (typically syntax error), see
 #   library error messages.
-def selectArea(commands,structure,result):
+def selectArea(commands, structure, result):
       cdef freesasa_structure *s
       cdef freesasa_result *r
-      cdef double area
-      cdef char *name = <char*>malloc(FREESASA_MAX_SELECTION_NAME+1);
+      cdef freesasa_selection *selection
       structure._get_address(<size_t> &s)
       result._get_address(<size_t> &r)
       value = dict()
       for cmd in commands:
-            ret = freesasa_select_area(cmd,name,&area,s,r)
-            if ret == FREESASA_FAIL:
+            selection = freesasa_selection_new(cmd, s, r)
+            if selection == NULL:
                   raise Exception("Error parsing '%s'" % cmd)
-            value[name] = area
-      free(name)
+            value[freesasa_selection_name(selection)] = freesasa_selection_area(selection)
+            freesasa_selection_free(selection)
       return value
 
 ## Set global verbosity
