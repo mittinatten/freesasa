@@ -211,11 +211,34 @@ freesasa_xml_chain(const freesasa_node *node,
 }
 
 xmlNodePtr
+freesasa_xml_selection(const freesasa_selection *selection)
+{
+    xmlNodePtr xml_selection = xmlNewNode(NULL, BAD_CAST "selection");
+    char buf[20];
+
+    sprintf(buf, "%f", freesasa_selection_area(selection));
+
+    if (xml_selection == NULL) {
+        fail_msg("");
+    } else {
+        if (xmlNewProp(xml_selection, BAD_CAST "name", BAD_CAST freesasa_selection_name(selection)) == NULL ||
+            xmlNewProp(xml_selection, BAD_CAST "area", BAD_CAST buf) == NULL) {
+            fail_msg("");
+            xmlFreeNode(xml_selection);
+            xml_selection = NULL;
+        }
+    }
+
+    return xml_selection;
+}
+
+xmlNodePtr
 freesasa_xml_structure(const freesasa_node *node,
                        int options)
 {
     assert(node);
-    xmlNodePtr xml_node = NULL, xml_area = NULL;
+    xmlNodePtr xml_node = NULL, xml_area = NULL, xml_selection = NULL;
+    const freesasa_selection **selections = freesasa_node_structure_selections(node);
 
     xml_node = xmlNewNode(NULL, BAD_CAST "structure");
     if (xml_node == NULL) {
@@ -229,16 +252,36 @@ freesasa_xml_structure(const freesasa_node *node,
     }
 
     xml_area = xml_nodearea(freesasa_node_area(node), "area");
+    if (xml_area == NULL) {
+        fail_msg("");
+        goto cleanup;
+    }
+
     if (xmlAddChild(xml_node, xml_area) == NULL) {
         fail_msg("");
         goto cleanup;
+    }
+
+    if (selections) {
+        while (*selections) {
+            xml_selection = freesasa_xml_selection(*selections);
+            if (xml_selection == NULL) {
+                fail_msg("");
+                goto cleanup;
+            }
+
+            if (xmlAddChild(xml_node, xml_selection) == NULL) {
+                fail_msg("");
+                goto cleanup;
+            }
+            ++selections;
+        }
     }
 
     return xml_node;
 
  cleanup:
     xmlFreeNode(xml_node);
-    xmlFreeNode(xml_area);
     return NULL;
 }
 

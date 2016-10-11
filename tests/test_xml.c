@@ -105,9 +105,12 @@ START_TEST (test_libxmlerr)
         freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
     fclose(pdb);
     freesasa_result *result = freesasa_calc_structure(ubq, NULL);
-    freesasa_node *tree = freesasa_tree_new();
+    freesasa_node *tree = freesasa_tree_new(), *structure_node;
+    freesasa_selection *selection = freesasa_selection_new("ala, resn ala", ubq, result);
     int ret;
     freesasa_tree_add_result(tree, result, ubq, "test");
+    structure_node = freesasa_node_children(freesasa_node_children(tree));
+    freesasa_node_structure_add_selection(structure_node, selection);
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 1; i < 100; ++i) {
@@ -116,7 +119,7 @@ START_TEST (test_libxmlerr)
         local_set_fail_after(0);
         ck_assert_int_eq(ret, FREESASA_FAIL);
     }
-    for (int i = 1; i < 29; ++i) {
+    for (int i = 1; i < 35; ++i) {
         local_set_fail_after(i);
         ret = freesasa_write_xml(devnull, tree, FREESASA_OUTPUT_STRUCTURE);
         local_set_fail_after(0);
@@ -124,6 +127,8 @@ START_TEST (test_libxmlerr)
     }
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     freesasa_node_free(tree);
+    freesasa_result_free(result);
+    freesasa_selection_free(selection);
 }
 END_TEST
 
