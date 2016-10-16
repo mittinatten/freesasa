@@ -533,6 +533,7 @@ freesasa_write_xml(FILE *output,
 
     writer = xmlNewTextWriterMemory(buf, 0);
     if (writer == NULL) {
+        xmlBufferFree(buf);
         fail_msg("");
         goto cleanup;
     }
@@ -570,7 +571,6 @@ freesasa_write_xml(FILE *output,
 
  cleanup:
     xmlFreeDoc(doc);
-    xmlBufferFree(buf);
     xmlFreeTextWriter(writer);
     return ret;
 }
