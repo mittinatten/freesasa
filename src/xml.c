@@ -15,31 +15,31 @@ nodearea2xml(const freesasa_nodearea *area,
     xmlNodePtr xml_node = xmlNewNode(NULL, BAD_CAST name);
     char buf[20];
 
-    sprintf(buf, "%f", area->total);
+    sprintf(buf, "%.3f", area->total);
     if (xmlNewProp(xml_node, BAD_CAST "total", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
     }
 
-    sprintf(buf, "%f", area->polar);
+    sprintf(buf, "%.3f", area->polar);
     if (xmlNewProp(xml_node, BAD_CAST "polar", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
     }
     
-    sprintf(buf, "%f", area->apolar);
+    sprintf(buf, "%.3f", area->apolar);
     if (xmlNewProp(xml_node, BAD_CAST "apolar", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
     }
 
-    sprintf(buf, "%f", area->main_chain);
+    sprintf(buf, "%.3f", area->main_chain);
     if (xmlNewProp(xml_node, BAD_CAST "mainChain", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
     }
 
-    sprintf(buf, "%f", area->side_chain);
+    sprintf(buf, "%.3f", area->side_chain);
     if (xmlNewProp(xml_node, BAD_CAST "sideChain", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
@@ -76,7 +76,7 @@ atom2xml(const freesasa_node *node,
         goto cleanup;
     }
 
-    sprintf(buf, "%f", area->total);
+    sprintf(buf, "%.3f", area->total);
     if (xmlNewProp(xml_node, BAD_CAST "area", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
@@ -94,7 +94,7 @@ atom2xml(const freesasa_node *node,
         goto cleanup;
     }
 
-    sprintf(buf, "%f", freesasa_node_atom_radius(node));
+    sprintf(buf, "%.3f", freesasa_node_atom_radius(node));
     if (xmlNewProp(xml_node, BAD_CAST "radius", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
@@ -142,6 +142,7 @@ residue2xml(const freesasa_node *node,
     }
 
     if (xmlAddChild(xml_node, xml_area) == NULL) {
+        xmlFreeNode(xml_area);
         fail_msg("");
         goto cleanup;
     }
@@ -154,6 +155,7 @@ residue2xml(const freesasa_node *node,
             goto cleanup;
         }
         if (xmlAddChild(xml_node, xml_relarea) == NULL) {
+            xmlFreeNode(xml_relarea);
             fail_msg("");
             goto cleanup;
         }
@@ -199,13 +201,13 @@ chain2xml(const freesasa_node *node,
 
     if (xmlAddChild(xml_node, xml_area) == NULL) {
         fail_msg("");
+        xmlFreeNode(xml_area);
         goto cleanup;
     }
 
     return xml_node;
 
  cleanup:
-    xmlFreeNode(xml_area);
     xmlFreeNode(xml_node);
     return NULL;
 }
@@ -216,7 +218,7 @@ selection2xml(const freesasa_selection *selection)
     xmlNodePtr xml_selection = xmlNewNode(NULL, BAD_CAST "selection");
     char buf[20];
 
-    sprintf(buf, "%f", freesasa_selection_area(selection));
+    sprintf(buf, "%.3f", freesasa_selection_area(selection));
 
     if (xml_selection == NULL) {
         fail_msg("");
@@ -230,6 +232,27 @@ selection2xml(const freesasa_selection *selection)
     }
 
     return xml_selection;
+}
+
+static xmlNodePtr
+add_selections_to_xmlNode(const freesasa_selection **selections,
+                          xmlNodePtr parent)
+{
+    while (*selections) {
+        xmlNodePtr xml_selection = selection2xml(*selections);
+        if (xml_selection == NULL) {
+            fail_msg("");
+            return NULL;
+        }
+
+        if (xmlAddChild(parent, xml_selection) == NULL) {
+            fail_msg("");
+            xmlFreeNode(xml_selection);
+            return NULL;
+        }
+        ++selections;
+    }
+    return parent;
 }
 
 static xmlNodePtr
@@ -259,22 +282,14 @@ structure2xml(const freesasa_node *node,
 
     if (xmlAddChild(xml_node, xml_area) == NULL) {
         fail_msg("");
+        xmlFreeNode(xml_area);
         goto cleanup;
     }
 
     if (selections) {
-        while (*selections) {
-            xml_selection = selection2xml(*selections);
-            if (xml_selection == NULL) {
-                fail_msg("");
-                goto cleanup;
-            }
-
-            if (xmlAddChild(xml_node, xml_selection) == NULL) {
-                fail_msg("");
-                goto cleanup;
-            }
-            ++selections;
+        if (add_selections_to_xmlNode(selections, xml_node) == NULL) {
+            fail_msg("");
+            goto cleanup;
         }
     }
 
@@ -318,7 +333,7 @@ node2xml(xmlNodePtr *xml_node,
         assert(0 && "Tree illegal");
     }
     if (*xml_node == NULL)
-        return fail_msg("");
+        return fail_msg("Error creating XML-node");
 
     // simplify?
     while (child != NULL) {
