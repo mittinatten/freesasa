@@ -9,7 +9,7 @@
 #include "freesasa_internal.h"
 
 static xmlNodePtr
-xml_nodearea(const freesasa_nodearea *area,
+nodearea2xml(const freesasa_nodearea *area,
              const char *name)
 {
     xmlNodePtr xml_node = xmlNewNode(NULL, BAD_CAST name);
@@ -52,9 +52,9 @@ xml_nodearea(const freesasa_nodearea *area,
     return NULL;
 }
 
-xmlNodePtr
-freesasa_xml_atom(const freesasa_node *node,
-                  int options)
+static xmlNodePtr
+atom2xml(const freesasa_node *node,
+         int options)
 {
     assert(node);
     xmlNodePtr xml_node = NULL;
@@ -107,9 +107,9 @@ freesasa_xml_atom(const freesasa_node *node,
     return NULL;
 }
 
-xmlNodePtr
-freesasa_xml_residue(const freesasa_node *node,
-                     int options)
+static xmlNodePtr
+residue2xml(const freesasa_node *node,
+            int options)
 {
     assert(node);
     xmlNodePtr xml_node = NULL, xml_area = NULL, xml_relarea = NULL;
@@ -135,7 +135,7 @@ freesasa_xml_residue(const freesasa_node *node,
         goto cleanup;
     }
 
-    xml_area = xml_nodearea(abs, "area");
+    xml_area = nodearea2xml(abs, "area");
     if (xml_area == NULL) {
         fail_msg("");
         goto cleanup;
@@ -148,7 +148,7 @@ freesasa_xml_residue(const freesasa_node *node,
 
     if ((reference != NULL) && !(options & FREESASA_OUTPUT_SKIP_REL)) {
         freesasa_residue_rel_nodearea(&rel, abs, reference);
-        xml_relarea = xml_nodearea(&rel, "relativeArea");
+        xml_relarea = nodearea2xml(&rel, "relativeArea");
         if (xml_relarea == NULL) {
             fail_msg("");
             goto cleanup;
@@ -166,9 +166,9 @@ freesasa_xml_residue(const freesasa_node *node,
     return NULL;
 }
 
-xmlNodePtr
-freesasa_xml_chain(const freesasa_node *node,
-                   int options)
+static xmlNodePtr
+chain2xml(const freesasa_node *node,
+          int options)
 {
     xmlNodePtr xml_node = NULL, xml_area = NULL;
     char buf[20];
@@ -191,7 +191,7 @@ freesasa_xml_chain(const freesasa_node *node,
         goto cleanup;
     }
 
-    xml_area = xml_nodearea(freesasa_node_area(node), "area");
+    xml_area = nodearea2xml(freesasa_node_area(node), "area");
     if (xml_area == NULL) {
         fail_msg("");
         goto cleanup;
@@ -210,8 +210,8 @@ freesasa_xml_chain(const freesasa_node *node,
     return NULL;
 }
 
-xmlNodePtr
-freesasa_xml_selection(const freesasa_selection *selection)
+static xmlNodePtr
+selection2xml(const freesasa_selection *selection)
 {
     xmlNodePtr xml_selection = xmlNewNode(NULL, BAD_CAST "selection");
     char buf[20];
@@ -232,9 +232,9 @@ freesasa_xml_selection(const freesasa_selection *selection)
     return xml_selection;
 }
 
-xmlNodePtr
-freesasa_xml_structure(const freesasa_node *node,
-                       int options)
+static xmlNodePtr
+structure2xml(const freesasa_node *node,
+              int options)
 {
     assert(node);
     xmlNodePtr xml_node = NULL, xml_area = NULL, xml_selection = NULL;
@@ -251,7 +251,7 @@ freesasa_xml_structure(const freesasa_node *node,
         goto cleanup;
     }
 
-    xml_area = xml_nodearea(freesasa_node_area(node), "area");
+    xml_area = nodearea2xml(freesasa_node_area(node), "area");
     if (xml_area == NULL) {
         fail_msg("");
         goto cleanup;
@@ -264,7 +264,7 @@ freesasa_xml_structure(const freesasa_node *node,
 
     if (selections) {
         while (*selections) {
-            xml_selection = freesasa_xml_selection(*selections);
+            xml_selection = selection2xml(*selections);
             if (xml_selection == NULL) {
                 fail_msg("");
                 goto cleanup;
@@ -286,11 +286,11 @@ freesasa_xml_structure(const freesasa_node *node,
 }
 
 // Root is not converted to xmlNodePtr, we skip immediately to children
-int
-freesasa_node2xml(xmlNodePtr *xml_node,
-                  freesasa_node *node,
-                  int exclude_type,
-                  int options)
+static int
+node2xml(xmlNodePtr *xml_node,
+         freesasa_node *node,
+         int exclude_type,
+         int options)
 {
     assert(xml_node);
     assert(node);
@@ -302,16 +302,16 @@ freesasa_node2xml(xmlNodePtr *xml_node,
 
     switch (freesasa_node_type(node)) {
     case FREESASA_NODE_STRUCTURE:
-        *xml_node = freesasa_xml_structure(node, options);
+        *xml_node = structure2xml(node, options);
         break;
     case FREESASA_NODE_CHAIN:
-        *xml_node = freesasa_xml_chain(node, options);
+        *xml_node = chain2xml(node, options);
         break;
     case FREESASA_NODE_RESIDUE:
-        *xml_node = freesasa_xml_residue(node, options);
+        *xml_node = residue2xml(node, options);
         break;
     case FREESASA_NODE_ATOM:
-        *xml_node = freesasa_xml_atom(node, options);
+        *xml_node = atom2xml(node, options);
         break;
     case FREESASA_NODE_ROOT:
     default:
@@ -322,7 +322,7 @@ freesasa_node2xml(xmlNodePtr *xml_node,
 
     // simplify?
     while (child != NULL) {
-        if (freesasa_node2xml(&xml_child, child, exclude_type, options) == FREESASA_FAIL)
+        if (node2xml(&xml_child, child, exclude_type, options) == FREESASA_FAIL)
             return fail_msg("");
 
         if (xml_child != NULL &&
@@ -429,7 +429,7 @@ xml_result(freesasa_node *result,
     assert(child);
 
     while(child) {
-        if (freesasa_node2xml(&xml_structure, child, exclude_type, options) == FREESASA_FAIL) {
+        if (node2xml(&xml_structure, child, exclude_type, options) == FREESASA_FAIL) {
             fail_msg("");
             goto cleanup;
         }
