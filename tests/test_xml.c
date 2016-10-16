@@ -129,6 +129,7 @@ START_TEST (test_libxmlerr)
     freesasa_node_free(tree);
     freesasa_result_free(result);
     freesasa_selection_free(selection);
+    freesasa_structure_free(ubq);
 }
 END_TEST
 

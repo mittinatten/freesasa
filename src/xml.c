@@ -337,11 +337,13 @@ node2xml(xmlNodePtr *xml_node,
 
     // simplify?
     while (child != NULL) {
-        if (node2xml(&xml_child, child, exclude_type, options) == FREESASA_FAIL)
+        if (node2xml(&xml_child, child, exclude_type, options) == FREESASA_FAIL) {
             return fail_msg("");
+        }
 
         if (xml_child != NULL &&
             xmlAddChild(*xml_node, xml_child) == NULL) {
+            xmlFreeNode(*xml_node);
             xmlFreeNode(xml_child);
             return fail_msg("");
         }
@@ -457,6 +459,7 @@ xml_result(freesasa_node *result,
 
     return xml_result_node;
  cleanup:
+    xmlFreeNode(xml_structure);
     xmlFreeNode(xml_result_node);
     return NULL;
 }
@@ -489,11 +492,9 @@ freesasa_write_xml(FILE *output,
     }
 
     ns = xmlNewNs(xml_root, BAD_CAST "http://freesasa.github.io/", NULL);
-    buf = xmlBufferCreate();
-    if (ns == NULL || buf == NULL) {
+    if (ns == NULL) {
         fail_msg("");
-        // this will later be stored with the doc, so can't be freed twice in cleanup
-        xmlFreeNs(ns);
+        xmlFreeNode(xml_root);
         goto cleanup;
     }
 
@@ -522,6 +523,12 @@ freesasa_write_xml(FILE *output,
             goto cleanup;
         }
         child = freesasa_node_next(child);
+    }
+
+    buf = xmlBufferCreate();
+    if (buf == NULL) {
+        fail_msg("");
+        goto cleanup;
     }
 
     writer = xmlNewTextWriterMemory(buf, 0);
@@ -563,6 +570,7 @@ freesasa_write_xml(FILE *output,
 
  cleanup:
     xmlFreeDoc(doc);
+    xmlBufferFree(buf);
     xmlFreeTextWriter(writer);
     return ret;
 }
