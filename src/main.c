@@ -185,6 +185,17 @@ short_help(void)
 }
 
 static void
+version(void)
+{
+    printf("%s\n", freesasa_string);
+    printf("License: MIT <http://opensource.org/licenses/MIT>\n");
+    printf("If you use this program for research, please cite:\n");
+    printf("  Simon Mitternacht (2016) FreeSASA: An open source C\n"
+           "  library for solvent accessible surface area calculations.\n"
+           "  F1000Research 5:189.\n");
+}
+
+static void
 release_resources(void)
 {
     if (classifier_from_file) freesasa_classifier_free(classifier_from_file);
@@ -200,6 +211,7 @@ release_resources(void)
         }
     }
 }
+
 static void
 abort_msg(const char *format,
           ...)
@@ -427,6 +439,40 @@ parse_output_format(const char *optarg)
         return FREESASA_PDB;
     }
     abort_msg("Unknown output format: '%s'", optarg);
+    return FREESASA_FAIL; // to avoid compiler warnings
+}
+
+static int
+parse_output_depth(const char *optarg) {
+    if (strcmp("structure", optarg) == 0) {
+        return FREESASA_OUTPUT_STRUCTURE;
+    }
+    if (strcmp("chain", optarg) == 0) {
+        return FREESASA_OUTPUT_CHAIN;
+    }
+    if (strcmp("residue", optarg) == 0) {
+        return FREESASA_OUTPUT_RESIDUE;
+    }
+    if (strcmp("atom", optarg) == 0) {
+        return FREESASA_OUTPUT_ATOM;
+    }
+    abort_msg("Output depth '%s' not allowed, "
+              "can only be 'structure', 'chain', 'residue' or 'atom'",
+              optarg);
+    return FREESASA_FAIL; // to avoid compiler warnings
+}
+
+static const freesasa_classifier *
+parse_radii_option(const char *optarg)
+{
+    if (strcmp("naccess", optarg) == 0) {
+        return &freesasa_naccess_classifier;
+    } else if (strcmp("protor", optarg) == 0) {
+        return &freesasa_protor_classifier;
+    }
+    abort_msg("Config '%s' not allowed, "
+              "can only be 'protor' or 'naccess')", optarg);
+    return NULL; // to avoid compiler warnings
 }
 
 int
@@ -504,28 +550,11 @@ main(int argc,
                 output_format = FREESASA_RSA;
                 break;
             case O_DEPTH:
-                if (strcmp("structure", optarg) == 0)
-                    output_depth = FREESASA_OUTPUT_STRUCTURE;
-                else if (strcmp("chain", optarg) == 0)
-                    output_depth = FREESASA_OUTPUT_CHAIN;
-                else if (strcmp("residue", optarg) == 0)
-                    output_depth = FREESASA_OUTPUT_RESIDUE;
-                else if (strcmp("atom", optarg) == 0)
-                    output_depth = 0;
-                else abort_msg("Output depth '%s' not allowed, "
-                               "can only be 'structure', 'chain', 'residue' or 'atom'",
-                               optarg);
+                output_depth = parse_output_depth(optarg);
                 break;
             case RADII:
                 static_config = 1;
-                if (strcmp("naccess", optarg) == 0) {
-                    classifier = &freesasa_naccess_classifier;
-                } else if (strcmp("protor", optarg) == 0) {
-                    classifier = &freesasa_protor_classifier;
-                } else {
-                    abort_msg("Config '%s' not allowed, "
-                              "can only be 'protor' or 'naccess')", optarg);
-                }
+                classifier = parse_radii_option(optarg);
                 break;
             case DEPRECATED:
                 deprecated();
@@ -538,12 +567,7 @@ main(int argc,
             help();
             exit(EXIT_SUCCESS);
         case 'v':
-            printf("%s\n", freesasa_string);
-            printf("License: MIT <http://opensource.org/licenses/MIT>\n");
-            printf("If you use this program for research, please cite:\n");
-            printf("  Simon Mitternacht (2016) FreeSASA: An open source C\n"
-                   "  library for solvent accessible surface area calculations.\n"
-                   "  F1000Research 5:189.\n");
+            version();
             exit(EXIT_SUCCESS);
         case 'e': 
             errlog = fopen_werr(optarg, "w");
@@ -572,7 +596,7 @@ main(int argc,
             parameters.shrake_rupley_n_points = atoi(optarg);
             parameters.lee_richards_n_slices = atoi(optarg);
             if (parameters.shrake_rupley_n_points <= 0)
-                abort_msg("error: Resolution needs to be at least 1 (20 recommended minum for S&R, 5 for L&R).");
+                abort_msg("Resolution needs to be at least 1 (20 recommended minum for S&R, 5 for L&R).");
             break;
         case 'S':
             parameters.alg = FREESASA_SHRAKE_RUPLEY;
@@ -585,7 +609,7 @@ main(int argc,
         case 'p':
             parameters.probe_radius = atof(optarg);
             if (parameters.probe_radius <= 0)
-                abort_msg("error: probe radius must be 0 or larger.");
+                abort_msg("Probe radius must be 0 or larger.");
             break;
         case 'H':
             structure_options |= FREESASA_INCLUDE_HETATM;

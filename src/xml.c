@@ -260,7 +260,7 @@ structure2xml(const freesasa_node *node,
               int options)
 {
     assert(node);
-    xmlNodePtr xml_node = NULL, xml_area = NULL, xml_selection = NULL;
+    xmlNodePtr xml_node = NULL, xml_area = NULL;
     const freesasa_selection **selections = freesasa_node_structure_selections(node);
 
     xml_node = xmlNewNode(NULL, BAD_CAST "structure");
