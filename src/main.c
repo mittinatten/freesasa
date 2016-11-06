@@ -29,23 +29,11 @@ freesasa_classifier *classifier_from_file = NULL;
 int structure_options = 0;
 
 // output files
-FILE *output_pdb = NULL;
-FILE *per_residue_type_file = NULL;
-FILE *per_residue_file = NULL;
-FILE *rsa_file = NULL;
-FILE *json_file = NULL;
-FILE *xml_file = NULL;
 FILE *output = NULL;
 FILE *errlog;
 
 // flags
-int per_residue_type = 0;
-int per_residue = 0;
 int printlog = 1;
-int printpdb = 0;
-int printrsa = 0;
-int printjson = 0;
-int printxml = 0;
 int static_config = 0;
 int output_depth = FREESASA_OUTPUT_CHAIN;
 int no_rel = 0;
@@ -64,13 +52,14 @@ struct analysis_results {
     int n_structures;
 };
 
-void
+static void
 help(void)
 {
     fprintf(stderr, "\nUsage: %s [options] pdb-file(s)\n\n", program_name);
     fprintf(stderr, "GENERAL OPTIONS\n"
             "  -h (--help)           Print this message\n"
-            "  -v (--version)        Print version of the program\n");
+            "  -v (--version)        Print version of the program\n"
+            "  --deprecated          Print deprecated options\n");
     fprintf(stderr, "\nPARAMETERS\n"
             "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm\n"
             "  -L (--lee-richards)   Use Lee & Richards algorithm [default]\n");
@@ -128,7 +117,7 @@ help(void)
             "                        'guess' its VdW radius, 'skip' the atom, or 'halt'.\n"
             "                        Default is 'guess'.\n");
     fprintf(stderr, "\nOUTPUT\n"
-            "  -l (--no-log)         Don't print log message (useful with -r -R and -B)\n"
+            "  -l (--no-log)         Don't print log message (useful with -r and -R)\n"
             "  -w (--no-warnings)    Don't print warnings (will still print warnings due to\n"
             "                        invalid command line options)\n"
             "\n"
@@ -136,32 +125,19 @@ help(void)
             "  -e <file> (--error-file=<file>)\n"
             "                        Redirect output and/or errors and warnings to file.\n"
             "\n"
-            "  -r  (--foreach-residue-type) or  --residue-type-file=<output-file>\n"
-            "  -R  (--foreach-residue)      or  --residue-file=<output-file>\n"
-            "                        Print SASA for each residue, either grouped by type or\n"
-            "                        sequentially. Use the -file variant to specify an output\n"
-            "                        file.\n"
-            "\n"
-            "  -B  (--print-as-B-values)  or   --B-value-file=<output-file>\n"
-            "                        Print PDB file where the temperature factor of each atom\n"
-            "                        has been replaced by its SASA, and the occupancy number\n"
-            "                        by the atomic radius. Use the -file variant to specify\n"
-            "                        an output file.\n"
-            "                        This option might give confusing output when used in\n"
-        "                        conjuction with the options -C and -g.\n"
-        "\n");
-    if (USE_JSON) {
-        fprintf(stderr,
-                "  --json  or  --json-file=<file>\n"
-                "                        Print results in JSON format\n"
-                "\n");
-    }
-    if (USE_XML) {
-        fprintf(stderr,
-                "  --xml   or  --xml-file=<file>\n"
-                "                        Print results in XML format\n"
-                "\n");
-    }
+            "  -f <format> (--format <format>)\n"
+            "                        Output format, options are:\n"
+            "                          - log  Default output, plain text\n"
+            "                          - res  The SASA of each residue type on a separate line.\n"
+            "                          - seq  The SASA of each residue separately.\n"
+            "                          - pdb  PDB file where the temperature factor of each atom\n"
+            "                                 is replaced by its SASA, and the occupancy number\n"
+            "                                 by the atomic radius.\n"
+            "                          - rsa  Results in RSA format.\n"
+            "                          - json Results in JSON format.\n"
+            "                          - xml  Results in XML format.\n"
+            "                        If the option is repeated, only the last value will be used.\n"
+            "\n");
     if (USE_JSON || USE_XML) {
         fprintf(stderr,
                 "  --output-depth=<structure|chain|residue|atom>\n"
@@ -169,10 +145,6 @@ help(void)
                 "\n");
     }
     fprintf(stderr,
-            "  --rsa   or  --rsa-file=<file>\n"
-            "                        Print relative SASA values in RSA format (same as\n"
-            "                        NACCESS). The reference amino acid SASAs are calculated\n"
-            "                        using ProtOr radii.\n"
             "\n"
             "  --select <command>    Select atoms using Pymol select syntax.\n"
             "                        The option can be repeated to define several selections.\n\n"
@@ -188,21 +160,34 @@ help(void)
             program_name,program_name);
 }
 
-void
+static void
+deprecated(void)
+{
+    fprintf(stderr,
+            "These options are still supported but will disappear in later versions of FreeSASA.\n"
+            "Use --format instead\n\n"
+            "  --rsa                 Equivalent to --format=rsa\n"
+            "  -B  (--print-as-B-values)\n"
+            "                        Equivalent to --format=pdb\n"
+            "  -r  (--foreach-residue-type)\n"
+            "                        Equivalent to --format=res\n"
+            "  -R  (--foreach-residue)\n"
+            "                        Equivalent to --format=seq.\n"
+
+            "\n");
+}
+
+static void
 short_help(void)
 {
     fprintf(stderr, "Run '%s -h' for usage instructions.\n",
             program_name);
 }
 
-void release_resources()
+static void
+release_resources(void)
 {
     if (classifier_from_file) freesasa_classifier_free(classifier_from_file);
-    if (output_pdb) fclose(output_pdb);
-    if (per_residue_type_file) fclose(per_residue_type_file);
-    if (per_residue_file) fclose(per_residue_file);
-    if (rsa_file) fclose(rsa_file);
-    if (json_file) fclose(json_file);
     if (errlog) fclose(errlog);
     if (chain_groups) {
         for (int i = 0; i < n_chain_groups; ++i) {
@@ -215,7 +200,7 @@ void release_resources()
         }
     }
 }
-void
+static void
 abort_msg(const char *format,
           ...)
 {
@@ -233,7 +218,7 @@ abort_msg(const char *format,
     exit(EXIT_FAILURE);
 }
 
-freesasa_structure **
+static freesasa_structure **
 get_structures(FILE *input, int *n)
 {
    freesasa_structure **structures = NULL;
@@ -295,9 +280,6 @@ run_analysis(FILE *input,
     structures = get_structures(input, &n);
     if (n == 0) abort_msg("Invalid input.");
 
-    // Only logging here
-    if (printlog) freesasa_write_parameters(output, &parameters);
-    
     // perform calculation on each structure and output results
     for (int i = 0; i < n; ++i) {
         char name_i[name_len+10];
@@ -337,22 +319,6 @@ run_analysis(FILE *input,
     free(structures);
 
     return tree;
-}
-
-static void
-print_results(freesasa_node *tree)
-{
-    int rel = (no_rel ? FREESASA_OUTPUT_SKIP_REL : 0);
-
-    if (printlog)  freesasa_tree_export(output,     tree, FREESASA_LOG);
-    if (per_residue_type)
-        freesasa_tree_export(per_residue_type_file, tree, FREESASA_RES);
-    if (per_residue)
-        freesasa_tree_export(per_residue_file,      tree, FREESASA_SEQ);
-    if (printpdb)  freesasa_tree_export(output_pdb, tree, FREESASA_PDB);
-    if (printrsa)  freesasa_tree_export(rsa_file,   tree, FREESASA_RSA | rel);
-    if (printjson) freesasa_tree_export(json_file,  tree, FREESASA_JSON | output_depth | rel);
-    if (printxml)  freesasa_tree_export(xml_file,   tree, FREESASA_XML | output_depth | rel);
 }
 
 static FILE*
@@ -436,6 +402,33 @@ add_unknown_option(const char *optarg)
     abort_msg("Unknown alternative to option --unknown: '%s'", optarg);
 }
 
+static int
+parse_output_format(const char *optarg)
+{
+    if (strcmp(optarg, "log") == 0) {
+        return FREESASA_LOG;
+    }
+    if (strcmp(optarg, "res") == 0) {
+        return FREESASA_RES;
+    }
+    if (strcmp(optarg, "seq") == 0) {
+        return FREESASA_SEQ;
+    } 
+    if (strcmp(optarg, "rsa") == 0) {
+        return FREESASA_RSA;
+    }
+    if (strcmp(optarg, "json") == 0) {
+        return FREESASA_JSON;
+    }
+    if (strcmp(optarg, "xml") == 0) {
+        return FREESASA_XML;
+    }
+    if (strcmp(optarg, "pdb") == 0) {
+        return FREESASA_PDB;
+    }
+    abort_msg("Unknown output format: '%s'", optarg);
+}
+
 int
 main(int argc,
      char **argv) 
@@ -447,10 +440,10 @@ main(int argc,
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
+    int output_format = FREESASA_LOG;
     freesasa_node *tree = freesasa_tree_new();
-    enum {B_FILE, RES_FILE, SEQ_FILE, SELECT, UNKNOWN,
-          RSA_FILE, RSA, JSON_FILE, JSON, XML_FILE, XML,
-          O_DEPTH, RADII};
+    enum {B_FILE, SELECT, UNKNOWN, RSA, JSON, XML,
+          O_DEPTH, RADII, DEPRECATED};
     parameters = freesasa_default_parameters;
     memset(opt_set, 0, n_opt);
     if (tree == NULL) abort_msg("Error initializing calculation.");
@@ -477,23 +470,17 @@ main(int argc,
         {"chain-groups",         required_argument, 0, 'g'},
         {"error-file",           required_argument, 0, 'e'},
         {"output",               required_argument, 0, 'o'},
+        {"format",               required_argument, 0, 'f'},
         {"radius-from-occupancy",no_argument,       0, 'O'},
-        {"residue-type-file",    required_argument, &option_flag, RES_FILE},
-        {"residue-file",         required_argument, &option_flag, SEQ_FILE},
-        {"B-value-file",         required_argument, &option_flag, B_FILE},
         {"select",               required_argument, &option_flag, SELECT},
         {"unknown",              required_argument, &option_flag, UNKNOWN},
-        {"rsa-file",             required_argument, &option_flag, RSA_FILE},
         {"rsa",                  no_argument,       &option_flag, RSA},
-        {"json-file",            required_argument, &option_flag, JSON_FILE},
-        {"json",                 no_argument,       &option_flag, JSON},
-        {"xml-file",             required_argument, &option_flag, XML_FILE},
-        {"xml",                  no_argument,       &option_flag, XML},
         {"output-depth",         required_argument, &option_flag, O_DEPTH},
         {"radii",                required_argument, &option_flag, RADII},
+        {"deprecated",           no_argument,       &option_flag, DEPRECATED},
         {0,0,0,0}
     };
-    options_string = ":hvlwLSHYOCMmBrRc:n:t:p:g:e:o:";
+    options_string = ":hvlwLSHYOCMmBrRc:n:t:p:g:e:o:f:";
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
         opt_set[(int)opt] = 1;
@@ -507,18 +494,6 @@ main(int argc,
         switch(opt) {
         case 0:
             switch(long_options[option_index].val) {
-            case RES_FILE:
-                per_residue_type = 1;
-                per_residue_type_file = fopen_werr(optarg, "w");
-                break;
-            case SEQ_FILE:
-                per_residue = 1;
-                per_residue_file = fopen_werr(optarg, "w");
-                break;
-            case B_FILE:
-                printpdb = 1;
-                output_pdb = fopen_werr(optarg, "w");
-                break;
             case SELECT:
                 add_select(optarg);
                 break;
@@ -526,25 +501,7 @@ main(int argc,
                 add_unknown_option(optarg);
                 break;
             case RSA:
-                printrsa = 1;
-                break;
-            case RSA_FILE:
-                printrsa = 1;
-                rsa_file = fopen_werr(optarg, "w");
-                break;
-            case JSON:
-                printjson = 1;
-                break;
-            case JSON_FILE:
-                printjson = 1;
-                json_file = fopen_werr(optarg, "w");
-                break;
-            case XML:
-                printxml = 1;
-                break;
-            case XML_FILE:
-                printxml = 1;
-                xml_file = fopen_werr(optarg, "w");
+                output_format = FREESASA_RSA;
                 break;
             case O_DEPTH:
                 if (strcmp("structure", optarg) == 0)
@@ -570,6 +527,9 @@ main(int argc,
                               "can only be 'protor' or 'naccess')", optarg);
                 }
                 break;
+            case DEPRECATED:
+                deprecated();
+                exit(EXIT_SUCCESS);
             default:
                 abort(); // what does this even mean?
             }
@@ -591,6 +551,9 @@ main(int argc,
             break;
         case 'o':
             output = fopen_werr(optarg, "w");
+            break;
+        case 'f':
+            output_format = parse_output_format(optarg);
             break;
         case 'l':
             printlog = 0;
@@ -644,14 +607,16 @@ main(int argc,
             structure_options |= FREESASA_SEPARATE_CHAINS;
             break;
         case 'r':
-            per_residue_type = 1;
+            freesasa_warn("Option '-r' deprecated, use '-f res' or '--format=res' instead");
+            output_format = FREESASA_RES;
             break;
         case 'R':
-            per_residue = 1;
+            freesasa_warn("Option '-R' deprecated, use '-f seq' or '--format=seq' instead");
+            output_format = FREESASA_SEQ;
             break;
-        case 'b':
         case 'B':
-            printpdb = 1;
+            freesasa_warn("Option '-B' deprecated, use '-f pdb' or '--format=pdb' instead");
+            output_format = FREESASA_PDB;
             break;
         case 'g':
             add_chain_groups(optarg);
@@ -674,30 +639,28 @@ main(int argc,
         }
     }
     if (output == NULL) output = stdout;
-    if (per_residue_type_file == NULL) per_residue_type_file = output;
-    if (per_residue_file == NULL) per_residue_file = output;
-    if (output_pdb == NULL) output_pdb = output;
-    if (rsa_file == NULL) rsa_file = output;
-    if (json_file == NULL) json_file = output;
-    if (xml_file == NULL) xml_file = output;
     if (alg_set > 1) abort_msg("Multiple algorithms specified.");
     if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.");
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.");
     if (opt_set['c'] && static_config) abort_msg("The options -c and --radii cannot be combined");
     if (opt_set['O'] && static_config) abort_msg("The options -O and --radii cannot be combined");
     if (opt_set['c'] && opt_set['O']) abort_msg("The options -c and -O can't be combined");
-    if (printrsa && (opt_set['c'] || opt_set['O'])) {
+    if (output_format == FREESASA_RSA && (opt_set['c'] || opt_set['O'])) {
         freesasa_warn("Will skip REL columns in RSA when custom atomic radii selected.");
     }
-    if (printrsa && (opt_set['C'] || opt_set['M']))
-        abort_msg("The option --rsa can not be combined with -C or -M. "
-                  "The RSA format does not support several results in one file.");
-    if (printrsa || printjson || printxml) printlog = 0;
-    if (printlog) fprintf(output, "## %s ##\n", freesasa_string);
+    if (output_format == FREESASA_RSA && (opt_set['C'] || opt_set['M']))
+        abort_msg("The RSA format can not be used with the options -C or -M. "
+                  "The format does not support several results in one file.");
+    if (output_format == FREESASA_LOG) {
+        fprintf(output, "## %s ##\n", freesasa_string);
+    }
     if (argc > optind) {
         for (int i = optind; i < argc; ++i) {
             freesasa_node *tmp;
             input = fopen_werr(argv[i], "r");
+            if (output_format == FREESASA_LOG) {
+                freesasa_write_parameters(output, &parameters);
+            }
             tmp = run_analysis(input, argv[i]);
             freesasa_tree_join(tree, &tmp);
             fclose(input);
@@ -711,7 +674,7 @@ main(int argc,
         else abort_msg("No input.", program_name);
     }
 
-    print_results(tree);
+    freesasa_tree_export(output, tree, output_format | output_depth | (no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
     freesasa_node_free(tree);
 
     release_resources();
