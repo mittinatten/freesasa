@@ -192,6 +192,10 @@ test_structure(freesasa_node *node)
             ck_assert_str_eq(json_object_get_string(val), "A");
         } else if (!strcmp(key, "area")) {
             compare_nodearea(val, &structure_area, 1);
+        } else if (!strcmp(key, "model")) {
+            ck_assert(json_object_is_type(val, json_type_int));
+            // ck_assert_str_eq(json_object_get_string(val), "1");
+            // these components are tested in test_chains
         } else if (!strcmp(key, "chains")) {
             ck_assert(json_object_is_type(val, json_type_array));
             // these components are tested in test_chains
