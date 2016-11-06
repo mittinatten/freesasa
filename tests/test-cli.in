@@ -90,8 +90,11 @@ echo "== General options =="
 # unknown options
 assert_fail "$cli --blablabla $datadir/1ubq.pdb"
 assert_fail "$cli -x $datadir/1ubq.pdb"
+# no option argument
+assert_fail "$cli $datadir/1ubq.pdn -o"
 # help message
 assert_pass "$cli -h > $dump 2> /dev/null"
+assert_pass "$cli --deprecated > $dump 2> /dev/null"
 # check that it's a valid version number
 version=`$cli -v | head -n 1`
 assert_pass "echo $version | perl -ne 'if (m/FreeSASA (\d+\.)*\d$/) {exit 0} else  {exit 1}'"
@@ -191,14 +194,14 @@ assert_pass "diff tmp/static.dat tmp/from_config.dat"
 assert_fail "$cli --radii=bla -n 3 < $datadir/1ubq.pdb > $dump"
 echo
 echo "== Testing res format =="
-assert_pass "$cli -S --format=res < $datadir/1ubq.pdb > tmp/restype"
+assert_pass "$cli -S --format=res -o tmp/restype -e $dump < $datadir/1ubq.pdb"
 assert_pass "diff tmp/restype $datadir/restype.reference"
 #deprecated
 assert_pass "$cli -S -r < $datadir/1ubq.pdb > tmp/restype"
 assert_pass "diff tmp/restype $datadir/restype.reference"
 echo
 echo "== Testing seq format =="
-assert_pass "$cli -S --format=seq < $datadir/1ubq.pdb > tmp/seq"
+assert_pass "$cli -S --format=seq -o tmp/seq < $datadir/1ubq.pdb"
 assert_pass "diff tmp/seq $datadir/seq.reference"
 #deprecated
 assert_pass "$cli -S -R < $datadir/1ubq.pdb > tmp/seq"
@@ -214,10 +217,10 @@ echo
 echo "== Testing RSA format =="
 for r in protor naccess
 do
-    for p in $(ls $datadir/rsa/A*A.pdb)
+    for p in $(ls $datadir/rsa/*.pdb)
     do
         rel=$($cli -L -n 1000 $p --format=rsa --radii=$r | grep "A   2" | sed "s/[[:space:]]\{1,\}/ /g" | cut -f 6,8,10,12,14 -d ' ')
-        if [[ $p == *"AGA"* ]]
+        if [[ $p == *"GLY"* ]]
         then
             assert_pass "test '$rel' = '100.0 N/A 100.0 100.0 100.0' && test $p"
         else
@@ -227,6 +230,9 @@ do
 done
 assert_fail "$cli --format=rsa -C $datadir/1ubq.pdb"
 assert_fail "$cli --format=rsa -M $datadir/1ubq.pdb"
+assert_pass "$cli -L -n 1000 --format=rsa -O -w $datadir/rsa/ALA.pdb > tmp/no_rel"
+rel=$(grep "A   2" tmp/no_rel | sed "s/[[:space:]]\{1,\}/ /g" | cut -f 6,8,10,12,14 -d ' ')
+assert_pass "test '$rel' = 'N/A N/A N/A N/A N/A'"
 # deprecated
 assert_pass "$cli --rsa $datadir/1ubq.pdb > $dump"
 
