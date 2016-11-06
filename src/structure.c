@@ -779,7 +779,7 @@ freesasa_structure_array(FILE *pdb,
             for (int j = 0; j < n_new_chains; ++j) {
                 ss[j0+j] = from_pdb_impl(pdb, chains[j], classifier, options);
                 if (ss[j0+j] == NULL) goto cleanup;
-                ss[j0+j]->model = ss[n_chains-n_new_chains]->model;
+                ss[j0+j]->model = i + 1;
             }
 
             free(chains);
@@ -798,6 +798,7 @@ freesasa_structure_array(FILE *pdb,
         for (int i = 0; i < n_models; ++i) {
             ss[i] = from_pdb_impl(pdb, models[i], classifier, options);
             if (ss[i] == NULL) goto cleanup;
+            ss[i]->model = i + 1;
         }
     }
 

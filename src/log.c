@@ -52,6 +52,7 @@ write_result(FILE *log,
     if (name == NULL) fprintf(log,"source  : unknown\n");
     else              fprintf(log,"source  : %s\n",name);
     fprintf(log,"chains  : %s\n", freesasa_node_structure_chain_labels(structure));
+    fprintf(log,"model   : %d\n", freesasa_node_structure_model(structure));
     fprintf(log,"atoms   : %d\n", freesasa_node_structure_n_atoms(structure));
 
     fprintf(log,"\nRESULTS (A^2)\n");

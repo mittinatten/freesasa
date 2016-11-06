@@ -111,7 +111,8 @@ freesasa_json_structure(freesasa_node *node,
 {
     json_object *obj = json_object_new_object();
 
-    json_object_object_add(obj, "chain-labels", json_object_new_string(freesasa_node_structure_chain_labels(node)));
+    json_object_object_add(obj, "chains", json_object_new_string(freesasa_node_structure_chain_labels(node)));
+    json_object_object_add(obj, "model", json_object_new_int(freesasa_node_structure_model(node)));
     json_object_object_add(obj, "area",
                            freesasa_json_nodearea(freesasa_node_area(node)));
 
@@ -203,7 +204,7 @@ json_result(freesasa_node *result,
     json_object_object_add(obj, "input", json_object_new_string(freesasa_node_name(result)));
     json_object_object_add(obj, "classifier", json_object_new_string(freesasa_node_classified_by(result)));
     json_object_object_add(obj, "parameters", parameters2json(parameters));
-    json_object_object_add(obj, "structures", freesasa_node2json(result, exclude_type, options));
+    json_object_object_add(obj, "structure", freesasa_node2json(result, exclude_type, options));
 
     return obj;
 }

@@ -261,6 +261,7 @@ structure2xml(const freesasa_node *node,
 {
     assert(node);
     xmlNodePtr xml_node = NULL, xml_area = NULL;
+    char buf[20];
     const freesasa_selection **selections = freesasa_node_structure_selections(node);
 
     xml_node = xmlNewNode(NULL, BAD_CAST "structure");
@@ -270,6 +271,12 @@ structure2xml(const freesasa_node *node,
     }
 
     if (xmlNewProp(xml_node, BAD_CAST "chains", BAD_CAST freesasa_node_structure_chain_labels(node)) == NULL) {
+        fail_msg("");
+        goto cleanup;
+    }
+
+    sprintf(buf, "%d", freesasa_node_structure_model(node));
+    if (xmlNewProp(xml_node, BAD_CAST "model", BAD_CAST buf) == NULL) {
         fail_msg("");
         goto cleanup;
     }

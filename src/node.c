@@ -353,6 +353,7 @@ node_structure(const freesasa_structure *structure,
     node->properties.structure.result = NULL;
     node->properties.structure.selection = NULL;
     node->properties.structure.chain_labels = strdup(freesasa_structure_chain_labels(structure));
+    node->properties.structure.model = freesasa_structure_model(structure);
 
     if (node->properties.structure.chain_labels == NULL) {
         mem_fail();
