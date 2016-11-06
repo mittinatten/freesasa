@@ -91,23 +91,23 @@ occupancies in the input PDB file
 
     $ freesasa --radius-from-occupancy 3wbm.pdb
 
-This option allows the user to first use either of the options
-`--print-as-B-values` or `--B-value-file` to write generate a PDB file
-with the radii used in the calculation, modify the radii of individual
-atoms in that file, and the recalculate the SASA with these modified
-radii.
+This option allows the user to first use the option `--format=pdb` (see @ref CLI-PDB) to
+write generate a PDB file with the radii used in the calculation,
+modify the radii of individual atoms in that file, and the recalculate
+the SASA with these modified radii.
 
 
 @section Output Output formats
 
 In addition to the standard output format above FreeSASA can export
-the results as @ref CLI-JSON, @ref CLI-XML, @ref CLI-PDB and @ref
-CLI-RSA. The level of detail of JSON and XML output can be controlled
-with the option `--output-depth=<depth>` which takes the values
-`atom`, `residue`, `chain` and `structure`. If `atom` is chosen, SASA
-values are shown for all levels of the structure, including individual
-atoms.  With `chain`, only structure and chain SASA values are printed
-(this is the default).
+the results as @ref CLI-JSON, @ref CLI-XML, @ref CLI-PDB, @ref
+CLI-RSA, @ref CLI-RES and @ref CLI-SEQ using the option
+`--format`. The level of detail of JSON and XML output can be
+controlled with the option `--output-depth=<depth>` which takes the
+values `atom`, `residue`, `chain` and `structure`. If `atom` is
+chosen, SASA values are shown for all levels of the structure,
+including individual atoms.  With `chain`, only structure and chain
+SASA values are printed (this is the default).
 
 The output can include relative SASA values for each residues. To
 calculate these a reference SASA value is needed, calculated using the
@@ -129,7 +129,7 @@ moment there is no interface to supply user-defined reference values.
 
 The command
 
-    $ freesasa --json --output-depth=residue 3wbm.pdb
+    $ freesasa --format=xml --output-depth=residue 3wbm.pdb
 
 generates the following
 
@@ -208,7 +208,7 @@ Where ellipsis indicates the remaining residues and chains.
 
 The command
 
-    $ freesasa --xml 3wbm.pdb
+    $ freesasa --format=xml 3wbm.pdb
 
 Generates the following
 
@@ -218,24 +218,24 @@ Generates the following
   <result classifier="ProtOr" input="3wbm.pdb">
     <parameters algorithm="Lee &amp; Richards" probeRadius="1.400000" resolution="20"/>
     <structure chains="ABCDXY">
-      <area total="25190.768387" polar="13638.391677" apolar="11552.376710" mainChain="3337.162250" sideChain="21853.606137"/>
+      <area total="25190.768" polar="13638.392" apolar="11552.377" mainChain="3337.162" sideChain="21853.606"/>
       <chain label="A" nResidues="86">
-        <area total="3785.486405" polar="1733.856021" apolar="2051.630384" mainChain="723.343587" sideChain="3062.142818"/>
+        <area total="3785.486" polar="1733.856" apolar="2051.630" mainChain="723.344" sideChain="3062.143"/>
       </chain>
       <chain label="B" nResidues="84">
-        <area total="4342.334101" polar="1957.114104" apolar="2385.219997" mainChain="853.707488" sideChain="3488.626613"/>
+        <area total="4342.334" polar="1957.114" apolar="2385.220" mainChain="853.707" sideChain="3488.627"/>
       </chain>
       <chain label="C" nResidues="86">
-        <area total="3961.119497" polar="1838.724087" apolar="2122.395410" mainChain="782.651768" sideChain="3178.467729"/>
+        <area total="3961.119" polar="1838.724" apolar="2122.395" mainChain="782.652" sideChain="3178.468"/>
       </chain>
       <chain label="D" nResidues="89">
-        <area total="4904.297681" polar="2332.306232" apolar="2571.991449" mainChain="977.459407" sideChain="3926.838274"/>
+        <area total="4904.298" polar="2332.306" apolar="2571.991" mainChain="977.459" sideChain="3926.838"/>
       </chain>
       <chain label="X" nResidues="25">
-        <area total="4156.455007" polar="2919.576220" apolar="1236.878787" mainChain="0.000000" sideChain="4156.455007"/>
+        <area total="4156.455" polar="2919.576" apolar="1236.879" mainChain="0.000" sideChain="4156.455"/>
       </chain>
       <chain label="Y" nResidues="25">
-        <area total="4041.075696" polar="2856.815013" apolar="1184.260683" mainChain="0.000000" sideChain="4041.075696"/>
+        <area total="4041.076" polar="2856.815" apolar="1184.261" mainChain="0.000" sideChain="4041.076"/>
       </chain>
     </structure>
   </result>
@@ -247,7 +247,7 @@ Generates the following
 
 The command-line interface can also be used as a PDB filter:
 
-    $ cat 3wbm.pdb | freesasa --no-log --print-as-B-values 
+    $ cat 3wbm.pdb | freesasa --format=pdb
     ATOM      1  N   THR A   5     -19.727  29.259  13.573  1.64  9.44
     ATOM      2  CA  THR A   5     -19.209  28.356  14.602  1.88  5.01
     ATOM      3  C   THR A   5     -18.747  26.968  14.116  1.61  0.40
@@ -260,17 +260,43 @@ radius of each atom (second to last column).
 Only the atoms and models used in the calculation will be present in
 the output (see @ref Input for how to modify this).
 
+@subsection CLI-RES SASA of each residue type
+
+Calculate the SASA of each residue type:
+
+    $ freesasa --format=res 3wbm.pdb
+    # Residue types in 3wbm.pdb
+    RES ALA :     251.57
+    RES ARG :    2868.98
+    RES ASN :    1218.87
+    ...
+    RES A :    1581.57
+    RES C :    2967.12
+    RES G :    1955.16
+    RES U :    1693.68
+
+@subsection CLI-SEQ SASA of each residue
+
+Calculate the SASA of each residue in the sequence:
+
+    $ freesasa --format=seq 3wbm.pdb
+    # Residues in 3wbm.pdb
+    SEQ A    5 THR :  138.48
+    SEQ A    6 PRO :   25.53
+    SEQ A    7 THR :   99.42
+    ...
+
 @subsection CLI-RSA RSA
 
-The CLI can also produce output similar to the RSA format from NACCESS
-using the options `--rsa` and `--rsa-file`. This format includes both
-absolute SASA values (ABS) and relative ones (REL) compared to a
-precalculated reference max value. The only significant difference
-between FreeSASA's RSA output format and that of NACCESS (except
-differences in areas due to different atomic radii), is that FreeSASA
-will print the value "N/A" where NACCESS prints "-99.9".
+The CLI can also produce output similar to the RSA format from
+NACCESS. This format includes both absolute SASA values (ABS) and
+relative ones (REL) compared to a precalculated reference max
+value. The only significant difference between FreeSASA's RSA output
+format and that of NACCESS (except differences in areas due to
+different atomic radii), is that FreeSASA will print the value "N/A"
+where NACCESS prints "-99.9".
 
-    $ freesasa 3wbm.pdb --rsa
+    $ freesasa --format=rsa 3wbm.pdb
     REM  FreeSASA 1.1
     REM  Absolute and relative SASAs for ABCDXY
     REM  Atomic radii and reference values for relative SASA: ProtOr
@@ -297,8 +323,8 @@ will print the value "N/A" where NACCESS prints "-99.9".
     END  Absolute sums over all chains
     TOTAL         25190.8      21853.6       3337.2      11552.4      13638.4
 
-Note that each RES is a single residue, not a residue type as above
-(i.e. has the same meaning as SEQ above). This unfortunate confusion
+Note that each `RES` is a single residue, not a residue type as above
+(i.e. has the same meaning as `SEQ` above). This unfortunate confusion
 of labels is due to RSA support being added much later than the other
 options. Fixing it now would break the interface, and will thus
 earliest be dealt with in the next major release.
@@ -310,46 +336,13 @@ exactly the same as those that ship with NACCESS, but have been
 calculated from scratch using the tripeptides that ship with
 FreeSASA. Calling
 
-    $ freesasa 3wbm.pdb --rsa-file=3wbm.rsa --radii=naccess
+    $ freesasa 3wbm.pdb --format=rsa --radii=naccess
 
 will give an RSA file where the ABS columns are identical to NACCESS
 (run with the flag `-b`) for the amino acids, and for nucleic acids
 the definition of backbone differs (no nucleic acid backbone has been
 defined in FreeSASA). REL values will differ slightly, due to the
 differences in reference values.
-
-@subsection CLI-other-output Other formats
-
-@subsubsection Residue-sasa SASA for each residue(-type)
-
-To calculate the SASA of each residue in the sequence, or each residue
-type, use the following commands (`--no-log` suppresses the standard output
-shown above):
-
-    $ freesasa --foreach-residue --no-log 3wbm.pdb
-    SEQ A    5 THR :  138.48
-    SEQ A    6 PRO :   25.53
-    SEQ A    7 THR :   99.42
-    ...
-
-and
-
-    $ freesasa --foreach-residue-type --no-log 3wbm.pdb
-    RES ALA :     251.57
-    RES ARG :    2868.98
-    RES ASN :    1218.87
-    ...
-    RES A :    1581.57
-    RES C :    2967.12
-    RES G :    1955.16
-    RES U :    1693.68
-
-@subsection Combining-sasa Several types of output at once
-
-To generate several results at the same time and write them to
-separate files, run
-
-    $ freesasa --xml-file=3wbm.xml --json-file=3wbm.json --B-value-file=3wbm.b 3wbm.pdb
 
 @section CLI-select Selecting groups of atoms
 
