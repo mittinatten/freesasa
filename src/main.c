@@ -630,10 +630,10 @@ main(int argc,
         }
     }
     if (output == NULL) output = stdout;
-    if (per_residue_type_file == NULL) per_residue_type_file = output;
-    if (per_residue_file == NULL) per_residue_file = output;
-    if (output_pdb == NULL) output_pdb = output;
-    if (rsa_file == NULL) rsa_file = output;
+    if (per_residue_type && per_residue_type_file == NULL) per_residue_type_file = output;
+    if (per_residue && per_residue_file == NULL) per_residue_file = output;
+    if (printpdb && output_pdb == NULL) output_pdb = output;
+    if (printrsa && rsa_file == NULL) rsa_file = output;
     if (alg_set > 1) abort_msg("Multiple algorithms specified.");
     if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.");
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.");
