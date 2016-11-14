@@ -119,6 +119,15 @@ and Bison. These build options, which add extra dependencies,
 are disabled by default to simplify installation for users only
 interested in the command line tool and and/or C Library.
 
+Version 2.0 (upcoming)
+----------------------
+
+Version 2.0 is in the last stages of preparation, and the code is
+available in the
+[dev-branch](https://github.com/mittinatten/freesasa/tree/dev) of the
+git repo. New features include output in the JSON and XML formats. Bug
+reports and comments are very welcome.
+
 Citing FreeSASA
 ---------------
 
