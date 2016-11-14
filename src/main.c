@@ -267,6 +267,7 @@ run_analysis(FILE *input,
     freesasa_strvp *classes = NULL;
     freesasa_structure **structures = NULL;
     int n = 0;
+    FILE *fp;
 
     // read PDB file
     structures = get_structures(input, &n);
@@ -293,15 +294,18 @@ run_analysis(FILE *input,
             freesasa_per_chain(output, result, structures[i]);
         }
         if (per_residue_type) {
-            if (n > 1) fprintf(per_residue_type_file, "\n## %s\n", name_i);
-            freesasa_per_residue_type(per_residue_type_file, result, structures[i]);
+            fp = (per_residue_type_file == NULL ? output : per_residue_type_file);
+            if (n > 1) fprintf(fp, "\n## %s\n", name_i);
+            freesasa_per_residue_type(fp, result, structures[i]);
         }
         if (per_residue) {
-            if (n > 1) fprintf(per_residue_file, "\n## %s\n", name_i);
-            freesasa_per_residue(per_residue_file, result, structures[i]);
+            fp = (per_residue_file == NULL ? output : per_residue_file);
+            if (n > 1) fprintf(fp, "\n## %s\n", name_i);
+            freesasa_per_residue(fp, result, structures[i]);
         }
         if (printpdb) {
-            freesasa_write_pdb(output_pdb, result, structures[i]);
+            fp = (output_pdb == NULL ? output : output_pdb);
+            freesasa_write_pdb(fp, result, structures[i]);
         }
         if (n_select > 0) {
             fprintf(output,"\nSELECTIONS\n");
@@ -317,7 +321,8 @@ run_analysis(FILE *input,
             }
         }
         if (printrsa) {
-            freesasa_write_rsa(rsa_file, result, structures[i], name_i, rsa_reference);
+            fp = (rsa_file == NULL ? output : rsa_file);
+            freesasa_write_rsa(fp, result, structures[i], name_i, rsa_reference);
         }
         freesasa_result_free(result);
         freesasa_strvp_free(classes);
@@ -630,10 +635,6 @@ main(int argc,
         }
     }
     if (output == NULL) output = stdout;
-    if (per_residue_type && per_residue_type_file == NULL) per_residue_type_file = output;
-    if (per_residue && per_residue_file == NULL) per_residue_file = output;
-    if (printpdb && output_pdb == NULL) output_pdb = output;
-    if (printrsa && rsa_file == NULL) rsa_file = output;
     if (alg_set > 1) abort_msg("Multiple algorithms specified.");
     if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.");
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.");
