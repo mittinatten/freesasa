@@ -106,16 +106,35 @@ freesasa_json_chain(freesasa_node *node,
 }
 
 json_object *
+freesasa_json_selection(const freesasa_selection **selections)
+{
+    assert(selections);
+    json_object *obj = json_object_new_array();
+    while (*selections) {
+        json_object *json_selection = json_object_new_object();
+        json_object_object_add(json_selection, "name", json_object_new_string(freesasa_selection_name(*selections)));
+        json_object_object_add(json_selection, "area", json_object_new_double(freesasa_selection_area(*selections)));
+        json_object_array_add(obj, json_selection);
+        ++selections;
+    };
+    return obj;
+}
+
+json_object *
 freesasa_json_structure(freesasa_node *node,
                         int options)
 {
     json_object *obj = json_object_new_object();
-
+    const freesasa_selection **selections = freesasa_node_structure_selections(node);
+    
     json_object_object_add(obj, "chains", json_object_new_string(freesasa_node_structure_chain_labels(node)));
     json_object_object_add(obj, "model", json_object_new_int(freesasa_node_structure_model(node)));
     json_object_object_add(obj, "area",
                            freesasa_json_nodearea(freesasa_node_area(node)));
-
+    if (selections != NULL) {
+        json_object_object_add(obj, "selections",
+                               freesasa_json_selection(selections));
+    }
     return obj;
 }
 
