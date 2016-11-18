@@ -179,36 +179,48 @@ freesasa_calc_tree(const freesasa_structure *structure,
     return tree;
 }
 
+static inline void
+count_err(int return_value, int *n_err)
+{
+    if (return_value == FREESASA_FAIL) {
+        (*n_err)++;
+    }
+}
+
 int
 freesasa_tree_export(FILE *file,
                      freesasa_node *root,
                      int options)
 {
     assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
+    int n_err = 0;
     if (options & FREESASA_LOG) {
-        return freesasa_write_log(file, root);
+        count_err(freesasa_write_log(file, root), &n_err);
     }
     if (options & FREESASA_RES) {
-        return freesasa_write_res(file, root);
+        count_err(freesasa_write_res(file, root), &n_err);
     }
     if (options & FREESASA_SEQ) {
-        return freesasa_write_seq(file, root);
+        count_err(freesasa_write_seq(file, root), &n_err);
     }
     if (options & FREESASA_PDB) {
-        return freesasa_write_pdb(file, root);
+        count_err(freesasa_write_pdb(file, root), &n_err);
     }
     if (options & FREESASA_RSA) {
-        return freesasa_write_rsa(file, root, options);
+        count_err(freesasa_write_rsa(file, root, options), &n_err);
     }
     if (options & FREESASA_JSON) {
-        if (USE_JSON) return freesasa_write_json(file, root, options);
+        if (USE_JSON) count_err(freesasa_write_json(file, root, options), &n_err);
         else return fail_msg("Library was built without support for JSON output.");
     }
     if (options & FREESASA_XML) {
-        if (USE_XML) return freesasa_write_xml(file, root, options);
+        if (USE_XML) count_err(freesasa_write_xml(file, root, options), &n_err);
         else return fail_msg("Library was built without support for XML output.");
     }
-    return fail_msg("No valid options given");
+    if (n_err > 0) {
+        return fail_msg("There were errors when writing output");
+    }
+    return FREESASA_SUCCESS;
 }
 
 freesasa_result *

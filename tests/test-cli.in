@@ -83,6 +83,8 @@ assert_fail "$cli -c $nofile < $smallpdb > $dump"
 assert_fail "$cli < $smallpdb > $nodir"
 assert_fail "$cli -e $nodir $smallpdb"
 assert_fail "$cli -o $nodir $smallpdb"
+# can only have one output
+assert_fail "$cli -o $dump -o $dump $smallpdb"
 # deprecated
 assert_fail "$cli --B-value-file $nodir < $smallpdb > $dump"
 assert_fail "$cli --residue-type-file $nodir < $smallpdb > $dump"
@@ -100,11 +102,13 @@ assert_pass "$cli --deprecated > $dump 2> /dev/null"
 # check that it's a valid version number
 version=`$cli -v | head -n 1`
 assert_pass "echo $version | perl -ne 'if (m/FreeSASA (\d+\.)*\d$/) {exit 0} else  {exit 1}'"
+# check that running with several output options doesn't crash
+assert_pass "$cli -o $dump -e tmp/err -n 1 $smallpdb"
 echo
 echo "== Testing S&R =="
 assert_pass "$cli -S <  $datadir/1ubq.pdb > $dump"
 echo
-#check that output message has required components
+#check that output message has required components, also verifies that basics of computation still work
 assert_pass "grep 'source\s\s*: stdin' $dump"
 $cli -S  $datadir/1ubq.pdb > $dump
 assert_pass "grep 'source\s\s*: $datadir/1ubq.pdb' $dump"
@@ -328,7 +332,6 @@ assert_equal_opt "$cli $datadir/1d3z.pdb" "-Y -n 2" "--hydrogen -n 2"
 assert_equal_opt "$cli $datadir/1d3z.pdb" "-m -n 2" "--join-models -n 2"
 assert_equal_opt "$cli $datadir/1d3z.pdb" "-C -n 2" "--separate-chains -n 2"
 assert_equal_opt "$cli $datadir/1d3z.pdb" "-M -n 2" "--separate-models -n 2"
-assert_equal_opt "$cli $smallpdb" "-l -n 2" "--no-log -n 2"
 assert_equal_opt "$cli $smallpdb" "-w -n 2" "--no-warnings -n 2"
 assert_equal_opt "$cli $datadir/2jo4.pdb" "-g AB+CD -n 2" "--chain-groups AB+CD -n 2"
 assert_equal_opt "$cli $datadir/2jo4.pdb" "-g AB+CD -n 2" "-g AB -g CD -n 2"

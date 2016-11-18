@@ -17,11 +17,12 @@ FreeSASA uses semantic versioning. Changelog added for versions 2.x
   * Classifier configuration files now have new name field
 * Memory error mocking is now more sophisticated: uses dlsym instead
   of macros, allowing more uniform test structure.
-* To simplify interface, CLI can only output one output format. Format
-  is controlled by the option `-f` or `--format`. Options specifying files
-  for specific outpt types have been removed, and the separate options
-  controlling output format have been deprecated (see below). An option
-  `--depracated` can be used to list these.
+* CLI output format is controlled by the option `-f` or
+  `--format`. Options specifying files for specific outpt types have
+  been removed, and the separate options controlling output format
+  have been deprecated (see below). An option `--deprecated` can be
+  used to list these. This has made the option `-l` or `--no-log`
+  obsolete.
 
 ### Added
 * New output formats
@@ -40,8 +41,8 @@ FreeSASA uses semantic versioning. Changelog added for versions 2.x
 * general bug cleaning, some minor memory leaks removed.
 
 ### Deprecated
-* interface for classifying using string-value pairs is deprecated
-* logging using structure and results now deprecated in favor of using
+* Interface for classifying using string-value pairs is deprecated
+* Logging using structure and results now deprecated in favor of using
   tree interface
 * CLI options `-B`, `-r`, `-R` and `--rsa` are deprecated (use `-f` or
   `--format` instead)

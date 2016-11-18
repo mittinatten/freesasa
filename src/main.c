@@ -20,23 +20,15 @@ extern char *optarg;
 #endif
 
 char *program_name = "freesasa";
-const char* options_string;
 
 // configuration
 freesasa_parameters parameters;
-const freesasa_classifier *classifier = NULL;
 freesasa_classifier *classifier_from_file = NULL;
+const freesasa_classifier *classifier = NULL;
 int structure_options = 0;
 
-// output files
-FILE *output = NULL;
-FILE *errlog;
-
 // flags
-int printlog = 1;
 int static_config = 0;
-int output_depth = FREESASA_OUTPUT_CHAIN;
-int no_rel = 0;
 
 // chain groups
 int n_chain_groups = 0;
@@ -127,7 +119,8 @@ help(void)
             "\n"
             "  -f <format> (--format <format>)\n"
             "                        Output format, options are:\n"
-            "                          - log  Default output, plain text\n"
+            "                          - log  Default output, plain text, supressed if other\n"
+            "                                 format selected.\n"
             "                          - res  The SASA of each residue type on a separate line.\n"
             "                          - seq  The SASA of each residue separately.\n"
             "                          - pdb  PDB file where the temperature factor of each atom\n"
@@ -136,7 +129,8 @@ help(void)
             "                          - rsa  Results in RSA format.\n"
             "                          - json Results in JSON format.\n"
             "                          - xml  Results in XML format.\n"
-            "                        If the option is repeated, only the last value will be used.\n"
+            "                        Can be repeated, log must be added explicitly if required in\n"
+            "                        conjunction with other format.\n"
             "\n");
     if (USE_JSON || USE_XML) {
         fprintf(stderr,
@@ -199,7 +193,6 @@ static void
 release_resources(void)
 {
     if (classifier_from_file) freesasa_classifier_free(classifier_from_file);
-    if (errlog) fclose(errlog);
     if (chain_groups) {
         for (int i = 0; i < n_chain_groups; ++i) {
             free(chain_groups[i]);
@@ -292,7 +285,7 @@ run_analysis(FILE *input,
     structures = get_structures(input, &n);
     if (n == 0) abort_msg("Invalid input.");
 
-    // perform calculation on each structure and output results
+    // perform calculation on each structure
     for (int i = 0; i < n; ++i) {
         char name_i[name_len+10];
         freesasa_node *tmp_tree;
@@ -480,13 +473,16 @@ main(int argc,
      char **argv) 
 {
     int alg_set = 0;
-    FILE *input = NULL;
+    FILE *input = NULL, *output = NULL, *errlog = NULL;
     char opt;
     int n_opt = 'z'+1;
     char opt_set[n_opt];
     int option_index = 0;
     int option_flag;
-    int output_format = FREESASA_LOG;
+    int output_format = 0;
+    int output_depth = FREESASA_OUTPUT_CHAIN;
+    int no_rel = 0;
+    const char* options_string = ":hvlwLSHYOCMmBrRc:n:t:p:g:e:o:f:";
     freesasa_node *tree = freesasa_tree_new();
     enum {B_FILE, SELECT, UNKNOWN, RSA, JSON, XML,
           O_DEPTH, RADII, DEPRECATED};
@@ -526,7 +522,7 @@ main(int argc,
         {"deprecated",           no_argument,       &option_flag, DEPRECATED},
         {0,0,0,0}
     };
-    options_string = ":hvlwLSHYOCMmBrRc:n:t:p:g:e:o:f:";
+
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
         opt_set[(int)opt] = 1;
@@ -574,13 +570,13 @@ main(int argc,
             freesasa_set_err_out(errlog);
             break;
         case 'o':
+            if (output != NULL) {
+                abort_msg("Option --output can only be set once");
+            }
             output = fopen_werr(optarg, "w");
             break;
         case 'f':
-            output_format = parse_output_format(optarg);
-            break;
-        case 'l':
-            printlog = 0;
+            output_format |= parse_output_format(optarg);
             break;
         case 'w':
             freesasa_set_verbosity(FREESASA_V_NOWARNINGS);
@@ -630,18 +626,6 @@ main(int argc,
         case 'C':
             structure_options |= FREESASA_SEPARATE_CHAINS;
             break;
-        case 'r':
-            freesasa_warn("Option '-r' deprecated, use '-f res' or '--format=res' instead");
-            output_format = FREESASA_RES;
-            break;
-        case 'R':
-            freesasa_warn("Option '-R' deprecated, use '-f seq' or '--format=seq' instead");
-            output_format = FREESASA_SEQ;
-            break;
-        case 'B':
-            freesasa_warn("Option '-B' deprecated, use '-f pdb' or '--format=pdb' instead");
-            output_format = FREESASA_PDB;
-            break;
         case 'g':
             add_chain_groups(optarg);
             break;
@@ -653,6 +637,20 @@ main(int argc,
                 abort_msg("Option '-t' only defined if program compiled with thread support.");
             }
             break;
+        // Deprecated options
+        case 'r':
+            freesasa_warn("Option '-r' deprecated, use '-f res' or '--format=res' instead");
+            output_format |= FREESASA_RES;
+            break;
+        case 'R':
+            freesasa_warn("Option '-R' deprecated, use '-f seq' or '--format=seq' instead");
+            output_format |= FREESASA_SEQ;
+            break;
+        case 'B':
+            freesasa_warn("Option '-B' deprecated, use '-f pdb' or '--format=pdb' instead");
+            output_format |= FREESASA_PDB;
+            break;
+        // Errors
         case ':':
             abort_msg("Option '-%c' missing argument.", optopt);
             break;
@@ -664,6 +662,7 @@ main(int argc,
     }
     if (output == NULL) output = stdout;
     if (alg_set > 1) abort_msg("Multiple algorithms specified.");
+    if (output_format == 0) output_format = FREESASA_LOG;
     if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.");
     if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.");
     if (opt_set['c'] && static_config) abort_msg("The options -c and --radii cannot be combined");
@@ -682,7 +681,7 @@ main(int argc,
         for (int i = optind; i < argc; ++i) {
             freesasa_node *tmp;
             input = fopen_werr(argv[i], "r");
-            if (output_format == FREESASA_LOG) {
+            if (output_format & FREESASA_LOG) {
                 freesasa_write_parameters(output, &parameters);
             }
             tmp = run_analysis(input, argv[i]);
@@ -702,6 +701,8 @@ main(int argc,
     freesasa_node_free(tree);
 
     release_resources();
+    if (errlog) fclose(errlog);
+    if (output) fclose(output);
 
     return EXIT_SUCCESS;
 }
