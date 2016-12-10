@@ -99,7 +99,8 @@ Documentation
 
 Enabling Doxygen builds a [full reference
 manual](http://freesasa.github.io/doxygen/), documenting both CLI and
-API, also available on the web at http://freesasa.github.io/.
+API in the folder `doc/html/doxygen/`, also available on the web at
+http://freesasa.github.io/.
 
 After building the package, calling
  
