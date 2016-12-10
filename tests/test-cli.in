@@ -341,10 +341,11 @@ assert_equal_opt "$cli $datadir/2jo4.pdb" "-g AB+CD -n 2" "--chain-groups AB+CD 
 assert_equal_opt "$cli $datadir/2jo4.pdb" "-g AB+CD -n 2" "-g AB -g CD -n 2"
 assert_equal_opt "$cli $datadir/1ubq.B.pdb" "-O -n 2" "--radius-from-occupancy -n 2"
 assert_equal_opt "$cli $smallpdb" "-f xml -n 2" "--format=xml -n 2"
-# deprecated
+# deprecated, just check that the program doesn't choke
 assert_equal_opt "$cli $smallpdb" "-r -n 2" "--foreach-residue-type -n 2"
 assert_equal_opt "$cli $smallpdb" "-R -n 2" "--foreach-residue -n 2"
 assert_equal_opt "$cli $smallpdb" "-B -n 2" "--print-as-B-values -n 2"
+assert_equal_opt "$cli $smallpdb" "-l -n 2" "--no-log -n 2"
 
 rm -f tmp/*
 

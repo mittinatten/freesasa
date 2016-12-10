@@ -44,5 +44,5 @@ FreeSASA uses semantic versioning. Changelog added for versions 2.x
 * Interface for classifying using string-value pairs is deprecated
 * Logging using structure and results now deprecated in favor of using
   tree interface
-* CLI options `-B`, `-r`, `-R` and `--rsa` are deprecated (use `-f` or
+* CLI options `-B`, `-r`, `-R`, `--rsa` and `-l` are deprecated (use `-f` or
   `--format` instead)

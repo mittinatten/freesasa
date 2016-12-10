@@ -32,7 +32,6 @@ static struct option long_options[] = {
     {"resolution",           required_argument, 0, 'n'},
     {"help",                 no_argument,       0, 'h'},
     {"version",              no_argument,       0, 'v'},
-    {"no-log",               no_argument,       0, 'l'},
     {"no-warnings",          no_argument,       0, 'w'},
     {"n-threads",            required_argument, 0, 't'},
     {"hetatm",               no_argument,       0, 'H'},
@@ -56,9 +55,14 @@ static struct option long_options[] = {
     {"foreach-residue-type", no_argument,       0, 'r'},
     {"foreach-residue",      no_argument,       0, 'R'},
     {"print-as-B-values",    no_argument,       0, 'B'},
+    {"no-log",               no_argument,       0, 'l'},
     {0,0,0,0}
 };
-const char* options_string = ":hvlwLSHYOCMmBrRc:n:t:p:g:e:o:f:";
+
+#define NOARG_OPTIONS "hvwLSHYOCMm"
+#define NOARG_DEPRECATED "BrRl"
+#define ARG_OPTIONS "c:n:t:p:g:e:o:f:"
+const char* options_string = ":" NOARG_OPTIONS NOARG_DEPRECATED ARG_OPTIONS;
 
 // State of app (most settings are stored here)
 struct cli_state {
@@ -131,129 +135,80 @@ release_state(struct cli_state *state)
 }
 
 static void
+addresses(FILE *out)
+{
+    fprintf(out,
+            "\n" REPORTBUG "\n"
+            "Home page: " HOMEPAGE "\n");
+}
+
+static void
 help(void)
 {
-    fprintf(stderr, "\nUsage: %s [options] pdb-file(s)\n\n", program_name);
-    fprintf(stderr, "GENERAL OPTIONS\n"
-            "  -h (--help)           Print this message\n"
-            "  -v (--version)        Print version of the program\n"
-            "  --deprecated          Print deprecated options\n");
-    fprintf(stderr, "\nPARAMETERS\n"
-            "  -S (--shrake-rupley)  Use Shrake & Rupley algorithm\n"
-            "  -L (--lee-richards)   Use Lee & Richards algorithm [default]\n");
-    fprintf(stderr,
-            "\n"
-            "  -p <value>  (--probe-radius=<value>)\n"
-            "                        Probe radius [default: %4.2f Å]\n"
-            "\n"
-            "  -n <value>  (--resolution=<value>)\n"
-            "                        Either: \n"
-            "                        - Number of test points in Shrake & Rupley algorithm,\n"
-            "                          [default: %d] or\n"
-            "                        - number of slices per atom in Lee & Richards algorithm.\n"
-            "                          [default: %d]\n"
-            "                        depending on which is selected.\n",
-            FREESASA_DEF_PROBE_RADIUS, FREESASA_DEF_SR_N, FREESASA_DEF_LR_N);
+    printf("\nUsage: %s [options] pdb-file ...", program_name);
+    printf("\n       %s [options] < pdb-file", program_name);
+    printf("\n       %s (-h | --help | -v | --version | --deprecated)\n", program_name);
+    printf("\n"
+           "Options: [--shrake-rupley|--lee-richards] -p=PROBE_RADIUS -n=RESOL -t=N_THREADS\n"
+           "  [--radius-from-occupancy | -c CLASSIFIER_FILE | --radii=(protor|naccess)]\n"
+           "  --hetatm --hydrogen [--separate-models | --join-models] [--separate-chains |\n"
+           "  --chain-groups=GROUPS...] --unknown=(guess|skip|halt)\n"
+           "  --output FILE --error-file FILE --no-warnings --select=COMMAND...\n"
+           "  --format=(log|res|seq|pdb|rsa|json|xml)... \n"
+           "  --output-depth=(structure|chain|residue|atom)\n");
+    printf("\nPARAMETERS\n"
+           "  -S --shrake-rupley           Use Shrake & Rupley algorithm\n"
+           "  -L --lee-richards            Use Lee & Richards algorithm [default]\n");
+    printf("  -p R --probe-radius=R        [default: %4.2f Å]\n"
+           "  -n N --resolution=N          [S&R default: %d] [L&R default: %d]\n",
+           FREESASA_DEF_PROBE_RADIUS, FREESASA_DEF_SR_N, FREESASA_DEF_LR_N);
     if (USE_THREADS) {
-        fprintf(stderr,
-                "\n  -t <value>  (--n-threads=<value>)\n"
-                "                        Number of threads to use in calculation. [default %d]\n",
-                FREESASA_DEF_NUMBER_THREADS);
+        printf(
+           "  -t N --n-threads=N           [default: %d]\n",
+           FREESASA_DEF_NUMBER_THREADS);
     }
-    fprintf(stderr,
-            "\n  -O (--radius-from-occupancy)\n"
-            "                        Read atomic radii from Occupancy field in the PDB input.\n"
-            "\n  -c <file> (--config-file=<file>)\n"
-            "                        Use atomic radii and classes provided in file, example\n"
-            "                        configuration files can be found in the directory\n"
-            "                        share/.\n"
-            "\n  --radii=<protor|naccess>\n"
-            "                        Use either ProtOr or NACCESS atomic radii, classes and\n"
-            "                        RSA reference values. Cannot be used in conjunction\n"
-            "                        with the option '-c'.\n"
-            "                        Default value is 'protor'.\n");
-    fprintf(stderr, "\nINPUT\n"
-            "  -H (--hetatm)         Include HETATM entries from input.\n"
-            "  -Y (--hydrogen)       Include hydrogen atoms (skipped by default). Default\n"
-            "                        classifier emits warnings. Use with care. To get\n"
-            "                        sensible results, one probably needs to redefine atomic\n"
-            "                        radii with the -c option. Default H radius is 1.10 Å.\n"
-            "  -m (--join-models)    Join all MODELs in input into one big structure.\n"
-            "  -C (--separate-chains) Calculate SASA for each chain separately.\n"
-            "  -M (--separate-models) Calculate SASA for each MODEL separately.\n"
-            "\n"
-            "  -g <chains> (--chain-groups=<chains>)\n"
-            "                        Select chain or group of chains, several groups can be \n"
-            "                        concatenated by '+', or by repeting the command. A\n"
-            "                        separate SASA calculation will be performed for each\n"
-            "                        group as though the other chains didn't exist.\n\n"
-            "                        Examples:\n"
-            "                            '-g A', '-g AB', -g 'A+B', '-g A -g B', '-g AB+CD'\n"
-            "\n"
-            "  --unknown=<guess|skip|halt>\n"
-            "                        When an unknown atom is encountered FreeSASA can either\n"
-            "                        'guess' its VdW radius, 'skip' the atom, or 'halt'.\n"
-            "                        Default is 'guess'.\n");
-    fprintf(stderr, "\nOUTPUT\n"
-            "  -l (--no-log)         Don't print log message (useful with -r and -R)\n"
-            "  -w (--no-warnings)    Don't print warnings (will still print warnings due to\n"
-            "                        invalid command line options)\n"
-            "\n"
-            "  -o <file> (--output=<file>)\n"
-            "  -e <file> (--error-file=<file>)\n"
-            "                        Redirect output and/or errors and warnings to file.\n"
-            "\n"
-            "  -f <format> (--format <format>)\n"
-            "                        Output format, options are:\n"
-            "                          - log  Default output, plain text, supressed if other\n"
-            "                                 format selected.\n"
-            "                          - res  The SASA of each residue type on a separate line.\n"
-            "                          - seq  The SASA of each residue separately.\n"
-            "                          - pdb  PDB file where the temperature factor of each atom\n"
-            "                                 is replaced by its SASA, and the occupancy number\n"
-            "                                 by the atomic radius.\n"
-            "                          - rsa  Results in RSA format.\n"
-            "                          - json Results in JSON format.\n"
-            "                          - xml  Results in XML format.\n"
-            "                        Can be repeated, log must be added explicitly if required in\n"
-            "                        conjunction with other format.\n"
-            "\n");
+    printf("\nRADIUS AND CLASS (maximum one of the following)\n"
+           "  -O --radius-from-occupancy   Read atomic radii from Occupancy in PDB\n"
+           "  -c FILE --config-file=FILE   Example files in 'share/'\n"
+           "  --radii=(protor|naccess)     [default: protor]\n");
+    printf("\nINPUT\n"
+           "  -H --hetatm                  Include HETATM entries from input\n"
+           "  -Y --hydrogen                Include hydrogen atoms, suppress warnings with -w\n"
+           "  -m --join-models             Join all MODELs in input into one structure\n"
+           "  -C --separate-chains         Calculate each chain separately\n"
+           "  -M --separate-models         Calculate each MODEL separately\n"
+           "  --unknown=(guess|skip|halt)  When unknown atom radius/class [default: guess]\n"
+           "  -g G --chain-groups=G        Each group will be treated separately. Examples:\n"
+            "                                 '-g A', -g 'A+B', '-g A -g B', '-g AB+CD'\n");
+    printf("\nOUTPUT\n"
+           "  -w --no-warnings             Skip most warnings\n"
+           "  -o FILE --output=FILE        Redirect output\n"
+           "  -e FILE --error-file=FILE    Redirect errors\n"
+           "  -f (...) --format=(log|res|seq|pdb|rsa|json|xml)\n"
+           "                               Output format, can be repeated. [default: log]\n");
     if (USE_JSON || USE_XML) {
-        fprintf(stderr,
-                "  --output-depth=<structure|chain|residue|atom>\n"
-                "                        Level of detail in JSON and/or XML output [default: chain]\n"
-                "\n");
+        printf(
+           "  --output-depth=(structure|chain|residue|atom)\n"
+           "                               Depth of JSON and XML output [default: chain]\n");
     }
-    fprintf(stderr,
-            "\n"
-            "  --select <command>    Select atoms using Pymol select syntax.\n"
-            "                        The option can be repeated to define several selections.\n\n"
-            "                        Examples:\n"
-            "                            'AR, resn ala+arg', 'chain_A, chain A'\n"
-            "                        AR and chain_A are just the names of the selections,\n"
-            "                        which will be reused in output. See documentation for\n"
-            "                        full syntax specification.\n");
-    fprintf(stderr,
-            "\nIf no pdb-file is specified STDIN is used for input.\n\n"
-            "To calculate SASA of one or several PDB file using default parameters simply\ntype:\n\n"
-            "   '%s pdb-file(s)'     or    '%s < pdb-file'\n\n",
-            program_name,program_name);
+    printf("  --select=COMMAND             Select atoms using Pymol select syntax, can be\n"
+           "                               repeated. Examples:\n"
+           "                                  'AR, resn ala+arg', 'chain_A, chain A'\n");
+    addresses(stdout);
 }
 
 static void
 deprecated(void)
 {
     fprintf(stderr,
-            "These options are still supported but will disappear in later versions of FreeSASA.\n"
+            "These options will disappear in later versions of FreeSASA.\n"
             "Use --format instead\n\n"
-            "  --rsa                 Equivalent to --format=rsa\n"
-            "  -B  (--print-as-B-values)\n"
-            "                        Equivalent to --format=pdb\n"
-            "  -r  (--foreach-residue-type)\n"
-            "                        Equivalent to --format=res\n"
-            "  -R  (--foreach-residue)\n"
-            "                        Equivalent to --format=seq.\n"
-
+            "  --rsa                         Equivalent to --format=rsa\n"
+            "  -B  --print-as-B-values       Equivalent to --format=pdb\n"
+            "  -r  --foreach-residue-type    Equivalent to --format=res\n"
+            "  -R  --foreach-residue         Equivalent to --format=seq.\n"
+            "  -l  --no-log                  Log suppressed if other format selected.\n"
+            "                                Options has no effect."
             "\n");
 }
 
@@ -262,6 +217,7 @@ short_help(void)
 {
     fprintf(stderr, "Run '%s -h' for usage instructions.\n",
             program_name);
+    addresses(stderr);
 }
 
 static void
@@ -273,6 +229,7 @@ version(void)
     printf("  Simon Mitternacht (2016) FreeSASA: An open source C\n"
            "  library for solvent accessible surface area calculations.\n"
            "  F1000Research 5:189.\n");
+    addresses(stdout);
 }
 
 static void
@@ -680,7 +637,10 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             freesasa_warn("option '-B' deprecated, use '-f pdb' or '--format=pdb' instead");
             state->output_format |= FREESASA_PDB;
             break;
-        // Errors
+        case 'l':
+            freesasa_warn("option '-l' deprecated, has no effect.");
+            break;
+            // Errors
         case ':':
             abort_msg("option '-%c' missing argument", optopt);
             break;
