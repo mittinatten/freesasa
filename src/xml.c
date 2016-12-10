@@ -337,10 +337,10 @@ node2xml(xmlNodePtr *xml_node,
         break;
     case FREESASA_NODE_ROOT:
     default:
-        assert(0 && "Tree illegal");
+        assert(0 && "tree illegal");
     }
     if (*xml_node == NULL)
-        return fail_msg("Error creating XML-node");
+        return fail_msg("error creating XML-node");
 
     // simplify?
     while (child != NULL) {

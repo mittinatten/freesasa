@@ -303,19 +303,19 @@ get_structures(FILE *input,
    if ((state->structure_options & FREESASA_SEPARATE_CHAINS) ||
        (state->structure_options & FREESASA_SEPARATE_MODELS)) {
        structures = freesasa_structure_array(input, n, state->classifier, state->structure_options);
-       if (structures == NULL) abort_msg("Invalid input.");
+       if (structures == NULL) abort_msg("invalid input");
        for (int i = 0; i < *n; ++i) {
-           if (structures[i] == NULL) abort_msg("Invalid input.");
+           if (structures[i] == NULL) abort_msg("invalid input");
        }
    } else {
        structures = malloc(sizeof(freesasa_structure*));
        if (structures == NULL) {
-           abort_msg("Out of memory.");
+           abort_msg("out of memory");
        }
        *n = 1;
        structures[0] = freesasa_structure_from_pdb(input, state->classifier, state->structure_options);
        if (structures[0] == NULL) {
-           abort_msg("Invalid input.");
+           abort_msg("invalid input");
        }
    }
 
@@ -328,10 +328,10 @@ get_structures(FILE *input,
                if (tmp != NULL) {
                    ++n2;
                    structures = realloc(structures, sizeof(freesasa_structure*)*n2);
-                   if (structures == NULL) abort_msg("Out of memory.");
+                   if (structures == NULL) abort_msg("out of memory");
                    structures[n2-1] = tmp;
                } else {
-                   abort_msg("Chain(s) '%s' not found.", state->chain_groups[i]);
+                   abort_msg("chain(s) '%s' not found", state->chain_groups[i]);
                }
            }
        }
@@ -351,11 +351,11 @@ run_analysis(FILE *input,
     freesasa_node *tree = freesasa_tree_new();
     int n = 0;
 
-    if (tree == NULL) abort_msg("Failed to initialize result-tree.");
+    if (tree == NULL) abort_msg("failed to initialize result-tree");
 
     // read PDB file
     structures = get_structures(input, &n, state);
-    if (n == 0) abort_msg("Invalid input.");
+    if (n == 0) abort_msg("invalid input");
 
     // perform calculation on each structure
     for (int i = 0; i < n; ++i) {
@@ -367,7 +367,7 @@ run_analysis(FILE *input,
             sprintf(name_i+strlen(name_i), ":%d", freesasa_structure_model(structures[i]));
 
         tmp_tree = freesasa_calc_tree(structures[i], &state->parameters, name_i);
-        if (tmp_tree == NULL) abort_msg("Can't calculate SASA.");
+        if (tmp_tree == NULL) abort_msg("can't calculate SASA");
 
         freesasa_node *structure_node =
             freesasa_node_children(freesasa_node_children(tmp_tree));
@@ -380,14 +380,14 @@ run_analysis(FILE *input,
                 if (sel != NULL) {
                     freesasa_node_structure_add_selection(structure_node, sel);
                 } else {
-                    abort_msg("Illegal selection");
+                    abort_msg("illegal selection");
                 }
                 freesasa_selection_free(sel);
             }
         }
 
         if (freesasa_tree_join(tree, &tmp_tree) != FREESASA_SUCCESS) {
-            abort_msg("Failed joining result-trees");
+            abort_msg("failed joining result-trees");
         }
 
         freesasa_structure_free(structures[i]);
@@ -423,8 +423,8 @@ state_add_chain_groups(const char* cmd, struct cli_state *state)
         if (a != '+' && 
             !(a >= 'a' && a <= 'z') && !(a >= 'A' && a <= 'Z') &&
             !(a >= '0' && a <= '9')) {
-            freesasa_fail("Character '%c' not valid chain ID in --chain-groups. "
-                          "Valdig characters are [A-z0-9] and '+' as separator.",a);
+            freesasa_fail("character '%c' not valid chain ID in --chain-groups, "
+                          "valid characters are [A-z0-9] and '+' as separator",a);
             ++err;
         }
     }
@@ -442,7 +442,7 @@ state_add_chain_groups(const char* cmd, struct cli_state *state)
         }
         free(str);
     } else {
-        abort_msg("Aborting.");
+        abort_msg("aborting");
     }
 }
 
@@ -476,7 +476,7 @@ state_add_unknown_option(const char *optarg, struct cli_state *state)
     if(strcmp(optarg, "guess") == 0) {
         return; //default
     }
-    abort_msg("Unknown alternative to option --unknown: '%s'", optarg);
+    abort_msg("unknown alternative to option --unknown: '%s'", optarg);
 }
 
 static int
@@ -503,7 +503,7 @@ parse_output_format(const char *optarg)
     if (strcmp(optarg, "pdb") == 0) {
         return FREESASA_PDB;
     }
-    abort_msg("Unknown output format: '%s'", optarg);
+    abort_msg("unknown output format: '%s'", optarg);
     return FREESASA_FAIL; // to avoid compiler warnings
 }
 
@@ -521,7 +521,7 @@ parse_output_depth(const char *optarg) {
     if (strcmp("atom", optarg) == 0) {
         return FREESASA_OUTPUT_ATOM;
     }
-    abort_msg("Output depth '%s' not allowed, "
+    abort_msg("output depth '%s' not allowed, "
               "can only be 'structure', 'chain', 'residue' or 'atom'",
               optarg);
     return FREESASA_FAIL; // to avoid compiler warnings
@@ -535,7 +535,7 @@ state_set_static_classifier(const char *optarg, struct cli_state *state)
     } else if (strcmp("protor", optarg) == 0) {
         state->classifier = &freesasa_protor_classifier;
     } else {
-        abort_msg("Config '%s' not allowed, "
+        abort_msg("config '%s' not allowed, "
                   "can only be 'protor' or 'naccess')", optarg);
     }
     state->static_classifier = 1;
@@ -559,9 +559,9 @@ parse_arg(int argc, char **argv, struct cli_state *state)
         opt_set[(int)opt] = 1;
         // Assume arguments starting with dash are actually missing arguments
         if (optarg != NULL && optarg[0] == '-') {
-            if (option_index > 0) abort_msg("Missing argument? Value '%s' cannot be argument to '--%s'.\n",
+            if (option_index > 0) abort_msg("missing argument? Value '%s' cannot be argument to '--%s'.\n",
                                             program_name,optarg,long_options[option_index].name);
-            else abort_msg("Missing argument? Value '%s' cannot be argument to '-%c'.\n",
+            else abort_msg("missing argument? Value '%s' cannot be argument to '-%c'.\n",
                            optarg,opt);
         }
         switch(opt) {
@@ -601,7 +601,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             break;
         case 'o':
             if (state->output != NULL) {
-                abort_msg("Option --output can only be set once");
+                abort_msg("option --output can only be set once");
             }
             state->output = fopen_werr(optarg, "w");
             break;
@@ -614,7 +614,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
         case 'c': {
             FILE *cf = fopen_werr(optarg, "r");
             state->classifier = state->classifier_from_file = freesasa_classifier_from_file(cf);
-            if (state->classifier_from_file == NULL) abort_msg("Can't read file '%s'.", optarg);
+            if (state->classifier_from_file == NULL) abort_msg("can't read file '%s'", optarg);
             state->no_rel = 1;
             break;
         }
@@ -622,7 +622,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             state->parameters.shrake_rupley_n_points = atoi(optarg);
             state->parameters.lee_richards_n_slices = atoi(optarg);
             if (state->parameters.shrake_rupley_n_points <= 0)
-                abort_msg("Resolution needs to be at least 1 (20 recommended minum for S&R, 5 for L&R).");
+                abort_msg("resolution needs to be at least 1 (20 recommended minum for S&R, 5 for L&R)");
             break;
         case 'S':
             state->parameters.alg = FREESASA_SHRAKE_RUPLEY;
@@ -635,7 +635,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
         case 'p':
             state->parameters.probe_radius = atof(optarg);
             if (state->parameters.probe_radius <= 0)
-                abort_msg("Probe radius must be 0 or larger.");
+                abort_msg("probe radius must be 0 or larger");
             break;
         case 'H':
             state->structure_options |= FREESASA_INCLUDE_HETATM;
@@ -662,48 +662,48 @@ parse_arg(int argc, char **argv, struct cli_state *state)
         case 't':
             if (USE_THREADS) {
                 state->parameters.n_threads = atoi(optarg);
-                if (state->parameters.n_threads < 1) abort_msg("Number of threads must be 1 or larger.");
+                if (state->parameters.n_threads < 1) abort_msg("number of threads must be 1 or larger");
             } else {
-                abort_msg("Option '-t' only defined if program compiled with thread support.");
+                abort_msg("option '-t' only defined if program compiled with thread support");
             }
             break;
         // Deprecated options
         case 'r':
-            freesasa_warn("Option '-r' deprecated, use '-f res' or '--format=res' instead");
+            freesasa_warn("option '-r' deprecated, use '-f res' or '--format=res' instead");
             state->output_format |= FREESASA_RES;
             break;
         case 'R':
-            freesasa_warn("Option '-R' deprecated, use '-f seq' or '--format=seq' instead");
+            freesasa_warn("option '-R' deprecated, use '-f seq' or '--format=seq' instead");
             state->output_format |= FREESASA_SEQ;
             break;
         case 'B':
-            freesasa_warn("Option '-B' deprecated, use '-f pdb' or '--format=pdb' instead");
+            freesasa_warn("option '-B' deprecated, use '-f pdb' or '--format=pdb' instead");
             state->output_format |= FREESASA_PDB;
             break;
         // Errors
         case ':':
-            abort_msg("Option '-%c' missing argument.", optopt);
+            abort_msg("option '-%c' missing argument", optopt);
             break;
         case '?':
         default:
-            abort_msg("Unknown option '-%c'.", optopt);
+            abort_msg("unknown option '-%c'", optopt);
             break;
         }
     }
     if (state->output == NULL) state->output = stdout;
-    if (alg_set > 1) abort_msg("Multiple algorithms specified.");
+    if (alg_set > 1) abort_msg("multiple algorithms specified");
     if (state->output_format == 0) state->output_format = FREESASA_LOG;
-    if (opt_set['m'] && opt_set['M']) abort_msg("The options -m and -M can't be combined.");
-    if (opt_set['g'] && opt_set['C']) abort_msg("The options -g and -C can't be combined.");
-    if (opt_set['c'] && state->static_classifier) abort_msg("The options -c and --radii cannot be combined");
-    if (opt_set['O'] && state->static_classifier) abort_msg("The options -O and --radii cannot be combined");
-    if (opt_set['c'] && opt_set['O']) abort_msg("The options -c and -O can't be combined");
+    if (opt_set['m'] && opt_set['M']) abort_msg("the options -m and -M can't be combined");
+    if (opt_set['g'] && opt_set['C']) abort_msg("the options -g and -C can't be combined");
+    if (opt_set['c'] && state->static_classifier) abort_msg("the options -c and --radii cannot be combined");
+    if (opt_set['O'] && state->static_classifier) abort_msg("the options -O and --radii cannot be combined");
+    if (opt_set['c'] && opt_set['O']) abort_msg("the options -c and -O can't be combined");
     if (state->output_format == FREESASA_RSA && (opt_set['c'] || opt_set['O'])) {
-        freesasa_warn("Will skip REL columns in RSA when custom atomic radii selected.");
+        freesasa_warn("will skip REL columns in RSA when custom atomic radii selected");
     }
     if (state->output_format == FREESASA_RSA && (opt_set['C'] || opt_set['M']))
-        abort_msg("The RSA format can not be used with the options -C or -M. "
-                  "The format does not support several results in one file.");
+        abort_msg("the RSA format can not be used with the options -C or -M, "
+                  "it does not support several results in one file");
     if (state->output_format == FREESASA_LOG) {
         fprintf(state->output, "## %s ##\n", freesasa_string);
     }
@@ -720,7 +720,7 @@ main(int argc,
     int optind = 0;
     
     freesasa_node *tree = freesasa_tree_new();
-    if (tree == NULL) abort_msg("Error initializing calculation.");
+    if (tree == NULL) abort_msg("error initializing calculation");
 
     init_state(&state);
 
@@ -743,7 +743,7 @@ main(int argc,
             tmp = run_analysis(stdin, "stdin", &state);
             freesasa_tree_join(tree, &tmp);
         }
-        else abort_msg("No input.", program_name);
+        else abort_msg("no input", program_name);
     }
 
     freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));

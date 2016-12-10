@@ -211,14 +211,14 @@ freesasa_tree_export(FILE *file,
     }
     if (options & FREESASA_JSON) {
         if (USE_JSON) count_err(freesasa_write_json(file, root, options), &n_err);
-        else return fail_msg("Library was built without support for JSON output.");
+        else return fail_msg("library was built without support for JSON output");
     }
     if (options & FREESASA_XML) {
         if (USE_XML) count_err(freesasa_write_xml(file, root, options), &n_err);
-        else return fail_msg("Library was built without support for XML output.");
+        else return fail_msg("library was built without support for XML output");
     }
     if (n_err > 0) {
-        return fail_msg("There were errors when writing output");
+        return fail_msg("there were errors when writing output");
     }
     return FREESASA_SUCCESS;
 }

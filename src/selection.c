@@ -156,12 +156,12 @@ get_expression(const char *selector)
    YY_BUFFER_STATE state;
    int err;
    expression *expression = NULL;
-   if (freesasa_yylex_init(&scanner)) fail_msg("Lexer failed");
+   if (freesasa_yylex_init(&scanner)) fail_msg("lexer failed");
    else{
        state = freesasa_yy_scan_string(selector, scanner);
        err = freesasa_yyparse(&expression, scanner);
        if (err) {
-           if (err == 1) fail_msg("Parser failed");
+           if (err == 1) fail_msg("parser failed");
            if (err == 2) mem_fail();
            expression_free(expression);
            expression = NULL;
@@ -308,31 +308,31 @@ is_valid_id(int parent_type,
     switch(parent_type) {
     case E_NAME:
         if (strlen(val) > PDB_ATOM_NAME_STRL)
-            return freesasa_warn("select: %s: Atom name '%s' invalid (string too long). "
-                                 "Will be ignored", e_str(parent_type), val);
+            return freesasa_warn("select: %s: atom name '%s' invalid (string too long), "
+                                 "will be ignored", e_str(parent_type), val);
         break;
     case E_SYMBOL:
         if (type != E_ID)
-            return freesasa_warn("select: %s: '%s' invalid (should be 1 or 2 letters, 'C', 'N', 'SE', etc). "
-                                 "Will be ignored.", e_str(parent_type), val);
+            return freesasa_warn("select: %s: '%s' invalid (should be 1 or 2 letters, 'C', 'N', 'SE', etc), "
+                                 "will be ignored", e_str(parent_type), val);
         if (strlen(val) > 2)
-            return freesasa_warn("select: %s: '%s' invalid (element names have 1 or 2 characters). "
-                                 "Will be ignored.", e_str(parent_type), val);
+            return freesasa_warn("select: %s: '%s' invalid (element names have 1 or 2 characters), "
+                                 "will be ignored", e_str(parent_type), val);
         break;
     case E_RESN:
         if (strlen(val) > PDB_ATOM_RES_NAME_STRL)
-            return freesasa_warn("select: %s: '%s' invalid (string too long). "
-                                 "Will be ignored.", e_str(parent_type), val);
+            return freesasa_warn("select: %s: '%s' invalid (string too long), "
+                                 "will be ignored", e_str(parent_type), val);
         break;
     case E_RESI:
         if (type != E_NUMBER)
-            return freesasa_warn("select: %s: '%s' invalid (not a number). "
-                                 "Will be ignored.", e_str(parent_type), val);
+            return freesasa_warn("select: %s: '%s' invalid (not a number), "
+                                 "will be ignored", e_str(parent_type), val);
         break;
     case E_CHAIN:
         if (strlen(val) > 1)
-            return freesasa_warn("select: %s: '%s' invalid (string too long). "
-                                 "Will be ignored.", e_str(parent_type), val);
+            return freesasa_warn("select: %s: '%s' invalid (string too long), "
+                                 "will be ignored", e_str(parent_type), val);
         break;
     default:
         assert(0);
@@ -352,14 +352,14 @@ select_range(expression_type parent_type,
     int lower, upper;
     if (parent_type == E_RESI) { // residues have integer numbering
         if (left->type != E_NUMBER || right->type != E_NUMBER) {
-            return freesasa_warn("select: %s: Range '%s-%s' invalid, needs to be two numbers. "
-                                 "Will be ignored.",e_str(parent_type), left->value, right->value);
+            return freesasa_warn("select: %s: range '%s-%s' invalid, needs to be two numbers, "
+                                 "will be ignored",e_str(parent_type), left->value, right->value);
         }
     } else { // chains can be numbered by both letters (common) and numbers (uncommon)
         if (left->type != right->type ||
             (left->type == E_ID && (strlen(left->value) > 1 || strlen(right->value) > 1)))
-            return freesasa_warn("select: %s: Range '%s-%s' invalid, should be two letters (A-C) or numbers (1-5). "
-                                 "Will be ignored.", e_str(parent_type), left->value, right->value);
+            return freesasa_warn("select: %s: range '%s-%s' invalid, should be two letters (A-C) or numbers (1-5), "
+                                 "will be ignored", e_str(parent_type), left->value, right->value);
     }
     if (left->type == E_NUMBER) {
         lower = atoi(left->value);
@@ -385,13 +385,13 @@ select_list(expression_type parent_type,
             const expression *expr)
 {
     if (expr == NULL)
-        return fail_msg("NULL expression.");
+        return fail_msg("NULL expression");
     int resr, resl;
     expression *left = expr->left, *right = expr->right;
     switch(expr->type) {
     case E_PLUS: 
         if (left == NULL || right == NULL) 
-            return fail_msg("NULL expression.");
+            return fail_msg("NULL expression");
         resl = select_list(parent_type,selection,structure,left);
         resr = select_list(parent_type,selection,structure,right);
         if (resl == FREESASA_WARN || resr == FREESASA_WARN)
@@ -399,7 +399,7 @@ select_list(expression_type parent_type,
         break;
     case E_RANGE:
         if (left == NULL || right == NULL) 
-            return fail_msg("select: NULL expression.");
+            return fail_msg("NULL expression");
         return select_range(parent_type, selection, structure, left, right);
     case E_ID:
     case E_NUMBER:
@@ -423,7 +423,7 @@ selection_join(struct selection *target,
 {
     int n;
     if (s1 == NULL || s2 == NULL || target == NULL)
-        return fail_msg("Trying to join NULL selections");
+        return fail_msg("trying to join NULL selections");
     
     assert(s1->size == s2->size);
     assert(s1->size == target->size);
@@ -467,7 +467,7 @@ select_atoms(struct selection* selection,
     int warn = 0, err = 0, n = selection->size, ret;
 
     // this should only happen if memory allocation failed during parsing
-    if (expr == NULL) return fail_msg("NULL expression.");
+    if (expr == NULL) return fail_msg("NULL expression");
 
     switch (expr->type) {
     case E_SELECTION:
@@ -500,7 +500,7 @@ select_atoms(struct selection* selection,
         }
         selection_free(sl);
         selection_free(sr);
-        if (err) return fail_msg("Error joining selections");
+        if (err) return fail_msg("error joining selections");
         break;
     }
     case E_NOT: {
@@ -579,9 +579,9 @@ select_area_impl(const char *command,
     expression_free(expression);
     
     if (err)
-        return freesasa_fail("in %s(): Problems parsing expression '%s'.",__func__,command);
+        return fail_msg("problems parsing expression '%s'",command);
     if (warn)
-        return freesasa_warn("in %s(): There were warnings.",__func__);
+        return freesasa_warn("in %s(): There were warnings",__func__);
     return n_atoms;
 }
 

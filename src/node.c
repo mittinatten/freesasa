@@ -474,7 +474,7 @@ freesasa_node_free(freesasa_node *root)
 {
     if (root) {
         if (root->parent)
-            return fail_msg("Can't free node that isn't the root of its tree");
+            return fail_msg("can't free node that isn't the root of its tree");
         node_free(root);
     }
     return FREESASA_SUCCESS;

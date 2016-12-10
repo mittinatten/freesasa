@@ -15,10 +15,10 @@ extern const char *freesasa_string;
 extern const freesasa_nodearea freesasa_nodearea_null;
 
 //! Shortcut for memory error generation
-#define mem_fail() freesasa_mem_fail(__func__,__FILE__,__LINE__) 
+#define mem_fail() freesasa_mem_fail(__FILE__,__LINE__) 
 
-//! Shortcut for error message with position information
-#define fail_msg(msg) freesasa_fail_wloc(__func__,__FILE__,__LINE__,msg)
+//! Shortcut for error message with position information, should be used by default
+#define fail_msg(...) freesasa_fail_wloc(__FILE__,__LINE__, __VA_ARGS__)
 
 /**
     Calculate SASA using S&R algorithm.
@@ -345,6 +345,8 @@ freesasa_alg_name(freesasa_algorithm algorithm);
 /**
     Print failure message using format string and arguments.
 
+    Prefer using the macro fail_msg().
+
     @param format Format string
     @return ::FREESASA_FAIL
 */
@@ -371,8 +373,7 @@ freesasa_warn(const char *format,...);
     @return ::FREESASA_FAIL
  */
 int
-freesasa_mem_fail(const char* func,
-                  const char* file,
+freesasa_mem_fail(const char* file,
                   int line);
 
 /**
@@ -390,16 +391,15 @@ freesasa_thread_error(int error_code);
 
     Mainly intended to be used by the macros fail_msg() and mem_fail().
 
-    @param func The function name
     @param file The file name
     @param line The line number
     @param msg The error message
     @return ::FREESASA_FAIL
  */
 int
-freesasa_fail_wloc(const char* func,
-                   const char* file,
+freesasa_fail_wloc(const char* file,
                    int line,
-                   const char *msg);
+                   const char *format,
+                   ...);
 
 #endif /* FREESASA_INTERNAL_H */

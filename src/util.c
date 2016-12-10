@@ -74,18 +74,27 @@ int freesasa_warn(const char *format,...)
 }
 
 int
-freesasa_fail_wloc(const char* func,
-                   const char* file,
+freesasa_fail_wloc(const char* file,
                    int line,
-                   const char *msg) 
+                   const char *format,
+                   ...)
 {
-    return freesasa_fail("in %s() (%s:%d): %s",func,file,line,msg);
+    FILE *fp = stderr;
+    va_list arg;
+    if (errlog != NULL) fp = errlog;
+    fprintf(fp, "%s:%s:%d: error:", freesasa_name, file, line);
+    va_start(arg, format);
+    vfprintf(fp, format, arg);
+    va_end(arg);
+    fputc('\n', fp);
+    fflush(fp);
+    return FREESASA_FAIL;
 }
 
 int
-freesasa_mem_fail(const char* func, const char* file, int line)
+freesasa_mem_fail(const char* file, int line)
 {
-    return freesasa_fail_wloc(func,file,line,"Out of memory.");
+    return freesasa_fail_wloc(file,line,"Out of memory");
 }
 
 const char*

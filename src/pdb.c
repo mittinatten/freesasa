@@ -70,8 +70,7 @@ freesasa_pdb_get_models(FILE* pdb,
         if (strncmp("ENDMDL",line,6)==0) {
             ++n_end;
             if (n != n_end) {
-                error = freesasa_fail("in %s(): Mismatch between MODEL and ENDMDL "
-                                      "in input\n",__func__);
+                error = fail_msg("mismatch between MODEL and ENDMDL in input");
                 break;
             }
             it[n-1].end = ftell(pdb);
@@ -187,7 +186,7 @@ freesasa_pdb_get_coord(double *xyz,
         return FREESASA_FAIL;
     }
     if (sscanf(line+30, "%lf%lf%lf", &xyz[0], &xyz[1], &xyz[2]) != 3) {
-        return freesasa_fail("Could not read coordinates from line '%s'",line);
+        return fail_msg("could not read coordinates from line '%s'",line);
     }
     return FREESASA_SUCCESS;
 }
@@ -301,7 +300,7 @@ write_pdb_impl(FILE *output,
                 radius = freesasa_node_atom_radius(atom);
 
                 if (line == NULL) {
-                    return fail_msg("PDB input not valid or not present.");
+                    return fail_msg("PDB input not valid or not present");
                 }
 
                 strncpy(buf, line, PDB_LINE_STRL);

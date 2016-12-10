@@ -116,15 +116,14 @@ freesasa_lee_richards(double *sasa,
     lr_data lr;
 
     if (resolution <= 0)
-        return freesasa_fail("in %s(): n_slices_per_atom = %f is invalid, must be > 0\n",
-                             __func__, resolution);
+        return fail_msg("%f slices per atom invalid resolution in L&R, must be > 0\n", resolution);
 
     if (n_atoms == 0) {
-        return freesasa_warn("in %s(): Empty coordinates", __func__);
+        return freesasa_warn("in %s(): empty coordinates", __func__);
     }
     if (n_threads > n_atoms) {
         n_threads = n_atoms;
-        freesasa_warn("No sense in having more threads than atoms, only using %d threads.",
+        freesasa_warn("no sense in having more threads than atoms, only using %d threads",
                       n_threads);
     }
     
@@ -136,8 +135,8 @@ freesasa_lee_richards(double *sasa,
         return_value = lr_do_threads(n_threads, &lr);
 #else
         return_value = freesasa_warn("in %s(): program compiled for single-threaded use, "
-                                     "but multiple threads were requested. Will "
-                                     "proceed in single-threaded mode.\n",
+                                     "but multiple threads were requested, will "
+                                     "proceed in single-threaded mode\n",
                                      __func__);
         n_threads = 1;
 #endif /* pthread */

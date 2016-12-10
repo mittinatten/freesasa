@@ -313,13 +313,13 @@ check_file(FILE *input,
     rewind(input);
 
     if (name->begin == -1) {
-        freesasa_warn("Input configuration lacks the entry 'name:'. "
-                      "Will use '" STD_CLASSIFIER_NAME "'.");
+        freesasa_warn("input configuration lacks the entry 'name:', "
+                      "will use '" STD_CLASSIFIER_NAME "'");
     }
     if ((types->begin == -1) ||
         (atoms->begin == -1)) {
-        return fail_msg("Input configuration lacks (at least) one of "
-                        "the entries 'types:' or 'atoms:'.");
+        return fail_msg("input configuration lacks (at least) one of "
+                        "the entries 'types:' or 'atoms:'");
     }
 
     return FREESASA_SUCCESS;
@@ -334,7 +334,7 @@ freesasa_classifier_parse_class(const char *name)
     } else if (strncasecmp(name, "polar", 5) == 0) {
         return FREESASA_ATOM_POLAR;
     } else {
-        return fail_msg("Only atom classes allowed are 'polar' and 'apolar'"
+        return fail_msg("only atom classes allowed are 'polar' and 'apolar'"
                         " (case insensitive)");
     }
 #else
@@ -343,7 +343,7 @@ freesasa_classifier_parse_class(const char *name)
     } else if (strncmp(name, "polar", 5) == 0) {
         return FREESASA_ATOM_POLAR;
     } else {
-        return fail_msg("Only atom classes allowed are 'polar' and 'apolar'");
+        return fail_msg("only atom classes allowed are 'polar' and 'apolar'");
     }
 #endif
 }
@@ -366,7 +366,7 @@ freesasa_classifier_add_type(struct classifier_types *types,
     freesasa_atom_class *tc = types->type_class;
     
     if (find_string(types->name, type_name, types->n_types) >= 0)
-        return freesasa_warn("Ignoring duplicate configuration entry for '%s'.", type_name);
+        return freesasa_warn("ignoring duplicate configuration entry for '%s'", type_name);
     
     the_class = freesasa_classifier_parse_class(class_name);
     if (the_class == FREESASA_FAIL) return fail_msg("");
@@ -414,10 +414,9 @@ read_types_line(struct classifier_types *types,
         if (the_type == FREESASA_FAIL) return fail_msg("");
         if (the_type == FREESASA_WARN) return FREESASA_WARN;
     } else {
-        return freesasa_fail("in %s(): Could not parse line '%s' in configuration, "
-                             "expecting triplet of type 'TYPE [RADIUS] CLASS' for "
-                             "example 'C_ALI 2.00 apolar'",
-                             __func__, line);
+        return fail_msg("could not parse line '%s' in configuration, "
+                        "expecting triplet of type 'TYPE [RADIUS] CLASS' for "
+                        "example 'C_ALI 2.00 apolar'", line);
     }
     return FREESASA_SUCCESS;
 }
@@ -475,7 +474,7 @@ freesasa_classifier_add_atom(struct classifier_residue *res,
     freesasa_atom_class *ac = res->atom_class;
 
     if (find_string(res->atom_name, name, res->n_atoms) >= 0)
-        return freesasa_warn("Ignoring duplicate configuration entry for atom '%s %s'", 
+        return freesasa_warn("ignoring duplicate configuration entry for atom '%s %s'", 
                              res->name, name);
     n = res->n_atoms+1;
 
@@ -550,8 +549,8 @@ read_atoms_line(struct freesasa_classifier *c,
     if (sscanf(line,"%s %s %s",buf1,buf2,buf3) == 3) {
         type = find_string(types->name, buf3, types->n_types);
         if (type < 0) 
-            return freesasa_fail("Unknown atom type '%s' in configuration, line '%s'",
-                                 buf3, line);
+            return fail_msg("unknown atom type '%s' in configuration, line '%s'",
+                            buf3, line);
         res = freesasa_classifier_add_residue(c, buf1);
         if (res == FREESASA_FAIL) return fail_msg("");
         atom = freesasa_classifier_add_atom(c->residue[res],
@@ -563,10 +562,10 @@ read_atoms_line(struct freesasa_classifier *c,
         if (atom == FREESASA_WARN) return FREESASA_WARN;
         
     } else {
-        return freesasa_fail("in %s(): Could not parse configuration, line '%s', "
-                             "expecting triplet of type "
-                             "'RESIDUE ATOM CLASS', for example 'ALA CB C_ALI'.",
-                             __func__, line);
+        return fail_msg("could not parse configuration, line '%s', "
+                        "expecting triplet of type "
+                        "'RESIDUE ATOM CLASS', for example 'ALA CB C_ALI'",
+                        line);
     }
     return FREESASA_SUCCESS;
 }
@@ -626,7 +625,7 @@ read_name(struct freesasa_classifier *classifier,
     assert(strcmp(buf, "name:") == 0);
 
     if (get_next_string(input, &buf) <= 0) {
-        fail_msg("Empty name for configuration?");
+        fail_msg("empty name for configuration?");
         goto cleanup;
     }
 
@@ -760,7 +759,7 @@ freesasa_classifier_class2str(freesasa_atom_class atom_class)
     case FREESASA_ATOM_UNKNOWN:
         return "Unknown";
     }
-    fail_msg("Invalid atom class");
+    fail_msg("invalid atom class");
     return NULL;
 }
 

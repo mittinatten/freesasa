@@ -382,7 +382,7 @@ guess_symbol(char *symbol,
             symbol[0] = ' ';
             symbol[1] = name[0];
             symbol[2] = '\0';
-            return freesasa_warn("Guessing that atom '%s' is symbol '%s'",
+            return freesasa_warn("guessing that atom '%s' is symbol '%s'",
                                  name,symbol);
         }
     }
@@ -459,22 +459,22 @@ structure_check_atom_radius(double *radius,
     *radius = freesasa_classifier_radius(classifier, a->res_name, a->atom_name);
     if (*radius < 0) {
         if (options & FREESASA_HALT_AT_UNKNOWN) {
-            return freesasa_fail("in %s(): atom '%s %s' unknown.",
-                                 __func__, a->res_name, a->atom_name);
+            return fail_msg("atom '%s %s' unknown",
+                            a->res_name, a->atom_name);
         } else if (options & FREESASA_SKIP_UNKNOWN) {
-            return freesasa_warn("Skipping unknown atom '%s %s'.",
+            return freesasa_warn("skipping unknown atom '%s %s'",
                                  a->res_name, a->atom_name, a->symbol, *radius);
         } else {
             *radius = freesasa_guess_radius(a->symbol);
             if (*radius < 0) {
                 *radius = +0.;
-                freesasa_warn("Atom '%s %s' unknown and ",
-                              "can't guess radius of symbol '%s'. "
-                              "Assigning radius 0 A.",
+                freesasa_warn("atom '%s %s' unknown and "
+                              "can't guess radius of symbol '%s', "
+                              "assigning radius 0 A",
                               a->res_name, a->atom_name, a->symbol);
             } else {
-                freesasa_warn("Atom '%s %s' unknown, guessing element is '%s', "
-                              "and radius %.3f A.",
+                freesasa_warn("atom '%s %s' unknown, guessing element is '%s', "
+                              "and radius %.3f A",
                               a->res_name, a->atom_name, a->symbol, *radius);
             }
             // do not return FREESASA_WARN here, because we will keep the atom
@@ -535,7 +535,7 @@ structure_add_atom(freesasa_structure *structure,
         r = 1; // fix it later
     } else {
         ret = structure_check_atom_radius(&r, atom, classifier, options);
-        if (ret == FREESASA_FAIL) return fail_msg("Halting at unknown atom.");
+        if (ret == FREESASA_FAIL) return fail_msg("halting at unknown atom");
         if (ret == FREESASA_WARN) return FREESASA_WARN;
     }
     assert(r >= 0);
@@ -637,7 +637,7 @@ from_pdb_impl(FILE *pdb_file,
     }
     
     if (s->atoms.n == 0) {
-        freesasa_fail("Input had no valid ATOM or HETATM lines.");
+        fail_msg("input had no valid ATOM or HETATM lines");
         goto cleanup;
     }
 
@@ -730,8 +730,8 @@ freesasa_structure_array(FILE *pdb,
 
     if( ! (options & FREESASA_SEPARATE_MODELS ||
            options & FREESASA_SEPARATE_CHAINS) ) {
-        fail_msg("Options need to specify at least one of FREESASA_SEPARATE_CHAINS "
-                 "and FREESASA_SEPARATE_MODELS.");
+        fail_msg("options need to specify at least one of FREESASA_SEPARATE_CHAINS "
+                 "and FREESASA_SEPARATE_MODELS");
         return NULL;
     }
 
@@ -739,7 +739,7 @@ freesasa_structure_array(FILE *pdb,
     n_models = freesasa_pdb_get_models(pdb,&models);
 
     if (n_models == FREESASA_FAIL) {
-        fail_msg("Problems reading PDB-file.");
+        fail_msg("problems reading PDB-file");
         return NULL;
     }
     if (n_models == 0) {
@@ -758,7 +758,7 @@ freesasa_structure_array(FILE *pdb,
 
             if (n_new_chains == FREESASA_FAIL) goto cleanup;
             if (n_new_chains == 0) {
-                freesasa_warn("in %s(): No chains found (in model %d).", __func__, i+1);
+                freesasa_warn("in %s(): no chains found (in model %d)", __func__, i+1);
                 continue;
             }
 
@@ -1035,7 +1035,7 @@ freesasa_structure_chain_index(const freesasa_structure *structure,
     for (int i = 0; i < structure->chains.n; ++i) {
         if (structure->chains.labels[i] == chain) return i;
     }
-    return freesasa_fail("in %s: Chain %c not found.", __func__, chain);
+    return fail_msg("chain %c not found", chain);
 }
 
 int
