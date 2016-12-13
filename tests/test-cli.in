@@ -167,6 +167,8 @@ assert_pass "$cli -g AB -S -n 10 $datadir/2jo4.pdb > $dump"
 assert_fail "$cli -g E -S -n 10 $datadir/2jo4.pdb > $dump"
 assert_pass "$cli -g AB+CD -S -n 10 $datadir/2jo4.pdb > $dump"
 assert_fail "$cli -g A-B -S -n 10 $datadir/2jo4.pdb > $dump"
+assert_fail "$cli -g AB -S -n 10 $smallpdb > $dump"
+assert_fail "$cli -g A+B -S -n 10 $smallpdb > $dump"
 echo
 echo "== Testing probe radius =="
 assert_fail "$cli -S -n 10 -p=-1 < $datadir/1ubq.pdb > $dump"

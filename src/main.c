@@ -300,7 +300,7 @@ get_structures(FILE *input,
                    if (structures == NULL) abort_msg("out of memory");
                    structures[n2-1] = tmp;
                } else {
-                   abort_msg("chain(s) '%s' not found", state->chain_groups[i]);
+                   abort_msg("at least one of chain(s) '%s' not found", state->chain_groups[i]);
                }
            }
        }

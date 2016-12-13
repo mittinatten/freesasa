@@ -843,18 +843,27 @@ freesasa_structure_get_chains(const freesasa_structure *structure,
                                                   c, v[0], v[1], v[2]);
             if (res == FREESASA_FAIL) {
                 fail_msg("");
-                freesasa_structure_free(new_s);
-                return NULL;
+                goto cleanup;
             }
         }
     }
 
+    // the following two tests could have been done by comparing the
+    // chain-strings before the loop, but this logic is simpler.
     if (new_s->atoms.n == 0) {
-        freesasa_structure_free(new_s);
-        new_s = NULL;
+        goto cleanup;
+    }
+    if (strlen(new_s->chains.labels) != strlen(chains)) {
+        fail_msg("structure has chains '%s', but '%s' requested",
+                 structure->chains.labels, chains);
+        goto cleanup;
     }
 
     return new_s;
+
+ cleanup:
+    freesasa_structure_free(new_s);
+    return NULL;
 }
 
 const char *

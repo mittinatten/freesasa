@@ -363,6 +363,13 @@ START_TEST (test_get_chains) {
     ck_assert(freesasa_structure_atom_chain(s2,129) == 'C');
     ck_assert_str_eq(freesasa_structure_chain_labels(s2),"AC");
     freesasa_structure_free(s2);
+
+    s2 = freesasa_structure_get_chains(s,"E");
+    ck_assert_ptr_eq(s2, NULL);
+
+    s2 = freesasa_structure_get_chains(s,"AE");
+    ck_assert_ptr_eq(s2, NULL);
+
     freesasa_structure_free(s);
 }
 END_TEST

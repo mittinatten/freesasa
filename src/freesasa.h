@@ -799,8 +799,8 @@ freesasa_structure_add_atom_wopt(freesasa_structure *structure,
     @param chains String of chain labels (e.g. "AB")
 
     @return A new structure consisting only of the specified
-    chains. Returns NULL if the input structure doesn't have any
-    matching chains or if memory allocation fails.
+    chains. Returns NULL if one or more of the requested chains don't
+    match any in the input structure or if memory allocation fails.
 
     @ingroup structure
  */
