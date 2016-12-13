@@ -81,6 +81,8 @@ freesasa_fail_wloc(const char* file,
 {
     FILE *fp = stderr;
     va_list arg;
+    int v = freesasa_get_verbosity();
+    if (freesasa_get_verbosity() == FREESASA_V_SILENT) return FREESASA_FAIL;
     if (errlog != NULL) fp = errlog;
     fprintf(fp, "%s:%s:%d: error:", freesasa_name, file, line);
     va_start(arg, format);
