@@ -9,6 +9,7 @@ AC_CONFIG_HEADERS([config.h])
 m4_include([m4/ax_compare_version.m4])
 AC_DEFINE([REPORTBUG], ["Report bugs to <https://github.com/mittinatten/freesasa/issues>"], [Bug report string])
 AC_DEFINE([HOMEPAGE], ["<http://freesasa.github.io>"], [Project homepage])
+AC_DEFINE([FREESASA_XMLNS], ["http://freesasa.github.io/"], [XML namespace])
 
 # Checks for programs.
 AC_PROG_CC
