@@ -21,7 +21,7 @@ extern char *optarg;
 
 static char *program_name = "freesasa";
 
-enum {B_FILE, SELECT, UNKNOWN, RSA, O_DEPTH, RADII, DEPRECATED};
+enum {B_FILE, SELECT, UNKNOWN, RSA, RADII, DEPRECATED};
 
 static int option_flag;
 
@@ -34,21 +34,21 @@ static struct option long_options[] = {
     {"version",              no_argument,       0, 'v'},
     {"no-warnings",          no_argument,       0, 'w'},
     {"n-threads",            required_argument, 0, 't'},
+    {"config-file",          required_argument, 0, 'c'},
+    {"radius-from-occupancy",no_argument,       0, 'O'},
     {"hetatm",               no_argument,       0, 'H'},
     {"hydrogen",             no_argument,       0, 'Y'},
     {"separate-chains",      no_argument,       0, 'C'},
     {"separate-models",      no_argument,       0, 'M'},
     {"join-models",          no_argument,       0, 'm'},
-    {"config-file",          required_argument, 0, 'c'},
     {"chain-groups",         required_argument, 0, 'g'},
     {"error-file",           required_argument, 0, 'e'},
     {"output",               required_argument, 0, 'o'},
     {"format",               required_argument, 0, 'f'},
-    {"radius-from-occupancy",no_argument,       0, 'O'},
+    {"depth",                required_argument, 0, 'd'},
     {"select",               required_argument, &option_flag, SELECT},
     {"unknown",              required_argument, &option_flag, UNKNOWN},
     {"rsa",                  no_argument,       &option_flag, RSA},
-    {"output-depth",         required_argument, &option_flag, O_DEPTH},
     {"radii",                required_argument, &option_flag, RADII},
     {"deprecated",           no_argument,       &option_flag, DEPRECATED},
     // Deprecated options
@@ -149,13 +149,14 @@ help(void)
     printf("\n       %s [options] < pdb-file", program_name);
     printf("\n       %s (-h | --help | -v | --version | --deprecated)\n", program_name);
     printf("\n"
-           "Options: [--shrake-rupley|--lee-richards] -p=PROBE_RADIUS -n=RESOL -t=N_THREADS\n"
-           "  [--radius-from-occupancy | -c CLASSIFIER_FILE | --radii=(protor|naccess)]\n"
+           "Options: [--shrake-rupley | --lee-richards] --probe-radius=FLOAT\n"
+           "  --resolution=INTEGER -n-threads=INTEGER\n"
+           "  [--radius-from-occupancy | --config-file FILE | --radii=(protor|naccess)]\n"
            "  --hetatm --hydrogen [--separate-models | --join-models] [--separate-chains |\n"
-           "  --chain-groups=GROUPS...] --unknown=(guess|skip|halt)\n"
-           "  --output FILE --error-file FILE --no-warnings --select=COMMAND...\n"
+           "  --chain-groups=STRING...] --unknown=(guess|skip|halt)\n"
+           "  --output FILE --error-file FILE --no-warnings --select=STRING...\n"
            "  --format=(log|res|seq|pdb|rsa|json|xml)... \n"
-           "  --output-depth=(structure|chain|residue|atom)\n");
+           "  --depth=(structure|chain|residue|atom)\n");
     printf("\nPARAMETERS\n"
            "  -S --shrake-rupley           Use Shrake & Rupley algorithm\n"
            "  -L --lee-richards            Use Lee & Richards algorithm [default]\n");
@@ -179,7 +180,7 @@ help(void)
            "  -M --separate-models         Calculate each MODEL separately\n"
            "  --unknown=(guess|skip|halt)  When unknown atom radius/class [default: guess]\n"
            "  -g G --chain-groups=G        Each group will be treated separately. Examples:\n"
-            "                                 '-g A', -g 'A+B', '-g A -g B', '-g AB+CD'\n");
+            "                                 '-g A', '-g A+B', '-g A -g B', '-g AB+CD'\n");
     printf("\nOUTPUT\n"
            "  -w --no-warnings             Skip most warnings\n"
            "  -o FILE --output=FILE        Redirect output\n"
@@ -188,7 +189,7 @@ help(void)
            "                               Output format, can be repeated. [default: log]\n");
     if (USE_JSON || USE_XML) {
         printf(
-           "  --output-depth=(structure|chain|residue|atom)\n"
+           "  -d (...) --depth=(structure|chain|residue|atom)\n"
            "                               Depth of JSON and XML output [default: chain]\n");
     }
     printf("  --select=COMMAND             Select atoms using Pymol select syntax, can be\n"
@@ -533,9 +534,6 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             case RSA:
                 state->output_format = FREESASA_RSA;
                 break;
-            case O_DEPTH:
-                state->output_depth = parse_output_depth(optarg);
-                break;
             case RADII:
                 state_set_static_classifier(optarg, state);
                 break;
@@ -564,6 +562,9 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             break;
         case 'f':
             state->output_format |= parse_output_format(optarg);
+            break;
+        case 'd':
+            state->output_depth = parse_output_depth(optarg);
             break;
         case 'w':
             freesasa_set_verbosity(FREESASA_V_NOWARNINGS);
@@ -642,11 +643,15 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             break;
             // Errors
         case ':':
-            abort_msg("option '-%c' missing argument", optopt);
+            abort_msg("option '-%c' missing argument");
             break;
         case '?':
         default:
-            abort_msg("unknown option '-%c'", optopt);
+            if (optopt == 0) {
+                abort_msg("unknown option '%s'", argv[optind-1]);
+            } else {
+                abort_msg("unknown option '-%c'", optopt);
+            }
             break;
         }
     }
