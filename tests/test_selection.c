@@ -10,7 +10,6 @@
 
 freesasa_structure *structure;
 freesasa_result *result;
-freesasa_strvp *svp;
 double radii[N] = {1.0,1.2,1.4,1.6,1.8,2,2.2,2.4};
 const char *name[N] = { " CA ", " O  ", " N  ", " SD ", " CB ", " OXT", "SE  ", " P  "};
 const char *resn[N] = {  "ALA",  "ALA",  "ARG",  "MET",  "VAL",  "GLU",  "SEC",  " DC"};
@@ -70,7 +69,6 @@ static void teardown(void)
 {
     freesasa_structure_free(structure);
     freesasa_result_free(result);
-    freesasa_strvp_free(svp);
 }
 
 static double addup(const int *sel, const freesasa_result *res)
