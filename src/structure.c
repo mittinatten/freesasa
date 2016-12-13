@@ -328,7 +328,7 @@ freesasa_structure_new(void)
     s->residues = residues_init();
     s->chains = chains_init();
     s->xyz = freesasa_coord_new();
-    s->model = 0;
+    s->model = 1;
     s->classifier_name = NULL;
 
     if (s->xyz == NULL) goto memerr;
