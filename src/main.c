@@ -11,7 +11,6 @@
 #include <stdarg.h>
 
 #include "freesasa.h"
-#include "freesasa_internal.h"
 
 #if STDC_HEADERS
 extern int getopt(int, char * const *, const char *);
@@ -224,7 +223,7 @@ short_help(void)
 static void
 version(void)
 {
-    printf("%s\n", freesasa_string);
+    printf("%s\n", PACKAGE_STRING);
     printf("License: MIT <http://opensource.org/licenses/MIT>\n");
     printf("If you use this program for research, please cite:\n");
     printf("  Simon Mitternacht (2016) FreeSASA: An open source C\n"
@@ -233,22 +232,34 @@ version(void)
     addresses(stdout);
 }
 
+/** error handling **/
+
 static void
-abort_msg(const char *format,
-          ...)
+err_msg(const char* prefix,
+        const char* format,
+        ...)
 {
     va_list arg;
     va_start(arg, format);
-    fprintf(stderr, "%s: error: ", program_name);
+    fprintf(stderr, "%s: %s: ", program_name, prefix);
     vfprintf(stderr, format, arg);
-    va_end(arg);
     fputc('\n', stderr);
+    va_end(arg);
+    fflush(stderr);
+}
+
+static void
+exit_with_help(void) {
     fputc('\n', stderr);
     short_help();
     fputc('\n', stderr);
     fflush(stderr);
     exit(EXIT_FAILURE);
 }
+
+#define warn(...) err_msg("warning", __VA_ARGS__)
+#define error(...) err_msg("error", __VA_ARGS__)
+#define abort_msg(...) do {error(__VA_ARGS__); exit_with_help();} while(0)
 
 static freesasa_structure **
 get_structures(FILE *input,
@@ -381,8 +392,8 @@ state_add_chain_groups(const char* cmd, struct cli_state *state)
         if (a != '+' && 
             !(a >= 'a' && a <= 'z') && !(a >= 'A' && a <= 'Z') &&
             !(a >= '0' && a <= '9')) {
-            freesasa_fail("character '%c' not valid chain ID in --chain-groups, "
-                          "valid characters are [A-z0-9] and '+' as separator",a);
+            error("character '%c' not valid chain ID in --chain-groups, "
+                  "valid characters are [A-z0-9] and '+' as separator", a);
             ++err;
         }
     }
@@ -394,7 +405,7 @@ state_add_chain_groups(const char* cmd, struct cli_state *state)
         while (token) {
             ++state->n_chain_groups;
             state->chain_groups = realloc(state->chain_groups,sizeof(char*)*state->n_chain_groups);
-            if (state->chain_groups == NULL) { mem_fail(); abort();}
+            if (state->chain_groups == NULL) { abort_msg("out of memory");}
             state->chain_groups[state->n_chain_groups-1] = strdup(token);
             token = strtok(0, "+");
         }
@@ -410,13 +421,11 @@ state_add_select(const char* cmd, struct cli_state *state)
     ++state->n_select;
     state->select_cmd = realloc(state->select_cmd, sizeof(char*)*state->n_select);
     if (state->select_cmd == NULL) {
-        mem_fail(); 
-        abort(); 
+        abort_msg("out of memory");
     }
     state->select_cmd[state->n_select-1] = strdup(cmd);
     if (state->select_cmd[state->n_select-1] == NULL) {
-        mem_fail(); 
-        abort();
+        abort_msg("out of memory");
     }
 }
 
@@ -518,7 +527,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
         // Assume arguments starting with dash are actually missing arguments
         if (optarg != NULL && optarg[0] == '-') {
             if (option_index > 0) abort_msg("missing argument? Value '%s' cannot be argument to '--%s'.\n",
-                                            program_name,optarg,long_options[option_index].name);
+                                            program_name,optarg, long_options[option_index].name);
             else abort_msg("missing argument? Value '%s' cannot be argument to '-%c'.\n",
                            optarg,opt);
         }
@@ -627,19 +636,19 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             break;
         // Deprecated options
         case 'r':
-            freesasa_warn("option '-r' deprecated, use '-f res' or '--format=res' instead");
+            warn("option '-r' deprecated, use '-f res' or '--format=res' instead");
             state->output_format |= FREESASA_RES;
             break;
         case 'R':
-            freesasa_warn("option '-R' deprecated, use '-f seq' or '--format=seq' instead");
+            warn("option '-R' deprecated, use '-f seq' or '--format=seq' instead");
             state->output_format |= FREESASA_SEQ;
             break;
         case 'B':
-            freesasa_warn("option '-B' deprecated, use '-f pdb' or '--format=pdb' instead");
+            warn("option '-B' deprecated, use '-f pdb' or '--format=pdb' instead");
             state->output_format |= FREESASA_PDB;
             break;
         case 'l':
-            freesasa_warn("option '-l' deprecated, has no effect.");
+            warn("option '-l' deprecated, has no effect.");
             break;
             // Errors
         case ':':
@@ -664,13 +673,13 @@ parse_arg(int argc, char **argv, struct cli_state *state)
     if (opt_set['O'] && state->static_classifier) abort_msg("the options -O and --radii cannot be combined");
     if (opt_set['c'] && opt_set['O']) abort_msg("the options -c and -O can't be combined");
     if (state->output_format == FREESASA_RSA && (opt_set['c'] || opt_set['O'])) {
-        freesasa_warn("will skip REL columns in RSA when custom atomic radii selected");
+        warn("will skip REL columns in RSA when custom atomic radii selected");
     }
     if (state->output_format == FREESASA_RSA && (opt_set['C'] || opt_set['M']))
         abort_msg("the RSA format can not be used with the options -C or -M, "
                   "it does not support several results in one file");
-    if (state->output_format == FREESASA_LOG) {
-        fprintf(state->output, "## %s ##\n", freesasa_string);
+    if (state->output_format & FREESASA_LOG) {
+        fprintf(state->output, "## %s ##\n", PACKAGE_STRING);
     }
 
     return optind;
@@ -695,9 +704,6 @@ main(int argc,
         for (int i = optind; i < argc; ++i) {
             freesasa_node *tmp;
             input = fopen_werr(argv[i], "r");
-            if (state.output_format & FREESASA_LOG) {
-                freesasa_write_parameters(state.output, &state.parameters);
-            }
             tmp = run_analysis(input, argv[i], &state);
             freesasa_tree_join(tree, &tmp);
             fclose(input);

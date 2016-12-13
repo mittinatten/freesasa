@@ -29,6 +29,7 @@ static void
 rsa_print_header(FILE *output,
                  const char *config_name,
                  const char *protein_name,
+                 const char *chains,
                  const freesasa_parameters *parameters,
                  int options)
 {
@@ -43,6 +44,7 @@ rsa_print_header(FILE *output,
         fprintf(output, "REM  Atomic radii and reference values for relative SASA: %s\n", config_name);
     else
         fprintf(output, "REM  No reference values available to calculate relative SASA\n");
+    fprintf(output, "REM  Chains: %s\n", chains);
     fprintf(output, "REM  Algorithm: %s\n", freesasa_alg_name(alg));
     fprintf(output, "REM  Probe-radius: %.2f\n", parameters->probe_radius);
     if (alg == FREESASA_LEE_RICHARDS) {
@@ -124,7 +126,7 @@ freesasa_write_rsa(FILE *output,
     chain = freesasa_node_children(structure_node);
 
     rsa_print_header(output, freesasa_node_classified_by(result_node),
-                     freesasa_node_name(structure_node), parameters, options);
+                     freesasa_node_name(result_node), freesasa_node_name(structure_node), parameters, options);
 
     res_index = chain_index = 0;
     while(chain) {

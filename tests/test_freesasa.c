@@ -227,7 +227,6 @@ START_TEST (test_sasa_1ubq)
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
     FILE *nowrite = fopen("/dev/null","r");
-    ck_assert(freesasa_write_parameters(nowrite, &freesasa_default_parameters) == FREESASA_FAIL);
     ck_assert(freesasa_write_log(nowrite, tree) == FREESASA_FAIL);
     ck_assert(freesasa_per_chain(nowrite, res, st) == FREESASA_FAIL);
     ck_assert(freesasa_per_residue_type(nowrite, res, st) == FREESASA_FAIL);

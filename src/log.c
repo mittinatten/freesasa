@@ -106,9 +106,9 @@ write_selections(FILE *log,
     return FREESASA_SUCCESS;
 }
 
-int
-freesasa_write_parameters(FILE *log,
-                          const freesasa_parameters *parameters)
+static int
+write_parameters(FILE *log,
+                 const freesasa_parameters *parameters)
 {
     assert(log);
     const freesasa_parameters *p = parameters;
@@ -248,6 +248,8 @@ freesasa_write_log(FILE *log,
     freesasa_node *result = freesasa_node_children(root);
     int several = (freesasa_node_next(result) != NULL); // are there more than one result
     int err = 0;
+
+    write_parameters(log, freesasa_node_result_parameters(result));
 
     while(result) {
         if (several) fprintf(log, "\n\n####################\n");

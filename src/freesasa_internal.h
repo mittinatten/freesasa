@@ -85,10 +85,6 @@ freesasa_calc(const coord_t *c,
               const freesasa_parameters *parameters);
 
 int
-freesasa_write_parameters(FILE *log,
-                          const freesasa_parameters *parameters);
-
-int
 freesasa_write_log(FILE *log,
                    freesasa_node *root);
 
