@@ -171,7 +171,7 @@ echo
 echo "== Testing probe radius =="
 assert_fail "$cli -S -n 10 -p=-1 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -S -n 10 -p 1 < $datadir/1ubq.pdb > $dump"
-assert_pass "$cli -S -p 1.4 --format=pdb < $datadir/1ubq.pdb > tmp/bfactor.pdb"
+assert_pass "$cli -S -p 1.4 --format=pdb < $datadir/1ubq.pdb | grep -v REMARK > tmp/bfactor.pdb"
 assert_pass "diff tmp/bfactor.pdb $datadir/1ubq.B.pdb"
 echo "== Testing option --unknown =="
 assert_pass "$cli --unknown=guess -Y -w -n 2  $datadir/1d3z.pdb > $dump"
@@ -214,10 +214,10 @@ assert_pass "$cli -S -R < $datadir/1ubq.pdb > tmp/seq"
 assert_pass "diff tmp/seq $datadir/seq.reference"
 echo
 echo "== Testing PDB format =="
-assert_pass "$cli -S --format=pdb < $datadir/1ubq.pdb > tmp/bfactor.pdb"
+assert_pass "$cli -S --format=pdb < $datadir/1ubq.pdb | grep -v REMARK > tmp/bfactor.pdb"
 assert_pass "diff tmp/bfactor.pdb $datadir/1ubq.B.pdb"
 #deprecated
-assert_pass "$cli -S -B < $datadir/1ubq.pdb > tmp/bfactor.pdb"
+assert_pass "$cli -S -B < $datadir/1ubq.pdb | grep -v REMARK > tmp/bfactor.pdb"
 assert_pass "diff tmp/bfactor.pdb $datadir/1ubq.B.pdb"
 echo
 echo "== Testing RSA format =="

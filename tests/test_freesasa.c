@@ -284,6 +284,9 @@ START_TEST (test_write_pdb) {
     size_t bufsize = 100;
     char *buf_tf = malloc(bufsize), *buf_ref = malloc(bufsize);
     while(getline(&buf_tf,&bufsize,tf) > 0 && getline(&buf_ref,&bufsize,ref) > 0) {
+        // skip remarks
+        while (strncmp(buf_ref, "REMARK", 6) == 0 && getline(&buf_ref, &bufsize, ref) > 0);
+        while (strncmp(buf_tf, "REMARK", 6) == 0 && getline(&buf_tf, &bufsize, tf) > 0);
         ck_assert_str_eq(buf_ref,buf_tf);
     }
     free(buf_tf);
