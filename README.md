@@ -44,6 +44,9 @@ and the `share/` directory contains some sample configurations,
 including one for the NACCESS parameters ([Hubbard & Thornton
 1993](http://www.bioinf.manchester.ac.uk/naccess/)).
 
+Version 2.0 adds some new features and breaks a few parts of the
+interface from 1.x, see CHANGELOG.md for detailed information.
+
 Compiling and installing
 ------------------------
 

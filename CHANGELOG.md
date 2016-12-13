@@ -19,10 +19,16 @@ FreeSASA uses semantic versioning. Changelog added for versions 2.x
     all residue types, allowing calculation of relative SASA for for
     example RSA output. At the moment no support for defining these
     values in classifier configuration file (TODO?).
-* Interface for classifying using string-value pairs has been removed
-  (type `freesasa_strvp` and functions `freesasa_result_classifiy()`
-  and `freesasa_strvp_free()`). The new tree-interface should be used
-  instead.
+  * Interface for classifying using string-value pairs has been
+    removed (type `freesasa_strvp` and functions
+    `freesasa_result_classifiy()` and `freesasa_strvp_free()`). The
+    new tree-interface should be used instead.
+* Structure interface changed: A structure is initialized with a
+  classifier and the relevant classifier values are stored directly in
+  the structure. This assures that the structure and results are
+  always analyzed with consistent parameters. One effect is that the
+  function `freesasa_calc_structure()` no longer takes the atomic
+  radii as an explicit parameters.
 * Functions `freesasa_per_residue()`, `freesasa_per_residue_type()`
   and `freesasa_per_chain()`, have also been removed from the
   interface. The same functionality can be achieved using

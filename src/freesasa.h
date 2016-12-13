@@ -163,7 +163,7 @@ enum freesasa_output_options {
     FREESASA_JSON=1<<7, //!< JSON output
     FREESASA_XML=1<<8, //!< XML output
     FREESASA_PDB=1<<9, //!< PDB output (with B-factors replaced by SASA values, and occupancy by radius)
-    FREESASA_RES=1<<10, //! A list of the integrated SASA of each residue type
+    FREESASA_RES=1<<10, //!< A list of the integrated SASA of each residue type
     FREESASA_SEQ=1<<11, //!< The SASA of each residue in the sequence
 
     //! Don't output relative areas, for example if structure has

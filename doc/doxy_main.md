@@ -580,7 +580,7 @@ takes a selection definition uses a subset of the Pymol select syntax
 @subsubsection structure-node Navigating the results as a tree
 
 In addition to the flat array of results in ::freesasa_result, and the
-global values returned by freesasa_classifier_classify_result(),
+global values returned by freesasa_result_classes(),
 FreeSASA has an interface for navigating the results as a tree. The
 leaf nodes are individual atoms, and there are parent nodes at the
 residue, chain, and structure levels. The function
@@ -599,7 +599,7 @@ each level of the tree.
 @subsubsection export-tree Exporting to RSA, JSON and XML
 
 The tree structure can also be exported to an RSA, JSON or XML file
-using freesasa_export_tree(). The RSA format is fixed, but the user
+using freesasa_tree_export(). The RSA format is fixed, but the user
 can select which levels of the tree to include in JSON and XML. The
 following illustrates how one would generate a tree and export it to
 XML, including nodes for the whole structure, chains and residues (but
@@ -626,7 +626,8 @@ coordinates in the order `x1,y1,z1,x2,y2,z2,...,xn,yn,zn`.
 ~~~{.c}
     double coord[] = {/* x */ 1.0, /* y */ 2.0, /* z */ 3.0};
     double radius[] = {2.0};
-    freesasa_result *result = freesasa_calc_coord(coord, radius, 1, NULL);
+    int n_atoms = 1;
+    freesasa_result *result = freesasa_calc_coord(coord, radius, n_atoms, NULL);
 ~~~
 
     
@@ -637,12 +638,10 @@ not cause a crash, but rather allow the user to exit gracefully or
 make another attempt. Therefore, errors due to user or system
 failures, such as faulty parameters, malformatted config-files, I/O
 errors or out of memory errors, are reported through return values,
-either ::FREESASA_FAIL or ::FREESASA_WARN, or by NULL pointers,
+either ::FREESASA_FAIL or ::FREESASA_WARN, or by `NULL` pointers,
 depending on the context. See the documentation for the individual
 functions. If memory allocation fails as much memory as possible is
-released. To the extent that it's possible to emulate system failures
-like this, they have been verified to not cause aborts or seg-faults
-(see the tests/ directory) in any part of the code.
+released.
 
 Errors that are attributable to programmers using the library, such as
 passing null pointers where not allowed, are checked by asserts.
@@ -653,42 +652,40 @@ The only global state the library stores is the verbosity level (set
 by freesasa_set_verbosity()) and the pointer to the error-log
 (defaults to `stderr`, can be changed by freesasa_set_err_out()). 
 
-It should be clear from the documentation when the other
-functions have side effects such as memory allocation and I/O, and
-thread-safety should generally not be an issue (to the extent that
-your C library has threadsafe I/O and dynamic memory allocation). The
-SASA calculation itself can be parallelized by passing a
+It should be clear from the documentation when the other functions
+have side effects such as memory allocation and I/O, and thread-safety
+should generally not be an issue (to the extent that your C library
+has threadsafe I/O and dynamic memory allocation). The SASA
+calculation itself can be parallelized by using a
 ::freesasa_parameters struct with ::freesasa_parameters.n_threads set
-to a value > 1 (default is 2) to freesasa_calc_structure() or
-freesasa_calc_coord(). This only gives a significant effect on
-performance for large proteins or at high precision, and because not
-all steps are parallelized it is usually not worth it to go beyond 2
-threads.
+to a value > 1 (default is 2) where appropriate. This only gives a
+significant effect on performance for large proteins or at high
+precision, and because not all steps are parallelized it is usually
+not worth it to go beyond 2 threads.
 
 @section Customizing Customizing behavior
 
 The types ::freesasa_parameters and ::freesasa_classifier can be used
 to change the parameters of the calculations. Users who wish to use
-the defaults can pass NULL wherever pointers to these are requested.
+the defaults can pass `NULL` wherever pointers to these are requested.
 
 @subsection Parameters Parameters
 
-Changing parameters is done by passing a ::freesasa_parameters object
+Parameters are stored in a ::freesasa_parameters object
 with the desired values. It can be initialized to default by
 
 ~~~{.c}
 freesasa_parameters param = freesasa_default_parameters;
 ~~~
 
-To allow the user to only change the parameters that are non-default.
-
-The following call would run a high precision Shrake & Rupley
-calculation with 10000 test points
+to allow the user to only change the parameters that are non-default.
+The following code would then run a high precision Shrake & Rupley
+calculation with 10000 test points on the provided structure.
 
 ~~~{.c}
 param.alg = FREESASA_SHRAKE_RUPLEY;
 param.shrake_rupley_n_points = 10000;
-freesasa_result *result = freesasa_calc_structure(structure,radii,param);
+freesasa_result *result = freesasa_calc_structure(structure, param);
 ~~~
 
 @subsection Classification Specifying atomic radii and classes
