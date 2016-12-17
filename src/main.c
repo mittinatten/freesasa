@@ -20,6 +20,20 @@ extern char *optarg;
 
 static char *program_name = "freesasa";
 
+#if USE_XML
+  #define XML_STRING "|xml"
+#else
+  #define XML_STRING ""
+#endif
+
+#if USE_JSON
+  #define JSON_STRING "|json"
+#else
+  #define JSON_STRING ""
+#endif
+
+#define FORMAT_STRING "log|res|seq|pdb|rsa" XML_STRING JSON_STRING
+
 enum {B_FILE, SELECT, UNKNOWN, RSA, RADII, DEPRECATED};
 
 static int option_flag;
@@ -154,7 +168,7 @@ help(void)
            "  --hetatm --hydrogen [--separate-models | --join-models] [--separate-chains |\n"
            "  --chain-groups=STRING...] --unknown=(guess|skip|halt)\n"
            "  --output FILE --error-file FILE --no-warnings --select=STRING...\n"
-           "  --format=(log|res|seq|pdb|rsa|json|xml)... \n"
+           "  --format=(" FORMAT_STRING ")... \n"
            "  --depth=(structure|chain|residue|atom)\n");
     printf("\nPARAMETERS\n"
            "  -S --shrake-rupley           Use Shrake & Rupley algorithm\n"
@@ -184,7 +198,7 @@ help(void)
            "  -w --no-warnings             Skip most warnings\n"
            "  -o FILE --output=FILE        Redirect output\n"
            "  -e FILE --error-file=FILE    Redirect errors\n"
-           "  -f (...) --format=(log|res|seq|pdb|rsa|json|xml)\n"
+           "  -f (...) --format=(" FORMAT_STRING ")\n"
            "                               Output format, can be repeated. [default: log]\n");
     if (USE_JSON || USE_XML) {
         printf(
@@ -462,10 +476,18 @@ parse_output_format(const char *optarg)
         return FREESASA_RSA;
     }
     if (strcmp(optarg, "json") == 0) {
-        return FREESASA_JSON;
+        if (USE_JSON) {
+            return FREESASA_JSON;
+        } else {
+            abort_msg("program was built without JSON support");
+        }
     }
     if (strcmp(optarg, "xml") == 0) {
-        return FREESASA_XML;
+        if (USE_XML) {
+            return FREESASA_XML;
+        } else {
+            abort_msg("program was built without XML support");
+        }
     }
     if (strcmp(optarg, "pdb") == 0) {
         return FREESASA_PDB;
