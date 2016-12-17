@@ -120,16 +120,18 @@ residue2xml(const freesasa_node *node,
 
     number = freesasa_node_residue_number(node);
 
-    int n_len = strlen(number);
-    char trim_number[n_len+1];
+    int num_len = strlen(number), name_len = strlen(name);
+    char trim_number[num_len+1], trim_name[name_len+1];
     sscanf(number, "%s", trim_number);
+    sscanf(name, "%s", trim_name);
+
     xml_node = xmlNewNode(NULL, BAD_CAST "residue");
     if (xml_node == NULL) {
         fail_msg("");
         return NULL;
     }
 
-    if (xmlNewProp(xml_node, BAD_CAST "name", BAD_CAST name) == NULL ||
+    if (xmlNewProp(xml_node, BAD_CAST "name", BAD_CAST trim_name) == NULL ||
         xmlNewProp(xml_node, BAD_CAST "number", BAD_CAST trim_number) == NULL) {
         fail_msg("");
         goto cleanup;
