@@ -60,7 +60,7 @@
     @brief Represenation of macromolecular structures.
 
     Interface for macromolecule structures, either instantiated
-    directly from a PDB file (freesasa_structure_from_PBD()) or atom
+    directly from a PDB file (freesasa_structure_from_pdb()) or atom
     by atom (freesasa_structure_add_atom()).
 
     @defgroup classifier Classifier
@@ -690,8 +690,7 @@ freesasa_structure_from_pdb(FILE *pdb,
       (::FREESASA_JOIN_MODELS is not supported here).
     @return Array of structures. Prints error message(s) and returns
       NULL if there were problems reading input, if invalid value of
-      `options`, or upon a memory allocation
-      failure.
+      `options`, or upon a memory allocation failure.
 
     @ingroup structure
  */

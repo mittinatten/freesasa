@@ -5,10 +5,10 @@ FreeSASA uses semantic versioning. Changelog added for versions 2.x
 
 ### Changed
 
-##### General
+#### General
 * Classifier configuration files now have new name field
 
-##### C API
+#### C API
 * Classifier interface changed.
   * Pointer is now opaque and classification done via
     `freesasa_classifier_class()` instead of
@@ -29,12 +29,14 @@ FreeSASA uses semantic versioning. Changelog added for versions 2.x
   always analyzed with consistent parameters. One effect is that the
   function `freesasa_calc_structure()` no longer takes the atomic
   radii as an explicit parameters.
-* Functions `freesasa_per_residue()`, `freesasa_per_residue_type()`
-  and `freesasa_per_chain()`, have also been removed from the
-  interface. The same functionality can be achieved using
-  `freesasa_tree_export()`.
+* The logging functions `freesasa_log()`, `freesasa_write_result()`,
+  `freesasa_write_parameters()`, `freesasa_write_rsa()`,
+  `freesasa_write_pdb()`, `freesasa_per_residue()`,
+  `freesasa_per_residue_type()` and `freesasa_per_chain()` have been
+  removed from the interface. The same functionality can be achieved
+  using `freesasa_tree_export()`.
 
-##### CLI
+#### CLI
 * CLI output format is controlled by the option `-f` or
   `--format`. Options specifying files for specific outpt types have
   been removed, and the separate options controlling output format
@@ -44,13 +46,16 @@ FreeSASA uses semantic versioning. Changelog added for versions 2.x
 
 ### Added
 
-##### General
+#### General
 * New output formats
   * XML using libmxl2 (optional)
   * JSON using JSON-C (optional)
   * RSA (was present already in 1.1, but interface now consolidated)
+* To build FreeSASA 2.0 the libraries libxml2 and JSON-C need to be
+  installed. These can be disabled by `./configure --disable-json
+  --disable-xml` to build a dependency-free version of the library.
 
-##### C API
+#### C API
 * New node interface. Results in tree form can be generated using
   `freesasa_calc_tree()` or `freesasa_tree_init()`. The feature was
   added to facilitate generation of XML and JSON output, but can be
@@ -66,11 +71,11 @@ FreeSASA uses semantic versioning. Changelog added for versions 2.x
 
 ### Deprecated
 
-##### CLI
+#### CLI
 * options `-B`, `-r`, `-R`, `--rsa` and `-l` are deprecated (use
   `-f` or `--format` instead)
 
-##### C API
+#### C API
 * Logging using structure and results now deprecated in favor of
   using tree interface
 * Function `freesasa_select_area()` is deprecated
