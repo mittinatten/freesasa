@@ -918,14 +918,16 @@ freesasa_atom_is_backbone(const char *atom_name)
     char name[n+1];
     name[0] = '\0';
     sscanf(atom_name, "%s", name); //trim whitespace
+    const char *bb[] = {"CA", "N", "O", "C", "OXT",
+                        "P", "OP1", "OP2", "O5'", "C5'", "C4'",
+                        "O4'", "C3'", "O3'", "C2'", "C1'"};
 
     if (strlen(name) == 0) return 0;
-    if (strcmp(name, "CA") == 0 ||
-        strcmp(name, "N") == 0 ||
-        strcmp(name, "O") == 0 ||
-        strcmp(name, "C") == 0 ||
-        strcmp(name, "OXT") == 0)
-        return 1;
+    for (int i = 0; i < sizeof(bb)/sizeof(const char*); ++i) {
+        if (strcmp(name, bb[i]) == 0) {
+            return 1;
+        }
+    }
     return 0;
 }
 

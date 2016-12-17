@@ -391,6 +391,17 @@ START_TEST (test_backbone)
     ck_assert(freesasa_atom_is_backbone("N"));
     ck_assert(freesasa_atom_is_backbone("O"));
     ck_assert(freesasa_atom_is_backbone("OXT"));
+    ck_assert(freesasa_atom_is_backbone("P"));
+    ck_assert(freesasa_atom_is_backbone("OP1"));
+    ck_assert(freesasa_atom_is_backbone("OP2"));
+    ck_assert(freesasa_atom_is_backbone("O5'"));
+    ck_assert(freesasa_atom_is_backbone("C5'"));
+    ck_assert(freesasa_atom_is_backbone("C4'"));
+    ck_assert(freesasa_atom_is_backbone("O4'"));
+    ck_assert(freesasa_atom_is_backbone("C3'"));
+    ck_assert(freesasa_atom_is_backbone("O3'"));
+    ck_assert(freesasa_atom_is_backbone("C2'"));
+    ck_assert(freesasa_atom_is_backbone("C1'"));
     ck_assert(freesasa_atom_is_backbone("") == 0);
     ck_assert(freesasa_atom_is_backbone("X") == 0);
 }

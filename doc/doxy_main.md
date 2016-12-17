@@ -346,11 +346,13 @@ FreeSASA. Calling
 
     $ freesasa 3wbm.pdb --format=rsa --radii=naccess
 
-will give an RSA file where the ABS columns are identical to NACCESS
-(run with the flag `-b`) for the amino acids, and for nucleic acids
-the definition of backbone differs (no nucleic acid backbone has been
-defined in FreeSASA). REL values will differ slightly, due to the
-differences in reference values.
+will give an RSA file where the ABS columns should be identical to
+NACCESS (if the latter is run with the flag `-b`). REL values will
+differ slightly, due to the differences in reference values. NACCESS
+also gives different results for the nucleic acid main-chain and
+side-chain (possibly due to a bug in NACCESS?). FreeSASA defines the
+(deoxy)ribose and phosphate groups as main-chain and the base as
+side-chain.
 
 @section CLI-select Selecting groups of atoms
 
