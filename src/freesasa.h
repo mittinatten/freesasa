@@ -40,15 +40,15 @@
     freesasa_node_next() and freesasa_node_parent(). The type of a
     node is determined by freesasa_node_type(). There are some
     properties that are common to all or most levels of the
-    tree. These accessors simply have the prefix freesasa_node, like
+    tree. These accessors simply have the prefix `freesasa_node`, like
     for example freesasa_node_name() and the above-mentioned
     functions. Other properties are specific to a special level, and
     then the prefix of the accessor functions will be
-    freesasa_node_atom or freesasa_node_structure, etc. The class of
-    an atom can for example be accessed using
+    `freesasa_node_atom` or `freesasa_node_structure`, etc. The class
+    of an atom can for example be accessed using
     freesasa_node_atom_is_polar().
 
-    The nodes of a tree are to be considered read only, and changes
+    The nodes of a tree are to be considered read-only, and changes
     are made only to the root node, initialized using
     freesasa_tree_new() or freesasa_tree_init(), and modified using
     freesasa_tree_add_result(), freesasa_tree_join(). The one
@@ -57,7 +57,7 @@
 
     @defgroup structure Structure
 
-    @brief Represenation of macromolecular structures.
+    @brief Representation of macromolecular structures.
 
     Interface for macromolecule structures, either instantiated
     directly from a PDB file (freesasa_structure_from_pdb()) or atom
@@ -109,7 +109,7 @@ typedef enum {
 #define freesasa_default_classifier freesasa_protor_classifier
 
 //! String returned by freesasa_structure_classifier_name() when
-//! structure was initialized by several different
+//! structure was initialized using several different
 //! classifiers. @ingroup structure
 #define FREESASA_CONFLICTING_CLASSIFIERS "conflicting-classifiers"
 
@@ -284,10 +284,10 @@ extern const freesasa_classifier freesasa_oons_classifier;
     freesasa_result_free().
 
     @param structure The structure
-    @param parameters Parameters for the calculation, if NULL
+    @param parameters Parameters for the calculation, if `NULL`
       defaults are used.
 
-    @return The result of the calculation, NULL if something went wrong.
+    @return The result of the calculation, `NULL` if something went wrong.
 
     @ingroup core
  */
@@ -301,13 +301,13 @@ freesasa_calc_structure(const freesasa_structure *structure,
     Return value is dynamically allocated, should be freed with
     freesasa_result_free().
 
-    @param parameters Parameters for the calculation, if NULL
-      defaults are used.
     @param xyz Array of coordinates in the form x1,y1,z1,x2,y2,z2,...,xn,yn,zn.
     @param radii Radii, this array should have n elements..
     @param n Number of coordinates (i.e. xyz has size 3*n, radii size n).
+    @param parameters Parameters for the calculation, if `NULL`
+      defaults are used.
 
-    @return The result of the calculation, NULL if something went wrong.
+    @return The result of the calculation, `NULL` if something went wrong.
 
     @ingroup core
  */
@@ -322,14 +322,14 @@ freesasa_calc_coord(const double *xyz,
     ::freesasa_node.
 
     Return value is dynamically allocated, should be freed with
-    freesasa_tree_free()
+    freesasa_node_free()
 
     @param structure A structure
-    @param parameters Parameters for the calculation, if NULL
+    @param parameters Parameters for the calculation, if `NULL`,
       defaults are used.
     @param name Name of input structure to be used in output.
 
-    @return The result of the calculation, NULL if something went wrong.
+    @return The result of the calculation, `NULL` if something went wrong.
 
     @ingroup core
  */
@@ -375,7 +375,7 @@ freesasa_result_free(freesasa_result *result);
     freesasa_classifier_free().
 
     @param file File containing configuration
-    @return The generated classifier. NULL if there were problems
+    @return The generated classifier. `NULL` if there were problems
       parsing or reading the file or memory allocation problem.
 
     @see @ref Config-file
@@ -468,7 +468,7 @@ freesasa_classifier_name(const freesasa_classifier *classifier);
     @param command The selection
     @param structure The structure to select from
     @param result The results to integrate
-    @return The selection. NULL if something went wrong. Use
+    @return The selection. `NULL` if something went wrong. Use
       freesasa_selection_name(), freesasa_selection_command(),
       freesasa_selection_area() and freesasa_selection_n_atoms() to
       access results of selection.
@@ -559,10 +559,10 @@ freesasa_get_verbosity(void);
 /**
     Set where to write errors.
     
-    By default stderr is used, this function can be called to redirect
+    By default `stderr` is used, this function can be called to redirect
     error output elsewhere.
 
-    @param err The file to write to. If NULL stderr will be used.
+    @param err The file to write to. If `NULL`, `stderr` will be used.
 
     @ingroup core
  */
@@ -572,7 +572,7 @@ freesasa_set_err_out(FILE *err);
 /**
     Get pointer to error file.
 
-    NULL means stderr is used.
+    `NULL` means `stderr` is used.
   
     @return The error file.
 
@@ -587,7 +587,7 @@ freesasa_get_err_out();
     Return value is dynamically allocated, should be freed with
     freesasa_structure_free().
 
-    @return Empty structure. NULL if memory allocation failure.
+    @return Empty structure. `NULL` if memory allocation failure.
 
     @ingroup structure
  */
@@ -610,7 +610,7 @@ freesasa_structure_free(freesasa_structure* structure);
     Reads in a PDB-file and generates a structure object.
     Automatically skips hydrogens and HETATM. If an atom has
     alternative coordinates, only the first alternative is used. If a
-    file has more than one `MODEL` (as in NMR structures) only the
+    file has more than one MODEL (as in NMR structures) only the
     first model is used. The provided classifier is used to determine
     the radius of each atom, if the atom is not recognized the element
     of the atom is guessed, and that element's VdW radius used. If
@@ -619,26 +619,21 @@ freesasa_structure_free(freesasa_structure* structure);
     through freesasa_structure_set_radius(). All these behaviors can
     be modified through the `options` bitfield argument:
 
-      - `options == 0`:
-         Default behavior
+      - 0: Default behavior
 
-      - `options & ::FREESASA_INCLUDE_HYDROGEN == 1`:
-         Include hydrogens.
+      - ::FREESASA_INCLUDE_HYDROGEN: Include hydrogen atoms.
 
-      - `options & ::FREESASA_INCLUDE_HETATM == 1`:
-         Include HETATM.
+      - ::FREESASA_INCLUDE_HETATM: Include HETATM.
 
-      - `options & ::FREESASA_JOIN_MODELS == 1`:
-         Join models.
+      - ::FREESASA_JOIN_MODELS: Join models.
 
-      - `options & ::FREESASA_SKIP_UNKNOWN == 1`: Skip unknown
-         atoms.
+      - ::FREESASA_SKIP_UNKNOWN: Skip unknown atoms.
       
-      - `options & ::FREESASA_HALT_AT_UNKNOWN == 1`: Halt at unknown
-         atom and return NULL. Overrides ::FREESASA_SKIP_UNKNOWN.
+      - ::FREESASA_HALT_AT_UNKNOWN: Halt at unknown atom and return
+        `NULL`. Overrides ::FREESASA_SKIP_UNKNOWN.
 
-      - `options & ::FREESASA_RADIUS_FROM_OCCUPANCY == 1`: Read atomic
-         radii from Occupancy field in PDB file.
+      - ::FREESASA_RADIUS_FROM_OCCUPANCY: Read atomic radii from
+         Occupancy field in PDB file.
 
     If a more fine-grained control over which atoms to include is
     needed, the PDB-file needs to be modified before calling this
@@ -652,7 +647,7 @@ freesasa_structure_free(freesasa_structure* structure);
     @param pdb A PDB file
 
     @param classifier A freesasa_classifier to determine radius of
-      atom. If NULL default classifier is used.
+      atom. If `NULL` default classifier is used.
 
     @param options A bitfield to determine what atoms to include and what to do
       when atoms are not recognized by classifier.
@@ -684,12 +679,12 @@ freesasa_structure_from_pdb(FILE *pdb,
     @param options Bitfield. Either or both of
       ::FREESASA_SEPARATE_MODELS and ::FREESASA_SEPARATE_CHAINS can be
       used to generate one structure per model and one structure per
-      chain, respectively (will return NULL if neither is
+      chain, respectively (will return `NULL` if neither is
       specified). See freesasa_structure_from_pdb() for documentation
       on options for deciding what atoms to include
       (::FREESASA_JOIN_MODELS is not supported here).
     @return Array of structures. Prints error message(s) and returns
-      NULL if there were problems reading input, if invalid value of
+      `NULL` if there were problems reading input, if invalid value of
       `options`, or upon a memory allocation failure.
 
     @ingroup structure
@@ -747,10 +742,10 @@ freesasa_structure_add_atom(freesasa_structure *structure,
         freesasa_structure_set_radius() to assign a radius from
         another source.
 
-      - `options & FREESASA_SKIP_UNKNOWN == 1` skip unknown atoms,
+      - `options & ::FREESASA_SKIP_UNKNOWN == 1` skip unknown atoms,
         return ::FREESASA_WARN.
 
-      - `options & FREESASA_HALT_AT_UNKNOWN == 1` skip unknown atoms,
+      - `options & ::FREESASA_HALT_AT_UNKNOWN == 1` skip unknown atoms,
         return ::FREESASA_FAIL. Overrides ::FREESASA_SKIP_UNKNOWN.
 
     @see Because the argument list is so long, freesasa_structure_add_atom()
@@ -795,10 +790,10 @@ freesasa_structure_add_atom_wopt(freesasa_structure *structure,
     freesasa_structure_free().
 
     @param structure Input structure.
-    @param chains String of chain labels (e.g. "AB")
+    @param chains String of chain labels (e.g. `"AB"`)
 
     @return A new structure consisting only of the specified
-    chains. Returns NULL if one or more of the requested chains don't
+    chains. Returns `NULL` if one or more of the requested chains don't
     match any in the input structure or if memory allocation fails.
 
     @ingroup structure
@@ -811,7 +806,7 @@ freesasa_structure_get_chains(const freesasa_structure *structure,
     Get string listing all chains in structure.
 
     @param structure The structure.
-    @return String with all chain labels in structure ("A", "ABC", etc).
+    @return String with all chain labels in structure (`"A"`, `"ABC"`, etc).
 
     @ingroup structure
  */
@@ -861,7 +856,7 @@ freesasa_structure_n_chains(const freesasa_structure *structure);
     Returns a pointer to an array of the radii of each atom.
 
     @param structure The structure.  
-    @return Array of radii. If NULL structure has not been properly
+    @return Array of radii. If `NULL` structure has not been properly
       initialized.
 
     @ingroup structure
@@ -910,7 +905,7 @@ freesasa_structure_atom_name(const freesasa_structure *structure,
 
     @param structure The structure.
     @param i Atom index.
-    @return Residue name in the form `"ALA"`, `"PHE"`, etc, if
+    @return Residue name in the form `"ALA"`, `"PHE"`, `"  C"`, etc, if
        structure was initialized from a PDB file, or in whatever form
        it was added through freesasa_structure_add_atom() or
        freesasa_structure_add_atom_wopt().
@@ -1046,8 +1041,9 @@ freesasa_structure_residue_chain(const freesasa_structure *structure,
 
     Useful if structure was generated with freesasa_structure_array().
 
-    @param structure The structure.  
-    @return The model number. 0 means no model number has been read.
+    @param structure The structure.
+    @return The model number. Will be 1 if MODEL not specified in PDB
+      input.
 
     @ingroup structure
  */
@@ -1060,7 +1056,7 @@ freesasa_structure_model(const freesasa_structure *structure);
     Size of array is 3*N, order of coordinates `x1, y1, z1, ...`.
 
     @param structure The structure.
-    @return Array of coordinates. NULL if structure empty. Size can be
+    @return Array of coordinates. `NULL` if structure empty. Size can be
       accessed through freesasa_structure_n() (multiply by three).
 
     @ingroup structure
@@ -1133,14 +1129,14 @@ const char *
 freesasa_structure_classifier_name(const freesasa_structure *structure);
 
 /**
-    Generates empty ::freesasa_node of type FREESASA_NODE_ROOT.
+    Generates empty ::freesasa_node of type ::FREESASA_NODE_ROOT.
 
     To be populated by freesasa_tree_add_result().
 
     The return value is dynamically allocated and should be freed
     using freesasa_node_free().
 
-    @return A ::freesasa_node. NULL if memory allocation fails.
+    @return A ::freesasa_node. `NULL` if memory allocation fails.
 
     @ingroup node
  */
@@ -1158,7 +1154,7 @@ freesasa_tree_new(void);
     @param name Name of the results (typically filename from
       which structure is derived)
 
-    @return The root node of the tree. NULL if memory allocation
+    @return The root node of the tree. `NULL` if memory allocation
       fails.
 
     @ingroup node
@@ -1177,7 +1173,7 @@ freesasa_tree_init(const freesasa_result *result,
     @param tree Node of type ::FREESASA_NODE_ROOT. Tree to add results
       to.
     @param result SASA values for the structure
-    @param structure The structure the results are based.
+    @param structure The structure the results are based on
     @param name The name to use for the result
     @return ::FREESASA_SUCCESS upon success. ::FREESASA_FAIL if memory
       allocation fails.
@@ -1191,14 +1187,14 @@ freesasa_tree_add_result(freesasa_node *tree,
                          const char *name);
 
 /**
-    Join two ::freesasa_node-trees.
+    Join two trees.
 
     Allows joining several calculations into one output file.
 
     @param tree1 Node of type ::FREESASA_NODE_ROOT. The joint tree
       will be stored here.
     @param tree2 Node of type ::FREESASA_NODE_ROOT. Will be added to
-      tree1, and then changed to NULL, since ownership of its contents
+      tree1, and then changed to `NULL`, since ownership of its contents
       have been transferred to tree1.
     @return ::FREESASA_SUCCESS.
 
@@ -1212,8 +1208,7 @@ freesasa_tree_join(freesasa_node *tree1,
     Outputs result in format specified by options.
 
     @param output Output file.
-    @param root Structure tree containing results (generated using 
-      freesasa_result2tree()). Node of type ::FREESASA_NODE_ROOT.
+    @param root Structure tree containing results. Node of type ::FREESASA_NODE_ROOT.
     @param options Bitfield specifying output format, see 
       ::freesasa_output_options.
     @return ::FREESASA_SUCCESS upon success. ::FREESASA_FAIL if there
@@ -1227,13 +1222,12 @@ freesasa_tree_export(FILE *output,
                      int options);
 
 /**
-    Free ::freesasa_node-tree.
+    Free tree.
 
-    Will not free anything if the node has a parent, i.e. if this node
-    is the not the root of the tree it belongs too.
+    Will not free anything if the node is not a root node.
 
     @param root Node of type ::FREESASA_NODE_ROOT
-    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if the node hasa a
+    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if the node has a
       parent.
 
     @ingroup node
@@ -1244,11 +1238,8 @@ freesasa_node_free(freesasa_node *root);
 /**
     The ::freesasa_nodearea of all atoms belonging to a node.
 
-    Only works if the areas have been added using
-    freesasa_structure_tree_fill().
-
     @param node The node. 
-    @return The area. NULL if no area has been attached to this node.
+    @return The area. `NULL` if no area has been attached to this node.
 
     @ingroup node
  */
@@ -1261,7 +1252,7 @@ freesasa_node_area(const freesasa_node *node);
     Use freesasa_node_next() to access next sibling.
 
     @param node The node.  
-    @return Pointer to the first child of a node. NULL if the node has no
+    @return Pointer to the first child of a node. `NULL` if the node has no
       children.
 
     @ingroup node
@@ -1273,7 +1264,7 @@ freesasa_node_children(freesasa_node *node);
     Next sibling of a node.
 
     @param node The node.
-    @return The next node, NULL if this is the last node.
+    @return The next node, `NULL` if this is the last node.
 
     @ingroup node
  */
@@ -1284,7 +1275,7 @@ freesasa_node_next(freesasa_node *node);
     The parent of a node.
 
     @param node The node.
-    @return The parent node. NULL if the node has no parent.
+    @return The parent node. `NULL` if the node has no parent.
 
     @ingroup node
  */
@@ -1295,7 +1286,7 @@ freesasa_node_parent(freesasa_node *node);
     The type of a node.
 
     @param node The node.
-    @return The ::freesasa_nodetype.
+    @return The type.
 
     @ingroup node
  */
@@ -1306,15 +1297,15 @@ freesasa_node_type(const freesasa_node *node);
     The name of a node.
     
     The node types will have the following names:
-    - Atom: atom name, i.e. " CA ", " OXT", etc.
-    - Residue: residue name, i.e. "ALA", "ARG", etc.
-    - Chain: chain label, i.e. "A", "B", c
-    - Structure: string of all chain labels in the molecule, i.e. "A", "ABC", etc
-    - Result: name of input (most often input filename or 'stdin')
-    - Root: NULL
+    - Atom: atom name, i.e. `" CA "`, `" OXT"`, etc.
+    - Residue: residue name, i.e. `"ALA"`, `"ARG"`, etc.
+    - Chain: chain label, i.e. `"A"`, `"B"`, etc.
+    - Structure: string of all chain labels in the molecule, i.e. `"A"`, `"ABC"`, etc
+    - Result: name of input (most often input filename or `"stdin"`)
+    - Root: `NULL`
 
     @param node The node.
-    @return The name. NULL if the node has no name.
+    @return The name. `NULL` if the node has no name.
 
     @ingroup node
  */
@@ -1369,7 +1360,7 @@ freesasa_node_atom_radius(const freesasa_node *node);
     Line in PDB atom was generated from.
 
     @param node A node of type ::FREESASA_NODE_ATOM.
-    @return The line. NULL if atom wasn't taken from PDB file.
+    @return The line. `NULL` if atom wasn't taken from PDB file.
 
     @ingroup node
  */
@@ -1403,8 +1394,7 @@ freesasa_node_residue_n_atoms(const freesasa_node *node);
     generate the tree.
 
     @param node A node of type ::FREESASA_NODE_RESIDUE.
-    @return The reference area. NULL if area not available or if node
-      is not a residue.
+    @return The reference area. `NULL` if area not available.
 
     @ingroup node
  */
@@ -1469,9 +1459,6 @@ freesasa_node_structure_model(const freesasa_node *node);
 /**
     Raw results for a structure
 
-    Useful for legacy code that depends on the ::freesasa_result-type
-    for output, etc.
-
     @param node A node of type ::FREESASA_NODE_STRUCTURE.
     @return The results.
 
@@ -1486,7 +1473,7 @@ freesasa_node_structure_result(const freesasa_node *node);
     Generated using freesasa_node_structure_add_selection().
 
     @param node A node of type ::FREESASA_NODE_STRUCTURE.
-    @return A null-terminated array of pointers to selections. NULL if
+    @return A null-terminated array of pointers to selections. `NULL` if
       no selections were associated with structure.
 
     @ingroup node

@@ -494,13 +494,12 @@ behavior can be modified using the following options
 
 @section Basic-API Basics
 
-The API is found in the header [freesasa.h](freesasa_8h.html) and this
-is the only header installed by `make install`. The other source-files
-and headers in the repository are for internal use, and are not
-present here, but are documented in the source itself. The file
-[example.c](example_8c_source.html) contains a simple program that
-illustrates how to use the API to read a PDB file from `stdin` and
-calculate and print the SASA.
+The API is found in the header [freesasa.h](freesasa_8h.html). The
+other source-files and headers in the repository are for internal use,
+and are not presented here, but are documented in the source
+itself. The file [example.c](example_8c_source.html) contains a simple
+program that illustrates how to use the API to read a PDB file from
+`stdin` and calculate and print the SASA.
 
 To calculate the SASA of a structure, there are two main options:
 
@@ -509,7 +508,7 @@ To calculate the SASA of a structure, there are two main options:
    and then run the calculation.
 
 2. Provide an array of cartesian coordinates and an array containing
-   the radii of the corresponding atoms to freesasa_calc_coord().
+   the radii of the corresponding atoms to freesasa\_calc\_coord().
 
 @subsection API-PDB Calculate SASA for a PDB file
 
@@ -522,11 +521,10 @@ Customizing explains how to configure the calculations.
 
 @subsubsection API-Read-PDB Open PDB file
 
-The function freesasa_structure_from_pdb() reads the atom coordinates
-from a PDB file and assigns a radius to each atom. The second and
-third arguments can be changed to use a custom ::freesasa_classifier to
-define radii and to specify options for what to include in the PDB
-file, respectively.
+The function freesasa\_structure\_from\_pdb() reads the atom
+coordinates from a PDB file and assigns a radius to each atom. The
+third argument can be used to pass options for how to read the PDB
+file.
 
 ~~~{.c}
     FILE *fp = fopen("1abc.pdb");
@@ -536,7 +534,7 @@ file, respectively.
 
 @subsubsection API-Calc Perform calculation and get total SASA
 
-Next we use freesasa_calc_structure() to calculate SASA using the
+Next we use freesasa\_calc\_structure() to calculate SASA using the
 structure we just generated, and then print the total area. The argument
 `NULL` means use default freesasa_parameters.
 
@@ -548,24 +546,27 @@ structure we just generated, and then print the total area. The argument
 @subsubsection API-Classes Get polar and apolar area
 
 We are commonly interested in the polar and apolar areas of a
-molecule, this can be calculated by freesasa_result_classes(). To get
-other classes of atoms we can either define our own classifier, or use
-freesasa_select_area() defined in the next section. The return type
-::freesasa_nodearea is a struct contains the total area and the area
-of all apolar and polar atoms, and main-chain and side-chain atoms.
+molecule, this can be calculated by freesasa\_result\_classes(). To
+get other classes of atoms we can either define our own classifier, or
+use freesasa\_select\_area() defined in the next section. The return
+type ::freesasa\_nodearea is a struct contains the total area and the
+area of all apolar and polar atoms, and main-chain and side-chain
+atoms.
 
 ~~~{.c}
-    freesasa_nodearea class_area = freesasa_result_classes(structure, result);
-    printf("Total  : %f A2\n", class_area.total);
-    printf("Apolar : %f A2\n", class_area.apolar);
-    printf("Polar  : %f A2\n", class_area.polar);
+    freesasa_nodearea area = freesasa_result_classes(structure, result);
+    printf("Total      : %f A2\n", area.total);
+    printf("Apolar     : %f A2\n", area.apolar);
+    printf("Polar      : %f A2\n", area.polar);
+    printf("Main-chain : %f A2\n", area.main_chain);
+    printf("Side-chain : %f A2\n", area.side_chain);
 ~~~
 
 @see @ref Classification
 
 @subsubsection API-Select Get area of custom groups of atoms
 
-Groups of atoms can be defined using freesasa_select_area(), which
+Groups of atoms can be defined using freesasa\_selection\_new(), which
 takes a selection definition uses a subset of the Pymol select syntax
 
 ~~~{.c}
@@ -581,19 +582,19 @@ takes a selection definition uses a subset of the Pymol select syntax
 
 @subsubsection structure-node Navigating the results as a tree
 
-In addition to the flat array of results in ::freesasa_result, and the
-global values returned by freesasa_result_classes(),
-FreeSASA has an interface for navigating the results as a tree. The
-leaf nodes are individual atoms, and there are parent nodes at the
-residue, chain, and structure levels. The function
-freesasa_calc_tree() does a SASA calculation and returns the root node
-of such a tree. If one already has a ::freesasa_result the function
-freesasa_tree_init() can be used instead. Each node has an associated
-::freesasa_nodearea of all its atoms. The tree can be traversed with
-freesasa_node_children(), freesasa_node_parent() and
-freesasa_node_next(), and the area, type and name using
-freesasa_node_area(), freesasa_node_type() and
-freesasa_node_name(). Additionally there are special properties for
+In addition to the flat array of results in ::freesasa\_result, and
+the global values returned by freesasa\_result\_classes(), FreeSASA
+has an interface for navigating the results as a tree. The leaf nodes
+are individual atoms, and there are parent nodes at the residue,
+chain, and structure levels. The function freesasa\_calc\_tree() does
+a SASA calculation and returns the root node of such a tree. (If one
+already has a ::freesasa\_result the function freesasa\_tree\_init()
+can be used instead). Each node stores a ::freesasa\_nodearea for the
+sum of all atoms belonging to the node. The tree can be traversed with
+freesasa\_node\_children(), freesasa\_node\_parent() and
+freesasa\_node\_next(), and the area, type and name using
+freesasa\_node\_area(), freesasa\_node\_type() and
+freesasa\_node\_name(). Additionally there are special properties for
 each level of the tree.
 
 @see node
@@ -601,7 +602,7 @@ each level of the tree.
 @subsubsection export-tree Exporting to RSA, JSON and XML
 
 The tree structure can also be exported to an RSA, JSON or XML file
-using freesasa_tree_export(). The RSA format is fixed, but the user
+using freesasa\_tree\_export(). The RSA format is fixed, but the user
 can select which levels of the tree to include in JSON and XML. The
 following illustrates how one would generate a tree and export it to
 XML, including nodes for the whole structure, chains and residues (but
@@ -622,11 +623,13 @@ excluding individual atoms).
 
 If users wish to supply their own coordinates and radii, these are
 accepted as arrays of doubles passed to the function
-freesasa_calc_coord(). The coordinate-array should have size 3*n with
+freesasa\_calc\_coord(). The coordinate-array should have size 3*n with
 coordinates in the order `x1,y1,z1,x2,y2,z2,...,xn,yn,zn`.
 
 ~~~{.c}
-    double coord[] = {/* x */ 1.0, /* y */ 2.0, /* z */ 3.0};
+    double coord[] = {1.0, /* x */
+                      2.0, /* y */
+                      3.0  /* z */ };
     double radius[] = {2.0};
     int n_atoms = 1;
     freesasa_result *result = freesasa_calc_coord(coord, radius, n_atoms, NULL);
@@ -640,10 +643,9 @@ not cause a crash, but rather allow the user to exit gracefully or
 make another attempt. Therefore, errors due to user or system
 failures, such as faulty parameters, malformatted config-files, I/O
 errors or out of memory errors, are reported through return values,
-either ::FREESASA_FAIL or ::FREESASA_WARN, or by `NULL` pointers,
-depending on the context. See the documentation for the individual
-functions. If memory allocation fails as much memory as possible is
-released.
+either ::FREESASA\_FAIL or ::FREESASA\_WARN, or by `NULL` pointers,
+depending on the context (see the documentation for the individual
+functions).
 
 Errors that are attributable to programmers using the library, such as
 passing null pointers where not allowed, are checked by asserts.
@@ -651,40 +653,41 @@ passing null pointers where not allowed, are checked by asserts.
 @subsection Thread-safety 
 
 The only global state the library stores is the verbosity level (set
-by freesasa_set_verbosity()) and the pointer to the error-log
-(defaults to `stderr`, can be changed by freesasa_set_err_out()). 
+by freesasa\_set\_verbosity()) and the pointer to the error-log
+(defaults to `stderr`, can be changed by freesasa\_set\_err\_out()). 
 
 It should be clear from the documentation when the other functions
 have side effects such as memory allocation and I/O, and thread-safety
 should generally not be an issue (to the extent that your C library
 has threadsafe I/O and dynamic memory allocation). The SASA
 calculation itself can be parallelized by using a
-::freesasa_parameters struct with ::freesasa_parameters.n_threads set
-to a value > 1 (default is 2) where appropriate. This only gives a
-significant effect on performance for large proteins or at high
-precision, and because not all steps are parallelized it is usually
-not worth it to go beyond 2 threads.
+::freesasa\_parameters struct with ::freesasa\_parameters.n\_threads
+\> 1 (default is 2) where appropriate. This only gives a significant
+effect on performance for large proteins or at high precision, and
+because not all steps are parallelized it is usually not worth it to
+go beyond 2 threads.
 
 @section Customizing Customizing behavior
 
-The types ::freesasa_parameters and ::freesasa_classifier can be used
-to change the parameters of the calculations. Users who wish to use
-the defaults can pass `NULL` wherever pointers to these are requested.
+The types ::freesasa\_parameters and ::freesasa\_classifier can be
+used to change the parameters of the calculations. Users who wish to
+use the defaults can pass `NULL` wherever pointers to these are
+requested.
 
 @subsection Parameters Parameters
 
-Parameters are stored in a ::freesasa_parameters object
-with the desired values. It can be initialized to default by
+Calculation parameters can be stored in a ::freesasa\_parameters
+object. It can be initialized to default by
 
 ~~~{.c}
 freesasa_parameters param = freesasa_default_parameters;
 ~~~
 
-to allow the user to only change the parameters that are non-default.
-The following code would then run a high precision Shrake & Rupley
+The following code would run a high precision Shrake & Rupley
 calculation with 10000 test points on the provided structure.
 
 ~~~{.c}
+freesasa_parameters param = freesasa_default_parameters;
 param.alg = FREESASA_SHRAKE_RUPLEY;
 param.shrake_rupley_n_points = 10000;
 freesasa_result *result = freesasa_calc_structure(structure, param);
@@ -696,24 +699,25 @@ Classifiers are used to determine which atoms are polar or apolar, and
 to specify atomic radii. In addition the three standard classifiers
 (see below) have reference values for the maximum areas of the 20
 standard amino acids which can be used to calculate relative areas of
-residues, as in the RSA output of NACCESS.
+residues, as in the RSA output.
 
 The default classifier is available through the const variable
-::freesasa_default_classifier. This uses the ProtOr radii, defined in the
-paper by Tsai et al. ([JMB 1999, 290:
-253](http://www.ncbi.nlm.nih.gov/pubmed/10388571)) for the standard
-amino acids (20 regular plus SEC, PYL, ASX and GLX), for some capping
-groups (ACE/NH2) and the nucleic acids. If the element can't be
-determined or is unknown, a negative radius is returned. It classes
-all carbons as *apolar* and all other known atoms as *polar*. 
+::freesasa\_default\_classifier. This uses the *ProtOr* radii, defined
+in the paper by Tsai et
+al. ([JMB 1999, 290: 253](http://www.ncbi.nlm.nih.gov/pubmed/10388571))
+for the standard amino acids (20 regular plus SEC, PYL, ASX and GLX),
+for some capping groups (ACE/NH2) and the standard nucleic acids. If
+the element can't be determined or is unknown, a zero radius is
+assigned. It classes all carbons as *apolar* and all other known atoms
+as *polar*.
 
-Early versions of FreeSASA used the atomic radii by Ooi et al. ([PNAS
-1987, 84: -3086](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/),
+Early versions of FreeSASA used the atomic radii by Ooi et
+al. ([PNAS 1987, 84: 3086-3090](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC304812/)),
 this classifier is still available through ::freesasa_oons_classifier.
 
 Users can provide their own classifiers through @ref Config-file. At
 the moment these do not allow the user to specify reference values to
-calculate relatative SASA values for RSA output.
+calculate relative SASA values for RSA output.
 
 The default behavior of freesasa_structure_from_pdb(),
 freesasa_structure_array(), freesasa_structure_add_atom() and
@@ -792,7 +796,7 @@ to convert the correspoding configurations in `share` to C code.
 
 FreeSASA uses a subset of the Pymol select commands to give users an
 easy way of summing up the SASA of groups of atoms. This is done by
-the function freesasa_selection_new() in the C API,
+the function freesasa\_selection\_new() in the C API,
 freesasa.selectArea() in the Python interface and the option
 `--select` for the command line tool. All commands are case
 insensitive. A basic selection has a selection name, a property
@@ -813,7 +817,7 @@ operator `and` has precedence over `or`, so the second parentheses is
 necessary but not the first, in the example above. The selection name
 has to start with a letter, but it can include numbers and
 underscores. The name can't be longer than
-::FREESASA_MAX_SELECTION_NAME characters.
+::FREESASA\_MAX\_SELECTION\_NAME characters.
 
 The following property selectors are supported
 
@@ -851,7 +855,8 @@ If Python is enabled using
     $ ./configure --enable-python-bindings
 
 Cython is used to build Python bindings for FreeSASA, and `make
-install` will install them.
+install` will install them. The option `--with-python=...` can be
+specified to specify which Python binary to use.
 
 Below follow some illustrations of how to use the package, see the
 @ref freesasa "package documentation" for details.
@@ -866,7 +871,7 @@ import freesasa
 
 structure = freesasa.Structure("1ubq.pdb")
 result = freesasa.calc(structure)
-area_classes = freesasa.classifyResults(result,structure)
+area_classes = freesasa.classifyResults(result, structure)
 
 print "Total : %.2f A2" % result.totalArea()
 for key in area_classes:
@@ -891,7 +896,7 @@ Using the results from a calculation we can also integrate SASA over a selection
 atoms, using a subset of the Pymol selection syntax (see @ref Selection):
 
 ~~~{.py}
-selections = freesasa.selectArea(('alanine, resn ala','r1_10, resi 1-10'), 
+selections = freesasa.selectArea(('alanine, resn ala', 'r1_10, resi 1-10'), 
                                  structure, result)
 for key in selections:
     print key, ": %.2f A2" % selections[key]
@@ -908,9 +913,9 @@ available in the share/ directory of the repository).
 
 ~~~{.py}
 classifier = freesasa.Classifier("naccess.config")
-structure = freesasa.Structure("1ubq.pdb",classifier) 
+structure = freesasa.Structure("1ubq.pdb", classifier) 
 result = freesasa.calc(structure)
-area_classes = freesasa.classifyResults(result,structure,classifier)
+area_classes = freesasa.classifyResults(result, structure, classifier)
 ~~~
 
 Classification can be customized also by extending the Classifier
@@ -923,12 +928,12 @@ import freesasa
 import re
 
 class DerivedClassifier(Classifier):
-    def classify(self,residueName,atomName):
-        if re.match('\s*N',atomName):
+    def classify(self, residueName, atomName):
+        if re.match('\s*N', atomName):
             return 'Nitrogen'
         return 'Not-nitrogen'
 
-    def radius(self,residueName,atomName):
+    def radius(self, residueName, atomName):
         if re.match('\s*N',atomName): # Nitrogen 
             return 1.6
         if re.match('\s*C',atomName): # Carbon
@@ -942,7 +947,7 @@ class DerivedClassifier(Classifier):
 classifier = DerivedClassifier()
 
 # use the DerivedClassifier to calculate atom radii
-structure = freesasa.Structure("1ubq.pdb",classifier)
+structure = freesasa.Structure("1ubq.pdb", classifier)
 result = freesasa.calc(structure)
 
 # use the DerivedClassifier to classify atoms
@@ -966,7 +971,7 @@ FreeSASA can also calculate the SASA of a Bio.PDB structure
 ~~~{.py}
     from Bio.PDB import PDBParser
     parser = PDBParser()
-    structure = parser.get_structure("Ubiquitin","1ubq.pdb")
+    structure = parser.get_structure("Ubiquitin", "1ubq.pdb")
     result, sasa_classes = freesasa.calcBioPDB(structure)
 ~~~
 

@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
     freesasa_structure *structure = NULL;
     freesasa_result *result = NULL;
     const freesasa_classifier *classifier = &freesasa_default_classifier;
-    freesasa_nodearea class_area;
+    freesasa_nodearea area;
 
     /* Read structure from stdin */
     structure = freesasa_structure_from_pdb(stdin, classifier, 0);
@@ -32,16 +32,16 @@ int main(int argc, char **argv) {
 
     /* Calculate area of classes (Polar/Apolar/..) */
     if (result) {
-        class_area = freesasa_result_classes(structure, result);
+        area = freesasa_result_classes(structure, result);
     } else {
         /* If there was an error at any step, we will end up here */
         printf("Error calculating SASA\n");
     }
     
     /* Print results */
-    printf("Total  : %f A2\n",class_area.total);
-    printf("Apolar : %f A2\n",class_area.apolar);
-    printf("Polar  : %f A2\n",class_area.polar);
+    printf("Total  : %f A2\n", area.total);
+    printf("Apolar : %f A2\n", area.apolar);
+    printf("Polar  : %f A2\n", area.polar);
 
     /* Free allocated resources */
     freesasa_result_free(result);
