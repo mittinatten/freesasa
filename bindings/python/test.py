@@ -243,6 +243,25 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(math.fabs(sasa_classes['Polar'] - 2236.9298941) < 1e-5)
         self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2542.5810983) < 1e-5)
 
+    def testCalcCoord(self):
+        # one unit sphere
+        radii = [1]
+        coord = [0,0,0]
+        parameters = Parameters()
+        parameters.setNSlices(5000)
+        parameters.setProbeRadius(0)
+        result = calcCoord(coord, radii, parameters)
+        self.assertTrue(math.fabs(result.totalArea() - 4*math.pi) < 1e-3)
+
+        # two separate unit spheres
+        radii = [1,1]
+        coord = [0,0,0, 4,4,4]
+        result = calcCoord(coord, radii, parameters)
+        self.assertTrue(math.fabs(result.totalArea() - 2*4*math.pi) < 1e-3)
+
+        self.assertRaises(AssertionError,
+                          lambda: calcCoord(radii, radii))
+
     def testSelectArea(self):
         structure = Structure("data/1ubq.pdb")
         result = calc(structure,Parameters({'algorithm' : ShrakeRupley}))

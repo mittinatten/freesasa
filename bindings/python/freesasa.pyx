@@ -586,7 +586,7 @@ def structureArray(fileName,
 # @param structure Structure to be used
 # @param parameters Parameters to use (if not specified defaults are used)
 # @return A Result object
-# @exception Exception something went wrong in calculation (see C library error messages)
+# @exception Exception: something went wrong in calculation (see C library error messages)
 def calc(structure,parameters=None):
       cdef const freesasa_parameters *p = NULL
       cdef const freesasa_structure *s = NULL
@@ -596,6 +596,40 @@ def calc(structure,parameters=None):
       result._c_result = <freesasa_result*> freesasa_calc_structure(s,p)
       if result._c_result is NULL:
             raise Exception("Error calculating SASA.")
+      return result
+
+## Calculate SASA for a set of coordinates and radii
+# @param coord list of size 3*N with atomic coordinates (x1, y1, z1,
+#   x2, y2, z2, ..., x_N, y_N, z_N'.
+# @param radii array of size N with atomic radii (r_1, r_2, ..., r_N)
+# @param Parameters to use (if not specified, defaults are used)
+# @exception AssertionError: mismatched array-sizes
+# @exception Exception: something went wrong in calculation (see C library error messages)
+def calcCoord(coord, radii, parameters=None):
+      assert(len(coord) == 3*len(radii))
+
+      cdef const freesasa_parameters *p = NULL
+      cdef double *c = <double*> malloc(len(coord)*sizeof(double))
+      cdef double *r = <double*> malloc(len(radii)*sizeof(double))
+      if c is NULL or r is NULL:
+            raise Exception("Memory allocation error")
+
+      for i in xrange(len(coord)):
+            c[i] = coord[i]
+      for i in xrange(len(radii)):
+            r[i] = radii[i]
+
+      if parameters is not None: parameters._get_address(<size_t>&p)
+
+      result = Result()
+      result._c_result = <freesasa_result*> freesasa_calc_coord(c, r, len(radii), p)
+
+      if result._c_result is NULL:
+            raise Exception("Error calculating SASA.")
+
+      free(c)
+      free(r)
+
       return result
 
 ## Break SASA result down into classes.
