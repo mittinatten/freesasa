@@ -604,6 +604,7 @@ def calc(structure,parameters=None):
 # @param radii array of size N with atomic radii (r_1, r_2, ..., r_N)
 # @param Parameters to use (if not specified, defaults are used)
 # @exception AssertionError: mismatched array-sizes
+# @exception Exception: Out of memory
 # @exception Exception: something went wrong in calculation (see C library error messages)
 def calcCoord(coord, radii, parameters=None):
       assert(len(coord) == 3*len(radii))

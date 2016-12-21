@@ -1,6 +1,11 @@
 # Changelog
 FreeSASA uses semantic versioning. Changelog added for versions 2.x
 
+## [unreleased]
+
+* Add function `calcCoord()` to Python interface, wraps C function
+  `freesasa_calc_coord()`.
+
 ## 2.0
 
 ### Changed
