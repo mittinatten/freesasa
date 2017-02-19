@@ -7,6 +7,7 @@ These pages document the
   - @ref API "FreeSASA C API"
   - @ref Python "FreeSASA Python interface"
   - @ref Config-file
+  - @ref Selection
   - @ref Geometry
 
 The library is released under the [MIT license](license.md).
@@ -815,14 +816,13 @@ Several selectors can be joined using boolean logic and parentheses,
 where s1, s2 and s3 are selectors and l1, l2 and l3 are lists. The
 operator `and` has precedence over `or`, so the second parentheses is
 necessary but not the first, in the example above. The selection name
-has to start with a letter, but it can include numbers and
-underscores. The name can't be longer than
-::FREESASA\_MAX\_SELECTION\_NAME characters.
+can include letters, numbers and underscores. The name can't be longer
+than ::FREESASA\_MAX\_SELECTION\_NAME characters.
 
 The following property selectors are supported
 
 - `resn` Residue names like "ala", "arg", "du", etc 
-- `resi` Residue index (positive integers)
+- `resi` Residue index (positive or negative integers)
 - `chain` Chain labels (single characters)
 - `name` Atom names, such as "ca", "c", "oxt", etc
 - `symbol` Element symbols, such as "C", "O", "Se", "Fe", etc.
@@ -834,11 +834,12 @@ A list of residues can be selected using
 and similarly for the other four selectors. In addition `resi` and
 `chain` support ranges
 
-    resi 1-10
-    resi 1-10+20-30+35
-    chain A+C-E
+    resi 1-10             (residues 1 to 10)
+    resi 1-10+20-30+35    (residues 1 to 10, 20 to 30 and 35)
+    resi -20--15+-10-5    (residues -20 to -15 and -10 to 5)
+    chain A+C-E           (chains A and C to E)
 
-Combining ranges with plus signs, as in the two last lines, is not
+Combining ranges with plus signs, as in the three last lines, is not
 allowed in Pymol but supported by FreeSASA.
 
 If a selection list contains elements not found in the molecule that
