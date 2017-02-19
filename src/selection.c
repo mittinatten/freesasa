@@ -37,6 +37,7 @@ e_str(expression_type e)
     case E_CHAIN:     return "chain";
     case E_ID:        return "<id>";
     case E_NUMBER:    return "<number>";
+    case E_NEGNUM:    return "<neg_number>";
     case E_AND:       return "and";
     case E_OR:        return "or";
     case E_NOT:       return "not";
@@ -81,17 +82,25 @@ freesasa_selection_atom(expression_type type,
     assert(val);
     expression *e = expression_new();
     if (e != NULL) {
-        e->type = type;
-        e->value = strdup(val);
-        
+        if (type == E_NEGNUM) {
+            int n = strlen(val)+2;
+            char buf[n];
+            sprintf(buf, "-%s", val);
+            e->type = E_NUMBER;
+            e->value = strdup(buf);
+        } else {
+            e->type = type;
+            e->value = strdup(val);
+        }
+
         if (e->value == NULL) {
             mem_fail();
             expression_free(e);
             return NULL;
         }
         
-        for (int i = 0; i < strlen(val); ++i)
-            e->value[i] = toupper(val[i]);
+        for (int i = 0; i < strlen(e->value); ++i)
+            e->value[i] = toupper(e->value[i]);
     }
     return e;
 }
@@ -147,6 +156,24 @@ freesasa_selection_operation(expression_type type,
     }
     return e;
 }
+
+//for debugging
+static void
+print_expr(const expression *e,int level)
+{
+    fprintf(stderr,"\n");
+    for (int i = 0; i < level; ++i) fprintf(stderr,"  ");
+    if (e == NULL) fprintf(stderr,"()");
+    else {
+        fprintf(stderr,"(%s ",e_str(e->type));
+        if (e->value) fprintf(stderr,": %s ",e->value);
+        print_expr(e->left,level+1);
+        print_expr(e->right,level+1);
+        fprintf(stderr,")");
+    }
+    fflush(stderr);
+}
+
 
 
 static expression *
@@ -715,23 +742,6 @@ freesasa_select_area(const char *command,
     int ret = select_area_impl(command,name, area, structure, result);
     if (ret >= 0) return FREESASA_SUCCESS;
     return ret;
-}
-
-//for debugging
-static void
-print_expr(const expression *e,int level)
-{
-    fprintf(stderr,"\n");
-    for (int i = 0; i < level; ++i) fprintf(stderr,"  ");
-    if (e == NULL) fprintf(stderr,"()");
-    else {
-        fprintf(stderr,"(%s ",e_str(e->type));
-        if (e->value) fprintf(stderr,": %s ",e->value);
-        print_expr(e->left,level+1);
-        print_expr(e->right,level+1);
-        fprintf(stderr,")");
-    }
-    fflush(stderr);
 }
 
 int freesasa_selection_parse_error(expression *e,

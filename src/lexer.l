@@ -24,7 +24,7 @@ NAME    (?i:name)
 CHAIN   (?i:chain)
 
 NUMBER  [[:digit:]]+
-ID      [[:alpha:]][[:alnum:]\_]*
+ID      [[:alnum:]\_]+\'*
 WS      [ \t\n\r]*
 
 %%

@@ -51,6 +51,7 @@
 %precedence T_NOT
 %left '+'
 %left '-'
+%right UNARY
 
 %type <expression> stmt
 %type <expression> expr
@@ -61,7 +62,8 @@
 %%
 
 stmt:
-  T_ID ',' expr          { *expression = freesasa_selection_create($expr,$T_ID); } 
+  T_ID ',' expr          { *expression = freesasa_selection_create($expr, $T_ID); }
+| T_NUMBER ',' expr      { *expression = freesasa_selection_create($expr, $T_NUMBER); }
 ;
 
 expr:
@@ -79,15 +81,16 @@ expr:
 list:
   atom                   { $$ = $1; }
 | atom '+' list          { $$ = freesasa_selection_operation(E_PLUS, $1, $3); }
+;
 
 range:
   atom                   { $$ = $1; }
+| range '+' range        { $$ = freesasa_selection_operation(E_PLUS, $1, $3); }
 | atom '-' atom          { $$ = freesasa_selection_operation(E_RANGE, $1, $3); }
-| atom '-' atom '+' range{ $$ = freesasa_selection_operation(E_PLUS, freesasa_selection_operation(E_RANGE, $1, $3),$5); }
-| atom '+' range         { $$ = freesasa_selection_operation(E_PLUS, $1, $3); }
 ;
 
 atom:
-  T_NUMBER               { $$ = freesasa_selection_atom(E_NUMBER,$1); }
-| T_ID                   { $$ = freesasa_selection_atom(E_ID,$1); }
+  T_NUMBER               { $$ = freesasa_selection_atom(E_NUMBER, $1); }
+| T_ID                   { $$ = freesasa_selection_atom(E_ID, $1); }
+| '-' T_NUMBER %prec UNARY  { $$ = freesasa_selection_atom(E_NEGNUM, $2); }
 ;
