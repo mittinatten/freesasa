@@ -93,6 +93,10 @@ START_TEST (test_selection_name)
     ck_assert_str_eq(selection_name[0], "c1");
     freesasa_select_area("1c, name ca", selection_name[0], value, structure, result);
     ck_assert_str_eq(selection_name[0], "1c");
+    freesasa_select_area("-1, name ca", selection_name[0], value, structure, result);
+    ck_assert_str_eq(selection_name[0], "-1");
+    freesasa_select_area("-1+2_abc, name ca", selection_name[0], value, structure, result);
+    ck_assert_str_eq(selection_name[0], "-1+2_abc");
 } END_TEST
 
 START_TEST (test_name)

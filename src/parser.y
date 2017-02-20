@@ -34,6 +34,7 @@
 
 %token <value> T_NUMBER
 %token <value> T_ID
+%token <value> T_SELID
 
 %token T_AND
 %token T_OR
@@ -62,8 +63,7 @@
 %%
 
 stmt:
-  T_ID ',' expr          { *expression = freesasa_selection_create($expr, $T_ID); }
-| T_NUMBER ',' expr      { *expression = freesasa_selection_create($expr, $T_NUMBER); }
+  T_SELID ',' expr          { *expression = freesasa_selection_create($expr, $T_SELID); }
 ;
 
 expr:

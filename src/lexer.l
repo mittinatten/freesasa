@@ -25,6 +25,7 @@ CHAIN   (?i:chain)
 
 NUMBER  [[:digit:]]+
 ID      [[:alnum:]\_]+\'*
+SELID   [[:alnum:]\_\-\+]+
 WS      [ \t\n\r]*
 
 %%
@@ -45,6 +46,7 @@ WS      [ \t\n\r]*
 {OR}      { return T_OR; }
 {NOT}     { return T_NOT; }
 
-{WS}      {}
-{NUMBER}  { yylval->value = strdup(yytext); return T_NUMBER; }
-{ID}      { yylval->value = strdup(yytext); return T_ID; }
+{WS}          {}
+{NUMBER}      { yylval->value = strdup(yytext); return T_NUMBER; }
+{ID}          { yylval->value = strdup(yytext); return T_ID; }
+{SELID}/","   { yylval->value = strdup(yytext); return T_SELID; }

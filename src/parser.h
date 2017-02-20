@@ -58,16 +58,17 @@ extern int freesasa_yydebug;
   {
     T_NUMBER = 258,
     T_ID = 259,
-    T_AND = 260,
-    T_OR = 261,
-    T_NOT = 262,
-    T_RESN = 263,
-    T_RESI = 264,
-    T_SYMBOL = 265,
-    T_NAME = 266,
-    T_CHAIN = 267,
-    ATOM = 268,
-    UNARY = 269
+    T_SELID = 260,
+    T_AND = 261,
+    T_OR = 262,
+    T_NOT = 263,
+    T_RESN = 264,
+    T_RESI = 265,
+    T_SYMBOL = 266,
+    T_NAME = 267,
+    T_CHAIN = 268,
+    ATOM = 269,
+    UNARY = 270
   };
 #endif
 
@@ -81,7 +82,7 @@ union YYSTYPE
     const char *value;
     expression *expression;
 
-#line 85 "parser.h" /* yacc.c:1909  */
+#line 86 "parser.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;
