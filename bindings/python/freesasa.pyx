@@ -215,12 +215,15 @@ cdef class Result:
 #  Wraps a C freesasa_classifier. If initialized without arguments the
 #  default classifier is used.
 #
+#  Derived classifiers should set the member purePython to True
+#
 #  Residue names should be of the format `"ALA"`,`"ARG"`, etc.
 #      
 #  Atom names should be of the format `"CA"`, `"N"`, etc. 
 #
 cdef class Classifier:
       cdef freesasa_classifier* _c_classifier
+      purePython = False
 
       ## Constructor.
       #
@@ -249,6 +252,13 @@ cdef class Classifier:
       def __dealloc__(self):
             if self._c_classifier is not &freesasa_default_classifier:
                   freesasa_classifier_free(self._c_classifier)
+
+
+      # This is used internally to determine if a Classifier wraps a C
+      # classifier or not (necessary when generating structures)
+      # @return Boolean
+      def _isCClassifier(self):
+            return not self.purePython
 
       ## Class of atom.
       #
@@ -320,6 +330,11 @@ cdef class Structure:
                    options = defaultOptions):
 
             self._c_structure = NULL
+            cdef freesasa_classifier *c = NULL
+            if classifier is None:
+                  classifier = Classifier()
+            if classifier._isCClassifier():
+                  classifier._get_address(<size_t>&c)
 
             if fileName is None:
                   self._c_structure = freesasa_structure_new()
@@ -329,16 +344,24 @@ cdef class Structure:
             if input is NULL:
                   raise IOError("File '%s' could not be opened." % fileName)
             structure_options = Structure._get_structure_options(options)
-            self._c_structure = freesasa_structure_from_pdb(input,NULL,structure_options)
+
+            if not classifier._isCClassifier(): # supress warnings
+                  setVerbosity(silent)
+
+            self._c_structure = freesasa_structure_from_pdb(input, c, structure_options)
+
+            if not classifier._isCClassifier():
+                  setVerbosity(normal)
+
             fclose(input)
 
             if self._c_structure is NULL:
                   raise Exception("Error reading '%s'." % fileName)
 
-            # this means we might be calculating the radii twice, the
-            # advantage of doing it this way is that we can define new
-            # classifiers using a Python interface
-            if (classifier is not None): 
+            # for pure Python classifiers we use the default
+            # classifier above to initialize the structure and then
+            # reassign radii using the provided classifier here
+            if (not classifier._isCClassifier()):
                   self.setRadiiWithClassifier(classifier)
 
 

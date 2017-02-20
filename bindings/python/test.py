@@ -6,6 +6,8 @@ from exceptions import Exception
 
 # this class tests using derived classes to create custom Classifiers
 class DerivedClassifier(Classifier):
+    purePython = True
+
     def classify(self,residueName,atomName):
         return 'bla'
 
@@ -55,6 +57,7 @@ class FreeSASATestCase(unittest.TestCase):
 
     def testClassifier(self):
         c = Classifier()
+        self.assertTrue(c._isCClassifier())
         self.assertTrue(c.classify("ALA"," CB ") == apolar)
         self.assertTrue(c.classify("ARG"," NH1") == polar)
         self.assertTrue(c.radius("ALA"," CB ") == 1.88)
@@ -74,6 +77,7 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(c.radius("ALA"," CB ") == 2.00)
 
         c = DerivedClassifier()
+        self.assertTrue(not c._isCClassifier())
         self.assertTrue(c.radius("ALA"," CB ") == 10)
         self.assertTrue(c.radius("ABCDEFG","HIJKLMNO") == 10)
         self.assertTrue(c.classify("ABCDEFG","HIJKLMNO") == "bla")
