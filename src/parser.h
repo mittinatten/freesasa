@@ -67,8 +67,8 @@ extern int freesasa_yydebug;
     T_SYMBOL = 266,
     T_NAME = 267,
     T_CHAIN = 268,
-    ATOM = 269,
-    UNARY = 270
+    T_MINUS = 269,
+    ATOM = 270
   };
 #endif
 

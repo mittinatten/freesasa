@@ -349,7 +349,7 @@ extern int freesasa_yylex \
 #undef YY_DECL
 #endif
 
-#line 53 "lexer.l"
+#line 55 "lexer.l"
 
 #line 355 "lexer.h"
 #undef freesasa_yyIN_HEADER

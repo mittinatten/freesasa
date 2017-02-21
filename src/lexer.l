@@ -16,6 +16,7 @@
 AND     (?i:\&|and)
 OR      (?i:\||or)
 NOT     (?i:\!|not)
+MINUS   \\-
 
 RESN    (?i:resn)
 RESI    (?i:resi)
@@ -45,6 +46,7 @@ WS      [ \t\n\r]*
 {AND}     { return T_AND; }
 {OR}      { return T_OR; }
 {NOT}     { return T_NOT; }
+{MINUS}   { return T_MINUS; }
 
 {WS}          {}
 {NUMBER}      { yylval->value = strdup(yytext); return T_NUMBER; }

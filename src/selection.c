@@ -43,6 +43,8 @@ e_str(expression_type e)
     case E_NOT:       return "not";
     case E_PLUS:      return "< + >";
     case E_RANGE:     return "< - >";
+    case E_RANGE_OPEN_R:     return "< - R >";
+    case E_RANGE_OPEN_L:     return "< - L >";
     }
     return NULL;
 }
@@ -369,16 +371,19 @@ is_valid_id(int parent_type,
 }
 
 static int
-select_range(expression_type parent_type,
+select_range(expression_type range_type,
+             expression_type parent_type,
              struct selection *selection,
              const freesasa_structure *structure,
              const expression *left,
              const expression *right)
 {
+    assert(range_type == E_RANGE || range_type == E_RANGE_OPEN_L || range_type == E_RANGE_OPEN_R);
     assert(parent_type == E_RESI || parent_type == E_CHAIN);
     int lower, upper;
     if (parent_type == E_RESI) { // residues have integer numbering
-        if (left->type != E_NUMBER || right->type != E_NUMBER) {
+        if (( left &&  left->type != E_NUMBER) ||
+            (right && right->type != E_NUMBER)) {
             return freesasa_warn("select: %s: range '%s-%s' invalid, needs to be two numbers, "
                                  "will be ignored",e_str(parent_type), left->value, right->value);
         }
@@ -388,7 +393,13 @@ select_range(expression_type parent_type,
             return freesasa_warn("select: %s: range '%s-%s' invalid, should be two letters (A-C) or numbers (1-5), "
                                  "will be ignored", e_str(parent_type), left->value, right->value);
     }
-    if (left->type == E_NUMBER) {
+    if (range_type == E_RANGE_OPEN_L) {
+        lower = atoi(freesasa_structure_atom_res_number(structure, 0));
+        upper = atoi(right->value);
+    } else if (range_type == E_RANGE_OPEN_R) {
+        lower = atoi(left->value);
+        upper = atoi(freesasa_structure_atom_res_number(structure, freesasa_structure_n(structure) - 1));
+    } else if (left->type == E_NUMBER) {
         lower = atoi(left->value);
         upper = atoi(right->value);
     } else {
@@ -419,15 +430,23 @@ select_list(expression_type parent_type,
     case E_PLUS: 
         if (left == NULL || right == NULL) 
             return fail_msg("NULL expression");
-        resl = select_list(parent_type,selection,structure,left);
-        resr = select_list(parent_type,selection,structure,right);
+        resl = select_list(parent_type, selection, structure, left);
+        resr = select_list(parent_type, selection, structure, right);
         if (resl == FREESASA_WARN || resr == FREESASA_WARN)
             return FREESASA_WARN;
         break;
     case E_RANGE:
         if (left == NULL || right == NULL) 
             return fail_msg("NULL expression");
-        return select_range(parent_type, selection, structure, left, right);
+        return select_range(E_RANGE, parent_type, selection, structure, left, right);
+    case E_RANGE_OPEN_L:
+        if (left != NULL || right == NULL)
+            return fail_msg("NULL expression");
+        return select_range(E_RANGE_OPEN_L, parent_type, selection, structure, left, right);
+    case E_RANGE_OPEN_R:
+        if (left == NULL || right != NULL)
+            return fail_msg("NULL expression");
+        return select_range(E_RANGE_OPEN_R, parent_type, selection, structure, left, right);
     case E_ID:
     case E_NUMBER:
         if (is_valid_id(parent_type, expr) == FREESASA_SUCCESS)
@@ -829,10 +848,10 @@ START_TEST (test_expression)
     ck_assert_int_eq(e->left->left->right->type,E_ID);
     ck_assert_str_eq(e->left->left->right->value,"C");
     ck_assert_str_eq(e->left->left->left->value,"O");
-    for (int i = E_SELECTION; i <= E_RANGE; ++i) {
+    for (int i = E_SELECTION; i <= E_RANGE_OPEN_R; ++i) {
         ck_assert_ptr_ne(e_str(i), NULL);
     }
-    ck_assert_ptr_eq(e_str(E_RANGE+1), NULL);
+    ck_assert_ptr_eq(e_str(E_RANGE_OPEN_R+1), NULL);
 }
 END_TEST
 

@@ -835,9 +835,11 @@ and similarly for the other four selectors. In addition `resi` and
 `chain` support ranges
 
     resi 1-10             (residues 1 to 10)
-    resi 1-10+20-30+35    (residues 1 to 10, 20 to 30 and 35)
-    resi -20--15+-10-5    (residues -20 to -15 and -10 to 5)
-    chain A+C-E           (chains A and C to E)
+    resi -10              (residues indices < 10)
+    resi 10-              (residues indices > 10)
+    resi 1-10+20-30+35-   (residues 1 to 10, 20 to 30 and above 35)
+    resi \-20-\-15+\-10-5 (residues -20 to -15 and -10 to 5)
+    chain A+C-E           (chains A and C to E, no open intervals allowed here)
 
 Combining ranges with plus signs, as in the three last lines, is not
 allowed in Pymol but supported by FreeSASA.

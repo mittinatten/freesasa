@@ -187,17 +187,24 @@ END_TEST
 
 START_TEST (test_resi)
 {
-    const char *commands[] = {"c1, resi -2-5",
+    const char *commands[] = {"c1, resi \\-2-5",
                               "c2, resi 2-4",
                               "c3, resi 1",
-                              "c4, resi -2 AND resi -1-5",
-                              "c5, resi -2 OR  resi -1-5",
-                              "c6, resi -2-2+2-5",
-                              "c7, resi -1+-2-4+5",
-                              "c8, resi -2-2+7+9+3-5+100",
-                              "c9, resi 1-4 AND NOT resi 2-4"};
+                              "c4, resi \\-2 AND resi \\-1-5",
+                              "c5, resi \\-2 OR  resi \\-1-5",
+                              "c6, resi \\-2-2+2-5",
+                              "c7, resi \\-1+\\-2-4+5",
+                              "c8, resi \\-2-2+7+9+3-5+100",
+                              "c9, resi 1-4 AND NOT resi 2-4",
+                              "c10,resi \\-2-",
+                              "c11,resi -5",
+                              "c12,resi \\-2-2+2-5",
+                              "c13,resi -5 AND NOT resi \\-2+\\-1+1+5",
+                              "c14,resi 1-2+3- AND NOT resi 5",
+                              "c15,resi 2- AND NOT resi 5",
+    };
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    test_select(commands,9);
+    test_select(commands,15);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     ck_assert(value[0] > 5);
     ck_assert(float_eq(value[0], addup(all, result), 1e-10));
@@ -209,6 +216,12 @@ START_TEST (test_resi)
     ck_assert(float_eq(value[6], value[0], 1e-10));
     ck_assert(float_eq(value[7], value[0], 1e-10));
     ck_assert(float_eq(value[8], value[2], 1e-10));
+    ck_assert(float_eq(value[9], value[0], 1e-10));
+    ck_assert(float_eq(value[10], value[0], 1e-10));
+    ck_assert(float_eq(value[11], value[0], 1e-10));
+    ck_assert(float_eq(value[12], value[1], 1e-10));
+    ck_assert(float_eq(value[13], value[1]+value[2], 1e-10));
+    ck_assert(float_eq(value[14], value[1], 1e-10));
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_int_eq(freesasa_select_area("c1, resi A",selection_name[0],value,structure,result),
@@ -265,10 +278,11 @@ START_TEST (test_syntax_error)
                          "resn, ala","resi, 1","name, ca","symbol, c","chain, a",
                          // ranges (-) used where not allowed
                          "a, resn ala-arg", "a, name ca-cb","a, symbol c-o",
-                         "a, resi 1-2-3",
-                         // trailing +-
-                         "a, resn ala+", "a, resn ala+arg+", "a, resi 1-",
-                         "a, resi 1-", "a, resi 1-2+","a, resi 1+2-5+",
+                         // illegal range syntax
+                         "a, resi 1-2-3", "a, resi -1-2", "a, resi 1-2-", "a, chain A-",
+                         // trailing +
+                         "a, resn ala+", "a, resn ala+arg+",
+                         "a, resi 1-2+","a, resi 1+2-5+",
                          // boolean operators
                          "a, (resn ala) AND","a,(resn ala) OR","a,(resn ala) OR NOT",
                          "a, (resn ala) AND arg","a,(resn ala) OR arg",
@@ -298,7 +312,7 @@ START_TEST (test_complex_syntax)
     double a;
     char s[FREESASA_MAX_SELECTION_NAME+1];
     const char *stmt[] = {"a, (resn ala AND resi 1-3) OR (NOT chain A+B AND (symbol C OR symbol O))",
-                          "a, NOT symbol SE+C AND NOT resi 5-7+1+-6--2+100+200+10-11"
+                          "a, NOT symbol SE+C AND NOT resi 5-7+1+\\-6-\\-2+100+200+10-11"
     };
     int n = sizeof(stmt)/sizeof(char*);
     freesasa_set_verbosity(FREESASA_V_SILENT);
