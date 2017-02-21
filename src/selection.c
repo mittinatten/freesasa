@@ -714,13 +714,6 @@ freesasa_selection_area(const freesasa_selection *selection)
     return selection->area;
 }
 
-int
-freesasa_selection_n_atoms(const freesasa_selection* selection)
-{
-    assert(selection);
-    return selection->area;
-}
-
 freesasa_selection *
 freesasa_selection_new(const char *command,
                        const freesasa_structure *structure,

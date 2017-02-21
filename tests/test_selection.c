@@ -157,6 +157,10 @@ START_TEST (test_symbol)
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_int_eq(freesasa_select_area("c1, symbol ABC",selection_name[0],value,structure,result),
                      FREESASA_WARN);
+    ck_assert_int_eq(freesasa_select_area("c1, symbol 1",selection_name[0],value,structure,result),
+                     FREESASA_WARN);
+    ck_assert_int_eq(freesasa_select_area("c1, symbol &%",selection_name[0],value,structure,result),
+                     FREESASA_FAIL);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
@@ -255,6 +259,8 @@ START_TEST (test_chain)
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_int_eq(freesasa_select_area("c1, chain AA",selection_name[0],value,structure,result),
+                     FREESASA_WARN);
+    ck_assert_int_eq(freesasa_select_area("c1, chain A-1",selection_name[0],value,structure,result),
                      FREESASA_WARN);
     ck_assert_int_eq(freesasa_select_area("c1, chain &",selection_name[0],value,structure,result),
                      FREESASA_FAIL);
