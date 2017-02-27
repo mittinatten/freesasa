@@ -129,9 +129,7 @@ AM_CONDITIONAL([HAVE_CYTHON],false)
 if test "x$enable_python_bindings" = "xyes" ; then
   AC_CHECK_PROG([PYTHON], [$python_bin], [$python_bin])
   AC_CHECK_PROG([CYTHON], [cython], [cython])
-  if test $CYTHON && test $PYTHON ; then
-    AM_CONDITIONAL([HAVE_CYTHON], true)
-  fi
+  AM_CONDITIONAL([HAVE_CYTHON], [test -n "$CYTHON" && test -n "$PYTHON"])
   AM_COND_IF([HAVE_CYTHON],[],[AC_MSG_ERROR([Cython not available, can not build Python bindings])])
 fi
 
@@ -145,9 +143,7 @@ AM_CONDITIONAL([GENERATE_PARSER],false)
 if test "x$enable_parser_generator" = "xyes" ; then
   AC_PROG_LEX
   AC_CHECK_PROGS([YACC], [bison byacc yacc])
-  if test -n $LEX && test "x$LEX" != "x:" && test -n $YACC ; then
-    AM_CONDITIONAL([GENERATE_PARSER], true)
-  fi
+  AM_CONDITIONAL([GENERATE_PARSER], [test -n $LEX && test "x$LEX" != "x:" && test -n $YACC])
   AM_COND_IF([GENERATE_PARSER],[],
     [AC_MSG_ERROR([Lexer and/or parser generator missing. Install Flex/lex and/or Bison/Yacc or configure without flag --enable-parser-generator.])])
 fi

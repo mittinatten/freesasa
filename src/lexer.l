@@ -16,6 +16,7 @@
 AND     (?i:\&|and)
 OR      (?i:\||or)
 NOT     (?i:\!|not)
+MINUS   \\-
 
 RESN    (?i:resn)
 RESI    (?i:resi)
@@ -24,7 +25,8 @@ NAME    (?i:name)
 CHAIN   (?i:chain)
 
 NUMBER  [[:digit:]]+
-ID      [[:alpha:]][[:alnum:]\_]*
+ID      [[:alnum:]\_]+\'*
+SELID   [[:alnum:]\_\-\+]+
 WS      [ \t\n\r]*
 
 %%
@@ -44,7 +46,9 @@ WS      [ \t\n\r]*
 {AND}     { return T_AND; }
 {OR}      { return T_OR; }
 {NOT}     { return T_NOT; }
+{MINUS}   { return T_MINUS; }
 
-{WS}      {}
-{NUMBER}  { yylval->value = strdup(yytext); return T_NUMBER; }
-{ID}      { yylval->value = strdup(yytext); return T_ID; }
+{WS}          {}
+{NUMBER}      { yylval->value = strdup(yytext); return T_NUMBER; }
+{ID}          { yylval->value = strdup(yytext); return T_ID; }
+{SELID}/","   { yylval->value = strdup(yytext); return T_SELID; }

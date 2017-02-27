@@ -2,7 +2,11 @@
 #define SELECTION_H
 
 typedef enum  
-    {E_SELECTION,E_SYMBOL,E_NAME,E_RESN,E_RESI,E_CHAIN,E_ID,E_NUMBER,E_AND,E_OR,E_NOT,E_PLUS,E_RANGE}
+    {E_SELECTION,
+     E_SYMBOL, E_NAME, E_RESN, E_RESI, E_CHAIN,
+     E_ID, E_NUMBER, E_NEGNUM,
+     E_AND, E_OR, E_NOT, E_PLUS,
+     E_RANGE, E_RANGE_OPEN_L, E_RANGE_OPEN_R}
 expression_type;
 
 typedef struct expression {

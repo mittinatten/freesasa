@@ -1,6 +1,18 @@
 # Changelog
 FreeSASA uses semantic versioning. Changelog added for versions 2.x
 
+## [unreleased]
+
+* Add function `calcCoord()` to Python interface, wraps C function
+  `freesasa_calc_coord()`.
+* Expand selection syntax:
+  * Allow negative residue numbers `resi \-10` (escaped with
+    backslash), and expression such as `resi \-10-\-5+\-3-5`
+  * Allow open-ended residue ranges `resi -10`, `resi 10-` and
+    combined as `resi -10+15-20+30-`
+  * Allow primes in atom names (i.e. `O5'`)
+  * Allow selection names to be numbers or start with a number
+
 ## 2.0
 
 ### Changed

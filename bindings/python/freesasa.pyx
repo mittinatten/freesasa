@@ -215,12 +215,15 @@ cdef class Result:
 #  Wraps a C freesasa_classifier. If initialized without arguments the
 #  default classifier is used.
 #
+#  Derived classifiers should set the member purePython to True
+#
 #  Residue names should be of the format `"ALA"`,`"ARG"`, etc.
 #      
 #  Atom names should be of the format `"CA"`, `"N"`, etc. 
 #
 cdef class Classifier:
       cdef freesasa_classifier* _c_classifier
+      purePython = False
 
       ## Constructor.
       #
@@ -249,6 +252,13 @@ cdef class Classifier:
       def __dealloc__(self):
             if self._c_classifier is not &freesasa_default_classifier:
                   freesasa_classifier_free(self._c_classifier)
+
+
+      # This is used internally to determine if a Classifier wraps a C
+      # classifier or not (necessary when generating structures)
+      # @return Boolean
+      def _isCClassifier(self):
+            return not self.purePython
 
       ## Class of atom.
       #
@@ -320,6 +330,11 @@ cdef class Structure:
                    options = defaultOptions):
 
             self._c_structure = NULL
+            cdef freesasa_classifier *c = NULL
+            if classifier is None:
+                  classifier = Classifier()
+            if classifier._isCClassifier():
+                  classifier._get_address(<size_t>&c)
 
             if fileName is None:
                   self._c_structure = freesasa_structure_new()
@@ -329,16 +344,24 @@ cdef class Structure:
             if input is NULL:
                   raise IOError("File '%s' could not be opened." % fileName)
             structure_options = Structure._get_structure_options(options)
-            self._c_structure = freesasa_structure_from_pdb(input,NULL,structure_options)
+
+            if not classifier._isCClassifier(): # supress warnings
+                  setVerbosity(silent)
+
+            self._c_structure = freesasa_structure_from_pdb(input, c, structure_options)
+
+            if not classifier._isCClassifier():
+                  setVerbosity(normal)
+
             fclose(input)
 
             if self._c_structure is NULL:
                   raise Exception("Error reading '%s'." % fileName)
 
-            # this means we might be calculating the radii twice, the
-            # advantage of doing it this way is that we can define new
-            # classifiers using a Python interface
-            if (classifier is not None): 
+            # for pure Python classifiers we use the default
+            # classifier above to initialize the structure and then
+            # reassign radii using the provided classifier here
+            if (not classifier._isCClassifier()):
                   self.setRadiiWithClassifier(classifier)
 
 
@@ -586,7 +609,7 @@ def structureArray(fileName,
 # @param structure Structure to be used
 # @param parameters Parameters to use (if not specified defaults are used)
 # @return A Result object
-# @exception Exception something went wrong in calculation (see C library error messages)
+# @exception Exception: something went wrong in calculation (see C library error messages)
 def calc(structure,parameters=None):
       cdef const freesasa_parameters *p = NULL
       cdef const freesasa_structure *s = NULL
@@ -596,6 +619,41 @@ def calc(structure,parameters=None):
       result._c_result = <freesasa_result*> freesasa_calc_structure(s,p)
       if result._c_result is NULL:
             raise Exception("Error calculating SASA.")
+      return result
+
+## Calculate SASA for a set of coordinates and radii
+# @param coord list of size 3*N with atomic coordinates (x1, y1, z1,
+#   x2, y2, z2, ..., x_N, y_N, z_N'.
+# @param radii array of size N with atomic radii (r_1, r_2, ..., r_N)
+# @param Parameters to use (if not specified, defaults are used)
+# @exception AssertionError: mismatched array-sizes
+# @exception Exception: Out of memory
+# @exception Exception: something went wrong in calculation (see C library error messages)
+def calcCoord(coord, radii, parameters=None):
+      assert(len(coord) == 3*len(radii))
+
+      cdef const freesasa_parameters *p = NULL
+      cdef double *c = <double*> malloc(len(coord)*sizeof(double))
+      cdef double *r = <double*> malloc(len(radii)*sizeof(double))
+      if c is NULL or r is NULL:
+            raise Exception("Memory allocation error")
+
+      for i in xrange(len(coord)):
+            c[i] = coord[i]
+      for i in xrange(len(radii)):
+            r[i] = radii[i]
+
+      if parameters is not None: parameters._get_address(<size_t>&p)
+
+      result = Result()
+      result._c_result = <freesasa_result*> freesasa_calc_coord(c, r, len(radii), p)
+
+      if result._c_result is NULL:
+            raise Exception("Error calculating SASA.")
+
+      free(c)
+      free(r)
+
       return result
 
 ## Break SASA result down into classes.

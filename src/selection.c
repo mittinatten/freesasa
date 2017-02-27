@@ -37,11 +37,14 @@ e_str(expression_type e)
     case E_CHAIN:     return "chain";
     case E_ID:        return "<id>";
     case E_NUMBER:    return "<number>";
+    case E_NEGNUM:    return "<neg_number>";
     case E_AND:       return "and";
     case E_OR:        return "or";
     case E_NOT:       return "not";
     case E_PLUS:      return "< + >";
     case E_RANGE:     return "< - >";
+    case E_RANGE_OPEN_R:     return "< - R >";
+    case E_RANGE_OPEN_L:     return "< - L >";
     }
     return NULL;
 }
@@ -81,17 +84,25 @@ freesasa_selection_atom(expression_type type,
     assert(val);
     expression *e = expression_new();
     if (e != NULL) {
-        e->type = type;
-        e->value = strdup(val);
-        
+        if (type == E_NEGNUM) {
+            int n = strlen(val)+2;
+            char buf[n];
+            sprintf(buf, "-%s", val);
+            e->type = E_NUMBER;
+            e->value = strdup(buf);
+        } else {
+            e->type = type;
+            e->value = strdup(val);
+        }
+
         if (e->value == NULL) {
             mem_fail();
             expression_free(e);
             return NULL;
         }
         
-        for (int i = 0; i < strlen(val); ++i)
-            e->value[i] = toupper(val[i]);
+        for (int i = 0; i < strlen(e->value); ++i)
+            e->value[i] = toupper(e->value[i]);
     }
     return e;
 }
@@ -147,6 +158,24 @@ freesasa_selection_operation(expression_type type,
     }
     return e;
 }
+
+//for debugging
+static void
+print_expr(const expression *e,int level)
+{
+    fprintf(stderr,"\n");
+    for (int i = 0; i < level; ++i) fprintf(stderr,"  ");
+    if (e == NULL) fprintf(stderr,"()");
+    else {
+        fprintf(stderr,"(%s ",e_str(e->type));
+        if (e->value) fprintf(stderr,": %s ",e->value);
+        print_expr(e->left,level+1);
+        print_expr(e->right,level+1);
+        fprintf(stderr,")");
+    }
+    fflush(stderr);
+}
+
 
 
 static expression *
@@ -342,16 +371,19 @@ is_valid_id(int parent_type,
 }
 
 static int
-select_range(expression_type parent_type,
+select_range(expression_type range_type,
+             expression_type parent_type,
              struct selection *selection,
              const freesasa_structure *structure,
              const expression *left,
              const expression *right)
 {
+    assert(range_type == E_RANGE || range_type == E_RANGE_OPEN_L || range_type == E_RANGE_OPEN_R);
     assert(parent_type == E_RESI || parent_type == E_CHAIN);
     int lower, upper;
     if (parent_type == E_RESI) { // residues have integer numbering
-        if (left->type != E_NUMBER || right->type != E_NUMBER) {
+        if (( left &&  left->type != E_NUMBER) ||
+            (right && right->type != E_NUMBER)) {
             return freesasa_warn("select: %s: range '%s-%s' invalid, needs to be two numbers, "
                                  "will be ignored",e_str(parent_type), left->value, right->value);
         }
@@ -361,7 +393,13 @@ select_range(expression_type parent_type,
             return freesasa_warn("select: %s: range '%s-%s' invalid, should be two letters (A-C) or numbers (1-5), "
                                  "will be ignored", e_str(parent_type), left->value, right->value);
     }
-    if (left->type == E_NUMBER) {
+    if (range_type == E_RANGE_OPEN_L) {
+        lower = atoi(freesasa_structure_atom_res_number(structure, 0));
+        upper = atoi(right->value);
+    } else if (range_type == E_RANGE_OPEN_R) {
+        lower = atoi(left->value);
+        upper = atoi(freesasa_structure_atom_res_number(structure, freesasa_structure_n(structure) - 1));
+    } else if (left->type == E_NUMBER) {
         lower = atoi(left->value);
         upper = atoi(right->value);
     } else {
@@ -392,15 +430,23 @@ select_list(expression_type parent_type,
     case E_PLUS: 
         if (left == NULL || right == NULL) 
             return fail_msg("NULL expression");
-        resl = select_list(parent_type,selection,structure,left);
-        resr = select_list(parent_type,selection,structure,right);
+        resl = select_list(parent_type, selection, structure, left);
+        resr = select_list(parent_type, selection, structure, right);
         if (resl == FREESASA_WARN || resr == FREESASA_WARN)
             return FREESASA_WARN;
         break;
     case E_RANGE:
         if (left == NULL || right == NULL) 
             return fail_msg("NULL expression");
-        return select_range(parent_type, selection, structure, left, right);
+        return select_range(E_RANGE, parent_type, selection, structure, left, right);
+    case E_RANGE_OPEN_L:
+        if (left != NULL || right == NULL)
+            return fail_msg("NULL expression");
+        return select_range(E_RANGE_OPEN_L, parent_type, selection, structure, left, right);
+    case E_RANGE_OPEN_R:
+        if (left == NULL || right != NULL)
+            return fail_msg("NULL expression");
+        return select_range(E_RANGE_OPEN_R, parent_type, selection, structure, left, right);
     case E_ID:
     case E_NUMBER:
         if (is_valid_id(parent_type, expr) == FREESASA_SUCCESS)
@@ -668,13 +714,6 @@ freesasa_selection_area(const freesasa_selection *selection)
     return selection->area;
 }
 
-int
-freesasa_selection_n_atoms(const freesasa_selection* selection)
-{
-    assert(selection);
-    return selection->area;
-}
-
 freesasa_selection *
 freesasa_selection_new(const char *command,
                        const freesasa_structure *structure,
@@ -715,23 +754,6 @@ freesasa_select_area(const char *command,
     int ret = select_area_impl(command,name, area, structure, result);
     if (ret >= 0) return FREESASA_SUCCESS;
     return ret;
-}
-
-//for debugging
-static void
-print_expr(const expression *e,int level)
-{
-    fprintf(stderr,"\n");
-    for (int i = 0; i < level; ++i) fprintf(stderr,"  ");
-    if (e == NULL) fprintf(stderr,"()");
-    else {
-        fprintf(stderr,"(%s ",e_str(e->type));
-        if (e->value) fprintf(stderr,": %s ",e->value);
-        print_expr(e->left,level+1);
-        print_expr(e->right,level+1);
-        fprintf(stderr,")");
-    }
-    fflush(stderr);
 }
 
 int freesasa_selection_parse_error(expression *e,
@@ -819,10 +841,10 @@ START_TEST (test_expression)
     ck_assert_int_eq(e->left->left->right->type,E_ID);
     ck_assert_str_eq(e->left->left->right->value,"C");
     ck_assert_str_eq(e->left->left->left->value,"O");
-    for (int i = E_SELECTION; i <= E_RANGE; ++i) {
+    for (int i = E_SELECTION; i <= E_RANGE_OPEN_R; ++i) {
         ck_assert_ptr_ne(e_str(i), NULL);
     }
-    ck_assert_ptr_eq(e_str(E_RANGE+1), NULL);
+    ck_assert_ptr_eq(e_str(E_RANGE_OPEN_R+1), NULL);
 }
 END_TEST
 

@@ -61,7 +61,6 @@ cdef extern from "freesasa.h":
     freesasa_result* freesasa_calc_structure(const freesasa_structure *structure,
                                              const freesasa_parameters *parameters)
 
-    # not used yet, should be added to the Python interface eventually
     freesasa_result* freesasa_calc_coord(const double *xyz,
                                          const double *radii,
                                          int n,

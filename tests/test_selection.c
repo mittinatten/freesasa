@@ -6,36 +6,40 @@
 #include <check.h>
 #include "tools.h"
 
-#define N 8
+#define N 11
 
 freesasa_structure *structure;
 freesasa_result *result;
-double radii[N] = {1.0,1.2,1.4,1.6,1.8,2,2.2,2.4};
-const char *name[N] = { " CA ", " O  ", " N  ", " SD ", " CB ", " OXT", "SE  ", " P  "};
-const char *resn[N] = {  "ALA",  "ALA",  "ARG",  "MET",  "VAL",  "GLU",  "SEC",  " DC"};
-const char *resi[N] = { "   1", "   1", "   2", "   3", "   4", "   1", "   2", "   4"};
-const char chain[N] = {    'A',    'A',    'A',    'A',    'A',    'B',    'B',    'B'};
-const int symb_O[N] = {      0,      1,      0,      0,      0,      1,      0,      0};
-const int symb_C[N] = {      1,      0,      0,      0,      1,      0,      0,      0};
-const int symb_N[N] = {      0,      0,      1,      0,      0,      0,      0,      0};
-const int symb_S[N] = {      0,      0,      0,      1,      0,      0,      0,      0};
-const int symb_SE[N]= {      0,      0,      0,      0,      0,      0,      1,      0};
-const int symb_P[N] = {      0,      0,      0,      0,      0,      0,      0,      1};
-const int resn_A[N] = {      1,      1,      0,      0,      0,      0,      0,      0};
-const int resn_R[N] = {      0,      0,      1,      0,      0,      0,      0,      0};
-const int resn_M[N] = {      0,      0,      0,      1,      0,      0,      0,      0};
-const int resn_V[N] = {      0,      0,      0,      0,      1,      0,      0,      0};
-const int resn_Q[N] = {      0,      0,      0,      0,      0,      1,      0,      0};
-const int resn_U[N] = {      0,      0,      0,      0,      0,      0,      1,      0};
-const int resn_DC[N]= {      0,      0,      0,      0,      0,      0,      0,      1};
-const int name_CA[N]= {      1,      0,      0,      0,      0,      0,      0,      0};
-const int name_O[N] = {      0,      1,      0,      0,      0,      0,      0,      0};
-const int name_OXT[N]={      0,      0,      0,      0,      0,      1,      0,      0};
-const int resi_1r4[N]={      1,      1,      1,      1,      1,      1,      1,      1};
-const int resi_1[N] = {      1,      1,      0,      0,      0,      1,      0,      0};
-const int resi_2r4[N]={      0,      0,      1,      1,      1,      0,      1,      1};
-const int chain_A[N]= {      1,      1,      1,      1,      1,      0,      0,      0};
-const int chain_B[N]= {      0,      0,      0,      0,      0,      1,      1,      1};
+double radii[N] = {0.6,0.8,1.0,1.2,1.4,1.6,1.8,2,2.2,2.4,2.6};
+const char *name[N] = { " CA ", " CA ", " CA ", " O  ", " N  ", " SD ", " CB ", " OXT", "SE  ", " P  ", " O5'"};
+const char *resn[N] = {  "ALA",  "ALA",  "ALA",  "ALA",  "ARG",  "MET",  "VAL",  "GLU",  "SEC",  " DC",  " DA"};
+const char *resi[N] = { "  -2", "  -1", "   1", "   1", "   2", "   3", "   4", "   1", "   2", "   4", "   5"};
+const char chain[N] = {    'A',    'A',    'A',    'A',    'A',    'A',    'A',    'B',    'B',    'B',    'B'};
+const int symb_O[N] = {      0,      0,      0,      1,      0,      0,      0,      1,      0,      0,      1};
+const int symb_C[N] = {      1,      1,      1,      0,      0,      0,      1,      0,      0,      0,      0};
+const int symb_N[N] = {      0,      0,      0,      0,      1,      0,      0,      0,      0,      0,      0};
+const int symb_S[N] = {      0,      0,      0,      0,      0,      1,      0,      0,      0,      0,      0};
+const int symb_SE[N]= {      0,      0,      0,      0,      0,      0,      0,      0,      1,      0,      0};
+const int symb_P[N] = {      0,      0,      0,      0,      0,      0,      0,      0,      0,      1,      0};
+const int resn_A[N] = {      1,      1,      1,      1,      0,      0,      0,      0,      0,      0,      0};
+const int resn_R[N] = {      0,      0,      0,      0,      1,      0,      0,      0,      0,      0,      0};
+const int resn_M[N] = {      0,      0,      0,      0,      0,      1,      0,      0,      0,      0,      0};
+const int resn_V[N] = {      0,      0,      0,      0,      0,      0,      1,      0,      0,      0,      0};
+const int resn_Q[N] = {      0,      0,      0,      0,      0,      0,      0,      1,      0,      0,      0};
+const int resn_U[N] = {      0,      0,      0,      0,      0,      0,      0,      0,      1,      0,      0};
+const int resn_DC[N]= {      0,      0,      0,      0,      0,      0,      0,      0,      0,      1,      0};
+const int name_CA[N]= {      1,      1,      1,      0,      0,      0,      0,      0,      0,      0,      0};
+const int name_O[N] = {      0,      0,      0,      1,      0,      0,      0,      0,      0,      0,      0};
+const int name_OXT[N]={      0,      0,      0,      0,      0,      0,      0,      1,      0,      0,      0};
+const int name_O5p[N]={      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      1};
+const int resi_1r4[N]={      0,      0,      1,      1,      1,      1,      1,      1,      1,      1,      0};
+const int resi_1[N] = {      0,      0,      1,      1,      0,      0,      0,      1,      0,      0,      0};
+const int resi_2r4[N]={      0,      0,      0,      0,      1,      1,      1,      0,      1,      1,      0};
+const int resi_m2r1[N]={     1,      1,      1,      1,      0,      0,      0,      0,      0,      0,      0};
+const int resi_m2rm1[N]={    1,      1,      0,      0,      0,      0,      0,      0,      0,      0,      0};
+const int chain_A[N]= {      1,      1,      1,      1,      1,      1,      1,      0,      0,      0,      0};
+const int chain_B[N]= {      0,      0,      0,      0,      0,      0,      0,      1,      1,      1,      1};
+const int all[N]=     {      1,      1,      1,      1,      1,      1,      1,      1,      1,      1,      1};
 char selection_name[100][FREESASA_MAX_SELECTION_NAME+1];
 double value[100];
 
@@ -79,6 +83,22 @@ static double addup(const int *sel, const freesasa_result *res)
     return sum;
 }
 
+START_TEST (test_selection_name)
+{
+    freesasa_select_area("c, name ca", selection_name[0], value, structure, result);
+    ck_assert_str_eq(selection_name[0], "c");
+    freesasa_select_area("1, name ca", selection_name[0], value, structure, result);
+    ck_assert_str_eq(selection_name[0], "1");
+    freesasa_select_area("c1, name ca", selection_name[0], value, structure, result);
+    ck_assert_str_eq(selection_name[0], "c1");
+    freesasa_select_area("1c, name ca", selection_name[0], value, structure, result);
+    ck_assert_str_eq(selection_name[0], "1c");
+    freesasa_select_area("-1, name ca", selection_name[0], value, structure, result);
+    ck_assert_str_eq(selection_name[0], "-1");
+    freesasa_select_area("-1+2_abc, name ca", selection_name[0], value, structure, result);
+    ck_assert_str_eq(selection_name[0], "-1+2_abc");
+} END_TEST
+
 START_TEST (test_name)
 {
     const char *commands[] = {"c1, name ca+o",
@@ -86,17 +106,20 @@ START_TEST (test_name)
                               "c3, name oxt",
                               "c4, name ca AND name o",
                               "c5, name ca OR  name o",
-                              "c6, name ca+o+oxt"};
-    test_select(commands,6);
+                              "c6, name ca+o+oxt",
+                              "c7, name o5'",
+                              "c8, name o5'+ca"};
+    test_select(commands,7);
     ck_assert(value[0] > 5); // check that it's non-zero
     ck_assert(float_eq(value[0], addup(name_CA,result) + addup(name_O,result), 1e-10));
     ck_assert(float_eq(value[0], value[4], 1e-10));
     ck_assert(float_eq(value[1], addup(name_CA,result), 1e-10));
     ck_assert(float_eq(value[2], addup(name_OXT,result), 1e-10));
     ck_assert(float_eq(value[3], 0, 1e-10));
-    ck_assert(float_eq(value[5], 
+    ck_assert(float_eq(value[5],
                        addup(name_CA,result) + addup(name_O,result) + addup(name_OXT,result),
                        1e-10));
+    ck_assert(float_eq(value[6], addup(name_O5p, result), 1e-10));
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_int_eq(freesasa_select_area("c1, name ABCDE",selection_name[0],value,structure,result),
@@ -134,6 +157,10 @@ START_TEST (test_symbol)
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_int_eq(freesasa_select_area("c1, symbol ABC",selection_name[0],value,structure,result),
                      FREESASA_WARN);
+    ck_assert_int_eq(freesasa_select_area("c1, symbol 1",selection_name[0],value,structure,result),
+                     FREESASA_WARN);
+    ck_assert_int_eq(freesasa_select_area("c1, symbol &%",selection_name[0],value,structure,result),
+                     FREESASA_FAIL);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
@@ -164,20 +191,27 @@ END_TEST
 
 START_TEST (test_resi)
 {
-    const char *commands[] = {"c1, resi 1+2-4",
+    const char *commands[] = {"c1, resi \\-2-5",
                               "c2, resi 2-4",
                               "c3, resi 1",
-                              "c4, resi 1 AND resi 2-4",
-                              "c5, resi 1 OR  resi 2-4",
-                              "c6, resi 1-2+2-4",
-                              "c7, resi 1+2-4+3",
-                              "c8, resi 1-2+7+9+3-5+100",
-                              "c9, resi 1-4 AND NOT resi 2-4"};
+                              "c4, resi \\-2 AND resi \\-1-5",
+                              "c5, resi \\-2 OR  resi \\-1-5",
+                              "c6, resi \\-2-2+2-5",
+                              "c7, resi \\-1+\\-2-4+5",
+                              "c8, resi \\-2-2+7+9+3-5+100",
+                              "c9, resi 1-4 AND NOT resi 2-4",
+                              "c10,resi \\-2-",
+                              "c11,resi -5",
+                              "c12,resi \\-2-2+2-5",
+                              "c13,resi -5 AND NOT resi \\-2+\\-1+1+5",
+                              "c14,resi 1-2+3- AND NOT resi 5",
+                              "c15,resi 2- AND NOT resi 5",
+    };
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    test_select(commands,9);
+    test_select(commands,15);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     ck_assert(value[0] > 5);
-    ck_assert(float_eq(value[0], addup(resi_1,result) + addup(resi_2r4,result), 1e-10));
+    ck_assert(float_eq(value[0], addup(all, result), 1e-10));
     ck_assert(float_eq(value[1], addup(resi_2r4,result), 1e-10));
     ck_assert(float_eq(value[2], addup(resi_1,result), 1e-10));
     ck_assert(float_eq(value[3], 0, 1e-10));
@@ -186,12 +220,18 @@ START_TEST (test_resi)
     ck_assert(float_eq(value[6], value[0], 1e-10));
     ck_assert(float_eq(value[7], value[0], 1e-10));
     ck_assert(float_eq(value[8], value[2], 1e-10));
+    ck_assert(float_eq(value[9], value[0], 1e-10));
+    ck_assert(float_eq(value[10], value[0], 1e-10));
+    ck_assert(float_eq(value[11], value[0], 1e-10));
+    ck_assert(float_eq(value[12], value[1], 1e-10));
+    ck_assert(float_eq(value[13], value[1]+value[2], 1e-10));
+    ck_assert(float_eq(value[14], value[1], 1e-10));
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_int_eq(freesasa_select_area("c1, resi A",selection_name[0],value,structure,result),
                      FREESASA_WARN);
     ck_assert_int_eq(freesasa_select_area("c1, resi 1A",selection_name[0],value,structure,result),
-                     FREESASA_FAIL); // This is a syntax error
+                     FREESASA_WARN);
     ck_assert_int_eq(freesasa_select_area("c1, resi 1-A",selection_name[0],value,structure,result),
                      FREESASA_WARN);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
@@ -220,6 +260,8 @@ START_TEST (test_chain)
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_int_eq(freesasa_select_area("c1, chain AA",selection_name[0],value,structure,result),
                      FREESASA_WARN);
+    ck_assert_int_eq(freesasa_select_area("c1, chain A-1",selection_name[0],value,structure,result),
+                     FREESASA_WARN);
     ck_assert_int_eq(freesasa_select_area("c1, chain &",selection_name[0],value,structure,result),
                      FREESASA_FAIL);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
@@ -242,10 +284,11 @@ START_TEST (test_syntax_error)
                          "resn, ala","resi, 1","name, ca","symbol, c","chain, a",
                          // ranges (-) used where not allowed
                          "a, resn ala-arg", "a, name ca-cb","a, symbol c-o",
-                         "a, resi 1-2-3",
-                         // trailing +-
-                         "a, resn ala+", "a, resn ala+arg+", "a, resi 1-",
-                         "a, resi 1-", "a, resi 1-2+","a, resi 1+2-5+",
+                         // illegal range syntax
+                         "a, resi 1-2-3", "a, resi -1-2", "a, resi 1-2-", "a, chain A-",
+                         // trailing +
+                         "a, resn ala+", "a, resn ala+arg+",
+                         "a, resi 1-2+","a, resi 1+2-5+",
                          // boolean operators
                          "a, (resn ala) AND","a,(resn ala) OR","a,(resn ala) OR NOT",
                          "a, (resn ala) AND arg","a,(resn ala) OR arg",
@@ -275,7 +318,7 @@ START_TEST (test_complex_syntax)
     double a;
     char s[FREESASA_MAX_SELECTION_NAME+1];
     const char *stmt[] = {"a, (resn ala AND resi 1-3) OR (NOT chain A+B AND (symbol C OR symbol O))",
-                          "a, NOT symbol SE+C AND NOT resi 5-7+1+6-8+100+200+10-11"
+                          "a, NOT symbol SE+C AND NOT resi 5-7+1+\\-6-\\-2+100+200+10-11"
     };
     int n = sizeof(stmt)/sizeof(char*);
     freesasa_set_verbosity(FREESASA_V_SILENT);
@@ -351,6 +394,7 @@ Suite *selector_suite() {
 
     TCase *tc_core = tcase_create("Core");
     tcase_add_checked_fixture(tc_core,setup,teardown);
+    tcase_add_test(tc_core, test_selection_name);
     tcase_add_test(tc_core, test_name);
     tcase_add_test(tc_core, test_symbol);
     tcase_add_test(tc_core, test_resn);

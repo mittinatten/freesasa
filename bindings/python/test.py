@@ -6,6 +6,8 @@ from exceptions import Exception
 
 # this class tests using derived classes to create custom Classifiers
 class DerivedClassifier(Classifier):
+    purePython = True
+
     def classify(self,residueName,atomName):
         return 'bla'
 
@@ -55,6 +57,7 @@ class FreeSASATestCase(unittest.TestCase):
 
     def testClassifier(self):
         c = Classifier()
+        self.assertTrue(c._isCClassifier())
         self.assertTrue(c.classify("ALA"," CB ") == apolar)
         self.assertTrue(c.classify("ARG"," NH1") == polar)
         self.assertTrue(c.radius("ALA"," CB ") == 1.88)
@@ -74,6 +77,7 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(c.radius("ALA"," CB ") == 2.00)
 
         c = DerivedClassifier()
+        self.assertTrue(not c._isCClassifier())
         self.assertTrue(c.radius("ALA"," CB ") == 10)
         self.assertTrue(c.radius("ABCDEFG","HIJKLMNO") == 10)
         self.assertTrue(c.classify("ABCDEFG","HIJKLMNO") == "bla")
@@ -242,6 +246,25 @@ class FreeSASATestCase(unittest.TestCase):
         sasa_classes = classifyResults(result,structure,classifier) # classifier passed to get user-classes
         self.assertTrue(math.fabs(sasa_classes['Polar'] - 2236.9298941) < 1e-5)
         self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2542.5810983) < 1e-5)
+
+    def testCalcCoord(self):
+        # one unit sphere
+        radii = [1]
+        coord = [0,0,0]
+        parameters = Parameters()
+        parameters.setNSlices(5000)
+        parameters.setProbeRadius(0)
+        result = calcCoord(coord, radii, parameters)
+        self.assertTrue(math.fabs(result.totalArea() - 4*math.pi) < 1e-3)
+
+        # two separate unit spheres
+        radii = [1,1]
+        coord = [0,0,0, 4,4,4]
+        result = calcCoord(coord, radii, parameters)
+        self.assertTrue(math.fabs(result.totalArea() - 2*4*math.pi) < 1e-3)
+
+        self.assertRaises(AssertionError,
+                          lambda: calcCoord(radii, radii))
 
     def testSelectArea(self):
         structure = Structure("data/1ubq.pdb")
