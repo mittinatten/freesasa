@@ -203,7 +203,9 @@ atom_new_from_line(const char *line,
     freesasa_pdb_get_res_number(rnumber, line);
 
     flag = freesasa_pdb_get_symbol(symbol, line);
-    if (flag == FREESASA_FAIL) guess_symbol(symbol,aname);
+    if (flag == FREESASA_FAIL || (symbol[0] == ' ' && symbol[1] == ' ')) {
+        guess_symbol(symbol, aname);
+    }
 
     a = atom_new(rname, rnumber, aname, symbol, freesasa_pdb_get_chain_label(line));
     
@@ -364,9 +366,9 @@ static int
 guess_symbol(char *symbol,
              const char *name) 
 {
-    // if the first position is empty, assume that it is a one letter element
-    // e.g. " C  "
-    if (name[0] == ' ') { 
+    // if the first position is empty, or a number, assume that it is
+    // a one letter element e.g. " C ", or "1H "
+    if (name[0] == ' ' || (name[0] >= '1' && name[0] <= '9')) {
         symbol[0] = ' ';
         symbol[1] = name[1];
         symbol[2] = '\0';
