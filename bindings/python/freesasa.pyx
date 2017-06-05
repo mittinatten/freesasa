@@ -81,7 +81,7 @@ cdef class Parameters:
                         if not key in defaultParameters:
                               unknownKeys.append(key)
                   if len(unknownKeys) > 0:
-                        raise AssertionError('Key(s): ',unknownKeys,', unknown');
+                        raise AssertionError('Key(s): ',unknownKeys,', unknown')
 
       ## Set algorithm.
       #
@@ -458,7 +458,7 @@ cdef class Structure:
             assert(self._c_structure is not NULL)
             assert(atomIndex >= 0 and atomIndex < self.nAtoms())
             assert(radius >= 0)
-            freesasa_structure_atom_set_radius(self._c_structure, atomIndex, radius);
+            freesasa_structure_atom_set_radius(self._c_structure, atomIndex, radius)
       
       ## Get atom name
       # @param i (int) Atom index.
@@ -467,7 +467,7 @@ cdef class Structure:
       def atomName(self,i):
             assert(i >= 0 and i < self.nAtoms())
             assert(self._c_structure is not NULL)
-            return freesasa_structure_atom_name(self._c_structure,i);
+            return freesasa_structure_atom_name(self._c_structure,i)
       
       ## Get residue name of given atom.
       # @param i (int) Atom index.
@@ -485,7 +485,7 @@ cdef class Structure:
       def residueNumber(self,i):
             assert(i >= 0 and i < self.nAtoms())
             assert(self._c_structure is not NULL)
-            return freesasa_structure_atom_res_number(self._c_structure,i);
+            return freesasa_structure_atom_res_number(self._c_structure,i)
 
       ## Get chain label for given atom.
       # @param i (int) Atom index.
@@ -495,7 +495,7 @@ cdef class Structure:
             assert(i >= 0 and i < self.nAtoms())
             assert(self._c_structure is not NULL)
             cdef char label[2]
-            label[0] = freesasa_structure_atom_chain(self._c_structure,i); 
+            label[0] = freesasa_structure_atom_chain(self._c_structure,i) 
             label[1] = '\0'
             return label
 
@@ -506,7 +506,7 @@ cdef class Structure:
       def coord(self, i):
             assert(i >= 0 and i < self.nAtoms())
             assert(self._c_structure is not NULL)
-            cdef const double *coord = freesasa_structure_coord_array(self._c_structure);
+            cdef const double *coord = freesasa_structure_coord_array(self._c_structure)
             return [coord[3*i], coord[3*i+1], coord[3*i+2]]
 
       @staticmethod
@@ -521,7 +521,7 @@ cdef class Structure:
                   if not key in knownOptions:
                         unknownOptions.append(key)
             if len(unknownOptions) > 0:
-                  raise AssertionError("Option(s): ",unknownOptions," unknown.");
+                  raise AssertionError("Option(s): ",unknownOptions," unknown.")
 
             # calculate bitfield
             if 'hetatm' in param and param['hetatm']:
@@ -592,7 +592,7 @@ def structureArray(fileName,
       input = fopen(fileName,'r')
       if input is NULL:
             raise IOError("File '%s' could not be opened." % fileName)
-      cdef int n;
+      cdef int n
       cdef freesasa_structure** sArray = freesasa_structure_array(input,&n,NULL,structure_options)
       fclose(input)
       if sArray is NULL:
