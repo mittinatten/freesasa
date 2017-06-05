@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h>
 #include "freesasa.h"
 #include "freesasa_internal.h"
 #include "classifier.h"
