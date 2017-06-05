@@ -13,7 +13,7 @@
 #define FLEX_SCANNER
 #define YY_FLEX_MAJOR_VERSION 2
 #define YY_FLEX_MINOR_VERSION 6
-#define YY_FLEX_SUBMINOR_VERSION 0
+#define YY_FLEX_SUBMINOR_VERSION 1
 #if YY_FLEX_SUBMINOR_VERSION > 0
 #define FLEX_BETA
 #endif
@@ -92,25 +92,13 @@ typedef unsigned int flex_uint32_t;
 
 #endif /* ! FLEXINT_H */
 
-#ifdef __cplusplus
-
-/* The "const" storage-class-modifier is valid. */
-#define YY_USE_CONST
-
-#else	/* ! __cplusplus */
-
-/* C99 requires __STDC__ to be defined as 1. */
-#if defined (__STDC__)
-
-#define YY_USE_CONST
-
-#endif	/* defined (__STDC__) */
-#endif	/* ! __cplusplus */
-
-#ifdef YY_USE_CONST
+/* TODO: this is always defined, so inline it */
 #define yyconst const
+
+#if defined(__GNUC__) && __GNUC__ >= 3
+#define yynoreturn __attribute__((__noreturn__))
 #else
-#define yyconst
+#define yynoreturn
 #endif
 
 /* An opaque pointer. */
@@ -165,12 +153,12 @@ struct yy_buffer_state
 	/* Size of input buffer in bytes, not including room for EOB
 	 * characters.
 	 */
-	yy_size_t yy_buf_size;
+	int yy_buf_size;
 
 	/* Number of characters read into yy_ch_buf, not including EOB
 	 * characters.
 	 */
-	yy_size_t yy_n_chars;
+	int yy_n_chars;
 
 	/* Whether we "own" the buffer - i.e., we know we created it,
 	 * and can realloc() it to grow it, and should free() it to
@@ -214,7 +202,7 @@ void freesasa_yypop_buffer_state (yyscan_t yyscanner );
 
 YY_BUFFER_STATE freesasa_yy_scan_buffer (char *base,yy_size_t size ,yyscan_t yyscanner );
 YY_BUFFER_STATE freesasa_yy_scan_string (yyconst char *yy_str ,yyscan_t yyscanner );
-YY_BUFFER_STATE freesasa_yy_scan_bytes (yyconst char *bytes,yy_size_t len ,yyscan_t yyscanner );
+YY_BUFFER_STATE freesasa_yy_scan_bytes (yyconst char *bytes,int len ,yyscan_t yyscanner );
 
 void *freesasa_yyalloc (yy_size_t ,yyscan_t yyscanner );
 void *freesasa_yyrealloc (void *,yy_size_t ,yyscan_t yyscanner );
@@ -228,14 +216,6 @@ void freesasa_yyfree (void * ,yyscan_t yyscanner );
 #ifdef YY_HEADER_EXPORT_START_CONDITIONS
 #define INITIAL 0
 
-#endif
-
-#ifndef YY_NO_UNISTD_H
-/* Special case for "unistd.h", since it is non-ANSI. We include it way
- * down here because we want the user's section 1 to have been scanned first.
- * The user has a chance to override it with an option.
- */
-#include <unistd.h>
 #endif
 
 #ifndef YY_EXTRA_TYPE
@@ -267,7 +247,7 @@ FILE *freesasa_yyget_out (yyscan_t yyscanner );
 
 void freesasa_yyset_out  (FILE * _out_str ,yyscan_t yyscanner );
 
-yy_size_t freesasa_yyget_leng (yyscan_t yyscanner );
+			int freesasa_yyget_leng (yyscan_t yyscanner );
 
 char *freesasa_yyget_text (yyscan_t yyscanner );
 
@@ -351,6 +331,6 @@ extern int freesasa_yylex \
 
 #line 55 "lexer.l"
 
-#line 355 "lexer.h"
+#line 335 "lexer.h"
 #undef freesasa_yyIN_HEADER
 #endif /* freesasa_yyHEADER_H */
