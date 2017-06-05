@@ -2,7 +2,6 @@ from freesasa import *
 import unittest
 import math
 import os
-from exceptions import Exception
 
 # this class tests using derived classes to create custom Classifiers
 class DerivedClassifier(Classifier):
@@ -279,7 +278,7 @@ class FreeSASATestCase(unittest.TestCase):
         try:
             from Bio.PDB import PDBParser
         except ImportError:
-            print "Can't import Bio.PDB, tests skipped"
+            print("Can't import Bio.PDB, tests skipped")
             pass
         else:
             parser = PDBParser()
@@ -299,7 +298,7 @@ class FreeSASATestCase(unittest.TestCase):
             # coordinates (due to rounding errors) we set the
             # tolerance as high as 1e-3
             result = calc(s1, Parameters({'algorithm' : LeeRichards, 'n-slices' : 20}))
-            print result.totalArea()
+            print(result.totalArea())
             self.assertTrue(math.fabs(result.totalArea() - 4804.055641) < 1e-3)
             sasa_classes = classifyResults(result, s1)
             self.assertTrue(math.fabs(sasa_classes['Polar'] - 2504.217302) < 1e-3)
@@ -309,7 +308,7 @@ class FreeSASATestCase(unittest.TestCase):
             self.assertTrue(math.fabs(result.totalArea() - 4834.716265) < 1e-3)
             self.assertTrue(math.fabs(sasa_classes['Polar'] - 2515.821238) < 1e-3)
             self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2318.895027) < 1e-3)
-            print result.totalArea()
+            print(result.totalArea())
 
 
 if __name__ == '__main__':
