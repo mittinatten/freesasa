@@ -3,10 +3,12 @@
 #endif
 #include <libxml/tree.h>
 #include <libxml/xmlwriter.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
 #include "freesasa_internal.h"
+#include "pdb.h"
 
 static xmlNodePtr
 nodearea2xml(const freesasa_nodearea *area,
@@ -60,8 +62,12 @@ atom2xml(const freesasa_node *node,
     xmlNodePtr xml_node = NULL;
     const freesasa_nodearea *area = freesasa_node_area(node);
     const char *name = freesasa_node_name(node);
-    int n_len = strlen(name);
-    char trim_name[n_len+1], buf[20];
+    char *trim_name = malloc(strlen(name) + 1), buf[20];
+
+    if (!trim_name) {
+        mem_fail();
+        goto cleanup;
+    }
 
     sscanf(name, "%s", trim_name);
 
@@ -100,9 +106,11 @@ atom2xml(const freesasa_node *node,
         goto cleanup;
     }
 
+    free(trim_name);
     return xml_node;
 
  cleanup:
+    free(trim_name);
     xmlFreeNode(xml_node);
     return NULL;
 }
@@ -113,15 +121,19 @@ residue2xml(const freesasa_node *node,
 {
     assert(node);
     xmlNodePtr xml_node = NULL, xml_area = NULL, xml_relarea = NULL;
-    const char *name = freesasa_node_name(node), *number;
+    const char *name = freesasa_node_name(node),
+        *number = freesasa_node_residue_number(node);
     const freesasa_nodearea *abs = freesasa_node_area(node),
         *reference = freesasa_node_residue_reference(node);
+    char *trim_number = malloc(strlen(number) + 1),
+        *trim_name = malloc(strlen(name) + 1);
     freesasa_nodearea rel;
 
-    number = freesasa_node_residue_number(node);
+    if (!trim_number || ! trim_name) {
+        mem_fail();
+        goto cleanup;
+    }
 
-    int num_len = strlen(number), name_len = strlen(name);
-    char trim_number[num_len+1], trim_name[name_len+1];
     sscanf(number, "%s", trim_number);
     sscanf(name, "%s", trim_name);
 
@@ -163,9 +175,13 @@ residue2xml(const freesasa_node *node,
         }
     }
 
+    free(trim_name);
+    free(trim_number);
     return xml_node;
 
  cleanup:
+    free(trim_name);
+    free(trim_number);
     xmlFreeNode(xml_node);
     return NULL;
 }

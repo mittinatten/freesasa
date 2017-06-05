@@ -20,8 +20,12 @@ freesasa_json_atom(freesasa_node *node,
     json_object *atom = json_object_new_object();
     const freesasa_nodearea *area = freesasa_node_area(node);
     const char *name = freesasa_node_name(node);
-    int n_len = strlen(name);
-    char trim_name[n_len+1];
+    char *trim_name = malloc(strlen(name) + 1);
+
+    if (!trim_name) {
+        mem_fail();
+        return NULL;
+    }
 
     sscanf(name, "%s", trim_name);
 
@@ -34,6 +38,7 @@ freesasa_json_atom(freesasa_node *node,
     json_object_object_add(atom, "radius",
                            json_object_new_double(freesasa_node_atom_radius(node)));
 
+    free(trim_name);
     return atom;
 }
 
@@ -71,8 +76,13 @@ freesasa_json_residue(freesasa_node *node,
     
     number = freesasa_node_residue_number(node);
 
-    int n_len = strlen(number);
-    char trim_number[n_len+1];
+    char *trim_number = malloc(strlen(number)+1);
+
+    if (!trim_number) {
+        mem_fail();
+        return NULL;
+    }
+
     sscanf(number, "%s", trim_number);
 
     json_object_object_add(obj, "name", json_object_new_string(name));
@@ -86,6 +96,9 @@ freesasa_json_residue(freesasa_node *node,
     
     json_object_object_add(obj, "n-atoms",
                            json_object_new_int(freesasa_node_residue_n_atoms(node)));
+
+    free(trim_number);
+
     return obj;
 }
 
@@ -257,4 +270,3 @@ freesasa_write_json(FILE *output,
     }
     return FREESASA_SUCCESS;
 }
-

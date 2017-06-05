@@ -11,6 +11,7 @@
 #include <errno.h>
 #include "classifier.h"
 #include "freesasa_internal.h"
+#include "pdb.h"
 
 #define STD_CLASSIFIER_NAME "no-name-given"
 
@@ -117,15 +118,25 @@ find_string(char **array,
     assert(key);
     if (array == NULL || array_size == 0) return -1;
 
-    int n = strlen(key);
-    char key_trimmed[n+1];
+    int n = strlen(key), i, found = 0;
+    char *key_trimmed = malloc(n+1);
+
+    if (key_trimmed == NULL) return mem_fail();
 
     // remove trailing and leading whitespace
     sscanf(key,"%s",key_trimmed);
-    for (int i = 0; i < array_size; ++i) {
+
+    for (i = 0; i < array_size; ++i) {
         assert(array[i]);
-        if (strcmp(array[i],key_trimmed) == 0) return i;
+        if (strcmp(array[i],key_trimmed) == 0) {
+            found = 1;
+            break;
+        }
     }
+
+    free(key_trimmed);
+
+    if (found) return i;
     return FREESASA_FAIL;
 }
 
@@ -406,19 +417,26 @@ read_types_line(struct classifier_types *types,
                 const char* line) 
 {
     size_t blen = strlen(line) + 1;
-    char buf1[blen], buf2[blen];
-    int the_type;
+    int the_type, ret = FREESASA_SUCCESS;
     double r;
-    if (sscanf(line,"%s %lf %s",buf1,&r,buf2) == 3) {
+    char *buf1 = malloc(blen), *buf2 = malloc(blen);
+
+    if (!buf1 || !buf2) {
+        ret = FREESASA_FAIL;
+        mem_fail();
+    } else if (sscanf(line,"%s %lf %s", buf1, &r, buf2) == 3) {
         the_type = freesasa_classifier_add_type(types, buf1, buf2, r);
-        if (the_type == FREESASA_FAIL) return fail_msg("");
-        if (the_type == FREESASA_WARN) return FREESASA_WARN;
+        if (the_type == FREESASA_FAIL) ret = fail_msg("");
+        if (the_type == FREESASA_WARN) ret = FREESASA_WARN;
     } else {
-        return fail_msg("could not parse line '%s' in configuration, "
-                        "expecting triplet of type 'TYPE [RADIUS] CLASS' for "
-                        "example 'C_ALI 2.00 apolar'", line);
+        ret = fail_msg("could not parse line '%s' in configuration, "
+                       "expecting triplet of type 'TYPE [RADIUS] CLASS' for "
+                       "example 'C_ALI 2.00 apolar'", line);
     }
-    return FREESASA_SUCCESS;
+
+    free(buf1);
+    free(buf2);
+    return ret;
 }
 
 /**
@@ -438,9 +456,8 @@ read_types(struct classifier_types *types,
     
     // read command (and discard)
     if (next_line(&line, input) > 0) {
-        size_t blen=strlen(line) + 1;
-        char buf[blen];
-        if (sscanf(line, "%s", buf) == 0) return FREESASA_FAIL;
+        char buf[7]; // we should not get here if the line isn't "types:" (plus whitespace)
+        if (sscanf(line, "%6s", buf) == 0) return FREESASA_FAIL;
         assert(strcmp(buf, "types:") == 0);
     } else {
         return FREESASA_FAIL;
@@ -895,8 +912,7 @@ freesasa_classify_n_residue_types()
 int
 freesasa_classify_residue(const char *res_name)
 {
-    int len = strlen(res_name);
-    char cpy[len+1];
+    char cpy[PDB_ATOM_RES_NAME_STRL+1];
     sscanf(res_name, "%s", cpy);
     for (int i = ALA; i < freesasa_classify_n_residue_types(); ++i) {
         if (strcmp(cpy,residue_names[i]) == 0) return i;
@@ -914,8 +930,7 @@ freesasa_classify_residue_name(int residue_type)
 int
 freesasa_atom_is_backbone(const char *atom_name)
 {
-    int n = strlen(atom_name);
-    char name[n+1];
+    char name[PDB_ATOM_NAME_STRL+1];
     name[0] = '\0';
     sscanf(atom_name, "%s", name); //trim whitespace
     const char *bb[] = {"CA", "N", "O", "C", "OXT",

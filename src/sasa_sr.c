@@ -3,9 +3,14 @@
 #endif
 #include <assert.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+
+#ifdef _MSC_VER
+# define _USE_MATH_DEFINES
+#endif
 #include <math.h>
+
 #if USE_THREADS
 # include <pthread.h>
 #endif
@@ -237,7 +242,7 @@ sr_atom_area(int i,
     const int n_points = sr->n_points;
     /* this array keeps track of which testpoints belonging to
        a certain atom do not overlap with any other atoms */
-    int spcount[n_points];
+    int *spcount = malloc(sizeof(int) * n_points);
     const int nni = sr->nb->nn[i];
     const int * restrict nbi = sr->nb->nb[i];
     const double ri = sr->r[i];
@@ -289,5 +294,6 @@ sr_atom_area(int i,
         if (spcount[k]) ++n_surface;
     }
     freesasa_coord_free(tp_coord_ri);
+    free(spcount);
     return (4.0*M_PI*ri*ri*n_surface)/n_points;
 }

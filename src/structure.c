@@ -191,10 +191,10 @@ atom_new_from_line(const char *line,
                    char *alt_label) 
 {
     assert(line);
-    const int buflen = strlen(line);
+    char aname[PDB_ATOM_NAME_STRL+1], rname[PDB_ATOM_RES_NAME_STRL+1],
+        rnumber[PDB_ATOM_RES_NUMBER_STRL+1], symbol[PDB_ATOM_SYMBOL_STRL+1];
     int flag;
     struct atom *a;
-    char aname[buflen], rname[buflen], rnumber[buflen], symbol[buflen];
 
     if (alt_label) *alt_label = freesasa_pdb_get_alt_coord_label(line);
 
