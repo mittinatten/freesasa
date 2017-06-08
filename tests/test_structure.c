@@ -217,21 +217,51 @@ START_TEST (test_hetatm)
 }
 END_TEST
 
-START_TEST (test_structure_array)
+START_TEST (test_structure_array_err)
+{
+    FILE *pdb;
+    int n = 0;
+
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    pdb = fopen(DATADIR "err.config", "r");
+    ck_assert_ptr_eq(freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_MODELS), NULL);
+    rewind(pdb);
+    ck_assert_ptr_eq(freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_CHAINS), NULL);
+    fclose(pdb);
+    
+    pdb = fopen(DATADIR "1ubq.pdb", "r");
+    ck_assert_ptr_eq(freesasa_structure_array(pdb, &n, NULL, 0), NULL);
+    fclose(pdb);
+
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+}
+END_TEST
+
+START_TEST (test_structure_array_one_chain) {
+    FILE *pdb;
+    int n = 0;
+    freesasa_structure **ss;
+
+    pdb = fopen(DATADIR "1ubq.pdb","r");
+    ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_CHAINS);
+    
+    ck_assert(ss != NULL);
+    ck_assert(n == 1);
+    ck_assert(freesasa_structure_n(ss[0]) == 602);
+    freesasa_structure_free(ss[0]);
+    free(ss);
+    fclose(pdb);
+}
+END_TEST
+
+START_TEST (test_structure_array_nmr)
 {
     FILE *pdb;
     int n = 0;
     freesasa_structure **ss;
-    
+
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    pdb = fopen(DATADIR "err.config", "r");
-    ck_assert_ptr_eq(freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_MODELS), NULL);
-    fclose(pdb);
-
     pdb = fopen(DATADIR "1d3z.pdb", "r");
-    ck_assert_ptr_eq(freesasa_structure_array(pdb, &n, NULL, 0), NULL);
-
-    rewind(pdb);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 
     ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_MODELS);
@@ -245,17 +275,8 @@ START_TEST (test_structure_array)
         freesasa_structure_free(ss[i]);
     }
     free(ss);
+    rewind(pdb);
 
-    rewind(pdb);
-    ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_CHAINS);
-    ck_assert(ss != NULL);
-    ck_assert(n == 1);
-    ck_assert(ss[0] != NULL);
-    ck_assert(freesasa_structure_n(ss[0]) == 602);
-    freesasa_structure_free(ss[0]);
-    free(ss);
-    
-    rewind(pdb);
     freesasa_set_verbosity(FREESASA_V_SILENT); // Silence Hydrogen warnings
     ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_CHAINS | FREESASA_SEPARATE_MODELS |
                                   FREESASA_INCLUDE_HYDROGEN);
@@ -267,8 +288,30 @@ START_TEST (test_structure_array)
         freesasa_structure_free(ss[i]);
     }
     free(ss);
-
     fclose(pdb);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
+}
+END_TEST
+
+START_TEST (test_structure_array_chains_models)
+{
+    FILE *pdb;
+    int n = 0;
+    freesasa_structure **ss;
+
+    pdb = fopen(DATADIR "1d3z.pdb", "r");
+
+    // one chain
+    ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_CHAINS);
+    ck_assert(ss != NULL);
+    ck_assert(n == 1);
+    ck_assert(ss[0] != NULL);
+    ck_assert(freesasa_structure_n(ss[0]) == 602);
+    freesasa_structure_free(ss[0]);
+    free(ss);
+    fclose(pdb);
+
+    // many chains
     pdb = fopen(DATADIR "2jo4.pdb", "r");
     ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_MODELS |
                                   FREESASA_INCLUDE_HETATM | FREESASA_INCLUDE_HYDROGEN);
@@ -280,9 +323,9 @@ START_TEST (test_structure_array)
         freesasa_structure_free(ss[i]);
     }
     free(ss);
+    rewind(pdb);
 
-    fclose(pdb);
-    pdb = fopen(DATADIR "2jo4.pdb", "r");
+    // separate both chains and models
     ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_MODELS | FREESASA_SEPARATE_CHAINS |
                                   FREESASA_INCLUDE_HETATM | FREESASA_INCLUDE_HYDROGEN);
     ck_assert(ss != NULL);
@@ -294,6 +337,7 @@ START_TEST (test_structure_array)
     }
     free(ss);
 
+    // many chains, many models, join models
     rewind(pdb);
     freesasa_structure *s = freesasa_structure_from_pdb(pdb, NULL, FREESASA_INCLUDE_HETATM | 
                                                         FREESASA_INCLUDE_HYDROGEN |
@@ -303,22 +347,6 @@ START_TEST (test_structure_array)
     freesasa_structure_free(s);
     
     fclose(pdb);
-    pdb = fopen(DATADIR "1ubq.pdb","r");
-    ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_CHAINS);
-    
-    ck_assert(ss != NULL);
-    ck_assert(n == 1);
-    ck_assert(freesasa_structure_n(ss[0]) == 602);
-    freesasa_structure_free(ss[0]);
-    free(ss);
-    fclose(pdb);
-    freesasa_set_verbosity(FREESASA_V_NORMAL);
-
-    pdb = fopen(DATADIR "err.config","r");
-    freesasa_set_verbosity(FREESASA_V_SILENT);
-    ss = freesasa_structure_array(pdb, &n, NULL,  FREESASA_SEPARATE_CHAINS);
-    freesasa_set_verbosity(FREESASA_V_NORMAL);
-    ck_assert(ss == NULL);
 }
 END_TEST
 
@@ -444,16 +472,22 @@ Suite* structure_suite() {
     tcase_add_test(tc_pdb,test_pdb);
     tcase_add_test(tc_pdb,test_hydrogen);
     tcase_add_test(tc_pdb,test_hetatm);
-    tcase_add_test(tc_pdb,test_structure_array);
     tcase_add_test(tc_pdb,test_get_chains);
     tcase_add_test(tc_pdb,test_occupancy);
 
+    TCase *tc_array = tcase_create("Array");
+    tcase_add_test(tc_pdb,test_structure_array_err);
+    tcase_add_test(tc_pdb,test_structure_array_one_chain);
+    tcase_add_test(tc_pdb,test_structure_array_nmr);
+    tcase_add_test(tc_pdb,test_structure_array_chains_models);
+    
     TCase *tc_1ubq = tcase_create("1UBQ");
     tcase_add_checked_fixture(tc_1ubq,setup_1ubq,teardown_1ubq);
     tcase_add_test(tc_1ubq,test_structure_1ubq);
 
     suite_add_tcase(s, tc_core);
     suite_add_tcase(s, tc_pdb);
+    suite_add_tcase(s, tc_array);
     suite_add_tcase(s, tc_1ubq);
 
     return s;
