@@ -579,7 +579,7 @@ from_pdb_impl(FILE *pdb_file,
               int options)
 {
     assert(pdb_file);
-    size_t len = PDB_LINE_STRL;
+    size_t len = 0;
     char *line = NULL;
     char alt, the_alt = ' ';
     double v[3], r;

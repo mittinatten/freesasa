@@ -15,7 +15,7 @@
 # See documentation of the classes and functions for how to customize behavior.
 #
 
-# cython: c_string_type=str, c_string_encoding=utf8
+# cython: c_string_type=str, c_string_encoding=ascii
 
 from libc.stdio cimport FILE, fopen, fclose
 from libc.stdlib cimport free, realloc, malloc
