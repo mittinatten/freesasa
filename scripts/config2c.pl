@@ -89,7 +89,7 @@ foreach my $p (@pdb) {
     my (@pol_atoms, @apol_atoms);
     foreach (@rsa_atoms) {
         next if (! /^ATOM/);
-        next if (! (substr($_,25,1) eq '2'));
+        next if (! (substr($_,25,1) eq '3'));
         next if (/H\s*$/); #skip hydrogen
         my $atom = substr($_,12,4);
         next if (substr($_,1,1) eq "H");
@@ -105,23 +105,23 @@ foreach my $p (@pdb) {
         push(@apol_atoms, $atom) if ($c =~ /FREESASA_ATOM_APOLAR/);
         push(@pol_atoms,  $atom) if ($c =~ /FREESASA_ATOM_POLAR/);
     }
-    my $select_bb = '--select="bb, resi 2 and name c+n+o+ca"';
-    my $select_sc = '--select="sc, resi 2 and not name c+n+o+ca"';
+    my $select_total = '--select="res3, resi 3"';
+    my $select_bb = '--select="bb, resi 3 and name c+n+o+ca"';
+    my $select_sc = '--select="sc, resi 3 and not name c+n+o+ca"';
     my ($select_apol, $select_pol);
     if (scalar @apol_atoms > 0) {
-        $select_apol = '--select="apol, resi 2 and name ' . join('+',@apol_atoms) . '"';
+        $select_apol = '--select="apol, resi 3 and name ' . join('+',@apol_atoms) . '"';
     }
     if (scalar @pol_atoms > 0) {
-        $select_pol  = '--select="pol, resi 2 and name '  . join('+',@pol_atoms) . '"';
+        $select_pol  = '--select="pol, resi 3 and name '  . join('+',@pol_atoms) . '"';
     }
-    my @data = `../src/freesasa $p -c $config_file -n 1000 -R $select_bb $select_sc $select_apol $select_pol`;
+    my @data = `../src/freesasa $p -c $config_file -n 1000 $select_total $select_bb $select_sc $select_apol $select_pol`;
     my %subarea;
     $subarea{pol} = $subarea{apol} = 0;
+    $subarea{name} = $name;
     foreach (@data) {
-        if (/^SEQ A\ +2 (\w\w\w) :\ + (\d+.\d+)/) {
-            ($name == $1) or die "inconsistency";
-            $subarea{name} = $1;
-            $subarea{total} = $2;
+        if (/^res3 :\ +(\d+.\d+)/) {
+            $subarea{total} = $1;
         }
         if (/^bb :\ +(\d+.\d+)/) {
             $subarea{bb} = $1;
