@@ -161,7 +161,7 @@ assert_pass "$cli -L -n 10 < $smallpdb > $dump"
 assert_fail "$cli -L -n 0 < $smallpdb > $dump"
 echo
 echo "== Testing option --chain-groups =="
-assert_pass "$cli -g A -S -n 10 $smallpdb > $dump"
+assert_pass "$cli -g S -S -n 10 $smallpdb > $dump"
 assert_fail "$cli -g B -S -n 10 $smallpdb > $dump"
 assert_pass "$cli -g AB -S -n 10 $datadir/2jo4.pdb > $dump"
 assert_fail "$cli -g E -S -n 10 $datadir/2jo4.pdb > $dump"
@@ -227,7 +227,7 @@ for r in protor naccess
 do
     for p in $(ls $datadir/rsa/*.pdb)
     do
-        rel=$($cli -L -n 1000 $p --format=rsa --radii=$r | grep "A   2" | sed "s/[[:space:]]\{1,\}/ /g" | cut -f 6,8,10,12,14 -d ' ')
+        rel=$($cli -L -n 1000 $p --format=rsa --radii=$r | grep "S   2" | sed "s/[[:space:]]\{1,\}/ /g" | cut -f 6,8,10,12,14 -d ' ')
         if [[ $p == *"GLY"* ]]
         then
             assert_pass "test '$rel' = '100.0 N/A 100.0 100.0 100.0' && test $p"
@@ -239,7 +239,7 @@ done
 assert_fail "$cli --format=rsa -C $smallpdb"
 assert_fail "$cli --format=rsa -M $smallpdb"
 assert_pass "$cli -L -n 1000 --format=rsa -O -w $datadir/rsa/ALA.pdb > tmp/no_rel"
-rel=$(grep "A   2" tmp/no_rel | sed "s/[[:space:]]\{1,\}/ /g" | cut -f 6,8,10,12,14 -d ' ')
+rel=$(grep "S   2" tmp/no_rel | sed "s/[[:space:]]\{1,\}/ /g" | cut -f 6,8,10,12,14 -d ' ')
 assert_pass "test '$rel' = 'N/A N/A N/A N/A N/A'"
 # deprecated
 assert_pass "$cli --rsa $datadir/1ubq.pdb > $dump"
