@@ -105,6 +105,7 @@ foreach my $p (@pdb) {
         push(@apol_atoms, $atom) if ($c =~ /FREESASA_ATOM_APOLAR/);
         push(@pol_atoms,  $atom) if ($c =~ /FREESASA_ATOM_POLAR/);
     }
+    my $select_total = '--select="res2, resi 2"';
     my $select_bb = '--select="bb, resi 2 and name c+n+o+ca"';
     my $select_sc = '--select="sc, resi 2 and not name c+n+o+ca"';
     my ($select_apol, $select_pol);
@@ -114,14 +115,13 @@ foreach my $p (@pdb) {
     if (scalar @pol_atoms > 0) {
         $select_pol  = '--select="pol, resi 2 and name '  . join('+',@pol_atoms) . '"';
     }
-    my @data = `../src/freesasa $p -c $config_file -n 1000 -R $select_bb $select_sc $select_apol $select_pol`;
+    my @data = `../src/freesasa $p -c $config_file -n 1000 $select_total $select_bb $select_sc $select_apol $select_pol`;
     my %subarea;
     $subarea{pol} = $subarea{apol} = 0;
+    $subarea{name} = $name;
     foreach (@data) {
-        if (/^SEQ A\ +2 (\w\w\w) :\ + (\d+.\d+)/) {
-            ($name == $1) or die "inconsistency";
-            $subarea{name} = $1;
-            $subarea{total} = $2;
+        if (/^res2 :\ +(\d+.\d+)/) {
+            $subarea{total} = $1;
         }
         if (/^bb :\ +(\d+.\d+)/) {
             $subarea{bb} = $1;
