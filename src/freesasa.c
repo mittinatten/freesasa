@@ -210,12 +210,18 @@ freesasa_tree_export(FILE *file,
         count_err(freesasa_write_rsa(file, root, options), &n_err);
     }
     if (options & FREESASA_JSON) {
-        if (USE_JSON) count_err(freesasa_write_json(file, root, options), &n_err);
-        else return fail_msg("library was built without support for JSON output");
+#if USE_JSON      
+        count_err(freesasa_write_json(file, root, options), &n_err);
+#else        
+        return fail_msg("library was built without support for JSON output");
+#endif        
     }
     if (options & FREESASA_XML) {
-        if (USE_XML) count_err(freesasa_write_xml(file, root, options), &n_err);
-        else return fail_msg("library was built without support for XML output");
+#if USE_XML
+          count_err(freesasa_write_xml(file, root, options), &n_err);
+#else          
+        return fail_msg("library was built without support for XML output");
+#endif        
     }
     if (n_err > 0) {
         return fail_msg("there were errors when writing output");
