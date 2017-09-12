@@ -20,7 +20,7 @@ extern const freesasa_nodearea freesasa_nodearea_null;
 //! Shortcut for error message with position information, should be used by default
 #define fail_msg(...) freesasa_fail_wloc(__FILE__,__LINE__, __VA_ARGS__)
 
-/*#ifdef _MSC_VER
+#ifdef _MSC_VER
 # define inline __inline
 #endif
 
@@ -33,7 +33,7 @@ extern const freesasa_nodearea freesasa_nodearea_null;
 #endif
 #if defined(_MSC_VER) && _MSC_VER < 1400 
 # define restrict
-#endif*/
+#endif
 
 /**
     Calculate SASA using S&R algorithm.
