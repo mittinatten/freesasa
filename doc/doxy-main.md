@@ -299,10 +299,9 @@ Calculate the SASA of each residue in the sequence:
 The CLI can also produce output similar to the RSA format from
 NACCESS. This format includes both absolute SASA values (ABS) and
 relative ones (REL) compared to a precalculated reference max
-value. The only significant difference between FreeSASA's RSA output
-format and that of NACCESS (except differences in areas due to
-different atomic radii), is that FreeSASA will print the value "N/A"
-where NACCESS prints "-99.9".
+value. The main difference between FreeSASA's RSA output format and
+that of NACCESS, is that FreeSASA will print the value "N/A" where
+NACCESS prints "-99.9", when the a reference value for REL is missing.
 
     $ freesasa --format=rsa 3wbm.pdb
     REM  FreeSASA 2.0
@@ -342,18 +341,27 @@ earliest be dealt with in the next major release.
 
 The reference values for the NACCESS configuration in FreeSASA are not
 exactly the same as those that ship with NACCESS, but have been
-calculated from scratch using the tripeptides that ship with
-FreeSASA. Calling
+calculated from using the same Ala-X-Ala tripeptides (kindly donated by
+the creators of NACCESS). By default NACCESS defines amino acid CA
+atoms as side-chain, whereas FreeSASA defines them as main-chain. The
+flag `-b` defines CA as main-chain in NACCESS.
 
-    $ freesasa 3wbm.pdb --format=rsa --radii=naccess
+Calling
+
+    $ freesasa 3wbm.pdb -n 20--format=rsa --radii=naccess
 
 will give an RSA file where the ABS columns should be identical to
-NACCESS (if the latter is run with the flag `-b`). REL values will
-differ slightly, due to the differences in reference values. NACCESS
-also gives different results for the nucleic acid main-chain and
-side-chain (possibly due to a bug in NACCESS?). FreeSASA defines the
+NACCESS with flag `-b`. All REL values will differ slightly because of
+round-off errors in the references. The difference will be large
+for side-/main-chain REL values, since the FreeSASA references were
+calculated with CA as main-chain. NACCESS also gives different results
+for the nucleic acid main-chain and side-chain. FreeSASA defines the
 (deoxy)ribose and phosphate groups as main-chain and the base as
 side-chain.
+
+Future versions might allow specifying what atoms are main-chain
+through the configuration file, and letting the user set their own
+reference values.
 
 @section CLI-select Selecting groups of atoms
 

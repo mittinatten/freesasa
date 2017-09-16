@@ -1,14 +1,14 @@
 CLEANFILES =
 ALLFILES =
 
-EXTRA_DIST = doxy_main.md license.md README.md \
+EXTRA_DIST = doxy-main.md license.md README.md \
 	doxygen-footer.html doxygen-header.html \
 	fig
 
 if HAVE_DOXYGEN
 
 doxyfile.stamp: $(top_srcdir)/src/freesasa.h $(top_srcdir)/src/example.c \
-	doxy_main.md $(top_srcdir)/README.md Doxyfile \
+	doxy-main.md $(top_srcdir)/README.md Doxyfile \
 	doxygen-footer.html doxygen-header.html $(top_srcdir)/bindings/python/freesasa.pyx
 	@if [ ! -d "html/" ]; then mkdir html; fi
 	@if [ ! -d "html/fig/" ]; then mkdir html/fig; fi
