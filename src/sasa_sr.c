@@ -13,6 +13,7 @@
 
 #if USE_THREADS
 # include <pthread.h>
+# define MAX_SR_THREADS 16
 #endif
 
 #include "freesasa_internal.h"
@@ -155,9 +156,13 @@ freesasa_shrake_rupley(double *sasa,
         return_value = FREESASA_SUCCESS;
     double probe_radius = param->probe_radius;
     sr_data sr;
-    
-    if (resolution <= 0)
+
+    if (n_threads > MAX_SR_THREADS) {
+        return fail_msg("S&R does not support more than %d threads", MAX_SR_THREADS);
+    }    
+    if (resolution <= 0) {
         return fail_msg("%f test points invalid resolution in S&R, must be > 0\n", resolution);
+    }
     if (n_atoms == 0) return freesasa_warn("in %s(): empty coordinates", __func__);
     if (n_threads > n_atoms) {
         n_threads = n_atoms;
@@ -195,8 +200,8 @@ static int
 sr_do_threads(int n_threads,
               sr_data *sr)
 {
-    pthread_t thread[n_threads];
-    sr_data srt[n_threads];
+    pthread_t thread[MAX_SR_THREADS];
+    sr_data srt[MAX_SR_THREADS];
     int thread_block_size = sr->n_atoms/n_threads;
     int res, return_value = FREESASA_SUCCESS;
     int threads_created = 0;
