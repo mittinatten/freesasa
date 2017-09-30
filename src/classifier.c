@@ -15,6 +15,8 @@
 
 #define STD_CLASSIFIER_NAME "no-name-given"
 
+#define MAX_LINE_LEN 256
+
 /**
     In this file the concept class refers to polar/apolar and type to
     aliphatic/aromatic/etc. See the example configurations in share/.
@@ -153,7 +155,7 @@ strip_line(char **line,
     char linebuf[n+1];
     char *comment, *first, *last, *tmp;
 
-   strncpy(linebuf, input, strlen(input)+1);
+    strncpy(linebuf, input, strlen(input)+1);
     comment = strchr(linebuf, '#');
     if (comment) *comment = '\0'; // skip comments
 
@@ -189,16 +191,19 @@ strip_line(char **line,
 static int
 get_next_string(FILE *input, char **str)
 {
-    char *line = NULL;
-    size_t len;
+    char line[MAX_LINE_LEN];
     long pos = ftell(input);
 
-    if (getline(&line, &len, input) < 0)
+    errno = 0;
+    if (fgets(line, MAX_LINE_LEN, input) == NULL) {
+        if (errno) {
+            return freesasa_fail(strerror(errno));
+        }
         return 0;
+    }
 
-    *str = malloc(len + 1);
+    *str = malloc(strlen(line) + 1);
     if (*str == NULL) {
-        free(line);
         return mem_fail();
     }
     *str[0] = '\0';
@@ -218,18 +223,15 @@ static int
 next_line(char **line,
           FILE *fp) 
 {
-    char *linebuf = NULL;
-    size_t len = 0;
+    char linebuf[MAX_LINE_LEN];
     int ret;
 
-    ret = getline(&linebuf, &len, fp);
+    errno = 0;
+    if (fgets(linebuf, MAX_LINE_LEN, fp) == NULL) {
+        return fail_msg(strerror(errno));
+    }
     
-    if (ret >= 0) ret = strip_line(line, linebuf);
-    else ret = FREESASA_FAIL;
-
-    free(linebuf);
-    
-    return ret;
+    return strip_line(line, linebuf);
 }
 
 /**
@@ -304,20 +306,18 @@ check_file(FILE *input,
 {
     assert(input); assert(types); assert(atoms);
     long last_tell;
-    size_t len = 0;
-    char *line = NULL;
+    char line[MAX_LINE_LEN];
 
     struct file_range *last_range = NULL;
 
     last_tell = ftell(input);
     types->begin = atoms->begin = name->begin = -1;
-    while (getline(&line, &len, input) >= 0) {
+    while (fgets(line, MAX_LINE_LEN, input)) {
         try_register_stringloc(line, "types:", last_tell, types, &last_range);
         try_register_stringloc(line, "atoms:", last_tell, atoms, &last_range);
         try_register_stringloc(line, "name:", last_tell, name, &last_range);
         last_tell = ftell(input);
     }
-    free(line);
     if (last_range != NULL) {
         last_range->end = last_tell;
     }

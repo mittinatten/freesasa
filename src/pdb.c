@@ -49,13 +49,12 @@ freesasa_pdb_get_models(FILE* pdb,
                         struct file_range** ranges)
 {
     assert(pdb != NULL);
-    size_t len = PDB_LINE_STRL;
-    char *line = NULL;
+    char line[PDB_MAX_LINE_STRL];
     int n = 0, n_end = 0, error = 0;
     long last_pos = ftell(pdb);
     struct file_range *it = NULL, *itb;
 
-    while (getline(&line, &len, pdb) != -1) {
+    while (fgets(line, PDB_MAX_LINE_STRL, pdb) != NULL) {
         if (strncmp("MODEL",line,5)==0) {
             ++n;
             itb = it;
@@ -77,7 +76,6 @@ freesasa_pdb_get_models(FILE* pdb,
         }
         last_pos = ftell(pdb);
     }
-    free(line);
     if (n == 0) { // when there are no models, the whole file is the model
         free(it);
         it = NULL;
@@ -102,8 +100,7 @@ freesasa_pdb_get_chains(FILE *pdb,
     // it is assumed that 'model' is valid for 'pdb'
 
     int n_chains = 0;
-    size_t len = PDB_LINE_STRL;
-    char *line = NULL;
+    char line[PDB_MAX_LINE_STRL];
     struct file_range *chains = NULL, *chb;
     char last_chain = '\0';
     long last_pos = model.begin;
@@ -112,7 +109,7 @@ freesasa_pdb_get_chains(FILE *pdb,
     // for each model, find file ranges for each chain, store them
     // in the dynamically growing array chains
     fseek(pdb,model.begin,SEEK_SET);
-    while (getline(&line, &len, pdb) != -1 &&
+    while (fgets(line, PDB_MAX_LINE_STRL, pdb) != NULL &&
            ftell(pdb) < model.end ) {
         if (strncmp("ATOM",line,4)==0 || ( (options & FREESASA_INCLUDE_HETATM) &&
                                            (strncmp("HETATM",line,6) == 0) ) ) {
@@ -124,7 +121,6 @@ freesasa_pdb_get_chains(FILE *pdb,
                 chains = realloc(chains,sizeof(struct file_range)*n_chains);
                 if (!chains) {
                     free(chb);
-                    free(line);
                     return mem_fail();
                 }
                 chains[n_chains-1].begin = last_pos;
@@ -133,7 +129,6 @@ freesasa_pdb_get_chains(FILE *pdb,
         }
         last_pos = ftell(pdb);
     }
-    free(line);
 
     if (n_chains > 0) {
         chains[n_chains-1].end = last_pos;
