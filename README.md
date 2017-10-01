@@ -56,11 +56,15 @@ from the latest
 [GitHub-release](https://github.com/mittinatten/freesasa/releases).
 
 The above commands build and install the command line tool `freesasa`
-(built in `src/`), the command
+(built in `src/`), the commands
 
     freesasa -h
 
-gives an overview of options. To run a calculation from PDB-file input
+and, if installed,
+
+    man freesasa
+
+give an overview of options. To run a calculation from PDB-file input
 using the defaults, simply type
 
     freesasa <pdb-file>

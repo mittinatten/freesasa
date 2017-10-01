@@ -45,7 +45,7 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memset mkdir sqrt strchr strdup strerror strncasecmp getopt_long getline])
 
-AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile tests/Makefile share/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile doc/man/freesasa.1 tests/Makefile share/Makefile])
 AC_CONFIG_FILES([bindings/Makefile bindings/python/setup.py])
 AC_CONFIG_FILES([tests/test-cli], [chmod +x tests/test-cli])
 AC_CONFIG_FILES([bindings/check-python], [chmod +x bindings/check-python])

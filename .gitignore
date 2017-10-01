@@ -45,4 +45,4 @@ bindings/check-python
 doc/html/
 doc/Doxyfile
 doc/doxyfile.stamp
-doc/doxygen
+doc/man/freesasa.1
