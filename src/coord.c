@@ -43,13 +43,29 @@ coord_clear(coord_t *c)
 }
 
 coord_t *
-freesasa_coord_copy(const coord_t *src)
+freesasa_coord_clone(const coord_t *src)
 {
     assert(src);
     coord_t *c = freesasa_coord_new();
-    if (c != NULL) freesasa_coord_set_all(c,src->xyz,src->n);
-    else mem_fail();
+
+    if (c == NULL) {
+        mem_fail();
+        return NULL;
+    }
+
+    if (freesasa_coord_set_all(c, src->xyz, src->n) != FREESASA_SUCCESS) {
+        fail_msg("");
+        return NULL;
+    }
+
     return c;
+}
+
+int
+freesasa_coord_copy(coord_t *target, const coord_t *src) {
+    if (src->n != target->n) return FREESASA_FAIL;
+    memcpy(target->xyz, src->xyz, sizeof(double) * src->n * 3);
+    return FREESASA_SUCCESS;
 }
 
 coord_t *
@@ -152,7 +168,11 @@ freesasa_coord_set_all(coord_t *c,
 {
     assert(c); assert(xyz);
     coord_clear(c);
-    return freesasa_coord_append(c,xyz,n);
+    int result = freesasa_coord_append(c,xyz,n);
+    if (result != FREESASA_SUCCESS) {
+        fail_msg("");
+    }
+    return result;
 }
 
 int

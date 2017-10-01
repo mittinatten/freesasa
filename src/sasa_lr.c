@@ -31,7 +31,7 @@ typedef struct {
     nb_list *adj;
     int n_slices_per_atom;
     double *sasa; // results
-    double **arc, **z_nb, **R_nb;
+    double *arc[MAX_LR_THREADS], *z_nb[MAX_LR_THREADS], *R_nb[MAX_LR_THREADS];
     int n_threads;
 } lr_data;
 
@@ -66,13 +66,10 @@ release_lr(lr_data *lr)
     lr->adj = NULL;
 
     for (int i = 0; i < lr->n_threads; ++i) {
-        if (lr->arc) free(lr->arc[i]);
-        if (lr->z_nb) free(lr->z_nb[i]);
-        if (lr->R_nb) free(lr->R_nb[i]);
+        free(lr->arc[i]);
+        free(lr->z_nb[i]);
+        free(lr->R_nb[i]);
     }
-    free(lr->arc);
-    free(lr->z_nb);
-    free(lr->R_nb);
 }
 
 // Allocate some helper arrays in area calculation that need to be pre-allocated
@@ -84,42 +81,6 @@ alloc_lr_calc_arrays(lr_data *lr, int n_threads) {
     for (int i = 0; i < n_atoms; ++i) {
         const int nni = lr->adj->nn[i];
         max_nni = max_nni < nni ? nni : max_nni;
-    }
-
-    lr->arc = malloc(sizeof(double*) * n_threads);
-
-    if (lr->arc) {
-        for (int i = 0; i < n_threads; ++i) {
-            lr->arc[i] = NULL;
-        }
-    } else {
-        return mem_fail();
-    }
-
-    lr->z_nb = malloc(sizeof(double*) * n_threads);
-
-    if (lr->z_nb) {
-        for (int i = 0; i < n_threads; ++i) {
-            lr->z_nb[i] = NULL;
-        }
-    } else {
-        return mem_fail();
-    }
-
-    lr->R_nb = malloc(sizeof(double*) * n_threads);
-
-    if (lr->R_nb) {
-        for (int i = 0; i < n_threads; ++i) {
-            lr->R_nb[i] = NULL;
-        }
-    } else {
-        return mem_fail();
-    }
-
-    for (int i = 0; i < n_threads; ++i) {
-        lr->arc[i] = NULL;
-        lr->z_nb[i] = NULL;
-        lr->R_nb[i] = NULL;
     }
 
     for (int i = 0; i < n_threads; ++i) {
@@ -152,7 +113,12 @@ init_lr(lr_data *lr,
     lr->n_slices_per_atom = n_slices_per_atom;
     lr->sasa = sasa;
     lr->n_threads = n_threads;
-    lr->arc = lr->z_nb = lr->R_nb = NULL;
+
+    for (int i = 0; i < n_threads; ++i) {
+        lr->arc[i] = NULL;
+        lr->z_nb[i] = NULL;
+        lr->R_nb[i] = NULL;
+    }
 
     lr->radii = malloc(sizeof(double)*n_atoms);
     if (lr->radii == NULL) {
@@ -170,11 +136,12 @@ init_lr(lr_data *lr,
 
     if (lr->adj == NULL) {
         release_lr(lr);
-        return FREESASA_FAIL;
+        return fail_msg("");
     }
+
     if (alloc_lr_calc_arrays(lr, n_threads)) {
         release_lr(lr);
-        return FREESASA_FAIL;
+        return fail_msg("");
     }
 
     return FREESASA_SUCCESS;

@@ -486,7 +486,7 @@ START_TEST (test_memerr)
     p.shrake_rupley_n_points = 10; // so the loop below will be fast
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    for (int i = 1; i < 40; ++i) {
+    for (int i = 1; i < 45; ++i) {
         p.alg = FREESASA_SHRAKE_RUPLEY;
         set_fail_after(i);
         ptr = freesasa_calc(&coord, r, &p);
