@@ -121,16 +121,16 @@ find_string(char **array,
     if (array == NULL || array_size == 0) return -1;
 
     int n = strlen(key), i, found = 0;
-    char *key_trimmed = malloc(n+1);
+    char *key_trimmed = malloc(n + 1);
 
     if (key_trimmed == NULL) return mem_fail();
 
     // remove trailing and leading whitespace
-    sscanf(key,"%s",key_trimmed);
+    sscanf(key, "%s", key_trimmed);
 
     for (i = 0; i < array_size; ++i) {
         assert(array[i]);
-        if (strcmp(array[i],key_trimmed) == 0) {
+        if (strcmp(array[i], key_trimmed) == 0) {
             found = 1;
             break;
         }
@@ -145,15 +145,16 @@ find_string(char **array,
 /**
    Removes comments and strips leading and trailing
    whitespace. Returns the length of the stripped line on success,
-   FREESASA_FAIL if malloc/realloc fails.
+   FREESASA_FAIL if malloc/realloc fails. Result will be stored in
+   the string line, which is assumed to have size MAX_LINE_LEN + 1.
  */
 static int
-strip_line(char **line,
+strip_line(char *line,
            const char *input) 
 {
     assert(strlen(input) <= MAX_LINE_LEN);
 
-    char *comment, *first, *last, *tmp;
+    char *comment, *first, *last;
     char linebuf[MAX_LINE_LEN + 1];
 
     strcpy(linebuf, input);
@@ -167,69 +168,64 @@ strip_line(char **line,
     if (last > first) 
         while (*last == ' ' || *last == '\t' || *last == '\n') --last;
 
-    tmp = realloc(*line,strlen(first)+1);
-    if (tmp == NULL) {
-        free(*line);
-        *line = NULL;
-        return mem_fail();
-    }
-    *line = tmp;
-    
     if (first >= last) {
-        **line = '\0';
+        line[0] = '\0';
         return 0;
     }
     
     *(last+1) = '\0';
-    strcpy(*line, first);
+    strncpy(line, first, MAX_LINE_LEN);
 
-    return strlen(*line);
+    return strlen(line);
 }
 
 /**
-    Essentially a safer fscanf(input, "%s", str) on the next line in input.
+    Essentially a safer fscanf(input, "%s", str) limited to the
+    current line in input.  Stores the result in 'str' (which should
+    be able to store a string of length MAX_LINE_LEN)
 */
 static int
-get_next_string(FILE *input, char **str)
+get_next_string(FILE *input, char *str)
 {
     char line[MAX_LINE_LEN + 1];
     long pos = ftell(input);
 
-    errno = 0;
     if (fgets(line, MAX_LINE_LEN + 1, input) == NULL) {
-        if (errno) {
+        if (ferror(input)) {
             return freesasa_fail(strerror(errno));
         }
         return 0;
     }
 
-    *str = malloc(strlen(line) + 1);
-    if (*str == NULL) {
-        return mem_fail();
-    }
-    *str[0] = '\0';
+    str[0] = '\0';
 
-    sscanf(line, "%s", *str);
+    sscanf(line, "%s", str);
 
-    fseek(input, pos + strlen(*str), SEEK_SET);
-    return strlen(*str);
+    fseek(input, pos + strlen(str), SEEK_SET);
+    return strlen(str);
 }
 
 /**
     Allocates space and stores a line stripped of comments in the line
     pointer. Returns the length of the line on success, FREESASA_FAIL
-    if malloc/realloc errors.
+    for I/O errors.
  */
 static int
-next_line(char **line,
+next_line(char *line,
           FILE *fp)
 {
     char linebuf[MAX_LINE_LEN + 1];
     int ret;
 
-    errno = 0;
     if (fgets(linebuf, MAX_LINE_LEN + 1, fp) == NULL) {
-        return fail_msg(strerror(errno));
+        if (ferror(fp)) {
+            return fail_msg(strerror(errno));
+        }
+
+        if (feof(fp)) {
+            line[0] = '\0';
+            return 0;
+        }
     }
 
     return strip_line(line, linebuf);
@@ -273,7 +269,7 @@ locate_string(const char *line,
 
 /**
     If string exists on line its location is stored in this_range, and
-    if prev_range is non-null it is set to and at the same location.
+    if prev_range is non-null it is set to end at the same location.
  */
 static inline int
 try_register_stringloc(const char *line,
@@ -313,8 +309,10 @@ check_file(FILE *input,
     struct file_range *last_range = NULL;
 
     last_tell = ftell(input);
+
+    // this allows us to detect wether a section wasn't found later
     types->begin = atoms->begin = name->begin = -1;
-    errno = 0;
+
     while (fgets(line, MAX_LINE_LEN + 1, input)) {
         try_register_stringloc(line, "types:", last_tell, types, &last_range);
         try_register_stringloc(line, "atoms:", last_tell, atoms, &last_range);
@@ -326,11 +324,9 @@ check_file(FILE *input,
             return fail_msg("Lines in classifier files can only be %d characters or less",
                             MAX_LINE_LEN);
         }
-
-        errno = 0;
     }
 
-    if (errno) {
+    if (ferror(input)) {
         return fail_msg(strerror(errno));
     }
 
@@ -421,6 +417,7 @@ freesasa_classifier_add_type(struct classifier_types *types,
     types->n_types++;
     types->type_radius[types->n_types-1] = r;
     types->type_class[types->n_types-1] = the_class;
+
     return types->n_types-1;
 }
 
@@ -463,12 +460,12 @@ read_types(struct classifier_types *types,
            FILE *input,
            struct file_range fi)
 {
-    char *line = NULL;
+    char line[MAX_LINE_LEN + 1];
     int ret = FREESASA_SUCCESS, nl;
     fseek(input, fi.begin, SEEK_SET);
     
     // read command (and discard)
-    if (next_line(&line, input) > 0) {
+    if (next_line(line, input) > 0) {
         char buf[7]; // we should not get here if the line isn't "types:" (plus whitespace)
         if (sscanf(line, "%6s", buf) == 0) return FREESASA_FAIL;
         assert(strcmp(buf, "types:") == 0);
@@ -477,13 +474,13 @@ read_types(struct classifier_types *types,
     }
 
     while (ftell(input) < fi.end) { 
-        nl = next_line(&line,input);
+        nl = next_line(line,input);
         if (nl == 0) continue;
         if (nl == FREESASA_FAIL) {ret = nl; break; };
         ret = read_types_line(types,line);
         if (ret == FREESASA_FAIL) break;
     }
-    free(line);
+
     return ret;
 }
 
@@ -546,17 +543,21 @@ freesasa_classifier_add_residue(struct freesasa_classifier *c,
     if (res >= 0) return res;
 
     res = c->n_residues + 1;
+
     if ((c->residue_name = realloc(rn, sizeof(char*) * res)) == NULL) {
         c->residue_name = rn;
         return mem_fail();
     }
+
     if ((c->residue = realloc(cr, sizeof(struct classifier_residue *) * res)) == NULL) {
         c->residue = cr;
         return mem_fail();
     }
+
     if ((c->residue[res-1] = freesasa_classifier_residue_new(name)) == NULL) {
         return mem_fail();
     }
+
     ++c->n_residues;
     c->residue_name[res-1] = c->residue[res-1]->name;
     return res-1;
@@ -576,15 +577,27 @@ read_atoms_line(struct freesasa_classifier *c,
     assert(strlen(line) <= MAX_LINE_LEN);
     char buf1[MAX_LINE_LEN + 1], buf2[MAX_LINE_LEN + 1], buf3[MAX_LINE_LEN + 1];
     int res, type, atom;
+
     if (sscanf(line,"%s %s %s", buf1, buf2, buf3) == 3) {
-        if (strlen(buf1) > PDB_ATOM_RES_NAME_STRL)
-            return fail_msg("residue name %s too long", buf1);
+        if (strlen(buf1) > PDB_ATOM_RES_NAME_STRL) {
+            return fail_msg("residue name %s is too long in classifier file", buf1);
+        }
+
+        if (strlen(buf2) > PDB_ATOM_NAME_STRL) {
+            return fail_msg("atom name %s is too long in classifier file", buf2);
+        }
+
         type = find_string(types->name, buf3, types->n_types);
-        if (type < 0) 
+
+        if (type < 0) {
             return fail_msg("unknown atom type '%s' in configuration, line '%s'",
                             buf3, line);
+        }
+
         res = freesasa_classifier_add_residue(c, buf1);
+
         if (res == FREESASA_FAIL) return fail_msg("");
+
         atom = freesasa_classifier_add_atom(c->residue[res],
                                             buf2,
                                             types->type_radius[type],
@@ -613,12 +626,12 @@ read_atoms(struct freesasa_classifier *c,
            FILE *input,
            struct file_range fi)
 {
-    char *line = NULL;
+    char line[MAX_LINE_LEN + 1];
     int ret = FREESASA_SUCCESS, nl;
     fseek(input, fi.begin, SEEK_SET);
 
     // read command (and discard)
-    if (next_line(&line, input) > 0) {
+    if (next_line(line, input) > 0) {
         assert(strlen(line) <= MAX_LINE_LEN);
         char buf[MAX_LINE_LEN + 1];
         if (sscanf(line, "%s", buf) == 0) return FREESASA_FAIL;
@@ -628,13 +641,12 @@ read_atoms(struct freesasa_classifier *c,
     }
 
     while (ftell(input) < fi.end) { 
-        nl = next_line(&line, input);
+        nl = next_line(line, input);
         if (nl == 0) continue;
         if (nl == FREESASA_FAIL) return fail_msg("");
         ret = read_atoms_line(c, types, line);
         if (ret == FREESASA_FAIL) break;
     }
-    free(line);
 
     return ret;
 }
@@ -644,34 +656,27 @@ read_name(struct freesasa_classifier *classifier,
           FILE *input,
           struct file_range fi)
 {
-    char *buf = NULL;
-    int ret = FREESASA_FAIL;
+    char buf[MAX_LINE_LEN + 1];
 
     if (fi.begin < 0)
-        return FREESASA_SUCCESS;
+        return FREESASA_SUCCESS; // name not set?
 
     fseek(input, fi.begin, SEEK_SET);
-    if (get_next_string(input, &buf) <= 0)
-        goto cleanup;
+    if (get_next_string(input, buf) <= 0)
+        return fail_msg("");
 
     assert(strcmp(buf, "name:") == 0);
 
-    if (get_next_string(input, &buf) <= 0) {
-        fail_msg("empty name for configuration?");
-        goto cleanup;
+    if (get_next_string(input, buf) <= 0) {
+        return fail_msg("empty name for configuration?");
     }
 
     classifier->name = strdup(buf);
     if (classifier->name == NULL) {
-        mem_fail();
-        goto cleanup;
+        return mem_fail();
     }
 
-    ret = FREESASA_SUCCESS;
-
- cleanup:
-    free(buf);
-    return ret;
+    return FREESASA_SUCCESS;
 }
 
 static struct freesasa_classifier*
@@ -1038,6 +1043,7 @@ START_TEST (test_classifier)
     ck_assert_int_eq(read_atoms_line(clf,types,"ARG CB b"),FREESASA_SUCCESS);
     ck_assert_int_eq(read_atoms_line(clf,types,"ARG CG b"),FREESASA_SUCCESS);
     ck_assert_int_eq(read_atoms_line(clf,types,"TOOLONGRESNAME CG b"), FREESASA_FAIL);
+    ck_assert_int_eq(read_atoms_line(clf,types,"ARG TOOLONGATOMNAME b"), FREESASA_FAIL);
     ck_assert_int_eq(clf->n_residues,2);
     ck_assert_str_eq(clf->residue_name[0],"ALA");
     ck_assert_str_eq(clf->residue_name[1],"ARG");
@@ -1060,7 +1066,7 @@ START_TEST (test_classifier_utils)
     const char *strarr[] = {"A","B","C"};
     const char *line[] = {"# Bla"," # Bla","Bla # Bla"," Bla # Bla","#Bla #Alb"};
  
-    char *dummy_str = NULL;
+    char dummy_str[MAX_LINE_LEN + 1];
     ck_assert_int_eq(find_string((char**)strarr,"A",3),0);
     ck_assert_int_eq(find_string((char**)strarr,"B",3),1);
     ck_assert_int_eq(find_string((char**)strarr,"C",3),2);
@@ -1068,15 +1074,15 @@ START_TEST (test_classifier_utils)
     ck_assert_int_eq(find_string((char**)strarr," C ",3),2);
     ck_assert_int_eq(find_string((char**)strarr,"CC",3),-1);
 
-    ck_assert_int_eq(strip_line(&dummy_str,line[0]),0);
-    ck_assert_int_eq(strip_line(&dummy_str,line[1]),0);
-    ck_assert_int_eq(strip_line(&dummy_str,line[2]),3);
+    ck_assert_int_eq(strip_line(dummy_str,line[0]),0);
+    ck_assert_int_eq(strip_line(dummy_str,line[1]),0);
+    ck_assert_int_eq(strip_line(dummy_str,line[2]),3);
     ck_assert_str_eq(dummy_str,"Bla");
 
-    ck_assert_int_eq(strip_line(&dummy_str,line[3]),3);
+    ck_assert_int_eq(strip_line(dummy_str,line[3]),3);
     ck_assert_str_eq(dummy_str,"Bla");
 
-    ck_assert_int_eq(strip_line(&dummy_str,line[4]),0);
+    ck_assert_int_eq(strip_line(dummy_str,line[4]),0);
 
     const char *str = "foo bar # baz";
     ck_assert_int_eq(locate_string(str, "Foo"), -1);
@@ -1093,7 +1099,6 @@ START_TEST (test_classifier_utils)
     ck_assert_ptr_eq(last_range, &this_range);
     ck_assert_int_eq(last_range->end, 4);
     ck_assert_int_eq(try_register_stringloc(str, "baz", 0, &this_range, &last_range), -1);
-    free(dummy_str);
 }
 END_TEST
 

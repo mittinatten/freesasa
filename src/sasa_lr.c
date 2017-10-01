@@ -204,12 +204,14 @@ freesasa_lee_richards(double *sasa,
         return fail_msg("L&R does not support more than %d threads", MAX_LR_THREADS);
     }
 
-    if (resolution <= 0)
+    if (resolution <= 0) {
         return fail_msg("%f slices per atom invalid resolution in L&R, must be > 0\n", resolution);
+    }
 
     if (n_atoms == 0) {
         return freesasa_warn("in %s(): empty coordinates", __func__);
     }
+
     if (n_threads > n_atoms) {
         n_threads = n_atoms;
         freesasa_warn("no sense in having more threads than atoms, only using %d threads",

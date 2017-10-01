@@ -159,7 +159,7 @@ freesasa_shrake_rupley(double *sasa,
 
     if (n_threads > MAX_SR_THREADS) {
         return fail_msg("S&R does not support more than %d threads", MAX_SR_THREADS);
-    }    
+    }
     if (resolution <= 0) {
         return fail_msg("%f test points invalid resolution in S&R, must be > 0\n", resolution);
     }
