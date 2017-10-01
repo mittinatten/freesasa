@@ -86,10 +86,16 @@ freesasa_selection_atom(expression_type type,
     if (e != NULL) {
         if (type == E_NEGNUM) {
             int n = strlen(val)+2;
-            char buf[n];
+            char *buf = malloc(n);
+            if (buf == NULL) {
+                mem_fail();
+                expression_free(e);
+                return NULL;
+            }
             sprintf(buf, "-%s", val);
             e->type = E_NUMBER;
             e->value = strdup(buf);
+            free(buf);
         } else {
             e->type = type;
             e->value = strdup(val);

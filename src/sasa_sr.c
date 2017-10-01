@@ -3,11 +3,17 @@
 #endif
 #include <assert.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+
+#ifdef _MSC_VER
+# define _USE_MATH_DEFINES
+#endif
 #include <math.h>
+
 #if USE_THREADS
 # include <pthread.h>
+# define MAX_SR_THREADS 16
 #endif
 
 #include "freesasa_internal.h"
@@ -22,11 +28,15 @@
 // calculation parameters (results stored in *sasa)
 typedef struct {
     int i1,i2; // for multithreading, range of atoms
+    int thread_index;
     int n_atoms;
     int n_points;
+    int n_threads;
     double probe_radius;
     const coord_t *xyz;
     coord_t *srp; // test-points
+    coord_t *tp_local[MAX_SR_THREADS]; // coord object for storing intermediates
+    int *spcount[MAX_SR_THREADS];
     double *r;
     double *r2;
     nb_list *nb;
@@ -39,7 +49,7 @@ static void *sr_thread(void *arg);
 #endif
 
 static double
-sr_atom_area(int i, const sr_data *sr) __attrib_pure__;
+sr_atom_area(int i, const sr_data *sr, int thread_index) __attrib_pure__;
 
 static coord_t *
 test_points(int N) 
@@ -85,6 +95,10 @@ release_sr(sr_data *sr)
     freesasa_nb_free(sr->nb);
     free(sr->r);
     free(sr->r2);
+    for (int i = 0; i < sr->n_threads; ++i) {
+        freesasa_coord_free(sr->tp_local[i]);
+        free(sr->spcount[i]);
+    }
 }
 
 
@@ -94,7 +108,8 @@ init_sr(sr_data *sr,
         const coord_t *xyz,
         const double *r,
         double probe_radius,
-        int n_points)
+        int n_points,
+        int n_threads)
 {
     int n_atoms = freesasa_coord_n(xyz);
     coord_t *srp = test_points(n_points);
@@ -104,11 +119,18 @@ init_sr(sr_data *sr,
     //store parameters and reference arrays
     sr->n_atoms = n_atoms;
     sr->n_points = n_points;
+    sr->n_threads = n_threads;
     sr->probe_radius = probe_radius;
     sr->xyz = xyz;
     sr->srp = srp;
     sr->sasa = sasa;
     sr->nb = NULL;
+
+    // should be done before any mallocs (to avoid problems in potential cleanup)
+    for (int i = 0; i < n_threads; ++i) {
+        sr->tp_local[i] = NULL;
+        sr->spcount[i] = NULL;
+    }
 
     sr->r =  malloc(sizeof(double)*n_atoms);
     sr->r2 = malloc(sizeof(double)*n_atoms);
@@ -119,6 +141,14 @@ init_sr(sr_data *sr,
         double ri = r[i] + probe_radius;
         sr->r[i] = ri;
         sr->r2[i] = ri * ri;
+    }
+
+    for (int i = 0; i < n_threads; ++i) {
+        sr->tp_local[i] = freesasa_coord_clone(sr->srp);
+        sr->spcount[i] = malloc(sizeof(int) * n_points);
+        if (sr->tp_local[i] == NULL || sr->spcount[i] == NULL) {
+            goto cleanup;
+        }
     }
 
     //calculate distances
@@ -136,7 +166,7 @@ int
 freesasa_shrake_rupley(double *sasa,
                        const coord_t *xyz,
                        const double *r,
-		       const freesasa_parameters *param)
+                       const freesasa_parameters *param)
 {
     assert(sasa);
     assert(xyz);
@@ -150,9 +180,13 @@ freesasa_shrake_rupley(double *sasa,
         return_value = FREESASA_SUCCESS;
     double probe_radius = param->probe_radius;
     sr_data sr;
-    
-    if (resolution <= 0)
+
+    if (n_threads > MAX_SR_THREADS) {
+        return fail_msg("S&R does not support more than %d threads", MAX_SR_THREADS);
+    }
+    if (resolution <= 0) {
         return fail_msg("%f test points invalid resolution in S&R, must be > 0\n", resolution);
+    }
     if (n_atoms == 0) return freesasa_warn("in %s(): empty coordinates", __func__);
     if (n_threads > n_atoms) {
         n_threads = n_atoms;
@@ -160,7 +194,7 @@ freesasa_shrake_rupley(double *sasa,
                       n_threads);
     }
     
-    if (init_sr(&sr, sasa, xyz, r, probe_radius, resolution))
+    if (init_sr(&sr, sasa, xyz, r, probe_radius, resolution, n_threads))
         return FREESASA_FAIL;
     
     //calculate SASA
@@ -178,7 +212,7 @@ freesasa_shrake_rupley(double *sasa,
     if (n_threads == 1) {
         // don't want the overhead of generating threads if only one is used
         for (int i = 0; i < n_atoms; ++i) {
-            sasa[i] = sr_atom_area(i, &sr);
+            sasa[i] = sr_atom_area(i, &sr, 0);
         }
     }
     release_sr(&sr);
@@ -190,8 +224,8 @@ static int
 sr_do_threads(int n_threads,
               sr_data *sr)
 {
-    pthread_t thread[n_threads];
-    sr_data srt[n_threads];
+    pthread_t thread[MAX_SR_THREADS];
+    sr_data srt[MAX_SR_THREADS];
     int thread_block_size = sr->n_atoms/n_threads;
     int res, return_value = FREESASA_SUCCESS;
     int threads_created = 0;
@@ -202,6 +236,7 @@ sr_do_threads(int n_threads,
         srt[t].i1 = t*thread_block_size;
         if (t == n_threads-1) srt[t].i2 = sr->n_atoms;
         else srt[t].i2 = (t+1)*thread_block_size;
+        srt[t].thread_index = t;
         res = pthread_create(&thread[t], NULL, sr_thread, (void *) &srt[t]);
         if (res) {
             return_value = fail_msg(freesasa_thread_error(res));
@@ -224,7 +259,7 @@ sr_thread(void *arg)
     sr_data *sr = ((sr_data*) arg);
     for (int i = sr->i1; i < sr->i2; ++i) {
         // mutex should not be necessary, writes to non-overlapping regions
-        sr->sasa[i] = sr_atom_area(i, sr);
+        sr->sasa[i] = sr_atom_area(i, sr, sr->thread_index);
     }
     pthread_exit(NULL);
 }
@@ -232,12 +267,13 @@ sr_thread(void *arg)
 
 static double
 sr_atom_area(int i,
-             const sr_data *sr)
+             const sr_data *sr,
+             int thread_index)
 {
     const int n_points = sr->n_points;
     /* this array keeps track of which testpoints belonging to
        a certain atom do not overlap with any other atoms */
-    int spcount[n_points];
+    int *spcount = sr->spcount[thread_index];
     const int nni = sr->nb->nn[i];
     const int * restrict nbi = sr->nb->nb[i];
     const double ri = sr->r[i];
@@ -248,8 +284,9 @@ sr_atom_area(int i,
     int n_surface = 0, current_nb, a;
     double dx, dy, dz;
     /* testpoints for this atom */
-    coord_t * restrict tp_coord_ri = freesasa_coord_copy(sr->srp);
+    coord_t * restrict tp_coord_ri = sr->tp_local[thread_index];
 
+    freesasa_coord_copy(tp_coord_ri, sr->srp);
     freesasa_coord_scale(tp_coord_ri, ri);
     freesasa_coord_translate(tp_coord_ri, vi);
     tp = freesasa_coord_all(tp_coord_ri);
@@ -288,6 +325,6 @@ sr_atom_area(int i,
     for (int k = 0; k < n_points; ++k) {
         if (spcount[k]) ++n_surface;
     }
-    freesasa_coord_free(tp_coord_ri);
+
     return (4.0*M_PI*ri*ri*n_surface)/n_points;
 }

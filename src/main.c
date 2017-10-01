@@ -300,8 +300,10 @@ run_analysis(FILE *input,
     freesasa_structure **structures = NULL;
     freesasa_node *tree = freesasa_tree_new();
     int n = 0;
+    char *name_i = malloc(name_len+10);
 
     if (tree == NULL) abort_msg("failed to initialize result-tree");
+    if (name_i == NULL) abort_msg("memory failure");
 
     // read PDB file
     structures = get_structures(input, &n, state);
@@ -309,7 +311,6 @@ run_analysis(FILE *input,
 
     // perform calculation on each structure
     for (int i = 0; i < n; ++i) {
-        char name_i[name_len+10];
         freesasa_node *tmp_tree;
 
         strcpy(name_i,name);
@@ -505,7 +506,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
     int alg_set = 0;
     char opt;
     int n_opt = 'z'+1;
-    char opt_set[n_opt];
+    char opt_set['z'+1];
     int option_index = 0;
 
     memset(opt_set, 0, n_opt);

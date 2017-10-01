@@ -20,6 +20,7 @@
 #define PDB_ATOM_RES_NUMBER_STRL 4 //!< Length of string with residue number, such as `" 123"`.
 #define PDB_ATOM_SYMBOL_STRL 2 //!< Length for string with element symbol, such "FE"
 #define PDB_LINE_STRL 80 //!< Length of a line in PDB file.
+#define PDB_MAX_LINE_STRL 120 //!< for reading, allows nonstandard input with extra fields
 
 /**
     Finds the location of all MODEL entries in the file pdb, returns

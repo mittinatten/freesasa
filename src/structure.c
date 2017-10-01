@@ -191,10 +191,10 @@ atom_new_from_line(const char *line,
                    char *alt_label) 
 {
     assert(line);
-    const int buflen = strlen(line);
+    char aname[PDB_ATOM_NAME_STRL+1], rname[PDB_ATOM_RES_NAME_STRL+1],
+        rnumber[PDB_ATOM_RES_NUMBER_STRL+1], symbol[PDB_ATOM_SYMBOL_STRL+1];
     int flag;
     struct atom *a;
-    char aname[buflen], rname[buflen], rnumber[buflen], symbol[buflen];
 
     if (alt_label) *alt_label = freesasa_pdb_get_alt_coord_label(line);
 
@@ -579,8 +579,7 @@ from_pdb_impl(FILE *pdb_file,
               int options)
 {
     assert(pdb_file);
-    size_t len = 0;
-    char *line = NULL;
+    char line[PDB_MAX_LINE_STRL];
     char alt, the_alt = ' ';
     double v[3], r;
     int ret;
@@ -591,7 +590,7 @@ from_pdb_impl(FILE *pdb_file,
     
     fseek(pdb_file,it.begin,SEEK_SET);
     
-    while (getline(&line, &len, pdb_file) != -1 && ftell(pdb_file) <= it.end) {
+    while (fgets(line, PDB_MAX_LINE_STRL, pdb_file) != NULL && ftell(pdb_file) <= it.end) {
         
         if (strncmp("ATOM",line,4)==0 || ( (options & FREESASA_INCLUDE_HETATM) &&
                                            (strncmp("HETATM", line, 6) == 0) )) {
@@ -643,12 +642,10 @@ from_pdb_impl(FILE *pdb_file,
         goto cleanup;
     }
 
-    free(line);
     return s;
 
  cleanup:
     fail_msg("");
-    free(line);
     atom_free(a);
     freesasa_structure_free(s);
     return NULL;
