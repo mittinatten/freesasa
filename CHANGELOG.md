@@ -1,6 +1,26 @@
 # Changelog
 FreeSASA uses semantic versioning. Changelog added for versions 2.x
 
+## [not released]
+
+* Relative SASA values are now calculated using the same reference
+  configurations as NACCESS. This means relative SASA values will
+  differ slightly from those of previous versions.
+* Python bindings compatible with Python 3.
+* Man page added
+* Bugs fixed:
+  * CLI option `--separate-models` now outputs all models in PDB output.
+  * On some platforms compilation failed when libxml and/or json-c was
+    not present. Now fixed.
+  * Some memory allocations were not checked for failure in S&R
+    calculations. These are now properly checked, and done more
+    seldomly, which should improve performance slightly.
+* Compatibility with Microsoft C Compiler:
+  * No variable length arrays
+  * Some macros and keywords are redefined when necessary
+  * Lexer does not depend on header `unistd.h`
+  * GNU getline not used, replaced by fgets()
+
 ## 2.0.1
 
 * Add function `calcCoord()` to Python interface, wraps C function
