@@ -3,7 +3,9 @@ ALLFILES =
 
 EXTRA_DIST = doxy_main.md license.md README.md \
 	doxygen-footer.html doxygen-header.html \
-	fig
+	fig man/freesasa.1
+
+man1_MANS = man/freesasa.1
 
 if HAVE_DOXYGEN
 

@@ -1,0 +1,121 @@
+.\" Man page for FressSASA
+.TH man 1 "2017" "@PACKAGE_VERSION@" "FreeSASA man page
+.SH NAME
+FreeSASA @PACKAGE_VERSION@ - calculate Solvent Accessible Surface Areas from PDB files
+.SH SYNOPSIS
+.B freesasa \fIPDB\-FILE\fR ... [ \-\-\fBshrake\-rupley\fR | \-\-\fBlee\-richards\fR 
+    \fB\-\-probe\-radius=\fR\fINUMBER\fR
+    \fB\-\-resolution=\fR\fIINTEGER\fR \fB\-\-n\-threads=\fR\fIINTEGER\fR
+    \fB\-\-radius\-from\-occupancy\fR | \fB\-\-config\-file=\fR\fIFILE\fR | \fB\-\-radii=\fR\fBprotor\fR|\fBnaccess\fR
+    \fB\-\-separate\-models\fR | \fB\-\-join\-models\fR
+    \fB\-\-hetatm\fR \fB\-\-hydrogen\fR
+    \fB\-\-separate\-chains\fR | \fB\-\-chain\-groups=\fR\fISTRING\fR ...
+    \fB\-\-unknown=\fR\fBguess\fR|\fBskip\fR|\fBhalt\fR 
+    \fB\-\-output=\fR\fIFILE\fR \fB\-\-error-file=\fR\fIFILE\fR \fB\-\-no\-warnings\fR 
+    \fB\-\-select=\fR\fISTRING\fR ...
+    \fB\-\-format=\fR\fBlog\fR|\fBres\fR|\fBseq\fR|\fBpdb\fR|\fBrsa\fR|\fBxml\fR|\fBjson\fR ...
+    \fB\-\-depth\fR=\fBstructure\fR|\fBchain\fR|\fBresidue\fR|\fBatom\fR ]
+.sp
+.B freesasa
+[\fIoptions\fR] < \fIPDB-FILE\fR
+.sp
+.B freesasa
+(\fB\-\-help\fR | \fB\-\-version\fR | \fB\-\-deprecated\fR)
+.sp
+
+.SH DESCRIPTION
+Calculate the Solvent Accessible Surface Area (SASA) of biomolecules from PDB files using either Lee & Richards' or Shrake & Rupley's algorithms.
+
+Report bugs to:
+.UR
+https://github.com/mittinatten/freesasa/issues
+.UE
+
+Home page: 
+.UR
+http://freesasa.github.io
+.UE
+
+
+.SH OPTIONS
+
+.SS Parameters
+.TP
+.BR  \-S ", " \-\-shrake-rupley
+Use Shrake & Rupley algorithm
+.TP
+.BR  \-L ", " \-\-lee-richards
+Use Lee & Richards algorithm [default]
+.TP
+.BR \-p ", " \-\-probe\-radius " " \fINUMBER\fR
+Set probe radius in Angstroms [default: 1.40 Å]
+.TP
+.BR -n ", " \-\-resolution " " \fIINTEGER\fR
+Set resolution for calculation.
+  S&R: number of test points/atom [default: 100],
+  L&R: slices/atom [default: 20].
+.TP
+.BR -t ", " \-\-n\-threads " " \fIINTEGER\fR
+Number of threads to use [default: 2]
+
+.SS Atom radii and classes (maximum one of the following)
+.TP
+.BR \-O ", " \-\-radius\-from\-occupancy
+Read atomic radii from Occupancy in PDB input
+.TP
+.BR \-c ", " \-\-config\-file " " \fIFILE\fR
+Clasifier to determine radii and classes. Example files in 'share/'
+.TP
+.BR \-\-radii " " protor|naccess
+Use either ProtOr or NACCESS radii and classes [defatul: protor]
+
+.SS Input options
+.TP
+.BR \-H ", " \-\-hetatm
+Include HETATM entries from input
+.TP
+.BR \-Y ", " \-\-hydrogen
+Include hydrogen atoms, suppress warnings with -w
+.TP
+.BR \-m ", " \-\-join\-models
+Join all MODELs in input into one structure
+.TP
+.BR \-C ", " \-\-separate-chains
+Calculate SASA for each chain separately
+.TP
+.BR \-M ", " \-\-separate-models
+Calculate SASA for each MODEL separately
+.TP
+.BR \-\-unknown " " guess|skip|halt
+When unknown atom is encountered, either guess its radius/class, skip it, or halt. [default: guess]
+.TP
+.BR \-g ", " \-\-chain\-groups " " \fILIST\fR
+Each group will be treated separately.
+.IP
+Examples:
+  '-g A', '-g A+B', '-g A -g B', '-g AB+CD'
+
+.SS Output options
+.TP
+.BR \-w ", " \-\-no\-warnings
+Skip most warnings
+.TP
+.BR \-o ", " \-\-output " " \fIFILE\fR
+Output file
+.TP
+.BR \-e ", " \-\-error\-file " " \fIFILE\fR
+Redirect errors and warnings to file
+.TP
+.BR -f ", " \-\-format " " log|res|seq|pdb|rsa|xml|json
+Output format, can be repeated. [default: log]
+.TP
+.BR -d ", " \-\-depth " " structure|chain|residue|atom
+Depth of JSON and XML output [default: chain]
+.TP
+.BR \-\-select " " \fICOMMAND\fR
+Select atoms using Pymol select syntax, can be repeated.
+.IP
+Examples:
+  \-\-select "AR, resn ala+arg", \-\-select "chain_A, chain A"
+
+

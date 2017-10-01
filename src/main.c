@@ -162,52 +162,19 @@ help(void)
     printf("\n       %s [options] < pdb-file", program_name);
     printf("\n       %s (-h | --help | -v | --version | --deprecated)\n", program_name);
     printf("\n"
-           "Options: [--shrake-rupley | --lee-richards] --probe-radius=FLOAT\n"
+           "Options:\n"
+           "  --shrake-rupley | --lee-richards\n"
+           "  --probe-radius=NUMBER\n"
            "  --resolution=INTEGER -n-threads=INTEGER\n"
-           "  [--radius-from-occupancy | --config-file FILE | --radii=(protor|naccess)]\n"
-           "  --hetatm --hydrogen [--separate-models | --join-models] [--separate-chains |\n"
-           "  --chain-groups=STRING...] --unknown=(guess|skip|halt)\n"
+           "  --radius-from-occupancy | --config-file FILE | --radii=(protor|naccess)\n"
+           "  --hetatm --hydrogen\n"
+           "  --separate-models | --join-models\n"
+           "  --separate-chains | --chain-groups=LIST ...\n"
+           "  --unknown=(guess|skip|halt)\n"
            "  --output FILE --error-file FILE --no-warnings --select=STRING...\n"
            "  --format=(" FORMAT_STRING ")... \n"
            "  --depth=(structure|chain|residue|atom)\n");
-    printf("\nPARAMETERS\n"
-           "  -S --shrake-rupley           Use Shrake & Rupley algorithm\n"
-           "  -L --lee-richards            Use Lee & Richards algorithm [default]\n");
-    printf("  -p R --probe-radius=R        [default: %4.2f Å]\n"
-           "  -n N --resolution=N          [S&R default: %d] [L&R default: %d]\n",
-           FREESASA_DEF_PROBE_RADIUS, FREESASA_DEF_SR_N, FREESASA_DEF_LR_N);
-    if (USE_THREADS) {
-        printf(
-           "  -t N --n-threads=N           [default: %d]\n",
-           FREESASA_DEF_NUMBER_THREADS);
-    }
-    printf("\nRADIUS AND CLASS (maximum one of the following)\n"
-           "  -O --radius-from-occupancy   Read atomic radii from Occupancy in PDB\n"
-           "  -c FILE --config-file=FILE   Example files in 'share/'\n"
-           "  --radii=(protor|naccess)     [default: protor]\n");
-    printf("\nINPUT\n"
-           "  -H --hetatm                  Include HETATM entries from input\n"
-           "  -Y --hydrogen                Include hydrogen atoms, suppress warnings with -w\n"
-           "  -m --join-models             Join all MODELs in input into one structure\n"
-           "  -C --separate-chains         Calculate each chain separately\n"
-           "  -M --separate-models         Calculate each MODEL separately\n"
-           "  --unknown=(guess|skip|halt)  When unknown atom radius/class [default: guess]\n"
-           "  -g G --chain-groups=G        Each group will be treated separately. Examples:\n"
-            "                                 '-g A', '-g A+B', '-g A -g B', '-g AB+CD'\n");
-    printf("\nOUTPUT\n"
-           "  -w --no-warnings             Skip most warnings\n"
-           "  -o FILE --output=FILE        Redirect output\n"
-           "  -e FILE --error-file=FILE    Redirect errors\n"
-           "  -f (...) --format=(" FORMAT_STRING ")\n"
-           "                               Output format, can be repeated. [default: log]\n");
-    if (USE_JSON || USE_XML) {
-        printf(
-           "  -d (...) --depth=(structure|chain|residue|atom)\n"
-           "                               Depth of JSON and XML output [default: chain]\n");
-    }
-    printf("  --select=COMMAND             Select atoms using Pymol select syntax, can be\n"
-           "                               repeated. Examples:\n"
-           "                                  'AR, resn ala+arg', 'chain_A, chain A'\n");
+    printf("\nPlease refer to the man pages or online documentation for detailed information.");
     addresses(stdout);
 }
 
