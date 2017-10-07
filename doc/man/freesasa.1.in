@@ -1,5 +1,5 @@
 .\" Man page for FressSASA
-.TH man 1 "2017" "@PACKAGE_VERSION@" "FreeSASA man page
+.TH man 1 "2017" "@PACKAGE_VERSION@" "FreeSASA man page"
 .SH NAME
 FreeSASA @PACKAGE_VERSION@ - calculate Solvent Accessible Surface Areas from PDB files
 .SH SYNOPSIS
@@ -117,5 +117,22 @@ Select atoms using Pymol select syntax, can be repeated.
 .IP
 Examples:
   \-\-select "AR, resn ala+arg", \-\-select "chain_A, chain A"
-
+.SS Deprecated
+.PP
+These options have been replaced and will disappear in later versions
+.TP
+.BR  \-\-rsa
+Equivalent to \-\-format=rsa
+.TP
+.BR \-B  ", " \-\-print\-as\-B\-values
+Equivalent to \-\-format=pdb
+.TP
+.BR \-r ", " \-\-foreach\-residue\-type
+Equivalent to \-\-format=res
+.TP
+.BR \-R ", " \-\-foreach\-residue
+Equivalent to \-\-format=seq
+.TP
+.BR \-l ", "  \-\-no\-log
+Log suppressed if other format selected. Option has no effect.
 

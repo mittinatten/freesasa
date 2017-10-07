@@ -160,22 +160,24 @@ help(void)
 {
     printf("\nUsage: %s [options] pdb-file ...", program_name);
     printf("\n       %s [options] < pdb-file", program_name);
-    printf("\n       %s (-h | --help | -v | --version | --deprecated)\n", program_name);
+    printf("\n       %s (--help | --version | --deprecated)\n", program_name);
     printf("\n"
            "Options:\n"
            "  --shrake-rupley | --lee-richards\n"
-           "  --probe-radius=NUMBER\n"
-           "  --resolution=INTEGER -n-threads=INTEGER\n"
-           "  --radius-from-occupancy | --config-file FILE | --radii=(protor|naccess)\n"
+           "  --probe-radius=<NUMBER>\n"
+           "  --resolution=<INTEGER> -n-threads=<INTEGER>\n"
+           "  --radius-from-occupancy | --config-file=<FILE> | --radii=<protor|naccess>\n"
            "  --hetatm --hydrogen\n"
+           "  --unknown=<guess|skip|halt>\n"
            "  --separate-models | --join-models\n"
-           "  --separate-chains | --chain-groups=LIST ...\n"
-           "  --unknown=(guess|skip|halt)\n"
-           "  --output FILE --error-file FILE --no-warnings --select=STRING...\n"
-           "  --format=(" FORMAT_STRING ")... \n"
-           "  --depth=(structure|chain|residue|atom)\n");
-    printf("\nPlease refer to the man pages or online documentation for detailed information.");
+           "  --separate-chains | --chain-groups=<LIST> ...\n"
+           "  --select=<STRING> ...\n"
+           "  --output=<FILE> --error-file=<FILE> --no-warnings\n"
+           "  --format=<" FORMAT_STRING "> ... \n"
+           "  --depth=<structure|chain|residue|atom>\n");
+    printf("\nPlease refer to the man pages or online documentation for more information.\n");
     addresses(stdout);
+    printf("\n");
 }
 
 static void
@@ -189,15 +191,15 @@ deprecated(void)
             "  -r  --foreach-residue-type    Equivalent to --format=res\n"
             "  -R  --foreach-residue         Equivalent to --format=seq.\n"
             "  -l  --no-log                  Log suppressed if other format selected.\n"
-            "                                Options has no effect."
+            "                                Option has no effect."
             "\n");
 }
 
 static void
 short_help(void)
 {
-    fprintf(stderr, "Run '%s -h' for usage instructions.\n",
-            program_name);
+    fprintf(stderr, "Call '%s -h' or 'man %s' for usage instructions\n",
+            program_name, program_name);
     addresses(stderr);
 }
 
