@@ -87,7 +87,7 @@ rsa_print_residue(FILE *output,
     resi_str = freesasa_node_residue_number(residue);
     chain = freesasa_node_name(freesasa_node_parent(residue))[0];
 
-    fprintf(output, "RES %s %c%s  ", abs->name, chain, resi_str);
+    fprintf(output, "RES %s %c%s ", abs->name, chain, resi_str);
     if (rel->name != NULL) {
         rsa_print_abs_rel(output, abs->total, rel->total);
         rsa_print_abs_rel(output, abs->side_chain, rel->side_chain);

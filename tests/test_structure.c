@@ -139,7 +139,7 @@ START_TEST (test_structure_1ubq)
     // check at random atom to see that parsing was correct
     ck_assert_str_eq(freesasa_structure_atom_res_name(s,8),"GLN");
     ck_assert_str_eq(freesasa_structure_atom_name(s,8)," N  ");
-    ck_assert_str_eq(freesasa_structure_atom_res_number(s,8),"   2");
+    ck_assert_str_eq(freesasa_structure_atom_res_number(s,8),"   2 ");
     ck_assert_int_eq(freesasa_structure_atom_chain(s,8),'A');
     ck_assert_str_eq(freesasa_structure_atom_symbol(s,8)," N");
 

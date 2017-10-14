@@ -58,11 +58,11 @@ START_TEST (test_pdb_lines)
 
     //Res-number
     freesasa_pdb_get_res_number(buf,lines[0]);
-    ck_assert_str_eq(buf,"  74");
+    ck_assert_str_eq(buf,"  74 ");
     freesasa_pdb_get_res_number(buf,lines[1]);
-    ck_assert_str_eq(buf,"  72");
+    ck_assert_str_eq(buf,"  72 ");
     freesasa_pdb_get_res_number(buf,lines[2]);
-    ck_assert_str_eq(buf,"  83");
+    ck_assert_str_eq(buf,"  83 ");
 
     //coordinates
     freesasa_pdb_get_coord(x,lines[0]);

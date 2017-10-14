@@ -315,7 +315,7 @@ write_pdb_impl(FILE *output,
     // Write TER  and ENDMDL lines
     strncpy(buf2, &buf[6], 5);
     buf2[5]='\0';
-    fprintf(output,"TER   %5d     %4s %c%4s\nENDMDL\n",
+    fprintf(output,"TER   %5d     %4s %c%5s\nENDMDL\n",
             atoi(buf2)+1, last_res_name, last_chain[0], last_res_number);
 
     fflush(output);
