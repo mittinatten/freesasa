@@ -15,6 +15,7 @@ FreeSASA uses semantic versioning. Changelog added for versions 2.x
   * Some memory allocations were not checked for failure in S&R
     calculations. These are now properly checked, and done more
     seldomly, which should improve performance slightly.
+* Residue numbers now include the iCode field for insterted residues
 * Compatibility with Microsoft C Compiler:
   * No variable length arrays
   * Some macros and keywords are redefined when necessary
