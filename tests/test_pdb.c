@@ -41,7 +41,9 @@ START_TEST (test_pdb_lines)
         "ATOM    585  C   ARG A  74      41.765  34.829  30.944  0.45 36.22           C",
         "ATOM    573  NH1AARG A  72      34.110  28.437  27.768  1.00 35.02           N  ",
         "HETATM  610  O   HOH A  83      27.707  15.908   4.653  1.00 20.30           O  ",
-        "ATOM    573  H   ARG A  72      34.110  28.437  27.768  1.00 35.02           H  ",};
+        "ATOM    573  H   ARG A  72      34.110  28.437  27.768  1.00 35.02           H  ",
+        "ATOM    585  C   ARG A  74      41.765  34.829          0.45 36.22           C",};
+
     //Atom-name
     freesasa_pdb_get_atom_name(buf,lines[0]);
     ck_assert_str_eq(buf," C  ");
@@ -69,6 +71,9 @@ START_TEST (test_pdb_lines)
     ck_assert(float_eq(x[0], 41.765, 1e-6) &&
               float_eq(x[1], 34.829, 1e-6) &&
               float_eq(x[2], 30.944, 1e-6) );
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    ck_assert_int_eq(freesasa_pdb_get_coord(x, lines[4]), FREESASA_FAIL);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 
     //chain label
     ck_assert_int_eq(freesasa_pdb_get_chain_label(lines[0]), 'A');
@@ -104,6 +109,12 @@ START_TEST (test_get_models) {
     int n = freesasa_pdb_get_models(pdb,&it);
     ck_assert_int_eq(n,0);
     ck_assert(it == NULL);
+    fclose(pdb);
+
+    pdb = fopen(DATADIR "model_mismatch.pdb", "r");
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    ck_assert_int_eq(freesasa_pdb_get_models(pdb, &it), FREESASA_FAIL);
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
     fclose(pdb);
 
     // this file has models

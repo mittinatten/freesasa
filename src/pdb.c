@@ -177,12 +177,20 @@ freesasa_pdb_get_coord(double *xyz,
 {
     assert(xyz);
     assert(line);
+    int n_coord = 24; // 54-30+1;
+    char coord_section[n_coord + 1];
+
     if (pdb_line_check(line,54) == FREESASA_FAIL) {
         return FREESASA_FAIL;
     }
-    if (sscanf(line+30, "%lf%lf%lf", &xyz[0], &xyz[1], &xyz[2]) != 3) {
+
+    strncpy(coord_section, line + 30, n_coord);
+    coord_section[n_coord] = '\0';
+
+    if (sscanf(coord_section, "%lf%lf%lf", &xyz[0], &xyz[1], &xyz[2]) != 3) {
         return fail_msg("could not read coordinates from line '%s'",line);
     }
+
     return FREESASA_SUCCESS;
 }
 
