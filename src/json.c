@@ -10,7 +10,7 @@
 #include "freesasa_internal.h"
 #include "classifier.h"
 
-/** The functions in JSON-C does not seem to have any documented error
+/** The functions in JSON-C do not seem to have any documented error
     return values. Therefore these errors are not caught. */
 
 json_object *
@@ -163,7 +163,9 @@ freesasa_node2json(freesasa_node *node,
     freesasa_node *child = freesasa_node_children(node);
     if (child) {
         if (freesasa_node_type(child) == exclude_type) lowest = 1;
-        if (!lowest) array = json_object_new_array();
+        if (!lowest) {
+            array = json_object_new_array();
+        }
     }
 
     switch (type) {

@@ -98,19 +98,37 @@ int xmlTextWriterEndDocument(xmlTextWriterPtr a) {
     return real_twed(a);
 }
 
-START_TEST (test_libxmlerr)
-{
-    FILE *pdb = fopen(DATADIR "1ubq.pdb", "r"), *devnull = fopen("/dev/null", "w");
-    freesasa_structure *ubq =
-        freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
+static FILE *pdb, *devnull;
+static freesasa_structure *ubq;
+static freesasa_result *result;
+static freesasa_node *tree, *structure_node;
+static freesasa_selection *selection;
+
+
+static void setup(void) {
+    pdb = fopen(DATADIR "1ubq.pdb", "r");
+    devnull = fopen("/dev/null", "w");
+    ubq = freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
     fclose(pdb);
-    freesasa_result *result = freesasa_calc_structure(ubq, NULL);
-    freesasa_node *tree = freesasa_tree_new(), *structure_node;
-    freesasa_selection *selection = freesasa_selection_new("ala, resn ala", ubq, result);
-    int ret;
+    result = freesasa_calc_structure(ubq, NULL);
+    tree = freesasa_tree_new();
+    selection = freesasa_selection_new("ala, resn ala", ubq, result);
+
     freesasa_tree_add_result(tree, result, ubq, "test");
     structure_node = freesasa_node_children(freesasa_node_children(tree));
     freesasa_node_structure_add_selection(structure_node, selection);
+}
+
+static void teardown(void) {
+    freesasa_node_free(tree);
+    freesasa_result_free(result);
+    freesasa_selection_free(selection);
+    freesasa_structure_free(ubq);
+}
+
+START_TEST (test_libxmlerr)
+{
+    int ret;
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
     for (int i = 1; i < 100; ++i) {
@@ -126,17 +144,29 @@ START_TEST (test_libxmlerr)
         ck_assert_int_eq(ret, FREESASA_FAIL);
     }
     freesasa_set_verbosity(FREESASA_V_NORMAL);
-    freesasa_node_free(tree);
-    freesasa_result_free(result);
-    freesasa_selection_free(selection);
-    freesasa_structure_free(ubq);
+}
+END_TEST
+
+START_TEST (test_memerr) {
+    int ret;
+
+    freesasa_set_verbosity(FREESASA_V_SILENT);
+    for (int i = 1; i < 35; ++i) {
+        set_fail_after(i);
+        ret = freesasa_write_xml(devnull, tree, FREESASA_OUTPUT_ATOM);
+        set_fail_after(0);
+        ck_assert_int_eq(ret, FREESASA_FAIL);
+    }
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 
 Suite* xml_suite() {
     Suite *s = suite_create("XML");
     TCase *tc_core = tcase_create("Core");
+    tcase_add_checked_fixture(tc_core,setup, teardown);
     tcase_add_test(tc_core, test_libxmlerr);
+    tcase_add_test(tc_core, test_memerr);
 
     suite_add_tcase(s, tc_core);
 

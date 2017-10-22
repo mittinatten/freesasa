@@ -165,21 +165,21 @@ freesasa_selection_operation(expression_type type,
     return e;
 }
 
-//for debugging
+// for debugging
 static void
-print_expr(const expression *e,int level)
+print_expr(FILE * output, const expression *e, int level)
 {
-    fprintf(stderr,"\n");
-    for (int i = 0; i < level; ++i) fprintf(stderr,"  ");
-    if (e == NULL) fprintf(stderr,"()");
+    fprintf(output, "\n");
+    for (int i = 0; i < level; ++i) fprintf(output, "  ");
+    if (e == NULL) fprintf(output, "()");
     else {
-        fprintf(stderr,"(%s ",e_str(e->type));
-        if (e->value) fprintf(stderr,": %s ",e->value);
-        print_expr(e->left,level+1);
-        print_expr(e->right,level+1);
-        fprintf(stderr,")");
+        fprintf(output, "(%s ",e_str(e->type));
+        if (e->value) fprintf(output, ": %s ",e->value);
+        print_expr(output, e->left, level+1);
+        print_expr(output, e->right, level+1);
+        fprintf(output, ")");
     }
-    fflush(stderr);
+    fflush(output);
 }
 
 
@@ -795,8 +795,8 @@ int freesasa_selection_parse_error(expression *e,
                                    yyscan_t scanner,
                                    const char *msg)
 {
-    if (freesasa_get_verbosity() == FREESASA_V_DEBUG)  print_expr(e,0);
-    if (freesasa_get_verbosity() == FREESASA_V_NORMAL) fprintf(stderr,"\n");
+    if (freesasa_get_verbosity() == FREESASA_V_DEBUG)  print_expr(stderr, e, 0);
+    if (freesasa_get_verbosity() == FREESASA_V_NORMAL) fprintf(stderr, "\n");
     return freesasa_fail(msg);
 }
 
@@ -883,6 +883,14 @@ START_TEST (test_expression)
 }
 END_TEST
 
+START_TEST (test_debug) // this test just runs the debug output code to not get artificially low coverage
+{
+    FILE *devnull = fopen("/dev/null", "w");
+    expression *e = get_expression("c1, symbol O+C");
+    print_expr(devnull, e, 0);
+}
+END_TEST
+
 struct selection selection_dummy = {.size = 1, .name = NULL, .atom = NULL};
 
 void *freesasa_selection_dummy_ptr = &selection_dummy;
@@ -901,6 +909,7 @@ test_selection_static()
     TCase *tc = tcase_create("selection.c static");
     tcase_add_test(tc, test_selection);
     tcase_add_test(tc, test_expression);
+    tcase_add_test(tc, test_debug);
 
     return tc;
 }

@@ -8,7 +8,7 @@
 #include "tools.h"
 
 extern json_object *
-freesasa_node2json(freesasa_node *node, int exclude_type);
+freesasa_node2json(freesasa_node *node, int exclude_type, int options);
 
 static int
 compare_nodearea(json_object *obj, const freesasa_nodearea *ref, int is_abs)
@@ -56,7 +56,7 @@ int
 test_atom(freesasa_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
-    json_object *atom = freesasa_node2json(node, FREESASA_NODE_NONE);
+    json_object *atom = freesasa_node2json(node, FREESASA_NODE_NONE, 0);
     ck_assert_ptr_ne(atom, NULL);
     
     struct json_object_iterator it = json_object_iter_begin(atom),
@@ -93,7 +93,7 @@ int
 test_residue(freesasa_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
-    json_object *residue = freesasa_node2json(node, FREESASA_NODE_NONE);
+    json_object *residue = freesasa_node2json(node, FREESASA_NODE_NONE, 0);
     ck_assert_ptr_ne(residue, NULL);
     const freesasa_nodearea *resarea = freesasa_node_area(node);
     struct json_object_iterator it = json_object_iter_begin(residue),
@@ -133,7 +133,7 @@ int
 test_chain(freesasa_node *node, const freesasa_result *result)
 {
     ck_assert_ptr_ne(node, NULL);
-    json_object *chain = freesasa_node2json(node, FREESASA_NODE_NONE);
+    json_object *chain = freesasa_node2json(node, FREESASA_NODE_NONE, 0);
     const freesasa_nodearea *chain_area = freesasa_node_area(node);
     ck_assert_ptr_ne(chain, NULL);
     ck_assert(float_eq(chain_area->total, result->total, 1e-10));
@@ -176,7 +176,7 @@ test_structure(freesasa_node *node)
         .side_chain = 3689.8982162353718,
         .main_chain = 1114.157424906374
     };
-    json_object *jstruct = freesasa_node2json(node, FREESASA_NODE_NONE);
+    json_object *jstruct = freesasa_node2json(node, FREESASA_NODE_NONE, 0);
     ck_assert_ptr_ne(jstruct, NULL);
 
     struct json_object_iterator it = json_object_iter_begin(jstruct),
