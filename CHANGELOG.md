@@ -1,7 +1,7 @@
 # Changelog
 FreeSASA uses semantic versioning. Changelog added for versions 2.x
 
-## [not released]
+## 2.0.2
 
 * Relative SASA values are now calculated using the same reference
   configurations as NACCESS. This means relative SASA values will
