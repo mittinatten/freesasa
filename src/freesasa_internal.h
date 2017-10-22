@@ -5,7 +5,7 @@
 #include "freesasa.h"
 #include "coord.h"
 
-//! The name of the library, to be used in error messages
+//! The name of the library, to be used in error messages and logging
 extern const char *freesasa_name;
 
 //! The name of the package, to be used in regular output (includes version)
@@ -19,6 +19,21 @@ extern const freesasa_nodearea freesasa_nodearea_null;
 
 //! Shortcut for error message with position information, should be used by default
 #define fail_msg(...) freesasa_fail_wloc(__FILE__,__LINE__, __VA_ARGS__)
+
+#ifdef _MSC_VER
+# define inline __inline
+#endif
+
+#if defined(_MSC_VER) && !defined(__func__)
+# define __func__ __FUNCTION__
+#endif
+
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+# define restrict __restrict
+#endif
+#if defined(_MSC_VER) && _MSC_VER < 1400 
+# define restrict
+#endif
 
 /**
     Calculate SASA using S&R algorithm.

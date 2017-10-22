@@ -59,7 +59,7 @@ void
 freesasa_coord_free(coord_t *coord);
 
 /**
-   Copy coordinates.
+   Clone coordinates.
 
    Creates a new ::coord_t object that is a copy of the
    argument `src`.
@@ -71,7 +71,20 @@ freesasa_coord_free(coord_t *coord);
    @return Copy of coordinates. NULL if out of memory.
  */
 coord_t *
-freesasa_coord_copy(const coord_t *src);
+freesasa_coord_clone(const coord_t *src);
+
+/**
+   Copy coordinates
+
+   Copies value of source coordinates to target.
+
+   @param target Target coordinates
+   @param src Source coordinates
+   @return ::FREESASA_FAIL if size mismatch between src and target,
+     else ::FREESASA_SUCCESS
+ */
+int
+freesasa_coord_copy(coord_t *target, const coord_t *src);
 
 /**
     Creates a `const` ::coord_t-object that is linked to an array of

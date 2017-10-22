@@ -48,7 +48,7 @@ endif # USE_XML
 
 if GENERATE_PARSER
 $(lp_output): lexer.l parser.y
-	@LEX@ lexer.l
+	@LEX@ --nounistd lexer.l
 	@YACC@ parser.y
 
 CLEANFILES += $(lp_output)

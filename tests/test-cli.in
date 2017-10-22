@@ -13,7 +13,7 @@ sharedir=@top_srcdir@/share/
 dump=tmp/test-cli.dump # will only contain the latest output
 nofile=nonexistent-file
 nodir=nonexistent-dir/file
-smallpdb=$datadir/rsa/ALA.pdb
+smallpdb=$datadir/rsa/GLY.pdb
 #global errors
 errors=0
 use_xml=0
@@ -132,6 +132,9 @@ assert_pass "grep 'atoms\s\s*: 660' $dump"
 assert_pass "grep 'Total\s\s*:\s\s*5656.65' $dump"
 assert_pass "$cli -S -n 50 < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli -S -n 0 < $datadir/1ubq.pdb > $dump"
+assert_fail "$cli -S -n \"-1\" < $datadir/1ubq.pdb > $dump"
+assert_fail "$cli -S -t 1000 < $datadir/1ubq.pdb > $dump"
+assert_pass "$cli -S -t 16 < $smallpdb > $dump"
 echo
 echo "== Testing -m -M and -C options =="
 # using flags -S and -n 10 to speed things up
@@ -159,6 +162,9 @@ echo "== Testing L&R =="
 assert_pass "$cli -L < $smallpdb > $dump"
 assert_pass "$cli -L -n 10 < $smallpdb > $dump"
 assert_fail "$cli -L -n 0 < $smallpdb > $dump"
+assert_fail "$cli -L -n \"-1\" < $smallpdb > $dump"
+assert_fail "$cli -L -t 1000 < $datadir/1ubq.pdb > $dump"
+assert_pass "$cli -L -t 16 < $smallpdb > $dump"
 echo
 echo "== Testing option --chain-groups =="
 assert_pass "$cli -g S -S -n 10 $smallpdb > $dump"
@@ -344,6 +350,10 @@ assert_pass "$cli -t 1 -L -n 3 < $smallpdb > $dump"
 assert_pass "$cli -t 2 -L -n 3 < $smallpdb > $dump"
 assert_pass "$cli -t 10 -L -n 3 < $smallpdb > $dump"
 assert_fail "$cli -t 0 < $smallpdb > $dump"
+echo
+echo "== Testing input with residue insertions ==="
+assert_pass "test $($cli -n 2 --format=seq < $datadir/icode.pdb | grep ^SEQ | wc -l) -eq 5"
+
 echo 
 echo "== Testing conflicting options =="
 assert_fail "$cli -m -M $smallpdb > $dump"

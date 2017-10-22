@@ -3,10 +3,17 @@
 #endif
 #include <assert.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
+
+#ifdef _MSC_VER
+# define _USE_MATH_DEFINES
+#endif
 #include <math.h>
+
+#define MAX_LR_THREADS 16
+
 #if USE_THREADS
 # include <pthread.h>
 #endif
@@ -24,11 +31,14 @@ typedef struct {
     nb_list *adj;
     int n_slices_per_atom;
     double *sasa; // results
+    double *arc[MAX_LR_THREADS], *z_nb[MAX_LR_THREADS], *R_nb[MAX_LR_THREADS];
+    int n_threads;
 } lr_data;
 
 typedef struct {
     int first_atom;
     int last_atom;
+    int thread_id;
     lr_data *lr;
 } lr_thread_interval;
 
@@ -39,7 +49,7 @@ static void *lr_thread(void *arg);
 
 /** Returns the are of atom i */
 static double
-atom_area(lr_data *lr,int i);
+atom_area(lr_data *lr, int i, int thread_id);
 
 /** Sum of exposed arcs based on buried arc intervals arc, assumes no
     intervals cross zero */
@@ -54,6 +64,36 @@ release_lr(lr_data *lr)
     freesasa_nb_free(lr->adj);
     lr->radii = NULL;
     lr->adj = NULL;
+
+    for (int i = 0; i < lr->n_threads; ++i) {
+        free(lr->arc[i]);
+        free(lr->z_nb[i]);
+        free(lr->R_nb[i]);
+    }
+}
+
+// Allocate some helper arrays in area calculation that need to be pre-allocated
+static int
+alloc_lr_calc_arrays(lr_data *lr, int n_threads) {
+    int max_nni = 0;
+    const int n_atoms = lr->n_atoms;
+
+    for (int i = 0; i < n_atoms; ++i) {
+        const int nni = lr->adj->nn[i];
+        max_nni = max_nni < nni ? nni : max_nni;
+    }
+
+    for (int i = 0; i < n_threads; ++i) {
+        lr->arc[i] = malloc(sizeof(double) * 4 * max_nni);
+        lr->z_nb[i] = malloc(sizeof(double) * max_nni);
+        lr->R_nb[i] = malloc(sizeof(double) * max_nni);
+
+        if (!lr->arc[i] || !lr->z_nb[i] || !lr->R_nb[i]) {
+            return mem_fail();
+        }
+    }
+
+    return FREESASA_SUCCESS;
 }
 
 /** Initialize object to be used for L&R calculation */
@@ -63,15 +103,22 @@ init_lr(lr_data *lr,
         const coord_t *xyz,
         const double *atom_radii,
         double probe_radius,
-        int n_slices_per_atom)
+        int n_slices_per_atom,
+        int n_threads)
 {
     const int n_atoms = freesasa_coord_n(xyz);
-
     lr->n_atoms = n_atoms;
     lr->xyz = xyz;
     lr->adj = NULL;
     lr->n_slices_per_atom = n_slices_per_atom;
     lr->sasa = sasa;
+    lr->n_threads = n_threads;
+
+    for (int i = 0; i < n_threads; ++i) {
+        lr->arc[i] = NULL;
+        lr->z_nb[i] = NULL;
+        lr->R_nb[i] = NULL;
+    }
 
     lr->radii = malloc(sizeof(double)*n_atoms);
     if (lr->radii == NULL) {
@@ -89,7 +136,12 @@ init_lr(lr_data *lr,
 
     if (lr->adj == NULL) {
         release_lr(lr);
-        return FREESASA_FAIL;
+        return fail_msg("");
+    }
+
+    if (alloc_lr_calc_arrays(lr, n_threads)) {
+        release_lr(lr);
+        return fail_msg("");
     }
 
     return FREESASA_SUCCESS;
@@ -115,19 +167,25 @@ freesasa_lee_richards(double *sasa,
     double probe_radius = param->probe_radius;
     lr_data lr;
 
-    if (resolution <= 0)
+    if (n_threads > MAX_LR_THREADS) {
+        return fail_msg("L&R does not support more than %d threads", MAX_LR_THREADS);
+    }
+
+    if (resolution <= 0) {
         return fail_msg("%f slices per atom invalid resolution in L&R, must be > 0\n", resolution);
+    }
 
     if (n_atoms == 0) {
         return freesasa_warn("in %s(): empty coordinates", __func__);
     }
+
     if (n_threads > n_atoms) {
         n_threads = n_atoms;
         freesasa_warn("no sense in having more threads than atoms, only using %d threads",
                       n_threads);
     }
     
-    if(init_lr(&lr, sasa, xyz, atom_radii, probe_radius, resolution))
+    if(init_lr(&lr, sasa, xyz, atom_radii, probe_radius, resolution, n_threads))
         return FREESASA_FAIL;
     
     if (n_threads > 1) {
@@ -143,7 +201,7 @@ freesasa_lee_richards(double *sasa,
     }
     if (n_threads == 1) {
         for (int i = 0; i < lr.n_atoms; ++i) {
-            lr.sasa[i] = atom_area(&lr, i);
+            lr.sasa[i] = atom_area(&lr, i, 0);
         }        
     }
     release_lr(&lr);
@@ -155,8 +213,8 @@ static int
 lr_do_threads(int n_threads,
               lr_data *lr)
 {
-    pthread_t thread[n_threads];
-    lr_thread_interval t_data[n_threads];
+    pthread_t thread[MAX_LR_THREADS];
+    lr_thread_interval t_data[MAX_LR_THREADS];
     int n_perthread = lr->n_atoms/n_threads, res;
     int threads_created = 0, return_value = FREESASA_SUCCESS;
  
@@ -168,6 +226,7 @@ lr_do_threads(int n_threads,
             t_data[t].last_atom = (t+1)*n_perthread - 1;
         }
         t_data[t].lr = lr;
+        t_data[t].thread_id = t;
         res = pthread_create(&thread[t], NULL, lr_thread,
                              (void *) &t_data[t]);
         if (res) {
@@ -177,7 +236,7 @@ lr_do_threads(int n_threads,
         ++threads_created;
     }
     for (int t = 0; t < threads_created; ++t) {
-        res = pthread_join(thread[t],NULL);
+        res = pthread_join(thread[t], NULL);
         if (res) {
             return_value = fail_msg(freesasa_thread_error(res));
         }
@@ -192,7 +251,7 @@ lr_thread(void *arg)
     for (int i = ti->first_atom; i <= ti->last_atom; ++i) {
         /* the different threads write to different parts of the
            array, so locking shouldn't be necessary */
-        ti->lr->sasa[i] = atom_area(ti->lr, i);
+        ti->lr->sasa[i] = atom_area(ti->lr, i, ti->thread_id);
     }
     pthread_exit(NULL);
 }
@@ -200,7 +259,8 @@ lr_thread(void *arg)
 
 static double
 atom_area(lr_data *lr,
-          int i)
+          int i,
+          int thread_id)
 {
     /* This function is large because a large number of pre-calculated
        arrays need to be accessed efficiently. Partially dereferenced
@@ -218,9 +278,12 @@ atom_area(lr_data *lr,
     const double * restrict const ydi = lr->adj->yd[i];
     const double zi = v[3*i+2], Ri = R[i];
     const int ns = lr->n_slices_per_atom;
-    double arc[nni*4], z_nb[nni], R_nb[nni];
+
+    double *arc = lr->arc[thread_id],
+        *z_nb = lr->z_nb[thread_id],
+        *R_nb = lr->R_nb[thread_id];
     double z, delta, sasa = 0;
-    
+
     for (int j = 0; j < nni; ++j) {
         z_nb[j] = v[3*nbi[j]+2];
         R_nb[j] = R[nbi[j]];

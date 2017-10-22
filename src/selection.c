@@ -86,10 +86,16 @@ freesasa_selection_atom(expression_type type,
     if (e != NULL) {
         if (type == E_NEGNUM) {
             int n = strlen(val)+2;
-            char buf[n];
+            char *buf = malloc(n);
+            if (buf == NULL) {
+                mem_fail();
+                expression_free(e);
+                return NULL;
+            }
             sprintf(buf, "-%s", val);
             e->type = E_NUMBER;
             e->value = strdup(buf);
+            free(buf);
         } else {
             e->type = type;
             e->value = strdup(val);
@@ -159,23 +165,22 @@ freesasa_selection_operation(expression_type type,
     return e;
 }
 
-//for debugging
+// for debugging
 static void
-print_expr(const expression *e,int level)
+print_expr(FILE * output, const expression *e, int level)
 {
-    fprintf(stderr,"\n");
-    for (int i = 0; i < level; ++i) fprintf(stderr,"  ");
-    if (e == NULL) fprintf(stderr,"()");
+    fprintf(output, "\n");
+    for (int i = 0; i < level; ++i) fprintf(output, "  ");
+    if (e == NULL) fprintf(output, "()");
     else {
-        fprintf(stderr,"(%s ",e_str(e->type));
-        if (e->value) fprintf(stderr,": %s ",e->value);
-        print_expr(e->left,level+1);
-        print_expr(e->right,level+1);
-        fprintf(stderr,")");
+        fprintf(output, "(%s ",e_str(e->type));
+        if (e->value) fprintf(output, ": %s ",e->value);
+        print_expr(output, e->left, level+1);
+        print_expr(output, e->right, level+1);
+        fprintf(output, ")");
     }
-    fflush(stderr);
+    fflush(output);
 }
-
 
 
 static expression *
@@ -277,9 +282,11 @@ match_resi(const freesasa_structure *structure,
            const char *id, 
            int i)
 {
-    int resi = atoi(freesasa_structure_atom_res_number(structure,i));
-    int e_resi = atoi(id);
-    return resi == e_resi;
+    char resi[PDB_ATOM_RES_NUMBER_STRL+1];
+    sscanf(freesasa_structure_atom_res_number(structure, i), "%s", resi);
+    if (strcmp(resi, id) == 0)
+        return 1;
+    return 0;
 }
 
 static int
@@ -354,9 +361,33 @@ is_valid_id(int parent_type,
                                  "will be ignored", e_str(parent_type), val);
         break;
     case E_RESI:
-        if (type != E_NUMBER)
-            return freesasa_warn("select: %s: '%s' invalid (not a number), "
-                                 "will be ignored", e_str(parent_type), val);
+        if (type == E_ID) {
+            // these should have format 1, 2, 345, etc or 12A, 12B, etc.
+            int n = strlen(val);
+            if (n > PDB_ATOM_RES_NUMBER_STRL) {
+                return freesasa_warn("select: %s: '%s' invalid (string too long), "
+                                     "will be ignored", e_str(parent_type), val);
+            } else {
+                int warn = 0;
+                if (n == 1) ++warn;
+                if (!warn && (toupper(val[n - 1]) < 'A' || toupper(val[n - 1]) > 'Z')) {
+                    ++warn;
+                }
+                for (int i = 0; !warn && i < n - 1; ++i) {
+                    if (val[i] < '0' || val[i] > '9') {
+                        ++warn;
+                    }
+                }
+                if (warn) {
+                    return freesasa_warn("select: %s: '%s' invalid, should either be "
+                                         "number (1, 2, 3) or number with insertion code (1A, 1B, ...), "
+                                         "will be ignored", e_str(parent_type), val);
+                }
+            }
+        } else if (type != E_NUMBER) {
+            return freesasa_warn("select: %s: '%s' invalid, will be ignored",
+                                 e_str(parent_type), val);
+        }
         break;
     case E_CHAIN:
         if (strlen(val) > 1)
@@ -589,6 +620,10 @@ select_area_impl(const char *command,
     expression = get_expression(command);
     selection = selection_new(result->n_atoms);
 
+    if (selection == NULL) {
+        return fail_msg("");
+    }
+
     if (expression != NULL && selection != NULL) {
         switch (select_atoms(selection, expression, structure)) {
         case FREESASA_FAIL: 
@@ -760,8 +795,8 @@ int freesasa_selection_parse_error(expression *e,
                                    yyscan_t scanner,
                                    const char *msg)
 {
-    if (freesasa_get_verbosity() == FREESASA_V_DEBUG)  print_expr(e,0);
-    if (freesasa_get_verbosity() == FREESASA_V_NORMAL) fprintf(stderr,"\n");
+    if (freesasa_get_verbosity() == FREESASA_V_DEBUG)  print_expr(stderr, e, 0);
+    if (freesasa_get_verbosity() == FREESASA_V_NORMAL) fprintf(stderr, "\n");
     return freesasa_fail(msg);
 }
 
@@ -848,6 +883,14 @@ START_TEST (test_expression)
 }
 END_TEST
 
+START_TEST (test_debug) // this test just runs the debug output code to not get artificially low coverage
+{
+    FILE *devnull = fopen("/dev/null", "w");
+    expression *e = get_expression("c1, symbol O+C");
+    print_expr(devnull, e, 0);
+}
+END_TEST
+
 struct selection selection_dummy = {.size = 1, .name = NULL, .atom = NULL};
 
 void *freesasa_selection_dummy_ptr = &selection_dummy;
@@ -866,6 +909,7 @@ test_selection_static()
     TCase *tc = tcase_create("selection.c static");
     tcase_add_test(tc, test_selection);
     tcase_add_test(tc, test_expression);
+    tcase_add_test(tc, test_debug);
 
     return tc;
 }

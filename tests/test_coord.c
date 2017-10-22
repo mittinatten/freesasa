@@ -70,6 +70,13 @@ START_TEST (test_coord)
     ck_assert(c2 != NULL);
     ck_assert_int_eq(freesasa_coord_append(c2, xyz2, 1), FREESASA_SUCCESS);
     ck_assert(float_eq(freesasa_coord_dist2_12(coord, c2, 1, 0), 2, 1e-10));
+
+    coord_t *c3 = freesasa_coord_clone(c2);
+    ck_assert(c3 != NULL);
+    ck_assert(float_eq(freesasa_coord_dist2_12(c3, c2, 0, 0), 0, 1e-10));
+    freesasa_coord_set_length_all(c2, 10);
+    ck_assert_int_eq(freesasa_coord_copy(c3, c2), FREESASA_SUCCESS);
+    ck_assert(float_eq(freesasa_coord_dist2_12(c3, c2, 0, 0), 0, 1e-10));
     freesasa_coord_free(c2);
 }
 END_TEST
@@ -83,10 +90,10 @@ START_TEST (test_memerr)
     set_fail_after(1);
     freesasa_set_verbosity(FREESASA_V_SILENT);
     void *ptr[] = {freesasa_coord_new(),
-                   freesasa_coord_copy(&coord),
+                   freesasa_coord_clone(&coord),
                    freesasa_coord_new_linked(v,1)};
     int ret[] = {freesasa_coord_append(coord_dyn, v, 1),
-               freesasa_coord_append_xyz(coord_dyn, v, v+1, v+2, 1)};
+                 freesasa_coord_append_xyz(coord_dyn, v, v+1, v+2, 1)};
     set_fail_after(0);
     for (int i = 0; i < sizeof(ptr)/sizeof(void*); ++i)
         ck_assert_ptr_eq(ptr[i],NULL);

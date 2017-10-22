@@ -139,7 +139,7 @@ START_TEST (test_structure_1ubq)
     // check at random atom to see that parsing was correct
     ck_assert_str_eq(freesasa_structure_atom_res_name(s,8),"GLN");
     ck_assert_str_eq(freesasa_structure_atom_name(s,8)," N  ");
-    ck_assert_str_eq(freesasa_structure_atom_res_number(s,8),"   2");
+    ck_assert_str_eq(freesasa_structure_atom_res_number(s,8),"   2 ");
     ck_assert_int_eq(freesasa_structure_atom_chain(s,8),'A');
     ck_assert_str_eq(freesasa_structure_atom_symbol(s,8)," N");
 
@@ -312,6 +312,7 @@ START_TEST (test_structure_array_chains_models)
     fclose(pdb);
 
     // many chains
+    freesasa_set_verbosity(FREESASA_V_SILENT);
     pdb = fopen(DATADIR "2jo4.pdb", "r");
     ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_MODELS |
                                   FREESASA_INCLUDE_HETATM | FREESASA_INCLUDE_HYDROGEN);
@@ -345,7 +346,7 @@ START_TEST (test_structure_array_chains_models)
     ck_assert(s != NULL);
     ck_assert(freesasa_structure_n(s) == 286*4*10);
     freesasa_structure_free(s);
-    
+    freesasa_set_verbosity(FREESASA_V_NORMAL);
     fclose(pdb);
 }
 END_TEST

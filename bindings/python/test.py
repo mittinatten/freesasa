@@ -96,7 +96,7 @@ class FreeSASATestCase(unittest.TestCase):
         self.assertTrue(s.chainLabel(1) == 'A')
         self.assertTrue(s.atomName(1) == ' CA ')
         self.assertTrue(s.residueName(1) == 'MET')
-        self.assertTrue(s.residueNumber(1) == '   1')
+        self.assertTrue(s.residueNumber(1) == '   1 ')
 
         s2 = Structure("data/1ubq.pdb",Classifier("share/oons.config"))
         self.assertTrue(s.nAtoms() == 602)
@@ -298,7 +298,6 @@ class FreeSASATestCase(unittest.TestCase):
             # coordinates (due to rounding errors) we set the
             # tolerance as high as 1e-3
             result = calc(s1, Parameters({'algorithm' : LeeRichards, 'n-slices' : 20}))
-            print(result.totalArea())
             self.assertTrue(math.fabs(result.totalArea() - 4804.055641) < 1e-3)
             sasa_classes = classifyResults(result, s1)
             self.assertTrue(math.fabs(sasa_classes['Polar'] - 2504.217302) < 1e-3)
@@ -308,7 +307,6 @@ class FreeSASATestCase(unittest.TestCase):
             self.assertTrue(math.fabs(result.totalArea() - 4834.716265) < 1e-3)
             self.assertTrue(math.fabs(sasa_classes['Polar'] - 2515.821238) < 1e-3)
             self.assertTrue(math.fabs(sasa_classes['Apolar'] - 2318.895027) < 1e-3)
-            print(result.totalArea())
 
 
 if __name__ == '__main__':
