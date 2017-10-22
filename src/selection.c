@@ -183,7 +183,6 @@ print_expr(const expression *e,int level)
 }
 
 
-
 static expression *
 get_expression(const char *selector) 
 {
@@ -283,9 +282,11 @@ match_resi(const freesasa_structure *structure,
            const char *id, 
            int i)
 {
-    int resi = atoi(freesasa_structure_atom_res_number(structure,i));
-    int e_resi = atoi(id);
-    return resi == e_resi;
+    char resi[PDB_ATOM_RES_NUMBER_STRL+1];
+    sscanf(freesasa_structure_atom_res_number(structure, i), "%s", resi);
+    if (strcmp(resi, id) == 0)
+        return 1;
+    return 0;
 }
 
 static int
@@ -360,9 +361,33 @@ is_valid_id(int parent_type,
                                  "will be ignored", e_str(parent_type), val);
         break;
     case E_RESI:
-        if (type != E_NUMBER)
-            return freesasa_warn("select: %s: '%s' invalid (not a number), "
-                                 "will be ignored", e_str(parent_type), val);
+        if (type == E_ID) {
+            // these should have format 1, 2, 345, etc or 12A, 12B, etc.
+            int n = strlen(val);
+            if (n > PDB_ATOM_RES_NUMBER_STRL) {
+                return freesasa_warn("select: %s: '%s' invalid (string too long), "
+                                     "will be ignored", e_str(parent_type), val);
+            } else {
+                int warn = 0;
+                if (n == 1) ++warn;
+                if (!warn && (toupper(val[n - 1]) < 'A' || toupper(val[n - 1]) > 'Z')) {
+                    ++warn;
+                }
+                for (int i = 0; !warn && i < n - 1; ++i) {
+                    if (val[i] < '0' || val[i] > '9') {
+                        ++warn;
+                    }
+                }
+                if (warn) {
+                    return freesasa_warn("select: %s: '%s' invalid, should either be "
+                                         "number (1, 2, 3) or number with insertion code (1A, 1B, ...), "
+                                         "will be ignored", e_str(parent_type), val);
+                }
+            }
+        } else if (type != E_NUMBER) {
+            return freesasa_warn("select: %s: '%s' invalid, will be ignored",
+                                 e_str(parent_type), val);
+        }
         break;
     case E_CHAIN:
         if (strlen(val) > 1)
@@ -594,6 +619,10 @@ select_area_impl(const char *command,
     
     expression = get_expression(command);
     selection = selection_new(result->n_atoms);
+
+    if (selection == NULL) {
+        return fail_msg("");
+    }
 
     if (expression != NULL && selection != NULL) {
         switch (select_atoms(selection, expression, structure)) {

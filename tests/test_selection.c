@@ -228,11 +228,21 @@ START_TEST (test_resi)
     ck_assert(float_eq(value[14], value[1], 1e-10));
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
-    ck_assert_int_eq(freesasa_select_area("c1, resi A",selection_name[0],value,structure,result),
+    ck_assert_int_eq(freesasa_select_area("c1, resi 1A", selection_name[0], value, structure, result),
+                     FREESASA_SUCCESS);
+    ck_assert_int_eq(freesasa_select_area("c1, resi 1a", selection_name[0], value, structure, result),
+                     FREESASA_SUCCESS);
+    ck_assert_int_eq(freesasa_select_area("c1, resi A", selection_name[0], value, structure, result),
                      FREESASA_WARN);
-    ck_assert_int_eq(freesasa_select_area("c1, resi 1A",selection_name[0],value,structure,result),
+    ck_assert_int_eq(freesasa_select_area("c1, resi A1", selection_name[0], value, structure, result),
                      FREESASA_WARN);
-    ck_assert_int_eq(freesasa_select_area("c1, resi 1-A",selection_name[0],value,structure,result),
+    ck_assert_int_eq(freesasa_select_area("c1, resi 1AA", selection_name[0], value, structure, result),
+                     FREESASA_WARN);
+    ck_assert_int_eq(freesasa_select_area("c1, resi 1aa", selection_name[0], value, structure, result),
+                     FREESASA_WARN);
+    ck_assert_int_eq(freesasa_select_area("c1, resi 1-A", selection_name[0], value, structure, result),
+                     FREESASA_WARN);
+    ck_assert_int_eq(freesasa_select_area("c1, resi 1A-2", selection_name[0], value, structure, result),
                      FREESASA_WARN);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
@@ -356,9 +366,12 @@ START_TEST (test_memerr)
     ptr1 = freesasa_selection_atom(E_SYMBOL, "C");
     set_fail_after(2);
     ptr2 = freesasa_selection_create(NULL, "bla");
+    set_fail_after(2);
+    ptr3 = freesasa_selection_atom(E_NEGNUM, "-1");
     set_fail_after(0);
     ck_assert_ptr_eq(ptr1, NULL);
     ck_assert_ptr_eq(ptr2, NULL);
+    ck_assert_ptr_eq(ptr3, NULL);
 
     expression e = {.left = NULL, .right = NULL, .type = E_OR, .value = NULL};
     
@@ -370,6 +383,13 @@ START_TEST (test_memerr)
     }
 
     freesasa_selection *sel, *sel2;
+
+    // can't go deeper here, because our malloc mocking doesn't work with flex/bison.
+    set_fail_after(1);
+    sel = freesasa_selection_new("a, atom 1", structure, result);
+    set_fail_after(0);
+    ck_assert_ptr_eq(sel, NULL);
+
     for (int i = 1; i < 4; ++i) {
         set_fail_after(i);
         sel = freesasa_selection_alloc("bla", "bla");

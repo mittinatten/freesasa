@@ -344,6 +344,10 @@ assert_pass "$cli -t 1 -L -n 3 < $smallpdb > $dump"
 assert_pass "$cli -t 2 -L -n 3 < $smallpdb > $dump"
 assert_pass "$cli -t 10 -L -n 3 < $smallpdb > $dump"
 assert_fail "$cli -t 0 < $smallpdb > $dump"
+echo
+echo "== Testing input with residue insertions ==="
+assert_pass "test $($cli -n 2 --format=seq < $datadir/icode.pdb | grep ^SEQ | wc -l) -eq 5"
+
 echo 
 echo "== Testing conflicting options =="
 assert_fail "$cli -m -M $smallpdb > $dump"
