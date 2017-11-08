@@ -149,11 +149,10 @@ freesasa_pdb_get_atom_name(char *name,
     assert(line);
     if (pdb_line_check(line,PDB_ATOM_NAME_STRL+12) == FREESASA_FAIL) {
         name[0] = '\0';
-        printf("Failed : %s\n", line);
         return FREESASA_FAIL;
     }
     strncpy(name,line+12,PDB_ATOM_NAME_STRL);
-    printf("%s\n", name );
+    // printf("%s\n", name );
     name[PDB_ATOM_NAME_STRL] = '\0';
     return FREESASA_SUCCESS;
 }
