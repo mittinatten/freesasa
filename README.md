@@ -72,7 +72,8 @@ using the defaults, simply type
 In addition, `make install` installs the header `freesasa.h` and the
 library `libfreesasa`. If the configure script is called with the
 option `--enable-python-bindings`, the Python module is also built and
-installed.
+installed. Users who are only interested in Python can alternatively use
+the repository https://github.com/freesasa/freesasa-python.
 
 The configuration can be changed with these options:
 * `--enable-python-bindings` builds Python bindings, requires Cython
