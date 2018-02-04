@@ -10,6 +10,10 @@
 #include "freesasa_internal.h"
 #include "pdb.h"
 
+#ifndef FREESASA_XMLNS
+# define FREESASA_XMLNS "freesasa"
+#endif
+
 static xmlNodePtr
 nodearea2xml(const freesasa_nodearea *area,
              const char *name)
@@ -28,7 +32,7 @@ nodearea2xml(const freesasa_nodearea *area,
         fail_msg("");
         goto cleanup;
     }
-    
+
     sprintf(buf, "%.3f", area->apolar);
     if (xmlNewProp(xml_node, BAD_CAST "apolar", BAD_CAST buf) == NULL) {
         fail_msg("");
@@ -325,7 +329,7 @@ structure2xml(const freesasa_node *node,
     return NULL;
 }
 
-// Root is not converted to xmlNodePtr, we skip immediately to children
+/* Root is not converted to xmlNodePtr, we skip immediately to children */
 static int
 node2xml(xmlNodePtr *xml_node,
          freesasa_node *node,
@@ -360,7 +364,7 @@ node2xml(xmlNodePtr *xml_node,
     if (*xml_node == NULL)
         return fail_msg("error creating XML-node");
 
-    // simplify?
+    /* simplify? */
     while (child != NULL) {
         if (node2xml(&xml_child, child, exclude_type, options) == FREESASA_FAIL) {
             return fail_msg("");
@@ -525,7 +529,7 @@ freesasa_write_xml(FILE *output,
 
     xmlDocSetRootElement(doc, xml_root);
 
-    // global attributes
+    /* global attributes */
     if (xmlNewProp(xml_root, BAD_CAST "source", BAD_CAST freesasa_string) == NULL) {
         fail_msg("");
         goto cleanup;
@@ -574,7 +578,7 @@ freesasa_write_xml(FILE *output,
         fail_msg("");
         goto cleanup;
     }
-    
+
     if (xmlNodeDump(buf, doc, xml_root, 0, 1) == 0) {
         fail_msg("");
         goto cleanup;
@@ -584,14 +588,14 @@ freesasa_write_xml(FILE *output,
         fail_msg("");
         goto cleanup;
     }
-    
+
     fprintf(output, "%s", (const char*) buf->content);
     fflush(output);
     if (ferror(output)) {
         fail_msg(strerror(errno));
         goto cleanup;
     }
-    
+
     ret = FREESASA_SUCCESS;
 
  cleanup:

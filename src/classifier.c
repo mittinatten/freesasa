@@ -40,11 +40,13 @@ freesasa_classifier_types_new()
 void
 freesasa_classifier_types_free(struct classifier_types* t)
 {
+    int i;
+
     if (t != NULL) {
         free(t->type_radius);
         free(t->type_class);
         if (t->name)
-            for (int i = 0; i < t->n_types; ++i)
+            for (i = 0; i < t->n_types; ++i)
                 free(t->name[i]);
         free(t->name);
 
@@ -73,11 +75,12 @@ freesasa_classifier_residue_new(const char* name)
 void
 freesasa_classifier_residue_free(struct classifier_residue* res)
 {
+    int i;
     if (res != NULL) {
         free(res->name);
 
         if (res->atom_name)
-            for (int i = 0; i < res->n_atoms; ++i)
+            for (i = 0; i < res->n_atoms; ++i)
                 free(res->atom_name[i]);
         free(res->atom_name);
 
@@ -88,7 +91,7 @@ freesasa_classifier_residue_free(struct classifier_residue* res)
     }
 }
 
-freesasa_classifier * 
+freesasa_classifier *
 freesasa_classifier_new()
 {
     struct freesasa_classifier *cfg = malloc(sizeof(struct freesasa_classifier));
@@ -100,9 +103,10 @@ freesasa_classifier_new()
 void
 freesasa_classifier_free(freesasa_classifier *c)
 {
+    int i;
     if (c != NULL) {
         if (c->residue)
-            for (int i = 0; i < c->n_residues; ++i)
+            for (i = 0; i < c->n_residues; ++i)
                 freesasa_classifier_residue_free(c->residue[i]);
         free(c->residue);
         free(c->residue_name);
@@ -111,8 +115,9 @@ freesasa_classifier_free(freesasa_classifier *c)
     }
 }
 
-//! check if array of strings has a string that matches key, ignores trailing and leading whitespace
-static int 
+/* check if array of strings has a string that matches key,
+   ignores trailing and leading whitespace */
+static int
 find_string(char **array,
             const char *key,
             int array_size)
@@ -125,7 +130,7 @@ find_string(char **array,
 
     if (key_trimmed == NULL) return mem_fail();
 
-    // remove trailing and leading whitespace
+    /* remove trailing and leading whitespace */
     sscanf(key, "%s", key_trimmed);
 
     for (i = 0; i < array_size; ++i) {
@@ -150,7 +155,7 @@ find_string(char **array,
  */
 static int
 strip_line(char *line,
-           const char *input) 
+           const char *input)
 {
     assert(strlen(input) <= MAX_LINE_LEN);
 
@@ -159,20 +164,20 @@ strip_line(char *line,
 
     strcpy(linebuf, input);
     comment = strchr(linebuf, '#');
-    if (comment) *comment = '\0'; // skip comments
+    if (comment) *comment = '\0'; /* skip comments */
 
     first = linebuf;
     last = linebuf + strlen(linebuf) - 1;
     while (*first == ' ' || *first == '\t') ++first;
-    
-    if (last > first) 
+
+    if (last > first)
         while (*last == ' ' || *last == '\t' || *last == '\n') --last;
 
     if (first >= last) {
         line[0] = '\0';
         return 0;
     }
-    
+
     *(last+1) = '\0';
     strncpy(line, first, MAX_LINE_LEN);
 
@@ -251,7 +256,7 @@ locate_string(const char *line,
 
     strcpy(buf, line);
 
-    // skip comments
+    /* skip comments */
     loc = strstr(buf, "#");
     if (loc == buf) {
         return NOT_FOUND;
@@ -310,7 +315,7 @@ check_file(FILE *input,
 
     last_tell = ftell(input);
 
-    // this allows us to detect wether a section wasn't found later
+    /* this allows us to detect wether a section wasn't found later */
     types->begin = atoms->begin = name->begin = -1;
 
     while (fgets(line, MAX_LINE_LEN + 1, input)) {
@@ -318,7 +323,7 @@ check_file(FILE *input,
         try_register_stringloc(line, "atoms:", last_tell, atoms, &last_range);
         try_register_stringloc(line, "name:", last_tell, name, &last_range);
         last_tell = ftell(input);
-        
+
         if (strlen(line) == MAX_LINE_LEN &&
             line[MAX_LINE_LEN - 1] != '\n') {
             return fail_msg("Lines in classifier files can only be %d characters or less",
@@ -380,7 +385,7 @@ freesasa_classifier_parse_class(const char *name)
 int
 freesasa_classifier_add_type(struct classifier_types *types,
                              const char *type_name,
-                             const char *class_name, 
+                             const char *class_name,
                              double r)
 {
     int the_class;
@@ -388,32 +393,32 @@ freesasa_classifier_add_type(struct classifier_types *types,
     char **tn = types->name;
     double *tr = types->type_radius;
     freesasa_atom_class *tc = types->type_class;
-    
+
     if (find_string(types->name, type_name, types->n_types) >= 0)
         return freesasa_warn("ignoring duplicate configuration entry for '%s'", type_name);
-    
+
     the_class = freesasa_classifier_parse_class(class_name);
     if (the_class == FREESASA_FAIL) return fail_msg("");
-    
+
     if ((types->name = realloc(tn, sizeof(char*)*n)) == NULL) {
         types->name = tn;
         return mem_fail();
     }
-    
+
     if ((types->type_radius = realloc(tr, sizeof(double)*n)) == NULL) {
         types->type_radius = tr;
         return mem_fail();
     }
-    
+
     if ((types->type_class = realloc(tc, sizeof(int) * n)) == NULL) {
         types->type_class = tc;
         return mem_fail();
     }
-    
+
     if ((types->name[n-1] = strdup(type_name)) == NULL) {
         return mem_fail();
     }
-        
+
     types->n_types++;
     types->type_radius[types->n_types-1] = r;
     types->type_class[types->n_types-1] = the_class;
@@ -428,7 +433,7 @@ freesasa_classifier_add_type(struct classifier_types *types,
  */
 static int
 read_types_line(struct classifier_types *types,
-                const char* line) 
+                const char* line)
 {
     assert(strlen(line) <= MAX_LINE_LEN);
 
@@ -463,17 +468,17 @@ read_types(struct classifier_types *types,
     char line[MAX_LINE_LEN + 1];
     int ret = FREESASA_SUCCESS, nl;
     fseek(input, fi.begin, SEEK_SET);
-    
-    // read command (and discard)
+
+    /* read command (and discard) */
     if (next_line(line, input) > 0) {
-        char buf[7]; // we should not get here if the line isn't "types:" (plus whitespace)
+        char buf[7]; /* we should not get here if the line isn't "types:" (plus whitespace) */
         if (sscanf(line, "%6s", buf) == 0) return FREESASA_FAIL;
         assert(strcmp(buf, "types:") == 0);
     } else {
         return FREESASA_FAIL;
     }
 
-    while (ftell(input) < fi.end) { 
+    while (ftell(input) < fi.end) {
         nl = next_line(line,input);
         if (nl == 0) continue;
         if (nl == FREESASA_FAIL) {ret = nl; break; };
@@ -501,7 +506,7 @@ freesasa_classifier_add_atom(struct classifier_residue *res,
     freesasa_atom_class *ac = res->atom_class;
 
     if (find_string(res->atom_name, name, res->n_atoms) >= 0)
-        return freesasa_warn("ignoring duplicate configuration entry for atom '%s %s'", 
+        return freesasa_warn("ignoring duplicate configuration entry for atom '%s %s'",
                              res->name, name);
     n = res->n_atoms+1;
 
@@ -517,7 +522,7 @@ freesasa_classifier_add_atom(struct classifier_residue *res,
         res->atom_class = ac;
         return mem_fail();
     }
-    if ((res->atom_name[n-1] = strdup(name)) == NULL) 
+    if ((res->atom_name[n-1] = strdup(name)) == NULL)
         return mem_fail();
 
     ++res->n_atoms;
@@ -605,7 +610,7 @@ read_atoms_line(struct freesasa_classifier *c,
 
         if (atom == FREESASA_FAIL) return fail_msg("");
         if (atom == FREESASA_WARN) return FREESASA_WARN;
-        
+
     } else {
         return fail_msg("could not parse configuration, line '%s', "
                         "expecting triplet of type "
@@ -630,7 +635,7 @@ read_atoms(struct freesasa_classifier *c,
     int ret = FREESASA_SUCCESS, nl;
     fseek(input, fi.begin, SEEK_SET);
 
-    // read command (and discard)
+    /* read command (and discard) */
     if (next_line(line, input) > 0) {
         assert(strlen(line) <= MAX_LINE_LEN);
         char buf[MAX_LINE_LEN + 1];
@@ -640,7 +645,7 @@ read_atoms(struct freesasa_classifier *c,
         return FREESASA_FAIL;
     }
 
-    while (ftell(input) < fi.end) { 
+    while (ftell(input) < fi.end) {
         nl = next_line(line, input);
         if (nl == 0) continue;
         if (nl == FREESASA_FAIL) return fail_msg("");
@@ -659,7 +664,7 @@ read_name(struct freesasa_classifier *classifier,
     char buf[MAX_LINE_LEN + 1];
 
     if (fi.begin < 0)
-        return FREESASA_SUCCESS; // name not set?
+        return FREESASA_SUCCESS; /* name not set? */
 
     fseek(input, fi.begin, SEEK_SET);
     if (get_next_string(input, buf) <= 0)
@@ -680,7 +685,7 @@ read_name(struct freesasa_classifier *classifier,
 }
 
 static struct freesasa_classifier*
-read_config(FILE *input) 
+read_config(FILE *input)
 {
     assert(input);
     struct file_range types_section, atoms_section, name_section;
@@ -701,7 +706,7 @@ read_config(FILE *input)
         goto cleanup;
 
     freesasa_classifier_types_free(types);
-    
+
     return classifier;
 
  cleanup:
@@ -714,7 +719,7 @@ read_config(FILE *input)
     See if an atom_name has been defined for the residue ANY (writes
     indices to the provided pointers).
  */
-static void 
+static void
 find_any(const struct freesasa_classifier *c,
          const char *atom_name,
          int *res, int *atom)
@@ -723,7 +728,7 @@ find_any(const struct freesasa_classifier *c,
     if (*res >= 0) {
         *atom = find_string(c->residue[*res]->atom_name,
                             atom_name,
-                            c->residue[*res]->n_atoms); 
+                            c->residue[*res]->n_atoms);
     }
 }
 /**
@@ -731,8 +736,8 @@ find_any(const struct freesasa_classifier *c,
     configuration. Prints error and returns FREESASA_WARN if not
     found.
  */
-static int 
-find_atom(const struct freesasa_classifier *c, 
+static int
+find_atom(const struct freesasa_classifier *c,
           const char *res_name,
           const char *atom_name,
           int* res,
@@ -742,7 +747,7 @@ find_atom(const struct freesasa_classifier *c,
     *res = find_string(c->residue_name, res_name, c->n_residues);
     if (*res < 0) {
         find_any(c, atom_name, res, atom);
-    } else {        
+    } else {
         const struct classifier_residue *residue = c->residue[*res];
         *atom = find_string(residue->atom_name, atom_name, residue->n_atoms);
         if (*atom < 0) {
@@ -758,10 +763,10 @@ find_atom(const struct freesasa_classifier *c,
 double
 freesasa_classifier_radius(const freesasa_classifier *classifier,
                            const char *res_name,
-                           const char *atom_name)                           
+                           const char *atom_name)
 {
     assert(classifier); assert(res_name); assert(atom_name);
-    
+
     int res, atom, status;
 
     status = find_atom(classifier, res_name, atom_name, &res,&atom);
@@ -772,7 +777,7 @@ freesasa_classifier_radius(const freesasa_classifier *classifier,
 
 freesasa_atom_class
 freesasa_classifier_class(const freesasa_classifier *classifier,
-                          const char *res_name, 
+                          const char *res_name,
                           const char *atom_name)
 {
     assert(classifier); assert(res_name); assert(atom_name);
@@ -823,11 +828,11 @@ freesasa_classifier_from_file(FILE *file)
 
 const freesasa_nodearea *
 freesasa_classifier_residue_reference(const freesasa_classifier *classifier,
-                                      const char *res_name)                                      
+                                      const char *res_name)
 {
     int res = find_string(classifier->residue_name, res_name, classifier->n_residues);
     if (res < 0) return NULL;
-    
+
     return &classifier->residue[res]->max_area;
 }
 
@@ -842,83 +847,86 @@ struct symbol_radius {
     double radius;
 };
 
-/* Taken from: 
-   
+/* Taken from:
+
    Mantina et al. "Consistent van der Waals Radii for
    the Whole Main Group". J. Phys. Chem. A, 2009, 113 (19), pp
-   5806–5812. 
-   
+   5806–5812.
+
    Many of these elements, if they occur in a PDB file, should
    probably rather be skipped than used in a SASA calculation, and
    ionization will change the effective radius.
 
 */
 static const struct symbol_radius symbol_radius[] = {
-    // elements that actually occur in the regular amino acids and nucleotides
-    {" H", 1.10}, {" C", 1.70}, {" N", 1.55}, {" O", 1.52}, {" P", 1.80}, {" S", 1.80}, {"SE", 1.90}, 
-    // some others, just because there were readily available values
+    /* elements that actually occur in the regular amino acids and nucleotides */
+    {" H", 1.10}, {" C", 1.70}, {" N", 1.55}, {" O", 1.52}, {" P", 1.80}, {" S", 1.80}, {"SE", 1.90},
+    /* some others, just because there were readily available values */
     {" F", 1.47}, {"CL", 1.75}, {"BR", 1.83}, {" I", 1.98},
-    {"LI", 1.81}, {"BE", 1.53}, {" B", 1.92}, 
-    {"NA", 2.27}, {"MG", 1.74}, {"AL", 1.84}, {"SI", 2.10}, 
-    {" K", 2.75}, {"CA", 2.31}, {"GA", 1.87}, {"GE", 2.11}, {"AS", 1.85}, 
-    {"RB", 3.03}, {"SR", 2.49}, {"IN", 1.93}, {"SN", 2.17}, {"SB", 2.06}, {"TE", 2.06}, 
+    {"LI", 1.81}, {"BE", 1.53}, {" B", 1.92},
+    {"NA", 2.27}, {"MG", 1.74}, {"AL", 1.84}, {"SI", 2.10},
+    {" K", 2.75}, {"CA", 2.31}, {"GA", 1.87}, {"GE", 2.11}, {"AS", 1.85},
+    {"RB", 3.03}, {"SR", 2.49}, {"IN", 1.93}, {"SN", 2.17}, {"SB", 2.06}, {"TE", 2.06},
 };
 
 double
 freesasa_guess_radius(const char* symbol)
 {
     assert(symbol);
-    int n_symbol = sizeof(symbol_radius)/sizeof(struct symbol_radius);
-    for (int i = 0; i < n_symbol; ++i) {
+    int n_symbol, i;
+
+    n_symbol = sizeof(symbol_radius)/sizeof(struct symbol_radius);
+
+    for (i = 0; i < n_symbol; ++i) {
         if (strcmp(symbol,symbol_radius[i].symbol) == 0)
             return symbol_radius[i].radius;
     }
     return -1.0;
 }
 
-//! The residue types that are returned by freesasa_classify_residue()
+/* The residue types that are returned by freesasa_classify_residue() */
 enum residue {
-    //Regular amino acids
+    /* Regular amino acids */
     ALA=0, ARG, ASN, ASP,
     CYS, GLN, GLU, GLY,
-    HIS, ILE, LEU, LYS, 
+    HIS, ILE, LEU, LYS,
     MET, PHE, PRO, SER,
     THR, TRP, TYR, VAL,
-    //some non-standard ones
+    /* some non-standard ones */
     CSE, SEC, PYL, PYH,
     ASX, GLX,
-    //residue unknown
+    /* residue unknown */
     RES_UNK,
-    //capping N- and C-terminal groups (usually HETATM)
+    /* capping N- and C-terminal groups (usually HETATM) */
     ACE, NH2,
-    //DNA
+    /* DNA */
     DA, DC, DG, DT,
     DU, DI,
-    //RNA (avoid one-letter enums)
+    /* RNA (avoid one-letter enums) */
     RA, RC, RG, RU, RI, RT,
-    //generic nucleotide
+    /* generic nucleotide */
     NN
 };
 
-// Residue types, make sure this always matches the corresponding enum.
+/* Residue types, make sure this always matches the corresponding enum. */
 static const char *residue_names[] = {
-    //amino acids
+    /* amino acids */
     "ALA","ARG","ASN","ASP",
     "CYS","GLN","GLU","GLY",
     "HIS","ILE","LEU","LYS",
     "MET","PHE","PRO","SER",
     "THR","TRP","TYR","VAL",
-    // non-standard amino acids
-    "CSE","SEC","PYL","PYH", // SEC and PYL are standard names, CSE and PYH are found in some early files
+    /* non-standard amino acids */
+    "CSE","SEC","PYL","PYH", /* SEC and PYL are standard names, CSE and PYH are found in some early files */
     "ASX","GLX",
     "UNK",
-    // capping groups
+    /* capping groups */
     "ACE","NH2",
-    //DNA
+    /* DNA */
     "DA","DC","DG","DT","DU","DI",
-    //RNA
+    /* RNA */
     "A","C","G","U","I","T",
-    //General nucleotide
+    /* General nucleotide */
     "N"
 };
 
@@ -931,9 +939,10 @@ freesasa_classify_n_residue_types()
 int
 freesasa_classify_residue(const char *res_name)
 {
+    int i;
     char cpy[PDB_ATOM_RES_NAME_STRL+1];
     sscanf(res_name, "%s", cpy);
-    for (int i = ALA; i < freesasa_classify_n_residue_types(); ++i) {
+    for (i = ALA; i < freesasa_classify_n_residue_types(); ++i) {
         if (strcmp(cpy,residue_names[i]) == 0) return i;
     }
     return RES_UNK;
@@ -949,15 +958,17 @@ freesasa_classify_residue_name(int residue_type)
 int
 freesasa_atom_is_backbone(const char *atom_name)
 {
-    char name[PDB_ATOM_NAME_STRL+1];
-    name[0] = '\0';
-    sscanf(atom_name, "%s", name); //trim whitespace
     const char *bb[] = {"CA", "N", "O", "C", "OXT",
                         "P", "OP1", "OP2", "O5'", "C5'", "C4'",
                         "O4'", "C3'", "O3'", "C2'", "C1'"};
+    char name[PDB_ATOM_NAME_STRL+1];
+    int i;
+
+    name[0] = '\0';
+    sscanf(atom_name, "%s", name); /* trim whitespace */
 
     if (strlen(name) == 0) return 0;
-    for (int i = 0; i < sizeof(bb)/sizeof(const char*); ++i) {
+    for (i = 0; i < sizeof(bb)/sizeof(const char*); ++i) {
         if (strcmp(name, bb[i]) == 0) {
             return 1;
         }
@@ -1065,7 +1076,7 @@ START_TEST (test_classifier_utils)
 {
     const char *strarr[] = {"A","B","C"};
     const char *line[] = {"# Bla"," # Bla","Bla # Bla"," Bla # Bla","#Bla #Alb"};
- 
+
     char dummy_str[MAX_LINE_LEN + 1];
     ck_assert_int_eq(find_string((char**)strarr,"A",3),0);
     ck_assert_int_eq(find_string((char**)strarr,"B",3),1);
@@ -1112,4 +1123,4 @@ test_classifier_static()
     return tc;
 }
 
-#endif // USE_CHECK
+#endif /** USE_CHECK */

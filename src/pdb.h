@@ -11,20 +11,19 @@
     The following functions all extract info from the PDB lines `ATOM`
     and `HETATM`. Valid lines have to begin with either `ATOM` or
     `HETATM` and be sufficiently long to contain the value in
-    question. 
+    question.
 */
 
-
-#define PDB_ATOM_NAME_STRL 4 //!< Length of strings with atom names, such as `" CA "`.
-#define PDB_ATOM_RES_NAME_STRL 3 //!< Length of string with residue names, such as `"ALA"`.
-#define PDB_ATOM_RES_NUMBER_STRL 5 //!< Length of string with residue number, such as `" 123"`.
-#define PDB_ATOM_SYMBOL_STRL 2 //!< Length for string with element symbol, such "FE"
-#define PDB_LINE_STRL 80 //!< Length of a line in PDB file.
-#define PDB_MAX_LINE_STRL 120 //!< for reading, allows nonstandard input with extra fields
+#define PDB_ATOM_NAME_STRL 4 /**< Length of strings with atom names, such as `" CA "`. */
+#define PDB_ATOM_RES_NAME_STRL 3 /**< Length of string with residue names, such as `"ALA"`. */
+#define PDB_ATOM_RES_NUMBER_STRL 5 /**< Length of string with residue number, such as `" 123"`. */
+#define PDB_ATOM_SYMBOL_STRL 2 /**< Length for string with element symbol, such "FE". */
+#define PDB_LINE_STRL 80 /**< Length of a line in PDB file. */
+#define PDB_MAX_LINE_STRL 120 /**< for reading, allows nonstandard input with extra fields. */
 
 /**
     Finds the location of all MODEL entries in the file pdb, returns
-    the number of models found. 
+    the number of models found.
 
     The array *ranges will be dynamically allocated to contain a
     file ranges for each model.
@@ -57,13 +56,13 @@ freesasa_pdb_get_chains(FILE *pdb,
                         int options);
 /**
     Get atom name from a PDB line.
-    
+
     Extracts the whole atom name field from an `ATOM` or `HETATM` PDB
     line, including padding, i.e. a string of ::PDB_ATOM_NAME_STRL
     characters. For example `" CA "` for a regular C-alpha.  If the
     line is invalid, the name will be an empty string and the function
     returns ::FREESASA_FAIL.
-    
+
     @param name The name is written to this string.
     @param line Line from a PDB file.
     @return ::FREESASA_SUCCESS if input is readable, else ::FREESASA_FAIL.
@@ -74,11 +73,11 @@ freesasa_pdb_get_atom_name(char *name,
 
 /**
     Get residue name from a PDB line.
-   
+
     Extracts the whole residue name from an `ATOM` or `HETATM` PDB
     line, i.e. a string of ::PDB_ATOM_RES_NAME_STRL characters. For
     example `"ALA"` for an Alanine. If theline is invalid, the name
-    will be an empty string and the function returns ::FREESASA_FAIL. 
+    will be an empty string and the function returns ::FREESASA_FAIL.
 
     @param name The name is written to this string.
     @param line Line from a PDB file.
@@ -105,13 +104,13 @@ freesasa_pdb_get_coord(double *coord,
 
 /**
     Get residue number from a PDB line.
-    
+
     Extracts residue number (ResSeq) as a string from an `ATOM` or
     `HETATM` PDB line as a string. String format is used because not
     all residue-numbers are numbers. The string should have length
     ::PDB_ATOM_RES_NUMBER_STRL. If the line is invalid, the number will be an
     empty string and the function returns ::FREESASA_FAIL.
-    
+
     @param number The residue number will be saved to this string.
     @param line Line from a PDB file.
     @return ::FREESASA_SUCCESS if input is readable, else ::FREESASA_FAIL.
@@ -122,24 +121,24 @@ freesasa_pdb_get_res_number(char *number,
 
 /**
     Get chain label from PDB line.
-    
+
     Extracts the one character chain label (Chain identifier) from an
-    `ATOM` or `HETATM` PDB line (i.e. `'A'`, `'B'`, `'C'`, ...) 
+    `ATOM` or `HETATM` PDB line (i.e. `'A'`, `'B'`, `'C'`, ...)
 
     @param line Line from a PDB file.
     @return The chain label. If the line is invalid, the function
-    returns '\0'. 
+    returns '\0'.
  */
 char
 freesasa_pdb_get_chain_label(const char* line);
 
 /**
     Get alternate coordinate label from PDB line.
-    
+
     If there is more than one set of coordinates for an atom there
     will be a label 'A', 'B', etc (Alternate location indicator). Else
-    the label is ' '. 
-    
+    the label is ' '.
+
     @param line Line from a PDB file.
     @return The label. If line is invalid, the function returns
       '\0'.
@@ -187,10 +186,10 @@ freesasa_pdb_get_bfactor(double *bfac,
 
 /**
     Is atom Hydrogen?
-    
+
     Checks if an atom from an `ATOM` or `HETATM` PDB line is Hydrogen.
 
-    @param line Line from a PDB file.  
+    @param line Line from a PDB file.
     @return 1 if Hydrogen (or deuterium). 0 otherwise. If line is
       invalid, the function returns ::FREESASA_FAIL.
  */

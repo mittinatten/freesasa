@@ -12,10 +12,11 @@
 #endif
 #include <math.h>
 
-#define MAX_LR_THREADS 16
-
 #if USE_THREADS
 # include <pthread.h>
+# define MAX_LR_THREADS 16
+#else
+# define MAX_LR_THREADS 1
 #endif
 
 #include "freesasa_internal.h"
@@ -23,14 +24,14 @@
 
 const double TWOPI = 2*M_PI;
 
-//calculation parameters and data (results stored in *sasa)
+/* calculation parameters and data (results stored in *sasa) */
 typedef struct {
     int n_atoms;
-    double *radii; //including probe
+    double *radii; /* including probe */
     const coord_t *xyz;
     nb_list *adj;
     int n_slices_per_atom;
-    double *sasa; // results
+    double *sasa; /* results */
     double *arc[MAX_LR_THREADS], *z_nb[MAX_LR_THREADS], *R_nb[MAX_LR_THREADS];
     int n_threads;
 } lr_data;
@@ -60,30 +61,32 @@ exposed_arc_length(double *restrict arc, int n);
 static void
 release_lr(lr_data *lr)
 {
+    int i;
+
     free(lr->radii);
     freesasa_nb_free(lr->adj);
     lr->radii = NULL;
     lr->adj = NULL;
 
-    for (int i = 0; i < lr->n_threads; ++i) {
+    for (i = 0; i < lr->n_threads; ++i) {
         free(lr->arc[i]);
         free(lr->z_nb[i]);
         free(lr->R_nb[i]);
     }
 }
 
-// Allocate some helper arrays in area calculation that need to be pre-allocated
+/* Allocate some helper arrays in area calculation that need to be pre-allocated */
 static int
 alloc_lr_calc_arrays(lr_data *lr, int n_threads) {
-    int max_nni = 0;
+    int max_nni = 0, i, nni;
     const int n_atoms = lr->n_atoms;
 
-    for (int i = 0; i < n_atoms; ++i) {
-        const int nni = lr->adj->nn[i];
+    for (i = 0; i < n_atoms; ++i) {
+        nni = lr->adj->nn[i];
         max_nni = max_nni < nni ? nni : max_nni;
     }
 
-    for (int i = 0; i < n_threads; ++i) {
+    for (i = 0; i < n_threads; ++i) {
         lr->arc[i] = malloc(sizeof(double) * 4 * max_nni);
         lr->z_nb[i] = malloc(sizeof(double) * max_nni);
         lr->R_nb[i] = malloc(sizeof(double) * max_nni);
@@ -107,6 +110,8 @@ init_lr(lr_data *lr,
         int n_threads)
 {
     const int n_atoms = freesasa_coord_n(xyz);
+    int i;
+
     lr->n_atoms = n_atoms;
     lr->xyz = xyz;
     lr->adj = NULL;
@@ -114,7 +119,7 @@ init_lr(lr_data *lr,
     lr->sasa = sasa;
     lr->n_threads = n_threads;
 
-    for (int i = 0; i < n_threads; ++i) {
+    for (i = 0; i < n_threads; ++i) {
         lr->arc[i] = NULL;
         lr->z_nb[i] = NULL;
         lr->R_nb[i] = NULL;
@@ -125,13 +130,13 @@ init_lr(lr_data *lr,
         return mem_fail();
     }
 
-    //init some arrays
-    for (int i = 0; i < n_atoms; ++i) {
+    /* init some arrays */
+    for (i = 0; i < n_atoms; ++i) {
         lr->radii[i] = atom_radii[i] + probe_radius;
         sasa[i] = 0.;
     }
 
-    // determine which atoms are neighbours
+    /* determine which atoms are neighbours */
     lr->adj = freesasa_nb_new(xyz, lr->radii);
 
     if (lr->adj == NULL) {
@@ -154,18 +159,21 @@ freesasa_lee_richards(double *sasa,
                       const double *atom_radii,
                       const freesasa_parameters *param)
 {
+    int return_value, n_atoms, n_threads, resolution, i;
+    double probe_radius;
+    lr_data lr;
+
     assert(sasa);
     assert(xyz);
     assert(atom_radii);
 
     if (param == NULL) param = &freesasa_default_parameters;
 
-    int return_value = FREESASA_SUCCESS,
-        n_atoms = freesasa_coord_n(xyz),
-        n_threads = param->n_threads,
-        resolution = param->lee_richards_n_slices;
-    double probe_radius = param->probe_radius;
-    lr_data lr;
+    return_value = FREESASA_SUCCESS;
+    n_atoms = freesasa_coord_n(xyz);
+    n_threads = param->n_threads;
+    resolution = param->lee_richards_n_slices;
+    probe_radius = param->probe_radius;
 
     if (n_threads > MAX_LR_THREADS) {
         return fail_msg("L&R does not support more than %d threads", MAX_LR_THREADS);
@@ -184,10 +192,10 @@ freesasa_lee_richards(double *sasa,
         freesasa_warn("no sense in having more threads than atoms, only using %d threads",
                       n_threads);
     }
-    
+
     if(init_lr(&lr, sasa, xyz, atom_radii, probe_radius, resolution, n_threads))
         return FREESASA_FAIL;
-    
+
     if (n_threads > 1) {
 #if USE_THREADS
         return_value = lr_do_threads(n_threads, &lr);
@@ -200,9 +208,9 @@ freesasa_lee_richards(double *sasa,
 #endif /* pthread */
     }
     if (n_threads == 1) {
-        for (int i = 0; i < lr.n_atoms; ++i) {
+        for (i = 0; i < lr.n_atoms; ++i) {
             lr.sasa[i] = atom_area(&lr, i, 0);
-        }        
+        }
     }
     release_lr(&lr);
     return return_value;
@@ -217,8 +225,9 @@ lr_do_threads(int n_threads,
     lr_thread_interval t_data[MAX_LR_THREADS];
     int n_perthread = lr->n_atoms/n_threads, res;
     int threads_created = 0, return_value = FREESASA_SUCCESS;
- 
-    for (int t = 0; t < n_threads; ++t) {
+    int t;
+
+    for (t = 0; t < n_threads; ++t) {
         t_data[t].first_atom = t*n_perthread;
         if (t == n_threads-1) {
             t_data[t].last_atom = lr->n_atoms - 1;
@@ -247,8 +256,10 @@ lr_do_threads(int n_threads,
 static void*
 lr_thread(void *arg)
 {
+    int i;
     lr_thread_interval *ti = ((lr_thread_interval*) arg);
-    for (int i = ti->first_atom; i <= ti->last_atom; ++i) {
+
+    for (i = ti->first_atom; i <= ti->last_atom; ++i) {
         /* the different threads write to different parts of the
            array, so locking shouldn't be necessary */
         ti->lr->sasa[i] = atom_area(ti->lr, i, ti->thread_id);
@@ -265,7 +276,7 @@ atom_area(lr_data *lr,
     /* This function is large because a large number of pre-calculated
        arrays need to be accessed efficiently. Partially dereferenced
        here to make access more efficient.
-    
+
        Variables are named according to the documentation (see page
        "Geometry of Lee & Richards' algorithm") */
 
@@ -279,65 +290,66 @@ atom_area(lr_data *lr,
     const double zi = v[3*i+2], Ri = R[i];
     const int ns = lr->n_slices_per_atom;
 
+    int j, islice, n_arcs, is_buried, narc2;
     double *arc = lr->arc[thread_id],
         *z_nb = lr->z_nb[thread_id],
         *R_nb = lr->R_nb[thread_id];
-    double z, delta, sasa = 0;
+    double z, delta, sasa = 0, alpha, beta, inf, sup;
+    double zj, di, dj, dij, Rj, Ri_prime2, Ri_prime, Rj_prime2, Rj_prime;
 
-    for (int j = 0; j < nni; ++j) {
+    for (j = 0; j < nni; ++j) {
         z_nb[j] = v[3*nbi[j]+2];
         R_nb[j] = R[nbi[j]];
     }
-    
+
     delta = 2*Ri/ns;
     z = zi-Ri-0.5*delta;
-    for (int islice = 0; islice < ns; ++islice) {
+    for (islice = 0; islice < ns; ++islice) {
         z += delta;
-        const double di = fabs(zi - z);
-        const double Ri_prime2 = Ri*Ri-di*di;
-        if (Ri_prime2 < 0 ) continue; // handle round-off errors
-        const double Ri_prime = sqrt(Ri_prime2);
-        if (Ri_prime <= 0) continue; // more round-off errors
-        int n_arcs = 0, is_buried = 0;
-        for (int j = 0; j < nni; ++j) {
-            const double zj = z_nb[j];
-            const double dj = fabs(zj - z);
-            const double Rj = R_nb[j];
+        di = fabs(zi - z);
+        Ri_prime2 = Ri*Ri-di*di;
+        if (Ri_prime2 < 0 ) continue; /* handle round-off errors */
+        Ri_prime = sqrt(Ri_prime2);
+        if (Ri_prime <= 0) continue; /* more round-off errors */
+        n_arcs = 0; is_buried = 0;
+        for (j = 0; j < nni; ++j) {
+            zj = z_nb[j];
+            dj = fabs(zj - z);
+            Rj = R_nb[j];
+
             if (dj < Rj) {
-                const double Rj_prime2 = Rj*Rj-dj*dj;
-                const double Rj_prime = sqrt(Rj_prime2);
-                const double dij = xydi[j];
-                double alpha, beta, inf, sup;
-                int narc2;
-                if (dij >= Ri_prime + Rj_prime) { // atoms aren't in contact
+                Rj_prime2 = Rj*Rj-dj*dj;
+                Rj_prime = sqrt(Rj_prime2);
+                dij = xydi[j];
+                if (dij >= Ri_prime + Rj_prime) { /* atoms aren't in contact */
                     continue;
                 }
-                if (dij + Ri_prime < Rj_prime) { // circle i is completely inside j
+                if (dij + Ri_prime < Rj_prime) { /* circle i is completely inside j */
                     is_buried = 1;
                     break;
                 }
-                if (dij + Rj_prime < Ri_prime) { // circle j is completely inside i
+                if (dij + Rj_prime < Ri_prime) { /* circle j is completely inside i */
                     continue;
                 }
-                // arc of circle i intersected by circle j
+                /* arc of circle i intersected by circle j */
                 alpha = acos ((Ri_prime2 + dij*dij - Rj_prime2)/(2.0*Ri_prime*dij));
-                // position of mid-point of intersection along circle i
+                /* position of mid-point of intersection along circle i */
                 beta = atan2 (ydi[j],xdi[j]) + M_PI;
                 inf = beta - alpha;
                 sup = beta + alpha;
                 if (inf < 0) inf += TWOPI;
                 if (sup > 2*M_PI) sup -= TWOPI;
                 narc2 = 2*n_arcs;
-                // store the arc, if arc passes 2*PI split into two
+                /* store the arc, if arc passes 2*PI split into two */
                 if (sup < inf) {
-                    //store arcs as contiguous pairs of angles
+                    /* store arcs as contiguous pairs of angles */
                     arc[narc2]   = 0;
                     arc[narc2+1] = sup;
-                    //second arc
+                    /* second arc */
                     arc[narc2+2] = inf;
                     arc[narc2+3] = TWOPI;
                     n_arcs += 2;
-                } else { 
+                } else {
                     arc[narc2]   = inf;
                     arc[narc2+1] = sup;
                     ++n_arcs;
@@ -351,48 +363,47 @@ atom_area(lr_data *lr,
     return sasa;
 }
 
-//insertion sort (faster than qsort for these short lists)
+/* insertion sort (faster than qsort for these short lists) */
 inline static void
 sort_arcs(double * restrict arc,
-          int n) 
+          int n)
 {
     double tmp[2];
     double *end = arc+2*n, *arcj, *arci;
     for (arci = arc+2; arci < end; arci += 2) {
-        //memcpy(tmp,arci,2*sizeof(double));
-        // this is much faster than memcpy for this small chunk
         *tmp = *arci;
         *(tmp+1) = *(arci+1);
         arcj = arci;
         while (arcj > arc && *(arcj-2) > tmp[0]) {
-            //memcpy(arcj,arcj-2,2*sizeof(double)); 
             *arcj = *(arcj-2);
             *(arcj+1) = *(arcj-1);
             arcj -= 2;
         }
-        //memcpy(arcj,tmp,2*sizeof(double));
         *arcj = *tmp;
         *(arcj+1) = *(tmp+1);
     }
 }
 
-// sort arcs by start-point, loop through them to sum parts of circle
-// not covered by any of the arcs
+/* sort arcs by start-point, loop through them to sum parts of circle
+   not covered by any of the arcs */
 inline static double
 exposed_arc_length(double * restrict arc,
                    int n)
 {
-    if (n == 0) return TWOPI;
+    int i2;
     double sum, sup, tmp;
+
+    if (n == 0) return TWOPI;
+
     sort_arcs(arc,n);
     sum = arc[0];
     sup = arc[1];
-    // in the following it is assumed that the arc[i2] <= arc[i2+1]
-    for (int i2 = 2; i2 < 2*n; i2 += 2) {
+    /* in the following it is assumed that the arc[i2] <= arc[i2+1] */
+    for (i2 = 2; i2 < 2*n; i2 += 2) {
         if (sup < arc[i2]) sum += arc[i2] - sup;
         tmp = arc[i2+1];
         if (tmp > sup) sup = tmp;
-    } 
+    }
     return sum + TWOPI - sup;
 }
 
@@ -401,16 +412,22 @@ exposed_arc_length(double * restrict arc,
 
 static int
 is_identical(const double *l1, const double *l2, int n) {
-    for (int i = 0; i < n; ++i) {
+    int i;
+
+    for (i = 0; i < n; ++i) {
         if (l1[i] != l2[i]) return 0;
     }
+
     return 1;
 }
 
 static int
 is_sorted(const double *list,int n)
 {
-    for (int i = 0; i < n - 1; ++i) if (list[2*i] > list[2*i+1]) return 0;
+    int i;
+
+    for (i = 0; i < n - 1; ++i) if (list[2*i] > list[2*i+1]) return 0;
+
     return 1;
 }
 
@@ -432,7 +449,7 @@ START_TEST (test_sort_arcs) {
 }
 END_TEST
 
-START_TEST (test_exposed_arc_length) 
+START_TEST (test_exposed_arc_length)
 {
     double a1[4] = {0,0.1*TWOPI,0.9*TWOPI,TWOPI}, a2[4] = {0.9*TWOPI,TWOPI,0,0.1*TWOPI};
     double a3[4] = {0,TWOPI,1,2}, a4[4] = {1,2,0,TWOPI};
@@ -450,7 +467,7 @@ START_TEST (test_exposed_arc_length)
     ck_assert(fabs(exposed_arc_length(a7,2) - 0.8*TWOPI) < 1e-10);
     ck_assert(fabs(exposed_arc_length(a8,2) - 0.8*TWOPI) < 1e-10);
     ck_assert(fabs(exposed_arc_length(a9,5) - 0.45) < 1e-10);
-    // can't think of anything more qualitatively different here
+    /* can't think of anything more qualitatively different here */
 }
 END_TEST
 
@@ -464,4 +481,4 @@ test_LR_static()
     return tc;
 }
 
-#endif // USE_CHECK
+#endif /* USE_CHECK */

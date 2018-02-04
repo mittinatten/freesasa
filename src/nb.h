@@ -6,27 +6,27 @@
 /**
    @file
    @author Simon Mitternacht
-   
+
    Functions to compute neighbor lists. The function
    freesasa_nb_contact() is mainly intended for checking consistency,
    in performance-critical code it is advisible to use the struct (as
    demonstrated in sasa_lr.c and sasa_sr.c).
  */
 
-//! Neighbor list
+/** Neighbor list */
 typedef struct {
-    int n; //!< number of elements
-    int **nb; //!< neighbors to each element
-    int *nn; //!< number of neighbors to each element
-    double **xyd; //!< distance between neighbors in xy-plane
-    double **xd; //!< signed distance between neighbors along x-axis
-    double **yd; //!< signed distance between neighbors along y-axis
-    int *capacity; //!< keeps track of memory chunks (don't change this)
+    int n;         /**< number of elements */
+    int **nb;      /**< neighbors to each element */
+    int *nn;       /**< number of neighbors to each element */
+    double **xyd;  /**< distance between neighbors in xy-plane */
+    double **xd;   /**< signed distance between neighbors along x-axis */
+    double **yd;   /**< signed distance between neighbors along y-axis */
+    int *capacity; /**< keeps track of memory chunks (don't change this) */
 } nb_list;
 
 /**
     Creates a neigbor list based on a set of coordinates with
-    corresponding sphere radii. 
+    corresponding sphere radii.
 
     Implemented using cell lists, giving O(N) performance. Should be
     freed with freesasa_nb_free(). For efficient calculations
@@ -64,4 +64,4 @@ freesasa_nb_contact(const nb_list *nb,
                     int i,
                     int j);
 
-#endif /* FREESASA_NB_H*/
+#endif /* FREESASA_NB_H */

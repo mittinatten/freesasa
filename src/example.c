@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include "freesasa.h"
 
-//! \{
+/** \{ */
 int main(int argc, char **argv) {
     freesasa_structure *structure = NULL;
     freesasa_result *result = NULL;
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
         /* If there was an error at any step, we will end up here */
         printf("Error calculating SASA\n");
     }
-    
+
     /* Print results */
     printf("Total  : %f A2\n", area.total);
     printf("Apolar : %f A2\n", area.apolar);
@@ -49,4 +49,4 @@ int main(int argc, char **argv) {
 
     return EXIT_SUCCESS;
 }
-//! \}
+/** \} */

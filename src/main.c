@@ -64,7 +64,7 @@ static struct option long_options[] = {
     {"rsa",                  no_argument,       &option_flag, RSA},
     {"radii",                required_argument, &option_flag, RADII},
     {"deprecated",           no_argument,       &option_flag, DEPRECATED},
-    // Deprecated options
+    /* Deprecated options */
     {"foreach-residue-type", no_argument,       0, 'r'},
     {"foreach-residue",      no_argument,       0, 'R'},
     {"print-as-B-values",    no_argument,       0, 'B'},
@@ -77,7 +77,7 @@ static struct option long_options[] = {
 #define ARG_OPTIONS "c:n:t:p:g:e:o:f:"
 const char* options_string = ":" NOARG_OPTIONS NOARG_DEPRECATED ARG_OPTIONS;
 
-// State of app (most settings are stored here)
+/* State of app (most settings are stored here) */
 struct cli_state {
     freesasa_parameters parameters;
     freesasa_classifier *classifier_from_file;
@@ -85,19 +85,18 @@ struct cli_state {
     int structure_options;
     int static_classifier;
     int no_rel;
-    // chain groups
+    /* chain groups */
     int n_chain_groups;
     char** chain_groups;
-    // selection commands
+    /* selection commands */
     int n_select;
     char** select_cmd;
-    // output settings
+    /* output settings */
     int output_format, output_depth;
-    // Files
+    /* Files */
     FILE *input, *output, *errlog;
 
 };
-//static struct cli_state state;
 
 struct analysis_results {
     freesasa_node *tree;
@@ -105,40 +104,40 @@ struct analysis_results {
     int n_structures;
 };
 
-// Defaults
+/* Defaults */
 static void
 init_state(struct cli_state *state)
 {
-    *state = (struct cli_state) {
-        .parameters = freesasa_default_parameters,
-        .classifier_from_file = NULL,
-        .classifier = NULL,
-        .structure_options = 0,
-        .static_classifier = 0,
-        .no_rel = 0,
-        .n_chain_groups = 0,
-        .chain_groups = NULL,
-        .n_select = 0,
-        .select_cmd = 0,
-        .output_format = 0,
-        .output_depth = FREESASA_OUTPUT_CHAIN,
-        .output = NULL,
-        .errlog = NULL,
-    };
+    state->parameters = freesasa_default_parameters;
+    state->classifier_from_file = NULL;
+    state->classifier = NULL;
+    state->structure_options = 0;
+    state->static_classifier = 0;
+    state->no_rel = 0;
+    state->n_chain_groups = 0;
+    state->chain_groups = NULL;
+    state->n_select = 0;
+    state->select_cmd = 0;
+    state->output_format = 0;
+    state->output_depth = FREESASA_OUTPUT_CHAIN;
+    state->output = NULL;
+    state->errlog = NULL;
 }
 
 static void
 release_state(struct cli_state *state)
 {
+    int i;
+
     if (state->classifier_from_file)
         freesasa_classifier_free(state->classifier_from_file);
     if (state->chain_groups) {
-        for (int i = 0; i < state->n_chain_groups; ++i) {
+        for (i = 0; i < state->n_chain_groups; ++i) {
             free(state->chain_groups[i]);
         }
     }
     if (state->select_cmd) {
-        for (int i = 0; i < state->n_select; ++i) {
+        for (i = 0; i < state->n_select; ++i) {
             free(state->select_cmd[i]);
         }
     }
@@ -249,48 +248,50 @@ get_structures(FILE *input,
                int *n,
                const struct cli_state *state)
 {
-   freesasa_structure **structures = NULL;
+    int i, j, n2;
+    freesasa_structure **structures = NULL;
+    freesasa_structure *tmp;
 
-   *n = 0;
-   if ((state->structure_options & FREESASA_SEPARATE_CHAINS) ||
-       (state->structure_options & FREESASA_SEPARATE_MODELS)) {
-       structures = freesasa_structure_array(input, n, state->classifier, state->structure_options);
-       if (structures == NULL) abort_msg("invalid input");
-       for (int i = 0; i < *n; ++i) {
-           if (structures[i] == NULL) abort_msg("invalid input");
-       }
-   } else {
-       structures = malloc(sizeof(freesasa_structure*));
-       if (structures == NULL) {
-           abort_msg("out of memory");
-       }
-       *n = 1;
-       structures[0] = freesasa_structure_from_pdb(input, state->classifier, state->structure_options);
-       if (structures[0] == NULL) {
-           abort_msg("invalid input");
-       }
-   }
+    *n = 0;
+    if ((state->structure_options & FREESASA_SEPARATE_CHAINS) ||
+        (state->structure_options & FREESASA_SEPARATE_MODELS)) {
+        structures = freesasa_structure_array(input, n, state->classifier, state->structure_options);
+        if (structures == NULL) abort_msg("invalid input");
+        for (i = 0; i < *n; ++i) {
+            if (structures[i] == NULL) abort_msg("invalid input");
+        }
+    } else {
+        structures = malloc(sizeof(freesasa_structure*));
+        if (structures == NULL) {
+            abort_msg("out of memory");
+        }
+        *n = 1;
+        structures[0] = freesasa_structure_from_pdb(input, state->classifier, state->structure_options);
+        if (structures[0] == NULL) {
+            abort_msg("invalid input");
+        }
+    }
 
-   // get chain-groups (if requested)
-   if (state->n_chain_groups > 0) {
-       int n2 = *n;
-       for (int i = 0; i < state->n_chain_groups; ++i) {
-           for (int j = 0; j < *n; ++j) {
-               freesasa_structure* tmp = freesasa_structure_get_chains(structures[j], state->chain_groups[i]);
-               if (tmp != NULL) {
-                   ++n2;
-                   structures = realloc(structures, sizeof(freesasa_structure*)*n2);
-                   if (structures == NULL) abort_msg("out of memory");
-                   structures[n2-1] = tmp;
-               } else {
-                   abort_msg("at least one of chain(s) '%s' not found", state->chain_groups[i]);
-               }
-           }
-       }
-       *n = n2;
-   }
+    /* get chain-groups (if requested) */
+    if (state->n_chain_groups > 0) {
+        n2 = *n;
+        for (i = 0; i < state->n_chain_groups; ++i) {
+            for (j = 0; j < *n; ++j) {
+                tmp = freesasa_structure_get_chains(structures[j], state->chain_groups[i]);
+                if (tmp != NULL) {
+                    ++n2;
+                    structures = realloc(structures, sizeof(freesasa_structure*)*n2);
+                    if (structures == NULL) abort_msg("out of memory");
+                    structures[n2-1] = tmp;
+                } else {
+                    abort_msg("at least one of chain(s) '%s' not found", state->chain_groups[i]);
+                }
+            }
+        }
+        *n = n2;
+    }
 
-   return structures;
+    return structures;
 }
 
 static freesasa_node *
@@ -300,21 +301,21 @@ run_analysis(FILE *input,
 {
     int name_len = strlen(name);
     freesasa_structure **structures = NULL;
-    freesasa_node *tree = freesasa_tree_new();
-    int n = 0;
+    freesasa_node *tree = freesasa_tree_new(), *tmp_tree, *structure_node;
+    const freesasa_result *result;
+    freesasa_selection *sel;
+    int n = 0, i, c;
     char *name_i = malloc(name_len+10);
 
     if (tree == NULL) abort_msg("failed to initialize result-tree");
     if (name_i == NULL) abort_msg("memory failure");
 
-    // read PDB file
+    /* read PDB file */
     structures = get_structures(input, &n, state);
     if (n == 0) abort_msg("invalid input");
 
-    // perform calculation on each structure
-    for (int i = 0; i < n; ++i) {
-        freesasa_node *tmp_tree;
-
+    /* perform calculation on each structure */
+    for (i = 0; i < n; ++i) {
         strcpy(name_i,name);
         if (n > 1 && (state->structure_options & FREESASA_SEPARATE_MODELS))
             sprintf(name_i+strlen(name_i), ":%d", freesasa_structure_model(structures[i]));
@@ -322,14 +323,14 @@ run_analysis(FILE *input,
         tmp_tree = freesasa_calc_tree(structures[i], &state->parameters, name_i);
         if (tmp_tree == NULL) abort_msg("can't calculate SASA");
 
-        freesasa_node *structure_node =
+        structure_node =
             freesasa_node_children(freesasa_node_children(tmp_tree));
-        const freesasa_result *result = freesasa_node_structure_result(structure_node);
+        result = freesasa_node_structure_result(structure_node);
 
-        // Calculate selections for each structure
+        /* Calculate selections for each structure */
         if (state->n_select > 0) {
-            for (int c = 0; c < state->n_select; ++c) {
-                freesasa_selection *sel = freesasa_selection_new(state->select_cmd[c], structures[i], result);
+            for (c = 0; c < state->n_select; ++c) {
+                sel = freesasa_selection_new(state->select_cmd[c], structures[i], result);
                 if (sel != NULL) {
                     freesasa_node_structure_add_selection(structure_node, sel);
                 } else {
@@ -353,27 +354,31 @@ run_analysis(FILE *input,
 
 static FILE*
 fopen_werr(const char* filename,
-           const char* mode) 
+           const char* mode)
 {
     FILE *f = fopen(filename, mode);
+
     if (f == NULL) {
         abort_msg("could not open file '%s'; %s",
                   filename, strerror(errno));
     }
+
     return f;
 }
 
 static void
-state_add_chain_groups(const char* cmd, struct cli_state *state) 
+state_add_chain_groups(const char* cmd, struct cli_state *state)
 {
     int err = 0;
     char *str;
     const char *token;
+    size_t i;
+    char a;
 
-    // check that string is valid
-    for (size_t i = 0; i < strlen(cmd); ++i) {
-        char a = cmd[i];
-        if (a != '+' && 
+    /* check that string is valid */
+    for (i = 0; i < strlen(cmd); ++i) {
+        a = cmd[i];
+        if (a != '+' &&
             !(a >= 'a' && a <= 'z') && !(a >= 'A' && a <= 'Z') &&
             !(a >= '0' && a <= '9')) {
             error("character '%c' not valid chain ID in --chain-groups, "
@@ -382,7 +387,7 @@ state_add_chain_groups(const char* cmd, struct cli_state *state)
         }
     }
 
-    //extract chain groups
+    /* extract chain groups */
     if (err == 0) {
         str = strdup(cmd);
         token = strtok(str, "+");
@@ -400,7 +405,7 @@ state_add_chain_groups(const char* cmd, struct cli_state *state)
 }
 
 static void
-state_add_select(const char* cmd, struct cli_state *state) 
+state_add_select(const char* cmd, struct cli_state *state)
 {
     ++state->n_select;
     state->select_cmd = realloc(state->select_cmd, sizeof(char*)*state->n_select);
@@ -419,13 +424,13 @@ state_add_unknown_option(const char *optarg, struct cli_state *state)
     if (strcmp(optarg, "skip") == 0) {
         state->structure_options |= FREESASA_SKIP_UNKNOWN;
         return;
-    } 
+    }
     if(strcmp(optarg, "halt") == 0) {
         state->structure_options |= FREESASA_HALT_AT_UNKNOWN;
         return;
-    } 
+    }
     if(strcmp(optarg, "guess") == 0) {
-        return; //default
+        return; /* default */
     }
     abort_msg("unknown alternative to option --unknown: '%s'", optarg);
 }
@@ -441,7 +446,7 @@ parse_output_format(const char *optarg)
     }
     if (strcmp(optarg, "seq") == 0) {
         return FREESASA_SEQ;
-    } 
+    }
     if (strcmp(optarg, "rsa") == 0) {
         return FREESASA_RSA;
     }
@@ -463,7 +468,7 @@ parse_output_format(const char *optarg)
         return FREESASA_PDB;
     }
     abort_msg("unknown output format: '%s'", optarg);
-    return FREESASA_FAIL; // to avoid compiler warnings
+    return FREESASA_FAIL; /* to avoid compiler warnings */
 }
 
 static int
@@ -483,7 +488,7 @@ parse_output_depth(const char *optarg) {
     abort_msg("output depth '%s' not allowed, "
               "can only be 'structure', 'chain', 'residue' or 'atom'",
               optarg);
-    return FREESASA_FAIL; // to avoid compiler warnings
+    return FREESASA_FAIL; /* to avoid compiler warnings */
 }
 
 static void
@@ -500,8 +505,8 @@ state_set_static_classifier(const char *optarg, struct cli_state *state)
     state->static_classifier = 1;
 }
 
-// Parse command line arguments and transform state
-// accordingly. Parameter state assumed to be initialized to default.
+/* Parse command line arguments and transform state
+   accordingly. Parameter state assumed to be initialized to default. */
 static int
 parse_arg(int argc, char **argv, struct cli_state *state)
 {
@@ -510,13 +515,14 @@ parse_arg(int argc, char **argv, struct cli_state *state)
     int n_opt = 'z'+1;
     char opt_set['z'+1];
     int option_index = 0;
+    FILE *cf;
 
     memset(opt_set, 0, n_opt);
 
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
         opt_set[(int)opt] = 1;
-        // Assume arguments starting with dash are actually missing arguments
+        /* Assume arguments starting with dash are actually missing arguments */
         if (optarg != NULL && optarg[0] == '-') {
             if (option_index > 0) abort_msg("missing argument? Value '%s' cannot be argument to '--%s'.\n",
                                             program_name,optarg, long_options[option_index].name);
@@ -542,7 +548,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
                 deprecated();
                 exit(EXIT_SUCCESS);
             default:
-                abort(); // what does this even mean?
+                abort(); /* what does this even mean? */
             }
             break;
         case 'h':
@@ -551,7 +557,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
         case 'v':
             version();
             exit(EXIT_SUCCESS);
-        case 'e': 
+        case 'e':
             state->errlog = fopen_werr(optarg, "w");
             freesasa_set_err_out(state->errlog);
             break;
@@ -571,7 +577,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             freesasa_set_verbosity(FREESASA_V_NOWARNINGS);
             break;
         case 'c': {
-            FILE *cf = fopen_werr(optarg, "r");
+            cf = fopen_werr(optarg, "r");
             state->classifier = state->classifier_from_file = freesasa_classifier_from_file(cf);
             if (state->classifier_from_file == NULL) abort_msg("can't read file '%s'", optarg);
             state->no_rel = 1;
@@ -626,7 +632,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
                 abort_msg("option '-t' only defined if program compiled with thread support");
             }
             break;
-        // Deprecated options
+        /* Deprecated options */
         case 'r':
             warn("option '-r' deprecated, use '-f res' or '--format=res' instead");
             state->output_format |= FREESASA_RES;
@@ -642,7 +648,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
         case 'l':
             warn("option '-l' deprecated, has no effect.");
             break;
-            // Errors
+        /* Errors */
         case ':':
             abort_msg("option '-%c' missing argument");
             break;
@@ -679,22 +685,21 @@ parse_arg(int argc, char **argv, struct cli_state *state)
 
 int
 main(int argc,
-     char **argv) 
+     char **argv)
 {
     struct cli_state state;
     FILE *input = NULL;
-    int optind = 0;
-    
-    freesasa_node *tree = freesasa_tree_new();
+    int optind = 0, i;
+
+    freesasa_node *tree = freesasa_tree_new(), *tmp;
     if (tree == NULL) abort_msg("error initializing calculation");
 
     init_state(&state);
 
     optind = parse_arg(argc, argv, &state);
-    
+
     if (argc > optind) {
-        for (int i = optind; i < argc; ++i) {
-            freesasa_node *tmp;
+        for (i = optind; i < argc; ++i) {
             input = fopen_werr(argv[i], "r");
             tmp = run_analysis(input, argv[i], &state);
             freesasa_tree_join(tree, &tmp);
@@ -702,7 +707,6 @@ main(int argc,
         }
     } else {
         if (!isatty(STDIN_FILENO)) {
-            freesasa_node *tmp;
             tmp = run_analysis(stdin, "stdin", &state);
             freesasa_tree_join(tree, &tmp);
         }
@@ -716,4 +720,3 @@ main(int argc,
 
     return EXIT_SUCCESS;
 }
-

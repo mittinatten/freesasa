@@ -52,7 +52,7 @@ e_str(expression_type e)
 extern int freesasa_yyparse(expression **expression, yyscan_t scanner);
 
 static expression *
-expression_new() 
+expression_new()
 {
     struct expression *e = malloc(sizeof(expression));
 
@@ -62,7 +62,7 @@ expression_new()
         e->left = NULL;
         e->right = NULL;
         e->value = NULL;
-    }   
+    }
     return e;
 }
 
@@ -81,12 +81,16 @@ expression *
 freesasa_selection_atom(expression_type type,
                         const char* val)
 {
-    assert(val);
     expression *e = expression_new();
+    int i, n;
+    char *buf;
+
+    assert(val);
+
     if (e != NULL) {
         if (type == E_NEGNUM) {
-            int n = strlen(val)+2;
-            char *buf = malloc(n);
+            n = strlen(val)+2;
+            buf = malloc(n);
             if (buf == NULL) {
                 mem_fail();
                 expression_free(e);
@@ -106,8 +110,8 @@ freesasa_selection_atom(expression_type type,
             expression_free(e);
             return NULL;
         }
-        
-        for (int i = 0; i < strlen(e->value); ++i)
+
+        for (i = 0; i < strlen(e->value); ++i)
             e->value[i] = toupper(e->value[i]);
     }
     return e;
@@ -117,8 +121,10 @@ expression *
 freesasa_selection_create(expression *selection,
                           const char* id)
 {
-    assert(id);
     expression *e = expression_new();
+
+    assert(id);
+
     if (e == NULL) expression_free(selection);
     else {
         e->type = E_SELECTION;
@@ -131,7 +137,7 @@ freesasa_selection_create(expression *selection,
             e = NULL;
         }
     }
-    
+
     return e;
 }
 
@@ -140,11 +146,14 @@ freesasa_selection_selector(expression_type type,
                             expression *list)
 {
     expression *e = expression_new();
-    if (e == NULL) expression_free(list);
-    else {
+
+    if (e == NULL) {
+        expression_free(list);
+    } else {
         e->type = type;
         e->left = list;
     }
+
     return e;
 }
 
@@ -154,6 +163,7 @@ freesasa_selection_operation(expression_type type,
                              expression *right)
 {
     expression *e = expression_new();
+
     if (e == NULL) {
         expression_free(left);
         expression_free(right);
@@ -162,17 +172,21 @@ freesasa_selection_operation(expression_type type,
         e->left = left;
         e->right = right;
     }
+
     return e;
 }
 
-// for debugging
+/* for debugging */
 static void
 print_expr(FILE * output, const expression *e, int level)
 {
+    int i;
     fprintf(output, "\n");
-    for (int i = 0; i < level; ++i) fprintf(output, "  ");
-    if (e == NULL) fprintf(output, "()");
-    else {
+    for (i = 0; i < level; ++i) fprintf(output, "  ");
+
+    if (e == NULL) {
+        fprintf(output, "()");
+    } else {
         fprintf(output, "(%s ",e_str(e->type));
         if (e->value) fprintf(output, ": %s ",e->value);
         print_expr(output, e->left, level+1);
@@ -184,14 +198,16 @@ print_expr(FILE * output, const expression *e, int level)
 
 
 static expression *
-get_expression(const char *selector) 
+get_expression(const char *selector)
 {
    freesasa_yyscan_t scanner;
    YY_BUFFER_STATE state;
    int err;
    expression *expression = NULL;
-   if (freesasa_yylex_init(&scanner)) fail_msg("lexer failed");
-   else{
+
+   if (freesasa_yylex_init(&scanner)) {
+       fail_msg("lexer failed");
+   } else {
        state = freesasa_yy_scan_string(selector, scanner);
        err = freesasa_yyparse(&expression, scanner);
        if (err) {
@@ -203,7 +219,7 @@ get_expression(const char *selector)
        freesasa_yy_delete_buffer(state, scanner);
        freesasa_yylex_destroy(scanner);
    }
-   
+
    return expression;
 }
 
@@ -211,9 +227,11 @@ static struct selection *
 selection_new(int n)
 {
     struct selection *selection = malloc(sizeof(struct selection));
-    
-    if (selection == NULL) mem_fail(); 
-    else {
+    int i;
+
+    if (selection == NULL) {
+        mem_fail();
+    } else {
         selection->size = n;
         selection->atom = malloc(sizeof(int)*n);
 
@@ -222,7 +240,7 @@ selection_new(int n)
             mem_fail();
             selection = NULL;
         } else {
-            for (int i = 0; i < n; ++i) selection->atom[i] = 0;
+            for (i = 0; i < n; ++i) selection->atom[i] = 0;
         }
     }
 
@@ -230,7 +248,7 @@ selection_new(int n)
 }
 
 static void
-selection_free(struct selection *selection) 
+selection_free(struct selection *selection)
 {
     if (selection) {
         free(selection->atom);
@@ -238,10 +256,10 @@ selection_free(struct selection *selection)
     }
 }
 
-/** Looks for exact match between the atom-name and expr->value*/
+/* Looks for exact match between the atom-name and expr->value */
 static int
 match_name(const freesasa_structure *structure,
-           const char *id, 
+           const char *id,
            int i)
 {
     char atom[PDB_ATOM_NAME_STRL+1];
@@ -254,7 +272,7 @@ match_name(const freesasa_structure *structure,
 /** Looks for match of strlen(expr->value) first characters of atom-name and expr->value */
 static int
 match_symbol(const freesasa_structure *structure,
-             const char *id, 
+             const char *id,
              int i)
 {
     char symbol[PDB_ATOM_SYMBOL_STRL+1];
@@ -279,7 +297,7 @@ match_resn(const freesasa_structure *structure,
 
 static int
 match_resi(const freesasa_structure *structure,
-           const char *id, 
+           const char *id,
            int i)
 {
     char resi[PDB_ATOM_RES_NUMBER_STRL+1];
@@ -303,15 +321,17 @@ select_id(expression_type parent_type,
           const freesasa_structure *structure,
           const char *id)
 {
+    int count = 0, match, i;
+
     assert(id);
-    int count = 0;
-    for (int i = 0; i < selection->size; ++i) {
-        int match = 0;
+
+    for (i = 0; i < selection->size; ++i) {
+        match = 0;
         switch(parent_type) {
-        case E_NAME: 
+        case E_NAME:
             match = match_name(structure, id, i);
             break;
-        case E_SYMBOL: 
+        case E_SYMBOL:
             match = match_symbol(structure, id, i);
             break;
         case E_RESN:
@@ -338,9 +358,14 @@ static int
 is_valid_id(int parent_type,
             const expression *expr)
 {
+    int type, n, warn, i;
+    const char* val;
+
     assert(expr->type == E_NUMBER || expr->type == E_ID);
-    int type = expr->type;
-    const char *val = expr->value;
+
+    type = expr->type;
+    val = expr->value;
+
     switch(parent_type) {
     case E_NAME:
         if (strlen(val) > PDB_ATOM_NAME_STRL)
@@ -362,18 +387,18 @@ is_valid_id(int parent_type,
         break;
     case E_RESI:
         if (type == E_ID) {
-            // these should have format 1, 2, 345, etc or 12A, 12B, etc.
-            int n = strlen(val);
+            /* these should have format 1, 2, 345, etc or 12A, 12B, etc. */
+            n = strlen(val);
             if (n > PDB_ATOM_RES_NUMBER_STRL) {
                 return freesasa_warn("select: %s: '%s' invalid (string too long), "
                                      "will be ignored", e_str(parent_type), val);
             } else {
-                int warn = 0;
+                warn = 0;
                 if (n == 1) ++warn;
                 if (!warn && (toupper(val[n - 1]) < 'A' || toupper(val[n - 1]) > 'Z')) {
                     ++warn;
                 }
-                for (int i = 0; !warn && i < n - 1; ++i) {
+                for (i = 0; !warn && i < n - 1; ++i) {
                     if (val[i] < '0' || val[i] > '9') {
                         ++warn;
                     }
@@ -409,16 +434,18 @@ select_range(expression_type range_type,
              const expression *left,
              const expression *right)
 {
+    int lower, upper, i, j;
+
     assert(range_type == E_RANGE || range_type == E_RANGE_OPEN_L || range_type == E_RANGE_OPEN_R);
     assert(parent_type == E_RESI || parent_type == E_CHAIN);
-    int lower, upper;
-    if (parent_type == E_RESI) { // residues have integer numbering
+
+    if (parent_type == E_RESI) { /* residues have integer numbering */
         if (( left &&  left->type != E_NUMBER) ||
             (right && right->type != E_NUMBER)) {
             return freesasa_warn("select: %s: range '%s-%s' invalid, needs to be two numbers, "
                                  "will be ignored",e_str(parent_type), left->value, right->value);
         }
-    } else { // chains can be numbered by both letters (common) and numbers (uncommon)
+    } else { /* chains can be numbered by both letters (common) and numbers (uncommon) */
         if (left->type != right->type ||
             (left->type == E_ID && (strlen(left->value) > 1 || strlen(right->value) > 1)))
             return freesasa_warn("select: %s: range '%s-%s' invalid, should be two letters (A-C) or numbers (1-5), "
@@ -437,11 +464,10 @@ select_range(expression_type range_type,
         lower = (int)left->value[0];
         upper = (int)right->value[0];
     }
-    for (int i = 0; i < selection->size; ++i) {
-        int j;
+    for (i = 0; i < selection->size; ++i) {
         if (parent_type == E_RESI) j = atoi(freesasa_structure_atom_res_number(structure,i));
         else j = (int)freesasa_structure_atom_chain(structure,i);
-        if (j >= lower && j <= upper) 
+        if (j >= lower && j <= upper)
             selection->atom[i] = 1;
     }
     return FREESASA_SUCCESS;
@@ -453,13 +479,18 @@ select_list(expression_type parent_type,
             const freesasa_structure *structure,
             const expression *expr)
 {
+    int resr, resl;
+    expression *left, *right;
+
     if (expr == NULL)
         return fail_msg("NULL expression");
-    int resr, resl;
-    expression *left = expr->left, *right = expr->right;
+
+    left = expr->left;
+    right = expr->right;
+
     switch(expr->type) {
-    case E_PLUS: 
-        if (left == NULL || right == NULL) 
+    case E_PLUS:
+        if (left == NULL || right == NULL)
             return fail_msg("NULL expression");
         resl = select_list(parent_type, selection, structure, left);
         resr = select_list(parent_type, selection, structure, right);
@@ -467,7 +498,7 @@ select_list(expression_type parent_type,
             return FREESASA_WARN;
         break;
     case E_RANGE:
-        if (left == NULL || right == NULL) 
+        if (left == NULL || right == NULL)
             return fail_msg("NULL expression");
         return select_range(E_RANGE, parent_type, selection, structure, left, right);
     case E_RANGE_OPEN_L:
@@ -498,10 +529,11 @@ selection_join(struct selection *target,
                const struct selection *s2,
                int type)
 {
-    int n;
+    int n, i;
+
     if (s1 == NULL || s2 == NULL || target == NULL)
         return fail_msg("trying to join NULL selections");
-    
+
     assert(s1->size == s2->size);
     assert(s1->size == target->size);
 
@@ -509,14 +541,14 @@ selection_join(struct selection *target,
 
     switch (type) {
     case E_AND:
-        for (int i = 0; i < n; ++i)
+        for (i = 0; i < n; ++i)
             target->atom[i] = s1->atom[i] && s2->atom[i];
         break;
     case E_OR:
-        for (int i = 0; i < n; ++i)
+        for (i = 0; i < n; ++i)
             target->atom[i] = s1->atom[i] || s2->atom[i];
         break;
-    default: 
+    default:
         assert(0);
     }
 
@@ -526,10 +558,14 @@ selection_join(struct selection *target,
 static int
 selection_not(struct selection *s)
 {
+    int i;
+
     if (s == NULL) return fail_msg("NULL selection");
-    for (int i = 0; i < s->size; ++i) {
+
+    for (i = 0; i < s->size; ++i) {
         s->atom[i] = ! s->atom[i];
     }
+
     return FREESASA_SUCCESS;
 }
 
@@ -539,11 +575,15 @@ select_atoms(struct selection* selection,
              const expression *expr,
              const freesasa_structure *structure)
 {
+    int warn = 0, err = 0, n, ret;
+    struct selection *sl, *sr;
+
     assert(selection);
     assert(structure);
-    int warn = 0, err = 0, n = selection->size, ret;
 
-    // this should only happen if memory allocation failed during parsing
+    n = selection->size;
+
+    /* this should only happen if memory allocation failed during parsing */
     if (expr == NULL) return fail_msg("NULL expression");
 
     switch (expr->type) {
@@ -561,7 +601,9 @@ select_atoms(struct selection* selection,
         break;
     case E_AND:
     case E_OR: {
-        struct selection *sl = selection_new(n), *sr = selection_new(n);
+        sl = selection_new(n);
+        sr = selection_new(n);
+
         if (sl != NULL && sr != NULL) {
             if ((ret = select_atoms(sl,expr->left,structure))) {
                 if (ret == FREESASA_WARN) ++warn;
@@ -575,8 +617,10 @@ select_atoms(struct selection* selection,
         } else {
             ++err;
         }
+
         selection_free(sl);
         selection_free(sr);
+
         if (err) return fail_msg("error joining selections");
         break;
     }
@@ -591,7 +635,7 @@ select_atoms(struct selection* selection,
     case E_NUMBER:
     case E_PLUS:
     case E_RANGE:
-        // these four are handled by the RESN,SYMBOL,ETC
+        /* these four are handled by the RESN,SYMBOL,ETC */
     default:
         return fail_msg("parser error");
     }
@@ -606,17 +650,19 @@ select_area_impl(const char *command,
                  const freesasa_structure *structure,
                  const freesasa_result *result)
 {
-    assert(name); assert(area); 
-    assert(command); assert(structure); assert(result);
-    assert(freesasa_structure_n(structure) == result->n_atoms);
     struct selection *selection = NULL;
     struct expression *expression = NULL;
     const int maxlen = FREESASA_MAX_SELECTION_NAME;
     double sasa = 0;
-    int err = 0, warn = 0, n_atoms = 0;
+    int err = 0, warn = 0, n_atoms = 0, j, len;
+
+    assert(name); assert(area);
+    assert(command); assert(structure); assert(result);
+    assert(freesasa_structure_n(structure) == result->n_atoms);
+
     *area = 0;
     name[0] = '\0';
-    
+
     expression = get_expression(command);
     selection = selection_new(result->n_atoms);
 
@@ -626,19 +672,19 @@ select_area_impl(const char *command,
 
     if (expression != NULL && selection != NULL) {
         switch (select_atoms(selection, expression, structure)) {
-        case FREESASA_FAIL: 
+        case FREESASA_FAIL:
             err = 1;
             break;
-        case FREESASA_WARN: 
-            warn = 1; // proceed with calculation, print warning later
+        case FREESASA_WARN:
+            warn = 1; /* proceed with calculation, print warning later */
         case FREESASA_SUCCESS: {
-            for (int j = 0; j < selection->size; ++j) {
+            for (j = 0; j < selection->size; ++j) {
                 ++n_atoms;
                 sasa += selection->atom[j]*result->sasa[j];
             }
-            
+
             *area = sasa;
-            int len = strlen(selection->name);
+            len = strlen(selection->name);
             if (len > maxlen) {
                 strncpy(name,selection->name,maxlen);
                 name[maxlen] = '\0';
@@ -647,7 +693,7 @@ select_area_impl(const char *command,
                 strncpy(name,selection->name,len);
                 name[len] = '\0';
             }
-            
+
             break;
         }
         default:
@@ -658,7 +704,7 @@ select_area_impl(const char *command,
     }
     selection_free(selection);
     expression_free(expression);
-    
+
     if (err)
         return fail_msg("problems parsing expression '%s'",command);
     if (warn)
@@ -714,10 +760,12 @@ freesasa_selection *
 freesasa_selection_clone(const freesasa_selection *src)
 {
     freesasa_selection *cpy = freesasa_selection_alloc(src->name, src->command);
+
     if (cpy == NULL) {
         fail_msg("");
         goto cleanup;
     }
+
     cpy->area = src->area;
     cpy->n_atoms = src->n_atoms;
 
@@ -803,19 +851,23 @@ int freesasa_selection_parse_error(expression *e,
 #if USE_CHECK
 #include <check.h>
 
-START_TEST (test_selection) 
+START_TEST (test_selection)
 {
+    struct selection *s1, *s2, *s3, *s4;
     static const expression empty_expression = {
         .right = NULL, .left = NULL, .value = NULL, .type = E_SELECTION
     };
     freesasa_structure *structure = freesasa_structure_new();
+    expression r,l,e,e_symbol;
+
     freesasa_structure_add_atom(structure," CA ","ALA","   1",'A',0,0,0);
     freesasa_structure_add_atom(structure," O  ","ALA","   1",'A',10,10,10);
-    struct selection *s1 = selection_new(freesasa_structure_n(structure));
-    struct selection *s2 = selection_new(freesasa_structure_n(structure));
-    struct selection *s3 = selection_new(freesasa_structure_n(structure));
-    struct selection *s4 = selection_new(freesasa_structure_n(structure));
-    expression r,l,e,e_symbol;
+
+    s1 = selection_new(freesasa_structure_n(structure));
+    s2 = selection_new(freesasa_structure_n(structure));
+    s3 = selection_new(freesasa_structure_n(structure));
+    s4 = selection_new(freesasa_structure_n(structure));
+
     r = l = e = e_symbol = empty_expression;
     e.type = E_PLUS;
     e.right = &r;
@@ -825,7 +877,7 @@ START_TEST (test_selection)
     e_symbol.type = E_SYMBOL;
     e_symbol.left = &e;
 
-    // select_symbol
+    /* select_symbol */
     select_list(E_SYMBOL,s1,structure,&r);
     ck_assert_int_eq(s1->atom[0],1);
     ck_assert_int_eq(s1->atom[1],0);
@@ -839,7 +891,7 @@ START_TEST (test_selection)
     ck_assert_int_eq(s4->atom[0],1);
     ck_assert_int_eq(s4->atom[1],1);
 
-    // selection_join
+    /* selection_join */
     selection_join(s3,s1,s2,E_AND);
     ck_assert_int_eq(s3->atom[0],0);
     ck_assert_int_eq(s3->atom[1],0);
@@ -850,8 +902,8 @@ START_TEST (test_selection)
     ck_assert_int_eq(selection_join(NULL,s1,s2,E_OR),FREESASA_FAIL);
     ck_assert_int_eq(selection_join(s3,NULL,s1,E_OR),FREESASA_FAIL);
     ck_assert_int_eq(selection_join(NULL,NULL,NULL,E_OR),FREESASA_FAIL);
-    
-    //selection_not
+
+    /* selection_not */
     ck_assert_int_eq(selection_not(s3),FREESASA_SUCCESS);
     ck_assert_int_eq(s3->atom[0],0);
     ck_assert_int_eq(s3->atom[1],0);
@@ -862,7 +914,9 @@ END_TEST
 
 START_TEST (test_expression)
 {
+    int i;
     expression *e = get_expression("c1, symbol O+C");
+
     ck_assert_ptr_ne(e,NULL);
     ck_assert_int_eq(e->type, E_SELECTION);
     ck_assert_ptr_ne(e->left, NULL);
@@ -876,14 +930,14 @@ START_TEST (test_expression)
     ck_assert_int_eq(e->left->left->right->type,E_ID);
     ck_assert_str_eq(e->left->left->right->value,"C");
     ck_assert_str_eq(e->left->left->left->value,"O");
-    for (int i = E_SELECTION; i <= E_RANGE_OPEN_R; ++i) {
+    for (i = E_SELECTION; i <= E_RANGE_OPEN_R; ++i) {
         ck_assert_ptr_ne(e_str(i), NULL);
     }
     ck_assert_ptr_eq(e_str(E_RANGE_OPEN_R+1), NULL);
 }
 END_TEST
 
-START_TEST (test_debug) // this test just runs the debug output code to not get artificially low coverage
+START_TEST (test_debug) /* this test just runs the debug output code to not get artificially low coverage */
 {
     FILE *devnull = fopen("/dev/null", "w");
     expression *e = get_expression("c1, symbol O+C");
@@ -914,4 +968,4 @@ test_selection_static()
     return tc;
 }
 
-#endif //USE_CHECK
+#endif /* USE_CHECK */

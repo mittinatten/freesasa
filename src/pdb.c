@@ -9,7 +9,7 @@
 #include "freesasa_internal.h"
 #include "pdb.h"
 
-//len >= 6
+/* len >= 6 */
 static inline int
 pdb_line_check(const char *line, int len)
 {
@@ -31,7 +31,7 @@ pdb_line_check(const char *line, int len)
 static inline int
 pdb_get_double(const char *line, int width, double *val)
 {
-    // allow truncated lines
+    /* allow truncated lines */
     if (strlen(line) < width) width = strlen(line);
     char buf[PDB_LINE_STRL];
     float tmp;
@@ -76,7 +76,7 @@ freesasa_pdb_get_models(FILE* pdb,
         }
         last_pos = ftell(pdb);
     }
-    if (n == 0) { // when there are no models, the whole file is the model
+    if (n == 0) { /* when there are no models, the whole file is the model */
         free(it);
         it = NULL;
     }
@@ -97,7 +97,7 @@ freesasa_pdb_get_chains(FILE *pdb,
 {
     assert(pdb);
     assert(ranges);
-    // it is assumed that 'model' is valid for 'pdb'
+    /* it is assumed that 'model' is valid for 'pdb' */
 
     int n_chains = 0;
     char line[PDB_MAX_LINE_STRL];
@@ -106,8 +106,8 @@ freesasa_pdb_get_chains(FILE *pdb,
     long last_pos = model.begin;
     *ranges = NULL;
 
-    // for each model, find file ranges for each chain, store them
-    // in the dynamically growing array chains
+    /* for each model, find file ranges for each chain, store them
+       in the dynamically growing array chains */
     fseek(pdb,model.begin,SEEK_SET);
     while (fgets(line, PDB_MAX_LINE_STRL, pdb) != NULL &&
            ftell(pdb) < model.end ) {
@@ -132,7 +132,7 @@ freesasa_pdb_get_chains(FILE *pdb,
 
     if (n_chains > 0) {
         chains[n_chains-1].end = last_pos;
-        chains[0].begin = model.begin; //preserve model info
+        chains[0].begin = model.begin; /* preserve model info */
         *ranges = chains;
     } else {
         *ranges = NULL;
@@ -177,7 +177,7 @@ freesasa_pdb_get_coord(double *xyz,
 {
     assert(xyz);
     assert(line);
-    int n_coord = 24; // 54-30+1;
+    int n_coord = 24; /* 54-30+1 */
     char coord_section[n_coord + 1];
 
     if (pdb_line_check(line,54) == FREESASA_FAIL) {
@@ -216,7 +216,7 @@ freesasa_pdb_get_chain_label(const char* line)
     return line[21];
 }
 
-char 
+char
 freesasa_pdb_get_alt_coord_label(const char* line)
 {
     assert(line);
@@ -243,7 +243,7 @@ freesasa_pdb_get_occupancy(double *occ,
                            const char* line)
 {
     assert(line);
-    // allow truncated lines
+    /* allow truncated lines */
     if (pdb_line_check(line, 55) == FREESASA_SUCCESS)
         return pdb_get_double(line+54, 6, occ);
     return FREESASA_FAIL;
@@ -254,7 +254,7 @@ freesasa_pdb_get_bfactor(double *bfac,
                          const char* line)
 {
     assert(line);
-        // allow truncated lines
+    /* allow truncated lines */
     if (pdb_line_check(line, 61) == FREESASA_SUCCESS)
         return pdb_get_double(line+60, 6, bfac);
     return FREESASA_FAIL;
@@ -265,9 +265,9 @@ freesasa_pdb_ishydrogen(const char* line)
 {
     assert(line);
     if (pdb_line_check(line,13) == FREESASA_FAIL) return FREESASA_FAIL;
-    //hydrogen
+    /* hydrogen */
     if (line[12] == 'H' || line[13] == 'H') return 1;
-    //hydrogen
+    /* hydrogen */
     if (line[12] == 'D' || line[13] == 'D') return 1;
     return 0;
 }
@@ -292,7 +292,7 @@ write_pdb_impl(FILE *output,
 
     chain = freesasa_node_children(structure);
 
-    // Write ATOM entries
+    /* Write ATOM entries */
     while (chain) {
         residue = freesasa_node_children(chain);
         while (residue) {
@@ -320,7 +320,7 @@ write_pdb_impl(FILE *output,
         chain = freesasa_node_next(chain);
     }
 
-    // Write TER  and ENDMDL lines
+    /* Write TER and ENDMDL lines */
     strncpy(buf2, &buf[6], 5);
     buf2[5]='\0';
     fprintf(output,"TER   %5d     %4s %c%5s\nENDMDL\n",
@@ -379,14 +379,14 @@ START_TEST (test_pdb)
     ck_assert(pdb_line_check("BLA BLA BLA", 11) == FREESASA_FAIL);
     ck_assert(pdb_line_check("BLA BLA BLA", 12) == FREESASA_FAIL);
 
-    //these will pass, although they would be useless
+    /* these will pass, although they would be useless */
     ck_assert(pdb_line_check("ATOM  ", 6) == FREESASA_SUCCESS);
     ck_assert(pdb_line_check("HETATM", 6) == FREESASA_SUCCESS);
 
-    // a more likely type of error
+    /* a more likely type of error */
     ck_assert(pdb_line_check("HETATM", 7) == FREESASA_FAIL);
 
-    // The normal case
+    /* The normal case */
     ck_assert(pdb_line_check("ATOM      1  N   MET A   1      27.340  "
                              "24.430   2.614  1.00  9.67           N  ",
                              80)
@@ -421,4 +421,4 @@ test_pdb_static()
     return tc;
 }
 
-#endif //USE_CHECK
+#endif /* USE_CHECK */

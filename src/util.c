@@ -20,8 +20,8 @@ static FILE *errlog = NULL;
 struct file_range
 freesasa_whole_file(FILE* file)
 {
-    assert(file);
     struct file_range range;
+    assert(file);
     rewind(file);
     range.begin = ftell(file);
     fseek(file,0,SEEK_END);

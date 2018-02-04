@@ -10,7 +10,7 @@
  */
 extern const freesasa_classifier freesasa_backbone_classifier;
 
-//! Classifier that classifies each atom according to residue
+/** Classifier that classifies each atom according to residue */
 extern const freesasa_classifier freesasa_residue_classifier;
 
 
@@ -29,10 +29,10 @@ extern const freesasa_classifier freesasa_residue_classifier;
     Struct to store information about the types-section in a user-config.
  */
 struct classifier_types {
-    int n_types; //!< number of types
-    char **name; //!< names of types
-    double *type_radius; //!< radius of type
-    freesasa_atom_class *type_class; //!< class of each type
+    int n_types;                     /**< number of types */
+    char **name;                     /**< names of types */
+    double *type_radius;             /**< radius of type */
+    freesasa_atom_class *type_class; /**< class of each type */
 };
 
 
@@ -40,19 +40,19 @@ struct classifier_types {
      Configuration info for each residue type.
  */
 struct classifier_residue {
-    int n_atoms; //!< Number of atoms
-    char *name; //!< Name of residue
-    char **atom_name; //!< Names of atoms
-    double *atom_radius; //!< Atomic radii
-    freesasa_atom_class *atom_class; //!< Classes of atoms
-    freesasa_nodearea max_area; //!< Maximum area (for RSA)
+    int n_atoms;                     /**< Number of atoms */
+    char *name;                      /**< Name of residue */
+    char **atom_name;                /**< Names of atoms */
+    double *atom_radius;             /**< Atomic radii */
+    freesasa_atom_class *atom_class; /**< Classes of atoms */
+    freesasa_nodearea max_area;      /**< Maximum area (for RSA) */
 };
 
 /**
     Stores a user-configuration as extracted from a configuration
     file. No info about types, since those are only a tool used
     intermediately in assigment of radii and classes.
-    
+
     An array of the names of residues is stored directly in the struct
     to facilitate searching for residues. The class_name array should
     be a clone of that found in struct types (can be done bye
@@ -61,8 +61,8 @@ struct classifier_residue {
     Only for internal use.
  */
 struct freesasa_classifier {
-    int n_residues; //!< Number of residues
-    char **residue_name; //!< Names of residues
+    int n_residues;      /**< Number of residues */
+    char **residue_name; /**< Names of residues */
     char *name;
     struct classifier_residue **residue;
 };
@@ -77,12 +77,12 @@ const freesasa_nodearea *
 freesasa_classifier_residue_reference(const freesasa_classifier *classifier,
                                       const char *res_name);
 
-// The functions below are only exposed to allow testing
-freesasa_classifier* 
-freesasa_classifier_new();
+/* The functions below are only exposed to allow testing */
+freesasa_classifier*
+freesasa_classifier_new(void);
 
 struct classifier_types*
-freesasa_classifier_types_new();
+freesasa_classifier_types_new(void);
 
 void
 freesasa_classifier_types_free(struct classifier_types* t);
@@ -106,7 +106,7 @@ freesasa_classifier_add_atom(struct classifier_residue *res,
 int
 freesasa_classifier_add_type(struct classifier_types *types,
                              const char *type_name,
-                             const char *class_name, 
+                             const char *class_name,
                              double r);
 
 int
@@ -114,10 +114,10 @@ freesasa_classifier_add_class(struct classifier_types *types,
                               const char *name);
 
 
-// These three are used to calculate residue type areas
+/* These three are used to calculate residue type areas */
 
 int
-freesasa_classify_n_residue_types();
+freesasa_classify_n_residue_types(void);
 
 int
 freesasa_classify_residue(const char *res_name);

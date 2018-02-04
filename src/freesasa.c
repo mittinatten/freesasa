@@ -1,7 +1,7 @@
 /**
-    This source file contains everything that is in freesasa.h
-    interface and does not have a natural home in any of the other
-    source files.
+ * This source file contains everything that is in freesasa.h
+ * interface and does not have a natural home in any of the other
+ * source files.
  */
 
 #if HAVE_CONFIG_H
@@ -25,9 +25,9 @@ const char *freesasa_string = PACKAGE_STRING;
 const char *freesasa_string = "FreeSASA";
 #endif
 
-// Allows compilation with different defaults
-// depending on USE_THREADS. but still exposing the value in a header
-// that doesn't depend on USE_THREADS
+/* Allows compilation with different defaults
+   depending on USE_THREADS. but still exposing the value in a header
+   that doesn't depend on USE_THREADS */
 #ifdef USE_THREADS
 #define DEF_NUMBER_THREADS 2
 #else
@@ -36,11 +36,11 @@ const char *freesasa_string = "FreeSASA";
 const int FREESASA_DEF_NUMBER_THREADS = DEF_NUMBER_THREADS;
 
 const freesasa_parameters freesasa_default_parameters = {
-    .alg = FREESASA_DEF_ALGORITHM,
-    .probe_radius = FREESASA_DEF_PROBE_RADIUS,
-    .shrake_rupley_n_points = FREESASA_DEF_SR_N,
-    .lee_richards_n_slices = FREESASA_DEF_LR_N,
-    .n_threads = DEF_NUMBER_THREADS,
+    FREESASA_DEF_ALGORITHM,
+    FREESASA_DEF_PROBE_RADIUS,
+    FREESASA_DEF_SR_N,
+    FREESASA_DEF_LR_N,
+    DEF_NUMBER_THREADS
 };
 
 static freesasa_result *
@@ -76,7 +76,7 @@ freesasa_result_free(freesasa_result *r)
 }
 
 freesasa_result*
-freesasa_calc(const coord_t *c, 
+freesasa_calc(const coord_t *c,
               const double *radii,
               const freesasa_parameters *parameters)
 
@@ -85,7 +85,7 @@ freesasa_calc(const coord_t *c,
     assert(radii);
 
     freesasa_result *result = result_new(freesasa_coord_n(c));
-    int ret;
+    int ret, i;
 
     if (result == NULL) {
         fail_msg("");
@@ -102,7 +102,7 @@ freesasa_calc(const coord_t *c,
         ret = freesasa_lee_richards(result->sasa, c, radii, parameters);
         break;
     default:
-        assert(0); //should never get here
+        assert(0); /* should never get here */
         break;
     }
     if (ret == FREESASA_FAIL) {
@@ -111,7 +111,7 @@ freesasa_calc(const coord_t *c,
     }
 
     result->total = 0;
-    for (int i = 0; i < freesasa_coord_n(c); ++i) {
+    for (i = 0; i < freesasa_coord_n(c); ++i) {
         result->total += result->sasa[i];
     }
     result->parameters = *parameters;
@@ -120,7 +120,7 @@ freesasa_calc(const coord_t *c,
 }
 
 freesasa_result*
-freesasa_calc_coord(const double *xyz, 
+freesasa_calc_coord(const double *xyz,
                     const double *radii,
                     int n,
                     const freesasa_parameters *parameters)
@@ -135,7 +135,7 @@ freesasa_calc_coord(const double *xyz,
     coord = freesasa_coord_new_linked(xyz,n);
     if (coord != NULL) result = freesasa_calc(coord, radii, parameters);
     if (result == NULL) fail_msg("");
-    
+
     freesasa_coord_free(coord);
 
     return result;
@@ -210,18 +210,18 @@ freesasa_tree_export(FILE *file,
         count_err(freesasa_write_rsa(file, root, options), &n_err);
     }
     if (options & FREESASA_JSON) {
-#if USE_JSON      
+#if USE_JSON
         count_err(freesasa_write_json(file, root, options), &n_err);
-#else        
+#else
         return fail_msg("library was built without support for JSON output");
-#endif        
+#endif
     }
     if (options & FREESASA_XML) {
 #if USE_XML
           count_err(freesasa_write_xml(file, root, options), &n_err);
-#else          
+#else
         return fail_msg("library was built without support for XML output");
-#endif        
+#endif
     }
     if (n_err > 0) {
         return fail_msg("there were errors when writing output");

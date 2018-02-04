@@ -115,13 +115,14 @@ freesasa_coord_append_xyz(coord_t *c,
     assert(c); assert(x); assert(y); assert(z);
     assert(!c->is_linked);
     double *xyz;
-    
+    int i;
+
     if (n == 0) return FREESASA_SUCCESS;
-    
+
     xyz = malloc(sizeof(double)*n*3);
     if(xyz == NULL) return mem_fail();
-    
-    for (int i = 0; i < n; ++i) {
+
+    for (i = 0; i < n; ++i) {
         xyz[i*3] = x[i];
         xyz[i*3+1] = y[i];
         xyz[i*3+2] = z[i];
@@ -145,7 +146,7 @@ freesasa_coord_set_i(coord_t *c,
     memcpy(&c->xyz[i*3], xyz, 3*sizeof(double));
 }
 
-void 
+void
 freesasa_coord_set_i_xyz(coord_t *c,
                          int i,
                          double x,
@@ -166,12 +167,17 @@ freesasa_coord_set_all(coord_t *c,
                        const double* xyz,
                        int n)
 {
+    int result;
+
     assert(c); assert(xyz);
+
     coord_clear(c);
-    int result = freesasa_coord_append(c,xyz,n);
+    result = freesasa_coord_append(c,xyz,n);
+
     if (result != FREESASA_SUCCESS) {
         fail_msg("");
     }
+
     return result;
 }
 
@@ -208,9 +214,12 @@ void
 freesasa_coord_set_length_all(coord_t *c,
                               double l)
 {
+    int i;
+
     assert(c);
     assert(!c->is_linked);
-    for (int i = 0; i < c->n; ++i) freesasa_coord_set_length_i(c,i,l);
+
+    for (i = 0; i < c->n; ++i) freesasa_coord_set_length_i(c,i,l);
 }
 
 const double*
@@ -239,7 +248,7 @@ dist2(const double *v1,
     return dx*dx + dy*dy + dz*dz;
 }
 
-double 
+double
 freesasa_coord_dist2(const coord_t *c,
                      int i,
                      int j)
@@ -289,10 +298,12 @@ freesasa_coord_translate_xyz(coord_t *c,
                              double y,
                              double z)
 {
+    int i;
+
     assert(c);
     assert(!c->is_linked);
 
-    for (int i = 0; i < c->n; ++i) {
+    for (i = 0; i < c->n; ++i) {
         c->xyz[3*i]   += x;
         c->xyz[3*i+1] += y;
         c->xyz[3*i+2] += z;
@@ -303,9 +314,12 @@ void
 freesasa_coord_scale(coord_t *c,
                      double s)
 {
+    int i;
+
     assert(c);
     assert(!c->is_linked);
-    for (int i = 0; i < c->n*3; ++i) {
+
+    for (i = 0; i < c->n*3; ++i) {
         c->xyz[i] *= s;
     }
 }

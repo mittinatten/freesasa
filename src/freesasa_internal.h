@@ -5,19 +5,19 @@
 #include "freesasa.h"
 #include "coord.h"
 
-//! The name of the library, to be used in error messages and logging
+/** The name of the library, to be used in error messages and logging */
 extern const char *freesasa_name;
 
-//! The name of the package, to be used in regular output (includes version)
+/** The name of the package, to be used in regular output (includes version) */
 extern const char *freesasa_string;
 
-//! A ::freesasa_nodearea with `name == NULL` and all values 0
+/** A ::freesasa_nodearea with `name == NULL` and all values 0 */
 extern const freesasa_nodearea freesasa_nodearea_null;
 
-//! Shortcut for memory error generation
-#define mem_fail() freesasa_mem_fail(__FILE__,__LINE__) 
+/** Shortcut for memory error generation */
+#define mem_fail() freesasa_mem_fail(__FILE__,__LINE__)
 
-//! Shortcut for error message with position information, should be used by default
+/** Shortcut for error message with position information, should be used by default */
 #define fail_msg(...) freesasa_fail_wloc(__FILE__,__LINE__, __VA_ARGS__)
 
 #ifdef _MSC_VER
@@ -31,13 +31,21 @@ extern const freesasa_nodearea freesasa_nodearea_null;
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 # define restrict __restrict
 #endif
-#if defined(_MSC_VER) && _MSC_VER < 1400 
+#if defined(_MSC_VER) && _MSC_VER < 1400
+# define restrict
+#endif
+
+#ifndef HAVE_INLINE
+# define inline
+#endif
+
+#ifdef __STRICT_ANSI__
 # define restrict
 #endif
 
 /**
     Calculate SASA using S&R algorithm.
-    
+
     @param sasa The results are written to this array, the user has to
     make sure it is large enough.
     @param c Coordinates of the object to calculate SASA for.
@@ -62,8 +70,8 @@ freesasa_shrake_rupley(double *sasa,
     right size. The argument grid sets the distance between grid
     points in Å. Returns FREESASA_SUCCESS on success, FREESASA_WARN if
     multiple threads are requested when compiled in single-threaded
-    mode (with error message). 
-    
+    mode (with error message).
+
     @param sasa The results are written to this array, the user has to
     make sure it is large enough.
     @param c Coordinates of the object to calculate SASA for.
@@ -72,7 +80,7 @@ freesasa_shrake_rupley(double *sasa,
     number of threads. If NULL :.freesasa_default_parameters is used.
     @return ::FREESASA_SUCCESS on success, ::FREESASA_WARN if
     multiple threads are requested when compiled in single-threaded
-    mode (with error message). ::FREESASA_FAIL if memory allocation 
+    mode (with error message). ::FREESASA_FAIL if memory allocation
     failure.
  */
 int freesasa_lee_richards(double* sasa,
@@ -129,8 +137,8 @@ freesasa_write_rsa(FILE *output,
     @param parameters Parameters used in the calculation (NULL means
       defaults are assumed).
     @param options Bitfield with options ::FREESASA_OUTPUT_STRUCTURE,
-      ::FREESASA_OUTPUT_CHAIN and ::FREESASA_OUTPUT_RESIDUE, that specify 
-      depth of the tree to output. If `options == 0` all levels are 
+      ::FREESASA_OUTPUT_CHAIN and ::FREESASA_OUTPUT_RESIDUE, that specify
+      depth of the tree to output. If `options == 0` all levels are
       written. The options ::FREESASA_OUTPUT_SKIP_REL specifies
       if REL column should be populated or not. If the classifier has no
       reference values, it will be left empty either way.
@@ -149,8 +157,8 @@ freesasa_write_json(FILE *ouput,
     @param parameters Parameters used in the calculation (NULL means
       defaults are assumed).
     @param options Bitfield with options ::FREESASA_OUTPUT_STRUCTURE,
-      ::FREESASA_OUTPUT_CHAIN and ::FREESASA_OUTPUT_RESIDUE, that specify 
-      depth of the tree to output. If `options == 0` all levels 
+      ::FREESASA_OUTPUT_CHAIN and ::FREESASA_OUTPUT_RESIDUE, that specify
+      depth of the tree to output. If `options == 0` all levels
       written. The options ::FREESASA_OUTPUT_SKIP_REL specifies
       if REL column should be populated or not. If the classifier has no
       reference values, it will be left empty either way.
@@ -218,7 +226,7 @@ freesasa_selection_clone(const freesasa_selection *selection);
 
 /**
     Get coordinates.
-    
+
     @param structure A structure.
     @return The coordinates of the structure as a ::coord_t struct.
  */
@@ -255,7 +263,7 @@ freesasa_structure_residue_reference(const freesasa_structure *structure,
 
     @param structure A structure.
     @param chain The chain label.
-    @return The index of `chain` in the structure. ::FREESASA_FAIL 
+    @return The index of `chain` in the structure. ::FREESASA_FAIL
       if `chain` not found.
  */
 int
@@ -318,7 +326,7 @@ freesasa_residue_rel_nodearea(freesasa_nodearea *rel,
 
 /**
     Is an atom a backbone atom
-   
+
     @param atom_name Name of atom
     @return 1 if the atom_name equals CA, N, O or C after whitespace
     is trimmed, 0 else. (i.e. does not check if it is an actual atom)
@@ -331,8 +339,8 @@ freesasa_atom_is_backbone(const char *atom_name);
     with fseek().
  */
 struct file_range {
-    long begin; //!< Position of beginning of range
-    long end; //!< Position of end of range
+    long begin; /**< Position of beginning of range */
+    long end; /**< Position of end of range */
 };
 
 /**
@@ -361,7 +369,7 @@ freesasa_alg_name(freesasa_algorithm algorithm);
     @param format Format string
     @return ::FREESASA_FAIL
 */
-int 
+int
 freesasa_fail(const char *format,...);
 
 /**
@@ -374,7 +382,7 @@ int
 freesasa_warn(const char *format,...);
 
 /**
-    Print warning message using function, file and line-number. 
+    Print warning message using function, file and line-number.
 
     Usually used via the macro mem_fail().
 

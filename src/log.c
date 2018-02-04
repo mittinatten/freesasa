@@ -9,11 +9,11 @@
 #include "freesasa_internal.h"
 #include "classifier.h"
 
-// to control error messages (used for debugging and testing)
+/** to control error messages (used for debugging and testing) */
 static freesasa_verbosity verbosity;
 
 int
-freesasa_set_verbosity(freesasa_verbosity s) 
+freesasa_set_verbosity(freesasa_verbosity s)
 {
     if (s == FREESASA_V_NORMAL ||
         s == FREESASA_V_NOWARNINGS ||
@@ -26,7 +26,7 @@ freesasa_set_verbosity(freesasa_verbosity s)
 }
 
 freesasa_verbosity
-freesasa_get_verbosity(void) 
+freesasa_get_verbosity(void)
 {
     return verbosity;
 }
@@ -118,8 +118,9 @@ write_parameters(FILE *log,
 
     fprintf(log,"algorithm    : %s\n",freesasa_alg_name(p->alg));
     fprintf(log,"probe-radius : %.3f\n", p->probe_radius);
-    if (USE_THREADS)
-        fprintf(log,"threads      : %d\n",p->n_threads);
+#if USE_THREADS
+    fprintf(log,"threads      : %d\n",p->n_threads);
+#endif
 
     switch(p->alg) {
     case FREESASA_SHRAKE_RUPLEY:
@@ -150,14 +151,14 @@ freesasa_write_res(FILE *log,
     assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
 
     freesasa_node *result, *structure, *chain, *residue;
-    int n_res = freesasa_classify_n_residue_types()+1, i_res;
+    int n_res = freesasa_classify_n_residue_types()+1, i_res, i;
     double *residue_area = malloc(sizeof(double) * n_res);
 
     if (residue_area == NULL) return mem_fail();
 
     result = freesasa_node_children(root);
     while (result) {
-        for (int i = 0; i < n_res; ++i) residue_area[i] = 0;
+        for (i = 0; i < n_res; ++i) residue_area[i] = 0;
         structure = freesasa_node_children(result);
         while (structure) {
             chain = freesasa_node_children(structure);
@@ -175,7 +176,7 @@ freesasa_write_res(FILE *log,
         }
 
         fprintf(log, "# Residue types in %s\n", freesasa_node_name(result));
-        for (int i_res = 0; i_res < n_res; ++i_res) {
+        for (i_res = 0; i_res < n_res; ++i_res) {
             double sasa = residue_area[i_res];
             if (i_res < 20 || sasa > 0) {
                 fprintf(log, "RES %s : %10.2f\n",
@@ -246,7 +247,7 @@ freesasa_write_log(FILE *log,
     assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
 
     freesasa_node *result = freesasa_node_children(root);
-    int several = (freesasa_node_next(result) != NULL); // are there more than one result
+    int several = (freesasa_node_next(result) != NULL); /* are there more than one result */
     int err = 0;
 
     if (write_parameters(log, freesasa_node_result_parameters(result)) == FREESASA_FAIL)
