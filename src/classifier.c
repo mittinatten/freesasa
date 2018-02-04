@@ -220,7 +220,6 @@ next_line(char *line,
           FILE *fp)
 {
     char linebuf[MAX_LINE_LEN + 1];
-    int ret;
 
     if (fgets(linebuf, MAX_LINE_LEN + 1, fp) == NULL) {
         if (ferror(fp)) {
