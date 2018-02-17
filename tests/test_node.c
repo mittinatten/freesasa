@@ -8,7 +8,7 @@ test_tree(freesasa_node *structure,
           const freesasa_result *result)
 {
     freesasa_node *next, *chain, *residue, *atom;
-    
+
     const freesasa_nodearea *area;
     ck_assert_ptr_ne((chain = freesasa_node_children(structure)), NULL);
     ck_assert_ptr_ne((residue = freesasa_node_children(chain)), NULL);
@@ -29,7 +29,7 @@ test_tree(freesasa_node *structure,
     ck_assert_str_eq(freesasa_node_structure_chain_labels(structure), "A");
 
     ck_assert_int_eq(freesasa_node_chain_n_residues(chain), 76);
-    
+
     // iterate
     next = freesasa_node_next(structure);
     ck_assert_ptr_eq(next, NULL);
@@ -78,7 +78,7 @@ START_TEST (test_result_node)
     ck_assert_int_eq(freesasa_node_type(rn), FREESASA_NODE_RESULT);
     ck_assert_ptr_ne((rn = freesasa_node_children(rn)), NULL);
     test_tree(rn, result);
-    
+
     freesasa_tree_join(tree, &tree2);
     ck_assert(tree2 == NULL);
     rn = freesasa_node_children(tree); // result in tree
@@ -129,5 +129,3 @@ Suite* result_node_suite() {
 
     return s;
 }
-
-

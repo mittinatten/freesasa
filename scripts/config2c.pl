@@ -3,7 +3,7 @@ use strict;
 # Script to generate source code for a classifier based on a
 # config-file. Useful for having default classifiers statically in
 # memory.  It generates a constant classifier that should be placed in
-# its own source-file. 
+# its own source-file.
 
 # This interpreter has stricter requirements on the input format than
 # the one in the C-code, since it is only for internal use. It also
@@ -16,7 +16,7 @@ use strict;
 # source-directory was generated using the command
 #
 #    perl config2c.pl protor ../share/protor.config
-# 
+#
 # where 'protor' will be the variable name prefix and the name used in
 # output generated from this classifier. It is also referred to in
 # freesasa.h.
@@ -136,8 +136,8 @@ foreach my $p (@pdb) {
             $subarea{apol} = $1;
         }
     }
-    $rsa{$name} = "\{.name = \"$name\", .total = $subarea{total}, .main_chain = $subarea{bb}, ".
-        ".side_chain = $subarea{sc}, .polar = $subarea{pol}, .apolar = $subarea{apol}\}";
+    $rsa{$name} = "\{\"$name\", $subarea{total}, $subarea{bb}, ".
+        "$subarea{sc}, $subarea{pol}, $subarea{apol}, 0\}";
 }
 
 my @res_array = sort keys %residues;
@@ -159,14 +159,15 @@ foreach my $res (@res_array) {
     print $types{$atoms{$res}{$_}}{class},", " foreach (@atom_names);
     print "};\n";
     print "static struct classifier_residue $prefix\_$res\_cfg = {\n";
-    print "    .name = \"$res\", .n_atoms = ", scalar keys %{$atoms{$res}},",\n";
-    print "    .atom_name = (char**) $prefix\_$res\_atom_name,\n";
-    print "    .atom_radius = (double*) $prefix\_$res\_atom_radius,\n";
-    print "    .atom_class = (freesasa_atom_class*) $prefix\_$res\_atom_class,\n";
+    print "    ", scalar keys %{$atoms{$res}}, ",\n";
+    print " \"$res\",\n";
+    print "    (char**) $prefix\_$res\_atom_name,\n";
+    print "    (double*) $prefix\_$res\_atom_radius,\n";
+    print "    (freesasa_atom_class*) $prefix\_$res\_atom_class,\n";
     if (exists $rsa{$res}) {
-        print "    .max_area = $rsa{$res},";
+        print " $rsa{$res},";
     } else {
-        print "    .max_area = {NULL, 0, 0, 0, 0, 0},";
+        print " {NULL, 0, 0, 0, 0, 0},";
     }
     print"\n};\n\n"
 }
@@ -178,11 +179,8 @@ print "};\n\n";
 
 
 print "const freesasa_classifier freesasa_$prefix\_classifier = {\n";
-print "    .n_residues = $n_residues,";
-print "    .residue_name = (char**) $prefix\_residue_name,\n";
-print "    .residue = (struct classifier_residue **) $prefix\_residue_cfg,\n";
-print "    .name = \"$name\",\n";
+print "    $n_residues,";
+print "    (char**) $prefix\_residue_name,\n";
+print "    \"$name\",\n";
+print "    (struct classifier_residue **) $prefix\_residue_cfg,\n";
 print "};\n\n";
-
-
-      

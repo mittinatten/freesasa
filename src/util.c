@@ -21,6 +21,7 @@ struct file_range
 freesasa_whole_file(FILE* file)
 {
     struct file_range range;
+
     assert(file);
     rewind(file);
     range.begin = ftell(file);
@@ -28,6 +29,7 @@ freesasa_whole_file(FILE* file)
     range.end = ftell(file);
     rewind(file);
     assert(range.begin <= range.end);
+
     return range;
 }
 
@@ -37,6 +39,7 @@ freesasa_err_impl(int err,
                   va_list arg)
 {
     FILE *fp = stderr;
+
     if (errlog != NULL) fp = errlog;
 
     fprintf(fp, "%s: ", freesasa_name);
@@ -55,10 +58,13 @@ int
 freesasa_fail(const char *format,...)
 {
     va_list arg;
+
     if (freesasa_get_verbosity() == FREESASA_V_SILENT) return FREESASA_FAIL;
+
     va_start(arg, format);
     freesasa_err_impl(FREESASA_FAIL,format,arg);
     va_end(arg);
+
     return FREESASA_FAIL;
 }
 
@@ -66,10 +72,13 @@ int freesasa_warn(const char *format,...)
 {
     va_list arg;
     int v = freesasa_get_verbosity();
+
     if (v == FREESASA_V_NOWARNINGS || v == FREESASA_V_SILENT) return FREESASA_WARN;
+
     va_start(arg, format);
     freesasa_err_impl(FREESASA_WARN,format,arg);
     va_end(arg);
+
     return FREESASA_WARN;
 }
 
@@ -81,14 +90,17 @@ freesasa_fail_wloc(const char* file,
 {
     FILE *fp = stderr;
     va_list arg;
+
     if (freesasa_get_verbosity() == FREESASA_V_SILENT) return FREESASA_FAIL;
     if (errlog != NULL) fp = errlog;
+
     fprintf(fp, "%s:%s:%d: error: ", freesasa_name, file, line);
     va_start(arg, format);
     vfprintf(fp, format, arg);
     va_end(arg);
     fputc('\n', fp);
     fflush(fp);
+
     return FREESASA_FAIL;
 }
 

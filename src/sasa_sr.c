@@ -174,19 +174,20 @@ freesasa_shrake_rupley(double *sasa,
                        const double *r,
                        const freesasa_parameters *param)
 {
+    int i, n_atoms, n_threads = param->n_threads, resolution, return_value;
+    double probe_radius = param->probe_radius;
+    sr_data sr;
+
     assert(sasa);
     assert(xyz);
     assert(r);
 
     if (param == NULL) param = &freesasa_default_parameters;
 
-    int i;
-    int n_atoms = freesasa_coord_n(xyz),
-        n_threads = param->n_threads,
-        resolution = param->shrake_rupley_n_points,
-        return_value = FREESASA_SUCCESS;
-    double probe_radius = param->probe_radius;
-    sr_data sr;
+    n_atoms = freesasa_coord_n(xyz);
+    n_threads = param->n_threads;
+    resolution = param->shrake_rupley_n_points;
+    return_value = FREESASA_SUCCESS;
 
     if (n_threads > MAX_SR_THREADS) {
         return fail_msg("S&R does not support more than %d threads", MAX_SR_THREADS);

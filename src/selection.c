@@ -1,14 +1,15 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <string.h>
+
 #include <ctype.h>
 #include <stdlib.h>
 #include <assert.h>
+
+#include "freesasa_internal.h"
 #include "selection.h"
 #include "parser.h"
 #include "lexer.h"
-#include "freesasa_internal.h"
 #include "pdb.h"
 
 struct freesasa_selection {

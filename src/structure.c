@@ -1,14 +1,14 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <string.h>
+
 #include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
-#include "freesasa_internal.h"
+
 #include "pdb.h"
 #include "classifier.h"
 #include "coord.h"
+#include "freesasa_internal.h"
 
 /**
    This file contains the functions that turn lines in PDB files to
@@ -40,14 +40,14 @@ struct atom {
 };
 
 static const struct atom empty_atom = {
-    .res_name = NULL,
-    .res_number = NULL,
-    .atom_name = NULL,
-    .symbol = NULL,
-    .line = NULL,
-    .res_index = -1,
-    .chain_label = '\0',
-    .the_class = FREESASA_ATOM_UNKNOWN
+    NULL, /* res_name */
+    NULL, /* res_number */
+    NULL, /* atom_name */
+    NULL, /* symbol */
+    NULL, /* line */
+    -1, /* res_index */
+    '\0', /* chain_label */
+    FREESASA_ATOM_UNKNOWN /* the_class */
 };
 
 struct atoms {
@@ -100,7 +100,12 @@ atom_free(struct atom *a)
 struct atoms
 atoms_init()
 {
-    return (struct atoms) {.n = 0, .n_alloc = 0, .atom = NULL, .radius = NULL};
+    struct atoms atoms;
+    atoms.n = 0;
+    atoms.n_alloc = 0;
+    atoms.atom = NULL;
+    atoms.radius = NULL;
+    return atoms;
 }
 
 /* Allocates memory in chunks, ticks up atoms->n if allocation successful */
@@ -232,19 +237,29 @@ atom_new_from_line(const char *line,
 static struct residues
 residues_init()
 {
-    return (struct residues)
-        {.n = 0, .n_alloc = 0, .first_atom = NULL, .reference_area = NULL};
+    struct residues res;
+
+    res.n = 0;
+    res.n_alloc = 0;
+    res.first_atom = 0;
+    res.reference_area = 0;
+
+    return res;
 }
 
 static int
 residues_alloc(struct residues *residues)
 {
+    int new_size;
+    void *fa, *ra;
+
     assert(residues);
     assert(residues->n <= residues->n_alloc);
 
     if (residues->n == residues->n_alloc) {
-        int new_size = residues->n_alloc + RESIDUES_CHUNK;
-        void *fa = residues->first_atom, *ra = residues->reference_area;
+        new_size = residues->n_alloc + RESIDUES_CHUNK;
+        fa = residues->first_atom;
+        ra = residues->reference_area;
 
         residues->first_atom = realloc(residues->first_atom,
                                        sizeof(int) * new_size);
@@ -286,18 +301,29 @@ residues_dealloc(struct residues *residues)
 static struct chains
 chains_init()
 {
-    return (struct chains) {.n = 0, .n_alloc = 0, .first_atom = NULL, .labels = NULL};
+    struct chains ch;
+
+    ch.n = 0;
+    ch.n_alloc = 0;
+    ch.first_atom = NULL;
+    ch.labels = NULL;
+
+    return ch;
 }
 
 static int
 chains_alloc(struct chains *chains)
 {
+    int new_size;
+    void *fa, *lbl;
+
     assert(chains);
     assert(chains->n <= chains->n_alloc);
 
     if (chains->n == chains->n_alloc) {
-        int new_size = chains->n_alloc + CHAINS_CHUNK;
-        void *fa = chains->first_atom, *lbl = chains->labels;
+        new_size = chains->n_alloc + CHAINS_CHUNK;
+        fa = chains->first_atom;
+        lbl = chains->labels;
 
         chains->first_atom = realloc(chains->first_atom,
                                      sizeof(int) * new_size);
@@ -529,9 +555,10 @@ structure_add_atom(freesasa_structure *structure,
                    const freesasa_classifier* classifier,
                    int options)
 {
-    assert(structure); assert(atom); assert(xyz);
     int na, ret;
     double r;
+
+    assert(structure); assert(atom); assert(xyz);
 
     /* let the stricter option override if both are specified */
     if (options & FREESASA_SKIP_UNKNOWN && options & FREESASA_HALT_AT_UNKNOWN)
@@ -588,13 +615,14 @@ from_pdb_impl(FILE *pdb_file,
               const freesasa_classifier *classifier,
               int options)
 {
-    assert(pdb_file);
     char line[PDB_MAX_LINE_STRL];
     char alt, the_alt = ' ';
     double v[3], r;
     int ret;
     struct atom *a = NULL;
     freesasa_structure *s = freesasa_structure_new();
+
+    assert(pdb_file);
 
     if (s == NULL) return NULL;
 
@@ -672,13 +700,13 @@ freesasa_structure_add_atom_wopt(freesasa_structure *structure,
                                  const freesasa_classifier *classifier,
                                  int options)
 {
-    assert(structure);
-    assert(atom_name); assert(residue_name); assert(residue_number);
-
     struct atom *a;
     char symbol[PDB_ATOM_SYMBOL_STRL+1];
     double v[3] = {x,y,z};
     int ret, warn = 0;
+
+    assert(structure);
+    assert(atom_name); assert(residue_name); assert(residue_number);
 
     /* this option can not be used here, and needs to be unset */
     options &= ~FREESASA_RADIUS_FROM_OCCUPANCY;
@@ -1005,8 +1033,11 @@ freesasa_structure_residue_atoms(const freesasa_structure *structure,
                                  int *first,
                                  int *last)
 {
+    int naa;
     assert(structure); assert(first); assert(last);
-    const int naa = structure->residues.n;
+
+    naa = structure->residues.n;
+
     assert(r_i >= 0 && r_i < naa);
 
     *first = structure->residues.first_atom[r_i];
@@ -1094,12 +1125,16 @@ freesasa_structure_chain_residues(const freesasa_structure *structure,
                                   int *first,
                                   int *last)
 {
-   assert(structure);
    int first_atom, last_atom;
+
+   assert(structure);
+
    if (freesasa_structure_chain_atoms(structure, chain, &first_atom, &last_atom))
        return fail_msg("");
+
    *first = structure->atoms.atom[first_atom]->res_index;
    *last = structure->atoms.atom[last_atom]->res_index;
+
    return FREESASA_SUCCESS;
 }
 

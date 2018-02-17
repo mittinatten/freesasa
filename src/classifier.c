@@ -1,16 +1,16 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdio.h>
+
 #include <stdlib.h>
 #include <assert.h>
-#include <string.h>
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
 #include <errno.h>
-#include "classifier.h"
+
 #include "freesasa_internal.h"
+#include "classifier.h"
 #include "pdb.h"
 
 #define STD_CLASSIFIER_NAME "no-name-given"
@@ -57,8 +57,11 @@ freesasa_classifier_types_free(struct classifier_types* t)
 struct classifier_residue*
 freesasa_classifier_residue_new(const char* name)
 {
+    struct classifier_residue *res;
     assert(strlen(name) > 0);
-    struct classifier_residue *res = malloc(sizeof(struct classifier_residue));
+
+    res = malloc(sizeof(struct classifier_residue));
+
     if (res == NULL) mem_fail();
     else {
         *res = empty_residue;
@@ -122,11 +125,13 @@ find_string(char **array,
             const char *key,
             int array_size)
 {
-    assert(key);
+    int n, i, found = 0;
+    char *key_trimmed;
+
     if (array == NULL || array_size == 0) return -1;
 
-    int n = strlen(key), i, found = 0;
-    char *key_trimmed = malloc(n + 1);
+    n = strlen(key);
+    key_trimmed = malloc(n + 1);
 
     if (key_trimmed == NULL) return mem_fail();
 
@@ -157,10 +162,10 @@ static int
 strip_line(char *line,
            const char *input)
 {
-    assert(strlen(input) <= MAX_LINE_LEN);
-
     char *comment, *first, *last;
     char linebuf[MAX_LINE_LEN + 1];
+
+    assert(strlen(input) <= MAX_LINE_LEN);
 
     strcpy(linebuf, input);
     comment = strchr(linebuf, '#');
@@ -243,11 +248,12 @@ static inline int
 locate_string(const char *line,
               const char *str)
 {
+    int NOT_FOUND = -1;
+    char *loc, buf[MAX_LINE_LEN + 1];
+
     assert(line);
     assert(strlen(line) <= MAX_LINE_LEN);
     assert(str);
-    int NOT_FOUND = -1;
-    char *loc, buf[MAX_LINE_LEN + 1];
 
     if (strlen(line) == 0) {
         return NOT_FOUND;
@@ -283,7 +289,9 @@ try_register_stringloc(const char *line,
                        struct file_range **prev_range)
 {
     int pos, NOT_FOUND = -1;
+
     if (strlen(line) == 0) return NOT_FOUND;
+
     pos = locate_string(line, str);
     if (pos >= 0) {
         this_range->begin = last_tell + pos;
@@ -306,11 +314,11 @@ check_file(FILE *input,
            struct file_range *atoms,
            struct file_range *name)
 {
-    assert(input); assert(types); assert(atoms);
     long last_tell;
     char line[MAX_LINE_LEN + 1];
-
     struct file_range *last_range = NULL;
+
+    assert(input); assert(types); assert(atoms);
 
     last_tell = ftell(input);
 
@@ -434,11 +442,11 @@ static int
 read_types_line(struct classifier_types *types,
                 const char* line)
 {
-    assert(strlen(line) <= MAX_LINE_LEN);
-
     int the_type, ret = FREESASA_SUCCESS;
     double r;
     char buf1[MAX_LINE_LEN + 1], buf2[MAX_LINE_LEN + 1];
+
+    assert(strlen(line) <= MAX_LINE_LEN);
 
     if (sscanf(line,"%s %lf %s", buf1, &r, buf2) == 3) {
         the_type = freesasa_classifier_add_type(types, buf1, buf2, r);
@@ -466,6 +474,7 @@ read_types(struct classifier_types *types,
 {
     char line[MAX_LINE_LEN + 1];
     int ret = FREESASA_SUCCESS, nl;
+
     fseek(input, fi.begin, SEEK_SET);
 
     /* read command (and discard) */
@@ -578,9 +587,10 @@ read_atoms_line(struct freesasa_classifier *c,
                 const struct classifier_types *types,
                 const char* line)
 {
-    assert(strlen(line) <= MAX_LINE_LEN);
     char buf1[MAX_LINE_LEN + 1], buf2[MAX_LINE_LEN + 1], buf3[MAX_LINE_LEN + 1];
     int res, type, atom;
+
+    assert(strlen(line) <= MAX_LINE_LEN);
 
     if (sscanf(line,"%s %s %s", buf1, buf2, buf3) == 3) {
         if (strlen(buf1) > PDB_ATOM_RES_NAME_STRL) {
@@ -630,14 +640,14 @@ read_atoms(struct freesasa_classifier *c,
            FILE *input,
            struct file_range fi)
 {
-    char line[MAX_LINE_LEN + 1];
+    char line[MAX_LINE_LEN + 1], buf[MAX_LINE_LEN + 1];
     int ret = FREESASA_SUCCESS, nl;
+
     fseek(input, fi.begin, SEEK_SET);
 
     /* read command (and discard) */
     if (next_line(line, input) > 0) {
         assert(strlen(line) <= MAX_LINE_LEN);
-        char buf[MAX_LINE_LEN + 1];
         if (sscanf(line, "%s", buf) == 0) return FREESASA_FAIL;
         assert(strcmp(buf, "atoms:") == 0);
     } else {
@@ -686,10 +696,11 @@ read_name(struct freesasa_classifier *classifier,
 static struct freesasa_classifier*
 read_config(FILE *input)
 {
-    assert(input);
     struct file_range types_section, atoms_section, name_section;
     struct freesasa_classifier *classifier = NULL;
     struct classifier_types *types = NULL;
+
+    assert(input);
 
     if (!(types = freesasa_classifier_types_new()))
         goto cleanup;
@@ -742,12 +753,13 @@ find_atom(const struct freesasa_classifier *c,
           int* res,
           int* atom)
 {
+    const struct classifier_residue *residue;
     *atom = -1;
     *res = find_string(c->residue_name, res_name, c->n_residues);
     if (*res < 0) {
         find_any(c, atom_name, res, atom);
     } else {
-        const struct classifier_residue *residue = c->residue[*res];
+        residue = c->residue[*res];
         *atom = find_string(residue->atom_name, atom_name, residue->n_atoms);
         if (*atom < 0) {
             find_any(c, atom_name, res, atom);
@@ -764,9 +776,9 @@ freesasa_classifier_radius(const freesasa_classifier *classifier,
                            const char *res_name,
                            const char *atom_name)
 {
-    assert(classifier); assert(res_name); assert(atom_name);
-
     int res, atom, status;
+
+    assert(classifier); assert(res_name); assert(atom_name);
 
     status = find_atom(classifier, res_name, atom_name, &res,&atom);
     if (status == FREESASA_SUCCESS)
@@ -779,8 +791,9 @@ freesasa_classifier_class(const freesasa_classifier *classifier,
                           const char *res_name,
                           const char *atom_name)
 {
-    assert(classifier); assert(res_name); assert(atom_name);
     int res, atom, status;
+
+    assert(classifier); assert(res_name); assert(atom_name);
 
     status = find_atom(classifier, res_name, atom_name, &res, &atom);
     if (status == FREESASA_SUCCESS)
@@ -818,10 +831,12 @@ freesasa_classifier*
 freesasa_classifier_from_file(FILE *file)
 {
     struct freesasa_classifier *classifier = read_config(file);
+
     if (classifier == NULL) {
         fail_msg("");
         return NULL;
     }
+
     return classifier;
 }
 
@@ -830,6 +845,7 @@ freesasa_classifier_residue_reference(const freesasa_classifier *classifier,
                                       const char *res_name)
 {
     int res = find_string(classifier->residue_name, res_name, classifier->n_residues);
+
     if (res < 0) return NULL;
 
     return &classifier->residue[res]->max_area;
@@ -871,8 +887,9 @@ static const struct symbol_radius symbol_radius[] = {
 double
 freesasa_guess_radius(const char* symbol)
 {
-    assert(symbol);
     int n_symbol, i;
+
+    assert(symbol);
 
     n_symbol = sizeof(symbol_radius)/sizeof(struct symbol_radius);
 
@@ -940,10 +957,13 @@ freesasa_classify_residue(const char *res_name)
 {
     int i;
     char cpy[PDB_ATOM_RES_NAME_STRL+1];
+
     sscanf(res_name, "%s", cpy);
+
     for (i = ALA; i < freesasa_classify_n_residue_types(); ++i) {
         if (strcmp(cpy,residue_names[i]) == 0) return i;
     }
+
     return RES_UNK;
 }
 

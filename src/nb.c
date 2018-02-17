@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
+
 #include "freesasa_internal.h"
 #include "nb.h"
 
@@ -62,9 +63,9 @@ cell_list_bounds(cell_list *c,
     c->y_max = Y + d/2.;
     c->z_min = z - d/2.;
     c->z_max = Z + d/2.;
-    c->nx = ceil((c->x_max - c->x_min)/d);
-    c->ny = ceil((c->y_max - c->y_min)/d);
-    c->nz = ceil((c->z_max - c->z_min)/d);
+    c->nx = (int) ceil((c->x_max - c->x_min)/d);
+    c->ny = (int) ceil((c->y_max - c->y_min)/d);
+    c->nz = (int) ceil((c->z_max - c->z_min)/d);
     c->n = c->nx*c->ny*c->nz;
 }
 

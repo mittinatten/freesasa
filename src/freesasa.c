@@ -81,11 +81,13 @@ freesasa_calc(const coord_t *c,
               const freesasa_parameters *parameters)
 
 {
+    freesasa_result *result;
+    int ret, i;
+
     assert(c);
     assert(radii);
 
-    freesasa_result *result = result_new(freesasa_coord_n(c));
-    int ret, i;
+    result = result_new(freesasa_coord_n(c));
 
     if (result == NULL) {
         fail_msg("");
@@ -125,12 +127,12 @@ freesasa_calc_coord(const double *xyz,
                     int n,
                     const freesasa_parameters *parameters)
 {
+    coord_t *coord = NULL;
+    freesasa_result *result = NULL;
+
     assert(xyz);
     assert(radii);
     assert(n > 0);
-
-    coord_t *coord = NULL;
-    freesasa_result *result = NULL;
 
     coord = freesasa_coord_new_linked(xyz,n);
     if (coord != NULL) result = freesasa_calc(coord, radii, parameters);
@@ -157,12 +159,14 @@ freesasa_calc_tree(const freesasa_structure *structure,
                    const freesasa_parameters *parameters,
                    const char *name)
 {
+    freesasa_node *tree = NULL;
+    freesasa_result *result;
+
     assert(structure);
 
-    freesasa_node *tree = NULL;
-    freesasa_result *result = freesasa_calc(freesasa_structure_xyz(structure),
-                                            freesasa_structure_radius(structure),
-                                            parameters);
+    result = freesasa_calc(freesasa_structure_xyz(structure),
+                           freesasa_structure_radius(structure),
+                           parameters);
 
     if (result != NULL) {
         tree = freesasa_tree_init(result, structure, name);
@@ -192,8 +196,10 @@ freesasa_tree_export(FILE *file,
                      freesasa_node *root,
                      int options)
 {
-    assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
     int n_err = 0;
+
+    assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
+
     if (options & FREESASA_LOG) {
         count_err(freesasa_write_log(file, root), &n_err);
     }
@@ -233,6 +239,7 @@ freesasa_result *
 freesasa_result_clone(const freesasa_result *result)
 {
     freesasa_result *clone = result_new(result->n_atoms);
+
     if (clone == NULL) {
         fail_msg("");
         return NULL;

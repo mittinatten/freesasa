@@ -1,7 +1,14 @@
 #ifndef FREESASA_INTERNAL_H
 #define FREESASA_INTERNAL_H
 
+#ifdef _MSC_VER
+# define _CRT_SECURE_NO_WARNINGS
+#endif
+
+/* These are included here so that the _CRT_SECURE_.. macro above will have the desired effect */
 #include <stdio.h>
+#include <string.h>
+
 #include "freesasa.h"
 #include "coord.h"
 
@@ -22,6 +29,11 @@ extern const freesasa_nodearea freesasa_nodearea_null;
 
 #ifdef _MSC_VER
 # define inline __inline
+# define strdup _strdup
+# define fmax(a, b)  (((a) > (b)) ? (a) : (b))
+# define fmin(a, b)  (((a) < (b)) ? (a) : (b))
+# include <float.h>
+# define isfinite _finite
 #endif
 
 #if defined(_MSC_VER) && !defined(__func__)
@@ -35,12 +47,12 @@ extern const freesasa_nodearea freesasa_nodearea_null;
 # define restrict
 #endif
 
-#ifndef HAVE_INLINE
-# define inline
-#endif
 
+/* The library is intended to be compiled with C99, but this macro
+   allows us to compile it with C89 too, to test MSC compatibility */
 #ifdef __STRICT_ANSI__
 # define restrict
+# define inline
 #endif
 
 /**
