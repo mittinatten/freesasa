@@ -17,11 +17,17 @@ json_object *
 freesasa_json_atom(freesasa_node *node,
                    int options)
 {
+    json_object *atom;
+    const freesasa_nodearea *area;
+    const char *name;
+    char *trim_name;
+
     assert(node);
-    json_object *atom = json_object_new_object();
-    const freesasa_nodearea *area = freesasa_node_area(node);
-    const char *name = freesasa_node_name(node);
-    char *trim_name = malloc(strlen(name) + 1);
+
+    atom = json_object_new_object();
+    area = freesasa_node_area(node);
+    name = freesasa_node_name(node);
+    trim_name = malloc(strlen(name) + 1);
 
     if (!trim_name) {
         mem_fail();
@@ -66,17 +72,19 @@ json_object *
 freesasa_json_residue(freesasa_node *node,
                       int options)
 {
+    json_object *obj;
+    const char *name, *number;
+    const freesasa_nodearea *abs, *reference;
+    freesasa_nodearea rel;
+
     assert(node);
     assert(freesasa_node_type(node) == FREESASA_NODE_RESIDUE);
 
-    json_object *obj = json_object_new_object();
-    const char *name = freesasa_node_name(node), *number;
-    const freesasa_nodearea *abs = freesasa_node_area(node),
-        *reference = freesasa_node_residue_reference(node);
-    freesasa_nodearea rel;
-    
+    obj = json_object_new_object();
+    name = freesasa_node_name(node);
     number = freesasa_node_residue_number(node);
-
+    abs = freesasa_node_area(node);
+    reference = freesasa_node_residue_reference(node);
     char *trim_number = malloc(strlen(number)+1);
 
     if (!trim_number) {
@@ -94,7 +102,7 @@ freesasa_json_residue(freesasa_node *node,
         freesasa_residue_rel_nodearea(&rel, abs, reference);
         json_object_object_add(obj, "relative-area", freesasa_json_nodearea(&rel));
     }
-    
+
     json_object_object_add(obj, "n-atoms",
                            json_object_new_int(freesasa_node_residue_n_atoms(node)));
 
@@ -140,7 +148,7 @@ freesasa_json_structure(freesasa_node *node,
 {
     json_object *obj = json_object_new_object();
     const freesasa_selection **selections = freesasa_node_structure_selections(node);
-    
+
     json_object_object_add(obj, "chains", json_object_new_string(freesasa_node_structure_chain_labels(node)));
     json_object_object_add(obj, "model", json_object_new_int(freesasa_node_structure_model(node)));
     json_object_object_add(obj, "area",
@@ -191,7 +199,7 @@ freesasa_node2json(freesasa_node *node,
     default:
         assert(0 && "Tree illegal");
     }
-    
+
     if (!lowest) {
         while (child) {
             json_object_array_add(array, freesasa_node2json(child, exclude_type, options));

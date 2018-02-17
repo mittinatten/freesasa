@@ -1,12 +1,12 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdio.h>
+
+#include "freesasa_internal.h"
+
 #include <stdlib.h>
-#include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include "freesasa_internal.h"
 #include "classifier.h"
 
 /** to control error messages (used for debugging and testing) */
@@ -35,12 +35,12 @@ static int
 write_result(FILE *log,
              freesasa_node *result)
 {
-    assert(log);
-    assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
-
     const char *name = NULL;
     freesasa_node *structure = NULL, *chain = NULL;
     const freesasa_nodearea *area = NULL;
+
+    assert(log);
+    assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
 
     name = freesasa_node_name(result);
     structure = freesasa_node_children(result);
@@ -84,8 +84,10 @@ write_selections(FILE *log,
                  freesasa_node *result)
 {
     freesasa_node *structure = freesasa_node_children(result);
+    const freesasa_selection **selection;
+
     while (structure) {
-        const freesasa_selection **selection = freesasa_node_structure_selections(structure);
+        selection = freesasa_node_structure_selections(structure);
         if (selection && *selection) {
             fprintf(log, "\nSELECTIONS\n");
             while(*selection) {
@@ -110,8 +112,10 @@ static int
 write_parameters(FILE *log,
                  const freesasa_parameters *parameters)
 {
-    assert(log);
     const freesasa_parameters *p = parameters;
+
+    assert(log);
+
     if (p == NULL) p = &freesasa_default_parameters;
 
     fprintf(log,"\nPARAMETERS\n");
@@ -146,13 +150,13 @@ int
 freesasa_write_res(FILE *log,
                    freesasa_node *root)
 {
-    assert(log);
-    assert(root);
-    assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
-
     freesasa_node *result, *structure, *chain, *residue;
     int n_res = freesasa_classify_n_residue_types()+1, i_res, i;
     double *residue_area = malloc(sizeof(double) * n_res);
+
+    assert(log);
+    assert(root);
+    assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
 
     if (residue_area == NULL) return mem_fail();
 
@@ -201,12 +205,14 @@ int
 freesasa_write_seq(FILE *log,
                    freesasa_node *root)
 {
+    freesasa_node *result, *structure, *chain, *residue;
+
     assert(log);
     assert(root);
     assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
-    freesasa_node *result, *structure, *chain, *residue;
 
     result = freesasa_node_children(root);
+
     while (result) {
         structure = freesasa_node_children(result);
         fprintf(log, "# Residues in %s\n", freesasa_node_name(result));
@@ -243,12 +249,12 @@ int
 freesasa_write_log(FILE *log,
                    freesasa_node *root)
 {
-    assert(log);
-    assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
-
     freesasa_node *result = freesasa_node_children(root);
     int several = (freesasa_node_next(result) != NULL); /* are there more than one result */
     int err = 0;
+
+    assert(log);
+    assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
 
     if (write_parameters(log, freesasa_node_result_parameters(result)) == FREESASA_FAIL)
         ++err;

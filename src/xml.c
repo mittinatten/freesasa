@@ -62,11 +62,16 @@ static xmlNodePtr
 atom2xml(const freesasa_node *node,
          int options)
 {
-    assert(node);
     xmlNodePtr xml_node = NULL;
     const freesasa_nodearea *area = freesasa_node_area(node);
     const char *name = freesasa_node_name(node);
-    char *trim_name = malloc(strlen(name) + 1), buf[20];
+    char *trim_name, buf[20];
+
+    assert(node);
+
+    area = freesasa_node_area(node);
+    name = freesasa_node_name(node);
+    trim_name = malloc(strlen(name) + 1);
 
     if (!trim_name) {
         mem_fail();
@@ -123,15 +128,20 @@ static xmlNodePtr
 residue2xml(const freesasa_node *node,
             int options)
 {
-    assert(node);
     xmlNodePtr xml_node = NULL, xml_area = NULL, xml_relarea = NULL;
-    const char *name = freesasa_node_name(node),
-        *number = freesasa_node_residue_number(node);
-    const freesasa_nodearea *abs = freesasa_node_area(node),
-        *reference = freesasa_node_residue_reference(node);
-    char *trim_number = malloc(strlen(number) + 1),
-        *trim_name = malloc(strlen(name) + 1);
+    const char *name, *number;
+    const freesasa_nodearea *abs, *reference;
+    char *trim_number, *trim_name;
     freesasa_nodearea rel;
+
+    assert(node);
+
+    name = freesasa_node_name(node);
+    number = freesasa_node_residue_number(node);
+    abs = freesasa_node_area(node);
+    reference = freesasa_node_residue_reference(node);
+    trim_number = malloc(strlen(number) + 1);
+    trim_name = malloc(strlen(name) + 1);
 
     if (!trim_number || ! trim_name) {
         mem_fail();
@@ -260,8 +270,10 @@ static xmlNodePtr
 add_selections_to_xmlNode(const freesasa_selection **selections,
                           xmlNodePtr parent)
 {
+    xmlNodePtr xml_selection;
+
     while (*selections) {
-        xmlNodePtr xml_selection = selection2xml(*selections);
+        xml_selection = selection2xml(*selections);
         if (xml_selection == NULL) {
             fail_msg("");
             return NULL;
@@ -281,10 +293,13 @@ static xmlNodePtr
 structure2xml(const freesasa_node *node,
               int options)
 {
-    assert(node);
     xmlNodePtr xml_node = NULL, xml_area = NULL;
     char buf[20];
-    const freesasa_selection **selections = freesasa_node_structure_selections(node);
+    const freesasa_selection **selections;
+
+    assert(node);
+
+    selections = freesasa_node_structure_selections(node);
 
     xml_node = xmlNewNode(NULL, BAD_CAST "structure");
     if (xml_node == NULL) {
@@ -336,10 +351,13 @@ node2xml(xmlNodePtr *xml_node,
          int exclude_type,
          int options)
 {
+    freesasa_node *child;
+    xmlNodePtr xml_child = NULL;
+
     assert(xml_node);
     assert(node);
-    freesasa_node *child = freesasa_node_children(node);
-    xmlNodePtr xml_child = NULL;
+
+    child = freesasa_node_children(node);
     *xml_node = NULL;
 
     if (freesasa_node_type(node) == exclude_type) return FREESASA_SUCCESS;
@@ -431,11 +449,14 @@ static xmlNodePtr
 xml_result(freesasa_node *result,
            int options)
 {
-    assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
     xmlNodePtr xml_result_node = NULL, xml_structure = NULL, xml_param = NULL;
     freesasa_node *child = NULL;
-    const freesasa_parameters *parameters = freesasa_node_result_parameters(result);
+    const freesasa_parameters *parameters;
     int exclude_type = FREESASA_NODE_NONE;
+
+    assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
+
+    parameters = freesasa_node_result_parameters(result);
 
     if (options & FREESASA_OUTPUT_STRUCTURE) exclude_type = FREESASA_NODE_CHAIN;
     if (options & FREESASA_OUTPUT_CHAIN) exclude_type = FREESASA_NODE_RESIDUE;
@@ -498,8 +519,6 @@ freesasa_write_xml(FILE *output,
                    freesasa_node *root,
                    int options)
 {
-    assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
-
     freesasa_node *child = NULL;
     xmlDocPtr doc = NULL;
     xmlNodePtr xml_root = NULL, xml_result_node = NULL;
@@ -507,6 +526,8 @@ freesasa_write_xml(FILE *output,
     xmlBufferPtr buf = NULL;
     xmlTextWriterPtr writer = NULL;
     int ret = FREESASA_FAIL;
+
+    assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
 
     doc = xmlNewDoc(BAD_CAST "1.0");
     if (doc == NULL) {

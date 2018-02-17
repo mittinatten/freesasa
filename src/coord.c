@@ -45,8 +45,9 @@ coord_clear(coord_t *c)
 coord_t *
 freesasa_coord_clone(const coord_t *src)
 {
-    assert(src);
     coord_t *c = freesasa_coord_new();
+
+    assert(src);
 
     if (c == NULL) {
         mem_fail();
@@ -72,9 +73,11 @@ coord_t *
 freesasa_coord_new_linked(const double *xyz,
                           int n)
 {
+    coord_t *c = freesasa_coord_new();
+
     assert(xyz);
     assert(n > 0);
-    coord_t *c = freesasa_coord_new();
+
     if (c != NULL) {
         c->xyz = (double*)xyz;
         c->n = n;
@@ -88,10 +91,13 @@ freesasa_coord_append(coord_t *c,
                       const double *xyz,
                       int n)
 {
+    int n_old;
+    double *xyz_old;
+
     assert(c); assert(xyz); assert(!c->is_linked);
 
-    int n_old = c->n;
-    double *xyz_old = c->xyz;
+    n_old  = c->n;
+    xyz_old = c->xyz;
 
     if (n == 0) return FREESASA_SUCCESS;
 
@@ -112,10 +118,11 @@ freesasa_coord_append_xyz(coord_t *c,
                           const double *y,
                           const double *z, int n)
 {
-    assert(c); assert(x); assert(y); assert(z);
-    assert(!c->is_linked);
     double *xyz;
     int i;
+
+    assert(c); assert(x); assert(y); assert(z);
+    assert(!c->is_linked);
 
     if (n == 0) return FREESASA_SUCCESS;
 
@@ -153,10 +160,13 @@ freesasa_coord_set_i_xyz(coord_t *c,
                          double y,
                          double z)
 {
+    double *v_i;
+
     assert(c); assert(c->n > i); assert(i >= 0);
     assert(!c->is_linked);
 
-    double *v_i = &c->xyz[i*3];
+    v_i = &c->xyz[i*3];
+
     *(v_i++) = x;
     *(v_i++) = y;
     *v_i = z;
@@ -198,13 +208,15 @@ freesasa_coord_set_length_i(coord_t *c,
                             int i,
                             double l)
 {
+    double x, y, z, r;
+
     assert(c); assert(c->xyz);
     assert(!c->is_linked);
     assert(i >= 0 && i < c->n);
     assert(l >= 0);
 
-    double x = c->xyz[3*i], y = c->xyz[3*i+1], z = c->xyz[3*i+2];
-    double r = sqrt(x*x + y*y + z*z);
+    x = c->xyz[3*i]; y = c->xyz[3*i+1]; z = c->xyz[3*i+2];
+    r = sqrt(x*x + y*y + z*z);
     c->xyz[3*i]   *= l/r;
     c->xyz[3*i+1] *= l/r;
     c->xyz[3*i+2] *= l/r;

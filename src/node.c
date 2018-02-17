@@ -66,14 +66,12 @@ node_new(const char *name)
         goto memerr;
     }
 
-    *node = (freesasa_node) {
-        .name = NULL,
-        .type = FREESASA_NODE_ATOM,
-        .area = NULL,
-        .parent = NULL,
-        .children = NULL,
-        .next = NULL
-    };
+    node->name = NULL;
+    node->type = FREESASA_NODE_ATOM;
+    node->area = NULL;
+    node->parent = NULL;
+    node->children = NULL;
+    node->next = NULL;
 
     if (name) {
         node->name = strdup(name);
@@ -92,8 +90,11 @@ node_new(const char *name)
 static void
 node_free(freesasa_node *node)
 {
+    freesasa_node *current = NULL, *next = NULL;
+    freesasa_selection **sel = NULL;
+
     if (node != NULL) {
-        freesasa_node *current = node->children, *next;
+        current = node->children;
         while (current) {
             next = current->next;
             node_free(current);
@@ -113,7 +114,7 @@ node_free(freesasa_node *node)
         case FREESASA_NODE_STRUCTURE:
             free(node->properties.structure.chain_labels);
             freesasa_result_free(node->properties.structure.result);
-            freesasa_selection **sel = node->properties.structure.selection;
+            sel = node->properties.structure.selection;
             if (sel) {
                 while(*sel) {
                     freesasa_selection_free(*sel);
@@ -172,19 +173,20 @@ node_gen_children(freesasa_node* parent,
                   int last,
                   node_generator ng)
 {
+    int i;
     freesasa_node *child, *first_child;
 
     first_child = ng(structure, result, first);
 
-    if (first_child == NULL){
+    if (first_child == NULL) {
         fail_msg("");
         return NULL;
     }
-    
+
     first_child->parent = parent;
     child = parent->children = first_child;
 
-    for (int i = first+1; i <= last; ++i) {
+    for (i = first+1; i <= last; ++i) {
         child->next = ng(structure, result, i);
         if (child->next == NULL){
             fail_msg("");
@@ -196,31 +198,29 @@ node_gen_children(freesasa_node* parent,
     child->next = NULL;
 
     node_add_area(parent, structure, result);
-    
+
     return first_child;
 }
 
 static freesasa_node *
 node_atom(const freesasa_structure *structure,
-                 const freesasa_result *result,
-                 int atom_index)
+          const freesasa_result *result,
+          int atom_index)
 {
-    freesasa_node *atom = 
+    freesasa_node *atom =
         node_new(freesasa_structure_atom_name(structure, atom_index));
     const char *line;
-    
+
     if (atom == NULL) {
         fail_msg("");
         return NULL;
     }
 
     atom->type = FREESASA_NODE_ATOM;
-    atom->properties.atom = (struct atom_properties) {
-        .is_polar = freesasa_structure_atom_class(structure, atom_index) == FREESASA_ATOM_POLAR,
-        .is_bb = freesasa_atom_is_backbone(atom->name),
-        .radius = freesasa_structure_atom_radius(structure, atom_index),
-        .pdb_line = NULL,
-    };
+    atom->properties.atom.is_polar = freesasa_structure_atom_class(structure, atom_index) == FREESASA_ATOM_POLAR;
+    atom->properties.atom.is_bb    = freesasa_atom_is_backbone(atom->name);
+    atom->properties.atom.radius   = freesasa_structure_atom_radius(structure, atom_index);
+    atom->properties.atom.pdb_line = NULL;
 
     line = freesasa_structure_atom_pdb_line(structure, atom_index);
     if (line != NULL) {
@@ -230,7 +230,7 @@ node_atom(const freesasa_structure *structure,
             goto cleanup;
         }
     }
-    
+
     atom->area = malloc(sizeof(freesasa_nodearea));
     if (atom->area == NULL) {
         mem_fail();
@@ -249,15 +249,15 @@ node_atom(const freesasa_structure *structure,
 
 static freesasa_node *
 node_residue(const freesasa_structure *structure,
-                    const freesasa_result *result,
-                    int residue_index)
+             const freesasa_result *result,
+             int residue_index)
 {
     freesasa_node *residue = NULL;
     const freesasa_nodearea *ref;
     int first, last;
 
     residue = node_new(freesasa_structure_residue_name(structure, residue_index));
-    
+
     if (residue == NULL) {
         fail_msg("");
         return NULL;
@@ -267,6 +267,7 @@ node_residue(const freesasa_structure *structure,
 
     freesasa_structure_residue_atoms(structure, residue_index, &first, &last);
     residue->properties.residue.n_atoms = last - first + 1;
+    residue->properties.residue.reference = NULL;
 
     residue->properties.residue.number = strdup(freesasa_structure_residue_number(structure, residue_index));
     if (residue->properties.residue.number == NULL) {
@@ -308,8 +309,8 @@ node_chain(const freesasa_structure *structure,
     int first_atom, last_atom, first_residue, last_residue;
 
     assert(strlen(chains) > chain_index);
-    
-    freesasa_structure_chain_atoms(structure, chains[chain_index], 
+
+    freesasa_structure_chain_atoms(structure, chains[chain_index],
                                    &first_atom, &last_atom);
 
     chain = node_new(name);
@@ -320,9 +321,9 @@ node_chain(const freesasa_structure *structure,
 
     chain->type = FREESASA_NODE_CHAIN;
     freesasa_structure_chain_residues(structure, name[0],
-                                      &first_residue, &last_residue);    
+                                      &first_residue, &last_residue);
     chain->properties.chain.n_residues = last_residue - first_residue + 1;
-    
+
     if (node_gen_children(chain, structure, result,
                           first_residue, last_residue,
                           node_residue) == NULL) {
@@ -341,7 +342,7 @@ node_structure(const freesasa_structure *structure,
 {
     freesasa_node *node = NULL;
     node = node_new(freesasa_structure_chain_labels(structure));
-    
+
     if (node == NULL) {
         fail_msg("");
         return NULL;
@@ -417,7 +418,7 @@ freesasa_tree_add_result(freesasa_node *tree,
                          const char *name)
 {
     freesasa_node *node = node_new(name);
-    
+
     if (node == NULL) {
         goto cleanup;
     }
@@ -426,11 +427,12 @@ freesasa_tree_add_result(freesasa_node *tree,
     node->properties.result.n_structures = 1;
     node->properties.result.parameters = result->parameters;
     node->properties.result.classified_by = strdup(freesasa_structure_classifier_name(structure));
+
     if (node->properties.result.classified_by == NULL) {
         mem_fail();
         goto cleanup;
     }
-        
+
     if (node_gen_children(node, structure, result, 0, 0,
                           node_structure) == NULL) {
         goto cleanup;
@@ -451,11 +453,14 @@ int
 freesasa_tree_join(freesasa_node *tree1,
                    freesasa_node **tree2)
 {
+    freesasa_node *child;
+
     assert(tree1); assert(tree2); assert(*tree2);
     assert(tree1->type == FREESASA_NODE_ROOT);
     assert((*tree2)->type == FREESASA_NODE_ROOT);
 
-    freesasa_node *child = tree1->children;
+    child = tree1->children;
+
     if (child != NULL) {
         while (child->next) child = child->next;
         child->next = (*tree2)->children;
@@ -470,7 +475,7 @@ freesasa_tree_join(freesasa_node *tree1,
 }
 
 int
-freesasa_node_free(freesasa_node *root) 
+freesasa_node_free(freesasa_node *root)
 {
     if (root) {
         if (root->parent)
@@ -619,10 +624,12 @@ int
 freesasa_node_structure_add_selection(freesasa_node *node,
                                       const freesasa_selection *selection)
 {
+    int n_selections = 0;
+    freesasa_selection **sel, **sel2;
+
     assert(node->type == FREESASA_NODE_STRUCTURE);
 
-    int n_selections = 0;
-    freesasa_selection **sel = node->properties.structure.selection, **sel2;
+    sel = node->properties.structure.selection;
 
     // count number of selections
     if (sel) {
@@ -711,12 +718,14 @@ freesasa_range_nodearea(freesasa_nodearea *area,
                         int first_atom,
                         int last_atom)
 {
+    int i;
+    freesasa_nodearea term = freesasa_nodearea_null;
+
     assert(area);
     assert(structure); assert(result);
     assert(first_atom <= last_atom);
 
-    freesasa_nodearea term = freesasa_nodearea_null;
-    for (int i = first_atom; i <= last_atom; ++i) {
+    for (i = first_atom; i <= last_atom; ++i) {
         freesasa_atom_nodearea(&term, structure, result, i);
         freesasa_add_nodearea(area, &term);
     }
