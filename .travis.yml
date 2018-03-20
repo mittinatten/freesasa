@@ -6,7 +6,7 @@ dist:
   trusty
 cache:
   pip
-    
+
 branches:
   only:
     - master
@@ -28,32 +28,11 @@ matrix:
       after_success:
         - coveralls --exclude tests --exclude src/lexer.l --exclude src/lexer.c --exclude src/parser.c --exclude src/parser.y --exclude src/example.c --exclude src/util.c  --gcov-options '\-lp'
 
-    ## Python bindings test w/o JSON and XML
-    ## also checks if everything works when JSON-C and XML not present on machine
-    - compiler: gcc
-      env: ENABLE="--enable-python-bindings --disable-json --disable-xml"
-      before_install:
-        - pip install --user cython
-        - pip install --user biopython
-        - sudo apt-get update -qq
-        - sudo apt-get install -qq check
-      after_failure: cat bindings/check-python.log
-
-    ## Python bindings test w JSON and XML
-    - compiler: gcc
-      env: ENABLE="--enable-python-bindings --enable-json --enable-xml"
-      before_install:
-        - pip install --user cython
-        - pip install --user biopython
-        - sudo apt-get update -qq
-        - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils
-      after_failure: cat bindings/check-python.log
-
     ## Test C library with clang
     - compiler: clang
       env: ENABLE="--enable-check"
 
-    ## test that configuration works when JSON-C and XML are disabled (but present)
+    ## test that configuration works for clang when JSON-C and XML are disabled (but present)
     - compiler: clang
       env: ENABLE="--enable-check --disable-json --disable-xml"
     - compiler: gcc
@@ -61,10 +40,10 @@ matrix:
 
 before_script:
   - autoreconf -i
-  - ./configure CFLAGS="-fPIC -O2" $ENABLE
+  - ./configure $ENABLE
 
 script: make && make check
 
 after_failure:
     - cat tests/test-api.log
-    - cat tests/test-cli.log 
+    - cat tests/test-cli.log

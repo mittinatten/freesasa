@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([FreeSASA], [2.0.2])
+AC_INIT([FreeSASA], [2.0.3])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
@@ -46,9 +46,7 @@ AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memset mkdir sqrt strchr strdup strerror strncasecmp getopt_long getline])
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile doc/man/freesasa.1 tests/Makefile share/Makefile])
-AC_CONFIG_FILES([bindings/Makefile bindings/python/setup.py])
 AC_CONFIG_FILES([tests/test-cli], [chmod +x tests/test-cli])
-AC_CONFIG_FILES([bindings/check-python], [chmod +x bindings/check-python])
 
 # Optionally disable thread support
 AC_ARG_ENABLE([threads],
@@ -76,13 +74,11 @@ AC_ARG_ENABLE([xml],
 
 AC_DEFINE([USE_XML], [0], [Define if XML should be included.])
 AM_CONDITIONAL([USE_XML], false)
-AC_SUBST([LIBXML_FOR_PY_BINDINGS], [])
 
 if test "x$enable_xml" != "xno" ; then
-  AC_CHECK_PROG([XMLLINT],[xmllint],[xmllint],[]) 
+  AC_CHECK_PROG([XMLLINT],[xmllint],[xmllint],[])
   PKG_CHECK_MODULES([libxml2], [libxml-2.0],
     [AC_DEFINE([USE_XML], [1])
-     AC_SUBST([LIBXML_FOR_PY_BINDINGS], ['"xml2"'])
      AC_SUBST([USE_XML], [yes])
      AM_CONDITIONAL([USE_XML], true)],
     [AC_MSG_ERROR([Library libxml2 not found, install library or build without (using --disable-xml).])])
@@ -96,14 +92,12 @@ AC_ARG_ENABLE([json],
     [Build without support for JSON output]))
 
 AC_DEFINE([USE_JSON], [0], [Define if JSON should be included])
-AC_SUBST([JSONC_FOR_PY_BINDINGS], [])
 AM_CONDITIONAL([USE_JSON], false)
 
 if test "x$enable_json" != "xno" ; then
   AC_CHECK_LIB([json-c], [json_object_get],
      [AC_CHECK_HEADER([json-c/json_object.h],
         [AC_DEFINE([USE_JSON], [1])
-         AC_SUBST([JSONC_FOR_PY_BINDINGS], ['"json-c"'])
          AC_SUBST([USE_JSON], [yes])
          AM_CONDITIONAL([USE_JSON], true)])])
   AM_COND_IF([USE_JSON],[],
@@ -111,25 +105,6 @@ if test "x$enable_json" != "xno" ; then
   AC_CHECK_PROG([JSONLINT],[jsonlint],[jsonlint],[])
 else
   AC_MSG_NOTICE([Building without support for JSON output.])
-fi
-
-# Which Python
-AC_ARG_WITH([python],
-  AS_HELP_STRING([--with-python=<python-binary>], [Specify which python to use.]),
-    [python_bin=$withval],[python_bin=python])
-
-# Enable Python-bindings
-AC_ARG_ENABLE([python-bindings],
-  [AS_HELP_STRING([--enable-python-bindings],
-    [Build Python bindings using Cython])])
-
-AM_CONDITIONAL([HAVE_CYTHON],false)
-
-if test "x$enable_python_bindings" = "xyes" ; then
-  AC_CHECK_PROG([PYTHON], [$python_bin], [$python_bin])
-  AC_CHECK_PROG([CYTHON], [cython], [cython])
-  AM_CONDITIONAL([HAVE_CYTHON], [test -n "$CYTHON" && test -n "$PYTHON"])
-  AM_COND_IF([HAVE_CYTHON],[],[AC_MSG_ERROR([Cython not available, can not build Python bindings])])
 fi
 
 # Enable parser generation with Flex/Bison
@@ -177,7 +152,6 @@ AC_ARG_ENABLE([check],
 
 AM_CONDITIONAL([USE_CHECK],false)
 AC_DEFINE([USE_CHECK],[0],[Build with Check unit testing framework])
-AC_SUBST([CHECK_FOR_PY_BINDINGS], [])
 
 if test "x$enable_check" = "xyes" ; then
   AC_CHECK_LIB(rt, setitimer) # necessary on some platforms
@@ -185,7 +159,6 @@ if test "x$enable_check" = "xyes" ; then
     [],
     [AC_MSG_ERROR[Library Check not available, install libary or configure without flag --enable-check]])
   AC_DEFINE([USE_CHECK], [1])
-  AC_SUBST([CHECK_FOR_PY_BINDINGS], ['"check"'])
   AM_CONDITIONAL([USE_CHECK], true)
 fi
 

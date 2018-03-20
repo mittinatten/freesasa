@@ -1,4 +1,4 @@
-SUBDIRS = src doc tests bindings share
+SUBDIRS = src doc tests share
 
 EXTRA_DIST = README.md scripts/chemcomp2config.pl scripts/config2c.pl scripts/rsa
 
