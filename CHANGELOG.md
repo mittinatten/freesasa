@@ -1,6 +1,15 @@
 # Changelog
 FreeSASA uses semantic versioning. Changelog added for versions 2.x
 
+## 2.0.3
+This version separates the Python bindings into a separate
+[module](https://github.com/freesasa/freesasa-python).
+To be able to release Windows binaries of the python module,
+the code has been changed to be C89 compatible where necessary,
+with a few macros to allow using `restrict` and `inline` when
+compiled with a C99 compiler. There are no changes to the behavior
+of the CLI or C API in this release.
+
 ## 2.0.2
 
 * Relative SASA values are now calculated using the same reference
