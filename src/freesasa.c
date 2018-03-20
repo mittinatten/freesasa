@@ -11,7 +11,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include <freesasa_internal.h>
+#include "freesasa_internal.h"
 
 #ifdef PACKAGE_VERSION
 const char *freesasa_version = PACKAGE_VERSION;
