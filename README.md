@@ -9,8 +9,7 @@ FreeSASA is a C library and command line tool for calculating Solvent
 Accessible Surface Area (SASA) of biomolecules. It is designed to be
 simple to use with defaults, but allows customization of all
 parameters of the calculation and provides a few different tools to
-analyze the results. Python bindings are also included in the
-repository.
+analyze the results. Python bindings are provided separately (see below).
 
 By default Lee & Richards' algorithm is used, but Shrake & Rupley's is
 also available. Both can be parameterized to arbitrary precision, and
