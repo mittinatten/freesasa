@@ -93,7 +93,7 @@ The Python bindings are available from PyPi and can be installed using
 This module is found in a separate repository
 https://github.com/freesasa/freesasa-python
 The PyPi module has binaries for Mac OS X and Windows, for a number
-of Python versions and [separate documentation](http://freesasa-python.readthedocs.io/en/latest/?).
+of Python versions and [separate documentation](http://freesasa.github.io/python/).
 
 Documentation
 -------------

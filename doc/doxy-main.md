@@ -10,7 +10,7 @@ These pages document the
   - @ref Geometry
 
 The [FreeSASA Python Module](https://github.com/freesasa/freesasa-python)
-is documented [elsewhere](http://freesasa-python.readthedocs.io/en/latest/?).
+is documented [elsewhere](http://freesasa.github.io/python/).
 
 The library is released under the [MIT license](license.md).
 
