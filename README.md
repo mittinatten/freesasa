@@ -112,8 +112,8 @@ explains how the commandline tool can be used.
 Compatibility and dependencies
 ------------------------------
 
-The program has been tested successfully with several versions of GNU
-C Compiler and Clang/LLVM. The library can be built using only
+The library has been tested successfully with several versions of GNU
+C Compiler and Clang/LLVM. It can be built using only
 standard C and GNU libraries. The standard build depends on
 [json-c](https://github.com/json-c/json-c) and
 [libxml2](http://xmlsoft.org/). These can be disabled by configuring
@@ -121,11 +121,17 @@ with `--disable-json` and `--disable-xml` respectively.
 
 Developers who want to do testing need to install the Check unit
 testing framework. Building the full reference manual requires Doxygen
-(version > 1.8.8). Building the Python bindings requires
-Cython. Changing the selection parser and lexer requires Flex and
+(version > 1.8.8). Changing the selection parser and lexer requires Flex and
 Bison. These build options, which add extra dependencies, are disabled
 by default to simplify installation for users only interested in the
 command line tool and and/or C Library.
+
+The C API can be built using MSVC, see:
+https://github.com/mittinatten/freesasa/issues/22#issuecomment-374661526
+(no project files provided though), but probably not the command line tool.
+It should be relatively straightforwad to build the command line tool for 
+Windows using MinGW or Cygwin, but this hasn't been tested (let me know if 
+you've got it to work).
 
 Citing FreeSASA
 ---------------
