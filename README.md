@@ -5,10 +5,6 @@ FreeSASA
 [![Build Status](https://travis-ci.org/mittinatten/freesasa.svg?branch=master)](https://travis-ci.org/mittinatten/freesasa)
 [![Coverage Status](https://coveralls.io/repos/github/mittinatten/freesasa/badge.svg?branch=master)](https://coveralls.io/github/mittinatten/freesasa?branch=master)
 
-C-library for calculating Solvent Accessible Surface Areas.
-
-License: MIT (see file LICENSE). Copyright: Simon Mitternacht 2013-2016.
-
 FreeSASA is a C library and command line tool for calculating Solvent
 Accessible Surface Area (SASA) of biomolecules. It is designed to be
 simple to use with defaults, but allows customization of all
@@ -93,12 +89,11 @@ Python module
 The Python bindings are available from PyPi and can be installed using
 
     pip install freesasa
-    
-This module is found in a separate repository 
+
+This module is found in a separate repository
 https://github.com/freesasa/freesasa-python
-(the bindings included here will eventually be removed).
-The PyPi module has binaries for Mac OS X and Windows, for a number 
-of Python versions.
+The PyPi module has binaries for Mac OS X and Windows, for a number
+of Python versions and [separate documentation](http://freesasa-python.readthedocs.io/en/latest/?).
 
 Documentation
 -------------
@@ -109,9 +104,9 @@ API in the folder `doc/html/doxygen/`, also available on the web at
 http://freesasa.github.io/.
 
 After building the package, calling
- 
+
     freesasa -h
-    
+
 explains how the commandline tool can be used.
 
 Compatibility and dependencies
