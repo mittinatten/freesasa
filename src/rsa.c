@@ -2,8 +2,6 @@
 # include <config.h>
 #endif
 
-#include "freesasa_internal.h"
-
 #include <assert.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -11,6 +9,7 @@
 
 #include "pdb.h"
 #include "classifier.h"
+#include "freesasa_internal.h"
 
 void
 freesasa_residue_rel_nodearea(freesasa_nodearea *rel,

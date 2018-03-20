@@ -2,11 +2,11 @@
 # include <config.h>
 #endif
 
-#include "freesasa_internal.h"
-
 #include <ctype.h>
 #include <stdlib.h>
 #include <assert.h>
+
+#include "freesasa_internal.h"
 #include "selection.h"
 #include "parser.h"
 #include "lexer.h"

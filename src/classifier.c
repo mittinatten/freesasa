@@ -2,14 +2,14 @@
 # include <config.h>
 #endif
 
-#include "freesasa_internal.h"
-
 #include <stdlib.h>
 #include <assert.h>
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
 #include <errno.h>
+
+#include "freesasa_internal.h"
 #include "classifier.h"
 #include "pdb.h"
 

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+
 #include "freesasa_internal.h"
 #include "coord.h"
 

@@ -2,13 +2,13 @@
 # include <config.h>
 #endif
 
-#include "freesasa_internal.h"
-
 #include <stdlib.h>
 #include <assert.h>
+
 #include "pdb.h"
 #include "classifier.h"
 #include "coord.h"
+#include "freesasa_internal.h"
 
 /**
    This file contains the functions that turn lines in PDB files to

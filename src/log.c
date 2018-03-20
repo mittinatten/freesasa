@@ -2,11 +2,11 @@
 # include <config.h>
 #endif
 
-#include "freesasa_internal.h"
-
 #include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
+
+#include "freesasa_internal.h"
 #include "classifier.h"
 
 /** to control error messages (used for debugging and testing) */

@@ -1,11 +1,13 @@
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
+
 #include <json-c/json_object.h>
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+
 #include "freesasa.h"
 #include "freesasa_internal.h"
 #include "classifier.h"

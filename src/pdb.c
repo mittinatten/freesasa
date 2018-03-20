@@ -2,11 +2,11 @@
 #  include <config.h>
 #endif
 
-#include "freesasa_internal.h"
-
 #include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
+
+#include "freesasa_internal.h"
 #include "pdb.h"
 
 /* len >= 6 */

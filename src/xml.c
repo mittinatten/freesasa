@@ -7,6 +7,7 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+
 #include "freesasa_internal.h"
 #include "pdb.h"
 

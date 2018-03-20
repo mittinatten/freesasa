@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
+
 #include "freesasa_internal.h"
 #include "nb.h"
 

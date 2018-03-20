@@ -9,8 +9,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <freesasa.h>
-#include <coord.h>
+#include "freesasa.h"
+#include "coord.h"
 
 /** The name of the library, to be used in error messages and logging */
 extern const char *freesasa_name;

@@ -82,7 +82,7 @@ freesasa_calc(const coord_t *c,
 
 {
     freesasa_result *result;
-    int ret, i;
+    int ret = FREESASA_SUCCESS, i;
 
     assert(c);
     assert(radii);
