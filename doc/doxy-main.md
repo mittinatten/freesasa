@@ -1,14 +1,16 @@
 FreeSASA
 ========
 
-These pages document the 
-    
+These pages document the
+
   - @ref CLI
   - @ref API "FreeSASA C API"
-  - @ref Python "FreeSASA Python interface"
   - @ref Config-file
   - @ref Selection
   - @ref Geometry
+
+The [FreeSASA Python Module](https://github.com/freesasa/freesasa-python)
+is documented elsewhere.
 
 The library is released under the [MIT license](license.md).
 
@@ -58,8 +60,8 @@ This generates the following output
     CHAIN D :    4904.30
     CHAIN X :    4156.46
     CHAIN Y :    4041.08
-    
-The results are all in the unit Ångström-squared. 
+
+The results are all in the unit Ångström-squared.
 
 @section parameters Changing parameters
 
@@ -76,7 +78,7 @@ instead calculates the SASA using Shrake & Rupley's algorithm with 200
 test points, a probe radius of 1.2 Å, using 4 parallel threads to
 speed things up.
 
-If the user wants to use their own atomic radii the command 
+If the user wants to use their own atomic radii the command
 
     $ freesasa --config-file <file> 3wbm.pdb
 
@@ -85,7 +87,7 @@ radii. The program will halt if it encounters atoms in the PDB input
 that are not present in the configuration. See @ref Config-file for
 instructions how to write a configuration.
 
-To use the atomic radii from NACCESS call 
+To use the atomic radii from NACCESS call
 
     $ freesasa --radii=naccess 3wbm.pdb
 
@@ -482,7 +484,7 @@ stderr.
 
 If a PDB file has several chains and/or models, by default all chains
 of the first model are used, and the rest of the file is ignored. This
-behavior can be modified using the following options 
+behavior can be modified using the following options
 
   - `--join-models`: Joins all models in the input into one large
     structure. Useful for biological assembly files were different
@@ -579,7 +581,7 @@ Groups of atoms can be defined using freesasa\_selection\_new(), which
 takes a selection definition uses a subset of the Pymol select syntax
 
 ~~~{.c}
-    freesasa_selection *selection = 
+    freesasa_selection *selection =
         freesasa_selection_new("aromatic, resn phe+tyr+trp+his+pro",
                                structure, result);
     printf("Area of selection '%s': %f A2\n",
@@ -627,7 +629,7 @@ excluding individual atoms).
     freesasa_node_free(tree);
 ~~~~
 
-    
+
 @subsection Coordinates
 
 If users wish to supply their own coordinates and radii, these are
@@ -644,7 +646,7 @@ coordinates in the order `x1,y1,z1,x2,y2,z2,...,xn,yn,zn`.
     freesasa_result *result = freesasa_calc_coord(coord, radius, n_atoms, NULL);
 ~~~
 
-    
+
 @subsection Error-handling
 
 The principle for error handling is that unpredictable errors should
@@ -659,11 +661,11 @@ functions).
 Errors that are attributable to programmers using the library, such as
 passing null pointers where not allowed, are checked by asserts.
 
-@subsection Thread-safety 
+@subsection Thread-safety
 
 The only global state the library stores is the verbosity level (set
 by freesasa\_set\_verbosity()) and the pointer to the error-log
-(defaults to `stderr`, can be changed by freesasa\_set\_err\_out()). 
+(defaults to `stderr`, can be changed by freesasa\_set\_err\_out()).
 
 It should be clear from the documentation when the other functions
 have side effects such as memory allocation and I/O, and thread-safety
@@ -829,7 +831,7 @@ than ::FREESASA\_MAX\_SELECTION\_NAME characters.
 
 The following property selectors are supported
 
-- `resn` Residue names like "ala", "arg", "du", etc 
+- `resn` Residue names like "ala", "arg", "du", etc
 - `resi` Residue index (positive or negative integers)
 - `chain` Chain labels (single characters)
 - `name` Atom names, such as "ca", "c", "oxt", etc
@@ -858,138 +860,6 @@ contribute to the selection. Not finding a list element can be because
 it specifies a residue that does not exist in the particular molecule,
 or because of typos. The selector does not keep a list of valid
 elements, residue names, etc.
-
-@page Python Python interface
-
-If Python is enabled using 
-    
-    $ ./configure --enable-python-bindings
-
-Cython is used to build Python bindings for FreeSASA, and `make
-install` will install them. The option `--with-python=...` can be
-specified to specify which Python binary to use.
-
-Below follow some illustrations of how to use the package, see the
-@ref freesasa "package documentation" for details.
-
-@section Python-basics Basic calculations
-
-Using defaults everywhere a simple calculation can be carried out as
-follows (assuming the PDB structure 1UBQ is available)
-
-~~~{.py} 
-import freesasa
-
-structure = freesasa.Structure("1ubq.pdb")
-result = freesasa.calc(structure)
-area_classes = freesasa.classifyResults(result, structure)
-
-print "Total : %.2f A2" % result.totalArea()
-for key in area_classes:
-    print key, ": %.2f A2" % area_classes[key]
-~~~
-
-Which would give the following output
-
-    Total : 4804.06 A2
-    Polar : 2504.22 A2
-    Apolar : 2299.84 A2
-
-The following does a high precision L&R calculation
-
-~~~{.py}
-result = freesasa.calc(structure,
-                       freesasa.Parameters({'algorithm' : freesasa.LeeRichards,
-                                            'n-slices' : 100}))
-~~~
-
-Using the results from a calculation we can also integrate SASA over a selection of
-atoms, using a subset of the Pymol selection syntax (see @ref Selection):
-
-~~~{.py}
-selections = freesasa.selectArea(('alanine, resn ala', 'r1_10, resi 1-10'), 
-                                 structure, result)
-for key in selections:
-    print key, ": %.2f A2" % selections[key]
-~~~
-which gives the output
-
-    alanine : 120.08 A2
-    r1_10 : 634.31 A2
-
-@section Python-classification Customizing atom classification
-
-This uses the NACCESS parameters (the file 'naccess.config' is
-available in the share/ directory of the repository).
-
-~~~{.py}
-classifier = freesasa.Classifier("naccess.config")
-structure = freesasa.Structure("1ubq.pdb", classifier) 
-result = freesasa.calc(structure)
-area_classes = freesasa.classifyResults(result, structure, classifier)
-~~~
-
-Classification can be customized also by extending the Classifier
-interface. The code below is an illustration of a classifier that
-classes Nitrogens separately, and assigns radii based on element only
-(and crudely).
-
-~~~{.py}
-import freesasa
-import re
-
-class DerivedClassifier(Classifier):
-    def classify(self, residueName, atomName):
-        if re.match('\s*N', atomName):
-            return 'Nitrogen'
-        return 'Not-nitrogen'
-
-    def radius(self, residueName, atomName):
-        if re.match('\s*N',atomName): # Nitrogen 
-            return 1.6
-        if re.match('\s*C',atomName): # Carbon
-            return 1.7
-        if re.match('\s*O',atomName): # Oxygen
-            return 1.4
-        if re.match('\s*S',atomName): # Sulfur
-            return 1.8    
-    return 0;                     # everything else (Hydrogen, etc)
-
-classifier = DerivedClassifier()
-
-# use the DerivedClassifier to calculate atom radii
-structure = freesasa.Structure("1ubq.pdb", classifier)
-result = freesasa.calc(structure)
-
-# use the DerivedClassifier to classify atoms
-area_classes = freesasa.classifyResults(result,structure,classifier)
-~~~
-
-Of course, this example is somewhat contrived, if we only want the
-integrated area of Nitrogen atoms, the simpler choice would be
-~~~{.py}
-    selection = freesasa.selectArea('nitrogen, symbol n', structure, result)
-~~~
-
-However, extending freesasa.Classifier, as illustrated above, allows
-classification to arbitrary complexity and also lets us redefine the
-radii used in the calculation.
-
-@section BioPDB Bio.PDB
-
-FreeSASA can also calculate the SASA of a Bio.PDB structure
-
-~~~{.py}
-    from Bio.PDB import PDBParser
-    parser = PDBParser()
-    structure = parser.get_structure("Ubiquitin", "1ubq.pdb")
-    result, sasa_classes = freesasa.calcBioPDB(structure)
-~~~
-
-If one needs more control over the analysis the structure can be
-converted to a freesasa.Structure using freesasa.structureFromBioPDB()
-and the calculation can be performed the normal way using this
-structure.
 
 @page Geometry Geometry of Lee & Richards' algorithm
 

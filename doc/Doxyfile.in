@@ -630,7 +630,6 @@ WARN_LOGFILE           =
 INPUT                  = @top_srcdir@/src/freesasa.h @top_srcdir@/src/example.c
 INPUT                  += doxy-main.md
 INPUT                  += README.md license.md
-INPUT                  += @top_srcdir@/bindings/python/freesasa.pyx
 USE_MDFILE_AS_MAINPAGE = doxy-main.md
 
 # This tag can be used to specify the character encoding of the source files
@@ -649,7 +648,7 @@ INPUT_ENCODING         = UTF-8
 # *.hxx *.hpp *.h++ *.idl *.odl *.cs *.php *.php3 *.inc *.m *.mm *.dox *.py
 # *.f90 *.f *.for *.vhd *.vhdl
 
-FILE_PATTERNS          = 
+FILE_PATTERNS          =
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories
 # should be searched for input files as well. Possible values are YES and NO.

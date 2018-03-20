@@ -331,7 +331,7 @@ typedef struct freesasa_classifier freesasa_classifier;
 extern const freesasa_classifier freesasa_protor_classifier;
 
 /**
-   @breif NACCESS classifier.
+   @brief NACCESS classifier.
 
    Classifier using NACCESS radii and classes.
 

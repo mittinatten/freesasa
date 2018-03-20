@@ -11,7 +11,7 @@ if HAVE_DOXYGEN
 
 doxyfile.stamp: $(top_srcdir)/src/freesasa.h $(top_srcdir)/src/example.c \
 	doxy-main.md $(top_srcdir)/README.md Doxyfile \
-	doxygen-footer.html doxygen-header.html $(top_srcdir)/bindings/python/freesasa.pyx
+	doxygen-footer.html doxygen-header.html
 	@if [ ! -d "html/" ]; then mkdir html; fi
 	@if [ ! -d "html/fig/" ]; then mkdir html/fig; fi
 	cp fig/* html/fig/
@@ -31,7 +31,6 @@ doxygen:
 endif
 
 clean-local:
-	rm -f *.log *~ 
+	rm -f *.log *~
 	rm -rf html/doxygen
 	rm -rf html/fig
-
