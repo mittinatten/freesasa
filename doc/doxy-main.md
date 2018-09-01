@@ -16,6 +16,10 @@ The library is released under the [MIT license](license.md).
 
 Installation instructions can be found in the [README](README.md) file.
 
+@page Python Python Module
+
+This page has moved to http://freesasa.github.io/python/.
+
 @page CLI Command-line Interface
 
 Building FreeSASA creates the binary `freesasa`, which is installed by
