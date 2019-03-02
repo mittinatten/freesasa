@@ -52,7 +52,7 @@ START_TEST (test_structure_api)
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert_int_eq(freesasa_structure_chain_index(s, 'B'), FREESASA_FAIL);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
-        
+
     int first, last;
     ck_assert(freesasa_structure_residue_atoms(s, 0, &first, &last) == FREESASA_SUCCESS);
     ck_assert(first == 0 && last == N-2);
@@ -172,7 +172,7 @@ START_TEST (test_pdb)
 }
 END_TEST
 
-START_TEST (test_hydrogen) 
+START_TEST (test_hydrogen)
 {
     FILE *pdb = fopen(DATADIR "1d3z.pdb","r");
     ck_assert(pdb != NULL);
@@ -203,7 +203,7 @@ START_TEST (test_hydrogen)
 }
 END_TEST
 
-START_TEST (test_hetatm) 
+START_TEST (test_hetatm)
 {
     FILE *pdb = fopen(DATADIR "1ubq.pdb","r");
     ck_assert(pdb != NULL);
@@ -228,7 +228,7 @@ START_TEST (test_structure_array_err)
     rewind(pdb);
     ck_assert_ptr_eq(freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_CHAINS), NULL);
     fclose(pdb);
-    
+
     pdb = fopen(DATADIR "1ubq.pdb", "r");
     ck_assert_ptr_eq(freesasa_structure_array(pdb, &n, NULL, 0), NULL);
     fclose(pdb);
@@ -244,7 +244,7 @@ START_TEST (test_structure_array_one_chain) {
 
     pdb = fopen(DATADIR "1ubq.pdb","r");
     ss = freesasa_structure_array(pdb, &n, NULL, FREESASA_SEPARATE_CHAINS);
-    
+
     ck_assert(ss != NULL);
     ck_assert(n == 1);
     ck_assert(freesasa_structure_n(ss[0]) == 602);
@@ -340,7 +340,7 @@ START_TEST (test_structure_array_chains_models)
 
     // many chains, many models, join models
     rewind(pdb);
-    freesasa_structure *s = freesasa_structure_from_pdb(pdb, NULL, FREESASA_INCLUDE_HETATM | 
+    freesasa_structure *s = freesasa_structure_from_pdb(pdb, NULL, FREESASA_INCLUDE_HETATM |
                                                         FREESASA_INCLUDE_HYDROGEN |
                                                         FREESASA_JOIN_MODELS);
     ck_assert(s != NULL);
@@ -370,35 +370,35 @@ START_TEST (test_get_chains) {
     ck_assert_int_eq(freesasa_structure_chain_atoms(s, 'D', &first, &last),FREESASA_SUCCESS);
     ck_assert_int_eq(first, 129*3);
     ck_assert_int_eq(last, 129*4-1);
-    
-    freesasa_structure *s2 = freesasa_structure_get_chains(s,"");
+
+    freesasa_structure *s2 = freesasa_structure_get_chains(s, "", NULL, 0);
     ck_assert(s2 == NULL);
-    s2 = freesasa_structure_get_chains(s,"X");
+    s2 = freesasa_structure_get_chains(s, "X", NULL, 0);
     ck_assert(s2 == NULL);
 
-    s2 = freesasa_structure_get_chains(s,"A");
+    s2 = freesasa_structure_get_chains(s, "A", NULL, 0);
     ck_assert(freesasa_structure_n(s2) == 129);
     ck_assert(freesasa_structure_atom_chain(s2,0) == 'A');
     ck_assert_str_eq(freesasa_structure_chain_labels(s2),"A");
     freesasa_structure_free(s2);
 
-    s2 = freesasa_structure_get_chains(s,"D");
+    s2 = freesasa_structure_get_chains(s, "D", NULL, 0);
     ck_assert(freesasa_structure_n(s2) == 129);
     ck_assert(freesasa_structure_atom_chain(s2,0) == 'D');
     ck_assert_str_eq(freesasa_structure_chain_labels(s2),"D");
     freesasa_structure_free(s2);
 
-    s2 = freesasa_structure_get_chains(s,"AC");
+    s2 = freesasa_structure_get_chains(s, "AC", NULL, 0);
     ck_assert(freesasa_structure_n(s2) == 2*129);
     ck_assert(freesasa_structure_atom_chain(s2,0) == 'A');
     ck_assert(freesasa_structure_atom_chain(s2,129) == 'C');
     ck_assert_str_eq(freesasa_structure_chain_labels(s2),"AC");
     freesasa_structure_free(s2);
 
-    s2 = freesasa_structure_get_chains(s,"E");
+    s2 = freesasa_structure_get_chains(s, "E", NULL, 0);
     ck_assert_ptr_eq(s2, NULL);
 
-    s2 = freesasa_structure_get_chains(s,"AE");
+    s2 = freesasa_structure_get_chains(s, "AE", NULL, 0);
     ck_assert_ptr_eq(s2, NULL);
 
     freesasa_structure_free(s);
@@ -418,7 +418,7 @@ START_TEST (test_occupancy)
     ck_assert(float_eq(r[1], 1.88, 1e-6));
     ck_assert(float_eq(r[2], 1.61, 1e-6));
     freesasa_structure_free(s);
-    
+
 }
 END_TEST
 
@@ -481,7 +481,7 @@ Suite* structure_suite() {
     tcase_add_test(tc_pdb,test_structure_array_one_chain);
     tcase_add_test(tc_pdb,test_structure_array_nmr);
     tcase_add_test(tc_pdb,test_structure_array_chains_models);
-    
+
     TCase *tc_1ubq = tcase_create("1UBQ");
     tcase_add_checked_fixture(tc_1ubq,setup_1ubq,teardown_1ubq);
     tcase_add_test(tc_1ubq,test_structure_1ubq);
@@ -493,4 +493,3 @@ Suite* structure_suite() {
 
     return s;
 }
-

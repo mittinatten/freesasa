@@ -277,7 +277,8 @@ get_structures(FILE *input,
         n2 = *n;
         for (i = 0; i < state->n_chain_groups; ++i) {
             for (j = 0; j < *n; ++j) {
-                tmp = freesasa_structure_get_chains(structures[j], state->chain_groups[i]);
+                tmp = freesasa_structure_get_chains(structures[j], state->chain_groups[i],
+                                                    state->classifier, state->structure_options);
                 if (tmp != NULL) {
                     ++n2;
                     structures = realloc(structures, sizeof(freesasa_structure*)*n2);

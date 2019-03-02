@@ -856,7 +856,9 @@ freesasa_structure_array(FILE *pdb,
 
 freesasa_structure*
 freesasa_structure_get_chains(const freesasa_structure *structure,
-                              const char* chains)
+                              const char* chains,
+                              const freesasa_classifier* classifier,
+                              int options)
 {
     freesasa_structure *new_s;
     struct atom *ai;
@@ -881,9 +883,9 @@ freesasa_structure_get_chains(const freesasa_structure *structure,
         c = ai->chain_label;
         if (strchr(chains,c) != NULL) {
             v = freesasa_coord_i(structure->xyz,i);
-            res = freesasa_structure_add_atom(new_s, ai->atom_name,
-                                              ai->res_name, ai->res_number,
-                                              c, v[0], v[1], v[2]);
+            res = freesasa_structure_add_atom_wopt(new_s, ai->atom_name,
+                                                   ai->res_name, ai->res_number,
+                                                   c, v[0], v[1], v[2], classifier, options);
             if (res == FREESASA_FAIL) {
                 fail_msg("");
                 goto cleanup;

@@ -42,7 +42,7 @@ double surface_two_spheres(const double *x, const double *r, double probe)
     return surface_spheres_intersecting(r[0]+probe,r[1]+probe,sqrt(d2));
 }
 
-int test_sasa(double ref, const char *test, const double *xyz, 
+int test_sasa(double ref, const char *test, const double *xyz,
               const double *r, int n)
 {
     double err;
@@ -66,7 +66,7 @@ void setup_lr_precision(void)
 }
 void teardown_lr_precision(void)
 {
-    
+
 }
 void setup_sr_precision(void)
 {
@@ -77,7 +77,7 @@ void setup_sr_precision(void)
 }
 void teardown_sr_precision(void)
 {
-    
+
 }
 
 START_TEST (test_sasa_alg_basic)
@@ -132,7 +132,7 @@ START_TEST (test_sasa_alg_basic)
     memcpy(coord2,coord5,12*sizeof(double));
     ck_assert(test_sasa(ref,"Four spheres in plane, rotated 90 deg round x-axis.",
                         coord2,r2,n));
-    
+
 }
 END_TEST
 
@@ -148,7 +148,7 @@ START_TEST (test_minimal_calc)
     // access areas
     ck_assert(fabs(result->sasa[0] - result->total) < 1e-10);
     ck_assert(fabs(result->total - (4*M_PI*M_PI*2.4*2.4)));
-    
+
     freesasa_result_free(result);
 }
 END_TEST
@@ -202,7 +202,7 @@ START_TEST (test_sasa_1ubq)
     ck_assert(float_eq(res->total, total_ref, 1e-5));
     ck_assert(float_eq(res_class.polar, polar_ref, 1e-5));
     ck_assert(float_eq(res_class.apolar, apolar_ref, 1e-5));
-    
+
     FILE *devnull = fopen("/dev/null","w");
     ck_assert(freesasa_write_pdb(devnull, tree) == FREESASA_SUCCESS);
     ck_assert(freesasa_tree_export(devnull, tree, FREESASA_PDB) == FREESASA_SUCCESS);
@@ -260,7 +260,7 @@ START_TEST (test_write_pdb) {
     for (int i = 0; i < n; ++i) res.sasa[i] = 1.23;
     res.parameters = freesasa_default_parameters;
     res.n_atoms = n;
-    
+
     freesasa_structure_set_radius(s, res.sasa);
     root = freesasa_tree_init(&res, s, "bla");
     ck_assert(freesasa_write_pdb(tf, root) == FREESASA_SUCCESS);
@@ -301,7 +301,7 @@ START_TEST (test_write_pdb) {
 END_TEST
 
 
-START_TEST (test_trimmed_pdb) 
+START_TEST (test_trimmed_pdb)
 {
     // This test is due to suggestion from João Rodrigues (issue #6 on Github)
     double total_ref = 16133.867124;
@@ -399,7 +399,7 @@ START_TEST (test_calc_errors)
     ck_assert(empty != NULL);
     ck_assert(freesasa_structure_from_pdb(empty, NULL, 0) == NULL);
     fclose(empty);
-    
+
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 
 }
@@ -425,7 +425,7 @@ START_TEST (test_multi_calc)
     p.lee_richards_n_slices = 20;
     ck_assert((res = freesasa_calc_structure(st,&p)) != NULL);
     ck_assert(fabs(res->total - 4804.055641) < 1e-5);
-    
+
     freesasa_structure_free(st);
     freesasa_result_free(res);
 #endif /* USE_THREADS */
@@ -433,7 +433,7 @@ START_TEST (test_multi_calc)
 END_TEST
 
 // test an NMR structure with hydrogens and several models
-START_TEST (test_1d3z) 
+START_TEST (test_1d3z)
 {
     FILE *pdb = fopen(DATADIR "1d3z.pdb","r");
     int n = 0;
@@ -447,7 +447,7 @@ START_TEST (test_1d3z)
     memcpy(radii_ref,freesasa_structure_radius(st),sizeof(double)*602);
     rewind(pdb);
     freesasa_structure_free(st);
-    
+
     freesasa_set_verbosity(FREESASA_V_SILENT);
     st = freesasa_structure_from_pdb(pdb, NULL, FREESASA_INCLUDE_HYDROGEN);
     result = freesasa_calc_structure(st, &param);
@@ -507,7 +507,7 @@ START_TEST (test_memerr)
         set_fail_after(0);
         ck_assert_ptr_eq(ptr, NULL);
         set_fail_after(i);
-        ptr = freesasa_structure_get_chains(s, "A");
+        ptr = freesasa_structure_get_chains(s, "A", NULL, 0);
         set_fail_after(0);
         ck_assert_ptr_eq(ptr, NULL);
     }
@@ -529,13 +529,13 @@ Suite *sasa_suite()
     tcase_add_test(tc_basic, test_user_classes);
     tcase_add_test(tc_basic, test_write_pdb);
     tcase_add_test(tc_basic, test_memerr);
-    
+
     TCase *tc_lr_basic = tcase_create("Basic L&R");
     tcase_add_checked_fixture(tc_lr_basic,setup_lr_precision,teardown_lr_precision);
     tcase_add_test(tc_lr_basic, test_sasa_alg_basic);
 
     TCase *tc_lr_static = test_LR_static();
-    
+
     TCase *tc_sr_basic = tcase_create("Basic S&R");
     tcase_add_checked_fixture(tc_sr_basic,setup_sr_precision,teardown_sr_precision);
     tcase_add_test(tc_sr_basic, test_sasa_alg_basic);

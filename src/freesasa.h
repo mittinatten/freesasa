@@ -865,6 +865,8 @@ freesasa_structure_add_atom_wopt(freesasa_structure *structure,
 
     @param structure Input structure.
     @param chains String of chain labels (e.g. `"AB"`)
+    @param classifier A classifier to use to build the new structure
+    @param options Structure options as in freesasa_structure_add_atom_wopt()
 
     @return A new structure consisting only of the specified
     chains. Returns `NULL` if one or more of the requested chains don't
@@ -874,7 +876,9 @@ freesasa_structure_add_atom_wopt(freesasa_structure *structure,
  */
 freesasa_structure*
 freesasa_structure_get_chains(const freesasa_structure *structure,
-                              const char* chains);
+                              const char* chains,
+                              const freesasa_classifier* classifier,
+                              int options);
 
 /**
     Get string listing all chains in structure.
