@@ -29,7 +29,7 @@ static const struct classifier_residue empty_residue = {0, NULL, NULL, NULL, NUL
 static const struct freesasa_classifier empty_config = {0, NULL, NULL, NULL};
 
 struct classifier_types*
-freesasa_classifier_types_new()
+freesasa_classifier_types_new(void)
 {
     struct classifier_types *t = malloc(sizeof(struct classifier_types));
     if (t == NULL) mem_fail();
