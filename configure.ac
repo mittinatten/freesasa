@@ -76,11 +76,13 @@ AC_DEFINE([USE_XML], [0], [Define if XML should be included.])
 AM_CONDITIONAL([USE_XML], false)
 
 if test "x$enable_xml" != "xno" ; then
-  AC_CHECK_PROG([XMLLINT],[xmllint],[xmllint],[])
-  PKG_CHECK_MODULES([libxml2], [libxml-2.0],
-    [AC_DEFINE([USE_XML], [1])
-     AC_SUBST([USE_XML], [yes])
-     AM_CONDITIONAL([USE_XML], true)],
+  AC_CHECK_PROG([XMLLINT],[xmllint], [xmllint],[])
+  AC_CHECK_LIB([xml2], [xmlNewDoc],
+     [AC_CHECK_HEADER([libxml/tree.h],
+        [AC_DEFINE([USE_XML], [1])
+         AC_SUBST([USE_XML], [yes])
+         AM_CONDITIONAL([USE_XML], true)])])
+  AM_COND_IF([USE_XML], [],
     [AC_MSG_ERROR([Library libxml2 not found, install library or build without (using --disable-xml).])])
 else
     AC_MSG_NOTICE([Building without support for XML output.])
