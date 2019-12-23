@@ -42,8 +42,8 @@ endif # USE_JSON
 if USE_XML
 libfreesasa_a_SOURCES += xml.c
 AM_CFLAGS += ${libxml2_CFLAGS}
-freesasa_LDADD += -lxml2
-example_LDADD += -lxml2
+freesasa_LDADD += ${libxml2_LIBS}
+example_LDADD += ${libxml2_LIBS}
 endif # USE_XML
 
 if GENERATE_PARSER
