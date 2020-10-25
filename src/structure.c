@@ -763,8 +763,16 @@ int freesasa_structure_add_cif_atom(freesasa_structure *structure,
                                     const freesasa_classifier *classifier,
                                     int options)
 {
+    char res_number[PDB_ATOM_RES_NUMBER_STRL + 1];
+
+    if (atom->pdbx_PDB_ins_code[0] != '?') {
+        snprintf(res_number, sizeof res_number, "%s%c", atom->auth_seq_id, atom->pdbx_PDB_ins_code[0]);
+    } else {
+        snprintf(res_number, sizeof res_number, "%s", atom->auth_seq_id);
+    }
+
     return structure_add_atom_wopt_impl(structure, atom->auth_atom_id, atom->auth_comp_id,
-                                        atom->auth_seq_id, atom->type_symbol, atom->auth_asym_id,
+                                        res_number, atom->type_symbol, atom->auth_asym_id,
                                         atom->Cartn_x, atom->Cartn_y, atom->Cartn_z,
                                         classifier, options);
 }

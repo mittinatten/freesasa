@@ -1,6 +1,7 @@
-#include "cif.hh"
 #include <gemmi/cif.hpp>
 #include <iostream>
+
+#include "cif.hh"
 
 freesasa_structure *
 freesasa_structure_from_cif(std::FILE *input,
@@ -23,11 +24,15 @@ freesasa_structure_from_cif(std::FILE *input,
     });
 
     freesasa_structure *structure = freesasa_structure_new();
+
     for (auto block : doc.blocks) {
+        auto prevAltId = '?';
+
         for (auto site : block.find("_atom_site.", columns)) {
             if (site[0] != "ATOM" && !(structure_options & FREESASA_INCLUDE_HETATM)) {
                 continue;
             }
+            auto currentAltId = site[6][0];
 
             freesasa_cif_atom atom = {
                 .group_PDB = site[0].c_str(),
@@ -41,6 +46,13 @@ freesasa_structure_from_cif(std::FILE *input,
                 .Cartn_x = atof(site[8].c_str()),
                 .Cartn_y = atof(site[9].c_str()),
                 .Cartn_z = atof(site[10].c_str())};
+
+            // Pick the first alternative conformation for an atom
+            if ((currentAltId != '?' && prevAltId == '?') || (currentAltId == '?')) {
+                prevAltId = currentAltId;
+            } else if (currentAltId != '?' && currentAltId != prevAltId) {
+                continue;
+            }
 
             freesasa_structure_add_cif_atom(structure, &atom, classifier, structure_options);
         }
