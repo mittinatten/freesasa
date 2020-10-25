@@ -1,6 +1,7 @@
 #include <check.h>
 #include <freesasa.h>
 #include <freesasa_internal.h>
+
 #include "tools.h"
 
 static void
@@ -54,9 +55,9 @@ test_tree(freesasa_node *structure,
     ck_assert(float_eq(result->sasa[1], area->total, 1e-10));
 }
 
-START_TEST (test_result_node)
+START_TEST(test_result_node)
 {
-    FILE *file = fopen(DATADIR "1ubq.pdb","r");
+    FILE *file = fopen(DATADIR "1ubq.pdb", "r");
     freesasa_structure *structure = freesasa_structure_from_pdb(file, NULL, 0);
     freesasa_result *result = freesasa_calc_structure(structure, NULL);
     freesasa_node *tree = freesasa_tree_new(), *tree2 = freesasa_tree_new();
@@ -98,8 +99,9 @@ START_TEST (test_result_node)
 }
 END_TEST
 
-START_TEST (test_memerr) {
-    FILE *file = fopen(DATADIR "1ubq.pdb","r");
+START_TEST(test_memerr)
+{
+    FILE *file = fopen(DATADIR "1ubq.pdb", "r");
     freesasa_structure *structure = freesasa_structure_from_pdb(file, NULL, 0);
     freesasa_result *result = freesasa_calc_structure(structure, NULL);
     freesasa_node *rn;
@@ -116,9 +118,11 @@ START_TEST (test_memerr) {
     freesasa_structure_free(structure);
     freesasa_result_free(result);
     fclose(file);
-} END_TEST
+}
+END_TEST
 
-Suite* result_node_suite() {
+Suite *result_node_suite()
+{
     Suite *s = suite_create("Result-node");
 
     TCase *tc_core = tcase_create("Core");

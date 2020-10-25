@@ -11,12 +11,14 @@
     errors.
  */
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "freesasa.h"
 
 /** \{ */
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     freesasa_structure *structure = NULL;
     freesasa_result *result = NULL;
     const freesasa_classifier *classifier = &freesasa_default_classifier;

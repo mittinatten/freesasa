@@ -1,19 +1,19 @@
 #if HAVE_CONFIG_H
-#  include <config.h>
+#include <config.h>
 #endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <assert.h>
 #include <errno.h>
-#include <string.h>
 #include <getopt.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "freesasa.h"
 
 #if STDC_HEADERS
-extern int getopt(int, char * const *, const char *);
+extern int getopt(int, char *const *, const char *);
 extern int optind, optopt;
 extern char *optarg;
 #endif
@@ -21,61 +21,65 @@ extern char *optarg;
 static char *program_name = "freesasa";
 
 #if USE_XML
-  #define XML_STRING "|xml"
+#define XML_STRING "|xml"
 #else
-  #define XML_STRING ""
+#define XML_STRING ""
 #endif
 
 #if USE_JSON
-  #define JSON_STRING "|json"
+#define JSON_STRING "|json"
 #else
-  #define JSON_STRING ""
+#define JSON_STRING ""
 #endif
 
 #define FORMAT_STRING "log|res|seq|pdb|rsa" XML_STRING JSON_STRING
 
-enum {B_FILE, SELECT, UNKNOWN, RSA, RADII, DEPRECATED};
+enum { B_FILE,
+       SELECT,
+       UNKNOWN,
+       RSA,
+       RADII,
+       DEPRECATED };
 
 static int option_flag;
 
 static struct option long_options[] = {
-    {"lee-richards",         no_argument,       0, 'L'},
-    {"shrake-rupley",        no_argument,       0, 'S'},
-    {"probe-radius",         required_argument, 0, 'p'},
-    {"resolution",           required_argument, 0, 'n'},
-    {"help",                 no_argument,       0, 'h'},
-    {"version",              no_argument,       0, 'v'},
-    {"no-warnings",          no_argument,       0, 'w'},
-    {"n-threads",            required_argument, 0, 't'},
-    {"config-file",          required_argument, 0, 'c'},
-    {"radius-from-occupancy",no_argument,       0, 'O'},
-    {"hetatm",               no_argument,       0, 'H'},
-    {"hydrogen",             no_argument,       0, 'Y'},
-    {"separate-chains",      no_argument,       0, 'C'},
-    {"separate-models",      no_argument,       0, 'M'},
-    {"join-models",          no_argument,       0, 'm'},
-    {"chain-groups",         required_argument, 0, 'g'},
-    {"error-file",           required_argument, 0, 'e'},
-    {"output",               required_argument, 0, 'o'},
-    {"format",               required_argument, 0, 'f'},
-    {"depth",                required_argument, 0, 'd'},
-    {"select",               required_argument, &option_flag, SELECT},
-    {"unknown",              required_argument, &option_flag, UNKNOWN},
-    {"rsa",                  no_argument,       &option_flag, RSA},
-    {"radii",                required_argument, &option_flag, RADII},
-    {"deprecated",           no_argument,       &option_flag, DEPRECATED},
+    {"lee-richards", no_argument, 0, 'L'},
+    {"shrake-rupley", no_argument, 0, 'S'},
+    {"probe-radius", required_argument, 0, 'p'},
+    {"resolution", required_argument, 0, 'n'},
+    {"help", no_argument, 0, 'h'},
+    {"version", no_argument, 0, 'v'},
+    {"no-warnings", no_argument, 0, 'w'},
+    {"n-threads", required_argument, 0, 't'},
+    {"config-file", required_argument, 0, 'c'},
+    {"radius-from-occupancy", no_argument, 0, 'O'},
+    {"hetatm", no_argument, 0, 'H'},
+    {"hydrogen", no_argument, 0, 'Y'},
+    {"separate-chains", no_argument, 0, 'C'},
+    {"separate-models", no_argument, 0, 'M'},
+    {"join-models", no_argument, 0, 'm'},
+    {"chain-groups", required_argument, 0, 'g'},
+    {"error-file", required_argument, 0, 'e'},
+    {"output", required_argument, 0, 'o'},
+    {"format", required_argument, 0, 'f'},
+    {"depth", required_argument, 0, 'd'},
+    {"select", required_argument, &option_flag, SELECT},
+    {"unknown", required_argument, &option_flag, UNKNOWN},
+    {"rsa", no_argument, &option_flag, RSA},
+    {"radii", required_argument, &option_flag, RADII},
+    {"deprecated", no_argument, &option_flag, DEPRECATED},
     /* Deprecated options */
-    {"foreach-residue-type", no_argument,       0, 'r'},
-    {"foreach-residue",      no_argument,       0, 'R'},
-    {"print-as-B-values",    no_argument,       0, 'B'},
-    {"no-log",               no_argument,       0, 'l'},
-    {0,0,0,0}
-};
+    {"foreach-residue-type", no_argument, 0, 'r'},
+    {"foreach-residue", no_argument, 0, 'R'},
+    {"print-as-B-values", no_argument, 0, 'B'},
+    {"no-log", no_argument, 0, 'l'},
+    {0, 0, 0, 0}};
 
 #define NOARG_OPTIONS "hvwLSHYOCMm"
 #define NOARG_DEPRECATED "BrRl"
 #define ARG_OPTIONS "c:n:t:p:g:e:o:f:"
-const char* options_string = ":" NOARG_OPTIONS NOARG_DEPRECATED ARG_OPTIONS;
+const char *options_string = ":" NOARG_OPTIONS NOARG_DEPRECATED ARG_OPTIONS;
 
 /* State of app (most settings are stored here) */
 struct cli_state {
@@ -87,15 +91,14 @@ struct cli_state {
     int no_rel;
     /* chain groups */
     int n_chain_groups;
-    char** chain_groups;
+    char **chain_groups;
     /* selection commands */
     int n_select;
-    char** select_cmd;
+    char **select_cmd;
     /* output settings */
     int output_format, output_depth;
     /* Files */
     FILE *input, *output, *errlog;
-
 };
 
 struct analysis_results {
@@ -143,7 +146,6 @@ release_state(struct cli_state *state)
     }
     if (state->errlog) fclose(state->errlog);
     if (state->output) fclose(state->output);
-
 }
 
 static void
@@ -217,8 +219,8 @@ version(void)
 /** error handling **/
 
 static void
-err_msg(const char* prefix,
-        const char* format,
+err_msg(const char *prefix,
+        const char *format,
         ...)
 {
     va_list arg;
@@ -231,7 +233,8 @@ err_msg(const char* prefix,
 }
 
 static void
-exit_with_help(void) {
+exit_with_help(void)
+{
     fputc('\n', stderr);
     short_help();
     fputc('\n', stderr);
@@ -241,7 +244,11 @@ exit_with_help(void) {
 
 #define warn(...) err_msg("warning", __VA_ARGS__)
 #define error(...) err_msg("error", __VA_ARGS__)
-#define abort_msg(...) do {error(__VA_ARGS__); exit_with_help();} while(0)
+#define abort_msg(...)      \
+    do {                    \
+        error(__VA_ARGS__); \
+        exit_with_help();   \
+    } while (0)
 
 static freesasa_structure **
 get_structures(FILE *input,
@@ -261,7 +268,7 @@ get_structures(FILE *input,
             if (structures[i] == NULL) abort_msg("invalid input");
         }
     } else {
-        structures = malloc(sizeof(freesasa_structure*));
+        structures = malloc(sizeof(freesasa_structure *));
         if (structures == NULL) {
             abort_msg("out of memory");
         }
@@ -281,9 +288,9 @@ get_structures(FILE *input,
                                                     state->classifier, state->structure_options);
                 if (tmp != NULL) {
                     ++n2;
-                    structures = realloc(structures, sizeof(freesasa_structure*)*n2);
+                    structures = realloc(structures, sizeof(freesasa_structure *) * n2);
                     if (structures == NULL) abort_msg("out of memory");
-                    structures[n2-1] = tmp;
+                    structures[n2 - 1] = tmp;
                 } else {
                     abort_msg("at least one of chain(s) '%s' not found", state->chain_groups[i]);
                 }
@@ -306,7 +313,7 @@ run_analysis(FILE *input,
     const freesasa_result *result;
     freesasa_selection *sel;
     int n = 0, i, c;
-    char *name_i = malloc(name_len+10);
+    char *name_i = malloc(name_len + 10);
 
     if (tree == NULL) abort_msg("failed to initialize result-tree");
     if (name_i == NULL) abort_msg("memory failure");
@@ -317,9 +324,9 @@ run_analysis(FILE *input,
 
     /* perform calculation on each structure */
     for (i = 0; i < n; ++i) {
-        strcpy(name_i,name);
+        strcpy(name_i, name);
         if (n > 1 && (state->structure_options & FREESASA_SEPARATE_MODELS))
-            sprintf(name_i+strlen(name_i), ":%d", freesasa_structure_model(structures[i]));
+            sprintf(name_i + strlen(name_i), ":%d", freesasa_structure_model(structures[i]));
 
         tmp_tree = freesasa_calc_tree(structures[i], &state->parameters, name_i);
         if (tmp_tree == NULL) abort_msg("can't calculate SASA");
@@ -353,9 +360,9 @@ run_analysis(FILE *input,
     return tree;
 }
 
-static FILE*
-fopen_werr(const char* filename,
-           const char* mode)
+static FILE *
+fopen_werr(const char *filename,
+           const char *mode)
 {
     FILE *f = fopen(filename, mode);
 
@@ -368,7 +375,7 @@ fopen_werr(const char* filename,
 }
 
 static void
-state_add_chain_groups(const char* cmd, struct cli_state *state)
+state_add_chain_groups(const char *cmd, struct cli_state *state)
 {
     int err = 0;
     char *str;
@@ -383,7 +390,8 @@ state_add_chain_groups(const char* cmd, struct cli_state *state)
             !(a >= 'a' && a <= 'z') && !(a >= 'A' && a <= 'Z') &&
             !(a >= '0' && a <= '9')) {
             error("character '%c' not valid chain ID in --chain-groups, "
-                  "valid characters are [A-z0-9] and '+' as separator", a);
+                  "valid characters are [A-z0-9] and '+' as separator",
+                  a);
             ++err;
         }
     }
@@ -394,9 +402,11 @@ state_add_chain_groups(const char* cmd, struct cli_state *state)
         token = strtok(str, "+");
         while (token) {
             ++state->n_chain_groups;
-            state->chain_groups = realloc(state->chain_groups,sizeof(char*)*state->n_chain_groups);
-            if (state->chain_groups == NULL) { abort_msg("out of memory");}
-            state->chain_groups[state->n_chain_groups-1] = strdup(token);
+            state->chain_groups = realloc(state->chain_groups, sizeof(char *) * state->n_chain_groups);
+            if (state->chain_groups == NULL) {
+                abort_msg("out of memory");
+            }
+            state->chain_groups[state->n_chain_groups - 1] = strdup(token);
             token = strtok(0, "+");
         }
         free(str);
@@ -406,15 +416,15 @@ state_add_chain_groups(const char* cmd, struct cli_state *state)
 }
 
 static void
-state_add_select(const char* cmd, struct cli_state *state)
+state_add_select(const char *cmd, struct cli_state *state)
 {
     ++state->n_select;
-    state->select_cmd = realloc(state->select_cmd, sizeof(char*)*state->n_select);
+    state->select_cmd = realloc(state->select_cmd, sizeof(char *) * state->n_select);
     if (state->select_cmd == NULL) {
         abort_msg("out of memory");
     }
-    state->select_cmd[state->n_select-1] = strdup(cmd);
-    if (state->select_cmd[state->n_select-1] == NULL) {
+    state->select_cmd[state->n_select - 1] = strdup(cmd);
+    if (state->select_cmd[state->n_select - 1] == NULL) {
         abort_msg("out of memory");
     }
 }
@@ -426,11 +436,11 @@ state_add_unknown_option(const char *optarg, struct cli_state *state)
         state->structure_options |= FREESASA_SKIP_UNKNOWN;
         return;
     }
-    if(strcmp(optarg, "halt") == 0) {
+    if (strcmp(optarg, "halt") == 0) {
         state->structure_options |= FREESASA_HALT_AT_UNKNOWN;
         return;
     }
-    if(strcmp(optarg, "guess") == 0) {
+    if (strcmp(optarg, "guess") == 0) {
         return; /* default */
     }
     abort_msg("unknown alternative to option --unknown: '%s'", optarg);
@@ -473,7 +483,8 @@ parse_output_format(const char *optarg)
 }
 
 static int
-parse_output_depth(const char *optarg) {
+parse_output_depth(const char *optarg)
+{
     if (strcmp("structure", optarg) == 0) {
         return FREESASA_OUTPUT_STRUCTURE;
     }
@@ -501,7 +512,8 @@ state_set_static_classifier(const char *optarg, struct cli_state *state)
         state->classifier = &freesasa_protor_classifier;
     } else {
         abort_msg("config '%s' not allowed, "
-                  "can only be 'protor' or 'naccess')", optarg);
+                  "can only be 'protor' or 'naccess')",
+                  optarg);
     }
     state->static_classifier = 1;
 }
@@ -513,8 +525,8 @@ parse_arg(int argc, char **argv, struct cli_state *state)
 {
     int alg_set = 0;
     char opt;
-    int n_opt = 'z'+1;
-    char opt_set['z'+1];
+    int n_opt = 'z' + 1;
+    char opt_set['z' + 1];
     int option_index = 0;
     FILE *cf;
 
@@ -525,14 +537,16 @@ parse_arg(int argc, char **argv, struct cli_state *state)
         opt_set[(int)opt] = 1;
         /* Assume arguments starting with dash are actually missing arguments */
         if (optarg != NULL && optarg[0] == '-') {
-            if (option_index > 0) abort_msg("missing argument? Value '%s' cannot be argument to '--%s'.\n",
-                                            program_name,optarg, long_options[option_index].name);
-            else abort_msg("missing argument? Value '%s' cannot be argument to '-%c'.\n",
-                           optarg,opt);
+            if (option_index > 0)
+                abort_msg("missing argument? Value '%s' cannot be argument to '--%s'.\n",
+                          program_name, optarg, long_options[option_index].name);
+            else
+                abort_msg("missing argument? Value '%s' cannot be argument to '-%c'.\n",
+                          optarg, opt);
         }
-        switch(opt) {
+        switch (opt) {
         case 0:
-            switch(long_options[option_index].val) {
+            switch (long_options[option_index].val) {
             case SELECT:
                 state_add_select(optarg, state);
                 break;
@@ -656,7 +670,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
         case '?':
         default:
             if (optopt == 0) {
-                abort_msg("unknown option '%s'", argv[optind-1]);
+                abort_msg("unknown option '%s'", argv[optind - 1]);
             } else {
                 abort_msg("unknown option '-%c'", optopt);
             }
@@ -684,9 +698,8 @@ parse_arg(int argc, char **argv, struct cli_state *state)
     return optind;
 }
 
-int
-main(int argc,
-     char **argv)
+int main(int argc,
+         char **argv)
 {
     struct cli_state state;
     FILE *input = NULL;
@@ -710,8 +723,8 @@ main(int argc,
         if (!isatty(STDIN_FILENO)) {
             tmp = run_analysis(stdin, "stdin", &state);
             freesasa_tree_join(tree, &tmp);
-        }
-        else abort_msg("no input", program_name);
+        } else
+            abort_msg("no input", program_name);
     }
 
     freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));

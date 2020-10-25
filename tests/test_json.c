@@ -1,10 +1,11 @@
 #if HAVE_CONFIG_H
-# include <config.h>
+#include <config.h>
 #endif
 #include <check.h>
+#include <freesasa.h>
 #include <json-c/json_object.h>
 #include <json-c/json_object_iterator.h>
-#include <freesasa.h>
+
 #include "tools.h"
 
 extern json_object *
@@ -14,7 +15,7 @@ static int
 compare_nodearea(json_object *obj, const freesasa_nodearea *ref, int is_abs)
 {
     struct json_object_iterator it = json_object_iter_begin(obj),
-        it_end = json_object_iter_end(obj);
+                                it_end = json_object_iter_end(obj);
     double total, polar, apolar, bb, sc;
     while (!json_object_iter_equal(&it, &it_end)) {
         const char *key = json_object_iter_peek_name(&it);
@@ -41,8 +42,8 @@ compare_nodearea(json_object *obj, const freesasa_nodearea *ref, int is_abs)
     }
     ck_assert(total > 0);
     if (is_abs) {
-        ck_assert(float_eq(total, polar+apolar, 1e-10));
-        ck_assert(float_eq(total, sc+bb, 1e-10));
+        ck_assert(float_eq(total, polar + apolar, 1e-10));
+        ck_assert(float_eq(total, sc + bb, 1e-10));
         ck_assert(float_eq(total, ref->total, 1e-10));
         ck_assert(float_eq(polar, ref->polar, 1e-10));
         ck_assert(float_eq(apolar, ref->apolar, 1e-10));
@@ -52,16 +53,15 @@ compare_nodearea(json_object *obj, const freesasa_nodearea *ref, int is_abs)
     return 1;
 }
 
-int
-test_atom(freesasa_node *node)
+int test_atom(freesasa_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
     json_object *atom = freesasa_node2json(node, FREESASA_NODE_NONE, 0);
     ck_assert_ptr_ne(atom, NULL);
-    
+
     struct json_object_iterator it = json_object_iter_begin(atom),
-        it_end = json_object_iter_end(atom);
-    while(!json_object_iter_equal(&it, &it_end)) {
+                                it_end = json_object_iter_end(atom);
+    while (!json_object_iter_equal(&it, &it_end)) {
         const char *key = json_object_iter_peek_name(&it);
         json_object *val = json_object_iter_peek_value(&it);
         if (!strcmp(key, "name")) {
@@ -85,21 +85,20 @@ test_atom(freesasa_node *node)
         json_object_iter_next(&it);
     }
     json_object_put(atom);
-    
+
     return 1;
 }
 
-int
-test_residue(freesasa_node *node)
+int test_residue(freesasa_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
     json_object *residue = freesasa_node2json(node, FREESASA_NODE_NONE, 0);
     ck_assert_ptr_ne(residue, NULL);
     const freesasa_nodearea *resarea = freesasa_node_area(node);
     struct json_object_iterator it = json_object_iter_begin(residue),
-        it_end = json_object_iter_end(residue);
+                                it_end = json_object_iter_end(residue);
 
-    while(!json_object_iter_equal(&it, &it_end)) {
+    while (!json_object_iter_equal(&it, &it_end)) {
         const char *key = json_object_iter_peek_name(&it);
         json_object *val = json_object_iter_peek_value(&it);
         if (!strcmp(key, "name")) {
@@ -112,7 +111,7 @@ test_residue(freesasa_node *node)
             ck_assert(json_object_is_type(val, json_type_int));
             ck_assert_int_eq(json_object_get_int(val), 8);
         } else if (!strcmp(key, "atoms")) {
-             ck_assert(json_object_is_type(val, json_type_array));
+            ck_assert(json_object_is_type(val, json_type_array));
             //this is checked further by test_atom
         } else if (!strcmp(key, "area")) {
             ck_assert(compare_nodearea(val, resarea, 1));
@@ -129,8 +128,7 @@ test_residue(freesasa_node *node)
     return 1;
 }
 
-int
-test_chain(freesasa_node *node, const freesasa_result *result)
+int test_chain(freesasa_node *node, const freesasa_result *result)
 {
     ck_assert_ptr_ne(node, NULL);
     json_object *chain = freesasa_node2json(node, FREESASA_NODE_NONE, 0);
@@ -139,8 +137,8 @@ test_chain(freesasa_node *node, const freesasa_result *result)
     ck_assert(float_eq(chain_area->total, result->total, 1e-10));
 
     struct json_object_iterator it = json_object_iter_begin(chain),
-        it_end = json_object_iter_end(chain);
-    while(!json_object_iter_equal(&it, &it_end)) {
+                                it_end = json_object_iter_end(chain);
+    while (!json_object_iter_equal(&it, &it_end)) {
         const char *key = json_object_iter_peek_name(&it);
         json_object *val = json_object_iter_peek_value(&it);
         if (!strcmp(key, "label")) {
@@ -164,8 +162,7 @@ test_chain(freesasa_node *node, const freesasa_result *result)
     return 1;
 }
 
-int
-test_structure(freesasa_node *node)
+int test_structure(freesasa_node *node)
 {
     ck_assert_ptr_ne(node, NULL);
     freesasa_nodearea structure_area = {
@@ -174,14 +171,13 @@ test_structure(freesasa_node *node)
         .polar = 2504.2173023011442,
         .apolar = 2299.838338840601,
         .side_chain = 3689.8982162353718,
-        .main_chain = 1114.157424906374
-    };
+        .main_chain = 1114.157424906374};
     json_object *jstruct = freesasa_node2json(node, FREESASA_NODE_NONE, 0);
     ck_assert_ptr_ne(jstruct, NULL);
 
     struct json_object_iterator it = json_object_iter_begin(jstruct),
-        it_end = json_object_iter_end(jstruct);
-    while(!json_object_iter_equal(&it, &it_end)) {
+                                it_end = json_object_iter_end(jstruct);
+    while (!json_object_iter_equal(&it, &it_end)) {
         const char *key = json_object_iter_peek_name(&it);
         json_object *val = json_object_iter_peek_value(&it);
         if (!strcmp(key, "input")) {
@@ -205,12 +201,12 @@ test_structure(freesasa_node *node)
 
         json_object_iter_next(&it);
     }
-    
+
     json_object_put(jstruct);
     return 1;
 }
 
-START_TEST (test_json)
+START_TEST(test_json)
 {
     FILE *pdb = fopen(DATADIR "1ubq.pdb", "r");
     freesasa_structure *ubq =
@@ -229,14 +225,15 @@ START_TEST (test_json)
     ck_assert(test_residue(residues));
     ck_assert(test_chain(chains, result));
     ck_assert(test_structure(structures));
-    
+
     freesasa_structure_free(ubq);
     freesasa_result_free(result);
     freesasa_node_free(tree);
 }
 END_TEST
 
-Suite* json_suite() {
+Suite *json_suite()
+{
     Suite *s = suite_create("JSON");
     TCase *tc_core = tcase_create("Core");
     tcase_add_test(tc_core, test_json);

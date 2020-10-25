@@ -1,5 +1,5 @@
 #if HAVE_CONFIG_H
-# include <config.h>
+#include <config.h>
 #endif
 #include <assert.h>
 #include <stdio.h>
@@ -7,15 +7,15 @@
 #include <string.h>
 
 #ifdef _MSC_VER
-# define _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
 #endif
 #include <math.h>
 
 #if USE_THREADS
-# include <pthread.h>
-# define MAX_SR_THREADS 16
+#include <pthread.h>
+#define MAX_SR_THREADS 16
 #else
-# define MAX_SR_THREADS 1
+#define MAX_SR_THREADS 1
 #endif
 
 #include "freesasa_internal.h"
@@ -36,7 +36,7 @@ typedef struct {
     int n_threads;
     double probe_radius;
     const coord_t *xyz;
-    coord_t *srp; /* test-points */
+    coord_t *srp;                      /* test-points */
     coord_t *tp_local[MAX_SR_THREADS]; /* coord object for storing intermediates */
     int *spcount[MAX_SR_THREADS];
     double *r;
@@ -58,24 +58,24 @@ test_points(int N)
 {
     /* Golden section spiral on a sphere
        from http://web.archive.org/web/20120421191837/http://www.cgafaq.info/wiki/Evenly_distributed_points_on_sphere */
-    double dlong = M_PI*(3-sqrt(5)), dz = 2.0/N, longitude = 0, z = 1-dz/2, r;
+    double dlong = M_PI * (3 - sqrt(5)), dz = 2.0 / N, longitude = 0, z = 1 - dz / 2, r;
     coord_t *coord = freesasa_coord_new();
-    double *tp = malloc(3*N*sizeof(double)), *p;
+    double *tp = malloc(3 * N * sizeof(double)), *p;
     if (tp == NULL || coord == NULL) {
         mem_fail();
         goto cleanup;
     }
 
-    for (p = tp; p-tp < 3*N; p += 3) {
-        r = sqrt(1-z*z);
-        p[0] = cos(longitude)*r;
-        p[1] = sin(longitude)*r;
+    for (p = tp; p - tp < 3 * N; p += 3) {
+        r = sqrt(1 - z * z);
+        p[0] = cos(longitude) * r;
+        p[1] = sin(longitude) * r;
         p[2] = z;
         z -= dz;
         longitude += dlong;
     }
 
-    if (freesasa_coord_append(coord,tp,N) == FREESASA_FAIL) {
+    if (freesasa_coord_append(coord, tp, N) == FREESASA_FAIL) {
         fail_msg("");
         goto cleanup;
     }
@@ -83,15 +83,14 @@ test_points(int N)
 
     return coord;
 
- cleanup:
+cleanup:
     free(tp);
     freesasa_coord_free(coord);
     return NULL;
 }
 
 /* free contents */
-void
-release_sr(sr_data *sr)
+void release_sr(sr_data *sr)
 {
     int i;
 
@@ -106,15 +105,13 @@ release_sr(sr_data *sr)
     }
 }
 
-
-int
-init_sr(sr_data *sr,
-        double *sasa,
-        const coord_t *xyz,
-        const double *r,
-        double probe_radius,
-        int n_points,
-        int n_threads)
+int init_sr(sr_data *sr,
+            double *sasa,
+            const coord_t *xyz,
+            const double *r,
+            double probe_radius,
+            int n_points,
+            int n_threads)
 {
     int n_atoms = freesasa_coord_n(xyz), i;
     coord_t *srp = test_points(n_points);
@@ -138,8 +135,8 @@ init_sr(sr_data *sr,
         sr->spcount[i] = NULL;
     }
 
-    sr->r =  malloc(sizeof(double)*n_atoms);
-    sr->r2 = malloc(sizeof(double)*n_atoms);
+    sr->r = malloc(sizeof(double) * n_atoms);
+    sr->r2 = malloc(sizeof(double) * n_atoms);
 
     if (sr->r == NULL || sr->r2 == NULL) goto cleanup;
 
@@ -163,16 +160,15 @@ init_sr(sr_data *sr,
 
     return FREESASA_SUCCESS;
 
- cleanup:
+cleanup:
     release_sr(sr);
     return mem_fail();
 }
 
-int
-freesasa_shrake_rupley(double *sasa,
-                       const coord_t *xyz,
-                       const double *r,
-                       const freesasa_parameters *param)
+int freesasa_shrake_rupley(double *sasa,
+                           const coord_t *xyz,
+                           const double *r,
+                           const freesasa_parameters *param)
 {
     int i, n_atoms, n_threads = param->n_threads, resolution, return_value;
     double probe_radius = param->probe_radius;
@@ -234,18 +230,20 @@ sr_do_threads(int n_threads,
 {
     pthread_t thread[MAX_SR_THREADS];
     sr_data srt[MAX_SR_THREADS];
-    int thread_block_size = sr->n_atoms/n_threads;
+    int thread_block_size = sr->n_atoms / n_threads;
     int res, return_value = FREESASA_SUCCESS;
     int threads_created = 0, t;
 
     /*  divide atoms evenly over threads */
     for (t = 0; t < n_threads; ++t) {
         srt[t] = *sr;
-        srt[t].i1 = t*thread_block_size;
-        if (t == n_threads-1) srt[t].i2 = sr->n_atoms;
-        else srt[t].i2 = (t+1)*thread_block_size;
+        srt[t].i1 = t * thread_block_size;
+        if (t == n_threads - 1)
+            srt[t].i2 = sr->n_atoms;
+        else
+            srt[t].i2 = (t + 1) * thread_block_size;
         srt[t].thread_index = t;
-        res = pthread_create(&thread[t], NULL, sr_thread, (void *) &srt[t]);
+        res = pthread_create(&thread[t], NULL, sr_thread, (void *)&srt[t]);
         if (res) {
             return_value = fail_msg(freesasa_thread_error(res));
             break;
@@ -265,7 +263,7 @@ static void *
 sr_thread(void *arg)
 {
     int i;
-    sr_data *sr = ((sr_data*) arg);
+    sr_data *sr = ((sr_data *)arg);
 
     for (i = sr->i1; i < sr->i2; ++i) {
         /* mutex should not be necessary, writes to non-overlapping regions */
@@ -285,16 +283,16 @@ sr_atom_area(int i,
        a certain atom do not overlap with any other atoms */
     int *spcount = sr->spcount[thread_index];
     const int nni = sr->nb->nn[i];
-    const int * restrict nbi = sr->nb->nb[i];
+    const int *restrict nbi = sr->nb->nb[i];
     const double ri = sr->r[i];
-    const double * restrict r2 = sr->r2;
-    const double * restrict v = freesasa_coord_all(sr->xyz);
-    const double * restrict vi = v+3*i;
-    const double * restrict tp;
+    const double *restrict r2 = sr->r2;
+    const double *restrict v = freesasa_coord_all(sr->xyz);
+    const double *restrict vi = v + 3 * i;
+    const double *restrict tp;
     int n_surface = 0, current_nb, a, j, k;
     double dx, dy, dz;
     /* testpoints for this atom */
-    coord_t * restrict tp_coord_ri = sr->tp_local[thread_index];
+    coord_t *restrict tp_coord_ri = sr->tp_local[thread_index];
 
     freesasa_coord_copy(tp_coord_ri, sr->srp);
     freesasa_coord_scale(tp_coord_ri, ri);
@@ -302,7 +300,7 @@ sr_atom_area(int i,
     tp = freesasa_coord_all(tp_coord_ri);
 
     /* initialize with all surface points hidden */
-    memset(spcount, 0, n_points*sizeof(int));
+    memset(spcount, 0, n_points * sizeof(int));
 
     /* Using the trick from NSOL to check points one by one for all
        atoms, start comparing with the first neighbor. If there is no
@@ -313,17 +311,17 @@ sr_atom_area(int i,
     for (j = 0; j < n_points; ++j) {
         /* a is the index of the atom under consideration */
         a = nbi[current_nb];
-        dx = tp[j*3]   - v[a*3];
-        dy = tp[j*3+1] - v[a*3+1];
-        dz = tp[j*3+2] - v[a*3+2];
-        if (dx*dx + dy*dy + dz*dz > r2[a]) {
+        dx = tp[j * 3] - v[a * 3];
+        dy = tp[j * 3 + 1] - v[a * 3 + 1];
+        dz = tp[j * 3 + 2] - v[a * 3 + 2];
+        if (dx * dx + dy * dy + dz * dz > r2[a]) {
             k = 0;
             for (; k < nni; ++k) {
                 a = nbi[k];
-                dx = tp[j*3]   - v[a*3];
-                dy = tp[j*3+1] - v[a*3+1];
-                dz = tp[j*3+2] - v[a*3+2];
-                if (dx*dx + dy*dy + dz*dz <= r2[a]) {
+                dx = tp[j * 3] - v[a * 3];
+                dy = tp[j * 3 + 1] - v[a * 3 + 1];
+                dz = tp[j * 3 + 2] - v[a * 3 + 2];
+                if (dx * dx + dy * dy + dz * dz <= r2[a]) {
                     current_nb = k;
                     break;
                 }
@@ -336,5 +334,5 @@ sr_atom_area(int i,
         if (spcount[k]) ++n_surface;
     }
 
-    return (4.0*M_PI*ri*ri*n_surface)/n_points;
+    return (4.0 * M_PI * ri * ri * n_surface) / n_points;
 }

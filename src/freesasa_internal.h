@@ -2,15 +2,15 @@
 #define FREESASA_INTERNAL_H
 
 #ifdef _MSC_VER
-# define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #endif
 
 /* These are included here so that the _CRT_SECURE_.. macro above will have the desired effect */
 #include <stdio.h>
 #include <string.h>
 
-#include "freesasa.h"
 #include "coord.h"
+#include "freesasa.h"
 
 /** The name of the library, to be used in error messages and logging */
 extern const char *freesasa_name;
@@ -22,37 +22,36 @@ extern const char *freesasa_string;
 extern const freesasa_nodearea freesasa_nodearea_null;
 
 /** Shortcut for memory error generation */
-#define mem_fail() freesasa_mem_fail(__FILE__,__LINE__)
+#define mem_fail() freesasa_mem_fail(__FILE__, __LINE__)
 
 /** Shortcut for error message with position information, should be used by default */
-#define fail_msg(...) freesasa_fail_wloc(__FILE__,__LINE__, __VA_ARGS__)
+#define fail_msg(...) freesasa_fail_wloc(__FILE__, __LINE__, __VA_ARGS__)
 
 #ifdef _MSC_VER
-# define inline __inline
-# define strdup _strdup
-# define fmax(a, b)  (((a) > (b)) ? (a) : (b))
-# define fmin(a, b)  (((a) < (b)) ? (a) : (b))
-# include <float.h>
-# define isfinite _finite
+#define inline __inline
+#define strdup _strdup
+#define fmax(a, b) (((a) > (b)) ? (a) : (b))
+#define fmin(a, b) (((a) < (b)) ? (a) : (b))
+#include <float.h>
+#define isfinite _finite
 #endif
 
 #if defined(_MSC_VER) && !defined(__func__)
-# define __func__ __FUNCTION__
+#define __func__ __FUNCTION__
 #endif
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400
-# define restrict __restrict
+#define restrict __restrict
 #endif
 #if defined(_MSC_VER) && _MSC_VER < 1400
-# define restrict
+#define restrict
 #endif
-
 
 /* The library is intended to be compiled with C99, but this macro
    allows us to compile it with C89 too, to test MSC compatibility */
 #ifdef __STRICT_ANSI__
-# define restrict
-# define inline
+#define restrict
+#define inline
 #endif
 
 /**
@@ -68,11 +67,10 @@ extern const freesasa_nodearea freesasa_nodearea_null;
     threads are requested when compiled in single-threaded mode (with
     error message). ::FREESASA_FAIL if memory allocation failure.
  */
-int
-freesasa_shrake_rupley(double *sasa,
-                       const coord_t *c,
-                       const double *radii,
-                       const freesasa_parameters *param);
+int freesasa_shrake_rupley(double *sasa,
+                           const coord_t *c,
+                           const double *radii,
+                           const freesasa_parameters *param);
 
 /**
     Calculate SASA using L&R algorithm.
@@ -95,7 +93,7 @@ freesasa_shrake_rupley(double *sasa,
     mode (with error message). ::FREESASA_FAIL if memory allocation
     failure.
  */
-int freesasa_lee_richards(double* sasa,
+int freesasa_lee_richards(double *sasa,
                           const coord_t *c,
                           const double *radii,
                           const freesasa_parameters *param);
@@ -114,14 +112,13 @@ int freesasa_lee_richards(double* sasa,
     @param parameters Parameters
     @return Result of calculation, NULL if something went wrong.
  */
-freesasa_result*
+freesasa_result *
 freesasa_calc(const coord_t *c,
               const double *radii,
               const freesasa_parameters *parameters);
 
-int
-freesasa_write_log(FILE *log,
-                   freesasa_node *root);
+int freesasa_write_log(FILE *log,
+                       freesasa_node *root);
 
 /**
     Print RSA-file
@@ -134,10 +131,9 @@ freesasa_write_log(FILE *log,
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
       writing to file.
  */
-int
-freesasa_write_rsa(FILE *output,
-                   freesasa_node *root,
-                   int options);
+int freesasa_write_rsa(FILE *output,
+                       freesasa_node *root,
+                       int options);
 
 /**
     Export to JSON
@@ -157,10 +153,9 @@ freesasa_write_rsa(FILE *output,
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
       writing to file.
  */
-int
-freesasa_write_json(FILE *ouput,
-                    freesasa_node *root,
-                    int options);
+int freesasa_write_json(FILE *ouput,
+                        freesasa_node *root,
+                        int options);
 /**
     Export to XML
 
@@ -177,10 +172,9 @@ freesasa_write_json(FILE *ouput,
     @return ::FREESASA_SUCCESS on success, ::FREESASA_FAIL if problems
       writing to file.
  */
-int
-freesasa_write_xml(FILE *ouput,
-                   freesasa_node *root,
-                   int options);
+int freesasa_write_xml(FILE *ouput,
+                       freesasa_node *root,
+                       int options);
 
 /**
     Write SASA values and atomic radii to new PDB-file.
@@ -199,30 +193,26 @@ freesasa_write_xml(FILE *ouput,
       ::FREESASA_FAIL if there is no previous PDB input to base output
       on or if there were problems writing to the file.
 */
-int
-freesasa_write_pdb(FILE *output,
-                   freesasa_node *structure);
+int freesasa_write_pdb(FILE *output,
+                       freesasa_node *structure);
 
 /**
     Write per-residue-type output
  */
-int
-freesasa_write_res(FILE *log,
-                   freesasa_node *root);
+int freesasa_write_res(FILE *log,
+                       freesasa_node *root);
 
 /**
     Write SASA per residue in sequence output
  */
-int
-freesasa_write_seq(FILE *log,
-                   freesasa_node *root);
+int freesasa_write_seq(FILE *log,
+                       freesasa_node *root);
 
 /**
     Write standard log message.
  */
-int
-freesasa_write_log(FILE *log,
-                   freesasa_node *root);
+int freesasa_write_log(FILE *log,
+                       freesasa_node *root);
 
 /**
     Clone results object
@@ -278,9 +268,8 @@ freesasa_structure_residue_reference(const freesasa_structure *structure,
     @return The index of `chain` in the structure. ::FREESASA_FAIL
       if `chain` not found.
  */
-int
-freesasa_structure_chain_index(const freesasa_structure *structure,
-                               char chain);
+int freesasa_structure_chain_index(const freesasa_structure *structure,
+                                   char chain);
 
 /**
     Extract area to provided ::freesasa_nodearea object
@@ -295,11 +284,10 @@ freesasa_structure_chain_index(const freesasa_structure *structure,
     @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if memory
       allocation for name fails.
  */
-int
-freesasa_atom_nodearea(freesasa_nodearea *area,
-                       const freesasa_structure *structure,
-                       const freesasa_result *result,
-                       int atom_index);
+int freesasa_atom_nodearea(freesasa_nodearea *area,
+                           const freesasa_structure *structure,
+                           const freesasa_result *result,
+                           int atom_index);
 
 /**
     Adds all members of term to corresponding members of sum
@@ -307,19 +295,17 @@ freesasa_atom_nodearea(freesasa_nodearea *area,
     @param sum Object to add to
     @param term Object to add
  */
-void
-freesasa_add_nodearea(freesasa_nodearea *sum,
-                      const freesasa_nodearea *term);
+void freesasa_add_nodearea(freesasa_nodearea *sum,
+                           const freesasa_nodearea *term);
 
 /**
     Compute nodearea for a range of atoms
  */
-void
-freesasa_range_nodearea(freesasa_nodearea *area,
-                        const freesasa_structure *structure,
-                        const freesasa_result *result,
-                        int first_atom,
-                        int last_atom);
+void freesasa_range_nodearea(freesasa_nodearea *area,
+                             const freesasa_structure *structure,
+                             const freesasa_result *result,
+                             int first_atom,
+                             int last_atom);
 
 /**
     Calculate relative SASA values for a residue
@@ -331,10 +317,9 @@ freesasa_range_nodearea(freesasa_nodearea *area,
     @param abs Absolute SASA for residue
     @param reference Reference SASA for the residue
  */
-void
-freesasa_residue_rel_nodearea(freesasa_nodearea *rel,
-                              const freesasa_nodearea *abs,
-                              const freesasa_nodearea *reference);
+void freesasa_residue_rel_nodearea(freesasa_nodearea *rel,
+                                   const freesasa_nodearea *abs,
+                                   const freesasa_nodearea *reference);
 
 /**
     Is an atom a backbone atom
@@ -343,8 +328,7 @@ freesasa_residue_rel_nodearea(freesasa_nodearea *rel,
     @return 1 if the atom_name equals CA, N, O or C after whitespace
     is trimmed, 0 else. (i.e. does not check if it is an actual atom)
  */
-int
-freesasa_atom_is_backbone(const char *atom_name);
+int freesasa_atom_is_backbone(const char *atom_name);
 
 /**
     Holds range in a file, to be initalized with ftell() and used
@@ -352,7 +336,7 @@ freesasa_atom_is_backbone(const char *atom_name);
  */
 struct file_range {
     long begin; /**< Position of beginning of range */
-    long end; /**< Position of end of range */
+    long end;   /**< Position of end of range */
 };
 
 /**
@@ -362,7 +346,7 @@ struct file_range {
     @return the ::file_range.
  */
 struct file_range
-freesasa_whole_file(FILE* file);
+freesasa_whole_file(FILE *file);
 
 /**
     Algorithm name
@@ -370,7 +354,7 @@ freesasa_whole_file(FILE* file);
     @param algorithm The algorithm
     @return Name
  */
-const char*
+const char *
 freesasa_alg_name(freesasa_algorithm algorithm);
 
 /**
@@ -381,8 +365,7 @@ freesasa_alg_name(freesasa_algorithm algorithm);
     @param format Format string
     @return ::FREESASA_FAIL
 */
-int
-freesasa_fail(const char *format,...);
+int freesasa_fail(const char *format, ...);
 
 /**
     Print warning message using format string and arguments.
@@ -390,8 +373,7 @@ freesasa_fail(const char *format,...);
     @param format Format string
     @return ::FREESASA_WARN
  */
-int
-freesasa_warn(const char *format,...);
+int freesasa_warn(const char *format, ...);
 
 /**
     Print warning message using function, file and line-number.
@@ -403,9 +385,8 @@ freesasa_warn(const char *format,...);
     @param line Line number for the error.
     @return ::FREESASA_FAIL
  */
-int
-freesasa_mem_fail(const char* file,
-                  int line);
+int freesasa_mem_fail(const char *file,
+                      int line);
 
 /**
     Returns string explaining return values of pthread_create() and
@@ -414,7 +395,7 @@ freesasa_mem_fail(const char* file,
     @param error_code The error code
     @return A string describing the error code.
  */
-const char*
+const char *
 freesasa_thread_error(int error_code);
 
 /**
@@ -427,10 +408,9 @@ freesasa_thread_error(int error_code);
     @param msg The error message
     @return ::FREESASA_FAIL
  */
-int
-freesasa_fail_wloc(const char* file,
-                   int line,
-                   const char *format,
-                   ...);
+int freesasa_fail_wloc(const char *file,
+                       int line,
+                       const char *format,
+                       ...);
 
 #endif /* FREESASA_INTERNAL_H */

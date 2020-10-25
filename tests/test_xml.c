@@ -1,12 +1,16 @@
 #define _GNU_SOURCE
-#include <freesasa_internal.h>
+#include "tools.h"
 #include <check.h>
+#include <dlfcn.h>
+#include <freesasa_internal.h>
 #include <libxml/tree.h>
 #include <libxml/xmlwriter.h>
-#include <dlfcn.h>
-#include "tools.h"
 
-#define fail_counter(err) if (fail_after > 0) { ++n_fails; if (n_fails >= fail_after) return (err); } 
+#define fail_counter(err)                        \
+    if (fail_after > 0) {                        \
+        ++n_fails;                               \
+        if (n_fails >= fail_after) return (err); \
+    }
 
 static int n_fails;
 static int fail_after;
@@ -30,16 +34,15 @@ xmlDocPtr xmlNewDoc(const xmlChar *a)
 xmlNodePtr xmlNewNode(xmlNsPtr a, const xmlChar *b)
 {
     fail_counter(NULL);
-    xmlNodePtr (*real_newnode)(xmlNsPtr, const xmlChar*) = dlsym(RTLD_NEXT, "xmlNewNode");
+    xmlNodePtr (*real_newnode)(xmlNsPtr, const xmlChar *) = dlsym(RTLD_NEXT, "xmlNewNode");
     return real_newnode(a, b);
 }
-
 
 xmlNsPtr xmlNewNs(xmlNodePtr a, const xmlChar *b, const xmlChar *c)
 {
     fail_counter(NULL);
-    xmlNsPtr (*real_newns)(xmlNodePtr, const xmlChar*, const xmlChar*) = dlsym(RTLD_NEXT, "xmlNewNs");
-    return real_newns(a,b,c);
+    xmlNsPtr (*real_newns)(xmlNodePtr, const xmlChar *, const xmlChar *) = dlsym(RTLD_NEXT, "xmlNewNs");
+    return real_newns(a, b, c);
 }
 
 xmlBufferPtr xmlBufferCreate(void)
@@ -53,10 +56,11 @@ xmlTextWriterPtr xmlNewTextWriterMemory(xmlBufferPtr a, int b)
 {
     fail_counter(NULL);
     xmlTextWriterPtr (*real_ntwm)(xmlBufferPtr, int) = dlsym(RTLD_NEXT, "xmlNewTextWriterMemory");
-    return real_ntwm(a,b);
+    return real_ntwm(a, b);
 }
 
-xmlNodePtr xmlAddChild(xmlNodePtr a, xmlNodePtr b) {
+xmlNodePtr xmlAddChild(xmlNodePtr a, xmlNodePtr b)
+{
     fail_counter(NULL);
     xmlNodePtr (*real_add)(xmlNodePtr, xmlNodePtr) = dlsym(RTLD_NEXT, "xmlAddChild");
     return real_add(a, b);
@@ -65,20 +69,20 @@ xmlNodePtr xmlAddChild(xmlNodePtr a, xmlNodePtr b) {
 xmlAttrPtr xmlNewProp(xmlNodePtr a, const xmlChar *b, const xmlChar *c)
 {
     fail_counter(NULL);
-    xmlAttrPtr (*real_np)(xmlNodePtr, const xmlChar*, const xmlChar*) = dlsym(RTLD_NEXT, "xmlNewProp");
+    xmlAttrPtr (*real_np)(xmlNodePtr, const xmlChar *, const xmlChar *) = dlsym(RTLD_NEXT, "xmlNewProp");
     return real_np(a, b, c);
 }
 
-int
-xmlTextWriterStartDocument(xmlTextWriterPtr a, const char *b, const char *c, const char *d)
+int xmlTextWriterStartDocument(xmlTextWriterPtr a, const char *b, const char *c, const char *d)
 {
     fail_counter(-1);
-    int (*real_twsd)(xmlTextWriterPtr, const char*, const char*, const char*) = 
+    int (*real_twsd)(xmlTextWriterPtr, const char *, const char *, const char *) =
         dlsym(RTLD_NEXT, "xmlTextWriterStartDocument");
     return real_twsd(a, b, c, d);
 }
 
-int xmlTextWriterFlush(xmlTextWriterPtr a) {
+int xmlTextWriterFlush(xmlTextWriterPtr a)
+{
     fail_counter(-1);
     int (*real_twf)(xmlTextWriterPtr) = dlsym(RTLD_NEXT, "xmlTextWriterFlush");
     return real_twf(a);
@@ -92,7 +96,8 @@ int xmlNodeDump(xmlBufferPtr a, xmlDocPtr b, xmlNodePtr c, int d, int e)
     return real_nd(a, b, c, d, e);
 }
 
-int xmlTextWriterEndDocument(xmlTextWriterPtr a) {
+int xmlTextWriterEndDocument(xmlTextWriterPtr a)
+{
     fail_counter(-1);
     int (*real_twed)(xmlTextWriterPtr) = dlsym(RTLD_NEXT, "xmlTextWriterEndDocument");
     return real_twed(a);
@@ -104,8 +109,8 @@ static freesasa_result *result;
 static freesasa_node *tree, *structure_node;
 static freesasa_selection *selection;
 
-
-static void setup(void) {
+static void setup(void)
+{
     pdb = fopen(DATADIR "1ubq.pdb", "r");
     devnull = fopen("/dev/null", "w");
     ubq = freesasa_structure_from_pdb(pdb, &freesasa_default_classifier, 0);
@@ -119,14 +124,15 @@ static void setup(void) {
     freesasa_node_structure_add_selection(structure_node, selection);
 }
 
-static void teardown(void) {
+static void teardown(void)
+{
     freesasa_node_free(tree);
     freesasa_result_free(result);
     freesasa_selection_free(selection);
     freesasa_structure_free(ubq);
 }
 
-START_TEST (test_libxmlerr)
+START_TEST(test_libxmlerr)
 {
     int ret;
 
@@ -147,7 +153,8 @@ START_TEST (test_libxmlerr)
 }
 END_TEST
 
-START_TEST (test_memerr) {
+START_TEST(test_memerr)
+{
     int ret;
 
     freesasa_set_verbosity(FREESASA_V_SILENT);
@@ -161,10 +168,11 @@ START_TEST (test_memerr) {
 }
 END_TEST
 
-Suite* xml_suite() {
+Suite *xml_suite()
+{
     Suite *s = suite_create("XML");
     TCase *tc_core = tcase_create("Core");
-    tcase_add_checked_fixture(tc_core,setup, teardown);
+    tcase_add_checked_fixture(tc_core, setup, teardown);
     tcase_add_test(tc_core, test_libxmlerr);
     tcase_add_test(tc_core, test_memerr);
 

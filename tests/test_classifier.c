@@ -1,10 +1,10 @@
-#include <stdlib.h>
-#include <stdio.h>
+#include "tools.h"
 #include <check.h>
+#include <classifier.h>
 #include <freesasa.h>
 #include <freesasa_internal.h>
-#include <classifier.h>
-#include "tools.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 struct atom {
     const char *a;
@@ -36,11 +36,12 @@ const char *aa[naa] = {"ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU",
 const char *other_aa[n_other] = {"GLX", "SEC", "PYL", "PYH", "ASX", "CSE"};
 
 #define n_capping 2
-const char *capping[n_capping] = {"ACE","NH2"};
+const char *capping[n_capping] = {"ACE", "NH2"};
 
 #define n_nuc 13
-const char *nuc[n_nuc] = {"DA","DC","DG","DT","DU","DI","A","C","G","T","U","I","N"};
+const char *nuc[n_nuc] = {"DA", "DC", "DG", "DT", "DU", "DI", "A", "C", "G", "T", "U", "I", "N"};
 
+// clang-format off
 const struct atom atoms[] = {
     {"ALA"," C  ",car_C,POL}, {"ALA"," O  ",car_O,POL}, {"ALA"," CA ",ali_C,APO},
     {"ALA"," N  ",ami_N,POL}, {"ALA"," CB ",ali_C,APO}, {"ALA"," X  ",r_unk,UNK},
@@ -151,7 +152,7 @@ const struct atom atoms[] = {
     {"PYL"," C  ",car_C,POL}, {"PYL"," O  ",car_O,POL}, {"PYL"," CA ",ali_C,APO},
     {"PYL"," N  ",ami_N,POL}, {"PYL"," CB ",ali_C,APO}, {"PYL"," CG ",ali_C,APO},
     {"PYL"," CG ",ali_C,APO}, {"PYL"," CD ",ali_C,APO}, {"PYL"," CE ",ali_C,APO},
-    {"PYL"," NZ ",ami_N,POL}, {"PYL"," O2 ",car_O,POL}, {"PYL"," C2 ",car_C,POL}, 
+    {"PYL"," NZ ",ami_N,POL}, {"PYL"," O2 ",car_O,POL}, {"PYL"," C2 ",car_C,POL},
     {"PYL"," CA2",aro_C,APO}, {"PYL"," CB2",ali_C,APO}, {"PYL"," CG2",aro_C,APO},
     {"PYL"," CD2",aro_C,APO}, {"PYL"," CE2",aro_C,APO}, {"PYL"," N2 ",ami_N,POL},
 // 243
@@ -160,8 +161,8 @@ const struct atom atoms[] = {
 // 247
     {"  A"," P  ",phos, POL}, {"  A"," OP1",car_O,POL}, {"  A"," OP2",car_O,POL},
     {"  A"," OP3",car_O,POL}, {"  A"," O5'",car_O,POL}, {"  A"," C5'",ali_C,APO},
-    {"  A"," C4'",aro_C,APO}, {"  A"," O4'",car_O,POL}, {"  A"," C3'",aro_C,APO}, 
-    {"  A"," O3'",car_O,POL}, {"  A"," C2'",aro_C,APO}, {"  A"," O2'",car_O,POL}, 
+    {"  A"," C4'",aro_C,APO}, {"  A"," O4'",car_O,POL}, {"  A"," C3'",aro_C,APO},
+    {"  A"," O3'",car_O,POL}, {"  A"," C2'",aro_C,APO}, {"  A"," O2'",car_O,POL},
     {"  A"," C1'",aro_C,APO}, {"  A"," N9 ",ami_N,POL}, {"  A"," C8 ",aro_C,APO},
     {"  A"," N7 ",ami_N,POL}, {"  A"," C5 ",aro_C,APO}, {"  A"," C6 ",aro_C,APO},
     {"  A"," N6 ",ami_N,POL}, {"  A"," N1 ",ami_N,POL}, {"  A"," C2 ",aro_C,APO},
@@ -169,16 +170,16 @@ const struct atom atoms[] = {
 // 270
     {"  C"," P  ",phos, POL}, {"  C"," OP1",car_O,POL}, {"  C"," OP2",car_O,POL},
     {"  C"," OP3",car_O,POL}, {"  C"," O5'",car_O,POL}, {"  C"," C5'",ali_C,APO},
-    {"  C"," C4'",aro_C,APO}, {"  C"," O4'",car_O,POL}, {"  C"," C3'",aro_C,APO}, 
-    {"  C"," O3'",car_O,POL}, {"  C"," C2'",aro_C,APO}, {"  C"," O2'",car_O,POL}, 
+    {"  C"," C4'",aro_C,APO}, {"  C"," O4'",car_O,POL}, {"  C"," C3'",aro_C,APO},
+    {"  C"," O3'",car_O,POL}, {"  C"," C2'",aro_C,APO}, {"  C"," O2'",car_O,POL},
     {"  C"," C1'",aro_C,APO}, {"  C"," N1 ",ami_N,POL}, {"  C"," C2 ",aro_C,APO},
     {"  C"," O2 ",car_O,POL}, {"  C"," N3 ",ami_N,POL}, {"  C"," C4 ",aro_C,APO},
     {"  C"," N4 ",ami_N,POL}, {"  C"," C5 ",aro_C,APO}, {"  C"," C6 ",aro_C,APO},
 // 291
     {"  G"," P  ",phos, POL}, {"  G"," OP1",car_O,POL}, {"  G"," OP2",car_O,POL},
     {"  G"," OP3",car_O,POL}, {"  G"," O5'",car_O,POL}, {"  G"," C5'",ali_C,APO},
-    {"  G"," C4'",aro_C,APO}, {"  G"," O4'",car_O,POL}, {"  G"," C3'",aro_C,APO}, 
-    {"  G"," O3'",car_O,POL}, {"  G"," C2'",aro_C,APO}, {"  G"," O2'",car_O,POL}, 
+    {"  G"," C4'",aro_C,APO}, {"  G"," O4'",car_O,POL}, {"  G"," C3'",aro_C,APO},
+    {"  G"," O3'",car_O,POL}, {"  G"," C2'",aro_C,APO}, {"  G"," O2'",car_O,POL},
     {"  G"," C1'",aro_C,APO}, {"  G"," N9 ",ami_N,POL}, {"  G"," C8 ",aro_C,APO},
     {"  G"," N7 ",ami_N,POL}, {"  G"," C5 ",aro_C,APO}, {"  G"," C6 ",aro_C,APO},
     {"  G"," O6 ",car_O,POL}, {"  G"," N1 ",ami_N,POL}, {"  G"," C2 ",aro_C,APO},
@@ -186,8 +187,8 @@ const struct atom atoms[] = {
 // 304
     {"  T"," P  ",phos, POL}, {"  T"," OP1",car_O,POL}, {"  T"," OP2",car_O,POL},
     {"  T"," OP3",car_O,POL}, {"  T"," O5'",car_O,POL}, {"  T"," C5'",ali_C,APO},
-    {"  T"," C4'",aro_C,APO}, {"  T"," O4'",car_O,POL}, {"  T"," C3'",aro_C,APO}, 
-    {"  T"," O3'",car_O,POL}, {"  T"," C2'",aro_C,APO}, {"  T"," O2'",car_O,POL}, 
+    {"  T"," C4'",aro_C,APO}, {"  T"," O4'",car_O,POL}, {"  T"," C3'",aro_C,APO},
+    {"  T"," O3'",car_O,POL}, {"  T"," C2'",aro_C,APO}, {"  T"," O2'",car_O,POL},
     {"  T"," C1'",aro_C,APO}, {"  T"," N1 ",ami_N,POL}, {"  T"," C2 ",aro_C,APO},
     {"  T"," O2 ",car_O,POL}, {"  T"," N3 ",ami_N,POL}, {"  T"," C4 ",aro_C,APO},
     {"  T"," O4 ",car_O,POL}, {"  T"," C5 ",aro_C,APO}, {"  T"," C6 ",aro_C,APO},
@@ -195,16 +196,16 @@ const struct atom atoms[] = {
 // 326
     {"  U"," P  ",phos, POL}, {"  U"," OP1",car_O,POL}, {"  U"," OP2",car_O,POL},
     {"  U"," OP3",car_O,POL}, {"  U"," O5'",car_O,POL}, {"  U"," C5'",ali_C,APO},
-    {"  U"," C4'",aro_C,APO}, {"  U"," O4'",car_O,POL}, {"  U"," C3'",aro_C,APO}, 
-    {"  U"," O3'",car_O,POL}, {"  U"," C2'",aro_C,APO}, {"  U"," O2'",car_O,POL}, 
+    {"  U"," C4'",aro_C,APO}, {"  U"," O4'",car_O,POL}, {"  U"," C3'",aro_C,APO},
+    {"  U"," O3'",car_O,POL}, {"  U"," C2'",aro_C,APO}, {"  U"," O2'",car_O,POL},
     {"  U"," C1'",aro_C,APO}, {"  U"," N1 ",ami_N,POL}, {"  U"," C2 ",aro_C,APO},
     {"  U"," O2 ",car_O,POL}, {"  U"," N3 ",ami_N,POL}, {"  U"," C4 ",aro_C,APO},
     {"  U"," O4 ",car_O,POL}, {"  U"," C5 ",aro_C,APO}, {"  U"," C6 ",aro_C,APO},
 // 347
     {"  I"," P  ",phos, POL}, {"  I"," OP1",car_O,POL}, {"  I"," OP2",car_O,POL},
     {"  I"," OP3",car_O,POL}, {"  I"," O5'",car_O,POL}, {"  I"," C5'",ali_C,APO},
-    {"  I"," C4'",aro_C,APO}, {"  I"," O4'",car_O,POL}, {"  I"," C3'",aro_C,APO}, 
-    {"  I"," O3'",car_O,POL}, {"  I"," C2'",aro_C,APO}, {"  I"," O2'",car_O,POL}, 
+    {"  I"," C4'",aro_C,APO}, {"  I"," O4'",car_O,POL}, {"  I"," C3'",aro_C,APO},
+    {"  I"," O3'",car_O,POL}, {"  I"," C2'",aro_C,APO}, {"  I"," O2'",car_O,POL},
     {"  I"," C1'",aro_C,APO}, {"  I"," N9 ",ami_N,POL}, {"  I"," C8 ",aro_C,APO},
     {"  I"," N7 ",ami_N,POL}, {"  I"," C5 ",aro_C,APO}, {"  I"," C6 ",aro_C,APO},
     {"  I"," N6 ",ami_N,POL}, {"  I"," N1 ",ami_N,POL}, {"  I"," C2 ",aro_C,APO},
@@ -212,7 +213,7 @@ const struct atom atoms[] = {
 
     {" DA"," P  ",phos, POL}, {" DA"," OP1",car_O,POL}, {" DA"," OP2",car_O,POL},
     {" DA"," OP3",car_O,POL}, {" DA"," O5'",car_O,POL}, {" DA"," C5'",ali_C,APO},
-    {" DA"," C4'",aro_C,APO}, {" DA"," O4'",car_O,POL}, {" DA"," C3'",aro_C,APO}, 
+    {" DA"," C4'",aro_C,APO}, {" DA"," O4'",car_O,POL}, {" DA"," C3'",aro_C,APO},
     {" DA"," O3'",car_O,POL}, {" DA"," C2'",aro_C,APO},
     {" DA"," C1'",aro_C,APO}, {" DA"," N9 ",ami_N,POL}, {" DA"," C8 ",aro_C,APO},
     {" DA"," N7 ",ami_N,POL}, {" DA"," C5 ",aro_C,APO}, {" DA"," C6 ",aro_C,APO},
@@ -221,15 +222,15 @@ const struct atom atoms[] = {
 
     {" DC"," P  ",phos, POL}, {" DC"," OP1",car_O,POL}, {" DC"," OP2",car_O,POL},
     {" DC"," OP3",car_O,POL}, {" DC"," O5'",car_O,POL}, {" DC"," C5'",ali_C,APO},
-    {" DC"," C4'",aro_C,APO}, {" DC"," O4'",car_O,POL}, {" DC"," C3'",aro_C,APO}, 
-    {" DC"," O3'",car_O,POL}, {" DC"," C2'",aro_C,APO}, 
+    {" DC"," C4'",aro_C,APO}, {" DC"," O4'",car_O,POL}, {" DC"," C3'",aro_C,APO},
+    {" DC"," O3'",car_O,POL}, {" DC"," C2'",aro_C,APO},
     {" DC"," C1'",aro_C,APO}, {" DC"," N1 ",ami_N,POL}, {" DC"," C2 ",aro_C,APO},
     {" DC"," O2 ",car_O,POL}, {" DC"," N3 ",ami_N,POL}, {" DC"," C4 ",aro_C,APO},
     {" DC"," N4 ",ami_N,POL}, {" DC"," C5 ",aro_C,APO}, {" DC"," C6 ",aro_C,APO},
 
     {" DG"," P  ",phos, POL}, {" DG"," OP1",car_O,POL}, {" DG"," OP2",car_O,POL},
     {" DG"," OP3",car_O,POL}, {" DG"," O5'",car_O,POL}, {" DG"," C5'",ali_C,APO},
-    {" DG"," C4'",aro_C,APO}, {" DG"," O4'",car_O,POL}, {" DG"," C3'",aro_C,APO}, 
+    {" DG"," C4'",aro_C,APO}, {" DG"," O4'",car_O,POL}, {" DG"," C3'",aro_C,APO},
     {" DG"," O3'",car_O,POL}, {" DG"," C2'",aro_C,APO},
     {" DG"," C1'",aro_C,APO}, {" DG"," N9 ",ami_N,POL}, {" DG"," C8 ",aro_C,APO},
     {" DG"," N7 ",ami_N,POL}, {" DG"," C5 ",aro_C,APO}, {" DG"," C6 ",aro_C,APO},
@@ -238,7 +239,7 @@ const struct atom atoms[] = {
 
     {" DT"," P  ",phos, POL}, {" DT"," OP1",car_O,POL}, {" DT"," OP2",car_O,POL},
     {" DT"," OP3",car_O,POL}, {" DT"," O5'",car_O,POL}, {" DT"," C5'",ali_C,APO},
-    {" DT"," C4'",aro_C,APO}, {" DT"," O4'",car_O,POL}, {" DT"," C3'",aro_C,APO}, 
+    {" DT"," C4'",aro_C,APO}, {" DT"," O4'",car_O,POL}, {" DT"," C3'",aro_C,APO},
     {" DT"," O3'",car_O,POL}, {" DT"," C2'",aro_C,APO},
     {" DT"," C1'",aro_C,APO}, {" DT"," N1 ",ami_N,POL}, {" DT"," C2 ",aro_C,APO},
     {" DT"," O2 ",car_O,POL}, {" DT"," N3 ",ami_N,POL}, {" DT"," C4 ",aro_C,APO},
@@ -247,28 +248,29 @@ const struct atom atoms[] = {
 
     {" DU"," P  ",phos, POL}, {" DU"," OP1",car_O,POL}, {" DU"," OP2",car_O,POL},
     {" DU"," OP3",car_O,POL}, {" DU"," O5'",car_O,POL}, {" DU"," C5'",ali_C,APO},
-    {" DU"," C4'",aro_C,APO}, {" DU"," O4'",car_O,POL}, {" DU"," C3'",aro_C,APO}, 
-    {" DU"," O3'",car_O,POL}, {" DU"," C2'",aro_C,APO}, 
+    {" DU"," C4'",aro_C,APO}, {" DU"," O4'",car_O,POL}, {" DU"," C3'",aro_C,APO},
+    {" DU"," O3'",car_O,POL}, {" DU"," C2'",aro_C,APO},
     {" DU"," C1'",aro_C,APO}, {" DU"," N1 ",ami_N,POL}, {" DU"," C2 ",aro_C,APO},
     {" DU"," O2 ",car_O,POL}, {" DU"," N3 ",ami_N,POL}, {" DU"," C4 ",aro_C,APO},
     {" DU"," O4 ",car_O,POL}, {" DU"," C5 ",aro_C,APO}, {" DU"," C6 ",aro_C,APO},
 
     {" DI"," P  ",phos, POL}, {" DI"," OP1",car_O,POL}, {" DI"," OP2",car_O,POL},
     {" DI"," OP3",car_O,POL}, {" DI"," O5'",car_O,POL}, {" DI"," C5'",ali_C,APO},
-    {" DI"," C4'",aro_C,APO}, {" DI"," O4'",car_O,POL}, {" DI"," C3'",aro_C,APO}, 
+    {" DI"," C4'",aro_C,APO}, {" DI"," O4'",car_O,POL}, {" DI"," C3'",aro_C,APO},
     {" DI"," O3'",car_O,POL}, {" DI"," C2'",aro_C,APO},
     {" DI"," C1'",aro_C,APO}, {" DI"," N9 ",ami_N,POL}, {" DI"," C8 ",aro_C,APO},
     {" DI"," N7 ",ami_N,POL}, {" DI"," C5 ",aro_C,APO}, {" DI"," C6 ",aro_C,APO},
     {" DI"," N6 ",ami_N,POL}, {" DI"," N1 ",ami_N,POL}, {" DI"," C2 ",aro_C,APO},
     {" DI"," N3 ",ami_N,POL}, {" DI"," C4 ",aro_C,APO},
 };
+// clang-format on
 
-const int n_atom_types = sizeof(atoms)/sizeof(struct atom);
+const int n_atom_types = sizeof(atoms) / sizeof(struct atom);
 
 static const freesasa_classifier *oons_c = &freesasa_oons_classifier;
 
 // tests freesasa_classifier_radius() and freesasa_guess_radius
-START_TEST (test_radius)
+START_TEST(test_radius)
 {
     char buf[50];
     freesasa_set_verbosity(FREESASA_V_SILENT); // the X and Y atoms give warnings
@@ -282,21 +284,24 @@ START_TEST (test_radius)
 }
 END_TEST
 
-START_TEST (test_class)
+START_TEST(test_class)
 {
     char buf[50];
     for (int i = 0; i < n_atom_types; ++i) {
         const struct atom a = atoms[i];
         int c = freesasa_classifier_class(oons_c, a.a, a.b);
-        if (c == FREESASA_WARN) { ck_assert(a.class == UNK); continue; }
-        sprintf(buf,"Classification error for %s %s %s %s",
+        if (c == FREESASA_WARN) {
+            ck_assert(a.class == UNK);
+            continue;
+        }
+        sprintf(buf, "Classification error for %s %s %s %s",
                 a.a, a.b, freesasa_classifier_class2str(c),
                 freesasa_classifier_class2str(a.class));
         ck_assert_msg(c == a.class, buf);
     }
     freesasa_set_verbosity(FREESASA_V_SILENT);
     ck_assert(freesasa_classifier_class(oons_c, "ABC", " X  ") == FREESASA_ATOM_UNKNOWN);
-    
+
     ck_assert(freesasa_classifier_class2str(100) == NULL);
     ck_assert(freesasa_classifier_class2str(-1) == NULL);
     ck_assert_str_eq(freesasa_classifier_class2str(FREESASA_ATOM_APOLAR), "Apolar");
@@ -306,14 +311,13 @@ START_TEST (test_class)
 }
 END_TEST
 
-
-START_TEST (test_residue)
+START_TEST(test_residue)
 {
     // check consistency of classification and string output
     int nrt = freesasa_classify_n_residue_types();
     for (int i = 0; i < nrt; ++i) {
         const char *res = freesasa_classify_residue_name(i);
-        ck_assert_int_eq(freesasa_classify_residue(res),i);
+        ck_assert_int_eq(freesasa_classify_residue(res), i);
     }
 
     // check numbering
@@ -336,22 +340,22 @@ START_TEST (test_residue)
 }
 END_TEST
 
-START_TEST (test_user)
+START_TEST(test_user)
 {
     FILE *clf = fopen(SHAREDIR "oons.config", "r");
     ck_assert(clf != NULL);
-    
-    freesasa_classifier* c = freesasa_classifier_from_file(clf);
+
+    freesasa_classifier *c = freesasa_classifier_from_file(clf);
     ck_assert(c != NULL);
     ck_assert(freesasa_classifier_class(c, "ALA", "CA") == FREESASA_ATOM_APOLAR);
     ck_assert(freesasa_classifier_class(c, "ALA", "O") == FREESASA_ATOM_POLAR);
-    ck_assert(float_eq(freesasa_classifier_radius(c, "ALA","CA"), 2.0, 1e-5));
-    ck_assert(float_eq(freesasa_classifier_radius(c, "ALA","N"), 1.55, 1e-5));
-      // compare oons.config and built in classification (should be identical for standard atoms)
+    ck_assert(float_eq(freesasa_classifier_radius(c, "ALA", "CA"), 2.0, 1e-5));
+    ck_assert(float_eq(freesasa_classifier_radius(c, "ALA", "N"), 1.55, 1e-5));
+    // compare oons.config and built in classification (should be identical for standard atoms)
     for (int i = 0; i < 188; ++i) {
         const char *res_name = atoms[i].a, *atom_name = atoms[i].b;
-        if (strcmp(atom_name," X  ") == 0) continue;
-        if (strcmp(atom_name," Y  ") == 0) continue;
+        if (strcmp(atom_name, " X  ") == 0) continue;
+        if (strcmp(atom_name, " Y  ") == 0) continue;
         ck_assert(float_eq(freesasa_classifier_radius(c, res_name, atom_name),
                            freesasa_classifier_radius(oons_c, res_name, atom_name), 1e-5));
         ck_assert(freesasa_classifier_class(c, res_name, atom_name) ==
@@ -365,23 +369,23 @@ START_TEST (test_user)
     ck_assert(freesasa_classifier_class(c, "X", "CB") == FREESASA_ATOM_APOLAR);
     ck_assert(freesasa_classifier_class(c, "X", "X") == FREESASA_ATOM_UNKNOWN);
     freesasa_classifier_free(c);
-    
+
     FILE *f = fopen(DATADIR "empty.pdb", "r");
     c = freesasa_classifier_from_file(f);
-    ck_assert(c==NULL);
+    ck_assert(c == NULL);
     fclose(f);
     freesasa_classifier_free(c);
-    
+
     f = fopen(DATADIR "err.config", "r");
     c = freesasa_classifier_from_file(f);
-    ck_assert(c==NULL);
+    ck_assert(c == NULL);
     fclose(f);
     freesasa_classifier_free(c);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
 }
 END_TEST
 
-START_TEST (test_backbone)
+START_TEST(test_backbone)
 {
     ck_assert(freesasa_atom_is_backbone("C"));
     ck_assert(freesasa_atom_is_backbone(" C  "));
@@ -407,16 +411,16 @@ START_TEST (test_backbone)
 }
 END_TEST
 
-START_TEST (test_memerr)
+START_TEST(test_memerr)
 {
     freesasa_set_verbosity(FREESASA_V_SILENT);
     set_fail_after(1);
     void *ptr[] = {freesasa_classifier_types_new(),
-                    freesasa_classifier_residue_new("ALA"),
-                    freesasa_classifier_new()};
+                   freesasa_classifier_residue_new("ALA"),
+                   freesasa_classifier_new()};
     set_fail_after(0);
 
-    for (int i = 0; i < sizeof(ptr)/sizeof(void*); ++i) {
+    for (int i = 0; i < sizeof(ptr) / sizeof(void *); ++i) {
         ck_assert_ptr_eq(ptr[i], NULL);
     }
 
@@ -428,17 +432,17 @@ START_TEST (test_memerr)
 
         if (i < 2) {
             set_fail_after(i);
-            ret = freesasa_classifier_add_type(types,"a","A",1.0);
+            ret = freesasa_classifier_add_type(types, "a", "A", 1.0);
             set_fail_after(0);
             ck_assert_int_eq(ret, FREESASA_FAIL);
-        } 
+        }
         set_fail_after(i);
-        ret = freesasa_classifier_add_atom(res,"A",1.0,0);
+        ret = freesasa_classifier_add_atom(res, "A", 1.0, 0);
         set_fail_after(0);
         ck_assert_int_eq(ret, FREESASA_FAIL);
 
         set_fail_after(i);
-        ret = freesasa_classifier_add_residue(clf,"A");
+        ret = freesasa_classifier_add_residue(clf, "A");
         set_fail_after(0);
         ck_assert_int_eq(ret, FREESASA_FAIL);
 
@@ -448,12 +452,12 @@ START_TEST (test_memerr)
     }
     // don't test all levels, but make sure errors in low level
     // allocation propagates to the interface
-    FILE *config = fopen(SHAREDIR "naccess.config","r");
+    FILE *config = fopen(SHAREDIR "naccess.config", "r");
     for (int i = 1; i < 200; ++i) {
         set_fail_after(i);
         void *ptr = freesasa_classifier_from_file(config);
         set_fail_after(0);
-        ck_assert_ptr_eq(ptr,NULL);
+        ck_assert_ptr_eq(ptr, NULL);
         rewind(config);
     }
     fclose(config);
@@ -461,23 +465,23 @@ START_TEST (test_memerr)
 }
 END_TEST
 
-extern TCase * test_classifier_static();
+extern TCase *test_classifier_static();
 
-Suite* classifier_suite()
+Suite *classifier_suite()
 {
     Suite *s = suite_create("Classify");
     TCase *tc_core = tcase_create("Core");
-    tcase_add_test(tc_core,test_radius);
-    tcase_add_test(tc_core,test_class);
-    tcase_add_test(tc_core,test_residue);
-    tcase_add_test(tc_core,test_user);
-    tcase_add_test(tc_core,test_backbone);
-    tcase_add_test(tc_core,test_memerr);
+    tcase_add_test(tc_core, test_radius);
+    tcase_add_test(tc_core, test_class);
+    tcase_add_test(tc_core, test_residue);
+    tcase_add_test(tc_core, test_user);
+    tcase_add_test(tc_core, test_backbone);
+    tcase_add_test(tc_core, test_memerr);
 
     TCase *tc_static = test_classifier_static();
-        
-    suite_add_tcase(s,tc_core);
-    suite_add_tcase(s,tc_static);
+
+    suite_add_tcase(s, tc_core);
+    suite_add_tcase(s, tc_static);
 
     return s;
 }

@@ -1,10 +1,10 @@
 #if HAVE_CONFIG_H
-#  include <config.h>
+#include <config.h>
 #endif
 
-#include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #include "freesasa_internal.h"
 #include "pdb.h"
@@ -48,9 +48,8 @@ pdb_get_double(const char *line, size_t width, double *val)
     return FREESASA_FAIL;
 }
 
-int
-freesasa_pdb_get_models(FILE* pdb,
-                        struct file_range** ranges)
+int freesasa_pdb_get_models(FILE *pdb,
+                            struct file_range **ranges)
 {
     char line[PDB_MAX_LINE_STRL];
     int n = 0, n_end = 0, error = 0;
@@ -60,24 +59,24 @@ freesasa_pdb_get_models(FILE* pdb,
     assert(pdb != NULL);
 
     while (fgets(line, PDB_MAX_LINE_STRL, pdb) != NULL) {
-        if (strncmp("MODEL",line,5)==0) {
+        if (strncmp("MODEL", line, 5) == 0) {
             ++n;
             itb = it;
-            it = realloc(it, sizeof(struct file_range)*n);
+            it = realloc(it, sizeof(struct file_range) * n);
             if (!it) {
                 free(itb);
                 error = mem_fail();
                 break;
             }
-            it[n-1].begin = last_pos;
+            it[n - 1].begin = last_pos;
         }
-        if (strncmp("ENDMDL",line,6)==0) {
+        if (strncmp("ENDMDL", line, 6) == 0) {
             ++n_end;
             if (n != n_end) {
                 error = fail_msg("mismatch between MODEL and ENDMDL in input");
                 break;
             }
-            it[n-1].end = ftell(pdb);
+            it[n - 1].end = ftell(pdb);
         }
         last_pos = ftell(pdb);
     }
@@ -94,11 +93,10 @@ freesasa_pdb_get_models(FILE* pdb,
     return n;
 }
 
-int
-freesasa_pdb_get_chains(FILE *pdb,
-                        struct file_range model,
-                        struct file_range **ranges,
-                        int options)
+int freesasa_pdb_get_chains(FILE *pdb,
+                            struct file_range model,
+                            struct file_range **ranges,
+                            int options)
 {
     /* it is assumed that 'model' is valid for 'pdb' */
 
@@ -115,22 +113,22 @@ freesasa_pdb_get_chains(FILE *pdb,
 
     /* for each model, find file ranges for each chain, store them
        in the dynamically growing array chains */
-    fseek(pdb,model.begin,SEEK_SET);
+    fseek(pdb, model.begin, SEEK_SET);
     while (fgets(line, PDB_MAX_LINE_STRL, pdb) != NULL &&
-           ftell(pdb) < model.end ) {
-        if (strncmp("ATOM",line,4)==0 || ( (options & FREESASA_INCLUDE_HETATM) &&
-                                           (strncmp("HETATM",line,6) == 0) ) ) {
+           ftell(pdb) < model.end) {
+        if (strncmp("ATOM", line, 4) == 0 || ((options & FREESASA_INCLUDE_HETATM) &&
+                                              (strncmp("HETATM", line, 6) == 0))) {
             char chain = freesasa_pdb_get_chain_label(line);
             if (chain != last_chain) {
-                if (n_chains > 0) chains[n_chains-1].end = last_pos;
+                if (n_chains > 0) chains[n_chains - 1].end = last_pos;
                 ++n_chains;
                 chb = chains;
-                chains = realloc(chains,sizeof(struct file_range)*n_chains);
+                chains = realloc(chains, sizeof(struct file_range) * n_chains);
                 if (!chains) {
                     free(chb);
                     return mem_fail();
                 }
-                chains[n_chains-1].begin = last_pos;
+                chains[n_chains - 1].begin = last_pos;
                 last_chain = chain;
             }
         }
@@ -138,7 +136,7 @@ freesasa_pdb_get_chains(FILE *pdb,
     }
 
     if (n_chains > 0) {
-        chains[n_chains-1].end = last_pos;
+        chains[n_chains - 1].end = last_pos;
         chains[0].begin = model.begin; /* preserve model info */
         *ranges = chains;
     } else {
@@ -147,40 +145,36 @@ freesasa_pdb_get_chains(FILE *pdb,
     return n_chains;
 }
 
-
-int
-freesasa_pdb_get_atom_name(char *name,
-                           const char *line)
+int freesasa_pdb_get_atom_name(char *name,
+                               const char *line)
 {
     assert(name);
     assert(line);
-    if (pdb_line_check(line,PDB_ATOM_NAME_STRL+12) == FREESASA_FAIL) {
+    if (pdb_line_check(line, PDB_ATOM_NAME_STRL + 12) == FREESASA_FAIL) {
         name[0] = '\0';
         return FREESASA_FAIL;
     }
-    strncpy(name,line+12,PDB_ATOM_NAME_STRL);
+    strncpy(name, line + 12, PDB_ATOM_NAME_STRL);
     name[PDB_ATOM_NAME_STRL] = '\0';
     return FREESASA_SUCCESS;
 }
 
-int
-freesasa_pdb_get_res_name(char *name,
-                          const char *line)
+int freesasa_pdb_get_res_name(char *name,
+                              const char *line)
 {
     assert(name);
     assert(line);
-    if (pdb_line_check(line,PDB_ATOM_RES_NAME_STRL+17) == FREESASA_FAIL) {
+    if (pdb_line_check(line, PDB_ATOM_RES_NAME_STRL + 17) == FREESASA_FAIL) {
         name[0] = '\0';
         return FREESASA_FAIL;
     }
-    strncpy(name, line+17, PDB_ATOM_RES_NAME_STRL);
+    strncpy(name, line + 17, PDB_ATOM_RES_NAME_STRL);
     name[PDB_ATOM_RES_NAME_STRL] = '\0';
     return FREESASA_SUCCESS;
 }
 
-int
-freesasa_pdb_get_coord(double *xyz,
-                       const char *line)
+int freesasa_pdb_get_coord(double *xyz,
+                           const char *line)
 {
     int n_coord = 24; /* 54-30+1 */
     char coord_section[25];
@@ -188,7 +182,7 @@ freesasa_pdb_get_coord(double *xyz,
     assert(xyz);
     assert(line);
 
-    if (pdb_line_check(line,54) == FREESASA_FAIL) {
+    if (pdb_line_check(line, 54) == FREESASA_FAIL) {
         return FREESASA_FAIL;
     }
 
@@ -196,83 +190,76 @@ freesasa_pdb_get_coord(double *xyz,
     coord_section[n_coord] = '\0';
 
     if (sscanf(coord_section, "%lf%lf%lf", &xyz[0], &xyz[1], &xyz[2]) != 3) {
-        return fail_msg("could not read coordinates from line '%s'",line);
+        return fail_msg("could not read coordinates from line '%s'", line);
     }
 
     return FREESASA_SUCCESS;
 }
 
-int
-freesasa_pdb_get_res_number(char *number,
-                            const char* line)
+int freesasa_pdb_get_res_number(char *number,
+                                const char *line)
 {
     assert(number);
     assert(line);
-    if (pdb_line_check(line,PDB_ATOM_RES_NUMBER_STRL+22) == FREESASA_FAIL) {
+    if (pdb_line_check(line, PDB_ATOM_RES_NUMBER_STRL + 22) == FREESASA_FAIL) {
         number[0] = '\0';
         return FREESASA_FAIL;
     }
-    strncpy(number, line+22, PDB_ATOM_RES_NUMBER_STRL);
+    strncpy(number, line + 22, PDB_ATOM_RES_NUMBER_STRL);
     number[PDB_ATOM_RES_NUMBER_STRL] = '\0';
     return FREESASA_SUCCESS;
 }
-char
-freesasa_pdb_get_chain_label(const char* line)
+char freesasa_pdb_get_chain_label(const char *line)
 {
     assert(line);
-    if (pdb_line_check(line,21) == FREESASA_FAIL) return '\0';
+    if (pdb_line_check(line, 21) == FREESASA_FAIL) return '\0';
     return line[21];
 }
 
-char
-freesasa_pdb_get_alt_coord_label(const char* line)
+char freesasa_pdb_get_alt_coord_label(const char *line)
 {
     assert(line);
-    if (pdb_line_check(line,16) == FREESASA_FAIL) return '\0';
+    if (pdb_line_check(line, 16) == FREESASA_FAIL) return '\0';
     return line[16];
 }
 
-int
-freesasa_pdb_get_symbol(char *symbol,
-                        const char* line)
+int freesasa_pdb_get_symbol(char *symbol,
+                            const char *line)
 {
     assert(line);
-    if (pdb_line_check(line,76+PDB_ATOM_SYMBOL_STRL) == FREESASA_FAIL) {
+    if (pdb_line_check(line, 76 + PDB_ATOM_SYMBOL_STRL) == FREESASA_FAIL) {
         symbol[0] = '\0';
         return FREESASA_FAIL;
     }
-    strncpy(symbol,line+76,2);
+    strncpy(symbol, line + 76, 2);
     symbol[2] = '\0';
     return FREESASA_SUCCESS;
 }
 
-int
-freesasa_pdb_get_occupancy(double *occ,
-                           const char* line)
+int freesasa_pdb_get_occupancy(double *occ,
+                               const char *line)
 {
     assert(line);
     /* allow truncated lines */
     if (pdb_line_check(line, 55) == FREESASA_SUCCESS)
-        return pdb_get_double(line+54, 6, occ);
+        return pdb_get_double(line + 54, 6, occ);
     return FREESASA_FAIL;
 }
 
-int
-freesasa_pdb_get_bfactor(double *bfac,
-                         const char* line)
+int freesasa_pdb_get_bfactor(double *bfac,
+                             const char *line)
 {
     assert(line);
     /* allow truncated lines */
     if (pdb_line_check(line, 61) == FREESASA_SUCCESS)
-        return pdb_get_double(line+60, 6, bfac);
+        return pdb_get_double(line + 60, 6, bfac);
     return FREESASA_FAIL;
 }
 
-int
-freesasa_pdb_ishydrogen(const char* line)
+int freesasa_pdb_ishydrogen(const char *line)
 {
     assert(line);
-    if (pdb_line_check(line,13) == FREESASA_FAIL) return FREESASA_FAIL;
+    if (pdb_line_check(line, 13) == FREESASA_FAIL) return FREESASA_FAIL;
     /* hydrogen */
     if (line[12] == 'H' || line[13] == 'H') return 1;
     /* hydrogen */
@@ -284,7 +271,7 @@ static int
 write_pdb_impl(FILE *output,
                freesasa_node *structure)
 {
-    char buf[PDB_LINE_STRL+1], buf2[6];
+    char buf[PDB_LINE_STRL + 1], buf2[6];
     int model;
     double radius;
     const char *line = NULL;
@@ -295,8 +282,10 @@ write_pdb_impl(FILE *output,
     assert(freesasa_node_type(structure) == FREESASA_NODE_STRUCTURE);
 
     model = freesasa_node_structure_model(structure);
-    if (model > 0) fprintf(output, "MODEL     %4d\n", model);
-    else fprintf(output,           "MODEL        1\n");
+    if (model > 0)
+        fprintf(output, "MODEL     %4d\n", model);
+    else
+        fprintf(output, "MODEL        1\n");
 
     chain = freesasa_node_children(structure);
 
@@ -330,9 +319,9 @@ write_pdb_impl(FILE *output,
 
     /* Write TER and ENDMDL lines */
     strncpy(buf2, &buf[6], 5);
-    buf2[5]='\0';
-    fprintf(output,"TER   %5d     %4s %c%5s\nENDMDL\n",
-            atoi(buf2)+1, last_res_name, last_chain[0], last_res_number);
+    buf2[5] = '\0';
+    fprintf(output, "TER   %5d     %4s %c%5s\nENDMDL\n",
+            atoi(buf2) + 1, last_res_name, last_chain[0], last_res_number);
 
     fflush(output);
     if (ferror(output)) {
@@ -342,9 +331,8 @@ write_pdb_impl(FILE *output,
     return FREESASA_SUCCESS;
 }
 
-int
-freesasa_write_pdb(FILE *output,
-                   freesasa_node *root)
+int freesasa_write_pdb(FILE *output,
+                       freesasa_node *root)
 {
     freesasa_node *result = freesasa_node_children(root), *structure;
 
@@ -357,9 +345,9 @@ freesasa_write_pdb(FILE *output,
                     "REMARK 999 replaced by the SASA of the atom, and the occupancy\n"
                     "REMARK 999 by the radius used in the calculation.\n");
 
-    while(result) {
+    while (result) {
         structure = freesasa_node_children(result);
-        while(structure) {
+        while (structure) {
             if (write_pdb_impl(output, structure) == FREESASA_FAIL) {
                 return fail_msg("");
             }
@@ -372,10 +360,10 @@ freesasa_write_pdb(FILE *output,
 }
 
 #if USE_CHECK
-#include <math.h>
 #include <check.h>
+#include <math.h>
 
-START_TEST (test_pdb)
+START_TEST(test_pdb)
 {
     double v;
     ck_assert(pdb_line_check("", 6) == FREESASA_FAIL);
@@ -397,8 +385,7 @@ START_TEST (test_pdb)
     /* The normal case */
     ck_assert(pdb_line_check("ATOM      1  N   MET A   1      27.340  "
                              "24.430   2.614  1.00  9.67           N  ",
-                             80)
-              == FREESASA_SUCCESS);
+                             80) == FREESASA_SUCCESS);
 
     v = 0;
     ck_assert(pdb_get_double("1.23", 4, &v) == FREESASA_SUCCESS);

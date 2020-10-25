@@ -1,19 +1,18 @@
 #if HAVE_CONFIG_H
-# include <config.h>
+#include <config.h>
 #endif
 
-#include <stdlib.h>
-#include <errno.h>
 #include <assert.h>
+#include <errno.h>
+#include <stdlib.h>
 
-#include "freesasa_internal.h"
 #include "classifier.h"
+#include "freesasa_internal.h"
 
 /** to control error messages (used for debugging and testing) */
 static freesasa_verbosity verbosity;
 
-int
-freesasa_set_verbosity(freesasa_verbosity s)
+int freesasa_set_verbosity(freesasa_verbosity s)
 {
     if (s == FREESASA_V_NORMAL ||
         s == FREESASA_V_NOWARNINGS ||
@@ -48,26 +47,28 @@ write_result(FILE *log,
     area = freesasa_node_area(structure);
     assert(area);
 
-    fprintf(log,"\nINPUT\n");
-    if (name == NULL) fprintf(log,"source  : unknown\n");
-    else              fprintf(log,"source  : %s\n",name);
-    fprintf(log,"chains  : %s\n", freesasa_node_structure_chain_labels(structure));
-    fprintf(log,"model   : %d\n", freesasa_node_structure_model(structure));
-    fprintf(log,"atoms   : %d\n", freesasa_node_structure_n_atoms(structure));
+    fprintf(log, "\nINPUT\n");
+    if (name == NULL)
+        fprintf(log, "source  : unknown\n");
+    else
+        fprintf(log, "source  : %s\n", name);
+    fprintf(log, "chains  : %s\n", freesasa_node_structure_chain_labels(structure));
+    fprintf(log, "model   : %d\n", freesasa_node_structure_model(structure));
+    fprintf(log, "atoms   : %d\n", freesasa_node_structure_n_atoms(structure));
 
-    fprintf(log,"\nRESULTS (A^2)\n");
-    fprintf(log,"Total   : %10.2f\n", area->total);
-    fprintf(log,"Apolar  : %10.2f\n", area->apolar);
-    fprintf(log,"Polar   : %10.2f\n", area->polar);
+    fprintf(log, "\nRESULTS (A^2)\n");
+    fprintf(log, "Total   : %10.2f\n", area->total);
+    fprintf(log, "Apolar  : %10.2f\n", area->apolar);
+    fprintf(log, "Polar   : %10.2f\n", area->polar);
     if (area->unknown > 0) {
-        fprintf(log,"Unknown : %10.2f\n",area->unknown);
+        fprintf(log, "Unknown : %10.2f\n", area->unknown);
     }
 
     chain = freesasa_node_children(structure);
     while (chain) {
         area = freesasa_node_area(chain);
         assert(area);
-        fprintf(log, "CHAIN %s : %10.2f\n",freesasa_node_name(chain), area->total);
+        fprintf(log, "CHAIN %s : %10.2f\n", freesasa_node_name(chain), area->total);
         chain = freesasa_node_next(chain);
     }
 
@@ -90,7 +91,7 @@ write_selections(FILE *log,
         selection = freesasa_node_structure_selections(structure);
         if (selection && *selection) {
             fprintf(log, "\nSELECTIONS\n");
-            while(*selection) {
+            while (*selection) {
                 fprintf(log, "%s : %10.2f\n",
                         freesasa_selection_name(*selection),
                         freesasa_selection_area(*selection));
@@ -118,20 +119,20 @@ write_parameters(FILE *log,
 
     if (p == NULL) p = &freesasa_default_parameters;
 
-    fprintf(log,"\nPARAMETERS\n");
+    fprintf(log, "\nPARAMETERS\n");
 
-    fprintf(log,"algorithm    : %s\n",freesasa_alg_name(p->alg));
-    fprintf(log,"probe-radius : %.3f\n", p->probe_radius);
+    fprintf(log, "algorithm    : %s\n", freesasa_alg_name(p->alg));
+    fprintf(log, "probe-radius : %.3f\n", p->probe_radius);
 #if USE_THREADS
-    fprintf(log,"threads      : %d\n",p->n_threads);
+    fprintf(log, "threads      : %d\n", p->n_threads);
 #endif
 
-    switch(p->alg) {
+    switch (p->alg) {
     case FREESASA_SHRAKE_RUPLEY:
-        fprintf(log,"testpoints   : %d\n",p->shrake_rupley_n_points);
+        fprintf(log, "testpoints   : %d\n", p->shrake_rupley_n_points);
         break;
     case FREESASA_LEE_RICHARDS:
-        fprintf(log,"slices       : %d\n",p->lee_richards_n_slices);
+        fprintf(log, "slices       : %d\n", p->lee_richards_n_slices);
         break;
     default:
         assert(0);
@@ -146,12 +147,11 @@ write_parameters(FILE *log,
     return FREESASA_SUCCESS;
 }
 
-int
-freesasa_write_res(FILE *log,
-                   freesasa_node *root)
+int freesasa_write_res(FILE *log,
+                       freesasa_node *root)
 {
     freesasa_node *result, *structure, *chain, *residue;
-    int n_res = freesasa_classify_n_residue_types()+1, i_res, i;
+    int n_res = freesasa_classify_n_residue_types() + 1, i_res, i;
     double *residue_area = malloc(sizeof(double) * n_res);
 
     assert(log);
@@ -162,13 +162,14 @@ freesasa_write_res(FILE *log,
 
     result = freesasa_node_children(root);
     while (result) {
-        for (i = 0; i < n_res; ++i) residue_area[i] = 0;
+        for (i = 0; i < n_res; ++i)
+            residue_area[i] = 0;
         structure = freesasa_node_children(result);
         while (structure) {
             chain = freesasa_node_children(structure);
             while (chain) {
                 residue = freesasa_node_children(chain);
-                while(residue) {
+                while (residue) {
                     assert(freesasa_node_type(residue) == FREESASA_NODE_RESIDUE);
                     i_res = freesasa_classify_residue(freesasa_node_name(residue));
                     residue_area[i_res] += freesasa_node_area(residue)->total;
@@ -201,9 +202,8 @@ freesasa_write_res(FILE *log,
     return FREESASA_SUCCESS;
 }
 
-int
-freesasa_write_seq(FILE *log,
-                   freesasa_node *root)
+int freesasa_write_seq(FILE *log,
+                       freesasa_node *root)
 {
     freesasa_node *result, *structure, *chain, *residue;
 
@@ -220,7 +220,7 @@ freesasa_write_seq(FILE *log,
             chain = freesasa_node_children(structure);
             while (chain) {
                 residue = freesasa_node_children(chain);
-                while(residue) {
+                while (residue) {
                     assert(freesasa_node_type(residue) == FREESASA_NODE_RESIDUE);
                     fprintf(log, "SEQ %s %s %s : %7.2f\n",
                             freesasa_node_name(chain),
@@ -233,7 +233,7 @@ freesasa_write_seq(FILE *log,
             }
             structure = freesasa_node_next(structure);
         }
-        fprintf(log,"\n");
+        fprintf(log, "\n");
         result = freesasa_node_next(result);
     }
 
@@ -245,9 +245,8 @@ freesasa_write_seq(FILE *log,
     return FREESASA_SUCCESS;
 }
 
-int
-freesasa_write_log(FILE *log,
-                   freesasa_node *root)
+int freesasa_write_log(FILE *log,
+                       freesasa_node *root)
 {
     freesasa_node *result = freesasa_node_children(root);
     int several = (freesasa_node_next(result) != NULL); /* are there more than one result */
@@ -259,7 +258,7 @@ freesasa_write_log(FILE *log,
     if (write_parameters(log, freesasa_node_result_parameters(result)) == FREESASA_FAIL)
         ++err;
 
-    while(result) {
+    while (result) {
         if (several) fprintf(log, "\n\n####################\n");
         if (write_result(log, result) == FREESASA_FAIL) ++err;
         if (write_selections(log, result) == FREESASA_FAIL) ++err;

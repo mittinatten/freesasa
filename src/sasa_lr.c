@@ -1,28 +1,28 @@
 #if HAVE_CONFIG_H
-# include <config.h>
+#include <config.h>
 #endif
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #ifdef _MSC_VER
-# define _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
 #endif
 #include <math.h>
 
 #if USE_THREADS
-# include <pthread.h>
-# define MAX_LR_THREADS 16
+#include <pthread.h>
+#define MAX_LR_THREADS 16
 #else
-# define MAX_LR_THREADS 1
+#define MAX_LR_THREADS 1
 #endif
 
 #include "freesasa_internal.h"
 #include "nb.h"
 
-const double TWOPI = 2*M_PI;
+const double TWOPI = 2 * M_PI;
 
 /* calculation parameters and data (results stored in *sasa) */
 typedef struct {
@@ -44,7 +44,7 @@ typedef struct {
 } lr_thread_interval;
 
 #if USE_THREADS
-static int lr_do_threads(int n_threads, lr_data*);
+static int lr_do_threads(int n_threads, lr_data *);
 static void *lr_thread(void *arg);
 #endif
 
@@ -77,7 +77,8 @@ release_lr(lr_data *lr)
 
 /* Allocate some helper arrays in area calculation that need to be pre-allocated */
 static int
-alloc_lr_calc_arrays(lr_data *lr, int n_threads) {
+alloc_lr_calc_arrays(lr_data *lr, int n_threads)
+{
     int max_nni = 0, i, nni;
     const int n_atoms = lr->n_atoms;
 
@@ -125,7 +126,7 @@ init_lr(lr_data *lr,
         lr->R_nb[i] = NULL;
     }
 
-    lr->radii = malloc(sizeof(double)*n_atoms);
+    lr->radii = malloc(sizeof(double) * n_atoms);
     if (lr->radii == NULL) {
         return mem_fail();
     }
@@ -150,14 +151,12 @@ init_lr(lr_data *lr,
     }
 
     return FREESASA_SUCCESS;
-
 }
 
-int
-freesasa_lee_richards(double *sasa,
-                      const coord_t *xyz,
-                      const double *atom_radii,
-                      const freesasa_parameters *param)
+int freesasa_lee_richards(double *sasa,
+                          const coord_t *xyz,
+                          const double *atom_radii,
+                          const freesasa_parameters *param)
 {
     int return_value, n_atoms, n_threads, resolution, i;
     double probe_radius;
@@ -193,7 +192,7 @@ freesasa_lee_richards(double *sasa,
                       n_threads);
     }
 
-    if(init_lr(&lr, sasa, xyz, atom_radii, probe_radius, resolution, n_threads))
+    if (init_lr(&lr, sasa, xyz, atom_radii, probe_radius, resolution, n_threads))
         return FREESASA_FAIL;
 
     if (n_threads > 1) {
@@ -223,21 +222,21 @@ lr_do_threads(int n_threads,
 {
     pthread_t thread[MAX_LR_THREADS];
     lr_thread_interval t_data[MAX_LR_THREADS];
-    int n_perthread = lr->n_atoms/n_threads, res;
+    int n_perthread = lr->n_atoms / n_threads, res;
     int threads_created = 0, return_value = FREESASA_SUCCESS;
     int t;
 
     for (t = 0; t < n_threads; ++t) {
-        t_data[t].first_atom = t*n_perthread;
-        if (t == n_threads-1) {
+        t_data[t].first_atom = t * n_perthread;
+        if (t == n_threads - 1) {
             t_data[t].last_atom = lr->n_atoms - 1;
         } else {
-            t_data[t].last_atom = (t+1)*n_perthread - 1;
+            t_data[t].last_atom = (t + 1) * n_perthread - 1;
         }
         t_data[t].lr = lr;
         t_data[t].thread_id = t;
         res = pthread_create(&thread[t], NULL, lr_thread,
-                             (void *) &t_data[t]);
+                             (void *)&t_data[t]);
         if (res) {
             return_value = fail_msg(freesasa_thread_error(res));
             break;
@@ -253,11 +252,11 @@ lr_do_threads(int n_threads,
     return return_value;
 }
 
-static void*
+static void *
 lr_thread(void *arg)
 {
     int i;
-    lr_thread_interval *ti = ((lr_thread_interval*) arg);
+    lr_thread_interval *ti = ((lr_thread_interval *)arg);
 
     for (i = ti->first_atom; i <= ti->last_atom; ++i) {
         /* the different threads write to different parts of the
@@ -281,44 +280,45 @@ atom_area(lr_data *lr,
        "Geometry of Lee & Richards' algorithm") */
 
     const int nni = lr->adj->nn[i];
-    const double * restrict const v = freesasa_coord_all(lr->xyz);
-    const double * restrict const R = lr->radii;
-    const int * restrict const nbi = lr->adj->nb[i];
-    const double * restrict const xydi = lr->adj->xyd[i];
-    const double * restrict const xdi = lr->adj->xd[i];
-    const double * restrict const ydi = lr->adj->yd[i];
-    const double zi = v[3*i+2], Ri = R[i];
+    const double *restrict const v = freesasa_coord_all(lr->xyz);
+    const double *restrict const R = lr->radii;
+    const int *restrict const nbi = lr->adj->nb[i];
+    const double *restrict const xydi = lr->adj->xyd[i];
+    const double *restrict const xdi = lr->adj->xd[i];
+    const double *restrict const ydi = lr->adj->yd[i];
+    const double zi = v[3 * i + 2], Ri = R[i];
     const int ns = lr->n_slices_per_atom;
 
     int j, islice, n_arcs, is_buried, narc2;
     double *arc = lr->arc[thread_id],
-        *z_nb = lr->z_nb[thread_id],
-        *R_nb = lr->R_nb[thread_id];
+           *z_nb = lr->z_nb[thread_id],
+           *R_nb = lr->R_nb[thread_id];
     double z, delta, sasa = 0, alpha, beta, inf, sup;
     double zj, di, dj, dij, Rj, Ri_prime2, Ri_prime, Rj_prime2, Rj_prime;
 
     for (j = 0; j < nni; ++j) {
-        z_nb[j] = v[3*nbi[j]+2];
+        z_nb[j] = v[3 * nbi[j] + 2];
         R_nb[j] = R[nbi[j]];
     }
 
-    delta = 2*Ri/ns;
-    z = zi-Ri-0.5*delta;
+    delta = 2 * Ri / ns;
+    z = zi - Ri - 0.5 * delta;
     for (islice = 0; islice < ns; ++islice) {
         z += delta;
         di = fabs(zi - z);
-        Ri_prime2 = Ri*Ri-di*di;
-        if (Ri_prime2 < 0 ) continue; /* handle round-off errors */
+        Ri_prime2 = Ri * Ri - di * di;
+        if (Ri_prime2 < 0) continue; /* handle round-off errors */
         Ri_prime = sqrt(Ri_prime2);
         if (Ri_prime <= 0) continue; /* more round-off errors */
-        n_arcs = 0; is_buried = 0;
+        n_arcs = 0;
+        is_buried = 0;
         for (j = 0; j < nni; ++j) {
             zj = z_nb[j];
             dj = fabs(zj - z);
             Rj = R_nb[j];
 
             if (dj < Rj) {
-                Rj_prime2 = Rj*Rj-dj*dj;
+                Rj_prime2 = Rj * Rj - dj * dj;
                 Rj_prime = sqrt(Rj_prime2);
                 dij = xydi[j];
                 if (dij >= Ri_prime + Rj_prime) { /* atoms aren't in contact */
@@ -332,32 +332,32 @@ atom_area(lr_data *lr,
                     continue;
                 }
                 /* arc of circle i intersected by circle j */
-                alpha = acos ((Ri_prime2 + dij*dij - Rj_prime2)/(2.0*Ri_prime*dij));
+                alpha = acos((Ri_prime2 + dij * dij - Rj_prime2) / (2.0 * Ri_prime * dij));
                 /* position of mid-point of intersection along circle i */
-                beta = atan2 (ydi[j],xdi[j]) + M_PI;
+                beta = atan2(ydi[j], xdi[j]) + M_PI;
                 inf = beta - alpha;
                 sup = beta + alpha;
                 if (inf < 0) inf += TWOPI;
-                if (sup > 2*M_PI) sup -= TWOPI;
-                narc2 = 2*n_arcs;
+                if (sup > 2 * M_PI) sup -= TWOPI;
+                narc2 = 2 * n_arcs;
                 /* store the arc, if arc passes 2*PI split into two */
                 if (sup < inf) {
                     /* store arcs as contiguous pairs of angles */
-                    arc[narc2]   = 0;
-                    arc[narc2+1] = sup;
+                    arc[narc2] = 0;
+                    arc[narc2 + 1] = sup;
                     /* second arc */
-                    arc[narc2+2] = inf;
-                    arc[narc2+3] = TWOPI;
+                    arc[narc2 + 2] = inf;
+                    arc[narc2 + 3] = TWOPI;
                     n_arcs += 2;
                 } else {
-                    arc[narc2]   = inf;
-                    arc[narc2+1] = sup;
+                    arc[narc2] = inf;
+                    arc[narc2 + 1] = sup;
                     ++n_arcs;
                 }
             }
         }
         if (is_buried == 0) {
-            sasa += delta*Ri*exposed_arc_length(arc,n_arcs);
+            sasa += delta * Ri * exposed_arc_length(arc, n_arcs);
         }
     }
     return sasa;
@@ -365,29 +365,29 @@ atom_area(lr_data *lr,
 
 /* insertion sort (faster than qsort for these short lists) */
 inline static void
-sort_arcs(double * restrict arc,
+sort_arcs(double *restrict arc,
           int n)
 {
     double tmp[2];
-    double *end = arc+2*n, *arcj, *arci;
-    for (arci = arc+2; arci < end; arci += 2) {
+    double *end = arc + 2 * n, *arcj, *arci;
+    for (arci = arc + 2; arci < end; arci += 2) {
         *tmp = *arci;
-        *(tmp+1) = *(arci+1);
+        *(tmp + 1) = *(arci + 1);
         arcj = arci;
-        while (arcj > arc && *(arcj-2) > tmp[0]) {
-            *arcj = *(arcj-2);
-            *(arcj+1) = *(arcj-1);
+        while (arcj > arc && *(arcj - 2) > tmp[0]) {
+            *arcj = *(arcj - 2);
+            *(arcj + 1) = *(arcj - 1);
             arcj -= 2;
         }
         *arcj = *tmp;
-        *(arcj+1) = *(tmp+1);
+        *(arcj + 1) = *(tmp + 1);
     }
 }
 
 /* sort arcs by start-point, loop through them to sum parts of circle
    not covered by any of the arcs */
 inline static double
-exposed_arc_length(double * restrict arc,
+exposed_arc_length(double *restrict arc,
                    int n)
 {
     int i2;
@@ -395,13 +395,13 @@ exposed_arc_length(double * restrict arc,
 
     if (n == 0) return TWOPI;
 
-    sort_arcs(arc,n);
+    sort_arcs(arc, n);
     sum = arc[0];
     sup = arc[1];
     /* in the following it is assumed that the arc[i2] <= arc[i2+1] */
-    for (i2 = 2; i2 < 2*n; i2 += 2) {
+    for (i2 = 2; i2 < 2 * n; i2 += 2) {
         if (sup < arc[i2]) sum += arc[i2] - sup;
-        tmp = arc[i2+1];
+        tmp = arc[i2 + 1];
         if (tmp > sup) sup = tmp;
     }
     return sum + TWOPI - sup;
@@ -411,7 +411,8 @@ exposed_arc_length(double * restrict arc,
 #include <check.h>
 
 static int
-is_identical(const double *l1, const double *l2, int n) {
+is_identical(const double *l1, const double *l2, int n)
+{
     int i;
 
     for (i = 0; i < n; ++i) {
@@ -422,51 +423,53 @@ is_identical(const double *l1, const double *l2, int n) {
 }
 
 static int
-is_sorted(const double *list,int n)
+is_sorted(const double *list, int n)
 {
     int i;
 
-    for (i = 0; i < n - 1; ++i) if (list[2*i] > list[2*i+1]) return 0;
+    for (i = 0; i < n - 1; ++i)
+        if (list[2 * i] > list[2 * i + 1]) return 0;
 
     return 1;
 }
 
-START_TEST (test_sort_arcs) {
-    double a_ref[] = {0,1,2,3}, b_ref[] = {-2,0,-1,0,-1,1};
-    double a1[4] = {0,1,2,3}, a2[4] = {2,3,0,1};
-    double b1[6] = {-2,0,-1,0,-1,1}, b2[6] = {-1,1,-2,0,-1,1};
-    sort_arcs(a1,2);
-    sort_arcs(a2,2);
-    sort_arcs(b1,3);
-    sort_arcs(b2,3);
-    ck_assert(is_sorted(a1,2));
-    ck_assert(is_sorted(a2,2));
-    ck_assert(is_sorted(b1,3));
-    ck_assert(is_sorted(b2,3));
-    ck_assert(is_identical(a_ref,a1,4));
-    ck_assert(is_identical(a_ref,a2,4));
-    ck_assert(is_identical(b_ref,b1,6));
+START_TEST(test_sort_arcs)
+{
+    double a_ref[] = {0, 1, 2, 3}, b_ref[] = {-2, 0, -1, 0, -1, 1};
+    double a1[4] = {0, 1, 2, 3}, a2[4] = {2, 3, 0, 1};
+    double b1[6] = {-2, 0, -1, 0, -1, 1}, b2[6] = {-1, 1, -2, 0, -1, 1};
+    sort_arcs(a1, 2);
+    sort_arcs(a2, 2);
+    sort_arcs(b1, 3);
+    sort_arcs(b2, 3);
+    ck_assert(is_sorted(a1, 2));
+    ck_assert(is_sorted(a2, 2));
+    ck_assert(is_sorted(b1, 3));
+    ck_assert(is_sorted(b2, 3));
+    ck_assert(is_identical(a_ref, a1, 4));
+    ck_assert(is_identical(a_ref, a2, 4));
+    ck_assert(is_identical(b_ref, b1, 6));
 }
 END_TEST
 
-START_TEST (test_exposed_arc_length)
+START_TEST(test_exposed_arc_length)
 {
-    double a1[4] = {0,0.1*TWOPI,0.9*TWOPI,TWOPI}, a2[4] = {0.9*TWOPI,TWOPI,0,0.1*TWOPI};
-    double a3[4] = {0,TWOPI,1,2}, a4[4] = {1,2,0,TWOPI};
-    double a5[4] = {0.1*TWOPI,0.2*TWOPI,0.5*TWOPI,0.6*TWOPI};
-    double a6[4] = {0.1*TWOPI,0.2*TWOPI,0.5*TWOPI,0.6*TWOPI};
-    double a7[4] = {0.1*TWOPI,0.3*TWOPI,0.15*TWOPI,0.2*TWOPI};
-    double a8[4] = {0.15*TWOPI,0.2*TWOPI,0.1*TWOPI,0.3*TWOPI};
-    double a9[10] = {0.05,0.1, 0.5,0.6, 0,0.15, 0.7,0.8, 0.75,TWOPI};
-    ck_assert(fabs(exposed_arc_length(a1,2) - 0.8*TWOPI) < 1e-10);
-    ck_assert(fabs(exposed_arc_length(a2,2) - 0.8*TWOPI) < 1e-10);
-    ck_assert(fabs(exposed_arc_length(a3,2)) < 1e-10);
-    ck_assert(fabs(exposed_arc_length(a4,2)) < 1e-10);
-    ck_assert(fabs(exposed_arc_length(a5,2) - 0.8*TWOPI) < 1e-10);
-    ck_assert(fabs(exposed_arc_length(a6,2) - 0.8*TWOPI) < 1e-10);
-    ck_assert(fabs(exposed_arc_length(a7,2) - 0.8*TWOPI) < 1e-10);
-    ck_assert(fabs(exposed_arc_length(a8,2) - 0.8*TWOPI) < 1e-10);
-    ck_assert(fabs(exposed_arc_length(a9,5) - 0.45) < 1e-10);
+    double a1[4] = {0, 0.1 * TWOPI, 0.9 * TWOPI, TWOPI}, a2[4] = {0.9 * TWOPI, TWOPI, 0, 0.1 * TWOPI};
+    double a3[4] = {0, TWOPI, 1, 2}, a4[4] = {1, 2, 0, TWOPI};
+    double a5[4] = {0.1 * TWOPI, 0.2 * TWOPI, 0.5 * TWOPI, 0.6 * TWOPI};
+    double a6[4] = {0.1 * TWOPI, 0.2 * TWOPI, 0.5 * TWOPI, 0.6 * TWOPI};
+    double a7[4] = {0.1 * TWOPI, 0.3 * TWOPI, 0.15 * TWOPI, 0.2 * TWOPI};
+    double a8[4] = {0.15 * TWOPI, 0.2 * TWOPI, 0.1 * TWOPI, 0.3 * TWOPI};
+    double a9[10] = {0.05, 0.1, 0.5, 0.6, 0, 0.15, 0.7, 0.8, 0.75, TWOPI};
+    ck_assert(fabs(exposed_arc_length(a1, 2) - 0.8 * TWOPI) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a2, 2) - 0.8 * TWOPI) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a3, 2)) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a4, 2)) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a5, 2) - 0.8 * TWOPI) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a6, 2) - 0.8 * TWOPI) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a7, 2) - 0.8 * TWOPI) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a8, 2) - 0.8 * TWOPI) < 1e-10);
+    ck_assert(fabs(exposed_arc_length(a9, 5) - 0.45) < 1e-10);
     /* can't think of anything more qualitatively different here */
 }
 END_TEST

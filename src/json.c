@@ -1,16 +1,16 @@
 #if HAVE_CONFIG_H
-  #include <config.h>
+#include <config.h>
 #endif
 
-#include <json-c/json_object.h>
 #include <assert.h>
 #include <errno.h>
-#include <string.h>
+#include <json-c/json_object.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "classifier.h"
 #include "freesasa.h"
 #include "freesasa_internal.h"
-#include "classifier.h"
 
 /** The functions in JSON-C do not seem to have any documented error
     return values. Therefore these errors are not caught. */
@@ -87,7 +87,7 @@ freesasa_json_residue(freesasa_node *node,
     number = freesasa_node_residue_number(node);
     abs = freesasa_node_area(node);
     reference = freesasa_node_residue_reference(node);
-    char *trim_number = malloc(strlen(number)+1);
+    char *trim_number = malloc(strlen(number) + 1);
 
     if (!trim_number) {
         mem_fail();
@@ -219,7 +219,7 @@ parameters2json(const freesasa_parameters *p)
     json_object_object_add(obj, "algorithm", json_object_new_string(freesasa_alg_name(p->alg)));
     json_object_object_add(obj, "probe-radius", json_object_new_double(p->probe_radius));
 
-    switch(p->alg) {
+    switch (p->alg) {
     case FREESASA_SHRAKE_RUPLEY:
         res = json_object_new_int(p->shrake_rupley_n_points);
         break;
@@ -254,16 +254,15 @@ json_result(freesasa_node *result,
     return obj;
 }
 
-int
-freesasa_write_json(FILE *output,
-                    freesasa_node *root,
-                    int options)
+int freesasa_write_json(FILE *output,
+                        freesasa_node *root,
+                        int options)
 
 {
     assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
 
     json_object *results = json_object_new_array(),
-        *json_root = json_object_new_object();
+                *json_root = json_object_new_object();
     freesasa_node *child = freesasa_node_children(root);
 
     json_object_object_add(json_root, "source", json_object_new_string(freesasa_string));

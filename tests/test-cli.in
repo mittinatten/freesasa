@@ -36,11 +36,11 @@ fi
 
 function assert_pass
 {
-    eval $1 
-    if [[ $? -ne 0 ]]; then 
+    eval $1
+    if [[ $? -ne 0 ]]; then
         echo Error: \"$1\" failed
         let errors=errors+1
-    #else 
+    #else
     #    echo \"$1\" successful
     fi
 }
@@ -48,10 +48,10 @@ function assert_pass
 function assert_fail
 {
     eval $1 2>/dev/null
-    if [[ $? -eq 0 ]]; then 
+    if [[ $? -eq 0 ]]; then
         echo Error: \"$1\" did not fail as expected
         let errors=errors+1
-    #else 
+    #else
     #    echo \"$1\" failed as expected;
     fi
 }
@@ -290,7 +290,7 @@ if [[ use_xml -eq 1 ]] ; then
     assert_pass "$cli --format=xml -C $smallpdb --select=\"ala, resn ala\" --select=\"C, name C\" > $xml_file"
     if [[ use_xmllint -eq 1 ]] ; then assert_pass "xmllint $xml_file > $dump"; fi
     assert_pass "grep '<selection' $xml_file > $dump"
-    
+
     # misspelling
     assert_fail "$cli --format=xml --depth=structures $smallpdb > $xml_file"
 fi
@@ -311,7 +311,7 @@ if [[ use_json -eq 1 ]] ; then
     assert_pass "$cli --format=json -C $datadir/2jo4.pdb > $json_file"
     if [[ use_jsonlint -eq 1 ]] ; then assert_pass "jsonlint $json_file > $dump"; fi
     assert_fail "grep 'selection' $json_file > $dump"
-    
+
     assert_pass "$cli --format=json $smallpdb --select=\"ala, resn ala\" --select=\"C, name C\" > $json_file"
     if [[ use_jsonlint -eq 1 ]] ; then assert_pass "jsonlint $json_file > $dump"; fi
     assert_pass "grep 'selection' $json_file > $dump"
@@ -319,24 +319,24 @@ fi
 echo
 echo "== Testing option --select =="
 assert_pass "$cli -S --select \"s1, resn ala\" --select \"s2, resn arg\" --select \"s3, resi 1\" $datadir/1ubq.pdb > tmp/select"
-sel_ala=$(grep s1 tmp/select | cut -f 2 -d ':' | sed 's/\ //g') 
+sel_ala=$(grep s1 tmp/select | cut -f 2 -d ':' | sed 's/\ //g')
 res_ala=$(grep ALA tmp/restype | cut -f 2 -d ':' | sed 's/\ //g')
 if [ "$res_ala" != "$sel_ala" ];
-then 
+then
     let errors=errors+1
     echo "Error: --format=res and --select don't give same result for ALA ('$res_ala' and '$sel_ala')"
 fi
 sel_arg=$(grep s2 tmp/select | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2//)
 res_arg=$(grep ARG tmp/restype | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2// | sed s/ARG//)
 if [ "$res_arg" != "$sel_arg" ]
-then 
+then
     let errors=errors+1
     echo "Error: --format=res and --select don't give same result for ARG ('$res_arg' and '$sel_arg')"
 fi
 sel_res1=$(grep s3 tmp/select | cut -f 2 -d ':' | sed 's/\ //g' | sed s/A2//)
 seq_res1=$(grep " 1 " tmp/seq | cut -f 2 -d ':' | cut -f 2 -d 'T' | sed 's/ //g')
 if [ "$seq_res1" != "$sel_res1" ]
-then 
+then
     let errors=errors+1
     echo "Error: --format=seq and --select don't give same result for first residue in 1ubq.pdb ('$seq_res1' and '$sel_res1')"
 fi
@@ -354,7 +354,7 @@ echo
 echo "== Testing input with residue insertions ==="
 assert_pass "test $($cli -n 2 --format=seq < $datadir/icode.pdb | grep ^SEQ | wc -l) -eq 5"
 
-echo 
+echo
 echo "== Testing conflicting options =="
 assert_fail "$cli -m -M $smallpdb > $dump"
 assert_fail "$cli -g A+B -C $smallpdb > $dump"
@@ -363,11 +363,11 @@ assert_fail "$cli -O --radii=naccess $smallpdb > $dump"
 assert_fail "$cli -c $sharedir/naccess.config -O $datadir/1ubq.pdb > $dump"
 echo
 echo "== Testing long-options =="
-assert_equal_opt "$cli $smallpdb" "-h" "--help" 
-assert_equal_opt "$cli $smallpdb" "-v" "--version" 
+assert_equal_opt "$cli $smallpdb" "-h" "--help"
+assert_equal_opt "$cli $smallpdb" "-v" "--version"
 assert_equal_opt "$cli $smallpdb" "-S -n 10" "--shrake-rupley -n 10"
 assert_equal_opt "$cli $smallpdb" "-L -n 3 " "--lee-richards -n 3 "
-assert_equal_opt "$cli $smallpdb" "-p 1.5 -n 3" "--probe-radius=1.5 -n 3" 
+assert_equal_opt "$cli $smallpdb" "-p 1.5 -n 3" "--probe-radius=1.5 -n 3"
 assert_equal_opt "$cli $smallpdb" "-L -n 3 " "-L --resolution=3 "
 assert_equal_opt "$cli $smallpdb" "-n 5" "--resolution=5"
 assert_equal_opt "$cli $smallpdb" "-t 4" "--n-threads=4"
@@ -393,7 +393,7 @@ rm -f tmp/*
 echo
 echo "There where $errors errors."
 echo
-if [ $errors -gt 0 ]; then 
+if [ $errors -gt 0 ]; then
     exit $errors
 else
     exit 0

@@ -17,6 +17,7 @@ freesasa
 example
 test
 .DS_Store
+.vscode
 *~
 *\#*
 a.out

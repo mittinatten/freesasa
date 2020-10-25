@@ -2,7 +2,9 @@
 #define FREESASA_NB_H
 
 #include <stdlib.h>
+
 #include "coord.h"
+
 /**
    @file
    @author Simon Mitternacht
@@ -48,8 +50,7 @@ freesasa_nb_new(const coord_t *coord,
 
     @param nb The neigbor list to free
  */
-void
-freesasa_nb_free(nb_list *nb);
+void freesasa_nb_free(nb_list *nb);
 
 /**
     Checks if two atoms are in contact. Only included for reference.
@@ -59,9 +60,8 @@ freesasa_nb_free(nb_list *nb);
     @param j Index of second coordinate
     @return 1 if contact, 0 else.
  */
-int
-freesasa_nb_contact(const nb_list *nb,
-                    int i,
-                    int j);
+int freesasa_nb_contact(const nb_list *nb,
+                        int i,
+                        int j);
 
 #endif /* FREESASA_NB_H */

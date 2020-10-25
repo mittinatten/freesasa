@@ -5,11 +5,11 @@
  */
 
 #if HAVE_CONFIG_H
-# include <config.h>
+#include <config.h>
 #endif
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include "freesasa_internal.h"
 
@@ -40,8 +40,7 @@ const freesasa_parameters freesasa_default_parameters = {
     FREESASA_DEF_PROBE_RADIUS,
     FREESASA_DEF_SR_N,
     FREESASA_DEF_LR_N,
-    DEF_NUMBER_THREADS
-};
+    DEF_NUMBER_THREADS};
 
 static freesasa_result *
 result_new(int n)
@@ -53,7 +52,7 @@ result_new(int n)
         return NULL;
     }
 
-    result->sasa = malloc(sizeof(double)  * n);
+    result->sasa = malloc(sizeof(double) * n);
 
     if (result->sasa == NULL) {
         mem_fail();
@@ -66,8 +65,7 @@ result_new(int n)
     return result;
 }
 
-void
-freesasa_result_free(freesasa_result *r)
+void freesasa_result_free(freesasa_result *r)
 {
     if (r) {
         free(r->sasa);
@@ -75,7 +73,7 @@ freesasa_result_free(freesasa_result *r)
     }
 }
 
-freesasa_result*
+freesasa_result *
 freesasa_calc(const coord_t *c,
               const double *radii,
               const freesasa_parameters *parameters)
@@ -96,7 +94,7 @@ freesasa_calc(const coord_t *c,
 
     if (parameters == NULL) parameters = &freesasa_default_parameters;
 
-    switch(parameters->alg) {
+    switch (parameters->alg) {
     case FREESASA_SHRAKE_RUPLEY:
         ret = freesasa_shrake_rupley(result->sasa, c, radii, parameters);
         break;
@@ -121,7 +119,7 @@ freesasa_calc(const coord_t *c,
     return result;
 }
 
-freesasa_result*
+freesasa_result *
 freesasa_calc_coord(const double *xyz,
                     const double *radii,
                     int n,
@@ -134,7 +132,7 @@ freesasa_calc_coord(const double *xyz,
     assert(radii);
     assert(n > 0);
 
-    coord = freesasa_coord_new_linked(xyz,n);
+    coord = freesasa_coord_new_linked(xyz, n);
     if (coord != NULL) result = freesasa_calc(coord, radii, parameters);
     if (result == NULL) fail_msg("");
 
@@ -143,9 +141,9 @@ freesasa_calc_coord(const double *xyz,
     return result;
 }
 
-freesasa_result*
-freesasa_calc_structure(const freesasa_structure* structure,
-                        const freesasa_parameters* parameters)
+freesasa_result *
+freesasa_calc_structure(const freesasa_structure *structure,
+                        const freesasa_parameters *parameters)
 {
     assert(structure);
 
@@ -191,10 +189,9 @@ count_err(int return_value, int *n_err)
     }
 }
 
-int
-freesasa_tree_export(FILE *file,
-                     freesasa_node *root,
-                     int options)
+int freesasa_tree_export(FILE *file,
+                         freesasa_node *root,
+                         int options)
 {
     int n_err = 0;
 
@@ -224,7 +221,7 @@ freesasa_tree_export(FILE *file,
     }
     if (options & FREESASA_XML) {
 #if USE_XML
-          count_err(freesasa_write_xml(file, root, options), &n_err);
+        count_err(freesasa_write_xml(file, root, options), &n_err);
 #else
         return fail_msg("library was built without support for XML output");
 #endif
@@ -253,10 +250,10 @@ freesasa_result_clone(const freesasa_result *result)
     return clone;
 }
 
-const char*
+const char *
 freesasa_alg_name(freesasa_algorithm alg)
 {
-    switch(alg) {
+    switch (alg) {
     case FREESASA_SHRAKE_RUPLEY:
         return "Shrake & Rupley";
     case FREESASA_LEE_RICHARDS:

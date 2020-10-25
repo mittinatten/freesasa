@@ -1,20 +1,19 @@
 #if HAVE_CONFIG_H
-# include <config.h>
+#include <config.h>
 #endif
 
 #include <assert.h>
-#include <stdlib.h>
 #include <errno.h>
 #include <math.h>
+#include <stdlib.h>
 
-#include "pdb.h"
 #include "classifier.h"
 #include "freesasa_internal.h"
+#include "pdb.h"
 
-void
-freesasa_residue_rel_nodearea(freesasa_nodearea *rel,
-                              const freesasa_nodearea *abs,
-                              const freesasa_nodearea *ref)
+void freesasa_residue_rel_nodearea(freesasa_nodearea *rel,
+                                   const freesasa_nodearea *abs,
+                                   const freesasa_nodearea *ref)
 {
     rel->total = 100. * abs->total / ref->total;
     rel->side_chain = 100. * abs->side_chain / ref->side_chain;
@@ -56,13 +55,15 @@ rsa_print_header(FILE *output,
 }
 
 static inline void
-rsa_print_abs_rel(FILE*output,
+rsa_print_abs_rel(FILE *output,
                   double abs,
                   double rel)
 {
     fprintf(output, "%7.2f", abs);
-    if (isfinite(rel)) fprintf(output, "%6.1f", rel);
-    else fprintf(output, "   N/A");
+    if (isfinite(rel))
+        fprintf(output, "%6.1f", rel);
+    else
+        fprintf(output, "   N/A");
 }
 
 static inline void
@@ -104,12 +105,11 @@ rsa_print_residue(FILE *output,
     return FREESASA_SUCCESS;
 }
 
-int
-freesasa_write_rsa(FILE *output,
-                   freesasa_node *tree,
-                   int options)
+int freesasa_write_rsa(FILE *output,
+                       freesasa_node *tree,
+                       int options)
 {
-    freesasa_node *residue, *chain, *structure_node,  *result_node;
+    freesasa_node *residue, *chain, *structure_node, *result_node;
     const freesasa_nodearea *abs, *reference;
     freesasa_nodearea rel;
     int res_index, chain_index;
@@ -127,7 +127,7 @@ freesasa_write_rsa(FILE *output,
                      freesasa_node_name(result_node), freesasa_node_name(structure_node), parameters, options);
 
     res_index = chain_index = 0;
-    while(chain) {
+    while (chain) {
         residue = freesasa_node_children(chain);
         while (residue) {
             abs = freesasa_node_area(residue);
@@ -148,12 +148,12 @@ freesasa_write_rsa(FILE *output,
 
     chain = freesasa_node_children(structure_node);
     chain_index = 0;
-    while(chain) {
+    while (chain) {
         const char *name = freesasa_node_name(chain);
         abs = freesasa_node_area(chain);
 
-        fprintf(output,"CHAIN%3d %c %10.1f   %10.1f   %10.1f   %10.1f   %10.1f\n",
-                chain_index+1, name[0], abs->total, abs->side_chain,
+        fprintf(output, "CHAIN%3d %c %10.1f   %10.1f   %10.1f   %10.1f   %10.1f\n",
+                chain_index + 1, name[0], abs->total, abs->side_chain,
                 abs->main_chain, abs->apolar, abs->polar);
 
         ++chain_index;
@@ -162,7 +162,7 @@ freesasa_write_rsa(FILE *output,
 
     abs = freesasa_node_area(structure_node);
     fprintf(output, "END  Absolute sums over all chains\n");
-    fprintf(output,"TOTAL      %10.1f   %10.1f   %10.1f   %10.1f   %10.1f\n",
+    fprintf(output, "TOTAL      %10.1f   %10.1f   %10.1f   %10.1f   %10.1f\n",
             abs->total, abs->side_chain, abs->main_chain, abs->apolar, abs->polar);
 
     fflush(output);

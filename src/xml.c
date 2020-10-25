@@ -1,18 +1,18 @@
 #if HAVE_CONFIG_H
-  #include <config.h>
+#include <config.h>
 #endif
+#include <assert.h>
+#include <errno.h>
 #include <libxml/tree.h>
 #include <libxml/xmlwriter.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <errno.h>
 
 #include "freesasa_internal.h"
 #include "pdb.h"
 
 #ifndef FREESASA_XMLNS
-# define FREESASA_XMLNS "freesasa"
+#define FREESASA_XMLNS "freesasa"
 #endif
 
 static xmlNodePtr
@@ -54,7 +54,7 @@ nodearea2xml(const freesasa_nodearea *area,
 
     return xml_node;
 
- cleanup:
+cleanup:
     xmlFreeNode(xml_node);
     return NULL;
 }
@@ -119,7 +119,7 @@ atom2xml(const freesasa_node *node,
     free(trim_name);
     return xml_node;
 
- cleanup:
+cleanup:
     free(trim_name);
     xmlFreeNode(xml_node);
     return NULL;
@@ -144,7 +144,7 @@ residue2xml(const freesasa_node *node,
     trim_number = malloc(strlen(number) + 1);
     trim_name = malloc(strlen(name) + 1);
 
-    if (!trim_number || ! trim_name) {
+    if (!trim_number || !trim_name) {
         mem_fail();
         goto cleanup;
     }
@@ -194,7 +194,7 @@ residue2xml(const freesasa_node *node,
     free(trim_number);
     return xml_node;
 
- cleanup:
+cleanup:
     free(trim_name);
     free(trim_number);
     xmlFreeNode(xml_node);
@@ -240,7 +240,7 @@ chain2xml(const freesasa_node *node,
 
     return xml_node;
 
- cleanup:
+cleanup:
     xmlFreeNode(xml_node);
     return NULL;
 }
@@ -340,7 +340,7 @@ structure2xml(const freesasa_node *node,
 
     return xml_node;
 
- cleanup:
+cleanup:
     xmlFreeNode(xml_node);
     return NULL;
 }
@@ -423,7 +423,7 @@ parameters2xml(const freesasa_parameters *p)
         goto cleanup;
     }
 
-    switch(p->alg) {
+    switch (p->alg) {
     case FREESASA_SHRAKE_RUPLEY:
         sprintf(buf, "%d", p->shrake_rupley_n_points);
         break;
@@ -441,7 +441,7 @@ parameters2xml(const freesasa_parameters *p)
 
     return xml_node;
 
- cleanup:
+cleanup:
     xmlFreeNode(xml_node);
     return NULL;
 }
@@ -496,7 +496,7 @@ xml_result(freesasa_node *result,
     child = freesasa_node_children(result);
     assert(child);
 
-    while(child) {
+    while (child) {
         if (node2xml(&xml_structure, child, exclude_type, options) == FREESASA_FAIL) {
             fail_msg("");
             goto cleanup;
@@ -509,16 +509,15 @@ xml_result(freesasa_node *result,
     };
 
     return xml_result_node;
- cleanup:
+cleanup:
     xmlFreeNode(xml_structure);
     xmlFreeNode(xml_result_node);
     return NULL;
 }
 
-int
-freesasa_write_xml(FILE *output,
-                   freesasa_node *root,
-                   int options)
+int freesasa_write_xml(FILE *output,
+                       freesasa_node *root,
+                       int options)
 {
     freesasa_node *child = NULL;
     xmlDocPtr doc = NULL;
@@ -590,8 +589,7 @@ freesasa_write_xml(FILE *output,
     }
 
     if (xmlTextWriterStartDocument(writer, XML_DEFAULT_VERSION,
-                                   xmlGetCharEncodingName(XML_CHAR_ENCODING_UTF8), NULL)
-        == -1) {
+                                   xmlGetCharEncodingName(XML_CHAR_ENCODING_UTF8), NULL) == -1) {
         fail_msg("");
         goto cleanup;
     }
@@ -611,7 +609,7 @@ freesasa_write_xml(FILE *output,
         goto cleanup;
     }
 
-    fprintf(output, "%s", (const char*) buf->content);
+    fprintf(output, "%s", (const char *)buf->content);
     fflush(output);
     if (ferror(output)) {
         fail_msg(strerror(errno));
@@ -620,7 +618,7 @@ freesasa_write_xml(FILE *output,
 
     ret = FREESASA_SUCCESS;
 
- cleanup:
+cleanup:
     xmlFreeDoc(doc);
     xmlFreeTextWriter(writer);
     return ret;

@@ -14,7 +14,7 @@
     This is only for interal use, error handling is done by asserts.
     The header provides functions to store, copy and modify
     coordinates through the type ::coord_t.
-    
+
     The distance calculation functions (freesasa_dist(),
     freesasa_dist2() and freesasa_dist2_12()) are useful for code that
     is not performance critical. When efficieny is a priority it is
@@ -25,16 +25,16 @@
 /** Store a set of 3-dimensional coordinates in a contiguous array */
 typedef struct coord_t {
     /** number of 3-vectors */
-    int n; 
+    int n;
 
     /** If these coordinates are only a link to an externally stored
         array this is 1, else 0. If it it is set, the coordinates can
         not be changed and the array not freed. */
-    int is_linked; 
+    int is_linked;
 
     /** array of all coordinates, dimension 3*n,
         x_1,y_1,z_1,...,x_n,y_n,z_n. */
-    double *xyz; 
+    double *xyz;
 } coord_t;
 
 /**
@@ -42,11 +42,11 @@ typedef struct coord_t {
 
     Return value is dynamically allocated, should be freed with
     freesasa_coord_free().
-    
+
     @return An empty ::coord_t object. Returns NULL if out of
     memory.
  */
-coord_t * 
+coord_t *
 freesasa_coord_new(void);
 
 /**
@@ -55,8 +55,7 @@ freesasa_coord_new(void);
    Will not free the coordinate array itself if it was initialized by
    freesasa_coord_new_linked().
  */
-void
-freesasa_coord_free(coord_t *coord);
+void freesasa_coord_free(coord_t *coord);
 
 /**
    Clone coordinates.
@@ -83,8 +82,7 @@ freesasa_coord_clone(const coord_t *src);
    @return ::FREESASA_FAIL if size mismatch between src and target,
      else ::FREESASA_SUCCESS
  */
-int
-freesasa_coord_copy(coord_t *target, const coord_t *src);
+int freesasa_coord_copy(coord_t *target, const coord_t *src);
 
 /**
     Creates a `const` ::coord_t-object that is linked to an array of
@@ -116,10 +114,9 @@ freesasa_coord_new_linked(const double *xyz,
     @param n Number of coordinates (array has size 3*n).
     @return FREESASA_SUCCESS if successful, FREESASA_FAIL if out of memory.
  */
-int
-freesasa_coord_append(coord_t *coord,
-                      const double *xyz,
-                      int n);
+int freesasa_coord_append(coord_t *coord,
+                          const double *xyz,
+                          int n);
 
 /**
     Append coordinates to ::coord_t object from three
@@ -132,12 +129,11 @@ freesasa_coord_append(coord_t *coord,
     @param n Size of arrays x, y and z.
     @return FREESASA_SUCCESS if successful, FREESASA_FAIL if out of memory.
  */
-int
-freesasa_coord_append_xyz(coord_t *coord,
-                          const double *x,
-                          const double *y,
-                          const double *z,
-                          int n);
+int freesasa_coord_append_xyz(coord_t *coord,
+                              const double *x,
+                              const double *y,
+                              const double *z,
+                              int n);
 
 /**
     Set given coordinate.
@@ -149,10 +145,9 @@ freesasa_coord_append_xyz(coord_t *coord,
     @param i Index
     @param xyz Array with coordinates x,y,z.
  */
-void
-freesasa_coord_set_i(coord_t *coord,
-                     int i,
-                     const double* xyz);
+void freesasa_coord_set_i(coord_t *coord,
+                          int i,
+                          const double *xyz);
 
 /**
     Set given coordinate.
@@ -166,32 +161,30 @@ freesasa_coord_set_i(coord_t *coord,
     @param y y-coordinate.
     @param z z-coordinate
  */
-void
-freesasa_coord_set_i_xyz(coord_t *coord,
-                         int i,
-                         double x,
-                         double y,
-                         double z);
+void freesasa_coord_set_i_xyz(coord_t *coord,
+                              int i,
+                              double x,
+                              double y,
+                              double z);
 
 /**
     Reset everything.
 
     Allocates memory to allow array of size n.
-    
+
     @param coord A ::coord_t object
     @param xyz Array of coordinates x1,y1,z1,x2,y2,z2,...
     @param n Number of coordinates (array has size 3*n).
     @return FREESASA_SUCCESS if successful, FREESASA_FAIL if out of memory.
  */
-int
-freesasa_coord_set_all(coord_t *coord,
-                       const double* xyz,
-                       int n);
+int freesasa_coord_set_all(coord_t *coord,
+                           const double *xyz,
+                           int n);
 
 /**
     Reset everything.
 
-    Allocates memory to allow array of size n.    
+    Allocates memory to allow array of size n.
 
     @param coord A ::coord_t object
     @param x Array of x-coordinates
@@ -200,12 +193,11 @@ freesasa_coord_set_all(coord_t *coord,
     @param n Size of arrays x, y and z.
     @return FREESASA_SUCCESS if successful, FREESASA_FAIL if out of memory.
  */
-int
-freesasa_coord_set_all_xyz(coord_t *coord,
-                           const double* x,
-                           const double *y,
-                           const double *z,
-                           int n);
+int freesasa_coord_set_all_xyz(coord_t *coord,
+                               const double *x,
+                               const double *y,
+                               const double *z,
+                               int n);
 
 /**
     Set length of a given coordinate vector. Useful for test-points in
@@ -218,13 +210,12 @@ freesasa_coord_set_all_xyz(coord_t *coord,
     @param i Index
     @param length Desired length (>= 0)
  */
-void
-freesasa_coord_set_length_i(coord_t *coord,
-                            int i,
-                            double length);
+void freesasa_coord_set_length_i(coord_t *coord,
+                                 int i,
+                                 double length);
 
 /**
-    Set length of all coordinate vectors to the same length. 
+    Set length of all coordinate vectors to the same length.
 
     This means all coordinates are on the same sphere.
 
@@ -234,9 +225,8 @@ freesasa_coord_set_length_i(coord_t *coord,
     @param coord A ::coord_t object
     @param length Desired length (>= 0)
  */
-void
-freesasa_coord_set_length_all(coord_t *coord,
-                              double length);
+void freesasa_coord_set_length_all(coord_t *coord,
+                                   double length);
 
 /**
     Coordinates for a given index.
@@ -248,14 +238,14 @@ freesasa_coord_set_length_all(coord_t *coord,
     @param i Index
     @return Array with coordinates x,y,z
  */
-const double*
+const double *
 freesasa_coord_i(const coord_t *coord,
                  int i);
 
 /**
     Calculate distance between two coordinate vectors. For speed,
     arguments aren't checked.
-    
+
     @param coord A ::coord_t object
     @param i first index
     @param j second index
@@ -269,7 +259,7 @@ double freesasa_coord_dist(const coord_t *coord,
 /**
     Calculate square distance between two coordinate vectors. For
     speed, arguments aren't checked.
-    
+
     @param coord A ::coord_t object
     @param i First index
     @param j Second index
@@ -284,7 +274,7 @@ freesasa_coord_dist2(const coord_t *coord,
 /**
     Calculate square distance between two coordinate vectors in
     separate coordinate sets. For speed, arguments aren't checked.
-    
+
     @param c1 First set of coordinates
     @param c2 Second set of coordinates
     @param i1 Index in first set
@@ -303,17 +293,16 @@ double freesasa_coord_dist2_12(const coord_t *c1,
     @param coord A ::coord_t object
     @return Array of coordinates x1,y1,z1,x2,y2,z2,...
  */
-const double*
+const double *
 freesasa_coord_all(const coord_t *coord) __attrib_pure__;
 
 /**
     Number of coordinates.
-    
+
     @param coord A ::coord_t object
     @return Number of coordinates
  */
-int
-freesasa_coord_n(const coord_t *coord) __attrib_pure__;
+int freesasa_coord_n(const coord_t *coord) __attrib_pure__;
 
 /**
     Translate all coordinates by same vector.
@@ -321,9 +310,8 @@ freesasa_coord_n(const coord_t *coord) __attrib_pure__;
     @param coord A ::coord_t object
     @param xyz Array describing translation vector x,y,z.
  */
-void
-freesasa_coord_translate(coord_t *coord,
-                         const double *xyz);
+void freesasa_coord_translate(coord_t *coord,
+                              const double *xyz);
 
 /**
     Translate all coordinates by same vector.
@@ -333,21 +321,19 @@ freesasa_coord_translate(coord_t *coord,
     @param y y-coordinate of translation vector
     @param z z-coordinate of translation vector
  */
-void
-freesasa_coord_translate_xyz(coord_t *coord,
-                             double x,
-                             double y,
-                             double z);
+void freesasa_coord_translate_xyz(coord_t *coord,
+                                  double x,
+                                  double y,
+                                  double z);
 
 /**
     Scale all coordinates by given factor.
-    
+
     @param coord A ::coord_t object
     @param a Factor to scale by
  */
-void
-freesasa_coord_scale(coord_t *coord,
-                     double a);
+void freesasa_coord_scale(coord_t *coord,
+                          double a);
 
 #undef __attrib_pure__
 

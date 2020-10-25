@@ -14,12 +14,12 @@
     question.
 */
 
-#define PDB_ATOM_NAME_STRL 4 /**< Length of strings with atom names, such as `" CA "`. */
-#define PDB_ATOM_RES_NAME_STRL 3 /**< Length of string with residue names, such as `"ALA"`. */
+#define PDB_ATOM_NAME_STRL 4       /**< Length of strings with atom names, such as `" CA "`. */
+#define PDB_ATOM_RES_NAME_STRL 3   /**< Length of string with residue names, such as `"ALA"`. */
 #define PDB_ATOM_RES_NUMBER_STRL 5 /**< Length of string with residue number, such as `" 123"`. */
-#define PDB_ATOM_SYMBOL_STRL 2 /**< Length for string with element symbol, such "FE". */
-#define PDB_LINE_STRL 80 /**< Length of a line in PDB file. */
-#define PDB_MAX_LINE_STRL 120 /**< for reading, allows nonstandard input with extra fields. */
+#define PDB_ATOM_SYMBOL_STRL 2     /**< Length for string with element symbol, such "FE". */
+#define PDB_LINE_STRL 80           /**< Length of a line in PDB file. */
+#define PDB_MAX_LINE_STRL 120      /**< for reading, allows nonstandard input with extra fields. */
 
 /**
     Finds the location of all MODEL entries in the file pdb, returns
@@ -33,9 +33,8 @@
       NULL. A return value of 0 doesn't have to mean the file is
       empty. ::FREESASA_FAIL if malloc-failure.
  */
-int
-freesasa_pdb_get_models(FILE* pdb,
-                        struct file_range** ranges);
+int freesasa_pdb_get_models(FILE *pdb,
+                            struct file_range **ranges);
 
 /**
     Finds the location of all chains within the file range 'model'.
@@ -49,11 +48,10 @@ freesasa_pdb_get_models(FILE* pdb,
     @return Number of chains found. Returns ::FREESASA_FAIL if memory
       allocation fails.
  */
-int
-freesasa_pdb_get_chains(FILE *pdb,
-                        struct file_range model,
-                        struct file_range **ranges,
-                        int options);
+int freesasa_pdb_get_chains(FILE *pdb,
+                            struct file_range model,
+                            struct file_range **ranges,
+                            int options);
 /**
     Get atom name from a PDB line.
 
@@ -67,9 +65,8 @@ freesasa_pdb_get_chains(FILE *pdb,
     @param line Line from a PDB file.
     @return ::FREESASA_SUCCESS if input is readable, else ::FREESASA_FAIL.
  */
-int
-freesasa_pdb_get_atom_name(char *name,
-                           const char *line);
+int freesasa_pdb_get_atom_name(char *name,
+                               const char *line);
 
 /**
     Get residue name from a PDB line.
@@ -83,9 +80,8 @@ freesasa_pdb_get_atom_name(char *name,
     @param line Line from a PDB file.
     @return ::FREESASA_SUCCESS if input is readable, else ::FREESASA_FAIL.
  */
-int
-freesasa_pdb_get_res_name(char *name,
-                          const char *line);
+int freesasa_pdb_get_res_name(char *name,
+                              const char *line);
 
 /**
     Get atom coordinates from a PDB line.
@@ -98,9 +94,8 @@ freesasa_pdb_get_res_name(char *name,
     @param line Line from a PDB file.
     @return ::FREESASA_SUCCESS if input is readable, else ::FREESASA_FAIL.
  */
-int
-freesasa_pdb_get_coord(double *coord,
-                       const char *line);
+int freesasa_pdb_get_coord(double *coord,
+                           const char *line);
 
 /**
     Get residue number from a PDB line.
@@ -115,9 +110,8 @@ freesasa_pdb_get_coord(double *coord,
     @param line Line from a PDB file.
     @return ::FREESASA_SUCCESS if input is readable, else ::FREESASA_FAIL.
  */
-int
-freesasa_pdb_get_res_number(char *number,
-                            const char* line);
+int freesasa_pdb_get_res_number(char *number,
+                                const char *line);
 
 /**
     Get chain label from PDB line.
@@ -129,8 +123,7 @@ freesasa_pdb_get_res_number(char *number,
     @return The chain label. If the line is invalid, the function
     returns '\0'.
  */
-char
-freesasa_pdb_get_chain_label(const char* line);
+char freesasa_pdb_get_chain_label(const char *line);
 
 /**
     Get alternate coordinate label from PDB line.
@@ -143,8 +136,7 @@ freesasa_pdb_get_chain_label(const char* line);
     @return The label. If line is invalid, the function returns
       '\0'.
  */
-char
-freesasa_pdb_get_alt_coord_label(const char* line);
+char freesasa_pdb_get_alt_coord_label(const char *line);
 
 /**
     Get element symbol from PDB line.
@@ -156,9 +148,8 @@ freesasa_pdb_get_alt_coord_label(const char* line);
     @return ::FREESASA_SUCCESS line has 78 or more characters. ::FREESASA_FAIL if
       line too short. Does not check if symbol is valid.
  */
-int
-freesasa_pdb_get_symbol(char *symbol,
-                        const char* line);
+int freesasa_pdb_get_symbol(char *symbol,
+                            const char *line);
 
 /**
     Get occupancy from PDB line
@@ -169,9 +160,8 @@ freesasa_pdb_get_symbol(char *symbol,
     @return ::FREESASA_SUCCESS if line is long enough, starts with
       ATOM or HETATM, and characters 55-60 contain a number.
  */
-int
-freesasa_pdb_get_occupancy(double *occ,
-                           const char* line);
+int freesasa_pdb_get_occupancy(double *occ,
+                               const char *line);
 /**
     Get temperature factor (B-factor) from PDB line
 
@@ -180,9 +170,8 @@ freesasa_pdb_get_occupancy(double *occ,
     @return ::FREESASA_SUCCESS if line is long enough, starts with
       ATOM or HETATM, and characters 61-66 contain a number.
  */
-int
-freesasa_pdb_get_bfactor(double *bfac,
-                         const char* line);
+int freesasa_pdb_get_bfactor(double *bfac,
+                             const char *line);
 
 /**
     Is atom Hydrogen?
@@ -193,7 +182,6 @@ freesasa_pdb_get_bfactor(double *bfac,
     @return 1 if Hydrogen (or deuterium). 0 otherwise. If line is
       invalid, the function returns ::FREESASA_FAIL.
  */
-int
-freesasa_pdb_ishydrogen(const char* line);
+int freesasa_pdb_ishydrogen(const char *line);
 
 #endif /* FREESASA_PDB_H */
