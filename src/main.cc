@@ -10,6 +10,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "cif.hh"
 #include "freesasa.h"
 
 #if STDC_HEADERS
@@ -18,7 +19,7 @@ extern int optind, optopt;
 extern char *optarg;
 #endif
 
-static char *program_name = "freesasa";
+static const char *program_name = "freesasa";
 
 #if USE_XML
 #define XML_STRING "|xml"
@@ -39,7 +40,8 @@ enum { B_FILE,
        UNKNOWN,
        RSA,
        RADII,
-       DEPRECATED };
+       DEPRECATED,
+       CIF };
 
 static int option_flag;
 
@@ -64,6 +66,7 @@ static struct option long_options[] = {
     {"output", required_argument, 0, 'o'},
     {"format", required_argument, 0, 'f'},
     {"depth", required_argument, 0, 'd'},
+    {"cif", no_argument, &option_flag, CIF},
     {"select", required_argument, &option_flag, SELECT},
     {"unknown", required_argument, &option_flag, UNKNOWN},
     {"rsa", no_argument, &option_flag, RSA},
@@ -88,6 +91,7 @@ struct cli_state {
     const freesasa_classifier *classifier;
     int structure_options;
     int static_classifier;
+    int cif;
     int no_rel;
     /* chain groups */
     int n_chain_groups;
@@ -125,6 +129,7 @@ init_state(struct cli_state *state)
     state->output_depth = FREESASA_OUTPUT_CHAIN;
     state->output = NULL;
     state->errlog = NULL;
+    state->cif = 0;
 }
 
 static void
@@ -170,6 +175,7 @@ help(void)
            "  --radius-from-occupancy | --config-file=<FILE> | --radii=<protor|naccess>\n"
            "  --hetatm --hydrogen\n"
            "  --unknown=<guess|skip|halt>\n"
+           "  --cif\n"
            "  --separate-models | --join-models\n"
            "  --separate-chains | --chain-groups=<LIST> ...\n"
            "  --select=<STRING> ...\n"
@@ -251,7 +257,7 @@ exit_with_help(void)
     } while (0)
 
 static freesasa_structure **
-get_structures(FILE *input,
+get_structures(std::FILE *input,
                int *n,
                const struct cli_state *state)
 {
@@ -268,12 +274,16 @@ get_structures(FILE *input,
             if (structures[i] == NULL) abort_msg("invalid input");
         }
     } else {
-        structures = malloc(sizeof(freesasa_structure *));
+        structures = (freesasa_structure **)malloc(sizeof(freesasa_structure *));
         if (structures == NULL) {
             abort_msg("out of memory");
         }
         *n = 1;
-        structures[0] = freesasa_structure_from_pdb(input, state->classifier, state->structure_options);
+        if (state->cif) {
+            structures[0] = freesasa_structure_from_cif(input, state->classifier, state->structure_options);
+        } else {
+            structures[0] = freesasa_structure_from_pdb(input, state->classifier, state->structure_options);
+        }
         if (structures[0] == NULL) {
             abort_msg("invalid input");
         }
@@ -288,7 +298,7 @@ get_structures(FILE *input,
                                                     state->classifier, state->structure_options);
                 if (tmp != NULL) {
                     ++n2;
-                    structures = realloc(structures, sizeof(freesasa_structure *) * n2);
+                    structures = (freesasa_structure **)realloc(structures, sizeof(freesasa_structure *) * n2);
                     if (structures == NULL) abort_msg("out of memory");
                     structures[n2 - 1] = tmp;
                 } else {
@@ -313,7 +323,7 @@ run_analysis(FILE *input,
     const freesasa_result *result;
     freesasa_selection *sel;
     int n = 0, i, c;
-    char *name_i = malloc(name_len + 10);
+    char *name_i = (char *)malloc(name_len + 10);
 
     if (tree == NULL) abort_msg("failed to initialize result-tree");
     if (name_i == NULL) abort_msg("memory failure");
@@ -402,7 +412,7 @@ state_add_chain_groups(const char *cmd, struct cli_state *state)
         token = strtok(str, "+");
         while (token) {
             ++state->n_chain_groups;
-            state->chain_groups = realloc(state->chain_groups, sizeof(char *) * state->n_chain_groups);
+            state->chain_groups = (char **)realloc(state->chain_groups, sizeof(char *) * state->n_chain_groups);
             if (state->chain_groups == NULL) {
                 abort_msg("out of memory");
             }
@@ -419,7 +429,7 @@ static void
 state_add_select(const char *cmd, struct cli_state *state)
 {
     ++state->n_select;
-    state->select_cmd = realloc(state->select_cmd, sizeof(char *) * state->n_select);
+    state->select_cmd = (char **)realloc(state->select_cmd, sizeof(char *) * state->n_select);
     if (state->select_cmd == NULL) {
         abort_msg("out of memory");
     }
@@ -562,6 +572,9 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             case DEPRECATED:
                 deprecated();
                 exit(EXIT_SUCCESS);
+            case CIF:
+                state->cif = 1;
+                break;
             default:
                 abort(); /* what does this even mean? */
             }

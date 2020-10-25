@@ -12,7 +12,7 @@
 freesasa_structure *structure;
 freesasa_result *result;
 // clang-format off
-double radii[N] = {0.6,0.8,1.0,1.2,1.4,1.6,1.8,2,2.2,2.4,2.6};
+double radii[N] =     {    0.6,    0.8,    1.0,    1.2,    1.4,    1.6,    1.8,      2,    2.2,    2.4,    2.6};
 const char *name[N] = { " CA ", " CA ", " CA ", " O  ", " N  ", " SD ", " CB ", " OXT", "SE  ", " P  ", " O5'"};
 const char *resn[N] = {  "ALA",  "ALA",  "ALA",  "ALA",  "ARG",  "MET",  "VAL",  "GLU",  "SEC",  " DC",  " DA"};
 const char *resi[N] = { "  -2", "  -1", "   1", "   1", "   2", "   3", "   4", "   1", "   2", "   4", "   5"};

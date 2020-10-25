@@ -1,0 +1,3 @@
+[submodule "third-party/gemmi"]
+	path = third-party/gemmi
+	url = git@github.com:project-gemmi/gemmi.git

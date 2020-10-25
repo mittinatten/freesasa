@@ -36,6 +36,11 @@ information.
 
 ## Building and installing
 
+After cloning the repository, add git submodules
+
+    git submodules init
+    git supmodules update
+
 FreeSASA can be compiled and installed using the following
 
     ./configure

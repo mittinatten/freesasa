@@ -1,6 +1,7 @@
-AM_LDFLAGS = 
+AM_LDFLAGS =
 AM_CFLAGS =
-freesasa_LDADD =
+freesasa_LDADD = -lc++
+AM_CPPFLAGS = -I$(top_srcdir)/third-party/gemmi/include/
 
 if COND_GCOV
 AM_CFLAGS += --coverage
@@ -26,7 +27,7 @@ libfreesasa_a_SOURCES = classifier.c classifier.h \
 	freesasa.c freesasa.h freesasa_internal.h \
 	nb.h nb.c util.c rsa.c \
 	selection.h selection.c $(lp_output)
-freesasa_SOURCES = main.c 
+freesasa_SOURCES = main.cc cif.cc
 example_SOURCES = example.c
 freesasa_LDADD += libfreesasa.a
 example_LDADD = libfreesasa.a

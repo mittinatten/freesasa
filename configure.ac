@@ -7,12 +7,14 @@ AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 m4_include([m4/ax_compare_version.m4])
+m4_include([m4/ax_cxx_compile_stdcxx.m4])
 AC_DEFINE([REPORTBUG], ["Report bugs to <https://github.com/mittinatten/freesasa/issues>"], [Bug report string])
 AC_DEFINE([HOMEPAGE], ["<http://freesasa.github.io>"], [Project homepage])
 AC_DEFINE([FREESASA_XMLNS], ["http://freesasa.github.io/"], [XML namespace])
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_RANLIB
 AC_PROG_INSTALL
 
@@ -44,6 +46,9 @@ AC_C_INLINE
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memset mkdir sqrt strchr strdup strerror strncasecmp getopt_long getline])
+
+# C++ 11
+AX_CXX_COMPILE_STDCXX([11])
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile doc/man/freesasa.1 tests/Makefile share/Makefile])
 AC_CONFIG_FILES([tests/test-cli], [chmod +x tests/test-cli])

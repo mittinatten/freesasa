@@ -289,6 +289,20 @@ typedef enum {
     FREESASA_NODE_NONE       /**< for specifying not a valid node. */
 } freesasa_nodetype;
 
+typedef struct {
+    const char *group_PDB;
+    const char auth_asym_id;
+    const char *auth_seq_id;
+    const char *pdbx_PDB_ins_code;
+    const char *auth_comp_id;
+    const char *auth_atom_id;
+    const char *label_alt_id;
+    const char *type_symbol;
+    const double Cartn_x;
+    const double Cartn_y;
+    const double Cartn_z;
+} freesasa_cif_atom;
+
 /**
    @brief Result node
 
@@ -844,6 +858,10 @@ int freesasa_structure_add_atom_wopt(freesasa_structure *structure,
                                      const freesasa_classifier *classifier,
                                      int options);
 
+int freesasa_structure_add_cif_atom(freesasa_structure *structure,
+                                    freesasa_cif_atom *atom,
+                                    const freesasa_classifier *classifier,
+                                    int options);
 /**
     Create new structure consisting of a selection chains from the
     provided structure.
