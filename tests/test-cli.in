@@ -71,6 +71,21 @@ function assert_equal_opt
     fi
 }
 
+function assert_equal_total
+{
+    tmp1=tmp/tmp1
+    tmp2=tmp/tmp2
+    eval $1 $2 | grep "Total" > $tmp1 2>/dev/null
+    eval $1 $3 | grep "Total" > $tmp2 2>/dev/null
+    diff $tmp1 $tmp2
+    if [[ $? -ne 0 ]]; then
+        echo Error: \"$1\" gives different results with arguments \"$2\" and \"$3\"
+        let errors=errors+1
+    #else
+    #    echo \"$1\" gives same result with arguments \"$2\" and \"$3\". Success.
+    fi
+}
+
 if [[ ! -d tmp ]]; then mkdir tmp; fi
 
 rm -f tmp/*
@@ -89,6 +104,7 @@ assert_fail "$cli -o $dump -o $dump $smallpdb"
 assert_fail "$cli --B-value-file $nodir < $smallpdb > $dump"
 assert_fail "$cli --residue-type-file $nodir < $smallpdb > $dump"
 assert_fail "$cli --residue-file $nodir < $smallpdb > $dump"
+
 echo
 echo "== General options =="
 # unknown options
@@ -104,6 +120,7 @@ version=`$cli -v | head -n 1`
 assert_pass "echo $version | perl -ne 'if (m/FreeSASA (\d+\.)*\d$/) {exit 0} else  {exit 1}'"
 # check that running with several output options doesn't crash
 assert_pass "$cli -o $dump -e tmp/err -n 1 $smallpdb"
+
 echo
 echo "== Testing S&R =="
 assert_pass "$cli -S <  $datadir/1ubq.pdb > $dump"
@@ -135,6 +152,7 @@ assert_fail "$cli -S -n 0 < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli -S -n \"-1\" < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli -S -t 1000 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -S -t 16 < $smallpdb > $dump"
+
 echo
 echo "== Testing -m -M and -C options =="
 # using flags -S and -n 10 to speed things up
@@ -157,6 +175,7 @@ assert_pass "$cli -n 2 -S -M -C  $datadir/2jo4.pdb > $dump"
 n_mod=`grep 2jo4.pdb $dump | wc -l`
 assert_pass "test $n_mod -eq 40"
 assert_fail "$cli -mM $datadir/2jo4.pdb > $dump"
+
 echo
 echo "== Testing L&R =="
 assert_pass "$cli -L < $smallpdb > $dump"
@@ -165,6 +184,7 @@ assert_fail "$cli -L -n 0 < $smallpdb > $dump"
 assert_fail "$cli -L -n \"-1\" < $smallpdb > $dump"
 assert_fail "$cli -L -t 1000 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -L -t 16 < $smallpdb > $dump"
+
 echo
 echo "== Testing option --chain-groups =="
 assert_pass "$cli -g S -S -n 10 $smallpdb > $dump"
@@ -175,12 +195,15 @@ assert_pass "$cli -g AB+CD -S -n 10 $datadir/2jo4.pdb > $dump"
 assert_fail "$cli -g A-B -S -n 10 $datadir/2jo4.pdb > $dump"
 assert_fail "$cli -g AB -S -n 10 $smallpdb > $dump"
 assert_fail "$cli -g A+B -S -n 10 $smallpdb > $dump"
+
 echo
 echo "== Testing probe radius =="
 assert_fail "$cli -S -n 10 -p=-1 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -S -n 10 -p 1 < $datadir/1ubq.pdb > $dump"
 assert_pass "$cli -S -p 1.4 --format=pdb < $datadir/1ubq.pdb | grep -v REMARK > tmp/bfactor.pdb"
 assert_pass "diff tmp/bfactor.pdb $datadir/1ubq.B.pdb"
+
+echo
 echo "== Testing option --unknown =="
 assert_pass "$cli --unknown=guess -Y -w -n 2  $datadir/1d3z.pdb > $dump"
 assert_pass "grep 1231 $dump"
@@ -189,6 +212,14 @@ assert_pass "grep 602 $dump"
 assert_fail "$cli --unknown=halt -Y -w -n 2 $datadir/1d3z.pdb > $dump"
 # misspelling should fail
 assert_fail "$cli --unknown=haltt -Y -w -n 2 $datadir/1d3z.pdb > $dump"
+
+echo
+echo "== Testing option --cif =="
+assert_equal_total "$cli" "$datadir/1ubq.pdb" "$datadir/1ubq.cif --cif"
+assert_equal_total "$cli" "$datadir/1d3z.pdb" "$datadir/1d3z.cif --cif"
+assert_equal_total "$cli" "$datadir/2jo4.pdb" "$datadir/2jo4.cif --cif"
+assert_equal_total "$cli" "$datadir/2jo4.pdb --join-models" "$datadir/2jo4.cif --cif --join-models"
+
 echo
 echo "== Testing user-configurations =="
 assert_pass "$cli -c $sharedir/naccess.config -n 3 < $smallpdb > $dump"
@@ -197,6 +228,7 @@ assert_fail "$cli -c $datadir/err.config -n 3 < $smallpdb > $dump"
 # can't combine these options
 assert_fail "$cli -c $datadir/naccess.config -n 3 -O < $smallpdb > $dump"
 assert_fail "$cli -c $datadir/naccess.config -n 3 --radii=naccess < $smallpdb > $dump"
+
 echo
 echo "== Testing --radii" ==
 assert_pass "$cli --radii=naccess -n 3 < $datadir/1ubq.pdb > tmp/static.dat"
@@ -206,6 +238,7 @@ assert_pass "$cli --radii=protor -n 3 < $datadir/1ubq.pdb > tmp/static.dat"
 assert_pass "$cli -c $sharedir/protor.config -n 3 < $datadir/1ubq.pdb > tmp/from_config.dat"
 assert_pass "diff tmp/static.dat tmp/from_config.dat"
 assert_fail "$cli --radii=bla -n 3 < $datadir/1ubq.pdb > $dump"
+
 echo
 echo "== Testing res format =="
 assert_pass "$cli -S --format=res -o tmp/restype -e $dump < $datadir/1ubq.pdb"
@@ -213,6 +246,7 @@ assert_pass "diff tmp/restype $datadir/restype.reference"
 #deprecated
 assert_pass "$cli -S -r < $datadir/1ubq.pdb > tmp/restype"
 assert_pass "diff tmp/restype $datadir/restype.reference"
+
 echo
 echo "== Testing seq format =="
 assert_pass "$cli -S --format=seq -o tmp/seq < $datadir/1ubq.pdb"
@@ -220,13 +254,15 @@ assert_pass "diff tmp/seq $datadir/seq.reference"
 #deprecated
 assert_pass "$cli -S -R < $datadir/1ubq.pdb > tmp/seq"
 assert_pass "diff tmp/seq $datadir/seq.reference"
+
 echo
-echo "== Testing PDB format =="
+echo "== Testing PDB output format =="
 assert_pass "$cli -S --format=pdb < $datadir/1ubq.pdb | grep -v REMARK > tmp/bfactor.pdb"
 assert_pass "diff tmp/bfactor.pdb $datadir/1ubq.B.pdb"
 #deprecated
 assert_pass "$cli -S -B < $datadir/1ubq.pdb | grep -v REMARK > tmp/bfactor.pdb"
 assert_pass "diff tmp/bfactor.pdb $datadir/1ubq.B.pdb"
+
 echo
 echo "== Testing RSA format =="
 for r in protor naccess
@@ -316,6 +352,7 @@ if [[ use_json -eq 1 ]] ; then
     if [[ use_jsonlint -eq 1 ]] ; then assert_pass "jsonlint $json_file > $dump"; fi
     assert_pass "grep 'selection' $json_file > $dump"
 fi
+
 echo
 echo "== Testing option --select =="
 assert_pass "$cli -S --select \"s1, resn ala\" --select \"s2, resn arg\" --select \"s3, resi 1\" $datadir/1ubq.pdb > tmp/select"
@@ -340,6 +377,7 @@ then
     let errors=errors+1
     echo "Error: --format=seq and --select don't give same result for first residue in 1ubq.pdb ('$seq_res1' and '$sel_res1')"
 fi
+
 echo
 echo
 echo "== Testing multithreading =="
@@ -350,6 +388,7 @@ assert_pass "$cli -t 1 -L -n 3 < $smallpdb > $dump"
 assert_pass "$cli -t 2 -L -n 3 < $smallpdb > $dump"
 assert_pass "$cli -t 10 -L -n 3 < $smallpdb > $dump"
 assert_fail "$cli -t 0 < $smallpdb > $dump"
+
 echo
 echo "== Testing input with residue insertions ==="
 assert_pass "test $($cli -n 2 --format=seq < $datadir/icode.pdb | grep ^SEQ | wc -l) -eq 5"
@@ -361,6 +400,7 @@ assert_fail "$cli -g A+B -C $smallpdb > $dump"
 assert_fail "$cli -c $sharedir/naccess.config --radii=naccess $smallpdb > $dump"
 assert_fail "$cli -O --radii=naccess $smallpdb > $dump"
 assert_fail "$cli -c $sharedir/naccess.config -O $datadir/1ubq.pdb > $dump"
+
 echo
 echo "== Testing long-options =="
 assert_equal_opt "$cli $smallpdb" "-h" "--help"
