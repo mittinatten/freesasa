@@ -923,9 +923,9 @@ freesasa_structure_get_chains(const freesasa_structure *structure,
         c = ai->chain_label;
         if (strchr(chains, c) != NULL) {
             v = freesasa_coord_i(structure->xyz, i);
-            res = freesasa_structure_add_atom_wopt(new_s, ai->atom_name,
-                                                   ai->res_name, ai->res_number,
-                                                   c, v[0], v[1], v[2], classifier, options);
+            res = structure_add_atom_wopt_impl(new_s, ai->atom_name,
+                                               ai->res_name, ai->res_number, ai->symbol,
+                                               c, v[0], v[1], v[2], classifier, options);
             if (res == FREESASA_FAIL) {
                 fail_msg("");
                 goto cleanup;
