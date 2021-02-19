@@ -1,13 +1,14 @@
 #include <gemmi/cif.hpp>
 #include <iostream>
 #include <set>
+#include <memory>
 
 #include "cif.hh"
 
-static std::set<int> *
+static std::unique_ptr<std::set<int>> 
 get_models(const gemmi::cif::Document &doc)
 {
-    auto models = new std::set<int>();
+    auto models = std::make_unique<std::set<int>> ();
     for (auto block : doc.blocks) {
         for (auto site : block.find("_atom_site.", {"pdbx_PDB_model_num"})) {
             models->insert(gemmi::cif::as_int(site[0]));
@@ -16,10 +17,10 @@ get_models(const gemmi::cif::Document &doc)
     return models;
 }
 
-static std::set<std::string> *
+static std::unique_ptr<std::set<std::string>>
 get_chains(const gemmi::cif::Document &doc)
 {
-    auto chains = new std::set<std::string>();
+    auto chains = std::make_unique<std::set<std::string>> ();
     for (auto block : doc.blocks) {
         for (auto site : block.find("_atom_site.", {"auth_asym_id"})) {
             chains->insert(site[0]);
@@ -50,11 +51,14 @@ structure_from_doc(const gemmi::cif::Document &doc,
                    int structure_options)
 {
     freesasa_structure *structure = freesasa_structure_new();
-
+    
+    unsigned skip_count {0};
     for (auto block : doc.blocks) {
         auto prevAltId = '?';
 
         for (auto site : block.find("_atom_site.", atom_site_columns)) {
+
+            // TODO figure out what this does
             if (site[0] != "ATOM" && !(structure_options & FREESASA_INCLUDE_HETATM)) {
                 continue;
             }
@@ -85,16 +89,28 @@ structure_from_doc(const gemmi::cif::Document &doc,
             }
 
             // Pick the first alternative conformation for an atom
-            if ((currentAltId != '?' && prevAltId == '?') || (currentAltId == '?')) {
-                prevAltId = currentAltId;
-            } else if (currentAltId != '?' && currentAltId != prevAltId) {
+            if (currentAltId != '.' && currentAltId != 'A'){
+                skip_count++;
+                std::cout << "Skipped Atom: ";
+                for (auto idx : site) {std::cout << idx.c_str() << " ";}
+                std::cout << std::endl;
                 continue;
             }
+            // if ((currentAltId != '.' && prevAltId == '.') || (currentAltId == '.')) {
+            //     prevAltId = currentAltId;
+            // } else if (currentAltId != '.' && currentAltId != prevAltId) {
+            //     skip_count++;
+            //     std::cout << "Skipped Atom: ";
+            //     for (auto idx : site) {std::cout << idx.c_str() << " ";}
+            //     std::cout << std::endl;
+            //     continue;
+            // }
 
             freesasa_structure_add_cif_atom(structure, &atom, classifier, structure_options);
         }
     }
-
+    std::cout << "HETATM? " << (structure_options & FREESASA_INCLUDE_HETATM) << std::endl;
+    std::cout << "Skipped " << skip_count << " atoms from cif due to Alt ID." << std::endl;
     return structure;
 }
 
@@ -116,8 +132,6 @@ freesasa_structure_from_cif(std::FILE *input,
 
         structure = structure_from_doc(doc, singleModel, classifier, structure_options);
     }
-
-    delete models;
 
     return structure;
 }
