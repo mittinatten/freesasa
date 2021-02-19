@@ -52,13 +52,10 @@ structure_from_doc(const gemmi::cif::Document &doc,
 {
     freesasa_structure *structure = freesasa_structure_new();
     
-    unsigned skip_count {0};
     for (auto block : doc.blocks) {
         auto prevAltId = '?';
 
         for (auto site : block.find("_atom_site.", atom_site_columns)) {
-
-            // TODO figure out what this does
             if (site[0] != "ATOM" && !(structure_options & FREESASA_INCLUDE_HETATM)) {
                 continue;
             }
@@ -89,28 +86,13 @@ structure_from_doc(const gemmi::cif::Document &doc,
             }
 
             // Pick the first alternative conformation for an atom
-            if (currentAltId != '.' && currentAltId != 'A'){
-                skip_count++;
-                std::cout << "Skipped Atom: ";
-                for (auto idx : site) {std::cout << idx.c_str() << " ";}
-                std::cout << std::endl;
+            if (currentAltId != '.' && currentAltId != 'A') {
                 continue;
             }
-            // if ((currentAltId != '.' && prevAltId == '.') || (currentAltId == '.')) {
-            //     prevAltId = currentAltId;
-            // } else if (currentAltId != '.' && currentAltId != prevAltId) {
-            //     skip_count++;
-            //     std::cout << "Skipped Atom: ";
-            //     for (auto idx : site) {std::cout << idx.c_str() << " ";}
-            //     std::cout << std::endl;
-            //     continue;
-            // }
 
             freesasa_structure_add_cif_atom(structure, &atom, classifier, structure_options);
         }
     }
-    std::cout << "HETATM? " << (structure_options & FREESASA_INCLUDE_HETATM) << std::endl;
-    std::cout << "Skipped " << skip_count << " atoms from cif due to Alt ID." << std::endl;
     return structure;
 }
 
