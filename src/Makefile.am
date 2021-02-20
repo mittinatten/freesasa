@@ -9,7 +9,7 @@ endif # COND_GCOV
 
 GCOV_FILES = *.gcda *.gcno *.gcov
 
-CLEANFILES = $(GCOV_FILES) *~
+CLEANFILES = $(GCOV_FILES) *~ .deps/*
 
 clean-local:
 	-rm -rf *.dSYM
