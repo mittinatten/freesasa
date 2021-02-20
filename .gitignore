@@ -47,3 +47,5 @@ doc/html/
 doc/Doxyfile
 doc/doxyfile.stamp
 doc/man/freesasa.1
+.ionide
+.fake
