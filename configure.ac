@@ -161,7 +161,7 @@ AM_CONDITIONAL([USE_SUBUNIT], false)
 
 if test "x$enable_check" = "xyes" ; then
   AC_CHECK_LIB(rt, setitimer) # necessary on some platforms
-  AC_CHECK_LIB([subunit], [subunit_test_start], AM_CONDITIONAL([USE_SUBUNIT], true)) # necessary on some platforms
+  AC_CHECK_LIB([subunit], [subunit_test_start]) # necessary on some platforms
   AC_CHECK_LIB([check],[suite_create],
     [],
     [AC_MSG_ERROR[Library Check not available, install libary or configure without flag --enable-check]])
