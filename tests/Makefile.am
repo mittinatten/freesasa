@@ -34,7 +34,7 @@ AM_CFLAGS += ${libxml2_CFLAGS}
 endif # USE_XML
 
 if USE_SUBUNIT
-test_api_LDADD += ${subunit}
+test_api_LDADD += -lsubunit
 endif # USE_SUBUNIT
 
 endif # USE_CHECK
