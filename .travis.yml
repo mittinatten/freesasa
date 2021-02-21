@@ -4,11 +4,6 @@ git:
 dist: xenial
 cache: pip
 
-branches:
-  only:
-    - master
-    - dev
-
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev
