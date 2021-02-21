@@ -47,8 +47,8 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memset mkdir sqrt strchr strdup strerror strncasecmp getopt_long getline])
 
-# C++ 11
-AX_CXX_COMPILE_STDCXX([11])
+# C++ 14
+AX_CXX_COMPILE_STDCXX([14])
 
 AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile doc/Doxyfile doc/man/freesasa.1 tests/Makefile share/Makefile])
 AC_CONFIG_FILES([tests/test-cli], [chmod +x tests/test-cli])
