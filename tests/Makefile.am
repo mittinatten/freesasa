@@ -1,8 +1,8 @@
 EXTRA_DIST = data test-cli.in
 check_PROGRAMS =
-TESTS = 
+TESTS =
 AM_CFLAGS =
-AM_LDFLAGS = 
+AM_LDFLAGS =
 
 if COND_GCOV
 AM_CFLAGS += --coverage
@@ -40,7 +40,7 @@ TESTS += test-cli
 endif # RUN_CLI_TESTS
 
 
-CLEANFILES = tmp/*  $(GCOV_FILES) *~
+CLEANFILES = tmp/*  $(GCOV_FILES) *~ .deps/*
 
 clean-local:
 	-rm -rf *.dSYM
