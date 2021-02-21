@@ -32,7 +32,7 @@ matrix:
 
 before_script:
   - autoreconf -i
-  - ./configure $ENABLE LDFLAGS="-lsubunit"
+  - ./configure $ENABLE
 
 script: make && make check
 
