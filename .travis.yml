@@ -1,11 +1,8 @@
-
 language: c
 git:
   depth: 3
-dist:
-  trusty
-cache:
-  pip
+dist: xenial
+cache: pip
 
 branches:
   only:
@@ -13,8 +10,8 @@ branches:
     - dev
 
 before_install:
-    - sudo apt-get update -qq
-    - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils
 
 matrix:
   include:
@@ -45,5 +42,5 @@ before_script:
 script: make && make check
 
 after_failure:
-    - cat tests/test-api.log
-    - cat tests/test-cli.log
+  - cat tests/test-api.log
+  - cat tests/test-cli.log
