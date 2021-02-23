@@ -65,6 +65,8 @@ static const auto atom_site_columns = std::vector<std::string>({
     "pdbx_PDB_model_num",
 });
 
+
+
 static freesasa_structure *
 structure_from_doc(const gemmi::cif::Document &doc,
                    const std::set<int> &models,
@@ -81,11 +83,60 @@ structure_from_doc(const gemmi::cif::Document &doc,
                 continue;
             }
 
-            auto model = atoi(site[11].c_str());
+            if (models.count(std::stoi(site[11])) == 0) continue;
+            
+            freesasa_cif_atom atom = {
+                .group_PDB = site[0].c_str(),
+                .auth_asym_id = site[1][0],
+                .auth_seq_id = site[2].c_str(),
+                .pdbx_PDB_ins_code = site[3].c_str(),
+                .auth_comp_id = site[4].c_str(),
+                .auth_atom_id = site[5].c_str(),
+                .label_alt_id = site[6].c_str(),
+                .type_symbol = site[7].c_str(),
+                .Cartn_x = atof(site[8].c_str()),
+                .Cartn_y = atof(site[9].c_str()),
+                .Cartn_z = atof(site[10].c_str())};
 
-            if (models.count(model) == 0) {
+            auto currentAltId = site[6][0];
+
+            if (!(structure_options & FREESASA_INCLUDE_HYDROGEN) && std::string(atom.type_symbol) == "H") {
                 continue;
             }
+
+            // Pick the first alternative conformation for an atom
+            if (currentAltId != '.' && currentAltId != 'A') {
+                continue;
+            }
+
+            freesasa_structure_add_cif_atom(structure, &atom, classifier, structure_options);
+        }
+    }
+    return structure;
+}
+
+
+
+static freesasa_structure*
+structure_from_doc(const gemmi::cif::Document &doc,
+                         const std::string &filter,
+                         const int &col, 
+                         const freesasa_classifier *classifier,
+                         int structure_options)
+{
+    std::cout << "Creating a filtered freesasa structure !" << std::endl;
+
+    freesasa_structure *structure = freesasa_structure_new();
+
+    for (auto block : doc.blocks) {
+        auto prevAltId = '?';
+
+        for (auto site : block.find("_atom_site.", atom_site_columns)) {
+            if (site[0] != "ATOM" && !(structure_options & FREESASA_INCLUDE_HETATM)) {
+                continue;
+            }
+
+            if (filter != site[col]) continue;
 
             freesasa_cif_atom atom = {
                 .group_PDB = site[0].c_str(),
@@ -116,6 +167,8 @@ structure_from_doc(const gemmi::cif::Document &doc,
     }
     return structure;
 }
+
+
 
 freesasa_structure *
 freesasa_structure_from_cif(std::FILE *input,
@@ -137,125 +190,30 @@ freesasa_structure_from_cif(std::FILE *input,
 }
 
 
-std::vector<freesasa_structure*>
-get_array_of_all_models(const gemmi::cif::Document &doc, int *n, const freesasa_classifier *classifier)
-{
-    const auto models = get_models(doc);
-
-    std::vector<freesasa_structure*> ss;
-
-    for (int i=0; i < models->size(); ++i)
-    {
-        ss.emplace_back(freesasa_structure_new());
-    }  
-    return ss; 
-}
-
 
 freesasa_structure*
-chain_structure_from_doc(const gemmi::cif::Document doc, 
-                         const std::string &chain_name,
-                         const freesasa_classifier *classifier,
-                         int structure_options)
+freesasa_structure_from_chain(const gemmi::cif::Document doc, 
+                              const std::string &chain_name,
+                              const freesasa_classifier *classifier,
+                              int structure_options)
 {
     std::cout << "Creating a freesasa structure from chain!" << std::endl;
-    freesasa_structure *structure = freesasa_structure_new();
 
-    for (auto block : doc.blocks) {
-        auto prevAltId = '?';
-
-        for (auto site : block.find("_atom_site.", atom_site_columns)) {
-            if (site[0] != "ATOM" && !(structure_options & FREESASA_INCLUDE_HETATM)) {
-                continue;
-            }
-
-            if (chain_name != site[1]) {
-                continue;
-            }
-
-            freesasa_cif_atom atom = {
-                .group_PDB = site[0].c_str(),
-                .auth_asym_id = site[1][0],
-                .auth_seq_id = site[2].c_str(),
-                .pdbx_PDB_ins_code = site[3].c_str(),
-                .auth_comp_id = site[4].c_str(),
-                .auth_atom_id = site[5].c_str(),
-                .label_alt_id = site[6].c_str(),
-                .type_symbol = site[7].c_str(),
-                .Cartn_x = atof(site[8].c_str()),
-                .Cartn_y = atof(site[9].c_str()),
-                .Cartn_z = atof(site[10].c_str())};
-
-            auto currentAltId = site[6][0];
-
-            if (!(structure_options & FREESASA_INCLUDE_HYDROGEN) && std::string(atom.type_symbol) == "H") {
-                continue;
-            }
-
-            // Pick the first alternative conformation for an atom
-            if (currentAltId != '.' && currentAltId != 'A') {
-                continue;
-            }
-
-            freesasa_structure_add_cif_atom(structure, &atom, classifier, structure_options);
-        }
-    }
-
-    return structure;
+    return structure_from_doc(doc, chain_name, 1, classifier, structure_options);
 }
 
 
 freesasa_structure*
-model_structure_from_doc(const gemmi::cif::Document &doc,
+freesasa_structure_from_model(const gemmi::cif::Document &doc,
                          const std::string &model, 
                          const freesasa_classifier *classifier,
                          int structure_options)
 {
     std::cout << "Creating a freesasa structure from model!" << std::endl;
-    freesasa_structure *structure = freesasa_structure_new();
 
-    for (auto block : doc.blocks) {
-        auto prevAltId = '?';
-
-        for (auto site : block.find("_atom_site.", atom_site_columns)) {
-            if (site[0] != "ATOM" && !(structure_options & FREESASA_INCLUDE_HETATM)) {
-                continue;
-            }
-
-            if (model != site[11]) {
-                continue;
-            }
-
-            freesasa_cif_atom atom = {
-                .group_PDB = site[0].c_str(),
-                .auth_asym_id = site[1][0],
-                .auth_seq_id = site[2].c_str(),
-                .pdbx_PDB_ins_code = site[3].c_str(),
-                .auth_comp_id = site[4].c_str(),
-                .auth_atom_id = site[5].c_str(),
-                .label_alt_id = site[6].c_str(),
-                .type_symbol = site[7].c_str(),
-                .Cartn_x = atof(site[8].c_str()),
-                .Cartn_y = atof(site[9].c_str()),
-                .Cartn_z = atof(site[10].c_str())};
-
-            auto currentAltId = site[6][0];
-
-            if (!(structure_options & FREESASA_INCLUDE_HYDROGEN) && std::string(atom.type_symbol) == "H") {
-                continue;
-            }
-
-            // Pick the first alternative conformation for an atom
-            if (currentAltId != '.' && currentAltId != 'A') {
-                continue;
-            }
-
-            freesasa_structure_add_cif_atom(structure, &atom, classifier, structure_options);
-        }
-    }
-
-    return structure;
+    return structure_from_doc(doc, model, 11, classifier, structure_options);
 }
+
 
 
 std::vector<freesasa_structure*>
@@ -302,7 +260,8 @@ freesasa_cif_structure_array(std::FILE *input,
             {
                 ss.emplace_back(
                     // TODO add model to freesasa_structure: implement this line from structure.c (ss[j0 + j]->model = i + 1;)
-                    chain_structure_from_doc(doc, chain_name, classifier, options)
+                    // Not sure if I still have to do this. Need to check. 
+                    freesasa_structure_from_chain(doc, chain_name, classifier, options)
                 );
             }
         }
@@ -316,7 +275,8 @@ freesasa_cif_structure_array(std::FILE *input,
         {
             ss.emplace_back(
                 // TODO add model to freesasa_structure: implement this line from structure.c (ss[j0 + j]->model = i + 1;)
-                model_structure_from_doc(doc, model.name, classifier, options)
+                // Not sure if I still have to do this. Need to check. 
+                freesasa_structure_from_model(doc, model.name, classifier, options)
             );
         }
         *n = n_models;
