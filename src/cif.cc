@@ -1,19 +1,16 @@
 #include <iostream>
-#include <set>
 #include <memory>
+#include <set>
 
 #include <gemmi/cif.hpp>
 #include <gemmi/mmcif.hpp>
 
 #include "cif.hh"
 
-
-
-
-static std::unique_ptr<std::set<int>> 
+static std::unique_ptr<std::set<int>>
 get_models(const gemmi::cif::Document &doc)
 {
-    auto models = std::make_unique<std::set<int>> ();
+    auto models = std::make_unique<std::set<int>>();
     for (auto block : doc.blocks) {
         for (auto site : block.find("_atom_site.", {"pdbx_PDB_model_num"})) {
             models->insert(gemmi::cif::as_int(site[0]));
@@ -25,7 +22,7 @@ get_models(const gemmi::cif::Document &doc)
 static std::unique_ptr<std::set<std::string>>
 get_chains(const gemmi::cif::Document &doc)
 {
-    auto chains = std::make_unique<std::set<std::string>> ();
+    auto chains = std::make_unique<std::set<std::string>>();
     for (auto block : doc.blocks) {
         for (auto site : block.find("_atom_site.", {"auth_asym_id"})) {
             chains->insert(site[0]);
@@ -35,19 +32,16 @@ get_chains(const gemmi::cif::Document &doc)
 }
 
 static std::unique_ptr<std::set<std::string>>
-get_chains(const gemmi::Model& model)
+get_chains(const gemmi::Model &model)
 {
-    auto chains = std::make_unique<std::set<std::string>> ();
+    auto chains = std::make_unique<std::set<std::string>>();
 
-    for (auto& chain : model.chains)
-    {
+    for (auto &chain : model.chains) {
         chains->insert(chain.name);
     }
 
     return chains;
 }
-
-
 
 static const auto atom_site_columns = std::vector<std::string>({
     "group_PDB",
@@ -64,27 +58,22 @@ static const auto atom_site_columns = std::vector<std::string>({
     "pdbx_PDB_model_num",
 });
 
-
-
 static freesasa_cif_atom
 freesasa_atom_from_site(const gemmi::cif::Table::Row &site)
 {
     return {
-                .group_PDB          = site[0].c_str(),
-                .auth_asym_id       = site[1][0],
-                .auth_seq_id        = site[2].c_str(),
-                .pdbx_PDB_ins_code  = site[3].c_str(),
-                .auth_comp_id       = site[4].c_str(),
-                .auth_atom_id       = site[5].c_str(),
-                .label_alt_id       = site[6].c_str(),
-                .type_symbol        = site[7].c_str(),
-                .Cartn_x            = atof(site[8].c_str()),
-                .Cartn_y            = atof(site[9].c_str()),
-                .Cartn_z            = atof(site[10].c_str())
-            };
+        .group_PDB = site[0].c_str(),
+        .auth_asym_id = site[1][0],
+        .auth_seq_id = site[2].c_str(),
+        .pdbx_PDB_ins_code = site[3].c_str(),
+        .auth_comp_id = site[4].c_str(),
+        .auth_atom_id = site[5].c_str(),
+        .label_alt_id = site[6].c_str(),
+        .type_symbol = site[7].c_str(),
+        .Cartn_x = atof(site[8].c_str()),
+        .Cartn_y = atof(site[9].c_str()),
+        .Cartn_z = atof(site[10].c_str())};
 }
-
-
 
 static freesasa_structure *
 structure_from_doc(const gemmi::cif::Document &doc,
@@ -93,7 +82,7 @@ structure_from_doc(const gemmi::cif::Document &doc,
                    int structure_options)
 {
     freesasa_structure *structure = freesasa_structure_new();
-    
+
     for (auto block : doc.blocks) {
         auto prevAltId = '?';
 
@@ -103,7 +92,7 @@ structure_from_doc(const gemmi::cif::Document &doc,
             }
 
             if (models.count(std::stoi(site[11])) == 0) continue;
-            
+
             freesasa_cif_atom atom = freesasa_atom_from_site(site);
 
             auto currentAltId = site[6][0];
@@ -123,14 +112,12 @@ structure_from_doc(const gemmi::cif::Document &doc,
     return structure;
 }
 
-
-
-static freesasa_structure*
+static freesasa_structure *
 structure_from_doc(const gemmi::cif::Document &doc,
-                         const std::string &filter,
-                         const int filter_col, 
-                         const freesasa_classifier *classifier,
-                         int structure_options)
+                   const std::string &filter,
+                   const int filter_col,
+                   const freesasa_classifier *classifier,
+                   int structure_options)
 {
     freesasa_structure *structure = freesasa_structure_new();
 
@@ -163,8 +150,6 @@ structure_from_doc(const gemmi::cif::Document &doc,
     return structure;
 }
 
-
-
 freesasa_structure *
 freesasa_structure_from_cif(std::FILE *input,
                             const freesasa_classifier *classifier,
@@ -184,10 +169,8 @@ freesasa_structure_from_cif(std::FILE *input,
     }
 }
 
-
-
-freesasa_structure*
-freesasa_structure_from_chain(const gemmi::cif::Document doc, 
+freesasa_structure *
+freesasa_structure_from_chain(const gemmi::cif::Document doc,
                               const std::string &chain_name,
                               const freesasa_classifier *classifier,
                               int structure_options)
@@ -195,27 +178,24 @@ freesasa_structure_from_chain(const gemmi::cif::Document doc,
     return structure_from_doc(doc, chain_name, 1, classifier, structure_options);
 }
 
-
-freesasa_structure*
+freesasa_structure *
 freesasa_structure_from_model(const gemmi::cif::Document &doc,
-                         const std::string &model, 
-                         const freesasa_classifier *classifier,
-                         int structure_options)
+                              const std::string &model,
+                              const freesasa_classifier *classifier,
+                              int structure_options)
 {
     return structure_from_doc(doc, model, 11, classifier, structure_options);
 }
 
-
-
-std::vector<freesasa_structure*>
+std::vector<freesasa_structure *>
 freesasa_cif_structure_array(std::FILE *input,
-                         int *n,
-                         const freesasa_classifier *classifier,
-                         int options)
+                             int *n,
+                             const freesasa_classifier *classifier,
+                             int options)
 {
     int n_models = 0, n_chains = 0;
 
-    std::vector<freesasa_structure*> ss;
+    std::vector<freesasa_structure *> ss;
 
     const auto doc = gemmi::cif::read_cstream(input, 8192, "cif-input");
 
@@ -229,13 +209,11 @@ freesasa_cif_structure_array(std::FILE *input,
     if (!(options & FREESASA_SEPARATE_MODELS)) n_models = 1;
 
     /* for each model read chains if requested */
-    if (options & FREESASA_SEPARATE_CHAINS) 
-    {
-        for(int i=0; i < n_models; ++i) 
-        {
-            auto chain_names  = get_chains(models[i]);
-            int n_new_chains  = chain_names->size();
-            n_chains         +=  n_new_chains;
+    if (options & FREESASA_SEPARATE_CHAINS) {
+        for (int i = 0; i < n_models; ++i) {
+            auto chain_names = get_chains(models[i]);
+            int n_new_chains = chain_names->size();
+            n_chains += n_new_chains;
 
             if (n_new_chains == 0) {
                 freesasa_warn("in %s(): no chains found (in model %s)", __func__, models[i].name.c_str());
@@ -243,29 +221,24 @@ freesasa_cif_structure_array(std::FILE *input,
             }
 
             ss.reserve(n_new_chains);
-            for (auto& chain_name : *chain_names)
-            {
+            for (auto &chain_name : *chain_names) {
                 ss.emplace_back(
                     // TODO add model to freesasa_structure: implement this line from structure.c (ss[j0 + j]->model = i + 1;)
-                    // Not sure if I still have to do this. Need to check. 
-                    freesasa_structure_from_chain(doc, chain_name, classifier, options)
-                );
+                    // Not sure if I still have to do this. Need to check.
+                    freesasa_structure_from_chain(doc, chain_name, classifier, options));
             }
         }
-        if (n_chains == 0) freesasa_fail("In %s(): No chains in any model in protein ", __func__, gemmi_struct.name.c_str());
+        if (n_chains == 0) freesasa_fail("In %s(): No chains in any model in protein: %s.", __func__, gemmi_struct.name.c_str());
         *n = n_chains;
     }
 
-    else 
-    {
+    else {
         ss.reserve(n_models);
-        for (int i=0; i < n_models; ++i) 
-        {
+        for (int i = 0; i < n_models; ++i) {
             ss.emplace_back(
                 // TODO add model to freesasa_structure: implement this line from structure.c (ss[j0 + j]->model = i + 1;)
-                // Not sure if I still have to do this. Need to check. 
-                freesasa_structure_from_model(doc, models[i].name, classifier, options)
-            );
+                // Not sure if I still have to do this. Need to check.
+                freesasa_structure_from_model(doc, models[i].name, classifier, options));
         }
         *n = n_models;
     }
