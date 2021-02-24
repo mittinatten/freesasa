@@ -3,7 +3,6 @@
 #include <memory>
 
 #include <gemmi/cif.hpp>
-#include <gemmi/model.hpp>
 #include <gemmi/mmcif.hpp>
 
 #include "cif.hh"
@@ -250,8 +249,7 @@ freesasa_cif_structure_array(std::FILE *input,
 
             if (n_new_chains == FREESASA_FAIL) gemmi::fail("No chains in protein");
             if (n_new_chains == 0) {
-                // TODO Cant get this to link with freesasa.a for some reason.
-                //freesasa_warn("in %s(): no chains found (in model %s)", __func__, model.name.c_str());
+                freesasa_warn("in %s(): no chains found (in model %s)", __func__, model.name.c_str());
                 continue;
             }
 

@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <vector>
 #include "freesasa.h"
+#include "freesasa_internal.h"
 
 freesasa_structure *
 freesasa_structure_from_cif(std::FILE *input,
@@ -17,9 +18,6 @@ freesasa_cif_structure_array(std::FILE *input,
                          int *n,
                          const freesasa_classifier *classifier,
                          int options);
-
-// TODO this declaration does not have its implementation linked against. (Dont know why.)
-int freesasa_warn(const char *format, ...);
 
 
 #endif /* CIF_HH */

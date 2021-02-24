@@ -9,6 +9,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "coord.h"
 #include "freesasa.h"
 
@@ -412,5 +416,10 @@ int freesasa_fail_wloc(const char *file,
                        int line,
                        const char *format,
                        ...);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* FREESASA_INTERNAL_H */
