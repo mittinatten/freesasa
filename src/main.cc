@@ -271,16 +271,13 @@ get_structures(std::FILE *input,
         (state->structure_options & FREESASA_SEPARATE_MODELS)) {
         if (state->cif) {
             structures = freesasa_cif_structure_array(input, n, state->classifier, state->structure_options);
-            std::cout << "Built structures from CIF: " << structures.size() << std::endl;
-            return structures;
         } else {
-            // TODO this hack is needed since PDB implementation is in C
+            // TODO this hack needed since PDB implementation is in C
             freesasa_structure** db_ptr_structs = freesasa_structure_array(input, n, state->classifier, state->structure_options);
             structures.reserve(*n);
             for (i = 0; i < *n; ++i) {
                 structures.push_back(std::move(db_ptr_structs[i]));
             }
-            std::cout << "Built structures from PDB: " << structures.size() << std::endl;
         }
         
         // if (structures == NULL) abort_msg("invalid input");
@@ -303,7 +300,6 @@ get_structures(std::FILE *input,
         }
     }
 
-    //TODO refactor: this currently fails with freesasa.c line 163 assertion.
     /* get chain-groups (if requested) */
     if (state->n_chain_groups > 0) {
         n2 = *n;
@@ -315,9 +311,7 @@ get_structures(std::FILE *input,
                 if (tmp != NULL) {
                     ++n2;
                     structures.reserve(n2);
-                    // structures = (freesasa_structure **)realloc(structures, sizeof(freesasa_structure *) * n2);
-                    // if (structures == NULL) abort_msg("out of memory");
-                    structures[n2 - 1] = tmp;
+                    structures.push_back(tmp);
                 } else {
                     abort_msg("at least one of chain(s) '%s' not found", state->chain_groups[i]);
                 }
@@ -325,7 +319,6 @@ get_structures(std::FILE *input,
         }
         *n = n2;
     }
-
     return structures;
 }
 
