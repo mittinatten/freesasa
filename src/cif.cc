@@ -66,6 +66,26 @@ static const auto atom_site_columns = std::vector<std::string>({
 
 
 
+static freesasa_cif_atom
+freesasa_atom_from_site(const gemmi::cif::Table::Row &site)
+{
+    return {
+                .group_PDB          = site[0].c_str(),
+                .auth_asym_id       = site[1][0],
+                .auth_seq_id        = site[2].c_str(),
+                .pdbx_PDB_ins_code  = site[3].c_str(),
+                .auth_comp_id       = site[4].c_str(),
+                .auth_atom_id       = site[5].c_str(),
+                .label_alt_id       = site[6].c_str(),
+                .type_symbol        = site[7].c_str(),
+                .Cartn_x            = atof(site[8].c_str()),
+                .Cartn_y            = atof(site[9].c_str()),
+                .Cartn_z            = atof(site[10].c_str())
+            };
+}
+
+
+
 static freesasa_structure *
 structure_from_doc(const gemmi::cif::Document &doc,
                    const std::set<int> &models,
@@ -84,18 +104,7 @@ structure_from_doc(const gemmi::cif::Document &doc,
 
             if (models.count(std::stoi(site[11])) == 0) continue;
             
-            freesasa_cif_atom atom = {
-                .group_PDB = site[0].c_str(),
-                .auth_asym_id = site[1][0],
-                .auth_seq_id = site[2].c_str(),
-                .pdbx_PDB_ins_code = site[3].c_str(),
-                .auth_comp_id = site[4].c_str(),
-                .auth_atom_id = site[5].c_str(),
-                .label_alt_id = site[6].c_str(),
-                .type_symbol = site[7].c_str(),
-                .Cartn_x = atof(site[8].c_str()),
-                .Cartn_y = atof(site[9].c_str()),
-                .Cartn_z = atof(site[10].c_str())};
+            freesasa_cif_atom atom = freesasa_atom_from_site(site);
 
             auto currentAltId = site[6][0];
 
@@ -119,12 +128,10 @@ structure_from_doc(const gemmi::cif::Document &doc,
 static freesasa_structure*
 structure_from_doc(const gemmi::cif::Document &doc,
                          const std::string &filter,
-                         const int &col, 
+                         const int filter_col, 
                          const freesasa_classifier *classifier,
                          int structure_options)
 {
-    std::cout << "Creating a filtered freesasa structure !" << std::endl;
-
     freesasa_structure *structure = freesasa_structure_new();
 
     for (auto block : doc.blocks) {
@@ -135,20 +142,9 @@ structure_from_doc(const gemmi::cif::Document &doc,
                 continue;
             }
 
-            if (filter != site[col]) continue;
+            if (filter != site[filter_col]) continue;
 
-            freesasa_cif_atom atom = {
-                .group_PDB = site[0].c_str(),
-                .auth_asym_id = site[1][0],
-                .auth_seq_id = site[2].c_str(),
-                .pdbx_PDB_ins_code = site[3].c_str(),
-                .auth_comp_id = site[4].c_str(),
-                .auth_atom_id = site[5].c_str(),
-                .label_alt_id = site[6].c_str(),
-                .type_symbol = site[7].c_str(),
-                .Cartn_x = atof(site[8].c_str()),
-                .Cartn_y = atof(site[9].c_str()),
-                .Cartn_z = atof(site[10].c_str())};
+            freesasa_cif_atom atom = freesasa_atom_from_site(site);
 
             auto currentAltId = site[6][0];
 
@@ -196,8 +192,6 @@ freesasa_structure_from_chain(const gemmi::cif::Document doc,
                               const freesasa_classifier *classifier,
                               int structure_options)
 {
-    std::cout << "Creating a freesasa structure from chain!" << std::endl;
-
     return structure_from_doc(doc, chain_name, 1, classifier, structure_options);
 }
 
@@ -208,8 +202,6 @@ freesasa_structure_from_model(const gemmi::cif::Document &doc,
                          const freesasa_classifier *classifier,
                          int structure_options)
 {
-    std::cout << "Creating a freesasa structure from model!" << std::endl;
-
     return structure_from_doc(doc, model, 11, classifier, structure_options);
 }
 
@@ -233,23 +225,20 @@ freesasa_cif_structure_array(std::FILE *input,
 
     n_models = models.size();
 
-    std::cout << "Number of models: " << n_models << std::endl;
-
     /* only keep first model if option not provided */
     if (!(options & FREESASA_SEPARATE_MODELS)) n_models = 1;
 
     /* for each model read chains if requested */
     if (options & FREESASA_SEPARATE_CHAINS) 
     {
-        for (auto& model : models) 
+        for(int i=0; i < n_models; ++i) 
         {
-            auto chain_names  = get_chains(model);
+            auto chain_names  = get_chains(models[i]);
             int n_new_chains  = chain_names->size();
             n_chains         +=  n_new_chains;
 
-            if (n_new_chains == FREESASA_FAIL) gemmi::fail("No chains in protein");
             if (n_new_chains == 0) {
-                freesasa_warn("in %s(): no chains found (in model %s)", __func__, model.name.c_str());
+                freesasa_warn("in %s(): no chains found (in model %s)", __func__, models[i].name.c_str());
                 continue;
             }
 
@@ -263,18 +252,19 @@ freesasa_cif_structure_array(std::FILE *input,
                 );
             }
         }
+        if (n_chains == 0) freesasa_fail("In %s(): No chains in any model in protein ", __func__, gemmi_struct.name.c_str());
         *n = n_chains;
     }
 
     else 
     {
         ss.reserve(n_models);
-        for (auto& model : models) 
+        for (int i=0; i < n_models; ++i) 
         {
             ss.emplace_back(
                 // TODO add model to freesasa_structure: implement this line from structure.c (ss[j0 + j]->model = i + 1;)
                 // Not sure if I still have to do this. Need to check. 
-                freesasa_structure_from_model(doc, model.name, classifier, options)
+                freesasa_structure_from_model(doc, models[i].name, classifier, options)
             );
         }
         *n = n_models;

@@ -279,16 +279,7 @@ get_structures(std::FILE *input,
                 structures.push_back(std::move(db_ptr_structs[i]));
             }
         }
-        
-        // if (structures == NULL) abort_msg("invalid input");
-        // for (i = 0; i < *n; ++i) {
-        //     if (structures[i] == NULL) abort_msg("invalid input");
-        // }
     } else {
-        // (freesasa_structure **)malloc(sizeof(freesasa_structure *));
-        // if (structures == NULL) {
-        //     abort_msg("out of memory");
-        // }
         *n = 1;
         if (state->cif) {
             structures.emplace_back(freesasa_structure_from_cif(input, state->classifier, state->structure_options));
