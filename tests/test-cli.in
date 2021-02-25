@@ -222,6 +222,22 @@ assert_equal_total "$cli --join-models" "$datadir/2jo4.pdb" "$datadir/2jo4.cif -
 assert_equal_total "$cli --chain-groups AB+CD -S -n 10" "$datadir/2jo4.pdb" "$datadir/2jo4.cif --cif"
 
 echo
+echo "== Testing --separate-chains and --separate-models output are equal between cif and pdb"
+assert_equal_total "$cli --separate-chains -S -n 10" "$datadir/2jo4.pdb" "$datadir/2jo4.cif --cif"
+assert_equal_total "$cli --separate-chains -S -n 10" "$datadir/2isk.pdb" "$datadir/2isk.cif --cif"
+assert_equal_total "$cli --separate-chains -S -n 10" "$datadir/1sui.pdb" "$datadir/1sui.cif --cif"
+# need input files with multiple models
+assert_equal_total "$cli --separate-models -S -n 10" "$datadir/2jo4.pdb" "$datadir/2jo4.cif --cif"
+assert_equal_total "$cli --separate-models -S -n 10" "$datadir/2isk.pdb" "$datadir/2isk.cif --cif"
+assert_equal_total "$cli --separate-models -S -n 10" "$datadir/1sui.pdb" "$datadir/1sui.cif --cif"
+assert_equal_total "$cli --separate-models -S -n 10" "$datadir/1d3z.pdb" "$datadir/1d3z.cif --cif"
+# need input files with multiple models
+assert_equal_total "$cli --separate-chains --separate-models -S -n 10" "$datadir/2jo4.pdb" "$datadir/2jo4.cif --cif"
+assert_equal_total "$cli --separate-chains --separate-models -S -n 10" "$datadir/2isk.pdb" "$datadir/2isk.cif --cif"
+assert_equal_total "$cli --separate-chains --separate-models -S -n 10" "$datadir/1sui.pdb" "$datadir/1sui.cif --cif"
+assert_equal_total "$cli --separate-chains --separate-models -S -n 10" "$datadir/1d3z.pdb" "$datadir/1d3z.cif --cif"
+
+echo
 echo "== Testing user-configurations =="
 assert_pass "$cli -c $sharedir/naccess.config -n 3 < $smallpdb > $dump"
 assert_pass "$cli -c $sharedir/oons.config -n 3 < $smallpdb > $dump"
