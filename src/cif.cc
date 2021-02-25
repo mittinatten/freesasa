@@ -84,8 +84,6 @@ structure_from_doc(const gemmi::cif::Document &doc,
     freesasa_structure *structure = freesasa_structure_new();
 
     for (auto block : doc.blocks) {
-        auto prevAltId = '?';
-
         for (auto site : block.find("_atom_site.", atom_site_columns)) {
             if (site[0] != "ATOM" && !(structure_options & FREESASA_INCLUDE_HETATM)) {
                 continue;
@@ -95,13 +93,12 @@ structure_from_doc(const gemmi::cif::Document &doc,
 
             freesasa_cif_atom atom = freesasa_atom_from_site(site);
 
-            auto currentAltId = site[6][0];
-
             if (!(structure_options & FREESASA_INCLUDE_HYDROGEN) && std::string(atom.type_symbol) == "H") {
                 continue;
             }
 
             // Pick the first alternative conformation for an atom
+            auto currentAltId = site[6][0];
             if (currentAltId != '.' && currentAltId != 'A') {
                 continue;
             }
@@ -122,8 +119,6 @@ structure_from_doc(const gemmi::cif::Document &doc,
     freesasa_structure *structure = freesasa_structure_new();
 
     for (auto block : doc.blocks) {
-        auto prevAltId = '?';
-
         for (auto site : block.find("_atom_site.", atom_site_columns)) {
             if (site[0] != "ATOM" && !(structure_options & FREESASA_INCLUDE_HETATM)) {
                 continue;
@@ -133,13 +128,12 @@ structure_from_doc(const gemmi::cif::Document &doc,
 
             freesasa_cif_atom atom = freesasa_atom_from_site(site);
 
-            auto currentAltId = site[6][0];
-
             if (!(structure_options & FREESASA_INCLUDE_HYDROGEN) && std::string(atom.type_symbol) == "H") {
                 continue;
             }
 
             // Pick the first alternative conformation for an atom
+            auto currentAltId = site[6][0];
             if (currentAltId != '.' && currentAltId != 'A') {
                 continue;
             }
