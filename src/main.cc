@@ -157,14 +157,7 @@ release_state(struct cli_state *state)
 static void
 addresses(FILE *out)
 {
-<<<<<<< HEAD
-    fprintf(out,
-            "\n" REPORTBUG "\n"
-            "Home page: " HOMEPAGE "\n");
-=======
-    fprintf(out, "\n" REPORTBUG "\n"
-                 "Home page: " HOMEPAGE "\n");
->>>>>>> 099b8cf... Applied .clang-format to src
+    fprintf(out, "\n" REPORTBUG "\nHome page: " HOMEPAGE "\n");
 }
 
 static void
