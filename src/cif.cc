@@ -109,41 +109,6 @@ structure_from_doc(const gemmi::cif::Document &doc,
     return structure;
 }
 
-static freesasa_structure *
-structure_from_doc(const gemmi::cif::Document &doc,
-                   const std::string &filter,
-                   const int filter_col,
-                   const freesasa_classifier *classifier,
-                   int structure_options)
-{
-    freesasa_structure *structure = freesasa_structure_new();
-
-    for (auto block : doc.blocks) {
-        for (auto site : block.find("_atom_site.", atom_site_columns)) {
-            if (site[0] != "ATOM" && !(structure_options & FREESASA_INCLUDE_HETATM)) {
-                continue;
-            }
-
-            if (filter != site[filter_col]) continue;
-
-            freesasa_cif_atom atom = freesasa_atom_from_site(site);
-
-            if (!(structure_options & FREESASA_INCLUDE_HYDROGEN) && std::string(atom.type_symbol) == "H") {
-                continue;
-            }
-
-            // Pick the first alternative conformation for an atom
-            auto currentAltId = site[6][0];
-            if (currentAltId != '.' && currentAltId != 'A') {
-                continue;
-            }
-
-            freesasa_structure_add_cif_atom(structure, &atom, classifier, structure_options);
-        }
-    }
-    return structure;
-}
-
 freesasa_structure *
 freesasa_structure_from_cif(std::FILE *input,
                             const freesasa_classifier *classifier,
@@ -164,21 +129,74 @@ freesasa_structure_from_cif(std::FILE *input,
 }
 
 freesasa_structure *
+freesasa_structure_from_model(const gemmi::cif::Document &doc,
+                              const std::string &model_name,
+                              const freesasa_classifier *classifier,
+                              int structure_options)
+{
+    freesasa_structure *structure = freesasa_structure_new();
+
+    for (auto block : doc.blocks) {
+        for (auto site : block.find("_atom_site.", atom_site_columns)) {
+            if (site[0] != "ATOM" && !(structure_options & FREESASA_INCLUDE_HETATM)) {
+                continue;
+            }
+
+            if (model_name != site[11]) continue;
+
+            freesasa_cif_atom atom = freesasa_atom_from_site(site);
+
+            if (!(structure_options & FREESASA_INCLUDE_HYDROGEN) && std::string(atom.type_symbol) == "H") {
+                continue;
+            }
+
+            // Pick the first alternative conformation for an atom
+            auto currentAltId = site[6][0];
+            if (currentAltId != '.' && currentAltId != 'A') {
+                continue;
+            }
+
+            freesasa_structure_add_cif_atom(structure, &atom, classifier, structure_options);
+        }
+    }
+    return structure;
+}
+
+freesasa_structure *
 freesasa_structure_from_chain(const gemmi::cif::Document doc,
+                              const std::string &model_name,
                               const std::string &chain_name,
                               const freesasa_classifier *classifier,
                               int structure_options)
 {
-    return structure_from_doc(doc, chain_name, 1, classifier, structure_options);
-}
+    // return structure_from_doc(doc, chain_name, 1, classifier, structure_options);
 
-freesasa_structure *
-freesasa_structure_from_model(const gemmi::cif::Document &doc,
-                              const std::string &model,
-                              const freesasa_classifier *classifier,
-                              int structure_options)
-{
-    return structure_from_doc(doc, model, 11, classifier, structure_options);
+    freesasa_structure *structure = freesasa_structure_new();
+
+    for (auto block : doc.blocks) {
+        for (auto site : block.find("_atom_site.", atom_site_columns)) {
+            if (site[0] != "ATOM" && !(structure_options & FREESASA_INCLUDE_HETATM)) {
+                continue;
+            }
+
+            if (model_name != site[11] || chain_name != site[1]) continue;
+
+            freesasa_cif_atom atom = freesasa_atom_from_site(site);
+
+            if (!(structure_options & FREESASA_INCLUDE_HYDROGEN) && std::string(atom.type_symbol) == "H") {
+                continue;
+            }
+
+            // Pick the first alternative conformation for an atom
+            auto currentAltId = site[6][0];
+            if (currentAltId != '.' && currentAltId != 'A') {
+                continue;
+            }
+
+            freesasa_structure_add_cif_atom(structure, &atom, classifier, structure_options);
+        }
+    }
+    return structure;
 }
 
 std::vector<freesasa_structure *>
@@ -217,22 +235,18 @@ freesasa_cif_structure_array(std::FILE *input,
             ss.reserve(n_new_chains);
             for (auto &chain_name : *chain_names) {
                 ss.emplace_back(
-                    // TODO add model to freesasa_structure: implement this line from structure.c (ss[j0 + j]->model = i + 1;)
-                    // Not sure if I still have to do this. Need to check.
-                    freesasa_structure_from_chain(doc, chain_name, classifier, options));
+                    freesasa_structure_from_chain(doc, models[i].name, chain_name, classifier, options));
+                freesasa_structure_set_model(ss.back(), i + 1);
             }
         }
         if (n_chains == 0) freesasa_fail("In %s(): No chains in any model in protein: %s.", __func__, gemmi_struct.name.c_str());
         *n = n_chains;
-    }
-
-    else {
+    } else {
         ss.reserve(n_models);
         for (int i = 0; i < n_models; ++i) {
             ss.emplace_back(
-                // TODO add model to freesasa_structure: implement this line from structure.c (ss[j0 + j]->model = i + 1;)
-                // Not sure if I still have to do this. Need to check.
                 freesasa_structure_from_model(doc, models[i].name, classifier, options));
+            freesasa_structure_set_model(ss.back(), i + 1);
         }
         *n = n_models;
     }
