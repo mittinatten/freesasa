@@ -7,6 +7,58 @@
 
 #include "cif.hh"
 
+struct ModelDiscriminator {
+    ModelDiscriminator(const std::string &model_name,
+                       const int model_col = 11)
+        : _model_name(model_name), _model_col(model_col)
+    {
+    }
+
+    bool operator()(const gemmi::cif::Table::Row &site) const
+    {
+        return _model_name != site[_model_col];
+    }
+
+private:
+    const std::string _model_name;
+    int _model_col;
+};
+
+struct ModelSetDiscriminator {
+    ModelSetDiscriminator(const std::set<int> models,
+                          const int model_col = 11)
+        : _models(models), _model_col(model_col)
+    {
+    }
+
+    bool operator()(const gemmi::cif::Table::Row &site) const
+    {
+        return _models.count(std::stoi(site[_model_col])) == 0;
+    }
+
+private:
+    const std::set<int> _models;
+    int _model_col;
+};
+
+struct ChainDiscriminator {
+    ChainDiscriminator(const std::string &model_name, const std::string &chain_name,
+                       const int model_col = 11, const int chain_col = 1)
+        : _model_name(model_name), _chain_name(chain_name),
+          _model_col(model_col), _chain_col(chain_col)
+    {
+    }
+
+    bool operator()(const gemmi::cif::Table::Row &site) const
+    {
+        return _model_name != site[_model_col] || _chain_name != site[_chain_col];
+    }
+
+private:
+    const std::string _model_name, _chain_name;
+    int _model_col, _chain_col;
+};
+
 static std::unique_ptr<std::set<int>>
 get_models(const gemmi::cif::Document &doc)
 {
@@ -75,11 +127,12 @@ freesasa_atom_from_site(const gemmi::cif::Table::Row &site)
         .Cartn_z = atof(site[10].c_str())};
 }
 
+template <typename T>
 static freesasa_structure *
-structure_from_doc(const gemmi::cif::Document &doc,
-                   const std::set<int> &models,
-                   const freesasa_classifier *classifier,
-                   int structure_options)
+freesasa_structure_from_pred(const gemmi::cif::Document &doc,
+                             const T &discriminator,
+                             const freesasa_classifier *classifier,
+                             int structure_options)
 {
     freesasa_structure *structure = freesasa_structure_new();
 
@@ -89,7 +142,7 @@ structure_from_doc(const gemmi::cif::Document &doc,
                 continue;
             }
 
-            if (models.count(std::stoi(site[11])) == 0) continue;
+            if (discriminator(site)) continue;
 
             freesasa_cif_atom atom = freesasa_atom_from_site(site);
 
@@ -117,15 +170,15 @@ freesasa_structure_from_cif(std::FILE *input,
     const auto doc = gemmi::cif::read_cstream(input, 8192, "cif-input");
     const auto models = get_models(doc);
 
+    std::unique_ptr<const ModelSetDiscriminator> discriminator;
     if (structure_options & FREESASA_JOIN_MODELS) {
-        return structure_from_doc(doc, *models, classifier, structure_options);
+        discriminator = std::make_unique<const ModelSetDiscriminator>(std::move(*models));
     } else {
         auto firstModel = models->begin();
-        auto singleModel = std::set<int>();
-        singleModel.insert(*firstModel);
-
-        return structure_from_doc(doc, singleModel, classifier, structure_options);
+        auto singleModel = std::set<int>{*firstModel};
+        discriminator = std::make_unique<const ModelSetDiscriminator>(singleModel);
     }
+    return freesasa_structure_from_pred(doc, *discriminator, classifier, structure_options);
 }
 
 freesasa_structure *
@@ -134,32 +187,9 @@ freesasa_structure_from_model(const gemmi::cif::Document &doc,
                               const freesasa_classifier *classifier,
                               int structure_options)
 {
+    const ModelDiscriminator discriminator(model_name);
+    return freesasa_structure_from_pred(doc, discriminator, classifier, structure_options);
     freesasa_structure *structure = freesasa_structure_new();
-
-    for (auto block : doc.blocks) {
-        for (auto site : block.find("_atom_site.", atom_site_columns)) {
-            if (site[0] != "ATOM" && !(structure_options & FREESASA_INCLUDE_HETATM)) {
-                continue;
-            }
-
-            if (model_name != site[11]) continue;
-
-            freesasa_cif_atom atom = freesasa_atom_from_site(site);
-
-            if (!(structure_options & FREESASA_INCLUDE_HYDROGEN) && std::string(atom.type_symbol) == "H") {
-                continue;
-            }
-
-            // Pick the first alternative conformation for an atom
-            auto currentAltId = site[6][0];
-            if (currentAltId != '.' && currentAltId != 'A') {
-                continue;
-            }
-
-            freesasa_structure_add_cif_atom(structure, &atom, classifier, structure_options);
-        }
-    }
-    return structure;
 }
 
 freesasa_structure *
@@ -169,34 +199,8 @@ freesasa_structure_from_chain(const gemmi::cif::Document doc,
                               const freesasa_classifier *classifier,
                               int structure_options)
 {
-    // return structure_from_doc(doc, chain_name, 1, classifier, structure_options);
-
-    freesasa_structure *structure = freesasa_structure_new();
-
-    for (auto block : doc.blocks) {
-        for (auto site : block.find("_atom_site.", atom_site_columns)) {
-            if (site[0] != "ATOM" && !(structure_options & FREESASA_INCLUDE_HETATM)) {
-                continue;
-            }
-
-            if (model_name != site[11] || chain_name != site[1]) continue;
-
-            freesasa_cif_atom atom = freesasa_atom_from_site(site);
-
-            if (!(structure_options & FREESASA_INCLUDE_HYDROGEN) && std::string(atom.type_symbol) == "H") {
-                continue;
-            }
-
-            // Pick the first alternative conformation for an atom
-            auto currentAltId = site[6][0];
-            if (currentAltId != '.' && currentAltId != 'A') {
-                continue;
-            }
-
-            freesasa_structure_add_cif_atom(structure, &atom, classifier, structure_options);
-        }
-    }
-    return structure;
+    const ChainDiscriminator discriminator(model_name, chain_name);
+    return freesasa_structure_from_pred(doc, discriminator, classifier, structure_options);
 }
 
 std::vector<freesasa_structure *>
