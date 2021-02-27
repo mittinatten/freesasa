@@ -119,8 +119,6 @@ freesasa_atom_from_site(const gemmi::cif::Table::Row &site)
     // remove quotation marks if necessary
     if (site[5][0] == '"') {
         auth_atom_id = std::make_unique<std::string>(site[5].substr(1, site[5].size() - 2));
-    } else {
-        auth_atom_id = std::make_unique<std::string>(site[5]);
     }
 
     return {
@@ -129,7 +127,7 @@ freesasa_atom_from_site(const gemmi::cif::Table::Row &site)
         .auth_seq_id = site[2].c_str(),
         .pdbx_PDB_ins_code = site[3].c_str(),
         .auth_comp_id = site[4].c_str(),
-        .auth_atom_id = std::move(*auth_atom_id).c_str(),
+        .auth_atom_id = auth_atom_id ? std::move(*auth_atom_id).c_str() : site[5].c_str(),
         .label_alt_id = site[6].c_str(),
         .type_symbol = site[7].c_str(),
         .Cartn_x = atof(site[8].c_str()),
