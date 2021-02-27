@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <set>
+#include <string>
 
 #include <gemmi/cif.hpp>
 #include <gemmi/mmcif.hpp>
@@ -110,23 +111,6 @@ static const auto atom_site_columns = std::vector<std::string>({
     "pdbx_PDB_model_num",
 });
 
-static freesasa_cif_atom
-freesasa_atom_from_site(const gemmi::cif::Table::Row &site)
-{
-    return {
-        .group_PDB = site[0].c_str(),
-        .auth_asym_id = site[1][0],
-        .auth_seq_id = site[2].c_str(),
-        .pdbx_PDB_ins_code = site[3].c_str(),
-        .auth_comp_id = site[4].c_str(),
-        .auth_atom_id = site[5].c_str(),
-        .label_alt_id = site[6].c_str(),
-        .type_symbol = site[7].c_str(),
-        .Cartn_x = atof(site[8].c_str()),
-        .Cartn_y = atof(site[9].c_str()),
-        .Cartn_z = atof(site[10].c_str())};
-}
-
 template <typename T>
 static freesasa_structure *
 freesasa_structure_from_pred(const gemmi::cif::Document &doc,
@@ -135,6 +119,7 @@ freesasa_structure_from_pred(const gemmi::cif::Document &doc,
                              int structure_options)
 {
     freesasa_structure *structure = freesasa_structure_new();
+    std::string auth_atom_id;
 
     for (auto block : doc.blocks) {
         for (auto site : block.find("_atom_site.", atom_site_columns)) {
@@ -144,7 +129,25 @@ freesasa_structure_from_pred(const gemmi::cif::Document &doc,
 
             if (discriminator(site)) continue;
 
-            freesasa_cif_atom atom = freesasa_atom_from_site(site);
+            // remove quotation marks if necessary
+            if (site[5][0] == '"') {
+                auth_atom_id = site[5].substr(1, site[5].size() - 2);
+            } else {
+                auth_atom_id = site[5];
+            }
+
+            freesasa_cif_atom atom = {
+                .group_PDB = site[0].c_str(),
+                .auth_asym_id = site[1][0],
+                .auth_seq_id = site[2].c_str(),
+                .pdbx_PDB_ins_code = site[3].c_str(),
+                .auth_comp_id = site[4].c_str(),
+                .auth_atom_id = auth_atom_id.c_str(),
+                .label_alt_id = site[6].c_str(),
+                .type_symbol = site[7].c_str(),
+                .Cartn_x = atof(site[8].c_str()),
+                .Cartn_y = atof(site[9].c_str()),
+                .Cartn_z = atof(site[10].c_str())};
 
             if (!(structure_options & FREESASA_INCLUDE_HYDROGEN) && std::string(atom.type_symbol) == "H") {
                 continue;
