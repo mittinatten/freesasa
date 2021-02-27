@@ -1599,6 +1599,9 @@ int freesasa_select_area(const char *command,
                          const freesasa_structure *structure,
                          const freesasa_result *result);
 
+void freesasa_structure_set_model(freesasa_structure *structure,
+                                  int model);
+
 #ifdef __cplusplus
 }
 #endif

@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <getopt.h>
+#include <iostream>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -156,9 +157,7 @@ release_state(struct cli_state *state)
 static void
 addresses(FILE *out)
 {
-    fprintf(out,
-            "\n" REPORTBUG "\n"
-            "Home page: " HOMEPAGE "\n");
+    fprintf(out, "\n" REPORTBUG "\nHome page: " HOMEPAGE "\n");
 }
 
 static void
@@ -256,33 +255,34 @@ exit_with_help(void)
         exit_with_help();   \
     } while (0)
 
-static freesasa_structure **
+static std::vector<freesasa_structure *>
 get_structures(std::FILE *input,
                int *n,
                const struct cli_state *state)
 {
     int i, j, n2;
-    freesasa_structure **structures = NULL;
+    std::vector<freesasa_structure *> structures;
     freesasa_structure *tmp;
 
     *n = 0;
     if ((state->structure_options & FREESASA_SEPARATE_CHAINS) ||
         (state->structure_options & FREESASA_SEPARATE_MODELS)) {
-        structures = freesasa_structure_array(input, n, state->classifier, state->structure_options);
-        if (structures == NULL) abort_msg("invalid input");
-        for (i = 0; i < *n; ++i) {
-            if (structures[i] == NULL) abort_msg("invalid input");
+        if (state->cif) {
+            structures = freesasa_cif_structure_array(input, n, state->classifier, state->structure_options);
+        } else {
+            // TODO this hack needed since PDB implementation is in C
+            freesasa_structure **db_ptr_structs = freesasa_structure_array(input, n, state->classifier, state->structure_options);
+            structures.reserve(*n);
+            for (i = 0; i < *n; ++i) {
+                structures.push_back(std::move(db_ptr_structs[i]));
+            }
         }
     } else {
-        structures = (freesasa_structure **)malloc(sizeof(freesasa_structure *));
-        if (structures == NULL) {
-            abort_msg("out of memory");
-        }
         *n = 1;
         if (state->cif) {
-            structures[0] = freesasa_structure_from_cif(input, state->classifier, state->structure_options);
+            structures.emplace_back(freesasa_structure_from_cif(input, state->classifier, state->structure_options));
         } else {
-            structures[0] = freesasa_structure_from_pdb(input, state->classifier, state->structure_options);
+            structures.emplace_back(freesasa_structure_from_pdb(input, state->classifier, state->structure_options));
         }
         if (structures[0] == NULL) {
             abort_msg("invalid input");
@@ -294,13 +294,13 @@ get_structures(std::FILE *input,
         n2 = *n;
         for (i = 0; i < state->n_chain_groups; ++i) {
             for (j = 0; j < *n; ++j) {
+                // TODO make this function pdb and cif compatible.
                 tmp = freesasa_structure_get_chains(structures[j], state->chain_groups[i],
                                                     state->classifier, state->structure_options);
                 if (tmp != NULL) {
                     ++n2;
-                    structures = (freesasa_structure **)realloc(structures, sizeof(freesasa_structure *) * n2);
-                    if (structures == NULL) abort_msg("out of memory");
-                    structures[n2 - 1] = tmp;
+                    structures.reserve(n2);
+                    structures.push_back(tmp);
                 } else {
                     abort_msg("at least one of chain(s) '%s' not found", state->chain_groups[i]);
                 }
@@ -308,7 +308,6 @@ get_structures(std::FILE *input,
         }
         *n = n2;
     }
-
     return structures;
 }
 
@@ -318,7 +317,7 @@ run_analysis(FILE *input,
              const struct cli_state *state)
 {
     int name_len = strlen(name);
-    freesasa_structure **structures = NULL;
+    std::vector<freesasa_structure *> structures;
     freesasa_node *tree = freesasa_tree_new(), *tmp_tree, *structure_node;
     const freesasa_result *result;
     freesasa_selection *sel;
@@ -365,8 +364,6 @@ run_analysis(FILE *input,
         freesasa_structure_free(structures[i]);
     }
 
-    free(structures);
-
     return tree;
 }
 
@@ -380,7 +377,6 @@ fopen_werr(const char *filename,
         abort_msg("could not open file '%s'; %s",
                   filename, strerror(errno));
     }
-
     return f;
 }
 

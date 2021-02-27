@@ -1207,3 +1207,9 @@ void freesasa_structure_set_radius(freesasa_structure *structure,
     assert(radii);
     memcpy(structure->atoms.radius, radii, structure->atoms.n * sizeof(double));
 }
+
+void freesasa_structure_set_model(freesasa_structure *structure,
+                                  int model)
+{
+    structure->model = model;
+}
