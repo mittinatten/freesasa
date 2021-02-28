@@ -218,6 +218,7 @@ echo "== Testing option --cif =="
 assert_equal_total "$cli" "$datadir/1ubq.pdb" "$datadir/1ubq.cif --cif"
 assert_equal_total "$cli" "$datadir/1d3z.pdb" "$datadir/1d3z.cif --cif"
 assert_equal_total "$cli" "$datadir/2jo4.pdb" "$datadir/2jo4.cif --cif"
+assert_equal_total "$cli" "$datadir/5hdn.pdb" "$datadir/5hdn.cif --cif"
 assert_equal_total "$cli --join-models" "$datadir/2jo4.pdb" "$datadir/2jo4.cif --cif"
 assert_equal_total "$cli --chain-groups AB+CD -S -n 10" "$datadir/2jo4.pdb" "$datadir/2jo4.cif --cif"
 
