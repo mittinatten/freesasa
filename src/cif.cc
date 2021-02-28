@@ -111,6 +111,30 @@ static const auto atom_site_columns = std::vector<std::string>({
     "pdbx_PDB_model_num",
 });
 
+static freesasa_cif_atom
+freesasa_atom_from_site(const gemmi::cif::Table::Row &site)
+{
+
+    std::unique_ptr<std::string> auth_atom_id;
+    // remove quotation marks if necessary
+    if (site[5][0] == '"') {
+        auth_atom_id = std::make_unique<std::string>(site[5].substr(1, site[5].size() - 2));
+    }
+
+    return {
+        .group_PDB = site[0].c_str(),
+        .auth_asym_id = site[1][0],
+        .auth_seq_id = site[2].c_str(),
+        .pdbx_PDB_ins_code = site[3].c_str(),
+        .auth_comp_id = site[4].c_str(),
+        .auth_atom_id = auth_atom_id ? std::move(*auth_atom_id).c_str() : site[5].c_str(),
+        .label_alt_id = site[6].c_str(),
+        .type_symbol = site[7].c_str(),
+        .Cartn_x = atof(site[8].c_str()),
+        .Cartn_y = atof(site[9].c_str()),
+        .Cartn_z = atof(site[10].c_str())};
+}
+
 template <typename T>
 static freesasa_structure *
 freesasa_structure_from_pred(const gemmi::cif::Document &doc,
@@ -129,25 +153,7 @@ freesasa_structure_from_pred(const gemmi::cif::Document &doc,
 
             if (discriminator(site)) continue;
 
-            // remove quotation marks if necessary
-            if (site[5][0] == '"') {
-                auth_atom_id = site[5].substr(1, site[5].size() - 2);
-            } else {
-                auth_atom_id = site[5];
-            }
-
-            freesasa_cif_atom atom = {
-                .group_PDB = site[0].c_str(),
-                .auth_asym_id = site[1][0],
-                .auth_seq_id = site[2].c_str(),
-                .pdbx_PDB_ins_code = site[3].c_str(),
-                .auth_comp_id = site[4].c_str(),
-                .auth_atom_id = auth_atom_id.c_str(),
-                .label_alt_id = site[6].c_str(),
-                .type_symbol = site[7].c_str(),
-                .Cartn_x = atof(site[8].c_str()),
-                .Cartn_y = atof(site[9].c_str()),
-                .Cartn_z = atof(site[10].c_str())};
+            freesasa_cif_atom atom = freesasa_atom_from_site(site);
 
             if (!(structure_options & FREESASA_INCLUDE_HYDROGEN) && std::string(atom.type_symbol) == "H") {
                 continue;
