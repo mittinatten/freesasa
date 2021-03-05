@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <json-c/json_object.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -51,21 +52,26 @@ freesasa_json_atom(freesasa_node *node,
     return atom;
 }
 
+static void
+freesasa_json_add_valid_num(const json_object *obj, const char *propName, double area)
+{
+    if (isnan(area) || isinf(area)) {
+        return;
+    }
+    json_object_object_add(obj, propName,
+                           json_object_new_double(area));
+}
+
 static json_object *
 freesasa_json_nodearea(const freesasa_nodearea *area)
 {
     json_object *obj = json_object_new_object();
 
-    json_object_object_add(obj, "total",
-                           json_object_new_double(area->total));
-    json_object_object_add(obj, "polar",
-                           json_object_new_double(area->polar));
-    json_object_object_add(obj, "apolar",
-                           json_object_new_double(area->apolar));
-    json_object_object_add(obj, "main-chain",
-                           json_object_new_double(area->main_chain));
-    json_object_object_add(obj, "side-chain",
-                           json_object_new_double(area->side_chain));
+    freesasa_json_add_valid_num(obj, "total", area->total);
+    freesasa_json_add_valid_num(obj, "polar", area->polar);
+    freesasa_json_add_valid_num(obj, "apolar", area->apolar);
+    freesasa_json_add_valid_num(obj, "main-chain", area->main_chain);
+    freesasa_json_add_valid_num(obj, "side-chain", area->side_chain);
 
     return obj;
 }
