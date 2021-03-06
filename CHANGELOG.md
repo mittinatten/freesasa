@@ -2,6 +2,12 @@
 
 FreeSASA uses semantic versioning. Changelog added for versions 2.x
 
+## Pending
+
+- Fix bug in JSON output where relative SASA for amino acids without sidechan
+  were written as `NaN`, which is not valid JSON. These values are now
+  simply skipped.
+
 ## 2.0.3
 
 This version separates the Python bindings into a separate
