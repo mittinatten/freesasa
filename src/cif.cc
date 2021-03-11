@@ -144,6 +144,7 @@ freesasa_structure_from_pred(const gemmi::cif::Document &doc,
 {
     freesasa_structure *structure = freesasa_structure_new();
     std::string auth_atom_id;
+    char prevAltId = '.';
 
     for (auto block : doc.blocks) {
         for (auto site : block.find("_atom_site.", atom_site_columns)) {
@@ -161,7 +162,9 @@ freesasa_structure_from_pred(const gemmi::cif::Document &doc,
 
             // Pick the first alternative conformation for an atom
             auto currentAltId = site[6][0];
-            if (currentAltId != '.' && currentAltId != 'A') {
+            if ((currentAltId != '.' && prevAltId == '.') || currentAltId == '.') {
+                prevAltId = currentAltId;
+            } else if (currentAltId != '.' && currentAltId != prevAltId) {
                 continue;
             }
 
