@@ -917,11 +917,13 @@ static const struct symbol_radius symbol_radius[] = {
 };
 
 double
-freesasa_guess_radius(const char *symbol)
+freesasa_guess_radius(const char *input_symbol)
 {
     int n_symbol, i;
+    char symbol[3];
 
-    assert(symbol);
+    assert(input_symbol);
+    snprintf(symbol, 3, "%2s", input_symbol);
 
     n_symbol = sizeof(symbol_radius) / sizeof(struct symbol_radius);
 
