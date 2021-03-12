@@ -3,15 +3,16 @@
 .SH NAME
 FreeSASA @PACKAGE_VERSION@ - calculate Solvent Accessible Surface Areas from PDB files
 .SH SYNOPSIS
-.B freesasa \fIPDB\-FILE\fR ... [ \-\-\fBshrake\-rupley\fR | \-\-\fBlee\-richards\fR 
+.B freesasa \fIPDB\-FILE\fR ... [ \-\-\fBshrake\-rupley\fR | \-\-\fBlee\-richards\fR
     \fB\-\-probe\-radius=\fR\fINUMBER\fR
     \fB\-\-resolution=\fR\fIINTEGER\fR \fB\-\-n\-threads=\fR\fIINTEGER\fR
     \fB\-\-radius\-from\-occupancy\fR | \fB\-\-config\-file=\fR\fIFILE\fR | \fB\-\-radii=\fR\fBprotor\fR|\fBnaccess\fR
     \fB\-\-separate\-models\fR | \fB\-\-join\-models\fR
     \fB\-\-hetatm\fR \fB\-\-hydrogen\fR
     \fB\-\-separate\-chains\fR | \fB\-\-chain\-groups=\fR\fISTRING\fR ...
-    \fB\-\-unknown=\fR\fBguess\fR|\fBskip\fR|\fBhalt\fR 
-    \fB\-\-output=\fR\fIFILE\fR \fB\-\-error-file=\fR\fIFILE\fR \fB\-\-no\-warnings\fR 
+    \fB\-\-unknown=\fR\fBguess\fR|\fBskip\fR|\fBhalt\fR
+    \fB\-\-cif
+    \fB\-\-output=\fR\fIFILE\fR \fB\-\-error-file=\fR\fIFILE\fR \fB\-\-no\-warnings\fR
     \fB\-\-select=\fR\fISTRING\fR ...
     \fB\-\-format=\fR\fBlog\fR|\fBres\fR|\fBseq\fR|\fBpdb\fR|\fBrsa\fR|\fBxml\fR|\fBjson\fR ...
     \fB\-\-depth\fR=\fBstructure\fR|\fBchain\fR|\fBresidue\fR|\fBatom\fR ]
@@ -31,7 +32,7 @@ Report bugs to:
 https://github.com/mittinatten/freesasa/issues
 .UE
 
-Home page: 
+Home page:
 .UR
 http://freesasa.github.io
 .UE
@@ -70,6 +71,9 @@ Clasifier to determine radii and classes. Example files in 'share/'
 Use either ProtOr or NACCESS radii and classes [defatul: protor]
 
 .SS Input options
+.TP
+.BR \-\-cif
+Input is in mmCIF format
 .TP
 .BR \-H ", " \-\-hetatm
 Include HETATM entries from input
@@ -135,4 +139,3 @@ Equivalent to \-\-format=seq
 .TP
 .BR \-l ", "  \-\-no\-log
 Log suppressed if other format selected. Option has no effect.
-

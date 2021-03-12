@@ -8,7 +8,7 @@ FreeSASA uses semantic versioning. Changelog added for versions 2.x
   were written as `NaN`, which is not valid JSON. These values are now
   simply skipped.
 - Support for mmCIF input with the CLI option `--cif`.
-  - The CLI was rewritten to C++ to allow using Gemmi for CIF import.
+  - The CLI was ported to C++ to allow using Gemmi for CIF import.
   - Gemmi is imported as a git submodule, see README for details.
   - A test runner was added to verify that CIF and PDB input files
     give the same result.
