@@ -53,7 +53,7 @@ freesasa_json_atom(freesasa_node *node,
 }
 
 static void
-freesasa_json_add_valid_num(const json_object *obj, const char *propName, double area)
+freesasa_json_add_valid_num(json_object *obj, const char *propName, double area)
 {
     if (isnan(area) || isinf(area)) {
         return;
