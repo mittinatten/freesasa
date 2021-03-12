@@ -1,8 +1,6 @@
 # FreeSASA
 
 [![DOI](https://zenodo.org/badge/18467/mittinatten/freesasa.svg)](https://zenodo.org/badge/latestdoi/18467/mittinatten/freesasa)
-[![Build Status](https://travis-ci.org/mittinatten/freesasa.svg?branch=master)](https://travis-ci.org/mittinatten/freesasa)
-[![Coverage Status](https://coveralls.io/repos/github/mittinatten/freesasa/badge.svg?branch=master)](https://coveralls.io/github/mittinatten/freesasa?branch=master)
 
 FreeSASA is a C library and command line tool for calculating Solvent
 Accessible Surface Area (SASA) of biomolecules. It is designed to be
