@@ -197,12 +197,13 @@ enum freesasa_output_options {
     FREESASA_PDB = 1 << 9,              /**< PDB output (with B-factors replaced by SASA values, and occupancy by radius). */
     FREESASA_RES = 1 << 10,             /**< A list of the integrated SASA of each residue type. */
     FREESASA_SEQ = 1 << 11,             /**< The SASA of each residue in the sequence. */
+    FREESASA_CIF = 1 << 12,             /**< CIF output with SASA values and SASA radius appended */
 
     /**
        Don't output relative areas, for example if structure has
        manually set radii, invalidating reference values
      */
-    FREESASA_OUTPUT_SKIP_REL = 1 << 12,
+    FREESASA_OUTPUT_SKIP_REL = 1 << 13,
 };
 
 /**

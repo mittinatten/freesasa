@@ -1,3 +1,5 @@
+#include <cassert>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <set>
@@ -6,7 +8,12 @@
 #include <gemmi/cif.hpp>
 #include <gemmi/mmcif.hpp>
 
+#define GEMMI_WRITE_IMPLEMENTATION
+#include <gemmi/to_mmcif.hpp>
+#undef GEMMI_WRITE_IMPLEMENTATION
+
 #include "cif.hh"
+#include "freesasa.h"
 
 struct ModelDiscriminator {
     ModelDiscriminator(const std::string &model_name,
@@ -143,8 +150,12 @@ freesasa_structure_from_pred(const gemmi::cif::Document &doc,
                              int structure_options)
 {
     freesasa_structure *structure = freesasa_structure_new();
+<<<<<<< HEAD
     std::string auth_atom_id;
     char prevAltId = '.';
+=======
+    // std::string auth_atom_id;  // Should be deleted due to refactoring.
+>>>>>>> 59a514a... Successfully parsing tree structure and input cif file; matching tree atom to cif atom.
 
     for (auto block : doc.blocks) {
         for (auto site : block.find("_atom_site.", atom_site_columns)) {
@@ -267,4 +278,119 @@ freesasa_cif_structure_array(std::FILE *input,
         *n = n_models;
     }
     return ss;
+}
+
+
+struct freesasa_MCRA{
+
+    freesasa_MCRA(const int model, const std::string &chain, const std::string &residue, const std::string &res_num, const std::string &atom)
+    : _model(model), _chain(chain), _residue(residue), _res_num(res_num), _atom(atom)
+    {}
+
+    int find_row(gemmi::cif::Table &table) const {
+        unsigned idx = 0;
+        for (auto site : table) {
+            if ((*this)(site)) {
+                return idx;
+            }
+            ++idx;
+        }
+        return -1;
+    }
+
+    friend std::ostream& operator << (std::ostream& os, const freesasa_MCRA& mcra){
+        os << "Atom(" << mcra._model << " " << mcra._chain << " "  << mcra._residue << " [" << mcra._res_num << "] " << mcra._atom << ")";
+        return os; 
+    }
+
+private:
+    bool operator () (const gemmi::cif::Table::Row &site) const {
+
+        
+        int model                  = std::stoul(site[11]);
+        const std::string &chain   = site[1];
+        const std::string &residue = site[4];
+        const std::string &res_num = site[2];
+        const std::string &atom    = site[5][0] != '"' ? site[5] : site[5].substr(1, site[5].size() - 2);
+
+        if (_model == model){
+            if (_chain == chain){
+                if (_res_num == res_num && _residue == residue){
+                    if (_atom == atom) {
+                        return true;
+                    } 
+                } 
+            } 
+        }
+        return false;
+
+    }
+
+    const int _model;
+    const std::string &_chain, &_residue, &_res_num,&_atom;
+};
+
+
+
+int freesasa_write_cif(std::FILE *output,
+                       freesasa_node *root,
+                       int options)
+{
+    freesasa_node *result{freesasa_node_children(root)};
+    freesasa_node *structure;
+
+    assert(output);
+    assert(root);
+    assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
+
+    std::string inp_file{freesasa_node_name(result)};
+    std::string out_file = inp_file.substr(0, inp_file.find_last_of(".")) + ".sasa.cif";
+
+    std::cout << "Input file: " << inp_file << std::endl << "Output File: " << out_file << std::endl;
+
+    const auto doc = gemmi::cif::read_file(inp_file);
+
+    auto block = doc.sole_block();
+
+    auto table = block.find("_atom_site.", atom_site_columns);
+
+
+    while (result) {
+        structure = freesasa_node_children(result);
+        while (structure) {
+            auto model = freesasa_node_structure_model(structure);
+            auto chain = freesasa_node_children(structure);
+            while (chain) {
+                auto cName = freesasa_node_name(chain);
+                auto residue = freesasa_node_children(chain);
+                while (residue) {
+                    auto rName = freesasa_node_name(residue);
+                    auto rNum  = freesasa_node_residue_number(residue);
+                    auto atom = freesasa_node_children(residue);
+                    while (atom) {
+                        auto aName   = freesasa_node_name(atom);
+                        auto area    = freesasa_node_area(atom);
+                        auto radius  = freesasa_node_atom_radius(atom);
+
+                        int  rowNum = freesasa_MCRA{model, cName, rName, rNum, aName}.find_row(table);
+                        // if (rowNum != -1) std::cout << "Found row: " << rowNum << std::endl; 
+                        // else {
+                        //     std::cout << "Did not find row for " << freesasa_MCRA{model, cName, rName, rNum, aName} << std::endl;
+                        //     exit(1);
+                        // }
+                        atom = freesasa_node_next(atom);
+                    }
+                    auto last_res_name = freesasa_node_name(residue);
+                    auto last_res_number = freesasa_node_residue_number(residue);
+                    residue = freesasa_node_next(residue);
+                }
+                auto last_chain = freesasa_node_name(chain);
+                chain = freesasa_node_next(chain);
+                std::cout << "Finished chain: " << cName << std::endl;
+            }
+            structure = freesasa_node_next(structure);
+        }
+        result = freesasa_node_next(result);
+    }
+    return FREESASA_SUCCESS;
 }

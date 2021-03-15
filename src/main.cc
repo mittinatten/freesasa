@@ -34,7 +34,7 @@ static const char *program_name = "freesasa";
 #define JSON_STRING ""
 #endif
 
-#define FORMAT_STRING "log|res|seq|pdb|rsa" XML_STRING JSON_STRING
+#define FORMAT_STRING "log|res|seq|pdb|rsa|cif" XML_STRING JSON_STRING
 
 enum { B_FILE,
        SELECT,
@@ -484,6 +484,9 @@ parse_output_format(const char *optarg)
     if (strcmp(optarg, "pdb") == 0) {
         return FREESASA_PDB;
     }
+    if (strcmp(optarg, "cif") == 0){
+        return FREESASA_CIF;
+    }
     abort_msg("unknown output format: '%s'", optarg);
     return FREESASA_FAIL; /* to avoid compiler warnings */
 }
@@ -736,7 +739,12 @@ int main(int argc,
             abort_msg("no input", program_name);
     }
 
-    freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
+    if (state.output_format & FREESASA_CIF){
+        std::cout << "CIF output requested! " << std::endl;
+        freesasa_write_cif(input, tree, state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
+    } else {
+        freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
+    }
     freesasa_node_free(tree);
 
     release_state(&state);

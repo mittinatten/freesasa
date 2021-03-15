@@ -23,4 +23,8 @@ freesasa_cif_structure_array(std::FILE *input,
                              const freesasa_classifier *classifier,
                              int options);
 
+int freesasa_write_cif(FILE *output,
+                       freesasa_node *root,
+                       int options);
+
 #endif /* CIF_HH */
