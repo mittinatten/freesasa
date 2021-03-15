@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -280,19 +281,20 @@ freesasa_cif_structure_array(std::FILE *input,
     return ss;
 }
 
-
-struct freesasa_MCRA{
+struct freesasa_MCRA {
 
     freesasa_MCRA(const int model, const std::string &chain, const std::string &residue, const std::string &res_num, const std::string &atom)
-    : _model(model), _chain(chain), _residue(residue), _res_num(res_num), _atom(atom)
-    {}
+        : _model(model), _chain(chain), _residue(residue), _res_num(res_num), _atom(atom)
+    {
+    }
 
-    int find_row(gemmi::cif::Table &table, int start_idx=0) const {
+    int find_row(gemmi::cif::Table &table, int start_idx = 0) const
+    {
         int idx = start_idx, total_rows = table.length();
 
         assert(idx < total_rows);
 
-        while (idx < total_rows - 1){
+        while (idx < total_rows) {
             if ((*this)(table[idx])) {
                 return idx;
             }
@@ -313,40 +315,37 @@ struct freesasa_MCRA{
         return -1;
     }
 
-    friend std::ostream& operator << (std::ostream& os, const freesasa_MCRA& mcra){
-        os << "Atom(" << mcra._model << " " << mcra._chain << " "  << mcra._residue << " [" << mcra._res_num << "] " << mcra._atom << ")";
-        return os; 
+    friend std::ostream &operator<<(std::ostream &os, const freesasa_MCRA &mcra)
+    {
+        os << "Atom(" << mcra._model << " " << mcra._chain << " " << mcra._residue << " [" << mcra._res_num << "] " << mcra._atom << ")";
+        return os;
     }
 
 private:
-    bool operator () (const gemmi::cif::Table::Row &site) const {
-
-        
-        int model                  = std::stoul(site[11]);
-        const std::string &chain   = site[1];
+    bool operator()(const gemmi::cif::Table::Row &site) const
+    {
+        int model = std::stoul(site[11]);
+        const std::string &chain = site[1];
         const std::string &residue = site[4];
         const std::string &res_num = site[2];
-        const std::string &atom    = site[5][0] != '"' ? site[5] : site[5].substr(1, site[5].size() - 2);
+        const std::string &atom = site[5][0] != '"' ? site[5] : site[5].substr(1, site[5].size() - 2);
 
-        if (_model == model){
-            if (_chain == chain){
-                if (_res_num == res_num && _residue == residue){
+        if (_model == model) {
+            if (_chain == chain) {
+                if (_res_num == res_num && _residue == residue) {
                     if (_atom == atom) {
                         // std::cout << "Found! " << *this << std::endl;
                         return true;
-                    } 
-                } 
-            } 
+                    }
+                }
+            }
         }
         return false;
-
     }
 
     const int _model;
-    const std::string &_chain, &_residue, &_res_num,&_atom;
+    const std::string &_chain, &_residue, &_res_num, &_atom;
 };
-
-
 
 int freesasa_write_cif(std::FILE *output,
                        freesasa_node *root,
@@ -361,13 +360,19 @@ int freesasa_write_cif(std::FILE *output,
 
     std::string inp_file{freesasa_node_name(result)};
     std::string out_file = inp_file.substr(0, inp_file.find_last_of(".")) + ".sasa.cif";
-    std::cout << "Input file: " << inp_file << std::endl << "Output File: " << out_file << std::endl;
+    std::cout << "Input file: " << inp_file << std::endl
+              << "Output File: " << out_file << std::endl;
 
     const auto doc = gemmi::cif::read_file(inp_file);
-    auto block     = doc.sole_block();
-    auto table     = block.find("_atom_site.", atom_site_columns);
-    std::cout << "Number of rows in the table: " << table.length() << std::endl;
+    auto block = doc.sole_block();
+    auto table = block.find("_atom_site.", atom_site_columns);
+    auto &loop = *table.get_loop();
+    std::cout << "Number of rows x columns in the table: " << table.length() << " x " << loop.tags.size() << std::endl;
 
+    // TODO allocate new vector<vector<string>> with the proper number of columns
+
+    std::vector<double> sasa_vals, sasa_radii;
+    sasa_vals.reserve(table.length()), sasa_radii.reserve(table.length());
     while (result) {
         structure = freesasa_node_children(result);
         std::cout << "New Result!" << std::endl;
@@ -381,17 +386,22 @@ int freesasa_write_cif(std::FILE *output,
                 auto residue = freesasa_node_children(chain);
                 while (residue) {
                     auto rName = freesasa_node_name(residue);
-                    auto rNum  = freesasa_node_residue_number(residue);
+                    auto rNum = freesasa_node_residue_number(residue);
                     auto atom = freesasa_node_children(residue);
                     while (atom) {
-                        auto aName   = freesasa_node_name(atom);
-                        auto area    = freesasa_node_area(atom);
-                        auto radius  = freesasa_node_atom_radius(atom);
+                        auto aName = freesasa_node_name(atom);
+                        auto area = freesasa_node_area(atom);
+                        auto radius = freesasa_node_atom_radius(atom);
 
                         idx = freesasa_MCRA{model, cName, rName, rNum, aName}.find_row(table, rowNum);
-                        rowNum = idx != -1 ? idx : rowNum;
-                        if (idx == -1) exit(1);
-
+                        if (idx != -1) {
+                            rowNum = idx;
+                            sasa_vals[rowNum] = area->total;
+                            sasa_radii[rowNum] = radius;
+                            std::cout << "Atom FREESASA Value and Radius: " << area->total << " " << radius << std::endl;
+                        } else {
+                            exit(1);
+                        }
                         atom = freesasa_node_next(atom);
                     }
                     auto last_res_name = freesasa_node_name(residue);
@@ -406,5 +416,6 @@ int freesasa_write_cif(std::FILE *output,
         }
         result = freesasa_node_next(result);
     }
+    std::cout << "Max freesasa value: " << sasa_vals[std::distance(sasa_vals.begin(), std::max_element(sasa_vals.begin(), sasa_vals.end()))] << std::endl;
     return FREESASA_SUCCESS;
 }
