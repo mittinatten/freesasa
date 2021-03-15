@@ -287,14 +287,29 @@ struct freesasa_MCRA{
     : _model(model), _chain(chain), _residue(residue), _res_num(res_num), _atom(atom)
     {}
 
-    int find_row(gemmi::cif::Table &table) const {
-        unsigned idx = 0;
+    int find_row(gemmi::cif::Table &table, int start_idx=0) const {
+        int idx = start_idx, total_rows = table.length();
+
+        assert(idx < total_rows);
+
+        while (idx < total_rows - 1){
+            if ((*this)(table[idx])) {
+                return idx;
+            }
+            ++idx;
+        }
+
+        std::cout << "Did not find row for: " << *this << std::endl;
+        std::cout << "Looping through entire table... " << std::endl;
+
+        idx = 0;
         for (auto site : table) {
             if ((*this)(site)) {
                 return idx;
             }
             ++idx;
         }
+        std::cout << "Still couldnt find: " << *this << std::endl;
         return -1;
     }
 
@@ -317,6 +332,7 @@ private:
             if (_chain == chain){
                 if (_res_num == res_num && _residue == residue){
                     if (_atom == atom) {
+                        // std::cout << "Found! " << *this << std::endl;
                         return true;
                     } 
                 } 
@@ -345,21 +361,21 @@ int freesasa_write_cif(std::FILE *output,
 
     std::string inp_file{freesasa_node_name(result)};
     std::string out_file = inp_file.substr(0, inp_file.find_last_of(".")) + ".sasa.cif";
-
     std::cout << "Input file: " << inp_file << std::endl << "Output File: " << out_file << std::endl;
 
     const auto doc = gemmi::cif::read_file(inp_file);
-
-    auto block = doc.sole_block();
-
-    auto table = block.find("_atom_site.", atom_site_columns);
-
+    auto block     = doc.sole_block();
+    auto table     = block.find("_atom_site.", atom_site_columns);
+    std::cout << "Number of rows in the table: " << table.length() << std::endl;
 
     while (result) {
         structure = freesasa_node_children(result);
+        std::cout << "New Result!" << std::endl;
         while (structure) {
+            int rowNum = 0, idx = 0;
             auto model = freesasa_node_structure_model(structure);
             auto chain = freesasa_node_children(structure);
+            std::cout << "New Structure!" << std::endl;
             while (chain) {
                 auto cName = freesasa_node_name(chain);
                 auto residue = freesasa_node_children(chain);
@@ -372,12 +388,10 @@ int freesasa_write_cif(std::FILE *output,
                         auto area    = freesasa_node_area(atom);
                         auto radius  = freesasa_node_atom_radius(atom);
 
-                        int  rowNum = freesasa_MCRA{model, cName, rName, rNum, aName}.find_row(table);
-                        // if (rowNum != -1) std::cout << "Found row: " << rowNum << std::endl; 
-                        // else {
-                        //     std::cout << "Did not find row for " << freesasa_MCRA{model, cName, rName, rNum, aName} << std::endl;
-                        //     exit(1);
-                        // }
+                        idx = freesasa_MCRA{model, cName, rName, rNum, aName}.find_row(table, rowNum);
+                        rowNum = idx != -1 ? idx : rowNum;
+                        if (idx == -1) exit(1);
+
                         atom = freesasa_node_next(atom);
                     }
                     auto last_res_name = freesasa_node_name(residue);
