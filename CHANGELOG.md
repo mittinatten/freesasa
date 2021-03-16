@@ -2,6 +2,18 @@
 
 FreeSASA uses semantic versioning. Changelog added for versions 2.x
 
+## Pending
+
+- Fix bug in JSON output where relative SASA for amino acids without sidechan
+  were written as `NaN`, which is not valid JSON. These values are now
+  simply skipped.
+- Support for mmCIF input with the CLI option `--cif`.
+  - The CLI was ported to C++ to allow using Gemmi for CIF import.
+  - Gemmi is imported as a git submodule, see README for details.
+  - A test runner was added to verify that CIF and PDB input files
+    give the same result.
+  - The C API does not support CIF for now (this would require conversion to C++).
+
 ## 2.0.3
 
 This version separates the Python bindings into a separate
