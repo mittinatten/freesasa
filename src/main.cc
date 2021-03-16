@@ -484,7 +484,7 @@ parse_output_format(const char *optarg)
     if (strcmp(optarg, "pdb") == 0) {
         return FREESASA_PDB;
     }
-    if (strcmp(optarg, "cif") == 0){
+    if (strcmp(optarg, "cif") == 0) {
         return FREESASA_CIF;
     }
     abort_msg("unknown output format: '%s'", optarg);
@@ -739,7 +739,7 @@ int main(int argc,
             abort_msg("no input", program_name);
     }
 
-    if (state.output_format & FREESASA_CIF){
+    if (state.output_format & FREESASA_CIF) {
         std::cout << "CIF output requested! " << std::endl;
         freesasa_write_cif(input, tree, state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
     } else {

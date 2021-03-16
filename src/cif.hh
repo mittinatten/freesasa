@@ -11,7 +11,6 @@
 #include "freesasa.h"
 #include "freesasa_internal.h"
 
-
 freesasa_structure *
 freesasa_structure_from_cif(std::FILE *input,
                             const freesasa_classifier *classifier,
