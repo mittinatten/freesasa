@@ -739,8 +739,12 @@ int main(int argc,
             abort_msg("no input", program_name);
     }
 
+<<<<<<< HEAD
     if (state.output_format & FREESASA_CIF) {
         std::cout << "CIF output requested! " << std::endl;
+=======
+    if (state.output_format & FREESASA_CIF){
+>>>>>>> a073ac3... Fixed redundant file writing. Need to address bug in 2jo4 redundancy and --separate-models bug in 2isk.
         freesasa_write_cif(state.output, tree, state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
     } else {
         freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
