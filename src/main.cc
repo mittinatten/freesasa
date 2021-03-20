@@ -741,7 +741,7 @@ int main(int argc,
 
     if (state.output_format & FREESASA_CIF) {
         std::cout << "CIF output requested! " << std::endl;
-        freesasa_write_cif(input, tree, state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
+        freesasa_write_cif(state.output, tree, state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
     } else {
         freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
     }

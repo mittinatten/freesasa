@@ -5,6 +5,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <algorithm>
 
 #include <gemmi/cif.hpp>
 #include <gemmi/mmcif.hpp>
@@ -15,6 +16,9 @@
 
 #include "cif.hh"
 #include "freesasa.h"
+
+
+static std::vector<gemmi::cif::Document> docs;
 
 struct ModelDiscriminator {
     ModelDiscriminator(const std::string &model_name,
@@ -182,12 +186,34 @@ freesasa_structure_from_pred(const gemmi::cif::Document &doc,
     return structure;
 }
 
+
+static gemmi::cif::Document&
+generate_gemmi_doc(std::FILE * input)
+{
+    docs.emplace_back(gemmi::cif::read_cstream(input, 8192, "cif-input"));
+    auto &doc = docs.back();
+
+    gemmi::Structure gemmi_struct = gemmi::make_structure_from_block(doc.blocks[0]);
+
+    if (gemmi_struct.name.find(".cif") != std::string::npos) {
+        doc.source = gemmi_struct.name;
+    }  else {
+        doc.source = gemmi_struct.name + ".cif";
+    }
+    transform(doc.source.begin(), doc.source.end(), doc.source.begin(), tolower);
+
+    return doc;
+}
+
 freesasa_structure *
 freesasa_structure_from_cif(std::FILE *input,
                             const freesasa_classifier *classifier,
                             int structure_options)
 {
-    const auto doc = gemmi::cif::read_cstream(input, 8192, "cif-input");
+    auto &doc = generate_gemmi_doc(input);
+
+    std::cout << "Renamed doc.source to " << doc.source << std::endl;
+
     const auto models = get_models(doc);
 
     std::unique_ptr<const ModelSetDiscriminator> discriminator;
@@ -233,7 +259,7 @@ freesasa_cif_structure_array(std::FILE *input,
 
     std::vector<freesasa_structure *> ss;
 
-    const auto doc = gemmi::cif::read_cstream(input, 8192, "cif-input");
+    auto &doc = generate_gemmi_doc(input);
 
     gemmi::Structure gemmi_struct = gemmi::make_structure_from_block(doc.blocks[0]);
 
@@ -342,42 +368,62 @@ private:
     const std::string &_chain, &_residue, &_res_num, &_atom;
 };
 
+
+static int find_doc_idx(std::string filename){
+
+    std::transform(filename.begin(), filename.end(), filename.begin(), tolower);    
+    for (int i = 0; i != docs.size(); ++i){
+        if (docs[i].source == filename){
+            return i;
+        }
+    }
+    return -1;
+}
+
+
 int freesasa_write_cif(std::FILE *output,
                        freesasa_node *root,
                        int options)
 {
     freesasa_node *result{freesasa_node_children(root)};
-    freesasa_node *structure;
+    freesasa_node *structure, *chain, *residue, *atom;
 
     assert(output);
     assert(root);
     assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
 
-    std::string inp_file{freesasa_node_name(result)};
-    std::string out_file = inp_file.substr(0, inp_file.find_last_of(".")) + ".sasa.cif";
-    std::cout << "Input file: " << inp_file << std::endl
-              << "Output File: " << out_file << std::endl;
-
-    auto doc = gemmi::cif::read_file(inp_file);
-    auto &block = doc.sole_block();
-    auto table = block.find("_atom_site.", atom_site_columns);
-
-    std::vector<std::string> sasa_vals{table.length(), "?"}, sasa_radii{table.length(), "?"};
     while (result) {
+        std::string inp_file{freesasa_node_name(result)};   
+        std::cout << "Input file: " << inp_file << std::endl;
+
+        int idx = find_doc_idx(inp_file);
+        if (idx == -1){
+            std::cout << "Unable to find gemmi doc for result: " << inp_file << " Skipping..." << std::endl;
+            result = freesasa_node_next(result);
+            continue;
+        } 
+        auto &doc = docs[idx];
+        std::cout << "Doc name: " << doc.source << std::endl;
+        bool equal = doc.source == inp_file;
+        std::cout << "file == doc? " << equal << std::endl;
+
+        auto& block = doc.sole_block();
+        auto table = block.find("_atom_site.", atom_site_columns);
+
+        std::vector<std::string> sasa_vals{table.length(), "?"}, sasa_radii{table.length(), "?"};
         structure = freesasa_node_children(result);
         // std::cout << "New Result!" << std::endl;
         while (structure) {
             int rowNum = 0, idx = 0;
             auto model = freesasa_node_structure_model(structure);
-            auto chain = freesasa_node_children(structure);
-            // std::cout << "New Structure!" << std::endl;
+            chain = freesasa_node_children(structure);
             while (chain) {
                 auto cName = freesasa_node_name(chain);
-                auto residue = freesasa_node_children(chain);
+                residue = freesasa_node_children(chain);
                 while (residue) {
                     auto rName = freesasa_node_name(residue);
                     auto rNum = freesasa_node_residue_number(residue);
-                    auto atom = freesasa_node_children(residue);
+                    atom = freesasa_node_children(residue);
                     while (atom) {
                         auto aName = freesasa_node_name(atom);
                         auto area = freesasa_node_area(atom);
@@ -403,45 +449,49 @@ int freesasa_write_cif(std::FILE *output,
             }
             structure = freesasa_node_next(structure);
         }
+        auto &loop = *table.get_loop();
+
+        unsigned long orig_tag_size = loop.tags.size();
+        unsigned long new_tag_size = orig_tag_size + 2;
+
+        // Creates a new table full of empty strings with the correct number of dimensions
+        // Outside vector size is the # of columns, inside vector size is the # of rows. 
+        std::vector<std::vector<std::string>> newCols(new_tag_size, {loop.length(), {"Empty"}});
+
+        // Copies data from original columns to their respecitve column in the new table filled with empty strings.
+        // Leaving only the new appended columns as empty strings
+        for (unsigned int i = 0; i != orig_tag_size; ++i)
+        {
+            auto iCol = block.find_loop(loop.tags[i]);
+            std::copy(iCol.begin(), iCol.end(), newCols[i].begin());
+        }
+
+        newCols[new_tag_size - 2] = std::move(sasa_vals);
+        newCols[new_tag_size - 1] = std::move(sasa_radii);
+
+        std::vector<std::string> new_tags{"_atom_site.FreeSASA_value", "_atom_site.FreeSASA_radius"};
+        for (auto tag : new_tags) loop.tags.push_back(tag); 
+
+        loop.set_all_values(newCols);
+
+        if (output == stdout){
+            gemmi::cif::write_cif_to_stream(std::cout, doc);
+        } else {
+            std::string out_file = inp_file.substr(0, inp_file.find_last_of(".")) + ".sasa.cif";
+            std::ofstream newCif;
+            newCif.open(out_file);
+            gemmi::cif::write_cif_to_stream(newCif, doc);
+            newCif.close();
+
+        }
+
+        unsigned count{0};
+        for (auto& value : newCols[new_tag_size - 2]){
+            if (value == "?") ++count;
+        }
+        std::cout << "Number of rows with no FREESASA value: " << count << std::endl;
+        std::cout << "Number of rows x columns in the out file: " << loop.length() << " x " << loop.width() << std::endl;
+
+
         result = freesasa_node_next(result);
-    }
-
-    auto &loop = *table.get_loop();
-
-    unsigned long orig_tag_size = loop.tags.size();
-    unsigned long new_tag_size = orig_tag_size + 2;
-
-    // Creates a new table full of empty strings with the correct number of dimensions
-    // Outside vector size is the # of columns, inside vector size is the # of rows.
-    std::vector<std::vector<std::string>> newCols(new_tag_size, {loop.length(), {"Empty"}});
-
-    // Copies data from original columns to their respecitve column in the new table filled with empty strings.
-    // Leaving only the new appended columns as empty strings
-    for (unsigned int i = 0; i != orig_tag_size; ++i) {
-        auto iCol = block.find_loop(loop.tags[i]);
-        std::copy(iCol.begin(), iCol.end(), newCols[i].begin());
-    }
-
-    newCols[new_tag_size - 2] = sasa_vals;
-    newCols[new_tag_size - 1] = sasa_radii;
-
-    std::vector<std::string> new_tags{"_atom_site.FreeSASA_value", "_atom_site.FreeSASA_radius"};
-    for (auto tag : new_tags)
-        loop.tags.push_back(tag);
-
-    loop.set_all_values(newCols);
-
-    std::ofstream newCif;
-    newCif.open(out_file);
-    gemmi::cif::write_cif_to_stream(newCif, doc);
-    newCif.close();
-
-    unsigned count{0};
-    for (auto &value : newCols[new_tag_size - 2]) {
-        if (value == "?") ++count;
-    }
-    std::cout << "Number of rows with no FREESASA value: " << count << std::endl;
-    std::cout << "Number of rows x columns in the out file: " << loop.length() << " x " << loop.width() << std::endl;
-
     return FREESASA_SUCCESS;
-}
