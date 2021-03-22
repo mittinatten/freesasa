@@ -71,10 +71,17 @@ let normalizeCommandResult (commandResult: CommandResult) : Output =
     let stripSource output =
         String.split [ "\n" ] output
         |> Seq.filter (fun line -> not (line.StartsWith "source"))
+        |> Seq.sort
         |> String.intercalate "\n"
 
     { Output = stripSource commandResult.StandardOutput
-      Warnings = commandResult.StandardError.Replace(" ", "")
+      Warnings =
+          commandResult
+              .StandardError
+              .Replace(" ", "")
+              .Split("\n")
+          |> Seq.sort
+          |> String.intercalate "\n"
       ExitCode = commandResult.ExitCode }
 
 let runPdbCalc args file =
@@ -141,8 +148,14 @@ let checkArgs codes args =
     |> Array.toList
     |> List.choose id
     |> fun errors ->
+        printf
+            "%s"
+            ("\r"
+             + (new string (' ', Console.WindowWidth - 1))
+             + "\r")
+
         if List.isEmpty errors then
-            printfn "\r - No errors"
+            printfn " - No errors"
             None
         else
             printfn " - Comparison failed:\n %A\n" errors
@@ -162,10 +175,15 @@ let main argv =
     else
         if not (Directory.Exists dataDirectory) then
             do Directory.CreateDirectory(dataDirectory) |> ignore
-
+        // [ PdbCode "1ubq"; PdbCode "1d3z" ] // for testing script itself
         let codes = getCodes argv.[0]
 
-        [ [] ] // ["--format=xml"] ["--separate-chains", "--separate-models"]
+        // [ [ "--hetatm" ]
+        //   [ "--hydrogen" ]
+        //   [ "--separate-chains"
+        //     "--separate-models" ]
+        //   [] ]
+        [ [ "--separate-chains" ] ]
         |> List.map (checkArgs codes)
         |> List.choose id
         |> fun errList -> if List.isEmpty errList then 0 else 1
