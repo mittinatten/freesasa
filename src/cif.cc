@@ -339,7 +339,7 @@ struct freesasa_MCRA {
 
     friend std::ostream &operator<<(std::ostream &os, const freesasa_MCRA &mcra)
     {
-        os << "Atom(" << mcra._model << " " << mcra._chain << " " << mcra._residue << " [" << mcra._res_num << "] " << mcra._atom << ")";
+        os << "Atom(" << mcra._model << " " << mcra._chain << " " <<  mcra._res_num << " [" << mcra._residue <<  "] " << mcra._atom << ")";
         return os;
     }
 
@@ -392,7 +392,7 @@ int freesasa_write_cif(std::FILE *output,
     assert(root);
     assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
 
-    std::string last_file = "";
+    std::string prev_file = "";
     bool write = false;
     std::vector<std::string> sasa_vals, sasa_radii;
     while (result) {
@@ -412,7 +412,7 @@ int freesasa_write_cif(std::FILE *output,
 
         auto& block = doc.sole_block();
         auto table = block.find("_atom_site.", atom_site_columns);
-        if (last_file != inp_file) {
+        if (prev_file != inp_file) {
             std::cout << "New file new vectors!" << std::endl;
             sasa_vals  = std::vector<std::string>{table.length(), "?"};
             sasa_radii = std::vector<std::string>{table.length(), "?"};
@@ -456,18 +456,18 @@ int freesasa_write_cif(std::FILE *output,
             }
             structure = freesasa_node_next(structure);
         }
-        last_file = freesasa_node_name(result);
+        prev_file = freesasa_node_name(result);
         result = freesasa_node_next(result);
 
         if (!result) {
+            // There is no next result so write out current (last) file. 
             write = true;
-            // std::cout << "No more result write file! " << doc.source << std::endl;
         } else if (freesasa_node_name(result) != doc.source){
+            // Next result node is from a new file so write out current file.
             write = true;
-            // std::cout << "New File! write old file!" << freesasa_node_name(result) << " " << doc.source << std::endl;
         } else {
+            // Next result node is from the some doc so not ready for writing. 
             write = false;
-            // std::cout << "Next result is from the same doc! Dont write yet! " << freesasa_node_name(result) << " " << doc.source << std::endl;
         }
         
         if (write){
