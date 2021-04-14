@@ -706,6 +706,15 @@ parse_arg(int argc, char **argv, struct cli_state *state)
     if (state->output_format & FREESASA_LOG) {
         fprintf(state->output, "## %s ##\n", PACKAGE_STRING);
     }
+    // CLI checks for the cif functionality
+    if (state->output_format == FREESASA_CIF && state->cif != 1)
+        abort_msg("The CIF format can not be used without the --cif option set. " 
+                  "Input file must be a cif in order to output a cif.");
+
+    if ((state->output_format == FREESASA_CIF || state->output_format == FREESASA_PDB) && 
+        state->structure_options & FREESASA_SEPARATE_CHAINS &&
+        state->structure_options & FREESASA_SEPARATE_MODELS)
+            abort_msg("Cannot output a cif/pdb file with both --separate-chains and --separate-models set. Pick one.");
 
     return optind;
 }
