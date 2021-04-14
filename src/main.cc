@@ -706,14 +706,15 @@ parse_arg(int argc, char **argv, struct cli_state *state)
     if (state->output_format & FREESASA_LOG) {
         fprintf(state->output, "## %s ##\n", PACKAGE_STRING);
     }
+
     // CLI checks for the cif functionality
     if (state->output_format == FREESASA_CIF && state->cif != 1)
-        abort_msg("The CIF format can not be used without the --cif option set. " 
-                  "Input file must be a cif in order to output a cif.");
+    abort_msg("The CIF format can not be used without the --cif option set. " 
+              "Input file must be a cif in order to output a cif.");
 
     if ((state->output_format == FREESASA_CIF || state->output_format == FREESASA_PDB) && 
-        state->structure_options & FREESASA_SEPARATE_CHAINS &&
-        state->structure_options & FREESASA_SEPARATE_MODELS)
+         state->structure_options & FREESASA_SEPARATE_CHAINS &&
+         state->structure_options & FREESASA_SEPARATE_MODELS)
             abort_msg("Cannot output a cif/pdb file with both --separate-chains and --separate-models set. Pick one.");
 
     return optind;
@@ -748,12 +749,7 @@ int main(int argc,
             abort_msg("no input", program_name);
     }
 
-<<<<<<< HEAD
-    if (state.output_format & FREESASA_CIF) {
-        std::cout << "CIF output requested! " << std::endl;
-=======
     if (state.output_format & FREESASA_CIF){
->>>>>>> a073ac3... Fixed redundant file writing. Need to address bug in 2jo4 redundancy and --separate-models bug in 2isk.
         freesasa_write_cif(state.output, tree, state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
     } else {
         freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));

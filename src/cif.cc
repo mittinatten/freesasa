@@ -496,10 +496,6 @@ int freesasa_write_cif(std::FILE *output,
             std::vector<std::string> new_tags{"_atom_site.FreeSASA_value", "_atom_site.FreeSASA_radius"};
             for (auto tag : new_tags) loop.tags.push_back(tag); 
 
-<<<<<<< HEAD
-
-        result = freesasa_node_next(result);
-=======
             loop.set_all_values(newCols);
 
             if (output == stdout){
@@ -520,5 +516,5 @@ int freesasa_write_cif(std::FILE *output,
 
         }
     }
->>>>>>> a073ac3... Fixed redundant file writing. Need to address bug in 2jo4 redundancy and --separate-models bug in 2isk.
     return FREESASA_SUCCESS;
+}
