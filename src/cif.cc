@@ -382,7 +382,7 @@ static int find_doc_idx(std::string filename){
 
 
 static void 
-append_freesasa_params_to_cif(gemmi::cif::Block& block, freesasa_node *result)
+append_freesasa_params_to_block(gemmi::cif::Block& block, freesasa_node *result)
 {
     assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
 
@@ -426,7 +426,7 @@ append_freesasa_params_to_cif(gemmi::cif::Block& block, freesasa_node *result)
 
 
 static void 
-append_freesasa_result_summary_to_cif(gemmi::cif::Block& block, freesasa_node *result)
+append_freesasa_result_summary_to_block(gemmi::cif::Block& block, freesasa_node *result)
 {
     assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
 
@@ -504,12 +504,113 @@ append_freesasa_result_summary_to_cif(gemmi::cif::Block& block, freesasa_node *r
 }
 
 
-int freesasa_write_cif(std::FILE *output,
+static void 
+populate_freesasa_result_vectors(gemmi::cif::Table& table, freesasa_node *result,
+                                 std::vector<std::string>& sasa_vals, 
+                                 std::vector<std::string>& sasa_radii)
+{
+    assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
+
+    assert(table.ok());
+
+    freesasa_node *structure, *chain, *residue, *atom;
+
+    structure = freesasa_node_children(result);
+    while (structure) 
+    {
+        int rowNum = 0, idx = 0;
+        auto model = freesasa_node_structure_model(structure);
+        chain = freesasa_node_children(structure);
+        std::cout << "New Structure with model: " << model << std::endl;
+        while (chain) {
+            auto cName = freesasa_node_name(chain);
+            residue = freesasa_node_children(chain);
+            std::cout << "New Chain: " << cName << std::endl;
+            while (residue) {
+                auto rName = freesasa_node_name(residue);
+                auto rNum = freesasa_node_residue_number(residue);
+                atom = freesasa_node_children(residue);
+                while (atom) {
+                    auto aName = freesasa_node_name(atom);
+                    auto area = freesasa_node_area(atom);
+                    auto radius = freesasa_node_atom_radius(atom);
+
+                    idx = freesasa_MCRA{model, cName, rName, rNum, aName}.find_row(table, rowNum);
+                    if (idx != -1) {
+                        rowNum = idx;
+                        sasa_vals[rowNum] = std::to_string(area->total);
+                        sasa_radii[rowNum] = std::to_string(radius);
+                    } else {
+                        exit(1);
+                    }
+                    atom = freesasa_node_next(atom);
+                }
+                auto last_res_name = freesasa_node_name(residue);
+                auto last_res_number = freesasa_node_residue_number(residue);
+                residue = freesasa_node_next(residue);
+            }
+            auto last_chain = freesasa_node_name(chain);
+            chain = freesasa_node_next(chain);
+            std::cout << "Finished chain: " << cName << std::endl;
+        }
+        structure = freesasa_node_next(structure);
+    }
+}
+
+
+static void
+freesasa_write_cif_block(std::FILE *output, gemmi::cif::Table& table, 
+                   std::vector<std::string>& sasa_vals, 
+                   std::vector<std::string>& sasa_radii)
+{
+    std::cout << "Writing: " << table.bloc.name << std::endl;
+
+    auto &loop = *table.get_loop();
+
+    unsigned long orig_tag_size = loop.tags.size();
+    unsigned long new_tag_size = orig_tag_size + 2;
+
+    // Creates a new table full of empty strings with the correct number of dimensions
+    // Outside vector size is the # of columns, inside vector size is the # of rows. 
+    std::vector<std::vector<std::string>> newCols(new_tag_size, {loop.length(), {"Empty"}});
+
+    // Copies data from original columns to their respecitve column in the new table filled with empty strings.
+    // Leaving only the new appended columns as empty strings
+    for (unsigned int i = 0; i != orig_tag_size; ++i)
+    {
+        auto iCol = table.bloc.find_loop(loop.tags[i]);
+        std::copy(iCol.begin(), iCol.end(), newCols[i].begin());
+    }
+
+    newCols[new_tag_size - 2] = std::move(sasa_vals);
+    newCols[new_tag_size - 1] = std::move(sasa_radii);
+
+    std::vector<std::string> new_tags{"_atom_site.FreeSASA_value", "_atom_site.FreeSASA_radius"};
+    for (auto tag : new_tags) loop.tags.push_back(tag); 
+
+    loop.set_all_values(newCols);
+
+    if (output != stdout)
+        freesasa_fail("In %s(): A CIF output for %s can only be streamed to stdout.", __func__, table.bloc.name.c_str());
+    
+    gemmi::cif::write_cif_block_to_stream(std::cout, table.bloc);
+    
+    unsigned count{0};
+    for (auto& value : newCols[new_tag_size - 2]){
+        if (value == "?") ++count;
+    }
+    std::cout << "Number of rows with no FREESASA value: " << count << std::endl;
+    std::cout << "Number of rows x columns in the out file: " << loop.length() << " x " << loop.width() << std::endl;
+
+}
+
+
+
+int freesasa_export_tree_to_cif(std::FILE *output,
                        freesasa_node *root,
                        int options)
 {
     freesasa_node *result{freesasa_node_children(root)};
-    freesasa_node *structure, *chain, *residue, *atom;
 
     assert(output);
     assert(root);
@@ -518,6 +619,7 @@ int freesasa_write_cif(std::FILE *output,
     std::string prev_file = "";
     bool write = false;
     std::vector<std::string> sasa_vals, sasa_radii;
+
     while (result) {
         std::string inp_file{freesasa_node_name(result)};
         std::cout << "New Result with Input file: " << inp_file << std::endl;
@@ -534,54 +636,19 @@ int freesasa_write_cif(std::FILE *output,
         std::cout << "file == doc? " << equal << std::endl;
 
         auto& block = doc.sole_block();
-        append_freesasa_params_to_cif(block, result);
-        append_freesasa_result_summary_to_cif(block, result);
+        std::cout << "Block name: " << block.name << std::endl;
+
+        append_freesasa_params_to_block(block, result);
+        append_freesasa_result_summary_to_block(block, result);
 
         auto table = block.find("_atom_site.", atom_site_columns);
         if (prev_file != inp_file) {
             std::cout << "New file new vectors!" << std::endl;
             sasa_vals  = std::vector<std::string>{table.length(), "?"};
             sasa_radii = std::vector<std::string>{table.length(), "?"};
-        } 
-        structure = freesasa_node_children(result);
-        while (structure) {
-            int rowNum = 0, idx = 0;
-            auto model = freesasa_node_structure_model(structure);
-            chain = freesasa_node_children(structure);
-            std::cout << "New Structure with model: " << model << std::endl;
-            while (chain) {
-                auto cName = freesasa_node_name(chain);
-                residue = freesasa_node_children(chain);
-                std::cout << "New Chain: " << cName << std::endl;
-                while (residue) {
-                    auto rName = freesasa_node_name(residue);
-                    auto rNum = freesasa_node_residue_number(residue);
-                    atom = freesasa_node_children(residue);
-                    while (atom) {
-                        auto aName = freesasa_node_name(atom);
-                        auto area = freesasa_node_area(atom);
-                        auto radius = freesasa_node_atom_radius(atom);
-
-                        idx = freesasa_MCRA{model, cName, rName, rNum, aName}.find_row(table, rowNum);
-                        if (idx != -1) {
-                            rowNum = idx;
-                            sasa_vals[rowNum] = std::to_string(area->total);
-                            sasa_radii[rowNum] = std::to_string(radius);
-                        } else {
-                            exit(1);
-                        }
-                        atom = freesasa_node_next(atom);
-                    }
-                    auto last_res_name = freesasa_node_name(residue);
-                    auto last_res_number = freesasa_node_residue_number(residue);
-                    residue = freesasa_node_next(residue);
-                }
-                auto last_chain = freesasa_node_name(chain);
-                chain = freesasa_node_next(chain);
-                std::cout << "Finished chain: " << cName << std::endl;
-            }
-            structure = freesasa_node_next(structure);
         }
+        populate_freesasa_result_vectors(table, result, sasa_vals, sasa_radii);
+       
         prev_file = freesasa_node_name(result);
         result = freesasa_node_next(result);
 
@@ -596,51 +663,7 @@ int freesasa_write_cif(std::FILE *output,
             write = false;
         }
         
-        if (write){
-            std::cout << "Writing: " << doc.source << std::endl;
-
-            auto &loop = *table.get_loop();
-
-            unsigned long orig_tag_size = loop.tags.size();
-            unsigned long new_tag_size = orig_tag_size + 2;
-
-            // Creates a new table full of empty strings with the correct number of dimensions
-            // Outside vector size is the # of columns, inside vector size is the # of rows. 
-            std::vector<std::vector<std::string>> newCols(new_tag_size, {loop.length(), {"Empty"}});
-
-            // Copies data from original columns to their respecitve column in the new table filled with empty strings.
-            // Leaving only the new appended columns as empty strings
-            for (unsigned int i = 0; i != orig_tag_size; ++i)
-            {
-                auto iCol = block.find_loop(loop.tags[i]);
-                std::copy(iCol.begin(), iCol.end(), newCols[i].begin());
-            }
-
-            newCols[new_tag_size - 2] = std::move(sasa_vals);
-            newCols[new_tag_size - 1] = std::move(sasa_radii);
-
-            std::vector<std::string> new_tags{"_atom_site.FreeSASA_value", "_atom_site.FreeSASA_radius"};
-            for (auto tag : new_tags) loop.tags.push_back(tag); 
-
-            loop.set_all_values(newCols);
-
-            if (output == stdout){
-                gemmi::cif::write_cif_to_stream(std::cout, doc);
-            } else {
-                std::string out_file = inp_file.substr(0, inp_file.find_last_of(".")) + ".sasa.cif";
-                std::ofstream newCif;
-                newCif.open(out_file);
-                gemmi::cif::write_cif_to_stream(newCif, doc);
-                newCif.close();
-            }
-            unsigned count{0};
-            for (auto& value : newCols[new_tag_size - 2]){
-                if (value == "?") ++count;
-            }
-            std::cout << "Number of rows with no FREESASA value: " << count << std::endl;
-            std::cout << "Number of rows x columns in the out file: " << loop.length() << " x " << loop.width() << std::endl;
-
-        }
+        if (write) freesasa_write_cif_block(output, table, sasa_vals, sasa_radii);
     }
     return FREESASA_SUCCESS;
 }
