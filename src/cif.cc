@@ -388,13 +388,18 @@ append_freesasa_params_to_block(gemmi::cif::Block& block, freesasa_node *result)
 
     const freesasa_parameters *params = freesasa_node_result_parameters(result);
 
+    std::string version{PACKAGE_STRING};
+    version = version.substr(version.find(" "));
+
     if (params == NULL) params = &freesasa_default_parameters;
 
     std::string params_prefix {"_freeSASA_parameters."};
 
-    std::vector<std::string> params_tags {"algorithm", "probe-radius"};
+    std::vector<std::string> params_tags {"version", "algorithm", "probe-radius"};
     std::vector<std::string> params_data {
-        std::string{freesasa_alg_name(params->alg)}, std::to_string(params->probe_radius)
+        version, 
+        std::string{freesasa_alg_name(params->alg)}, 
+        std::to_string(params->probe_radius)
     };
 
     #if USE_THREADS
@@ -419,7 +424,7 @@ append_freesasa_params_to_block(gemmi::cif::Block& block, freesasa_node *result)
     for (int i = 0; i != params_tags.size(); ++i)
     {
         // place quotes around the algorithm tag value
-        if (i == 0) block.set_pair(params_prefix + params_tags[i], gemmi::cif::quote(params_data[i]));
+        if (i == 1) block.set_pair(params_prefix + params_tags[i], gemmi::cif::quote(params_data[i]));
         else block.set_pair(params_prefix + params_tags[i], params_data[i]);
     }
 }
