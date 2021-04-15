@@ -381,6 +381,118 @@ static int find_doc_idx(std::string filename){
 }
 
 
+static void 
+append_freesasa_params_to_cif(gemmi::cif::Block& block, freesasa_node *result)
+{
+    assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
+
+    const freesasa_parameters *params = freesasa_node_result_parameters(result);
+
+    if (params == NULL) params = &freesasa_default_parameters;
+
+    std::string params_prefix {"_freeSASA_parameters."};
+
+    std::vector<std::string> params_tags {"algorithm", "probe-radius"};
+    std::vector<std::string> params_data {
+        std::string{freesasa_alg_name(params->alg)}, std::to_string(params->probe_radius)
+    };
+
+    #if USE_THREADS
+        params_tags.push_back("threads");
+        params_data.push_back(std::to_string(params->n_threads));
+    #endif
+
+    switch (params->alg) {
+        case FREESASA_SHRAKE_RUPLEY:
+            params_tags.push_back("testpoints");
+            params_data.push_back(std::to_string(params->shrake_rupley_n_points));
+            break;
+        case FREESASA_LEE_RICHARDS:
+            params_tags.push_back("slices");
+            params_data.push_back(std::to_string(params->lee_richards_n_slices));
+            break;
+        default:
+            assert(0);
+            break;
+    }
+
+    for (int i = 0; i != params_tags.size(); ++i)
+    {
+        // place quotes around the algorithm tag value
+        if (i == 0) block.set_pair(params_prefix + params_tags[i], gemmi::cif::quote(params_data[i]));
+        else block.set_pair(params_prefix + params_tags[i], params_data[i]);
+    }
+}
+
+
+static void 
+append_freesasa_result_summary_to_cif(gemmi::cif::Block& block, freesasa_node *result)
+{
+    assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
+
+    freesasa_node *structure = NULL, *chain = NULL;
+    const freesasa_nodearea *area = NULL;
+
+    std::string name{freesasa_node_name(result)};
+
+    structure = freesasa_node_children(result);
+    assert(structure);
+
+    area = freesasa_node_area(structure);
+    assert(area);
+
+    std::string results_prefix{"_freeSASA_results."};
+    std::vector<std::string> result_tags {"source", "chains", "model", "atoms", "type", "surface_area"};
+    std::vector<std::string> template_data(result_tags.size()); 
+    std::vector<std::vector<std::string>>result_data;
+
+    if (name.empty()) template_data[0] = "unknown";
+    else template_data[0] = name;
+
+    template_data[1] = std::string{freesasa_node_structure_chain_labels(structure)};
+    template_data[2] = std::to_string(freesasa_node_structure_model(structure));
+    template_data[3] = std::to_string(freesasa_node_structure_n_atoms(structure));
+    
+    template_data[4] = "Total";
+    template_data[5] = std::to_string(area->total);
+    result_data.push_back(template_data);
+
+    template_data[4] = "Apolar";
+    template_data[5] = std::to_string(area->apolar);
+    result_data.push_back(template_data);
+
+    template_data[4] = "Polar";
+    template_data[5] = std::to_string(area->polar);
+    result_data.push_back(template_data);
+
+    if (area->unknown > 0)
+    {
+        template_data[4] = "Unknown";
+        template_data[5] = std::to_string(area->unknown);
+        result_data.push_back(template_data);
+    }
+
+    chain = freesasa_node_children(structure);
+    while (chain) 
+    {
+        area = freesasa_node_area(chain);
+        assert(area);
+
+        template_data[4] = gemmi::cif::quote(std::string{"CHAIN "} + std::string{freesasa_node_name(chain)});
+        template_data[5] = std::to_string(area->total);
+        result_data.push_back(template_data);
+
+        chain = freesasa_node_next(chain);
+    }
+
+    gemmi::cif::Loop& result_loop = block.init_loop(results_prefix, result_tags);
+    for (auto& row : result_data) 
+    { 
+        result_loop.add_row(row); 
+    }
+}
+
+
 int freesasa_write_cif(std::FILE *output,
                        freesasa_node *root,
                        int options)
@@ -411,6 +523,9 @@ int freesasa_write_cif(std::FILE *output,
         std::cout << "file == doc? " << equal << std::endl;
 
         auto& block = doc.sole_block();
+        append_freesasa_params_to_cif(block, result);
+        append_freesasa_result_summary_to_cif(block, result);
+
         auto table = block.find("_atom_site.", atom_site_columns);
         if (prev_file != inp_file) {
             std::cout << "New file new vectors!" << std::endl;
