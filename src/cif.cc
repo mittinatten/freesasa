@@ -485,10 +485,21 @@ append_freesasa_result_summary_to_cif(gemmi::cif::Block& block, freesasa_node *r
         chain = freesasa_node_next(chain);
     }
 
-    gemmi::cif::Loop& result_loop = block.init_loop(results_prefix, result_tags);
+    gemmi::cif::Loop *result_loop;
+    if (block.find(results_prefix, result_tags).ok())
+    {
+        result_loop = block.find(results_prefix, result_tags).get_loop();
+    } 
+    else 
+    {
+        gemmi::cif::Loop& temp_loop = block.init_loop(results_prefix, result_tags);
+        result_loop = &temp_loop;
+    }
+
     for (auto& row : result_data) 
     { 
-        result_loop.add_row(row); 
+        result_loop->add_row(row); 
+        
     }
 }
 
