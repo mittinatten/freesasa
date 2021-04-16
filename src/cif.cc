@@ -369,7 +369,16 @@ private:
 };
 
 
+static std::string
+get_filename(std::string filename)
+{
+    return filename.substr(0, filename.find(".cif") + 4);
+}
+
 static int find_doc_idx(std::string filename){
+
+    // Remove :<model number> if present
+    filename = get_filename(filename);
 
     std::transform(filename.begin(), filename.end(), filename.begin(), tolower);    
     for (int i = 0; i != docs.size(); ++i){
@@ -438,7 +447,7 @@ append_freesasa_result_summary_to_block(gemmi::cif::Block& block, freesasa_node 
     freesasa_node *structure = NULL, *chain = NULL;
     const freesasa_nodearea *area = NULL;
 
-    std::string name{freesasa_node_name(result)};
+    std::string name{get_filename(freesasa_node_name(result))};
 
     structure = freesasa_node_children(result);
     assert(structure);
@@ -519,23 +528,25 @@ populate_freesasa_result_vectors(gemmi::cif::Table& table, freesasa_node *result
     assert(table.ok());
 
     freesasa_node *structure, *chain, *residue, *atom;
+    int rowNum = 0, idx = 0;
 
     structure = freesasa_node_children(result);
     while (structure) 
     {
-        int rowNum = 0, idx = 0;
+        rowNum = 0, idx = 0;
         auto model = freesasa_node_structure_model(structure);
         chain = freesasa_node_children(structure);
         std::cout << "New Structure with model: " << model << std::endl;
         while (chain) {
-            auto cName = freesasa_node_name(chain);
+            auto chainName = freesasa_node_name(chain);
             residue = freesasa_node_children(chain);
-            std::cout << "New Chain: " << cName << std::endl;
+            std::cout << "New Chain: " << chainName << std::endl;
             while (residue) {
-                auto rName = freesasa_node_name(residue);
-                auto rNum = freesasa_node_residue_number(residue);
                 atom = freesasa_node_children(residue);
                 while (atom) {
+                    auto cName = std::string(1, freesasa_node_atom_chain(atom));
+                    auto rNum = freesasa_node_atom_residue_number(atom);
+                    auto rName = freesasa_node_atom_residue_name(atom);
                     auto aName = freesasa_node_name(atom);
                     auto area = freesasa_node_area(atom);
                     auto radius = freesasa_node_atom_radius(atom);
@@ -556,7 +567,7 @@ populate_freesasa_result_vectors(gemmi::cif::Table& table, freesasa_node *result
             }
             auto last_chain = freesasa_node_name(chain);
             chain = freesasa_node_next(chain);
-            std::cout << "Finished chain: " << cName << std::endl;
+            std::cout << "Finished chain: " << chainName << std::endl;
         }
         structure = freesasa_node_next(structure);
     }
@@ -626,9 +637,9 @@ int freesasa_export_tree_to_cif(std::FILE *output,
     std::vector<std::string> sasa_vals, sasa_radii;
 
     while (result) {
-        std::string inp_file{freesasa_node_name(result)};
-        std::cout << "New Result with Input file: " << inp_file << std::endl;
-
+        std::string inp_file{get_filename(freesasa_node_name(result))};
+        std::cout << "New Result with Input file: " << inp_file << " "  << std::endl;
+    
         int idx = find_doc_idx(inp_file);
         if (idx == -1){
             std::cout << "Unable to find gemmi doc for result: " << inp_file << " Skipping..." << std::endl;
@@ -648,19 +659,19 @@ int freesasa_export_tree_to_cif(std::FILE *output,
 
         auto table = block.find("_atom_site.", atom_site_columns);
         if (prev_file != inp_file) {
-            std::cout << "New file new vectors!" << std::endl;
+            std::cout << "New file new vectors! " << std::endl;
             sasa_vals  = std::vector<std::string>{table.length(), "?"};
             sasa_radii = std::vector<std::string>{table.length(), "?"};
         }
         populate_freesasa_result_vectors(table, result, sasa_vals, sasa_radii);
        
-        prev_file = freesasa_node_name(result);
+        prev_file = get_filename(freesasa_node_name(result));
         result = freesasa_node_next(result);
 
         if (!result) {
             // There is no next result so write out current (last) file. 
             write = true;
-        } else if (freesasa_node_name(result) != doc.source){
+        } else if (get_filename(freesasa_node_name(result)) != doc.source){
             // Next result node is from a new file so write out current file.
             write = true;
         } else {

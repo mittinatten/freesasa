@@ -14,6 +14,9 @@ struct atom_properties {
     int is_bb;
     double radius;
     char *pdb_line;
+    char chain;
+    const char *res_number;
+    const char *res_name;
 };
 
 struct residue_properties {
@@ -108,6 +111,8 @@ node_free(freesasa_node *node)
         switch (node->type) {
         case FREESASA_NODE_ATOM:
             free(node->properties.atom.pdb_line);
+            free((char *)node->properties.atom.res_name);
+            free((char *)node->properties.atom.res_number);
             break;
         case FREESASA_NODE_RESIDUE:
             free(node->properties.residue.reference);
@@ -223,6 +228,18 @@ node_atom(const freesasa_structure *structure,
     atom->properties.atom.is_bb = freesasa_atom_is_backbone(atom->name);
     atom->properties.atom.radius = freesasa_structure_atom_radius(structure, atom_index);
     atom->properties.atom.pdb_line = NULL;
+    atom->properties.atom.chain = freesasa_structure_atom_chain(structure, atom_index);
+    atom->properties.atom.res_number = strdup(freesasa_structure_atom_res_number(structure, atom_index));
+    if (atom->properties.atom.res_number == NULL) {
+        mem_fail();
+        goto cleanup;
+    }
+
+    atom->properties.atom.res_name = strdup(freesasa_structure_atom_res_name(structure, atom_index));
+    if (atom->properties.atom.res_name == NULL) {
+        mem_fail();
+        goto cleanup;
+    }
 
     line = freesasa_structure_atom_pdb_line(structure, atom_index);
     if (line != NULL) {
@@ -555,6 +572,26 @@ freesasa_node_atom_pdb_line(const freesasa_node *node)
 {
     assert(node->type == FREESASA_NODE_ATOM);
     return node->properties.atom.pdb_line;
+}
+
+const char *
+freesasa_node_atom_residue_number(const freesasa_node *node)
+{
+    assert(node->type == FREESASA_NODE_ATOM);
+    return node->properties.atom.res_number;
+}
+
+const char *
+freesasa_node_atom_residue_name(const freesasa_node *node)
+{
+    assert(node->type == FREESASA_NODE_ATOM);
+    return node->properties.atom.res_name;
+}
+
+char freesasa_node_atom_chain(const freesasa_node *node)
+{
+    assert(node->type == FREESASA_NODE_ATOM);
+    return node->properties.atom.chain;
 }
 
 int freesasa_node_residue_n_atoms(const freesasa_node *node)

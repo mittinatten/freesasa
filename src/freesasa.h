@@ -1439,6 +1439,38 @@ const char *
 freesasa_node_atom_pdb_line(const freesasa_node *node);
 
 /**
+    Atom residue number.
+
+    @param node A node of type ::FREESASA_NODE_ATOM.
+    @return The residue sequence number that this atom is a part of.
+
+    @ingroup node
+ */
+const char *
+freesasa_node_atom_residue_number(const freesasa_node *node);
+
+/**
+    Atom residue name.
+
+    @param node A node of type ::FREESASA_NODE_ATOM.
+    @return The residue 3-char name this atom is a part of.
+
+    @ingroup node
+ */
+const char *
+freesasa_node_atom_residue_name(const freesasa_node *node);
+
+/**
+    Atom chain.
+
+    @param node A node of type ::FREESASA_NODE_ATOM.
+    @return The chain this atom is a part of.
+
+    @ingroup node
+ */
+char freesasa_node_atom_chain(const freesasa_node *node);
+
+/**
     Residue number.
 
     @param node A node of type ::FREESASA_NODE_RESIDUE.
