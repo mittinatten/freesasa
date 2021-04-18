@@ -5,7 +5,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <algorithm>
 
 #include <gemmi/cif.hpp>
 #include <gemmi/mmcif.hpp>
@@ -16,7 +15,6 @@
 
 #include "cif.hh"
 #include "freesasa.h"
-
 
 static std::vector<gemmi::cif::Document> docs;
 
@@ -186,9 +184,8 @@ freesasa_structure_from_pred(const gemmi::cif::Document &doc,
     return structure;
 }
 
-
-static gemmi::cif::Document&
-generate_gemmi_doc(std::FILE * input)
+static gemmi::cif::Document &
+generate_gemmi_doc(std::FILE *input)
 {
     docs.emplace_back(gemmi::cif::read_cstream(input, 8192, "cif-input"));
     auto &doc = docs.back();
@@ -197,7 +194,7 @@ generate_gemmi_doc(std::FILE * input)
 
     if (gemmi_struct.name.find(".cif") != std::string::npos) {
         doc.source = gemmi_struct.name;
-    }  else {
+    } else {
         doc.source = gemmi_struct.name + ".cif";
     }
     transform(doc.source.begin(), doc.source.end(), doc.source.begin(), tolower);
@@ -339,7 +336,7 @@ struct freesasa_MCRA {
 
     friend std::ostream &operator<<(std::ostream &os, const freesasa_MCRA &mcra)
     {
-        os << "Atom(" << mcra._model << " " << mcra._chain << " " <<  mcra._res_num << " [" << mcra._residue <<  "] " << mcra._atom << ")";
+        os << "Atom(" << mcra._model << " " << mcra._chain << " " << mcra._res_num << " [" << mcra._residue << "] " << mcra._atom << ")";
         return os;
     }
 
@@ -368,30 +365,29 @@ private:
     const std::string &_chain, &_residue, &_res_num, &_atom;
 };
 
-
 static std::string
 get_filename(std::string filename)
 {
     return filename.substr(0, filename.find(".cif") + 4);
 }
 
-static int find_doc_idx(std::string filename){
+static int find_doc_idx(std::string filename)
+{
 
     // Remove :<model number> if present
     filename = get_filename(filename);
 
-    std::transform(filename.begin(), filename.end(), filename.begin(), tolower);    
-    for (int i = 0; i != docs.size(); ++i){
-        if (docs[i].source == filename){
+    std::transform(filename.begin(), filename.end(), filename.begin(), tolower);
+    for (int i = 0; i != docs.size(); ++i) {
+        if (docs[i].source == filename) {
             return i;
         }
     }
     return -1;
 }
 
-
-static void 
-append_freesasa_params_to_block(gemmi::cif::Block& block, freesasa_node *result)
+static void
+append_freesasa_params_to_block(gemmi::cif::Block &block, freesasa_node *result)
 {
     assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
 
@@ -402,45 +398,82 @@ append_freesasa_params_to_block(gemmi::cif::Block& block, freesasa_node *result)
 
     if (params == NULL) params = &freesasa_default_parameters;
 
-    std::string params_prefix {"_freeSASA_parameters."};
+    std::string params_prefix{"_freeSASA_parameters."};
 
-    std::vector<std::string> params_tags {"version", "algorithm", "probe-radius"};
-    std::vector<std::string> params_data {
-        version, 
-        std::string{freesasa_alg_name(params->alg)}, 
-        std::to_string(params->probe_radius)
-    };
+    std::vector<std::string> params_tags{"version", "algorithm", "probe-radius"};
+    std::vector<std::string> params_data{
+        version,
+        std::string{freesasa_alg_name(params->alg)},
+        std::to_string(params->probe_radius)};
 
-    #if USE_THREADS
-        params_tags.push_back("threads");
-        params_data.push_back(std::to_string(params->n_threads));
-    #endif
+#if USE_THREADS
+    params_tags.push_back("threads");
+    params_data.push_back(std::to_string(params->n_threads));
+#endif
 
     switch (params->alg) {
-        case FREESASA_SHRAKE_RUPLEY:
-            params_tags.push_back("testpoints");
-            params_data.push_back(std::to_string(params->shrake_rupley_n_points));
-            break;
-        case FREESASA_LEE_RICHARDS:
-            params_tags.push_back("slices");
-            params_data.push_back(std::to_string(params->lee_richards_n_slices));
-            break;
-        default:
-            assert(0);
-            break;
+    case FREESASA_SHRAKE_RUPLEY:
+        params_tags.push_back("testpoints");
+        params_data.push_back(std::to_string(params->shrake_rupley_n_points));
+        break;
+    case FREESASA_LEE_RICHARDS:
+        params_tags.push_back("slices");
+        params_data.push_back(std::to_string(params->lee_richards_n_slices));
+        break;
+    default:
+        assert(0);
+        break;
     }
 
-    for (int i = 0; i != params_tags.size(); ++i)
-    {
+    for (int i = 0; i != params_tags.size(); ++i) {
         // place quotes around the algorithm tag value
-        if (i == 1) block.set_pair(params_prefix + params_tags[i], gemmi::cif::quote(params_data[i]));
-        else block.set_pair(params_prefix + params_tags[i], params_data[i]);
+        if (i == 1)
+            block.set_pair(params_prefix + params_tags[i], gemmi::cif::quote(params_data[i]));
+        else
+            block.set_pair(params_prefix + params_tags[i], params_data[i]);
     }
 }
 
+static void
+append_freesasa_rsa_summary_to_block(gemmi::cif::Block &block, freesasa_node *residue)
+{
+    assert(freesasa_node_type(residue) == FREESASA_NODE_RESIDUE);
 
-static void 
-append_freesasa_result_summary_to_block(gemmi::cif::Block& block, freesasa_node *result)
+    const freesasa_nodearea *abs, *reference;
+    freesasa_nodearea rel;
+
+    abs = freesasa_node_area(residue);
+    reference = freesasa_node_residue_reference(residue);
+
+    freesasa_residue_rel_nodearea(&rel, abs, reference);
+
+    std::string rsa_prefix{"_freeSASA_relative_SASA."};
+    std::vector<std::string> rsa_tags{
+        "comp_id", "seq_id", "total", "polar", "apolar", "main_chain", "side_chain"};
+
+    std::vector<std::string> rsa_data{
+        std::string{freesasa_node_name(residue)},
+        std::string{freesasa_node_residue_number(residue)},
+        std::to_string(rel.total),
+        std::to_string(rel.polar),
+        std::to_string(rel.apolar),
+        std::to_string(rel.main_chain),
+        std::to_string(rel.side_chain),
+    };
+
+    gemmi::cif::Loop *result_loop;
+    if (block.find(rsa_prefix, rsa_tags).ok()) {
+        result_loop = block.find(rsa_prefix, rsa_tags).get_loop();
+    } else {
+        gemmi::cif::Loop &temp_loop = block.init_loop(rsa_prefix, rsa_tags);
+        result_loop = &temp_loop;
+    }
+
+    result_loop->add_row(rsa_data);
+}
+
+static void
+append_freesasa_result_summary_to_block(gemmi::cif::Block &block, freesasa_node *result)
 {
     assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
 
@@ -456,17 +489,19 @@ append_freesasa_result_summary_to_block(gemmi::cif::Block& block, freesasa_node 
     assert(area);
 
     std::string results_prefix{"_freeSASA_results."};
-    std::vector<std::string> result_tags {"source", "chains", "model", "atoms", "type", "surface_area"};
-    std::vector<std::string> template_data(result_tags.size()); 
-    std::vector<std::vector<std::string>>result_data;
+    std::vector<std::string> result_tags{"source", "chains", "model", "atoms", "type", "surface_area"};
+    std::vector<std::string> template_data(result_tags.size());
+    std::vector<std::vector<std::string>> result_data;
 
-    if (name.empty()) template_data[0] = "unknown";
-    else template_data[0] = name;
+    if (name.empty())
+        template_data[0] = "unknown";
+    else
+        template_data[0] = name;
 
     template_data[1] = std::string{freesasa_node_structure_chain_labels(structure)};
     template_data[2] = std::to_string(freesasa_node_structure_model(structure));
     template_data[3] = std::to_string(freesasa_node_structure_n_atoms(structure));
-    
+
     template_data[4] = "Total";
     template_data[5] = std::to_string(area->total);
     result_data.push_back(template_data);
@@ -479,16 +514,14 @@ append_freesasa_result_summary_to_block(gemmi::cif::Block& block, freesasa_node 
     template_data[5] = std::to_string(area->polar);
     result_data.push_back(template_data);
 
-    if (area->unknown > 0)
-    {
+    if (area->unknown > 0) {
         template_data[4] = "Unknown";
         template_data[5] = std::to_string(area->unknown);
         result_data.push_back(template_data);
     }
 
     chain = freesasa_node_children(structure);
-    while (chain) 
-    {
+    while (chain) {
         area = freesasa_node_area(chain);
         assert(area);
 
@@ -500,28 +533,22 @@ append_freesasa_result_summary_to_block(gemmi::cif::Block& block, freesasa_node 
     }
 
     gemmi::cif::Loop *result_loop;
-    if (block.find(results_prefix, result_tags).ok())
-    {
+    if (block.find(results_prefix, result_tags).ok()) {
         result_loop = block.find(results_prefix, result_tags).get_loop();
-    } 
-    else 
-    {
-        gemmi::cif::Loop& temp_loop = block.init_loop(results_prefix, result_tags);
+    } else {
+        gemmi::cif::Loop &temp_loop = block.init_loop(results_prefix, result_tags);
         result_loop = &temp_loop;
     }
 
-    for (auto& row : result_data) 
-    { 
-        result_loop->add_row(row); 
-        
+    for (auto &row : result_data) {
+        result_loop->add_row(row);
     }
 }
 
-
-static void 
-populate_freesasa_result_vectors(gemmi::cif::Table& table, freesasa_node *result,
-                                 std::vector<std::string>& sasa_vals, 
-                                 std::vector<std::string>& sasa_radii)
+static void
+populate_freesasa_result_vectors(gemmi::cif::Table &table, freesasa_node *result,
+                                 std::vector<std::string> &sasa_vals,
+                                 std::vector<std::string> &sasa_radii)
 {
     assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
 
@@ -531,8 +558,7 @@ populate_freesasa_result_vectors(gemmi::cif::Table& table, freesasa_node *result
     int rowNum = 0, idx = 0;
 
     structure = freesasa_node_children(result);
-    while (structure) 
-    {
+    while (structure) {
         rowNum = 0, idx = 0;
         auto model = freesasa_node_structure_model(structure);
         chain = freesasa_node_children(structure);
@@ -542,6 +568,7 @@ populate_freesasa_result_vectors(gemmi::cif::Table& table, freesasa_node *result
             residue = freesasa_node_children(chain);
             std::cout << "New Chain: " << chainName << std::endl;
             while (residue) {
+                append_freesasa_rsa_summary_to_block(table.bloc, residue);
                 atom = freesasa_node_children(residue);
                 while (atom) {
                     auto cName = std::string(1, freesasa_node_atom_chain(atom));
@@ -573,11 +600,10 @@ populate_freesasa_result_vectors(gemmi::cif::Table& table, freesasa_node *result
     }
 }
 
-
 static void
-freesasa_write_cif_block(std::FILE *output, gemmi::cif::Table& table, 
-                   std::vector<std::string>& sasa_vals, 
-                   std::vector<std::string>& sasa_radii)
+freesasa_write_cif_block(std::FILE *output, gemmi::cif::Table &table,
+                         std::vector<std::string> &sasa_vals,
+                         std::vector<std::string> &sasa_radii)
 {
     std::cout << "Writing: " << table.bloc.name << std::endl;
 
@@ -587,13 +613,12 @@ freesasa_write_cif_block(std::FILE *output, gemmi::cif::Table& table,
     unsigned long new_tag_size = orig_tag_size + 2;
 
     // Creates a new table full of empty strings with the correct number of dimensions
-    // Outside vector size is the # of columns, inside vector size is the # of rows. 
+    // Outside vector size is the # of columns, inside vector size is the # of rows.
     std::vector<std::vector<std::string>> newCols(new_tag_size, {loop.length(), {"Empty"}});
 
     // Copies data from original columns to their respecitve column in the new table filled with empty strings.
     // Leaving only the new appended columns as empty strings
-    for (unsigned int i = 0; i != orig_tag_size; ++i)
-    {
+    for (unsigned int i = 0; i != orig_tag_size; ++i) {
         auto iCol = table.bloc.find_loop(loop.tags[i]);
         std::copy(iCol.begin(), iCol.end(), newCols[i].begin());
     }
@@ -602,29 +627,27 @@ freesasa_write_cif_block(std::FILE *output, gemmi::cif::Table& table,
     newCols[new_tag_size - 1] = std::move(sasa_radii);
 
     std::vector<std::string> new_tags{"_atom_site.FreeSASA_value", "_atom_site.FreeSASA_radius"};
-    for (auto tag : new_tags) loop.tags.push_back(tag); 
+    for (auto tag : new_tags)
+        loop.tags.push_back(tag);
 
     loop.set_all_values(newCols);
 
     if (output != stdout)
         freesasa_fail("In %s(): A CIF output for %s can only be streamed to stdout.", __func__, table.bloc.name.c_str());
-    
+
     gemmi::cif::write_cif_block_to_stream(std::cout, table.bloc);
-    
+
     unsigned count{0};
-    for (auto& value : newCols[new_tag_size - 2]){
+    for (auto &value : newCols[new_tag_size - 2]) {
         if (value == "?") ++count;
     }
     std::cout << "Number of rows with no FREESASA value: " << count << std::endl;
     std::cout << "Number of rows x columns in the out file: " << loop.length() << " x " << loop.width() << std::endl;
-
 }
 
-
-
 int freesasa_export_tree_to_cif(std::FILE *output,
-                       freesasa_node *root,
-                       int options)
+                                freesasa_node *root,
+                                int options)
 {
     freesasa_node *result{freesasa_node_children(root)};
 
@@ -638,20 +661,20 @@ int freesasa_export_tree_to_cif(std::FILE *output,
 
     while (result) {
         std::string inp_file{get_filename(freesasa_node_name(result))};
-        std::cout << "New Result with Input file: " << inp_file << " "  << std::endl;
-    
+        std::cout << "New Result with Input file: " << inp_file << " " << std::endl;
+
         int idx = find_doc_idx(inp_file);
-        if (idx == -1){
+        if (idx == -1) {
             std::cout << "Unable to find gemmi doc for result: " << inp_file << " Skipping..." << std::endl;
             result = freesasa_node_next(result);
             continue;
-        } 
+        }
         auto &doc = docs[idx];
         std::cout << "Doc name: " << doc.source << std::endl;
         bool equal = doc.source == inp_file;
         std::cout << "file == doc? " << equal << std::endl;
 
-        auto& block = doc.sole_block();
+        auto &block = doc.sole_block();
         std::cout << "Block name: " << block.name << std::endl;
 
         append_freesasa_params_to_block(block, result);
@@ -660,25 +683,25 @@ int freesasa_export_tree_to_cif(std::FILE *output,
         auto table = block.find("_atom_site.", atom_site_columns);
         if (prev_file != inp_file) {
             std::cout << "New file new vectors! " << std::endl;
-            sasa_vals  = std::vector<std::string>{table.length(), "?"};
+            sasa_vals = std::vector<std::string>{table.length(), "?"};
             sasa_radii = std::vector<std::string>{table.length(), "?"};
         }
         populate_freesasa_result_vectors(table, result, sasa_vals, sasa_radii);
-       
+
         prev_file = get_filename(freesasa_node_name(result));
         result = freesasa_node_next(result);
 
         if (!result) {
-            // There is no next result so write out current (last) file. 
+            // There is no next result so write out current (last) file.
             write = true;
-        } else if (get_filename(freesasa_node_name(result)) != doc.source){
+        } else if (get_filename(freesasa_node_name(result)) != doc.source) {
             // Next result node is from a new file so write out current file.
             write = true;
         } else {
-            // Next result node is from the some doc so not ready for writing. 
+            // Next result node is from the some doc so not ready for writing.
             write = false;
         }
-        
+
         if (write) freesasa_write_cif_block(output, table, sasa_vals, sasa_radii);
     }
     return FREESASA_SUCCESS;
