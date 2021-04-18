@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -434,8 +435,16 @@ append_freesasa_params_to_block(gemmi::cif::Block &block, freesasa_node *result)
     }
 }
 
+static std::string
+correct_inf_nan_values(const double value)
+{
+    if (std::isnan(value)) return ".";
+    if (std::isinf(value)) return "?";
+    return std::to_string(value);
+}
+
 static void
-append_freesasa_rsa_summary_to_block(gemmi::cif::Block &block, freesasa_node *residue)
+append_freesasa_rsa_residue_to_block(gemmi::cif::Block &block, freesasa_node *residue)
 {
     assert(freesasa_node_type(residue) == FREESASA_NODE_RESIDUE);
 
@@ -445,31 +454,53 @@ append_freesasa_rsa_summary_to_block(gemmi::cif::Block &block, freesasa_node *re
     abs = freesasa_node_area(residue);
     reference = freesasa_node_residue_reference(residue);
 
-    freesasa_residue_rel_nodearea(&rel, abs, reference);
+    if (reference)
+        freesasa_residue_rel_nodearea(&rel, abs, reference);
+    else
+        rel = freesasa_nodearea_null;
 
-    std::string rsa_prefix{"_freeSASA_relative_SASA."};
+    std::string rsa_prefix{"_freeSASA_rsa."};
     std::vector<std::string> rsa_tags{
-        "comp_id", "seq_id", "total", "polar", "apolar", "main_chain", "side_chain"};
-
-    std::vector<std::string> rsa_data{
-        std::string{freesasa_node_name(residue)},
-        std::string{freesasa_node_residue_number(residue)},
-        std::to_string(rel.total),
-        std::to_string(rel.polar),
-        std::to_string(rel.apolar),
-        std::to_string(rel.main_chain),
-        std::to_string(rel.side_chain),
+        "asym_id",
+        "seq_id",
+        "comp_id",
+        "abs_total",
+        "rel_total",
+        "abs_side_chain",
+        "rel_side_chain",
+        "abs_main_chain",
+        "rel_main_chain",
+        "abs_apolar",
+        "rel_apolar",
+        "abs_polar",
+        "rel_polar",
     };
 
-    gemmi::cif::Loop *result_loop;
+    std::vector<std::string> rsa_data{
+        std::string{freesasa_node_name(freesasa_node_parent(residue))[0]},
+        std::string{freesasa_node_residue_number(residue)},
+        std::string{freesasa_node_name(residue)},
+        correct_inf_nan_values(abs->total),
+        correct_inf_nan_values(rel.total),
+        correct_inf_nan_values(abs->side_chain),
+        correct_inf_nan_values(rel.side_chain),
+        correct_inf_nan_values(abs->main_chain),
+        correct_inf_nan_values(rel.main_chain),
+        correct_inf_nan_values(abs->apolar),
+        correct_inf_nan_values(rel.apolar),
+        correct_inf_nan_values(abs->polar),
+        correct_inf_nan_values(rel.polar),
+    };
+
+    gemmi::cif::Loop *rsa_loop;
     if (block.find(rsa_prefix, rsa_tags).ok()) {
-        result_loop = block.find(rsa_prefix, rsa_tags).get_loop();
+        rsa_loop = block.find(rsa_prefix, rsa_tags).get_loop();
     } else {
         gemmi::cif::Loop &temp_loop = block.init_loop(rsa_prefix, rsa_tags);
-        result_loop = &temp_loop;
+        rsa_loop = &temp_loop;
     }
 
-    result_loop->add_row(rsa_data);
+    rsa_loop->add_row(rsa_data);
 }
 
 static void
@@ -548,7 +579,8 @@ append_freesasa_result_summary_to_block(gemmi::cif::Block &block, freesasa_node 
 static void
 populate_freesasa_result_vectors(gemmi::cif::Table &table, freesasa_node *result,
                                  std::vector<std::string> &sasa_vals,
-                                 std::vector<std::string> &sasa_radii)
+                                 std::vector<std::string> &sasa_radii,
+                                 int options)
 {
     assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
 
@@ -568,7 +600,8 @@ populate_freesasa_result_vectors(gemmi::cif::Table &table, freesasa_node *result
             residue = freesasa_node_children(chain);
             std::cout << "New Chain: " << chainName << std::endl;
             while (residue) {
-                append_freesasa_rsa_summary_to_block(table.bloc, residue);
+                if (!(options & FREESASA_OUTPUT_SKIP_REL))
+                    append_freesasa_rsa_residue_to_block(table.bloc, residue);
                 atom = freesasa_node_children(residue);
                 while (atom) {
                     auto cName = std::string(1, freesasa_node_atom_chain(atom));
@@ -686,7 +719,7 @@ int freesasa_export_tree_to_cif(std::FILE *output,
             sasa_vals = std::vector<std::string>{table.length(), "?"};
             sasa_radii = std::vector<std::string>{table.length(), "?"};
         }
-        populate_freesasa_result_vectors(table, result, sasa_vals, sasa_radii);
+        populate_freesasa_result_vectors(table, result, sasa_vals, sasa_radii, options);
 
         prev_file = get_filename(freesasa_node_name(result));
         result = freesasa_node_next(result);
