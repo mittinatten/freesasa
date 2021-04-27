@@ -367,20 +367,30 @@ private:
 };
 
 static std::string
-get_filename(std::string filename)
+get_cif_filename(std::string filename)
 {
-    return filename.substr(0, filename.find(".cif") + 4);
+    // Remove :<model number> if present in the cif filename
+    if (filename.find(".cif") != std::string::npos)
+        return filename.substr(0, filename.find(".cif") + 4);
+    return filename;
 }
 
 static int find_doc_idx(std::string filename)
 {
+    filename = get_cif_filename(filename);
 
-    // Remove :<model number> if present
-    filename = get_filename(filename);
+    if (filename.find("stdin") != std::string::npos) {
+        std::cout << "finding doc for stdin: " << filename << std::endl;
+        if (docs.size() == 1)
+            return 0;
+        else
+            freesasa_fail("CIF input is from stdin but there are more than 1 gemmi documents to choose from. Unable to select correct doc. exiting...");
+    }
 
     std::transform(filename.begin(), filename.end(), filename.begin(), tolower);
     for (int i = 0; i != docs.size(); ++i) {
-        if (docs[i].source == filename) {
+        if (filename.find(docs[i].source) != std::string::npos) {
+            std::cout << "Filename: " << filename << " Source: " << docs[i].source << std::endl;
             return i;
         }
     }
@@ -511,7 +521,7 @@ append_freesasa_result_summary_to_block(gemmi::cif::Block &block, freesasa_node 
     freesasa_node *structure = NULL, *chain = NULL;
     const freesasa_nodearea *area = NULL;
 
-    std::string name{get_filename(freesasa_node_name(result))};
+    std::string name{get_cif_filename(freesasa_node_name(result))};
 
     structure = freesasa_node_children(result);
     assert(structure);
@@ -688,24 +698,22 @@ int freesasa_export_tree_to_cif(std::FILE *output,
     assert(root);
     assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
 
-    std::string prev_file = "";
+    int prev_doc_idx = -1, doc_idx = 0;
     bool write = false;
     std::vector<std::string> sasa_vals, sasa_radii;
 
     while (result) {
-        std::string inp_file{get_filename(freesasa_node_name(result))};
+        std::string inp_file{freesasa_node_name(result)};
         std::cout << "New Result with Input file: " << inp_file << " " << std::endl;
 
-        int idx = find_doc_idx(inp_file);
-        if (idx == -1) {
+        doc_idx = find_doc_idx(inp_file);
+        if (doc_idx == -1) {
             std::cout << "Unable to find gemmi doc for result: " << inp_file << " Skipping..." << std::endl;
             result = freesasa_node_next(result);
             continue;
         }
-        auto &doc = docs[idx];
+        auto &doc = docs[doc_idx];
         std::cout << "Doc name: " << doc.source << std::endl;
-        bool equal = doc.source == inp_file;
-        std::cout << "file == doc? " << equal << std::endl;
 
         auto &block = doc.sole_block();
         std::cout << "Block name: " << block.name << std::endl;
@@ -714,24 +722,24 @@ int freesasa_export_tree_to_cif(std::FILE *output,
         append_freesasa_result_summary_to_block(block, result);
 
         auto table = block.find("_atom_site.", atom_site_columns);
-        if (prev_file != inp_file) {
+        if (prev_doc_idx != doc_idx) {
             std::cout << "New file new vectors! " << std::endl;
             sasa_vals = std::vector<std::string>{table.length(), "?"};
             sasa_radii = std::vector<std::string>{table.length(), "?"};
         }
         populate_freesasa_result_vectors(table, result, sasa_vals, sasa_radii, options);
 
-        prev_file = get_filename(freesasa_node_name(result));
+        prev_doc_idx = doc_idx;
         result = freesasa_node_next(result);
 
         if (!result) {
             // There is no next result so write out current (last) file.
             write = true;
-        } else if (get_filename(freesasa_node_name(result)) != doc.source) {
+        } else if (find_doc_idx(freesasa_node_name(result)) != prev_doc_idx) {
             // Next result node is from a new file so write out current file.
             write = true;
         } else {
-            // Next result node is from the some doc so not ready for writing.
+            // Next result node is from the same doc so not ready for writing.
             write = false;
         }
 
