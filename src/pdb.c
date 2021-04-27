@@ -259,10 +259,23 @@ int freesasa_pdb_get_bfactor(double *bfac,
 int freesasa_pdb_ishydrogen(const char *line)
 {
     assert(line);
+    char symbol[PDB_ATOM_SYMBOL_STRL + 1];
+    freesasa_pdb_get_symbol(symbol, line);
+
     if (pdb_line_check(line, 13) == FREESASA_FAIL) return FREESASA_FAIL;
-    /* hydrogen */
+
+    /* Check symbol first */
+    if (strncmp(symbol, " H", 2) == 0) return 1;
+    if (strncmp(symbol, " D", 2) == 0) return 1;
+    /* If the symbol is not blank and not H or D */
+    if (!(strncmp(symbol, "  ", 2) == 0)) return 0;
+
+    /* When symbol is missing */
+    /* Cover elements such as Cd, Nd, Th, etc. ("CD  ", "ND  ") */
+    if (!(line[12] == ' ' || (line[12] >= '1' && line[12] <= '9'))) return 0;
+    /* Hydrogen, atom name "H**" or " H**" */
     if (line[12] == 'H' || line[13] == 'H') return 1;
-    /* hydrogen */
+    /* Deuterium */
     if (line[12] == 'D' || line[13] == 'D') return 1;
     return 0;
 }

@@ -13,6 +13,8 @@ FreeSASA uses semantic versioning. Changelog added for versions 2.x
   - A test runner was added to verify that CIF and PDB input files
     give the same result.
   - The C API does not support CIF for now (this would require conversion to C++).
+- Fix bug where elements with H or D as second element, such as CD, were classified
+  as hydrogens.
 
 ## 2.0.3
 
