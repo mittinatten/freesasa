@@ -282,6 +282,10 @@ freesasa_cif_structure_array(std::FILE *input,
 
             ss.reserve(n_new_chains);
             for (auto &chain_name : *chain_names) {
+                if (models[i].find_chain(chain_name)->get_polymer().size() == 0) {
+                    --n_chains;
+                    continue;
+                }
                 ss.emplace_back(
                     freesasa_structure_from_chain(doc, models[i].name, chain_name, classifier, options));
                 freesasa_structure_set_model(ss.back(), i + 1);
