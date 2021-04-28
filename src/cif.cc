@@ -530,34 +530,29 @@ append_freesasa_result_summary_to_block(gemmi::cif::Block &block, freesasa_node 
     assert(area);
 
     std::string results_prefix{"_freeSASA_results."};
-    std::vector<std::string> result_tags{"source", "chains", "model", "atoms", "type", "surface_area"};
+    std::vector<std::string> result_tags{"model", "chains", "atoms", "type", "surface_area"};
     std::vector<std::string> template_data(result_tags.size());
     std::vector<std::vector<std::string>> result_data;
 
-    if (name.empty())
-        template_data[0] = "unknown";
-    else
-        template_data[0] = name;
-
+    template_data[0] = std::to_string(freesasa_node_structure_model(structure));
     template_data[1] = std::string{freesasa_node_structure_chain_labels(structure)};
-    template_data[2] = std::to_string(freesasa_node_structure_model(structure));
-    template_data[3] = std::to_string(freesasa_node_structure_n_atoms(structure));
+    template_data[2] = std::to_string(freesasa_node_structure_n_atoms(structure));
 
-    template_data[4] = "Total";
-    template_data[5] = std::to_string(area->total);
+    template_data[3] = "Total";
+    template_data[4] = std::to_string(area->total);
     result_data.push_back(template_data);
 
-    template_data[4] = "Apolar";
-    template_data[5] = std::to_string(area->apolar);
+    template_data[3] = "Apolar";
+    template_data[4] = std::to_string(area->apolar);
     result_data.push_back(template_data);
 
-    template_data[4] = "Polar";
-    template_data[5] = std::to_string(area->polar);
+    template_data[3] = "Polar";
+    template_data[4] = std::to_string(area->polar);
     result_data.push_back(template_data);
 
     if (area->unknown > 0) {
-        template_data[4] = "Unknown";
-        template_data[5] = std::to_string(area->unknown);
+        template_data[3] = "Unknown";
+        template_data[4] = std::to_string(area->unknown);
         result_data.push_back(template_data);
     }
 
@@ -566,8 +561,8 @@ append_freesasa_result_summary_to_block(gemmi::cif::Block &block, freesasa_node 
         area = freesasa_node_area(chain);
         assert(area);
 
-        template_data[4] = gemmi::cif::quote(std::string{"CHAIN "} + std::string{freesasa_node_name(chain)});
-        template_data[5] = std::to_string(area->total);
+        template_data[3] = gemmi::cif::quote(std::string{"CHAIN "} + std::string{freesasa_node_name(chain)});
+        template_data[4] = std::to_string(area->total);
         result_data.push_back(template_data);
 
         chain = freesasa_node_next(chain);
