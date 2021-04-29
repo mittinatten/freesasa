@@ -15,8 +15,8 @@ struct atom_properties {
     double radius;
     char *pdb_line;
     char chain;
-    const char *res_number;
-    const char *res_name;
+    char *res_number;
+    char *res_name;
 };
 
 struct residue_properties {
@@ -111,8 +111,8 @@ node_free(freesasa_node *node)
         switch (node->type) {
         case FREESASA_NODE_ATOM:
             free(node->properties.atom.pdb_line);
-            free((char *)node->properties.atom.res_name);
-            free((char *)node->properties.atom.res_number);
+            free(node->properties.atom.res_name);
+            free(node->properties.atom.res_number);
             break;
         case FREESASA_NODE_RESIDUE:
             free(node->properties.residue.reference);
@@ -224,11 +224,14 @@ node_atom(const freesasa_structure *structure,
     }
 
     atom->type = FREESASA_NODE_ATOM;
+    atom->properties.atom.pdb_line = NULL;
+    atom->properties.atom.res_number = NULL;
+    atom->properties.atom.res_name = NULL;
     atom->properties.atom.is_polar = freesasa_structure_atom_class(structure, atom_index) == FREESASA_ATOM_POLAR;
     atom->properties.atom.is_bb = freesasa_atom_is_backbone(atom->name);
     atom->properties.atom.radius = freesasa_structure_atom_radius(structure, atom_index);
-    atom->properties.atom.pdb_line = NULL;
     atom->properties.atom.chain = freesasa_structure_atom_chain(structure, atom_index);
+
     atom->properties.atom.res_number = strdup(freesasa_structure_atom_res_number(structure, atom_index));
     if (atom->properties.atom.res_number == NULL) {
         mem_fail();
