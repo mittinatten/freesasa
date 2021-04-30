@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <fstream>
 #include <iostream>
 #include <memory>
 #include <set>
@@ -276,25 +275,28 @@ freesasa_cif_structure_array(std::FILE *input,
             n_chains += n_new_chains;
 
             if (n_new_chains == 0) {
-                freesasa_warn("in %s(): no chains found (in model %s)", __func__, models[i].name.c_str());
+                freesasa_warn("in %s(): no chains found (in model %s)",
+                              __func__, models[i].name.c_str());
                 continue;
             }
 
             ss.reserve(n_new_chains);
             for (auto &chain_name : *chain_names) {
-                freesasa_structure* structure = freesasa_structure_from_chain(doc, models[i].name, chain_name, classifier, options);
-                if (freesasa_structure_n(structure) == 0){
+                freesasa_structure *structure = freesasa_structure_from_chain(doc, models[i].name, chain_name, classifier, options);
+                if (freesasa_structure_n(structure) == 0) {
                     --n_chains;
                     free(structure);
                     continue;
                 }
-                
+
                 ss.push_back(std::move(structure));
-            
+
                 freesasa_structure_set_model(ss.back(), i + 1);
             }
         }
-        if (n_chains == 0) freesasa_fail("In %s(): No chains in any model in protein: %s.", __func__, gemmi_struct.name.c_str());
+        if (n_chains == 0)
+            freesasa_fail("In %s(): No chains in any model in protein: %s.",
+                          __func__, gemmi_struct.name.c_str());
         *n = n_chains;
     } else {
         ss.reserve(n_models);
@@ -310,8 +312,12 @@ freesasa_cif_structure_array(std::FILE *input,
 
 struct freesasa_MCRA {
 
-    freesasa_MCRA(const int model, const std::string &chain, const std::string &residue, const std::string &res_num, const std::string &atom)
-        : _model(model), _chain(chain), _residue(residue), _res_num(res_num), _atom(atom)
+    freesasa_MCRA(const int model,
+                  const std::string &chain,
+                  const std::string &res_num,
+                  const std::string &residue,
+                  const std::string &atom)
+        : _model(model), _chain(chain), _res_num(res_num), _residue(residue), _atom(atom)
     {
     }
 
@@ -328,8 +334,12 @@ struct freesasa_MCRA {
             ++idx;
         }
 
-        std::cout << "Did not find row for: " << *this << std::endl;
-        std::cout << "Looping through entire table... " << std::endl;
+        freesasa_warn(
+            "In %s(), unable to find row in _atom_site for atom (%d, %s, %s, %s, %s). "
+            "Looping through entire table to double check...",
+            __func__, this->_model, this->_chain.c_str(),
+            this->_res_num.c_str(), this->_residue.c_str(),
+            this->_atom.c_str());
 
         idx = 0;
         for (const auto site : table) {
@@ -338,8 +348,7 @@ struct freesasa_MCRA {
             }
             ++idx;
         }
-        std::cout << "Still couldnt find: " << *this << std::endl;
-        return -1;
+        return FREESASA_FAIL;
     }
 
     friend std::ostream &operator<<(std::ostream &os, const freesasa_MCRA &mcra)
@@ -387,21 +396,22 @@ static int find_doc_idx(std::string filename)
     filename = get_cif_filename(filename);
 
     if (filename.find("stdin") != std::string::npos) {
-        std::cout << "finding doc for stdin: " << filename << std::endl;
         if (docs.size() == 1)
             return 0;
         else
-            freesasa_fail("CIF input is from stdin but there are more than 1 gemmi documents to choose from. Unable to select correct doc. exiting...");
+            freesasa_fail(
+                "In %s(), CIF input is from stdin but there are more than 1 gemmi documents to choose from. "
+                "Unable to select correct doc. exiting...",
+                __func__);
     }
 
     std::transform(filename.begin(), filename.end(), filename.begin(), tolower);
     for (int i = 0; i != docs.size(); ++i) {
         if (filename.find(docs[i].source) != std::string::npos) {
-            std::cout << "Filename: " << filename << " Source: " << docs[i].source << std::endl;
             return i;
         }
     }
-    return -1;
+    return FREESASA_WARN;
 }
 
 static void
@@ -425,18 +435,18 @@ append_freesasa_params_to_block(gemmi::cif::Block &block, freesasa_node *result)
         std::to_string(params->probe_radius)};
 
 #if USE_THREADS
-    params_tags.push_back("threads");
-    params_data.push_back(std::to_string(params->n_threads));
+    params_tags.emplace_back("threads");
+    params_data.emplace_back(std::to_string(params->n_threads));
 #endif
 
     switch (params->alg) {
     case FREESASA_SHRAKE_RUPLEY:
-        params_tags.push_back("testpoints");
-        params_data.push_back(std::to_string(params->shrake_rupley_n_points));
+        params_tags.emplace_back("testpoints");
+        params_data.emplace_back(std::to_string(params->shrake_rupley_n_points));
         break;
     case FREESASA_LEE_RICHARDS:
-        params_tags.push_back("slices");
-        params_data.push_back(std::to_string(params->lee_richards_n_slices));
+        params_tags.emplace_back("slices");
+        params_data.emplace_back(std::to_string(params->lee_richards_n_slices));
         break;
     default:
         assert(0);
@@ -528,8 +538,6 @@ append_freesasa_result_summary_to_block(gemmi::cif::Block &block, freesasa_node 
     freesasa_node *structure = NULL, *chain = NULL;
     const freesasa_nodearea *area = NULL;
 
-    std::string name{get_cif_filename(freesasa_node_name(result))};
-
     structure = freesasa_node_children(result);
     assert(structure);
 
@@ -599,18 +607,15 @@ populate_freesasa_result_vectors(gemmi::cif::Table &table, freesasa_node *result
     assert(table.ok());
 
     freesasa_node *structure, *chain, *residue, *atom;
-    int rowNum = 0, idx = 0;
+    int rowNum{0}, model{0};
 
     structure = freesasa_node_children(result);
     while (structure) {
-        rowNum = 0, idx = 0;
-        auto model = freesasa_node_structure_model(structure);
+        rowNum = 0;
+        model = freesasa_node_structure_model(structure);
         chain = freesasa_node_children(structure);
-        std::cout << "New Structure with model: " << model << std::endl;
         while (chain) {
-            auto chainName = freesasa_node_name(chain);
             residue = freesasa_node_children(chain);
-            std::cout << "New Chain: " << chainName << std::endl;
             while (residue) {
                 if (!(options & FREESASA_OUTPUT_SKIP_REL))
                     append_freesasa_rsa_residue_to_block(table.bloc, residue);
@@ -623,23 +628,20 @@ populate_freesasa_result_vectors(gemmi::cif::Table &table, freesasa_node *result
                     auto area = freesasa_node_area(atom);
                     auto radius = freesasa_node_atom_radius(atom);
 
-                    idx = freesasa_MCRA{model, cName, rName, rNum, aName}.find_row(table, rowNum);
-                    if (idx != -1) {
-                        rowNum = idx;
-                        sasa_vals[rowNum] = std::to_string(area->total);
-                        sasa_radii[rowNum] = std::to_string(radius);
-                    } else {
-                        exit(1);
-                    }
+                    rowNum = freesasa_MCRA{model, cName, rNum, rName, aName}.find_row(table, rowNum);
+                    if (rowNum == FREESASA_FAIL)
+                        freesasa_fail(
+                            "In %s(), unable to find freesasa_node atom (%d, %s, %s, %s, %s) in cif %s",
+                            __func__, model, cName.c_str(), rNum, rName, aName, table.bloc.name.c_str());
+
+                    sasa_vals[rowNum] = std::to_string(area->total);
+                    sasa_radii[rowNum] = std::to_string(radius);
+
                     atom = freesasa_node_next(atom);
                 }
-                auto last_res_name = freesasa_node_name(residue);
-                auto last_res_number = freesasa_node_residue_number(residue);
                 residue = freesasa_node_next(residue);
             }
-            auto last_chain = freesasa_node_name(chain);
             chain = freesasa_node_next(chain);
-            std::cout << "Finished chain: " << chainName << std::endl;
         }
         structure = freesasa_node_next(structure);
     }
@@ -650,8 +652,6 @@ freesasa_write_cif_block(std::FILE *output, gemmi::cif::Table &table,
                          std::vector<std::string> &sasa_vals,
                          std::vector<std::string> &sasa_radii)
 {
-    std::cout << "Writing: " << table.bloc.name << std::endl;
-
     auto &loop = *table.get_loop();
 
     unsigned long orig_tag_size = loop.tags.size();
@@ -671,23 +671,19 @@ freesasa_write_cif_block(std::FILE *output, gemmi::cif::Table &table,
     newCols[new_tag_size - 2] = std::move(sasa_vals);
     newCols[new_tag_size - 1] = std::move(sasa_radii);
 
-    std::vector<std::string> new_tags{"_atom_site.FreeSASA_value", "_atom_site.FreeSASA_radius"};
+    std::vector<std::string> new_tags{
+        "_atom_site.FreeSASA_value",
+        "_atom_site.FreeSASA_radius"};
     for (auto tag : new_tags)
         loop.tags.push_back(tag);
 
     loop.set_all_values(newCols);
 
     if (output != stdout)
-        freesasa_fail("In %s(): A CIF output for %s can only be streamed to stdout.", __func__, table.bloc.name.c_str());
+        freesasa_fail("In %s(): A CIF output for %s can only be streamed to stdout.",
+                      __func__, table.bloc.name.c_str());
 
     gemmi::cif::write_cif_block_to_stream(std::cout, table.bloc);
-
-    unsigned count{0};
-    for (auto &value : newCols[new_tag_size - 2]) {
-        if (value == "?") ++count;
-    }
-    std::cout << "Number of rows with no FREESASA value: " << count << std::endl;
-    std::cout << "Number of rows x columns in the out file: " << loop.length() << " x " << loop.width() << std::endl;
 }
 
 int freesasa_export_tree_to_cif(std::FILE *output,
@@ -705,43 +701,38 @@ int freesasa_export_tree_to_cif(std::FILE *output,
     std::vector<std::string> sasa_vals, sasa_radii;
 
     while (result) {
-        std::string inp_file{freesasa_node_name(result)};
-        std::cout << "New Result with Input file: " << inp_file << " " << std::endl;
-
-        doc_idx = find_doc_idx(inp_file);
-        if (doc_idx == -1) {
-            std::cout << "Unable to find gemmi doc for result: " << inp_file << " Skipping..." << std::endl;
+        doc_idx = find_doc_idx(freesasa_node_name(result));
+        if (doc_idx == FREESASA_WARN) {
+            freesasa_warn("In %s(), unable to find gemmi doc for result node: %s. Skipping...",
+                          __func__, freesasa_node_name(result));
             result = freesasa_node_next(result);
             continue;
         }
-        auto &doc = docs[doc_idx];
-        std::cout << "Doc name: " << doc.source << std::endl;
 
-        auto &block = doc.sole_block();
-        std::cout << "Block name: " << block.name << std::endl;
+        auto &block = docs[doc_idx].sole_block();
 
         append_freesasa_params_to_block(block, result);
         append_freesasa_result_summary_to_block(block, result);
 
         auto table = block.find("_atom_site.", atom_site_columns);
         if (prev_doc_idx != doc_idx) {
-            std::cout << "New file new vectors! " << std::endl;
             sasa_vals = std::vector<std::string>{table.length(), "?"};
             sasa_radii = std::vector<std::string>{table.length(), "?"};
         }
+
         populate_freesasa_result_vectors(table, result, sasa_vals, sasa_radii, options);
 
         prev_doc_idx = doc_idx;
         result = freesasa_node_next(result);
 
         if (!result) {
-            // There is no next result so write out current (last) file.
+            // There is no next result so write out current file.
             write = true;
         } else if (find_doc_idx(freesasa_node_name(result)) != prev_doc_idx) {
             // Next result node is from a new file so write out current file.
             write = true;
         } else {
-            // Next result node is from the same doc so not ready for writing.
+            // Next result node is from the same doc so do not write current file yet.
             write = false;
         }
 
