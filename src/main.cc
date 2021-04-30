@@ -34,7 +34,7 @@ static const char *program_name = "freesasa";
 #define JSON_STRING ""
 #endif
 
-#define FORMAT_STRING "log|res|seq|pdb|rsa" XML_STRING JSON_STRING
+#define FORMAT_STRING "log|res|seq|pdb|rsa|cif" XML_STRING JSON_STRING
 
 enum { B_FILE,
        SELECT,
@@ -484,6 +484,9 @@ parse_output_format(const char *optarg)
     if (strcmp(optarg, "pdb") == 0) {
         return FREESASA_PDB;
     }
+    if (strcmp(optarg, "cif") == 0) {
+        return FREESASA_CIF;
+    }
     abort_msg("unknown output format: '%s'", optarg);
     return FREESASA_FAIL; /* to avoid compiler warnings */
 }
@@ -704,6 +707,16 @@ parse_arg(int argc, char **argv, struct cli_state *state)
         fprintf(state->output, "## %s ##\n", PACKAGE_STRING);
     }
 
+    // CLI checks for the cif functionality
+    if (state->output_format == FREESASA_CIF && state->cif != 1)
+    abort_msg("The CIF format can not be used without the --cif option set. " 
+              "Input file must be a cif in order to output a cif.");
+
+    if ((state->output_format == FREESASA_CIF || state->output_format == FREESASA_PDB) && 
+         state->structure_options & FREESASA_SEPARATE_CHAINS &&
+         state->structure_options & FREESASA_SEPARATE_MODELS)
+            abort_msg("Cannot output a cif/pdb file with both --separate-chains and --separate-models set. Pick one.");
+
     return optind;
 }
 
@@ -736,7 +749,11 @@ int main(int argc,
             abort_msg("no input", program_name);
     }
 
-    freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
+    if (state.output_format & FREESASA_CIF) {
+        freesasa_export_tree_to_cif(state.output, tree, state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
+    } else {
+        freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
+    }
     freesasa_node_free(tree);
 
     release_state(&state);

@@ -197,12 +197,13 @@ enum freesasa_output_options {
     FREESASA_PDB = 1 << 9,              /**< PDB output (with B-factors replaced by SASA values, and occupancy by radius). */
     FREESASA_RES = 1 << 10,             /**< A list of the integrated SASA of each residue type. */
     FREESASA_SEQ = 1 << 11,             /**< The SASA of each residue in the sequence. */
+    FREESASA_CIF = 1 << 12,             /**< CIF output with SASA values and SASA radius appended */
 
     /**
        Don't output relative areas, for example if structure has
        manually set radii, invalidating reference values
      */
-    FREESASA_OUTPUT_SKIP_REL = 1 << 12,
+    FREESASA_OUTPUT_SKIP_REL = 1 << 13,
 };
 
 /**
@@ -1436,6 +1437,38 @@ freesasa_node_atom_radius(const freesasa_node *node);
  */
 const char *
 freesasa_node_atom_pdb_line(const freesasa_node *node);
+
+/**
+    Atom residue number.
+
+    @param node A node of type ::FREESASA_NODE_ATOM.
+    @return The residue sequence number that this atom is a part of.
+
+    @ingroup node
+ */
+const char *
+freesasa_node_atom_residue_number(const freesasa_node *node);
+
+/**
+    Atom residue name.
+
+    @param node A node of type ::FREESASA_NODE_ATOM.
+    @return The residue 3-char name this atom is a part of.
+
+    @ingroup node
+ */
+const char *
+freesasa_node_atom_residue_name(const freesasa_node *node);
+
+/**
+    Atom chain.
+
+    @param node A node of type ::FREESASA_NODE_ATOM.
+    @return The chain this atom is a part of.
+
+    @ingroup node
+ */
+char freesasa_node_atom_chain(const freesasa_node *node);
 
 /**
     Residue number.
