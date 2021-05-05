@@ -744,5 +744,11 @@ int freesasa_export_tree_to_cif(const char *filename,
 
     std::ostream out(buf);
 
-    return write_result(out, root, options);
+    int ret = write_result(out, root, options);
+
+    if (filename != NULL) {
+        fout.close();
+    }
+
+    return ret;
 }
