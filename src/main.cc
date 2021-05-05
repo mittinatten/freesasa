@@ -103,6 +103,7 @@ struct cli_state {
     /* output settings */
     int output_format, output_depth;
     /* Files */
+    char *output_filename;
     FILE *input, *output, *errlog;
 };
 
@@ -128,6 +129,7 @@ init_state(struct cli_state *state)
     state->select_cmd = 0;
     state->output_format = 0;
     state->output_depth = FREESASA_OUTPUT_CHAIN;
+    state->output_filename = NULL;
     state->output = NULL;
     state->errlog = NULL;
     state->cif = 0;
@@ -152,6 +154,7 @@ release_state(struct cli_state *state)
     }
     if (state->errlog) fclose(state->errlog);
     if (state->output) fclose(state->output);
+    free(state->output_filename);
 }
 
 static void
@@ -589,10 +592,10 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             freesasa_set_err_out(state->errlog);
             break;
         case 'o':
-            if (state->output != NULL) {
+            if (state->output_filename != NULL) {
                 abort_msg("option --output can only be set once");
             }
-            state->output = fopen_werr(optarg, "w");
+            state->output_filename = strdup(optarg);
             break;
         case 'f':
             state->output_format |= parse_output_format(optarg);
@@ -689,7 +692,13 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             break;
         }
     }
-    if (state->output == NULL) state->output = stdout;
+
+    if (state->output_filename) {
+        state->output = fopen_werr(state->output_filename, "w");
+    } else {
+        state->output = stdout;
+    }
+
     if (alg_set > 1) abort_msg("multiple algorithms specified");
     if (state->output_format == 0) state->output_format = FREESASA_LOG;
     if (opt_set['m'] && opt_set['M']) abort_msg("the options -m and -M can't be combined");
@@ -709,13 +718,13 @@ parse_arg(int argc, char **argv, struct cli_state *state)
 
     // CLI checks for the cif functionality
     if (state->output_format == FREESASA_CIF && state->cif != 1)
-    abort_msg("The CIF format can not be used without the --cif option set. " 
-              "Input file must be a cif in order to output a cif.");
+        abort_msg("The CIF format can not be used without the --cif option set. "
+                  "Input file must be a cif in order to output a cif.");
 
-    if ((state->output_format == FREESASA_CIF || state->output_format == FREESASA_PDB) && 
-         state->structure_options & FREESASA_SEPARATE_CHAINS &&
-         state->structure_options & FREESASA_SEPARATE_MODELS)
-            abort_msg("Cannot output a cif/pdb file with both --separate-chains and --separate-models set. Pick one.");
+    if ((state->output_format == FREESASA_CIF || state->output_format == FREESASA_PDB) &&
+        state->structure_options & FREESASA_SEPARATE_CHAINS &&
+        state->structure_options & FREESASA_SEPARATE_MODELS)
+        abort_msg("Cannot output a cif/pdb file with both --separate-chains and --separate-models set. Pick one.");
 
     return optind;
 }
@@ -750,7 +759,7 @@ int main(int argc,
     }
 
     if (state.output_format & FREESASA_CIF) {
-        freesasa_export_tree_to_cif(state.output, tree, state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
+        freesasa_export_tree_to_cif(state.output_filename, tree, state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
     } else {
         freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
     }

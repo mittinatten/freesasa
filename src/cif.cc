@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <set>
@@ -208,8 +209,6 @@ freesasa_structure_from_cif(std::FILE *input,
                             int structure_options)
 {
     auto &doc = generate_gemmi_doc(input);
-
-    std::cout << "Renamed doc.source to " << doc.source << std::endl;
 
     const auto models = get_models(doc);
 
@@ -648,9 +647,9 @@ populate_freesasa_result_vectors(gemmi::cif::Table &table, freesasa_node *result
 }
 
 static void
-freesasa_write_cif_block(std::FILE *output, gemmi::cif::Table &table,
-                         std::vector<std::string> &sasa_vals,
-                         std::vector<std::string> &sasa_radii)
+write_cif_block(std::ostream &out, gemmi::cif::Table &table,
+                std::vector<std::string> &sasa_vals,
+                std::vector<std::string> &sasa_radii)
 {
     auto &loop = *table.get_loop();
 
@@ -679,22 +678,13 @@ freesasa_write_cif_block(std::FILE *output, gemmi::cif::Table &table,
 
     loop.set_all_values(newCols);
 
-    if (output != stdout)
-        freesasa_fail("In %s(): A CIF output for %s can only be streamed to stdout.",
-                      __func__, table.bloc.name.c_str());
-
-    gemmi::cif::write_cif_block_to_stream(std::cout, table.bloc);
+    gemmi::cif::write_cif_block_to_stream(out, table.bloc);
 }
 
-int freesasa_export_tree_to_cif(std::FILE *output,
-                                freesasa_node *root,
-                                int options)
+static int
+write_result(std::ostream &out, freesasa_node *root, int options)
 {
     freesasa_node *result{freesasa_node_children(root)};
-
-    assert(output);
-    assert(root);
-    assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
 
     int prev_doc_idx = -1, doc_idx = 0;
     bool write = false;
@@ -736,7 +726,29 @@ int freesasa_export_tree_to_cif(std::FILE *output,
             write = false;
         }
 
-        if (write) freesasa_write_cif_block(output, table, sasa_vals, sasa_radii);
+        if (write) write_cif_block(out, table, sasa_vals, sasa_radii);
     }
     return FREESASA_SUCCESS;
+}
+
+int freesasa_export_tree_to_cif(const char *filename,
+                                freesasa_node *root,
+                                int options)
+{
+    assert(root);
+    assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
+
+    std::streambuf *buf;
+    std::ofstream fout;
+
+    if (filename != NULL) {
+        fout.open(filename);
+        buf = fout.rdbuf();
+    } else {
+        buf = std::cout.rdbuf();
+    }
+
+    std::ostream out(buf);
+
+    return write_result(out, root, options);
 }
