@@ -349,12 +349,6 @@ struct freesasa_MCRA {
         return FREESASA_FAIL;
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const freesasa_MCRA &mcra)
-    {
-        os << "Atom(" << mcra._model << " " << mcra._chain << " " << mcra._res_num << " [" << mcra._residue << "] " << mcra._atom << ")";
-        return os;
-    }
-
 private:
     bool is_row(const gemmi::cif::Table::Row &row) const
     {
