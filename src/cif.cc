@@ -433,11 +433,6 @@ append_freesasa_params_to_block(gemmi::cif::Block &block, freesasa_node *result)
         std::string{freesasa_alg_name(params->alg)},
         std::to_string(params->probe_radius)};
 
-#if USE_THREADS
-    params_tags.emplace_back("threads");
-    params_data.emplace_back(std::to_string(params->n_threads));
-#endif
-
     switch (params->alg) {
     case FREESASA_SHRAKE_RUPLEY:
         params_tags.emplace_back("testpoints");
