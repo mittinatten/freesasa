@@ -611,8 +611,7 @@ populate_freesasa_result_vectors(gemmi::cif::Table &table, freesasa_node *result
         while (chain) {
             residue = freesasa_node_children(chain);
             while (residue) {
-                if (!(options & FREESASA_OUTPUT_SKIP_REL))
-                    append_freesasa_rsa_residue_to_block(table.bloc, residue);
+                append_freesasa_rsa_residue_to_block(table.bloc, residue);
                 atom = freesasa_node_children(residue);
                 while (atom) {
                     auto cName = std::string(1, freesasa_node_atom_chain(atom));
