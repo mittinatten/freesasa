@@ -110,7 +110,7 @@ Output file
 .BR \-e ", " \-\-error\-file " " \fIFILE\fR
 Redirect errors and warnings to file
 .TP
-.BR -f ", " \-\-format " " log|res|seq|pdb|rsa|xml|json
+.BR -f ", " \-\-format " " log|res|seq|pdb|rsa|cif|xml|json
 Output format, can be repeated. [default: log]
 .TP
 .BR -d ", " \-\-depth " " structure|chain|residue|atom

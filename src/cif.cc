@@ -310,7 +310,6 @@ freesasa_cif_structure_array(std::FILE *input,
 }
 
 struct freesasa_MCRA {
-
     freesasa_MCRA(const int model,
                   const std::string &chain,
                   const std::string &res_num,

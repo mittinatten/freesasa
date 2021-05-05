@@ -113,8 +113,8 @@ the SASA with these modified radii.
 @section Output Output formats
 
 In addition to the standard output format above FreeSASA can export
-the results as @ref CLI-JSON, @ref CLI-XML, @ref CLI-PDB, @ref
-CLI-RSA, @ref CLI-RES and @ref CLI-SEQ using the option
+the results as @ref CLI-JSON, @ref CLI-XML, @ref CLI-PDB, @ref CLI-CIF-OUTPUT,
+@ref CLI-RSA, @ref CLI-RES and @ref CLI-SEQ using the option
 `--format`. The level of detail of JSON and XML output can be
 controlled with the option `--output-depth=<depth>` which takes the
 values `atom`, `residue`, `chain` and `structure`. If `atom` is
@@ -252,7 +252,6 @@ Generates the following
     </structure>
   </result>
 </results>
-
 ```
 
 @subsection CLI-PDB PDB
@@ -273,6 +272,80 @@ The command-line interface can also be used as a PDB filter:
 The output is a PDB-file where the temperature factors have been
 replaced by SASA values (last column), and occupancy numbers by the
 radius of each atom (second to last column).
+
+Only the atoms and models used in the calculation will be present in
+the output (see @ref Input for how to modify this).
+
+@subsection CLI-CIF-OUTPUT CIF
+
+The option `--output=cif` can be used if the input was in the mmCIF format.
+It takes the original input and adds two columns to the `atom_site`s
+
+    loop_
+    _atom_site.group_PDB
+    _atom_site.id
+    _atom_site.type_symbol
+    _atom_site.label_atom_id
+    _atom_site.label_alt_id
+    _atom_site.label_comp_id
+    _atom_site.label_asym_id
+    _atom_site.label_entity_id
+    _atom_site.label_seq_id
+    _atom_site.pdbx_PDB_ins_code
+    _atom_site.Cartn_x
+    _atom_site.Cartn_y
+    _atom_site.Cartn_z
+    _atom_site.occupancy
+    _atom_site.B_iso_or_equiv
+    _atom_site.pdbx_formal_charge
+    _atom_site.auth_seq_id
+    _atom_site.auth_comp_id
+    _atom_site.auth_asym_id
+    _atom_site.auth_atom_id
+    _atom_site.pdbx_PDB_model_num
+    _atom_site.FreeSASA_value
+    _atom_site.FreeSASA_radius
+    ATOM 1 N N . MET A 1 1 ? 27.340 24.430 2.614 1.00 9.67 ? 1 MET A N 1 19.515388 1.640000
+    ...
+
+The parameters used
+
+    _freeSASA_parameters.version  2.0.3
+    _freeSASA_parameters.algorithm 'Lee & Richards'
+    _freeSASA_parameters.probe-radius 1.400000
+    _freeSASA_parameters.slices 20
+
+Results at structure and chain level
+
+    loop_
+    _freeSASA_results.model
+    _freeSASA_results.chains
+    _freeSASA_results.atoms
+    _freeSASA_results.type
+    _freeSASA_results.surface_area
+    1 A 602 Total 4804.055641
+    1 A 602 Apolar 2299.838339
+    1 A 602 Polar 2504.217302
+    1 A 602 'CHAIN A' 4804.055641
+
+And residue level results, including relative values, if available
+
+    loop_
+    _freeSASA_rsa.asym_id
+    _freeSASA_rsa.seq_id
+    _freeSASA_rsa.comp_id
+    _freeSASA_rsa.abs_total
+    _freeSASA_rsa.rel_total
+    _freeSASA_rsa.abs_side_chain
+    _freeSASA_rsa.rel_side_chain
+    _freeSASA_rsa.abs_main_chain
+    _freeSASA_rsa.rel_main_chain
+    _freeSASA_rsa.abs_apolar
+    _freeSASA_rsa.rel_apolar
+    _freeSASA_rsa.abs_polar
+    _freeSASA_rsa.rel_polar
+    A 1 MET 54.393508 28.168570 19.085046 12.630739 35.308462 84.067766 28.483151 24.216248 25.910357 34.327447
+    ...
 
 Only the atoms and models used in the calculation will be present in
 the output (see @ref Input for how to modify this).
