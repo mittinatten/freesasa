@@ -128,7 +128,7 @@ assert_pass "$cli -h > $dump 2> /dev/null"
 assert_pass "$cli --deprecated > $dump 2> /dev/null"
 # check that it's a valid version number
 version=`$cli -v | head -n 1`
-assert_pass "echo $version | perl -ne 'if (m/FreeSASA (\d+\.)*\d$/) {exit 0} else  {exit 1}'"
+assert_pass "echo $version | perl -ne 'if (m/FreeSASA (\d+\.)*\d(-beta)?$/) {exit 0} else  {exit 1}'"
 # check that running with several output options doesn't crash
 assert_pass "$cli -o $dump -e tmp/err -n 1 $smallpdb"
 
@@ -234,12 +234,12 @@ assert_equal_total "$cli" "$datadir/3bkr.pdb" "$datadir/3bkr.cif --cif"
 assert_equal_total "$cli -w" "$datadir/3gnn.pdb" "$datadir/3gnn.cif --cif"
 assert_equal_total "$cli --join-models" "$datadir/2jo4.pdb" "$datadir/2jo4.cif --cif"
 assert_equal_total "$cli --chain-groups AB+CD -S -n 10" "$datadir/2jo4.pdb" "$datadir/2jo4.cif --cif"
-assert_pass "$cli --cif --separate-chain --format=cif $datadir/1ubq.cif"
-assert_pass "$cli --cif --separate-models --format=cif $datadir/1ubq.cif"
-assert_pass "$cli --cif --format=cif $datadir/1ubq.cif"
-assert_fail "$cli --cif --format=pdb $datadir/1ubq.cif"
-assert_fail "$cli --format=cif $datadir/1ubq.pdb"
-assert_fail "$cli --cif --format=cif --separate-chains --separate-models"
+assert_pass "$cli --cif --separate-chain --format=cif $datadir/1ubq.cif > $dump"
+assert_pass "$cli --cif --separate-models --format=cif $datadir/1ubq.cif > $dump"
+assert_pass "$cli --cif --format=cif $datadir/1ubq.cif > $dump"
+assert_fail "$cli --cif --format=pdb $datadir/1ubq.cif > $dump"
+assert_fail "$cli --format=cif $datadir/1ubq.pdb > $dump"
+assert_fail "$cli --cif --format=cif --separate-chains --separate-models > $dump"
 
 echo
 echo "== Testing --separate-chains and --separate-models output are equal between cif and pdb"
