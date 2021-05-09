@@ -712,15 +712,13 @@ parse_arg(int argc, char **argv, struct cli_state *state)
     if (state->output_format == FREESASA_RSA && (opt_set['C'] || opt_set['M']))
         abort_msg("the RSA format can not be used with the options -C or -M, "
                   "it does not support several results in one file");
+
     if (state->output_format & FREESASA_LOG) {
         fprintf(state->output, "## %s ##\n", PACKAGE_STRING);
     }
 
-    // CLI checks for the cif functionality
-    if (state->output_format == FREESASA_CIF && state->cif != 1)
-        abort_msg("The CIF format can not be used without the --cif option set. "
-                  "Input file must be a cif in order to output a cif.");
-
+    if (state->output_format == FREESASA_CIF && state->cif != 1) abort_msg("CIF output can not be generated from .pdb input");
+    if (state->output_format == FREESASA_PDB && state->cif == 1) abort_msg("PDB output can not be generated from .cif input.");
     if ((state->output_format == FREESASA_CIF || state->output_format == FREESASA_PDB) &&
         state->structure_options & FREESASA_SEPARATE_CHAINS &&
         state->structure_options & FREESASA_SEPARATE_MODELS)
