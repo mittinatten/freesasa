@@ -518,7 +518,7 @@ append_freesasa_rsa_residue_to_block(gemmi::cif::Block &block, freesasa_node *re
     rsa_loop->add_row(rsa_data);
 }
 
-static void
+static int
 append_freesasa_result_summary_to_block(gemmi::cif::Block &block, freesasa_node *result)
 {
     assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
@@ -527,10 +527,14 @@ append_freesasa_result_summary_to_block(gemmi::cif::Block &block, freesasa_node 
     const freesasa_nodearea *area = NULL;
 
     structure = freesasa_node_children(result);
-    assert(structure);
+    if (structure == NULL) {
+        return freesasa_fail("Result node has no structure nodes.");
+    }
 
     area = freesasa_node_area(structure);
-    assert(area);
+    if (area == NULL) {
+        return freesasa_fail("Structure node has no area.");
+    }
 
     std::string results_prefix{"_freeSASA_results."};
     std::vector<std::string> result_tags{"model", "chains", "atoms", "type", "surface_area"};
@@ -562,7 +566,9 @@ append_freesasa_result_summary_to_block(gemmi::cif::Block &block, freesasa_node 
     chain = freesasa_node_children(structure);
     while (chain) {
         area = freesasa_node_area(chain);
-        assert(area);
+        if (area == NULL) {
+            return freesasa_fail("Chain has no stored area");
+        }
 
         template_data[3] = gemmi::cif::quote(std::string{"CHAIN "} + std::string{freesasa_node_name(chain)});
         template_data[4] = std::to_string(area->total);
@@ -582,6 +588,8 @@ append_freesasa_result_summary_to_block(gemmi::cif::Block &block, freesasa_node 
     for (auto &row : result_data) {
         result_loop->add_row(row);
     }
+
+    return FREESASA_SUCCESS;
 }
 
 static void
@@ -690,7 +698,10 @@ write_result(std::ostream &out, freesasa_node *root, int options)
         auto &block = docs[doc_idx].sole_block();
 
         append_freesasa_params_to_block(block, result);
-        append_freesasa_result_summary_to_block(block, result);
+
+        if (append_freesasa_result_summary_to_block(block, result) == FREESASA_FAIL) {
+            return freesasa_fail("Unable to build CIF output");
+        }
 
         auto table = block.find("_atom_site.", atom_site_columns);
         if (prev_doc_idx != doc_idx) {
@@ -725,6 +736,7 @@ int freesasa_export_tree_to_cif(const char *filename,
 {
     assert(root);
     assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
+    int ret;
 
     std::streambuf *buf;
     std::ofstream fout;
@@ -738,10 +750,18 @@ int freesasa_export_tree_to_cif(const char *filename,
 
     std::ostream out(buf);
 
-    int ret = write_result(out, root, options);
+    try {
+        ret = write_result(out, root, options);
+    } catch (...) {
+        ret = FREESASA_FAIL;
+    }
 
     if (filename != NULL) {
         fout.close();
+    }
+
+    if (ret == FREESASA_FAIL) {
+        freesasa_fail("Unable to output CIF file");
     }
 
     return ret;
