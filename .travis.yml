@@ -1,20 +1,12 @@
-
-language: c
+language: c++
 git:
   depth: 3
-dist:
-  trusty
-cache:
-  pip
-
-branches:
-  only:
-    - master
-    - dev
+dist: xenial
+cache: pip
 
 before_install:
-    - sudo apt-get update -qq
-    - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev
 
 matrix:
   include:
@@ -24,7 +16,7 @@ matrix:
       before_install:
         - pip install --user cpp-coveralls
         - sudo apt-get update -qq
-        - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils
+        - sudo apt-get install -qq check libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev
       after_success:
         - coveralls --exclude tests --exclude src/lexer.l --exclude src/lexer.c --exclude src/parser.c --exclude src/parser.y --exclude src/example.c --exclude src/util.c  --gcov-options '\-lp'
 
@@ -45,5 +37,5 @@ before_script:
 script: make && make check
 
 after_failure:
-    - cat tests/test-api.log
-    - cat tests/test-cli.log
+  - cat tests/test-api.log
+  - cat tests/test-cli.log

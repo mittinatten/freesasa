@@ -690,17 +690,19 @@ cleanup:
     return NULL;
 }
 
-int freesasa_structure_add_atom_wopt(freesasa_structure *structure,
-                                     const char *atom_name,
-                                     const char *residue_name,
-                                     const char *residue_number,
-                                     char chain_label,
-                                     double x, double y, double z,
-                                     const freesasa_classifier *classifier,
-                                     int options)
+static int
+structure_add_atom_wopt_impl(freesasa_structure *structure,
+                             const char *atom_name,
+                             const char *residue_name,
+                             const char *residue_number,
+                             const char *symbol,
+                             char chain_label,
+                             double x, double y, double z,
+                             const freesasa_classifier *classifier,
+                             int options)
 {
     struct atom *a;
-    char symbol[PDB_ATOM_SYMBOL_STRL + 1];
+    char my_symbol[PDB_ATOM_SYMBOL_STRL + 1];
     double v[3] = {x, y, z};
     int ret, warn = 0;
 
@@ -712,11 +714,14 @@ int freesasa_structure_add_atom_wopt(freesasa_structure *structure,
     /* this option can not be used here, and needs to be unset */
     options &= ~FREESASA_RADIUS_FROM_OCCUPANCY;
 
-    if (guess_symbol(symbol, atom_name) == FREESASA_WARN &&
-        options & FREESASA_SKIP_UNKNOWN)
+    if (symbol != NULL) {
+        strncpy(my_symbol, symbol, sizeof(my_symbol));
+    } else if (guess_symbol(my_symbol, atom_name) == FREESASA_WARN &&
+               options & FREESASA_SKIP_UNKNOWN) {
         ++warn;
+    }
 
-    a = atom_new(residue_name, residue_number, atom_name, symbol, chain_label);
+    a = atom_new(residue_name, residue_number, atom_name, my_symbol, chain_label);
     if (a == NULL) return mem_fail();
 
     ret = structure_add_atom(structure, a, v, classifier, options);
@@ -730,6 +735,18 @@ int freesasa_structure_add_atom_wopt(freesasa_structure *structure,
     return ret;
 }
 
+int freesasa_structure_add_atom_wopt(freesasa_structure *structure,
+                                     const char *atom_name,
+                                     const char *residue_name,
+                                     const char *residue_number,
+                                     char chain_label,
+                                     double x, double y, double z,
+                                     const freesasa_classifier *classifier,
+                                     int options)
+{
+    return structure_add_atom_wopt_impl(structure, atom_name, residue_name, residue_number, NULL,
+                                        chain_label, x, y, z, classifier, options);
+}
 int freesasa_structure_add_atom(freesasa_structure *structure,
                                 const char *atom_name,
                                 const char *residue_name,
@@ -737,8 +754,27 @@ int freesasa_structure_add_atom(freesasa_structure *structure,
                                 char chain_label,
                                 double x, double y, double z)
 {
-    return freesasa_structure_add_atom_wopt(structure, atom_name, residue_name, residue_number,
-                                            chain_label, x, y, z, NULL, 0);
+    return structure_add_atom_wopt_impl(structure, atom_name, residue_name, residue_number, NULL,
+                                        chain_label, x, y, z, NULL, 0);
+}
+
+int freesasa_structure_add_cif_atom(freesasa_structure *structure,
+                                    freesasa_cif_atom *atom,
+                                    const freesasa_classifier *classifier,
+                                    int options)
+{
+    char res_number[PDB_ATOM_RES_NUMBER_STRL + 1];
+
+    if (atom->pdbx_PDB_ins_code[0] != '?') {
+        snprintf(res_number, sizeof res_number, "%s%c", atom->auth_seq_id, atom->pdbx_PDB_ins_code[0]);
+    } else {
+        snprintf(res_number, sizeof res_number, "%s", atom->auth_seq_id);
+    }
+
+    return structure_add_atom_wopt_impl(structure, atom->auth_atom_id, atom->auth_comp_id,
+                                        res_number, atom->type_symbol, atom->auth_asym_id,
+                                        atom->Cartn_x, atom->Cartn_y, atom->Cartn_z,
+                                        classifier, options);
 }
 
 freesasa_structure *
@@ -887,9 +923,9 @@ freesasa_structure_get_chains(const freesasa_structure *structure,
         c = ai->chain_label;
         if (strchr(chains, c) != NULL) {
             v = freesasa_coord_i(structure->xyz, i);
-            res = freesasa_structure_add_atom_wopt(new_s, ai->atom_name,
-                                                   ai->res_name, ai->res_number,
-                                                   c, v[0], v[1], v[2], classifier, options);
+            res = structure_add_atom_wopt_impl(new_s, ai->atom_name,
+                                               ai->res_name, ai->res_number, ai->symbol,
+                                               c, v[0], v[1], v[2], classifier, options);
             if (res == FREESASA_FAIL) {
                 fail_msg("");
                 goto cleanup;
@@ -1170,4 +1206,10 @@ void freesasa_structure_set_radius(freesasa_structure *structure,
     assert(structure);
     assert(radii);
     memcpy(structure->atoms.radius, radii, structure->atoms.n * sizeof(double));
+}
+
+void freesasa_structure_set_model(freesasa_structure *structure,
+                                  int model)
+{
+    structure->model = model;
 }

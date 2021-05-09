@@ -261,7 +261,7 @@ const struct atom atoms[] = {
     {" DI"," C1'",aro_C,APO}, {" DI"," N9 ",ami_N,POL}, {" DI"," C8 ",aro_C,APO},
     {" DI"," N7 ",ami_N,POL}, {" DI"," C5 ",aro_C,APO}, {" DI"," C6 ",aro_C,APO},
     {" DI"," N6 ",ami_N,POL}, {" DI"," N1 ",ami_N,POL}, {" DI"," C2 ",aro_C,APO},
-    {" DI"," N3 ",ami_N,POL}, {" DI"," C4 ",aro_C,APO},
+    {" DI"," N3 ",ami_N,POL}, {" DI"," C4 ",aro_C,APO}
 };
 // clang-format on
 

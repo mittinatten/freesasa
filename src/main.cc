@@ -4,12 +4,14 @@
 #include <assert.h>
 #include <errno.h>
 #include <getopt.h>
+#include <iostream>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+#include "cif.hh"
 #include "freesasa.h"
 
 #if STDC_HEADERS
@@ -18,7 +20,7 @@ extern int optind, optopt;
 extern char *optarg;
 #endif
 
-static char *program_name = "freesasa";
+static const char *program_name = "freesasa";
 
 #if USE_XML
 #define XML_STRING "|xml"
@@ -32,14 +34,15 @@ static char *program_name = "freesasa";
 #define JSON_STRING ""
 #endif
 
-#define FORMAT_STRING "log|res|seq|pdb|rsa" XML_STRING JSON_STRING
+#define FORMAT_STRING "log|res|seq|pdb|rsa|cif" XML_STRING JSON_STRING
 
 enum { B_FILE,
        SELECT,
        UNKNOWN,
        RSA,
        RADII,
-       DEPRECATED };
+       DEPRECATED,
+       CIF };
 
 static int option_flag;
 
@@ -64,6 +67,7 @@ static struct option long_options[] = {
     {"output", required_argument, 0, 'o'},
     {"format", required_argument, 0, 'f'},
     {"depth", required_argument, 0, 'd'},
+    {"cif", no_argument, &option_flag, CIF},
     {"select", required_argument, &option_flag, SELECT},
     {"unknown", required_argument, &option_flag, UNKNOWN},
     {"rsa", no_argument, &option_flag, RSA},
@@ -88,6 +92,7 @@ struct cli_state {
     const freesasa_classifier *classifier;
     int structure_options;
     int static_classifier;
+    int cif;
     int no_rel;
     /* chain groups */
     int n_chain_groups;
@@ -98,6 +103,7 @@ struct cli_state {
     /* output settings */
     int output_format, output_depth;
     /* Files */
+    char *output_filename;
     FILE *input, *output, *errlog;
 };
 
@@ -123,8 +129,10 @@ init_state(struct cli_state *state)
     state->select_cmd = 0;
     state->output_format = 0;
     state->output_depth = FREESASA_OUTPUT_CHAIN;
+    state->output_filename = NULL;
     state->output = NULL;
     state->errlog = NULL;
+    state->cif = 0;
 }
 
 static void
@@ -146,14 +154,13 @@ release_state(struct cli_state *state)
     }
     if (state->errlog) fclose(state->errlog);
     if (state->output) fclose(state->output);
+    free(state->output_filename);
 }
 
 static void
 addresses(FILE *out)
 {
-    fprintf(out,
-            "\n" REPORTBUG "\n"
-            "Home page: " HOMEPAGE "\n");
+    fprintf(out, "\n" REPORTBUG "\nHome page: " HOMEPAGE "\n");
 }
 
 static void
@@ -170,6 +177,7 @@ help(void)
            "  --radius-from-occupancy | --config-file=<FILE> | --radii=<protor|naccess>\n"
            "  --hetatm --hydrogen\n"
            "  --unknown=<guess|skip|halt>\n"
+           "  --cif\n"
            "  --separate-models | --join-models\n"
            "  --separate-chains | --chain-groups=<LIST> ...\n"
            "  --select=<STRING> ...\n"
@@ -250,30 +258,35 @@ exit_with_help(void)
         exit_with_help();   \
     } while (0)
 
-static freesasa_structure **
-get_structures(FILE *input,
+static std::vector<freesasa_structure *>
+get_structures(std::FILE *input,
                int *n,
                const struct cli_state *state)
 {
     int i, j, n2;
-    freesasa_structure **structures = NULL;
+    std::vector<freesasa_structure *> structures;
     freesasa_structure *tmp;
 
     *n = 0;
     if ((state->structure_options & FREESASA_SEPARATE_CHAINS) ||
         (state->structure_options & FREESASA_SEPARATE_MODELS)) {
-        structures = freesasa_structure_array(input, n, state->classifier, state->structure_options);
-        if (structures == NULL) abort_msg("invalid input");
-        for (i = 0; i < *n; ++i) {
-            if (structures[i] == NULL) abort_msg("invalid input");
+        if (state->cif) {
+            structures = freesasa_cif_structure_array(input, n, state->classifier, state->structure_options);
+        } else {
+            // TODO this hack needed since PDB implementation is in C
+            freesasa_structure **db_ptr_structs = freesasa_structure_array(input, n, state->classifier, state->structure_options);
+            structures.reserve(*n);
+            for (i = 0; i < *n; ++i) {
+                structures.push_back(std::move(db_ptr_structs[i]));
+            }
         }
     } else {
-        structures = malloc(sizeof(freesasa_structure *));
-        if (structures == NULL) {
-            abort_msg("out of memory");
-        }
         *n = 1;
-        structures[0] = freesasa_structure_from_pdb(input, state->classifier, state->structure_options);
+        if (state->cif) {
+            structures.emplace_back(freesasa_structure_from_cif(input, state->classifier, state->structure_options));
+        } else {
+            structures.emplace_back(freesasa_structure_from_pdb(input, state->classifier, state->structure_options));
+        }
         if (structures[0] == NULL) {
             abort_msg("invalid input");
         }
@@ -284,13 +297,13 @@ get_structures(FILE *input,
         n2 = *n;
         for (i = 0; i < state->n_chain_groups; ++i) {
             for (j = 0; j < *n; ++j) {
+                // TODO make this function pdb and cif compatible.
                 tmp = freesasa_structure_get_chains(structures[j], state->chain_groups[i],
                                                     state->classifier, state->structure_options);
                 if (tmp != NULL) {
                     ++n2;
-                    structures = realloc(structures, sizeof(freesasa_structure *) * n2);
-                    if (structures == NULL) abort_msg("out of memory");
-                    structures[n2 - 1] = tmp;
+                    structures.reserve(n2);
+                    structures.push_back(tmp);
                 } else {
                     abort_msg("at least one of chain(s) '%s' not found", state->chain_groups[i]);
                 }
@@ -298,7 +311,6 @@ get_structures(FILE *input,
         }
         *n = n2;
     }
-
     return structures;
 }
 
@@ -308,12 +320,12 @@ run_analysis(FILE *input,
              const struct cli_state *state)
 {
     int name_len = strlen(name);
-    freesasa_structure **structures = NULL;
+    std::vector<freesasa_structure *> structures;
     freesasa_node *tree = freesasa_tree_new(), *tmp_tree, *structure_node;
     const freesasa_result *result;
     freesasa_selection *sel;
     int n = 0, i, c;
-    char *name_i = malloc(name_len + 10);
+    char *name_i = (char *)malloc(name_len + 10);
 
     if (tree == NULL) abort_msg("failed to initialize result-tree");
     if (name_i == NULL) abort_msg("memory failure");
@@ -355,8 +367,6 @@ run_analysis(FILE *input,
         freesasa_structure_free(structures[i]);
     }
 
-    free(structures);
-
     return tree;
 }
 
@@ -370,7 +380,6 @@ fopen_werr(const char *filename,
         abort_msg("could not open file '%s'; %s",
                   filename, strerror(errno));
     }
-
     return f;
 }
 
@@ -402,7 +411,7 @@ state_add_chain_groups(const char *cmd, struct cli_state *state)
         token = strtok(str, "+");
         while (token) {
             ++state->n_chain_groups;
-            state->chain_groups = realloc(state->chain_groups, sizeof(char *) * state->n_chain_groups);
+            state->chain_groups = (char **)realloc(state->chain_groups, sizeof(char *) * state->n_chain_groups);
             if (state->chain_groups == NULL) {
                 abort_msg("out of memory");
             }
@@ -419,7 +428,7 @@ static void
 state_add_select(const char *cmd, struct cli_state *state)
 {
     ++state->n_select;
-    state->select_cmd = realloc(state->select_cmd, sizeof(char *) * state->n_select);
+    state->select_cmd = (char **)realloc(state->select_cmd, sizeof(char *) * state->n_select);
     if (state->select_cmd == NULL) {
         abort_msg("out of memory");
     }
@@ -477,6 +486,9 @@ parse_output_format(const char *optarg)
     }
     if (strcmp(optarg, "pdb") == 0) {
         return FREESASA_PDB;
+    }
+    if (strcmp(optarg, "cif") == 0) {
+        return FREESASA_CIF;
     }
     abort_msg("unknown output format: '%s'", optarg);
     return FREESASA_FAIL; /* to avoid compiler warnings */
@@ -562,6 +574,9 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             case DEPRECATED:
                 deprecated();
                 exit(EXIT_SUCCESS);
+            case CIF:
+                state->cif = 1;
+                break;
             default:
                 abort(); /* what does this even mean? */
             }
@@ -577,10 +592,10 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             freesasa_set_err_out(state->errlog);
             break;
         case 'o':
-            if (state->output != NULL) {
+            if (state->output_filename != NULL) {
                 abort_msg("option --output can only be set once");
             }
-            state->output = fopen_werr(optarg, "w");
+            state->output_filename = strdup(optarg);
             break;
         case 'f':
             state->output_format |= parse_output_format(optarg);
@@ -677,7 +692,13 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             break;
         }
     }
-    if (state->output == NULL) state->output = stdout;
+
+    if (state->output_filename) {
+        state->output = fopen_werr(state->output_filename, "w");
+    } else {
+        state->output = stdout;
+    }
+
     if (alg_set > 1) abort_msg("multiple algorithms specified");
     if (state->output_format == 0) state->output_format = FREESASA_LOG;
     if (opt_set['m'] && opt_set['M']) abort_msg("the options -m and -M can't be combined");
@@ -691,9 +712,17 @@ parse_arg(int argc, char **argv, struct cli_state *state)
     if (state->output_format == FREESASA_RSA && (opt_set['C'] || opt_set['M']))
         abort_msg("the RSA format can not be used with the options -C or -M, "
                   "it does not support several results in one file");
+
     if (state->output_format & FREESASA_LOG) {
         fprintf(state->output, "## %s ##\n", PACKAGE_STRING);
     }
+
+    if (state->output_format == FREESASA_CIF && state->cif != 1) abort_msg("CIF output can not be generated from .pdb input");
+    if (state->output_format == FREESASA_PDB && state->cif == 1) abort_msg("PDB output can not be generated from .cif input.");
+    if ((state->output_format == FREESASA_CIF || state->output_format == FREESASA_PDB) &&
+        state->structure_options & FREESASA_SEPARATE_CHAINS &&
+        state->structure_options & FREESASA_SEPARATE_MODELS)
+        abort_msg("Cannot output a cif/pdb file with both --separate-chains and --separate-models set. Pick one.");
 
     return optind;
 }
@@ -727,7 +756,11 @@ int main(int argc,
             abort_msg("no input", program_name);
     }
 
-    freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
+    if (state.output_format & FREESASA_CIF) {
+        freesasa_export_tree_to_cif(state.output_filename, tree, state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
+    } else {
+        freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
+    }
     freesasa_node_free(tree);
 
     release_state(&state);
