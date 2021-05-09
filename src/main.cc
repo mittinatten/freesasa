@@ -732,7 +732,7 @@ int main(int argc,
 {
     struct cli_state state;
     FILE *input = NULL;
-    int optind = 0, i;
+    int optind = 0, i, ret;
 
     freesasa_node *tree = freesasa_tree_new(), *tmp;
     if (tree == NULL) abort_msg("error initializing calculation");
@@ -757,13 +757,17 @@ int main(int argc,
     }
 
     if (state.output_format & FREESASA_CIF) {
-        freesasa_export_tree_to_cif(state.output_filename, tree);
+        ret = freesasa_export_tree_to_cif(state.output_filename, tree);
     } else {
-        freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
+        ret = freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
     }
     freesasa_node_free(tree);
 
     release_state(&state);
 
-    return EXIT_SUCCESS;
+    if (ret == FREESASA_FAIL) {
+        freesasa_fail("Error when writing results");
+    }
+
+    return ret != FREESASA_FAIL ? EXIT_SUCCESS : EXIT_FAILURE;
 }
