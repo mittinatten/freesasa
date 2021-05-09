@@ -595,8 +595,7 @@ append_freesasa_result_summary_to_block(gemmi::cif::Block &block, freesasa_node 
 static void
 populate_freesasa_result_vectors(gemmi::cif::Table &table, freesasa_node *result,
                                  std::vector<std::string> &sasa_vals,
-                                 std::vector<std::string> &sasa_radii,
-                                 int options)
+                                 std::vector<std::string> &sasa_radii)
 {
     assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
 
@@ -678,7 +677,7 @@ write_cif_block(std::ostream &out, gemmi::cif::Table &table,
 }
 
 static int
-write_result(std::ostream &out, freesasa_node *root, int options)
+write_result(std::ostream &out, freesasa_node *root)
 {
     freesasa_node *result{freesasa_node_children(root)};
 
@@ -709,7 +708,7 @@ write_result(std::ostream &out, freesasa_node *root, int options)
             sasa_radii = std::vector<std::string>{table.length(), "?"};
         }
 
-        populate_freesasa_result_vectors(table, result, sasa_vals, sasa_radii, options);
+        populate_freesasa_result_vectors(table, result, sasa_vals, sasa_radii);
 
         prev_doc_idx = doc_idx;
         result = freesasa_node_next(result);
@@ -731,8 +730,7 @@ write_result(std::ostream &out, freesasa_node *root, int options)
 }
 
 int freesasa_export_tree_to_cif(const char *filename,
-                                freesasa_node *root,
-                                int options)
+                                freesasa_node *root)
 {
     assert(root);
     assert(freesasa_node_type(root) == FREESASA_NODE_ROOT);
@@ -751,7 +749,7 @@ int freesasa_export_tree_to_cif(const char *filename,
     std::ostream out(buf);
 
     try {
-        ret = write_result(out, root, options);
+        ret = write_result(out, root);
     } catch (...) {
         ret = FREESASA_FAIL;
     }

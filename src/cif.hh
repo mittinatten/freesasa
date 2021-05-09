@@ -24,7 +24,6 @@ freesasa_cif_structure_array(std::FILE *input,
 
 /// If filename is NULL output will be written to stdout
 int freesasa_export_tree_to_cif(const char *filename,
-                                freesasa_node *root,
-                                int options);
+                                freesasa_node *root);
 
 #endif /* CIF_HH */
