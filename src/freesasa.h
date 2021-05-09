@@ -105,9 +105,9 @@ typedef enum {
 
 /* Default parameters */
 #define FREESASA_DEF_ALGORITHM FREESASA_LEE_RICHARDS /**< Default algorithm @ingroup core. */
-#define FREESASA_DEF_PROBE_RADIUS 1.4                /**< Default probe radius (in Ångström). @ingroup core. */
-#define FREESASA_DEF_SR_N 100                        /**< Default number of test points in S&R. @ingroup core. */
-#define FREESASA_DEF_LR_N 20                         /**< Default number of slices per atom  in L&R. @ingroup core. */
+#define FREESASA_DEF_PROBE_RADIUS 1.4                /**< Default probe radius (in Ångström) @ingroup core. */
+#define FREESASA_DEF_SR_N 100                        /**< Default number of test points in S&R @ingroup core. */
+#define FREESASA_DEF_LR_N 20                         /**< Default number of slices per atom in L&R @ingroup core. */
 
 /**
    @brief Default ::freesasa_classifier
@@ -290,6 +290,11 @@ typedef enum {
     FREESASA_NODE_NONE       /**< for specifying not a valid node. */
 } freesasa_nodetype;
 
+/**
+   Struct to store data about a mmCIF atom site.
+
+   @ingroup structure
+ */
 typedef struct {
     const char *group_PDB;
     const char auth_asym_id;
@@ -840,7 +845,7 @@ int freesasa_structure_add_atom(freesasa_structure *structure,
     @param x x-coordinate of atom.
     @param y y-coordinate of atom.
     @param z z-coordinate of atom.
-    @param classifier A freesasa_classifier to determine radius of atom and to
+    @param classifier A ::freesasa_classifier to determine radius of atom and to
       decide if to keep atom or not (see options).
     @param options A bitfield to determine what to do with unknown atoms (see above).
 
@@ -858,7 +863,21 @@ int freesasa_structure_add_atom_wopt(freesasa_structure *structure,
                                      double x, double y, double z,
                                      const freesasa_classifier *classifier,
                                      int options);
+/**
+    Add atoms from a mmCIF file to a structure
 
+    @param structure The structure to add to.
+    @param atom An atom site from a mmCIF file
+    @param classifier A ::freesasa_classifier to determine radius of atom and to
+      decide if to keep atom or not (see options).
+    @param options Structure options as in freesasa_structure_add_atom_wopt()
+
+    @return ::FREESASA_SUCCESS on normal execution. ::FREESASA_FAIL if
+       if memory allocation fails or if halting at unknown
+       atom. ::FREESASA_WARN if skipping atom.
+
+    @ingroup structure
+ */
 int freesasa_structure_add_cif_atom(freesasa_structure *structure,
                                     freesasa_cif_atom *atom,
                                     const freesasa_classifier *classifier,
