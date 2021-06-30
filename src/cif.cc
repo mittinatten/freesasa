@@ -400,7 +400,9 @@ find_doc_idx(std::string filename)
 
     std::transform(filename.begin(), filename.end(), filename.begin(), tolower);
     for (int i = 0; i != docs.size(); ++i) {
-        if (filename.find(docs[i].source) != std::string::npos) {
+        // only compare the first 4 characters of the doc.source value
+        // this allows different file suffix and extensions
+        if (filename.find(docs[i].source.substr(0,4)) != std::string::npos) {
             return i;
         }
     }
@@ -616,7 +618,8 @@ populate_freesasa_result_vectors(gemmi::cif::Table &table, freesasa_node *result
                 atom = freesasa_node_children(residue);
                 while (atom) {
                     auto cName = std::string(1, freesasa_node_atom_chain(atom));
-                    auto rNum = freesasa_node_atom_residue_number(atom);
+                    // TODO figure out why this returns decimal string sometimes
+                    auto rNum = std::to_string(std::atoi(freesasa_node_atom_residue_number(atom)));
                     auto rName = freesasa_node_atom_residue_name(atom);
                     auto aName = freesasa_node_name(atom);
                     auto area = freesasa_node_area(atom);
@@ -626,7 +629,7 @@ populate_freesasa_result_vectors(gemmi::cif::Table &table, freesasa_node *result
                     if (rowNum == FREESASA_FAIL)
                         freesasa_fail(
                             "In %s(), unable to find freesasa_node atom (%d, %s, %s, %s, %s) in cif %s",
-                            __func__, model, cName.c_str(), rNum, rName, aName, table.bloc.name.c_str());
+                            __func__, model, cName.c_str(), rNum.c_str(), rName, aName, table.bloc.name.c_str());
 
                     sasa_vals[rowNum] = std::to_string(area->total);
                     sasa_radii[rowNum] = std::to_string(radius);
