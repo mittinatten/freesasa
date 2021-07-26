@@ -402,7 +402,7 @@ find_doc_idx(std::string filename)
     for (int i = 0; i != docs.size(); ++i) {
         // only compare the first 4 characters of the doc.source value
         // this allows different file suffix and extensions
-        if (filename.find(docs[i].source.substr(0,4)) != std::string::npos) {
+        if (filename.find(docs[i].source.substr(0, 4)) != std::string::npos) {
             return i;
         }
     }
@@ -644,10 +644,29 @@ populate_freesasa_result_vectors(gemmi::cif::Table &table, freesasa_node *result
     }
 }
 
-static void
-write_cif_block(std::ostream &out, gemmi::cif::Table &table,
-                std::vector<std::string> &sasa_vals,
-                std::vector<std::string> &sasa_radii)
+static int
+replace_sasa_columns(gemmi::cif::Table &table,
+                     const std::vector<std::string> &sasa_vals,
+                     const std::vector<std::string> &sasa_radii,
+                     const std::vector<std::string> &sasa_tags)
+{
+    std::vector<std::vector<std::string>> sasa_columns = {sasa_vals, sasa_radii};
+
+    assert(sasa_columns.size() == sasa_tags.size());
+
+    for (unsigned i = 0; i != sasa_tags.size(); ++i) {
+        auto column = table.bloc.find_loop(sasa_tags[i]);
+        std::copy(sasa_columns[i].begin(), sasa_columns[i].end(), column.begin());
+    }
+
+    return FREESASA_SUCCESS;
+}
+
+static int
+append_sasa_columns(gemmi::cif::Table &table,
+                    const std::vector<std::string> &sasa_vals,
+                    const std::vector<std::string> &sasa_radii,
+                    const std::vector<std::string> &sasa_tags)
 {
     auto &loop = *table.get_loop();
 
@@ -656,27 +675,42 @@ write_cif_block(std::ostream &out, gemmi::cif::Table &table,
 
     // Creates a new table full of empty strings with the correct number of dimensions
     // Outside vector size is the # of columns, inside vector size is the # of rows.
-    std::vector<std::vector<std::string>> newCols(new_tag_size, {loop.length(), {"Empty"}});
+    std::vector<std::vector<std::string>> new_columns(new_tag_size, {loop.length(), {"Empty"}});
 
     // Copies data from original columns to their respecitve column in the new table filled with empty strings.
     // Leaving only the new appended columns as empty strings
-    for (unsigned int i = 0; i != orig_tag_size; ++i) {
-        auto iCol = table.bloc.find_loop(loop.tags[i]);
-        std::copy(iCol.begin(), iCol.end(), newCols[i].begin());
+    for (unsigned i = 0; i != orig_tag_size; ++i) {
+        auto column = table.bloc.find_loop(loop.tags[i]);
+        std::copy(column.begin(), column.end(), new_columns[i].begin());
     }
 
-    newCols[new_tag_size - 2] = std::move(sasa_vals);
-    newCols[new_tag_size - 1] = std::move(sasa_radii);
+    new_columns[new_tag_size - 2] = std::move(sasa_vals);
+    new_columns[new_tag_size - 1] = std::move(sasa_radii);
 
-    std::vector<std::string> new_tags{
-        "_atom_site.FreeSASA_value",
-        "_atom_site.FreeSASA_radius"};
-    for (auto tag : new_tags)
+    for (const auto &tag : sasa_tags)
         loop.tags.push_back(tag);
 
-    loop.set_all_values(newCols);
+    loop.set_all_values(new_columns);
 
-    gemmi::cif::write_cif_block_to_stream(out, table.bloc);
+    return FREESASA_SUCCESS;
+}
+
+static int
+rewrite_atom_site(gemmi::cif::Table &table,
+                  std::vector<std::string> &sasa_vals,
+                  std::vector<std::string> &sasa_radii)
+{
+    std::vector<std::string> sasa_tags{
+        "_atom_site.FreeSASA_value",
+        "_atom_site.FreeSASA_radius"};
+
+    auto &loop = *table.get_loop();
+
+    if (loop.has_tag(sasa_tags[0]) && loop.has_tag(sasa_tags[1])) {
+        return replace_sasa_columns(table, sasa_vals, sasa_radii, sasa_tags);
+    } else {
+        return append_sasa_columns(table, sasa_vals, sasa_radii, sasa_tags);
+    }
 }
 
 static int
@@ -699,12 +733,6 @@ write_result(std::ostream &out, freesasa_node *root)
 
         auto &block = docs[doc_idx].sole_block();
 
-        append_freesasa_params_to_block(block, result);
-
-        if (append_freesasa_result_summary_to_block(block, result) == FREESASA_FAIL) {
-            return freesasa_fail("Unable to build CIF output");
-        }
-
         auto table = block.find("_atom_site.", atom_site_columns);
         if (prev_doc_idx != doc_idx) {
             sasa_vals = std::vector<std::string>{table.length(), "?"};
@@ -712,6 +740,15 @@ write_result(std::ostream &out, freesasa_node *root)
         }
 
         populate_freesasa_result_vectors(table, result, sasa_vals, sasa_radii);
+
+        int added_data = rewrite_atom_site(table, sasa_vals, sasa_radii);
+        int added_summary = append_freesasa_result_summary_to_block(block, result);
+
+        if (added_data == FREESASA_FAIL || added_summary == FREESASA_FAIL) {
+            return freesasa_fail("Unable to build CIF output");
+        }
+
+        append_freesasa_params_to_block(block, result);
 
         prev_doc_idx = doc_idx;
         result = freesasa_node_next(result);
@@ -727,7 +764,7 @@ write_result(std::ostream &out, freesasa_node *root)
             write = false;
         }
 
-        if (write) write_cif_block(out, table, sasa_vals, sasa_radii);
+        if (write) gemmi::cif::write_cif_block_to_stream(out, block);
     }
     return FREESASA_SUCCESS;
 }
