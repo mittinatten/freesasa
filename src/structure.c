@@ -78,6 +78,7 @@ struct freesasa_structure {
     char *classifier_name;
     coord_t *xyz;
     int model; /* model number */
+    char *cif_filename;
 };
 
 static int
@@ -1212,4 +1213,17 @@ void freesasa_structure_set_model(freesasa_structure *structure,
                                   int model)
 {
     structure->model = model;
+}
+
+void freesasa_structure_set_cif_filename(freesasa_structure *structure,
+                                         const char *filename)
+{
+    assert(structure);
+    structure->cif_filename = strdup(filename);
+}
+
+const char *freesasa_structure_cif_filename(freesasa_structure *structure)
+{
+    assert(structure);
+    return structure->cif_filename;
 }

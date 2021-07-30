@@ -13,11 +13,13 @@
 
 freesasa_structure *
 freesasa_structure_from_cif(std::FILE *input,
+                            const std::string &cif_name,
                             const freesasa_classifier *classifier,
                             int structure_options);
 
 std::vector<freesasa_structure *>
 freesasa_cif_structure_array(std::FILE *input,
+                             const std::string &cif_name,
                              int *n,
                              const freesasa_classifier *classifier,
                              int options);

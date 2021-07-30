@@ -260,6 +260,7 @@ exit_with_help(void)
 
 static std::vector<freesasa_structure *>
 get_structures(std::FILE *input,
+               const char *name, 
                int *n,
                const struct cli_state *state)
 {
@@ -271,7 +272,7 @@ get_structures(std::FILE *input,
     if ((state->structure_options & FREESASA_SEPARATE_CHAINS) ||
         (state->structure_options & FREESASA_SEPARATE_MODELS)) {
         if (state->cif) {
-            structures = freesasa_cif_structure_array(input, n, state->classifier, state->structure_options);
+            structures = freesasa_cif_structure_array(input, name, n, state->classifier, state->structure_options);
         } else {
             // TODO this hack needed since PDB implementation is in C
             freesasa_structure **db_ptr_structs = freesasa_structure_array(input, n, state->classifier, state->structure_options);
@@ -283,7 +284,7 @@ get_structures(std::FILE *input,
     } else {
         *n = 1;
         if (state->cif) {
-            structures.emplace_back(freesasa_structure_from_cif(input, state->classifier, state->structure_options));
+            structures.emplace_back(freesasa_structure_from_cif(input, name, state->classifier, state->structure_options));
         } else {
             structures.emplace_back(freesasa_structure_from_pdb(input, state->classifier, state->structure_options));
         }
@@ -331,7 +332,7 @@ run_analysis(FILE *input,
     if (name_i == NULL) abort_msg("memory failure");
 
     /* read PDB file */
-    structures = get_structures(input, &n, state);
+    structures = get_structures(input, name, &n, state);
     if (n == 0) abort_msg("invalid input");
 
     /* perform calculation on each structure */
