@@ -555,13 +555,11 @@ append_freesasa_result_summary_to_block(gemmi::cif::Block &block, freesasa_node 
 }
 
 static void
-populate_freesasa_result_vectors(gemmi::cif::Table &table, freesasa_node *result,
+populate_freesasa_result_vectors(gemmi::cif::Block &block, freesasa_node *result,
                                  std::vector<std::string> &sasa_vals,
                                  std::vector<std::string> &sasa_radii)
 {
     assert(freesasa_node_type(result) == FREESASA_NODE_RESULT);
-
-    assert(table.ok());
 
     freesasa_node *structure, *chain, *residue, *atom;
     int rowNum{0}, model{0};
@@ -574,8 +572,10 @@ populate_freesasa_result_vectors(gemmi::cif::Table &table, freesasa_node *result
         while (chain) {
             residue = freesasa_node_children(chain);
             while (residue) {
-                append_freesasa_rsa_residue_to_block(table.bloc, residue);
+                append_freesasa_rsa_residue_to_block(block, residue);
                 atom = freesasa_node_children(residue);
+                auto table = block.find("_atom_site.", atom_site_columns);
+                assert(table.ok());
                 while (atom) {
                     auto cName = std::string(1, freesasa_node_atom_chain(atom));
                     // TODO figure out why this returns decimal string sometimes
@@ -693,20 +693,18 @@ write_result(std::ostream &out, freesasa_node *root)
 
         auto &block = docs[cif_name].sole_block();
 
-        auto table = block.find("_atom_site.", atom_site_columns);
+        size_t table_length = block.find("_atom_site.", atom_site_columns).length();
         if (prev_cif_name != cif_name) {
-            sasa_vals = std::vector<std::string>{table.length(), "?"};
-            sasa_radii = std::vector<std::string>{table.length(), "?"};
+            sasa_vals = std::vector<std::string>{table_length, "?"};
+            sasa_radii = std::vector<std::string>{table_length, "?"};
         }
 
-        populate_freesasa_result_vectors(table, result, sasa_vals, sasa_radii);
+        populate_freesasa_result_vectors(block, result, sasa_vals, sasa_radii);
 
-        int added_data = rewrite_atom_site(table, sasa_vals, sasa_radii);
         int added_summary = append_freesasa_result_summary_to_block(block, result);
 
-        if (added_data == FREESASA_FAIL || added_summary == FREESASA_FAIL) {
-            return freesasa_fail("Unable to build CIF output");
-        }
+        if (added_summary == FREESASA_FAIL) return freesasa_fail("Unable to add summary output to cif doc.");
+    
 
         append_freesasa_params_to_block(block, result);
 
@@ -724,7 +722,15 @@ write_result(std::ostream &out, freesasa_node *root)
             write = false;
         }
 
-        if (write) gemmi::cif::write_cif_block_to_stream(out, block);
+        if (write){
+            // Rewrite atom_site table 
+            auto table = block.find("_atom_site.", atom_site_columns);
+            int added_sasa_cols = rewrite_atom_site(table, sasa_vals, sasa_radii);
+            if (added_sasa_cols == FREESASA_FAIL) 
+                return freesasa_fail("Unable to add freesasa columns to atom_site table.");
+            else 
+                gemmi::cif::write_cif_block_to_stream(out, block);
+        }
     }
     return FREESASA_SUCCESS;
 }
