@@ -704,7 +704,6 @@ write_result(std::ostream &out, freesasa_node *root)
         int added_summary = append_freesasa_result_summary_to_block(block, result);
 
         if (added_summary == FREESASA_FAIL) return freesasa_fail("Unable to add summary output to cif doc.");
-    
 
         append_freesasa_params_to_block(block, result);
 
@@ -722,13 +721,13 @@ write_result(std::ostream &out, freesasa_node *root)
             write = false;
         }
 
-        if (write){
-            // Rewrite atom_site table 
+        if (write) {
+            // Rewrite atom_site table
             auto table = block.find("_atom_site.", atom_site_columns);
             int added_sasa_cols = rewrite_atom_site(table, sasa_vals, sasa_radii);
-            if (added_sasa_cols == FREESASA_FAIL) 
+            if (added_sasa_cols == FREESASA_FAIL)
                 return freesasa_fail("Unable to add freesasa columns to atom_site table.");
-            else 
+            else
                 gemmi::cif::write_cif_block_to_stream(out, block);
         }
     }
