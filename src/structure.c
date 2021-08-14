@@ -386,6 +386,7 @@ void freesasa_structure_free(freesasa_structure *s)
         chains_dealloc(&s->chains);
         if (s->xyz != NULL) freesasa_coord_free(s->xyz);
         free(s->classifier_name);
+        free(s->cif_filename);
         free(s);
     }
 }
