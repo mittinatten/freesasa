@@ -34,7 +34,7 @@ struct structure_properties {
     int n_atoms;
     int model;
     char *chain_labels;
-    char *cif_filename;
+    size_t cif_ref;
     freesasa_result *result;
     freesasa_selection **selection; // NULL terminated array
 };
@@ -121,7 +121,6 @@ node_free(freesasa_node *node)
             break;
         case FREESASA_NODE_STRUCTURE:
             free(node->properties.structure.chain_labels);
-            free(node->properties.structure.cif_filename);
             freesasa_result_free(node->properties.structure.result);
             sel = node->properties.structure.selection;
             if (sel) {
@@ -379,7 +378,7 @@ node_structure(const freesasa_structure *structure,
     node->properties.structure.selection = NULL;
     node->properties.structure.chain_labels = strdup(freesasa_structure_chain_labels(structure));
     node->properties.structure.model = freesasa_structure_model(structure);
-    node->properties.structure.cif_filename = strdup(freesasa_structure_cif_filename(structure));
+    node->properties.structure.cif_ref = freesasa_structure_cif_ref(structure);
 
     if (node->properties.structure.chain_labels == NULL) {
         mem_fail();
@@ -658,11 +657,11 @@ freesasa_node_structure_result(const freesasa_node *node)
     return node->properties.structure.result;
 }
 
-const char *
-freesasa_node_structure_cif_filename(const freesasa_node *node)
+size_t
+freesasa_node_structure_cif_ref(const freesasa_node *node)
 {
     assert(node->type == FREESASA_NODE_STRUCTURE);
-    return node->properties.structure.cif_filename;
+    return node->properties.structure.cif_ref;
 }
 
 int freesasa_node_structure_add_selection(freesasa_node *node,

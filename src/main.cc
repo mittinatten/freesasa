@@ -260,7 +260,7 @@ exit_with_help(void)
 
 static std::vector<freesasa_structure *>
 get_structures(std::FILE *input,
-               const char *name, 
+               const char *name,
                int *n,
                const struct cli_state *state)
 {
@@ -272,7 +272,7 @@ get_structures(std::FILE *input,
     if ((state->structure_options & FREESASA_SEPARATE_CHAINS) ||
         (state->structure_options & FREESASA_SEPARATE_MODELS)) {
         if (state->cif) {
-            structures = freesasa_cif_structure_array(input, name, n, state->classifier, state->structure_options);
+            structures = freesasa_cif_structure_array(input, n, state->classifier, state->structure_options);
         } else {
             // TODO this hack needed since PDB implementation is in C
             freesasa_structure **db_ptr_structs = freesasa_structure_array(input, n, state->classifier, state->structure_options);
@@ -284,7 +284,7 @@ get_structures(std::FILE *input,
     } else {
         *n = 1;
         if (state->cif) {
-            structures.emplace_back(freesasa_structure_from_cif(input, name, state->classifier, state->structure_options));
+            structures.emplace_back(freesasa_structure_from_cif(input, state->classifier, state->structure_options));
         } else {
             structures.emplace_back(freesasa_structure_from_pdb(input, state->classifier, state->structure_options));
         }
@@ -759,6 +759,7 @@ int main(int argc,
 
     if (state.output_format & FREESASA_CIF) {
         ret = freesasa_export_tree_to_cif(state.output_filename, tree);
+        freesasa_cif_clear_docs();
     } else {
         ret = freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
     }

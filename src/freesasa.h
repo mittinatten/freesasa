@@ -1564,17 +1564,6 @@ const char *
 freesasa_node_structure_chain_labels(const freesasa_node *node);
 
 /**
-    CIF file read to create the structure.
-
-    @param node A node of type ::FREESASA_NODE_STRUCTURE.
-    @return cif filename as null-terminated string.
-
-    @ingroup node
- */
-const char *
-freesasa_node_structure_cif_filename(const freesasa_node *node);
-
-/**
     Model number of a structure (from input PDB)
 
     @param node A node of type ::FREESASA_NODE_STRUCTURE.
@@ -1664,11 +1653,6 @@ int freesasa_select_area(const char *command,
 
 void freesasa_structure_set_model(freesasa_structure *structure,
                                   int model);
-
-void freesasa_structure_set_cif_filename(freesasa_structure *structure,
-                                         const char *filename);
-
-const char *freesasa_structure_cif_filename(freesasa_structure *structure);
 
 #ifdef __cplusplus
 }
