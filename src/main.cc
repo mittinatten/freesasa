@@ -260,7 +260,6 @@ exit_with_help(void)
 
 static std::vector<freesasa_structure *>
 get_structures(std::FILE *input,
-               const char *name,
                int *n,
                const struct cli_state *state)
 {
@@ -332,7 +331,7 @@ run_analysis(FILE *input,
     if (name_i == NULL) abort_msg("memory failure");
 
     /* read PDB file */
-    structures = get_structures(input, name, &n, state);
+    structures = get_structures(input, &n, state);
     if (n == 0) abort_msg("invalid input");
 
     /* perform calculation on each structure */
