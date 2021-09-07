@@ -86,22 +86,30 @@ extern "C" {
 #endif
 
 /** @brief The FreeSASA algorithms. @ingroup core */
-typedef enum {
+enum freesasa_algorithm {
     FREESASA_LEE_RICHARDS, /**< Lee & Richards' algorithm. */
     FREESASA_SHRAKE_RUPLEY /**< Shrake & Rupley's algorithm. */
-} freesasa_algorithm;
+};
+
+#ifndef __cplusplus
+typedef enum freesasa_algorithm freesasa_algorithm;
+#endif
 
 /**
    @brief Verbosity levels.
    @see freesasa_set_verbosity()
    @see freesasa_get_verbosity()
  */
-typedef enum {
+enum freesasa_verbosity {
     FREESASA_V_NORMAL,     /**< Print all errors and warnings. */
     FREESASA_V_NOWARNINGS, /**< Print only errors. */
     FREESASA_V_SILENT,     /**< Print no errors and warnings. */
     FREESASA_V_DEBUG,      /**< Print all errors, warnings and debug messages. */
-} freesasa_verbosity;
+};
+
+#ifndef __cplusplus
+typedef enum freesasa_verbosity freesasa_verbosity;
+#endif
 
 /* Default parameters */
 #define FREESASA_DEF_ALGORITHM FREESASA_LEE_RICHARDS /**< Default algorithm @ingroup core. */
@@ -152,11 +160,15 @@ enum freesasa_error_codes {
    Atoms can be of the classes Apolar, Polar or Unknown.
    @ingroup classifier
  */
-typedef enum {
+enum freesasa_atom_class {
     FREESASA_ATOM_APOLAR = 0,
     FREESASA_ATOM_POLAR = 1,
     FREESASA_ATOM_UNKNOWN = 2,
-} freesasa_atom_class;
+};
+
+#ifndef __cplusplus
+typedef enum freesasa_atom_class freesasa_atom_class;
+#endif
 
 /**
    @brief Options for reading structure from PDB
@@ -217,13 +229,17 @@ enum freesasa_output_options {
    Struct to store parameters for SASA calculation
    @ingroup core
  */
-typedef struct {
+struct freesasa_parameters {
     freesasa_algorithm alg;     /**< Algorithm. */
     double probe_radius;        /**< Probe radius (in Ångström). */
     int shrake_rupley_n_points; /**< Number of test points in S&R calculation. */
     int lee_richards_n_slices;  /**< Number of slices per atom in L&R calculation. */
     int n_threads;              /**< Number of threads to use, if compiled with thread-support. */
-} freesasa_parameters;
+};
+
+#ifndef __cplusplus
+typedef struct freesasa_parameters freesasa_parameters;
+#endif
 
 /**
    The default parameters for FreeSASA.
@@ -248,12 +264,16 @@ typedef struct freesasa_structure freesasa_structure;
 
    @ingroup core
  */
-typedef struct {
+struct freesasa_result {
     double total;                   /**< Total SASA in Ångström^2. */
     double *sasa;                   /**< SASA of each atom in Ångström^2. */
     int n_atoms;                    /**< Number of atoms. */
     freesasa_parameters parameters; /**< Parameters used when generating result. */
-} freesasa_result;
+};
+
+#ifndef __cplusplus
+typedef struct freesasa_result freesasa_result;
+#endif
 
 /**
    Struct to store integrated SASA values for either a full structure
@@ -266,7 +286,7 @@ typedef struct {
 
    @ingroup node
  */
-typedef struct {
+struct freesasa_nodearea {
     const char *name;  /**< Name of substructure. */
     double total;      /**< Total SASA. */
     double main_chain; /**< Main-chain/Backbone SASA. */
@@ -274,13 +294,17 @@ typedef struct {
     double polar;      /**< Polar SASA. */
     double apolar;     /**< Apolar SASA. */
     double unknown;    /**< SASA of unknown class (neither polar nor apolar). */
-} freesasa_nodearea;
+};
+
+#ifndef __cplusplus
+typedef struct freesasa_nodearea freesasa_nodearea;
+#endif
 
 /**
    @brief Node types
    @ingroup node
  */
-typedef enum {
+enum freesasa_nodetype {
     FREESASA_NODE_ATOM,      /**< Atom node. */
     FREESASA_NODE_RESIDUE,   /**< Residue node. */
     FREESASA_NODE_CHAIN,     /**< Chain node. */
@@ -288,14 +312,18 @@ typedef enum {
     FREESASA_NODE_RESULT,    /**< Result node, wraps results for one or more related structures. */
     FREESASA_NODE_ROOT,      /**< Root node, wraps one or more unrelated results. */
     FREESASA_NODE_NONE       /**< for specifying not a valid node. */
-} freesasa_nodetype;
+};
+
+#ifndef __cplusplus
+typedef enum freesasa_nodetype freesasa_nodetype;
+#endif
 
 /**
    Struct to store data about a mmCIF atom site.
 
    @ingroup structure
  */
-typedef struct {
+struct freesasa_cif_atom {
     const char *group_PDB;
     const char auth_asym_id;
     const char *auth_seq_id;
@@ -307,7 +335,11 @@ typedef struct {
     const double Cartn_x;
     const double Cartn_y;
     const double Cartn_z;
-} freesasa_cif_atom;
+};
+
+#ifndef __cplusplus
+typedef struct freesasa_cif_atom freesasa_cif_atom;
+#endif
 
 /**
    @brief Result node
