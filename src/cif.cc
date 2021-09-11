@@ -199,6 +199,11 @@ generate_gemmi_doc(std::FILE *input)
     return std::make_pair(std::ref(docs[my_idx]), my_idx);
 }
 
+static void release_gemmi_doc(size_t doc_ref)
+{
+    docs.erase(doc_ref);
+}
+
 freesasa_structure *
 freesasa_structure_from_cif(std::FILE *input,
                             const freesasa_classifier *classifier,
@@ -218,7 +223,7 @@ freesasa_structure_from_cif(std::FILE *input,
     }
 
     auto structure = structure_from_pred(doc_idx_pair.first, *discriminator, classifier, structure_options);
-    freesasa_structure_set_cif_ref(structure, doc_idx_pair.second);
+    freesasa_structure_set_cif_ref(structure, doc_idx_pair.second, &release_gemmi_doc);
 
     return structure;
 }
@@ -769,9 +774,4 @@ int freesasa_export_tree_to_cif(const char *filename,
     }
 
     return ret;
-}
-
-void freesasa_cif_clear_docs()
-{
-    docs.clear();
 }
