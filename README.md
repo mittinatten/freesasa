@@ -41,8 +41,11 @@ After cloning the repository, add git submodules
 
 FreeSASA can be compiled and installed using the following
 
+```sh
+    autoreconf -i  # only if cloned from the git-repo
     ./configure
     make && make install
+```    
 
 NB: If the source is downloaded from the git repository the
 configure-script needs to be set up first using `autoreconf -i`. Users
