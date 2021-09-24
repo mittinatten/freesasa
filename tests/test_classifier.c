@@ -32,8 +32,8 @@ struct atom {
 const char *aa[naa] = {"ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU",
                        "GLY", "HIS", "ILE", "LEU", "LYS", "MET", "PHE",
                        "PRO", "SER", "THR", "TRP", "TYR", "VAL"};
-#define n_other 6
-const char *other_aa[n_other] = {"GLX", "SEC", "PYL", "PYH", "ASX", "CSE"};
+#define n_other 7
+const char *other_aa[n_other] = {"GLX", "SEC", "MSE", "PYL", "PYH", "ASX", "CSE"};
 
 #define n_capping 2
 const char *capping[n_capping] = {"ACE", "NH2"};
@@ -261,7 +261,11 @@ const struct atom atoms[] = {
     {" DI"," C1'",aro_C,APO}, {" DI"," N9 ",ami_N,POL}, {" DI"," C8 ",aro_C,APO},
     {" DI"," N7 ",ami_N,POL}, {" DI"," C5 ",aro_C,APO}, {" DI"," C6 ",aro_C,APO},
     {" DI"," N6 ",ami_N,POL}, {" DI"," N1 ",ami_N,POL}, {" DI"," C2 ",aro_C,APO},
-    {" DI"," N3 ",ami_N,POL}, {" DI"," C4 ",aro_C,APO}
+    {" DI"," N3 ",ami_N,POL}, {" DI"," C4 ",aro_C,APO},
+
+    {"MSE"," C  ",car_C,POL}, {"MSE"," O  ",car_O,POL}, {"MSE"," CA ",ali_C,APO},
+    {"MSE"," N  ",ami_N,POL}, {"MSE"," CB ",ali_C,APO}, {"MSE"," CG ",ali_C,APO},
+    {"MSE"," SE ",sele, POL}, {"MSE"," CE ",ali_C,APO}, {"MSE"," X  ",r_unk,UNK},
 };
 // clang-format on
 
