@@ -146,13 +146,14 @@ The following command will install all dependencies needed for a minimal build o
 (tested on versions 16, 18 and 20).
 
 ```sh
-apt-get install build-essential autoconf libc++-dev libc++abi-dev
+    apt-get update
+    apt-get install build-essential autoconf libc++-dev libc++abi-dev
 ```
 
 For a fully featured build, with ability to run unit tests, these additional packages are needed
 
 ```sh
-apt-get install check libjson-c-dev libxml2-dev libxml2-utils
+    apt-get install check libjson-c-dev libxml2-dev libxml2-utils
 ```
 
 ## Citing FreeSASA
