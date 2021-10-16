@@ -1,7 +1,7 @@
 language: c++
 git:
   depth: 3
-dist: xenial
+dist: groovy
 cache: pip
 
 before_install:
