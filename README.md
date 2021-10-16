@@ -41,11 +41,9 @@ After cloning the repository, add git submodules
 
 FreeSASA can be compiled and installed using the following
 
-```sh
     autoreconf -i # only necessary if you're cloning git repo
     ./configure
     make && make install
-```
 
 NB: If the source is downloaded from the git repository the
 configure-script needs to be set up first using `autoreconf -i`. Users
@@ -145,16 +143,12 @@ you've got it to work).
 The following command will install all dependencies needed for a minimal build of FreeSASA
 (tested on versions 16, 18 and 20).
 
-```sh
     apt-get update
     apt-get install build-essential autoconf libc++-dev libc++abi-dev
-```
 
 For a fully featured build, with ability to run unit tests, these additional packages are needed
 
-```sh
     apt-get install check libjson-c-dev libxml2-dev libxml2-utils
-```
 
 ## Citing FreeSASA
 
