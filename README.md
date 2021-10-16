@@ -42,10 +42,10 @@ After cloning the repository, add git submodules
 FreeSASA can be compiled and installed using the following
 
 ```sh
-    autoreconf -i  # only if cloned from the git-repo
+    autoreconf -i # only necessary if you're cloning git repo
     ./configure
     make && make install
-```    
+```
 
 NB: If the source is downloaded from the git repository the
 configure-script needs to be set up first using `autoreconf -i`. Users
@@ -139,6 +139,21 @@ https://github.com/mittinatten/freesasa/issues/22#issuecomment-374661526
 It should be relatively straightforwad to build the command line tool for
 Windows using MinGW or Cygwin, but this hasn't been tested (let me know if
 you've got it to work).
+
+### Prerequisites for Ubuntu
+
+The following command will install all dependencies needed for a minimal build of FreeSASA
+(tested on versions 16, 18 and 20).
+
+```sh
+apt-get install build-essential autoconf libc++-dev libc++abi-dev
+```
+
+For a fully featured build, with ability to run unit tests, these additional packages are needed
+
+```sh
+apt-get install check libjson-c-dev libxml2-dev libxml2-utils
+```
 
 ## Citing FreeSASA
 
