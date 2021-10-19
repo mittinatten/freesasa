@@ -140,11 +140,11 @@ you've got it to work).
 
 ### Prerequisites for Ubuntu
 
-The following command will install all dependencies needed for a minimal build of FreeSASA
-(tested on versions 16, 18 and 20).
+The following command will install all dependencies needed, some of which most users will already have,
+for a minimal build of FreeSASA in Ubuntu (verified for version 16, 18 and 20).
 
     apt-get update
-    apt-get install build-essential autoconf libc++-dev libc++abi-dev
+    apt-get install git build-essential autoconf libc++-dev libc++abi-dev
 
 For a fully featured build, with ability to run unit tests, these additional packages are needed
 
