@@ -325,6 +325,10 @@ assert_pass "test '$rel' = 'N/A N/A N/A N/A N/A'"
 # deprecated
 assert_pass "$cli --rsa $datadir/1ubq.pdb > $dump"
 
+echo "== Verify idempotency of CIF format =="
+# does not work yet
+# assert_equal_opt "$cli --cif --format=cif $datadir/1ubq.cif" "" " | $cli --cif --format=cif"
+
 # XML // very basic testing, just to make sure XML is valid and that the right tags are present
 if [[ use_xml -eq 1 ]] ; then
     echo

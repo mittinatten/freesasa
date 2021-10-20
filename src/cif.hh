@@ -50,7 +50,4 @@ freesasa_cif_structure_array(std::FILE *input,
 int freesasa_export_tree_to_cif(const char *filename,
                                 freesasa_node *root);
 
-/// Clear map of stored cif docs. After it is cleared
-void freesasa_cif_clear_docs();
-
 #endif /* CIF_HH */
