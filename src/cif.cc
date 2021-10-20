@@ -17,8 +17,9 @@
 
 #include "cif.hh"
 #include "freesasa.h"
+#include "freesasa_internal.h"
 
-static std::map<const std::string, gemmi::cif::Document> docs;
+static std::map<size_t, gemmi::cif::Document> docs;
 
 struct ModelDiscriminator {
     ModelDiscriminator(const std::string &model_name,
@@ -150,13 +151,11 @@ freesasa_atom_from_site(const gemmi::cif::Table::Row &site)
 template <typename T>
 static freesasa_structure *
 structure_from_pred(const gemmi::cif::Document &doc,
-                    const std::string cif_name,
                     const T &discriminator,
                     const freesasa_classifier *classifier,
                     int structure_options)
 {
     freesasa_structure *structure = freesasa_structure_new();
-    freesasa_structure_set_cif_filename(structure, cif_name.c_str());
     std::string auth_atom_id;
     char prevAltId = '.';
 
@@ -188,22 +187,31 @@ structure_from_pred(const gemmi::cif::Document &doc,
     return structure;
 }
 
-static gemmi::cif::Document &
-generate_gemmi_doc(std::FILE *input, const std::string name)
+static std::pair<gemmi::cif::Document &, size_t>
+generate_gemmi_doc(std::FILE *input)
 {
-    docs.emplace(name, gemmi::cif::read_cstream(input, 8192, "cif-input"));
-    return docs[name];
+    static size_t index = 1;
+
+    // theoretically there could be thread safety issues here, not sure they're relevant.
+    size_t my_idx = index++;
+
+    docs.emplace(my_idx, gemmi::cif::read_cstream(input, 8192, "cif-input"));
+    return std::make_pair(std::ref(docs[my_idx]), my_idx);
+}
+
+static void release_gemmi_doc(size_t doc_ref)
+{
+    docs.erase(doc_ref);
 }
 
 freesasa_structure *
 freesasa_structure_from_cif(std::FILE *input,
-                            const std::string &cif_name,
                             const freesasa_classifier *classifier,
                             int structure_options)
 {
-    auto &doc = generate_gemmi_doc(input, cif_name);
+    auto doc_idx_pair = generate_gemmi_doc(input);
 
-    const auto models = get_models(doc);
+    const auto models = get_models(doc_idx_pair.first);
 
     std::unique_ptr<const ModelSetDiscriminator> discriminator;
     if (structure_options & FREESASA_JOIN_MODELS) {
@@ -213,35 +221,36 @@ freesasa_structure_from_cif(std::FILE *input,
         auto singleModel = std::set<int>{*firstModel};
         discriminator = std::make_unique<const ModelSetDiscriminator>(singleModel);
     }
-    return structure_from_pred(doc, cif_name, *discriminator, classifier, structure_options);
+
+    auto structure = structure_from_pred(doc_idx_pair.first, *discriminator, classifier, structure_options);
+    freesasa_structure_set_cif_ref(structure, doc_idx_pair.second, &release_gemmi_doc);
+
+    return structure;
 }
 
 static freesasa_structure *
 structure_from_model(const gemmi::cif::Document &doc,
-                     const std::string &cif_name,
                      const std::string &model_name,
                      const freesasa_classifier *classifier,
                      int structure_options)
 {
     const ModelDiscriminator discriminator(model_name);
-    return structure_from_pred(doc, cif_name, discriminator, classifier, structure_options);
+    return structure_from_pred(doc, discriminator, classifier, structure_options);
 }
 
 static freesasa_structure *
 structure_from_chain(const gemmi::cif::Document doc,
-                     const std::string &cif_name,
                      const std::string &model_name,
                      const std::string &chain_name,
                      const freesasa_classifier *classifier,
                      int structure_options)
 {
     const ChainDiscriminator discriminator(model_name, chain_name);
-    return structure_from_pred(doc, cif_name, discriminator, classifier, structure_options);
+    return structure_from_pred(doc, discriminator, classifier, structure_options);
 }
 
 std::vector<freesasa_structure *>
 freesasa_cif_structure_array(std::FILE *input,
-                             const std::string &cif_name,
                              int *n,
                              const freesasa_classifier *classifier,
                              int options)
@@ -250,7 +259,9 @@ freesasa_cif_structure_array(std::FILE *input,
 
     std::vector<freesasa_structure *> ss;
 
-    auto &doc = generate_gemmi_doc(input, cif_name);
+    // We don't care about the index here, for now, since exporting structure
+    // arrays to CIF output is not supported.
+    auto doc = generate_gemmi_doc(input).first;
 
     gemmi::Structure gemmi_struct = gemmi::make_structure_from_block(doc.blocks[0]);
 
@@ -276,7 +287,7 @@ freesasa_cif_structure_array(std::FILE *input,
 
             ss.reserve(n_new_chains);
             for (auto &chain_name : *chain_names) {
-                freesasa_structure *structure = structure_from_chain(doc, cif_name, models[i].name, chain_name, classifier, options);
+                freesasa_structure *structure = structure_from_chain(doc, models[i].name, chain_name, classifier, options);
                 if (freesasa_structure_n(structure) == 0) {
                     --n_chains;
                     free(structure);
@@ -296,7 +307,7 @@ freesasa_cif_structure_array(std::FILE *input,
         ss.reserve(n_models);
         for (int i = 0; i < n_models; ++i) {
             ss.emplace_back(
-                structure_from_model(doc, cif_name, models[i].name, classifier, options));
+                structure_from_model(doc, models[i].name, classifier, options));
             freesasa_structure_set_model(ss.back(), i + 1);
         }
         *n = n_models;
@@ -674,29 +685,55 @@ rewrite_atom_site(gemmi::cif::Table &table,
 }
 
 static int
+reset_freesasa_tables(gemmi::cif::Block &block)
+{
+    std::vector<gemmi::cif::Table> result_tables{
+        block.find_mmcif_category("_freeSASA_results."),
+        block.find_mmcif_category("_freeSASA_rsa."),
+        block.find_mmcif_category("_freeSASA_parameters.")};
+
+    for (auto &table : result_tables) {
+        if (table.ok()) {
+            // Table exist. Making sure its a loop.
+            if (!table.loop_item) {
+                // Table is a pair so turning it into a loop
+                table.convert_pair_to_loop();
+            }
+            table.get_loop()->clear();
+        }
+    }
+
+    return FREESASA_SUCCESS;
+}
+
+static int
 write_result(std::ostream &out, freesasa_node *root)
 {
     freesasa_node *result{freesasa_node_children(root)};
 
-    std::string cif_name, prev_cif_name = "";
+    size_t cif_ref, prev_cif_ref = 0;
     bool write = false;
     std::vector<std::string> sasa_vals, sasa_radii;
 
     while (result) {
-        cif_name = freesasa_node_structure_cif_filename(freesasa_node_children(result));
-        if (docs.find(cif_name) == docs.end()) {
+        cif_ref = freesasa_node_structure_cif_ref(freesasa_node_children(result));
+        if (docs.find(cif_ref) == docs.end()) {
             freesasa_warn("In %s(), unable to find gemmi doc for result node: %s. Skipping...",
                           __func__, freesasa_node_name(result));
             result = freesasa_node_next(result);
             continue;
         }
 
-        auto &block = docs[cif_name].sole_block();
+        auto &block = docs[cif_ref].sole_block();
 
-        size_t table_length = block.find("_atom_site.", atom_site_columns).length();
-        if (prev_cif_name != cif_name) {
-            sasa_vals = std::vector<std::string>{table_length, "?"};
-            sasa_radii = std::vector<std::string>{table_length, "?"};
+        if (cif_ref != prev_cif_ref) {
+            reset_freesasa_tables(block);
+        }
+
+        auto table = block.find("_atom_site.", atom_site_columns);
+        if (prev_cif_ref != cif_ref) {
+            sasa_vals = std::vector<std::string>{table.length(), "?"};
+            sasa_radii = std::vector<std::string>{table.length(), "?"};
         }
 
         populate_freesasa_result_vectors(block, result, sasa_vals, sasa_radii);
@@ -707,13 +744,13 @@ write_result(std::ostream &out, freesasa_node *root)
 
         append_freesasa_params_to_block(block, result);
 
-        prev_cif_name = cif_name;
+        prev_cif_ref = cif_ref;
         result = freesasa_node_next(result);
 
         if (!result) {
             // There is no next result so write out current file.
             write = true;
-        } else if (freesasa_node_structure_cif_filename(freesasa_node_children(result)) != prev_cif_name) {
+        } else if (freesasa_node_structure_cif_ref(freesasa_node_children(result)) != prev_cif_ref) {
             // Next result node is from a new file so write out current file.
             write = true;
         } else {

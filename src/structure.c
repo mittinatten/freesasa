@@ -78,7 +78,8 @@ struct freesasa_structure {
     char *classifier_name;
     coord_t *xyz;
     int model; /* model number */
-    char *cif_filename;
+    size_t cif_ref;
+    void (*release_cif_ref)(size_t);
 };
 
 static int
@@ -368,6 +369,8 @@ freesasa_structure_new(void)
     s->xyz = freesasa_coord_new();
     s->model = 1;
     s->classifier_name = NULL;
+    s->cif_ref = 0;
+    s->release_cif_ref = 0;
 
     if (s->xyz == NULL) goto memerr;
 
@@ -384,9 +387,17 @@ void freesasa_structure_free(freesasa_structure *s)
         atoms_dealloc(&s->atoms);
         residues_dealloc(&s->residues);
         chains_dealloc(&s->chains);
-        if (s->xyz != NULL) freesasa_coord_free(s->xyz);
+
+        if (s->xyz != NULL) {
+            freesasa_coord_free(s->xyz);
+        }
+
         free(s->classifier_name);
-        free(s->cif_filename);
+
+        if (s->cif_ref > 0 && s->release_cif_ref != NULL) {
+            s->release_cif_ref(s->cif_ref);
+        }
+
         free(s);
     }
 }
@@ -1216,15 +1227,17 @@ void freesasa_structure_set_model(freesasa_structure *structure,
     structure->model = model;
 }
 
-void freesasa_structure_set_cif_filename(freesasa_structure *structure,
-                                         const char *filename)
+void freesasa_structure_set_cif_ref(freesasa_structure *structure,
+                                    size_t ref,
+                                    void (*release_func)(size_t))
 {
     assert(structure);
-    structure->cif_filename = strdup(filename);
+    structure->cif_ref = ref;
+    structure->release_cif_ref = release_func;
 }
 
-const char *freesasa_structure_cif_filename(freesasa_structure *structure)
+size_t freesasa_structure_cif_ref(const freesasa_structure *structure)
 {
     assert(structure);
-    return structure->cif_filename;
+    return structure->cif_ref;
 }

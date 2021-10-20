@@ -261,6 +261,43 @@ const char *
 freesasa_structure_atom_pdb_line(const freesasa_structure *structure,
                                  int i);
 
+/**
+    Add a reference number to the document used to generate the structure from a CIF file,
+    used when exporting to CIF file.
+
+    @param structure A structure.
+    @param ref Reference number for document. >= 1.
+    @param release_func A function that can be called when freeing the structure, to trigger
+        the destructor for the CIF document. This can be NULL if one wants another mode
+        of control over the CIF document.
+    @return ::FREESASA_SUCCESS if success.
+        ::FREESASA_FAIL if memory allocation error.
+*/
+void freesasa_structure_set_cif_ref(freesasa_structure *structure,
+                                    size_t ref,
+                                    void (*release_func)(size_t));
+
+/**
+    Retrieve the reference number for the CIF document used to generate the structure
+    from a CIF file.
+
+    @param structure A structure.
+    @return The reference number. 0 if structure is not from CIF file.
+*/
+size_t freesasa_structure_cif_ref(const freesasa_structure *structure);
+
+/**
+    Retrieve the reference number for the CIF document used to generate the structure
+    from a CIF file, in a structure node.
+
+    @param node A node of type ::FREESASA_NODE_STRUCTURE.
+    @return Reference to CIF document.
+
+    @ingroup node
+ */
+size_t
+freesasa_node_structure_cif_ref(const freesasa_node *node);
+
 const freesasa_nodearea *
 freesasa_structure_residue_reference(const freesasa_structure *structure,
                                      int r_i);
@@ -416,7 +453,6 @@ int freesasa_fail_wloc(const char *file,
                        int line,
                        const char *format,
                        ...);
-
 
 #ifdef __cplusplus
 }
