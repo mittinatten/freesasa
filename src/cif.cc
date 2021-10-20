@@ -685,6 +685,28 @@ rewrite_atom_site(gemmi::cif::Table &table,
 }
 
 static int
+reset_freesasa_tables(gemmi::cif::Block &block)
+{
+    std::vector<gemmi::cif::Table> result_tables{
+        block.find_mmcif_category("_freeSASA_results."),
+        block.find_mmcif_category("_freeSASA_rsa."),
+        block.find_mmcif_category("_freeSASA_parameters.")};
+
+    for (auto &table : result_tables) {
+        if (table.ok()) {
+            // Table exist. Making sure its a loop.
+            if (!table.loop_item) {
+                // Table is a pair so turning it into a loop
+                table.convert_pair_to_loop();
+            }
+            table.get_loop()->clear();
+        }
+    }
+
+    return FREESASA_SUCCESS;
+}
+
+static int
 write_result(std::ostream &out, freesasa_node *root)
 {
     freesasa_node *result{freesasa_node_children(root)};
@@ -703,6 +725,10 @@ write_result(std::ostream &out, freesasa_node *root)
         }
 
         auto &block = docs[cif_ref].sole_block();
+
+        if (cif_ref != prev_cif_ref) {
+            reset_freesasa_tables(block);
+        }
 
         auto table = block.find("_atom_site.", atom_site_columns);
         if (prev_cif_ref != cif_ref) {
