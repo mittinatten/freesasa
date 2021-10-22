@@ -931,8 +931,6 @@ static const struct symbol_radius symbol_radius[] = {
     {"PD", 1.63},
     {"AG", 1.72},
     {"CD", 1.58},
-    {"TC", 2.00},
-    {"RU", 1.20},
     {"HF", 1.40},
     {"TA", 1.22},
     {" W", 1.26},
