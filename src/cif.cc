@@ -260,7 +260,7 @@ freesasa_cif_structure_array(std::FILE *input,
     std::vector<freesasa_structure *> ss;
 
     auto doc_idx_pair = generate_gemmi_doc(input);
-    auto doc = doc_idx_pair.first;
+    auto &doc = doc_idx_pair.first;
 
     gemmi::Structure gemmi_struct = gemmi::make_structure_from_block(doc.blocks[0]);
 
@@ -296,7 +296,7 @@ freesasa_cif_structure_array(std::FILE *input,
                 ss.push_back(std::move(structure));
 
                 freesasa_structure_set_model(ss.back(), i + 1);
-                // we don't set cif_ref here because output is not defined for --separate-chains
+                freesasa_structure_set_cif_ref(ss.back(), doc_idx_pair.second, NULL);
             }
         }
         if (n_chains == 0)

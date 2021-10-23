@@ -236,10 +236,10 @@ assert_equal_total "$cli --join-models" "$datadir/2jo4.pdb" "$datadir/2jo4.cif -
 assert_equal_total "$cli --chain-groups AB+CD -S -n 10" "$datadir/2jo4.pdb" "$datadir/2jo4.cif --cif"
 assert_pass "$cli --cif --separate-models --format=cif $datadir/1ubq.cif > $dump"
 assert_pass "$cli --cif --format=cif $datadir/1ubq.cif > $dump"
-assert_fail "$cli --cif --format=cif --separate-chains $datadir/1ubq.cif > $dump"
+assert_pass "$cli --cif --format=cif --separate-chains $datadir/1ubq.cif > $dump"
+assert_pass "$cli --cif --format=cif --separate-chains --separate-models $datadir/1ubq.cif > $dump"
 assert_fail "$cli --cif --format=pdb $datadir/1ubq.cif > $dump"
 assert_fail "$cli --format=cif $datadir/1ubq.pdb > $dump"
-assert_fail "$cli --cif --format=cif --separate-chains --separate-models $datadir/1ubq.cif > $dump"
 
 echo
 echo "== Testing --separate-chains and --separate-models output are equal between cif and pdb"
@@ -327,6 +327,10 @@ assert_pass "$cli --rsa $datadir/1ubq.pdb > $dump"
 
 echo "== Verify idempotency of CIF format =="
 assert_equal_opt "$cli --cif --format=cif $datadir/1ubq.cif" "" " | $cli --cif --format=cif"
+assert_equal_opt "$cli --cif --format=cif --separate-chains $datadir/2jo4.cif" "" " | $cli --separate-chains --cif --format=cif"
+assert_equal_opt "$cli --cif --format=cif --separate-models $datadir/2jo4.cif" "" " | $cli --separate-models --cif --format=cif"
+assert_equal_opt "$cli --cif --format=cif --separate-models --separate-chains $datadir/2jo4.cif" "" \
+    " | $cli --separate-models --separate-chains --cif --format=cif"
 
 # XML // very basic testing, just to make sure XML is valid and that the right tags are present
 if [[ use_xml -eq 1 ]] ; then
