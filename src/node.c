@@ -34,6 +34,7 @@ struct structure_properties {
     int n_atoms;
     int model;
     char *chain_labels;
+    size_t cif_ref;
     freesasa_result *result;
     freesasa_selection **selection; // NULL terminated array
 };
@@ -377,6 +378,7 @@ node_structure(const freesasa_structure *structure,
     node->properties.structure.selection = NULL;
     node->properties.structure.chain_labels = strdup(freesasa_structure_chain_labels(structure));
     node->properties.structure.model = freesasa_structure_model(structure);
+    node->properties.structure.cif_ref = freesasa_structure_cif_ref(structure);
 
     if (node->properties.structure.chain_labels == NULL) {
         mem_fail();
@@ -653,6 +655,13 @@ freesasa_node_structure_result(const freesasa_node *node)
 {
     assert(node->type == FREESASA_NODE_STRUCTURE);
     return node->properties.structure.result;
+}
+
+size_t
+freesasa_node_structure_cif_ref(const freesasa_node *node)
+{
+    assert(node->type == FREESASA_NODE_STRUCTURE);
+    return node->properties.structure.cif_ref;
 }
 
 int freesasa_node_structure_add_selection(freesasa_node *node,

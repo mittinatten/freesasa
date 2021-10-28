@@ -260,28 +260,26 @@ exit_with_help(void)
 
 static std::vector<freesasa_structure *>
 get_structures(std::FILE *input,
-               int *n,
                const struct cli_state *state)
 {
-    int i, j, n2;
+    int n = 0, n2 = 0;
     std::vector<freesasa_structure *> structures;
     freesasa_structure *tmp;
 
-    *n = 0;
     if ((state->structure_options & FREESASA_SEPARATE_CHAINS) ||
         (state->structure_options & FREESASA_SEPARATE_MODELS)) {
         if (state->cif) {
-            structures = freesasa_cif_structure_array(input, n, state->classifier, state->structure_options);
+            structures = freesasa_cif_structure_array(input, &n, state->classifier, state->structure_options);
         } else {
             // TODO this hack needed since PDB implementation is in C
-            freesasa_structure **db_ptr_structs = freesasa_structure_array(input, n, state->classifier, state->structure_options);
-            structures.reserve(*n);
-            for (i = 0; i < *n; ++i) {
+            freesasa_structure **db_ptr_structs = freesasa_structure_array(input, &n, state->classifier, state->structure_options);
+            structures.reserve(n);
+            for (int i = 0; i < n; ++i) {
                 structures.push_back(std::move(db_ptr_structs[i]));
             }
         }
     } else {
-        *n = 1;
+        n = 1;
         if (state->cif) {
             structures.emplace_back(freesasa_structure_from_cif(input, state->classifier, state->structure_options));
         } else {
@@ -294,9 +292,9 @@ get_structures(std::FILE *input,
 
     /* get chain-groups (if requested) */
     if (state->n_chain_groups > 0) {
-        n2 = *n;
-        for (i = 0; i < state->n_chain_groups; ++i) {
-            for (j = 0; j < *n; ++j) {
+        n2 = n;
+        for (int i = 0; i < state->n_chain_groups; ++i) {
+            for (int j = 0; j < n; ++j) {
                 // TODO make this function pdb and cif compatible.
                 tmp = freesasa_structure_get_chains(structures[j], state->chain_groups[i],
                                                     state->classifier, state->structure_options);
@@ -309,38 +307,37 @@ get_structures(std::FILE *input,
                 }
             }
         }
-        *n = n2;
+        n = n2;
     }
+
+    if (n == 0) {
+        abort_msg("invalid input");
+    }
+
     return structures;
 }
 
 static freesasa_node *
-run_analysis(FILE *input,
+run_analysis(std::vector<freesasa_structure *> structures,
              const char *name,
              const struct cli_state *state)
 {
     int name_len = strlen(name);
-    std::vector<freesasa_structure *> structures;
     freesasa_node *tree = freesasa_tree_new(), *tmp_tree, *structure_node;
     const freesasa_result *result;
     freesasa_selection *sel;
-    int n = 0, i, c;
     char *name_i = (char *)malloc(name_len + 10);
 
     if (tree == NULL) abort_msg("failed to initialize result-tree");
     if (name_i == NULL) abort_msg("memory failure");
 
-    /* read PDB file */
-    structures = get_structures(input, &n, state);
-    if (n == 0) abort_msg("invalid input");
-
     /* perform calculation on each structure */
-    for (i = 0; i < n; ++i) {
+    for (auto structure : structures) {
         strcpy(name_i, name);
-        if (n > 1 && (state->structure_options & FREESASA_SEPARATE_MODELS))
-            sprintf(name_i + strlen(name_i), ":%d", freesasa_structure_model(structures[i]));
+        if (structures.size() > 1 && (state->structure_options & FREESASA_SEPARATE_MODELS))
+            sprintf(name_i + strlen(name_i), ":%d", freesasa_structure_model(structure));
 
-        tmp_tree = freesasa_calc_tree(structures[i], &state->parameters, name_i);
+        tmp_tree = freesasa_calc_tree(structure, &state->parameters, name_i);
         if (tmp_tree == NULL) abort_msg("can't calculate SASA");
 
         structure_node =
@@ -349,8 +346,8 @@ run_analysis(FILE *input,
 
         /* Calculate selections for each structure */
         if (state->n_select > 0) {
-            for (c = 0; c < state->n_select; ++c) {
-                sel = freesasa_selection_new(state->select_cmd[c], structures[i], result);
+            for (int c = 0; c < state->n_select; ++c) {
+                sel = freesasa_selection_new(state->select_cmd[c], structure, result);
                 if (sel != NULL) {
                     freesasa_node_structure_add_selection(structure_node, sel);
                 } else {
@@ -363,8 +360,6 @@ run_analysis(FILE *input,
         if (freesasa_tree_join(tree, &tmp_tree) != FREESASA_SUCCESS) {
             abort_msg("failed joining result-trees");
         }
-
-        freesasa_structure_free(structures[i]);
     }
 
     return tree;
@@ -389,11 +384,10 @@ state_add_chain_groups(const char *cmd, struct cli_state *state)
     int err = 0;
     char *str;
     const char *token;
-    size_t i;
     char a;
 
     /* check that string is valid */
-    for (i = 0; i < strlen(cmd); ++i) {
+    for (size_t i = 0; i < strlen(cmd); ++i) {
         a = cmd[i];
         if (a != '+' &&
             !(a >= 'a' && a <= 'z') && !(a >= 'A' && a <= 'Z') &&
@@ -719,7 +713,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
 
     if (state->output_format == FREESASA_CIF && state->cif != 1) abort_msg("CIF output can not be generated from .pdb input");
     if (state->output_format == FREESASA_PDB && state->cif == 1) abort_msg("PDB output can not be generated from .cif input.");
-    if ((state->output_format == FREESASA_CIF || state->output_format == FREESASA_PDB) &&
+    if (state->output_format == FREESASA_PDB &&
         state->structure_options & FREESASA_SEPARATE_CHAINS &&
         state->structure_options & FREESASA_SEPARATE_MODELS)
         abort_msg("Cannot output a cif/pdb file with both --separate-chains and --separate-models set. Pick one.");
@@ -732,7 +726,7 @@ int main(int argc,
 {
     struct cli_state state;
     FILE *input = NULL;
-    int optind = 0, i, ret;
+    int optind = 0, ret;
 
     freesasa_node *tree = freesasa_tree_new(), *tmp;
     if (tree == NULL) abort_msg("error initializing calculation");
@@ -740,20 +734,24 @@ int main(int argc,
     init_state(&state);
 
     optind = parse_arg(argc, argv, &state);
+    std::vector<freesasa_structure *> structures;
 
     if (argc > optind) {
-        for (i = optind; i < argc; ++i) {
+        for (int i = optind; i < argc; ++i) {
             input = fopen_werr(argv[i], "r");
-            tmp = run_analysis(input, argv[i], &state);
+            structures = get_structures(input, &state);
+            tmp = run_analysis(structures, argv[i], &state);
             freesasa_tree_join(tree, &tmp);
             fclose(input);
         }
     } else {
         if (!isatty(STDIN_FILENO)) {
-            tmp = run_analysis(stdin, "stdin", &state);
+            structures = get_structures(stdin, &state);
+            tmp = run_analysis(structures, "stdin", &state);
             freesasa_tree_join(tree, &tmp);
-        } else
+        } else {
             abort_msg("no input", program_name);
+        }
     }
 
     if (state.output_format & FREESASA_CIF) {
@@ -762,6 +760,10 @@ int main(int argc,
         ret = freesasa_tree_export(state.output, tree, state.output_format | state.output_depth | (state.no_rel ? FREESASA_OUTPUT_SKIP_REL : 0));
     }
     freesasa_node_free(tree);
+
+    for (auto structure : structures) {
+        freesasa_structure_free(structure);
+    }
 
     release_state(&state);
 
