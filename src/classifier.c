@@ -884,7 +884,7 @@ struct symbol_radius {
 */
 static const struct symbol_radius symbol_radius[] = {
     /* elements that actually occur in the regular amino acids and nucleotides */
-    {" H", 1.20},
+    {" H", 1.10},
     {" C", 1.70},
     {" N", 1.55},
     {" O", 1.52},
@@ -895,7 +895,7 @@ static const struct symbol_radius symbol_radius[] = {
     /* Halogens */
     {" F", 1.47},
     {"CL", 1.75},
-    {"BR", 1.85},
+    {"BR", 1.83},
     {" I", 1.98},
     /* Alkali and Alkali Earth metals */
     {"LI", 1.82},
@@ -944,12 +944,11 @@ static const struct symbol_radius symbol_radius[] = {
     {"AL", 1.84},
     {"GA", 1.87},
     {"IN", 1.93},
-    {"SN", 2.27},
+    {"SN", 2.17},
     {"TL", 1.96},
     {"PB", 2.02},
     {"BI", 2.07},
     {"PO", 1.97},
-    {"HG", 1.55},
     /* Metalloid */
     {" B", 1.92},
     {"SI", 2.10},
