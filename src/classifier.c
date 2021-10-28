@@ -898,7 +898,7 @@ static const struct symbol_radius symbol_radius[] = {
     {"BR", 1.83},
     {" I", 1.98},
     /* Alkali and Alkali Earth metals */
-    {"LI", 1.82},
+    {"LI", 1.81},
     {"BE", 1.53},
     {"NA", 2.27},
     {"MG", 1.73},
