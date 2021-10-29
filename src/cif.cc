@@ -259,9 +259,8 @@ freesasa_cif_structure_array(std::FILE *input,
 
     std::vector<freesasa_structure *> ss;
 
-    // We don't care about the index here, for now, since exporting structure
-    // arrays to CIF output is not supported.
-    auto doc = generate_gemmi_doc(input).first;
+    auto doc_idx_pair = generate_gemmi_doc(input);
+    auto &doc = doc_idx_pair.first;
 
     gemmi::Structure gemmi_struct = gemmi::make_structure_from_block(doc.blocks[0]);
 
@@ -297,6 +296,7 @@ freesasa_cif_structure_array(std::FILE *input,
                 ss.push_back(std::move(structure));
 
                 freesasa_structure_set_model(ss.back(), i + 1);
+                freesasa_structure_set_cif_ref(ss.back(), doc_idx_pair.second, NULL);
             }
         }
         if (n_chains == 0)
@@ -309,9 +309,13 @@ freesasa_cif_structure_array(std::FILE *input,
             ss.emplace_back(
                 structure_from_model(doc, models[i].name, classifier, options));
             freesasa_structure_set_model(ss.back(), i + 1);
+            freesasa_structure_set_cif_ref(ss.back(), doc_idx_pair.second, NULL);
         }
         *n = n_models;
     }
+
+    // this is a hack, we only want to release docs once per input
+    freesasa_structure_set_cif_ref(ss.back(), doc_idx_pair.second, &release_gemmi_doc);
     return ss;
 }
 
@@ -718,10 +722,9 @@ write_result(std::ostream &out, freesasa_node *root)
     while (result) {
         cif_ref = freesasa_node_structure_cif_ref(freesasa_node_children(result));
         if (docs.find(cif_ref) == docs.end()) {
-            freesasa_warn("In %s(), unable to find gemmi doc for result node: %s. Skipping...",
-                          __func__, freesasa_node_name(result));
-            result = freesasa_node_next(result);
-            continue;
+            return freesasa_fail("In %s(), unable to find gemmi doc for result node: %s."
+                                 "This can happen when using the --separate-chains option",
+                                 __func__, freesasa_node_name(result));
         }
 
         auto &block = docs[cif_ref].sole_block();

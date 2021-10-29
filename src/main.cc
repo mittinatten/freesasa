@@ -713,7 +713,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
 
     if (state->output_format == FREESASA_CIF && state->cif != 1) abort_msg("CIF output can not be generated from .pdb input");
     if (state->output_format == FREESASA_PDB && state->cif == 1) abort_msg("PDB output can not be generated from .cif input.");
-    if ((state->output_format == FREESASA_CIF || state->output_format == FREESASA_PDB) &&
+    if (state->output_format == FREESASA_PDB &&
         state->structure_options & FREESASA_SEPARATE_CHAINS &&
         state->structure_options & FREESASA_SEPARATE_MODELS)
         abort_msg("Cannot output a cif/pdb file with both --separate-chains and --separate-models set. Pick one.");
