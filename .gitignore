@@ -28,6 +28,8 @@ config.h.in
 config.h
 config.status
 configure.scan
+config.sub
+config.guess
 configure
 stamp-h1
 missing
