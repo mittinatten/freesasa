@@ -2,7 +2,7 @@
 
 FreeSASA uses semantic versioning. Changelog added for versions 2.x
 
-## 2.1.0-beta
+## 2.1.0
 
 The new features in this release were created on initiative by and in collaboration
 with [Danny Diaz](https://github.com/danny305).
