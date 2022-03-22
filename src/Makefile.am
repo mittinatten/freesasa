@@ -27,7 +27,7 @@ libfreesasa_a_SOURCES = classifier.c classifier.h \
 	freesasa.c freesasa.h freesasa_internal.h \
 	nb.h nb.c util.c rsa.c \
 	selection.h selection.c $(lp_output)
-freesasa_SOURCES = main.cc cif.cc
+freesasa_SOURCES = main.cc cif.cc cif.hh
 example_SOURCES = example.c
 freesasa_LDADD += libfreesasa.a
 example_LDADD = libfreesasa.a
