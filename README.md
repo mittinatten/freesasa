@@ -150,6 +150,32 @@ For a fully featured build, with ability to run unit tests, these additional pac
 
     apt-get install check libjson-c-dev libxml2-dev libxml2-utils
 
+### Prerequisites for RHEL / CentOS
+
+_Thanks to [@jvlehtonen](https://github.com/jvlehtonen) for providing the following_:
+
+GNU Build System and git install on RHEL 7 and 8 -based systems (including CentOS 7, AlmaLinux, Rocky Linux, etc) as "yum group":
+   
+    sudo yum install @development
+
+The additional dependencies can be installed on RHEL-based systems with:
+
+    sudo yum install json-c-devel libxml2-devel
+
+The system GCC in RHEL 7 (and hence CentOS 7) does not support required C++ standard.Later version of GCC are available via Software Collections (SCL). RHEL 7 has its method to enable SCL. CentOS 7 enables SCL repo with:
+
+    sudo yum install centos-release-scl-rh
+
+"Toolchain" from Developer Toolset is sufficient for building with GCC. For example:
+
+    sudo yum install devtoolset-9-toolchain
+
+In order to use programs from SCL one has to enable environment:
+
+    scl enable devtoolset-9 bash
+
+The bash that starts above does have gcc version 9 on PATH. The built freesasa binary does not require the environment.
+
 ## Citing FreeSASA
 
 FreeSASA can be cited using the following publication
