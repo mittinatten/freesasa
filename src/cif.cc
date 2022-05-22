@@ -125,9 +125,10 @@ static const auto atom_site_columns = std::vector<std::string>({
     "pdbx_PDB_model_num",
 });
 
-/** Returns atom where .auth_atom_id is dynamically allocated and needs to be freed.
+/**
+ * Returns atom where .auth_atom_id is dynamically allocated and needs to be freed.
  *
- * TODO: Better solution needed. A previous version witgh std::move didn't work as expected,
+ * TODO: Better solution needed. A previous version with std::move didn't work as expected,
  * and sometimes caused seg-faults.
  */
 static freesasa_cif_atom
