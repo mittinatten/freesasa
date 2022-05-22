@@ -2,6 +2,11 @@
 
 FreeSASA uses semantic versioning. Changelog added for versions 2.x
 
+## 2.1.1
+
+- Fix error where compiling without multithread support still set the default number of threads to 2.
+- Fix issue when stripping quotes from atom names in CIF-files, which sometimes caused memory errors.
+
 ## 2.1.0
 
 The new features in this release were created on initiative by and in collaboration
@@ -9,7 +14,7 @@ with [Danny Diaz](https://github.com/danny305).
 
 ### Added
 
-- Support for mmCIF input with the CLI option `--cif`. 
+- Support for mmCIF input with the CLI option `--cif`.
   - The CLI was ported to C++ to allow using Gemmi for CIF import.
   - Gemmi is imported as a git submodule, see README for details.
   - A test runner was added to verify that CIF and PDB input files
@@ -17,7 +22,7 @@ with [Danny Diaz](https://github.com/danny305).
   - The C API does not support CIF for now (this would require conversion to C++).
 - Add output option `--format=cif` that can be used when input is mmCIF.
   See documentation for an example.
-- Added VdW-radii for all elements. 
+- Added VdW-radii for all elements.
   - Using values from Gemmi when missing in paper by Mantina et al.
   - Correct Mg radius from 1.74 to 1.73 Å.
 
@@ -28,7 +33,7 @@ with [Danny Diaz](https://github.com/danny305).
   simply skipped.
 - Fix bug where elements with H or D as second letter, such as CD, were classified
   as hydrogens.
-- Change some type definitions to be more C++ friendly.  
+- Change some type definitions to be more C++ friendly.
 
 ## 2.0.3
 
