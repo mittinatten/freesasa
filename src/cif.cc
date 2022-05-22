@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -124,14 +125,20 @@ static const auto atom_site_columns = std::vector<std::string>({
     "pdbx_PDB_model_num",
 });
 
+/** Returns atom where .auth_atom_id is dynamically allocated and needs to be freed.
+ *
+ * TODO: Better solution needed. A previous version witgh std::move didn't work as expected,
+ * and sometimes caused seg-faults.
+ */
 static freesasa_cif_atom
 freesasa_atom_from_site(const gemmi::cif::Table::Row &site)
 {
-
-    std::unique_ptr<std::string> auth_atom_id;
+    const char *auth_atom_id;
     // remove quotation marks if necessary
     if (site[5][0] == '"') {
-        auth_atom_id = std::make_unique<std::string>(site[5].substr(1, site[5].size() - 2));
+        auth_atom_id = std::string(site[5].substr(1, site[5].size() - 2)).c_str();
+    } else {
+        auth_atom_id = site[5].c_str();
     }
 
     return {
@@ -140,7 +147,7 @@ freesasa_atom_from_site(const gemmi::cif::Table::Row &site)
         .auth_seq_id = site[2].c_str(),
         .pdbx_PDB_ins_code = site[3].c_str(),
         .auth_comp_id = site[4].c_str(),
-        .auth_atom_id = auth_atom_id ? std::move(*auth_atom_id).c_str() : site[5].c_str(),
+        .auth_atom_id = strdup(auth_atom_id),
         .label_alt_id = site[6].c_str(),
         .type_symbol = site[7].c_str(),
         .Cartn_x = atof(site[8].c_str()),
@@ -182,6 +189,9 @@ structure_from_pred(const gemmi::cif::Document &doc,
             }
 
             freesasa_structure_add_cif_atom(structure, &atom, classifier, structure_options);
+
+            // since this is in the interface between C and C++ code, some hackery is needed
+            free((void *)atom.auth_atom_id);
         }
     }
     return structure;
