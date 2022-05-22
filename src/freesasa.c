@@ -28,7 +28,7 @@ const char *freesasa_string = "FreeSASA";
 /* Allows compilation with different defaults
    depending on USE_THREADS. but still exposing the value in a header
    that doesn't depend on USE_THREADS */
-#ifdef USE_THREADS
+#if USE_THREADS
 #define DEF_NUMBER_THREADS 2
 #else
 #define DEF_NUMBER_THREADS 1
