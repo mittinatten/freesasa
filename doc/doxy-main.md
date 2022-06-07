@@ -979,9 +979,9 @@ inside \f$j\f$ (and the other way around). If \f$d_{ij}\f$ lies
 between these two cases the angle of circle \f$i\f$ that is buried due
 to circle \f$j\f$ is
 
-\f[ \alpha = 2\arccos \bigl[({R*i^\prime}^2*{\,}
+\f[ \alpha = 2\arccos \bigl[({R_i^\prime}^2{\,}
 
-- d*{ij}^2 - {R*{j}^\prime}^2*{\,})/(2R_i^\prime d*{ij})\bigr]. \f]
+- d_{ij}^2 - {R_{j}^\prime}^2{\,})/(2R_i^\prime d_{ij})\bigr]. \f]
 
 If the middle point of this arc on the circle is at an angle
 \f$\beta\f$, the arc spans the interval
@@ -990,7 +990,7 @@ taking into account any overlap between them we get the total buried
 angle \f$\gamma\f$ in this slices. The exposed arc angle for this atom
 and slice is thus \f$2\pi-\gamma\f$ and the total SASA of that atom
 
-\f[ A*i =R_i \delta \!\! \sum*{s\in\text{slices}} \!\!
+\f[ A_i =R_i \delta \!\! \sum_{s\in\text{slices}} \!\!
 \left[2\pi-\gamma_s\right]\,. \f]
 
 The angle is multiplied by \f$R_i\f$ (not \f$R_i^\prime\f$) to give
