@@ -2,6 +2,11 @@
 
 FreeSASA uses semantic versioning. Changelog added for versions 2.x
 
+## 2.1.2
+
+- Fix error where CLI options weren't parsed properly on ARM processors.
+- Fix error in man pages.
+
 ## 2.1.1
 
 - Fix error where compiling without multithread support still set the default number of threads to 2.
