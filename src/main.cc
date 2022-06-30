@@ -530,7 +530,7 @@ static int
 parse_arg(int argc, char **argv, struct cli_state *state)
 {
     int alg_set = 0;
-    char opt;
+    int opt;
     int n_opt = 'z' + 1;
     char opt_set['z' + 1];
     int option_index = 0;
@@ -540,7 +540,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
 
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
-        opt_set[(int)opt] = 1;
+        opt_set[opt] = 1;
         /* Assume arguments starting with dash are actually missing arguments */
         if (optarg != NULL && optarg[0] == '-') {
             if (option_index > 0)
