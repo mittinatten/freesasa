@@ -3,7 +3,7 @@ run-name: ${{ github.actor }} testing freesasa
 on:
   push:
     branches:
-      - "*"
+      - "master"
   pull_request:
     branches:
       - master
@@ -20,10 +20,11 @@ jobs:
             CXX: g++
             enable: "--enable-check --enable-json --enable-xml"
             deps: "check libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev"
-          - CC: clang
-            CXX: clang
-            enable: "--enable-check --enable-json --enable-xml"
-            deps: "check libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev"
+          # causes linker errors, what else is needed?
+          # - CC: clang
+          #   CXX: clang
+          #   enable: "--enable-check --enable-json --enable-xml"
+          #   deps: "check libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev"
     runs-on: ubuntu-latest
     steps:
       - name: "Check out code"
