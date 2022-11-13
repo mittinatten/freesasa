@@ -12,19 +12,16 @@ jobs:
     strategy:
       matrix:
         include:
-          - env:
-              CC: gcc
-              CXX: g++
+          - CC: gcc
+            CXX: g++
             enable: "--disable-json --disable-xml"
             deps: "libc++-dev libc++abi-dev"
-          - env:
-              CC: gcc
-              CXX: g++
+          - CC: gcc
+            CXX: g++
             enable: "--enable-check --enable-json --enable-xml"
             deps: "check libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev"
-          - env:
-              CC: clang
-              CXX: clang
+          - CC: clang
+            CXX: clang
             enable: "--enable-check --enable-json --enable-xml"
             deps: "check libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev"
     runs-on: ubuntu-latest
@@ -40,7 +37,7 @@ jobs:
       - name: "Configure"
         run: |
           autoreconf -i
-          ./configure ${{ matrix.enable }} CC=$CC CXX=$CXX
+          ./configure ${{ matrix.enable }} CC=${{ matrix.CC }} CXX=${{ matrix.CXX }}
       - name: "Build"
         run: make
       - name: "Test"
