@@ -20,7 +20,7 @@ jobs:
         # check that minimal build also works
         include:
           - compiler: gcc
-            enable: ""
+            enable: "--disable-json --disable-xml"
             deps: "libc++-dev libc++abi-dev"
     runs-on: ubuntu-latest
     steps:
