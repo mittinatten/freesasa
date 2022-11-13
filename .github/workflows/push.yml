@@ -11,12 +11,14 @@ jobs:
   Test:
     strategy:
       matrix:
-        - compiler: gcc
-          enable: ""
-          deps: "libc++-dev libc++abi-dev"
-        - compiler: [gcc, clang]
-          enable: "--enable-check --enable-json --enable-xml"
-          deps: "check libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev"
+        compiler: [gcc, clang]
+        enable: "--enable-check --enable-json --enable-xml"
+        deps: "check libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev"
+        # check that minimal build also works
+        include:
+          - compiler: gcc
+            enable: ""
+            deps: "libc++-dev libc++abi-dev"
     runs-on: ubuntu-latest
     steps:
       - name: "Check out code"
