@@ -40,7 +40,7 @@ jobs:
       - name: "Configure"
         run: |
           autoreconf -i
-          ./configure ${{ matrix.enable }}
+          ./configure ${{ matrix.enable }} CC=$CC CXX=$CXX
       - name: "Build"
         run: make
       - name: "Test"
