@@ -84,7 +84,8 @@ END_TEST
 
 START_TEST(test_memerr)
 {
-    #ifdef _GNU_SOURCE
+    // the mocking of malloc, etc doesn't work with clang
+    #ifndef __clang__
     set_fail_after(0);
     static double v[18] = {0, 0, 0, 1, 1, 1, -1, 1, -1, 2, 0, -2, 2, 2, 0, -5, 5, 5};
     struct coord_t coord = {.xyz = v, .n = 6, .is_linked = 0};
@@ -106,7 +107,7 @@ START_TEST(test_memerr)
     freesasa_coord_free(coord_dyn);
     set_fail_after(0);
     ck_assert_int_eq(1,2);
-    #endif // _GNU_SOURCE
+    #endif // __clang__
 }
 END_TEST
 
