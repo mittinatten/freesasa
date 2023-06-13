@@ -1,6 +1,6 @@
 AM_LDFLAGS =
 AM_CFLAGS =
-freesasa_LDADD = -lc++
+freesasa_LDADD = -lstdc++
 AM_CPPFLAGS = -I$(top_srcdir)/third-party/gemmi/include/
 
 if COND_GCOV
