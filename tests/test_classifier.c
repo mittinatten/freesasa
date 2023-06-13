@@ -418,7 +418,9 @@ END_TEST
 
 START_TEST(test_memerr)
 {
-    #ifdef _GNU_SOURCE
+    // the mocking of malloc, etc doesn't work with clang
+    #ifndef __clang__
+
     freesasa_set_verbosity(FREESASA_V_SILENT);
     set_fail_after(1);
     void *ptr[] = {freesasa_classifier_types_new(),
@@ -468,7 +470,7 @@ START_TEST(test_memerr)
     }
     fclose(config);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
-    #endif // _GNU_SOURCE
+    #endif // __clang__
 }
 END_TEST
 
