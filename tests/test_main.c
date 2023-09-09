@@ -6,20 +6,20 @@
 #include <config.h>
 #endif
 
-extern Suite *pdb_suite();
-extern Suite *classifier_suite();
-extern Suite *coord_suite();
-extern Suite *structure_suite();
-extern Suite *sasa_suite();
-extern Suite *nb_suite();
-extern Suite *selector_suite();
-extern Suite *result_node_suite();
+extern Suite *pdb_suite(void);
+extern Suite *classifier_suite(void);
+extern Suite *coord_suite(void);
+extern Suite *structure_suite(void);
+extern Suite *sasa_suite(void);
+extern Suite *nb_suite(void);
+extern Suite *selector_suite(void);
+extern Suite *result_node_suite(void);
 
 #ifdef USE_JSON
-extern Suite *json_suite();
+extern Suite *json_suite(void);
 #endif
 #ifdef USE_XML
-extern Suite *xml_suite();
+extern Suite *xml_suite(void);
 #endif
 
 int main(int argc, char **argv)

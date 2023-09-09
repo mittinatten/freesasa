@@ -43,9 +43,9 @@ START_TEST(test_memerr)
 }
 END_TEST
 
-extern TCase *test_nb_static();
+extern TCase *test_nb_static(void);
 
-Suite *nb_suite()
+Suite *nb_suite(void)
 {
     Suite *s = suite_create("Neighbor lists");
 

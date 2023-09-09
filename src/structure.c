@@ -100,7 +100,7 @@ atom_free(struct atom *a)
 }
 
 struct atoms
-atoms_init()
+atoms_init(void)
 {
     struct atoms atoms;
     atoms.n = 0;
@@ -237,7 +237,7 @@ atom_new_from_line(const char *line,
 }
 
 static struct residues
-residues_init()
+residues_init(void)
 {
     struct residues res;
 
@@ -301,7 +301,7 @@ residues_dealloc(struct residues *residues)
 }
 
 static struct chains
-chains_init()
+chains_init(void)
 {
     struct chains ch;
 

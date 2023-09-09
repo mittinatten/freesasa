@@ -465,7 +465,7 @@ START_TEST(test_memerr)
 }
 END_TEST
 
-Suite *structure_suite()
+Suite *structure_suite(void)
 {
     // what goes in what Case is kind of arbitrary
     Suite *s = suite_create("Structure");

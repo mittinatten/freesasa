@@ -168,7 +168,7 @@ START_TEST(test_memerr)
 }
 END_TEST
 
-Suite *xml_suite()
+Suite *xml_suite(void)
 {
     Suite *s = suite_create("XML");
     TCase *tc_core = tcase_create("Core");

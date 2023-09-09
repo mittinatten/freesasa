@@ -111,7 +111,7 @@ START_TEST(test_memerr)
 }
 END_TEST
 
-Suite *coord_suite()
+Suite *coord_suite(void)
 {
     Suite *s = suite_create("Coord");
     TCase *tc_core = tcase_create("Core");

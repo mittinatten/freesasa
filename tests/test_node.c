@@ -121,7 +121,7 @@ START_TEST(test_memerr)
 }
 END_TEST
 
-Suite *result_node_suite()
+Suite *result_node_suite(void)
 {
     Suite *s = suite_create("Result-node");
 

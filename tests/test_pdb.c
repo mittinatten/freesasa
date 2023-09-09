@@ -193,9 +193,9 @@ START_TEST(test_get_chains)
 }
 END_TEST
 
-extern TCase *test_pdb_static();
+extern TCase *test_pdb_static(void);
 
-Suite *pdb_suite()
+Suite *pdb_suite(void)
 {
     Suite *s = suite_create("PDB-parser");
     TCase *tc_core = tcase_create("Core");

@@ -513,9 +513,9 @@ START_TEST(test_memerr)
 }
 END_TEST
 
-extern TCase *test_LR_static();
+extern TCase *test_LR_static(void);
 
-Suite *sasa_suite()
+Suite *sasa_suite(void)
 {
     Suite *s = suite_create("SASA-calculation");
 

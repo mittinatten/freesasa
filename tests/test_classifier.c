@@ -475,9 +475,9 @@ START_TEST(test_memerr)
 END_TEST
 
 
-extern TCase *test_classifier_static();
+extern TCase *test_classifier_static(void);
 
-Suite *classifier_suite()
+Suite *classifier_suite(void)
 {
     Suite *s = suite_create("Classify");
     TCase *tc_core = tcase_create("Core");

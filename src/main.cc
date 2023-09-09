@@ -335,7 +335,7 @@ run_analysis(std::vector<freesasa_structure *> structures,
     for (auto structure : structures) {
         strcpy(name_i, name);
         if (structures.size() > 1 && (state->structure_options & FREESASA_SEPARATE_MODELS))
-            sprintf(name_i + strlen(name_i), ":%d", freesasa_structure_model(structure));
+            snprintf(name_i + strlen(name_i), 9, ":%d", freesasa_structure_model(structure));
 
         tmp_tree = freesasa_calc_tree(structure, &state->parameters, name_i);
         if (tmp_tree == NULL) abort_msg("can't calculate SASA");

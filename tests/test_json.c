@@ -232,7 +232,7 @@ START_TEST(test_json)
 }
 END_TEST
 
-Suite *json_suite()
+Suite *json_suite(void)
 {
     Suite *s = suite_create("JSON");
     TCase *tc_core = tcase_create("Core");
