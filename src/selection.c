@@ -721,11 +721,11 @@ select_area_impl(const char *command,
 
             *area = sasa;
             len = strlen(selection->name);
+            strncpy(name, selection->name, maxlen);
+
             if (len > maxlen) {
-                strncpy(name, selection->name, maxlen);
                 name[maxlen] = '\0';
             } else {
-                strncpy(name, selection->name, len);
                 name[len] = '\0';
             }
 
