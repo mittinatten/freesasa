@@ -459,7 +459,9 @@ Suite *selector_suite()
     tcase_add_test(tc_core, test_resn);
     tcase_add_test(tc_core, test_resi);
     tcase_add_test(tc_core, test_chain);
-    tcase_add_test(tc_core, test_memerr);
+    if (INCLUDE_MEMERR_TESTS) {
+      tcase_add_test(tc_core, test_memerr);
+    }
 
     TCase *tc_static = test_selection_static();
 

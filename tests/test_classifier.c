@@ -486,7 +486,9 @@ Suite *classifier_suite()
     tcase_add_test(tc_core, test_residue);
     tcase_add_test(tc_core, test_user);
     tcase_add_test(tc_core, test_backbone);
-    tcase_add_test(tc_core, test_memerr);
+    if (INCLUDE_MEMERR_TESTS) {
+      tcase_add_test(tc_core, test_memerr);
+    }
 
     TCase *tc_static = test_classifier_static();
 

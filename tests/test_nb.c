@@ -51,7 +51,9 @@ Suite *nb_suite()
 
     TCase *tc_nb = tcase_create("Basic");
     tcase_add_test(tc_nb, test_nb);
-    tcase_add_test(tc_nb, test_memerr);
+    if (INCLUDE_MEMERR_TESTS) {
+      tcase_add_test(tc_nb, test_memerr);
+    }
 
     TCase *tc_static = test_nb_static();
 

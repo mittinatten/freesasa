@@ -524,7 +524,9 @@ Suite *sasa_suite()
     tcase_add_test(tc_basic, test_calc_errors);
     tcase_add_test(tc_basic, test_user_classes);
     tcase_add_test(tc_basic, test_write_pdb);
-    tcase_add_test(tc_basic, test_memerr);
+    if (INCLUDE_MEMERR_TESTS) {
+      tcase_add_test(tc_basic, test_memerr);
+    }
 
     TCase *tc_lr_basic = tcase_create("Basic L&R");
     tcase_add_checked_fixture(tc_lr_basic, setup_lr_precision, teardown_lr_precision);

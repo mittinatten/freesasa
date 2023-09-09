@@ -472,7 +472,9 @@ Suite *structure_suite()
     TCase *tc_core = tcase_create("Core");
     tcase_add_test(tc_core, test_structure_api);
     tcase_add_test(tc_core, test_add_atom);
-    tcase_add_test(tc_core, test_memerr);
+    if (INCLUDE_MEMERR_TESTS) {
+      tcase_add_test(tc_core, test_memerr);
+    }
 
     TCase *tc_pdb = tcase_create("PDB");
     tcase_add_test(tc_pdb, test_pdb);

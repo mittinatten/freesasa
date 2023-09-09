@@ -169,6 +169,18 @@ if test "x$enable_check" = "xyes" ; then
   AM_CONDITIONAL([USE_CHECK], true)
 fi
 
+# Enable memerr  tests
+AC_ARG_ENABLE([memerr-tests],
+  [AS_HELP_STRING([--enable-memerr-tests],
+        [Enable memory error tests that replace malloc])])
+AM_CONDITIONAL([INCLUDE_MEMERR_TESTS], false)
+AC_DEFINE([INCLUDE_MEMERR_TESTS],[0],[Include memory error tests that require mocking malloc])
+
+if test "x$enable_memerr_tests" = "xyes" ; then
+   AC_DEFINE([INCLUDE_MEMERR_TESTS], [1])
+   AM_CONDITIONAL([INCLUDE_MEMERR_TESTS], true)
+fi
+
 # Enable gcov
 AC_ARG_ENABLE([gcov],
   [AS_HELP_STRING([--enable-gcov],
