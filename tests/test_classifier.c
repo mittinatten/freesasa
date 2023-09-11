@@ -298,7 +298,7 @@ START_TEST(test_class)
             ck_assert(a.class == UNK);
             continue;
         }
-        sprintf(buf, "Classification error for %s %s %s %s",
+        snprintf(buf, sizeof buf, "Classification error for %s %s %s %s",
                 a.a, a.b, freesasa_classifier_class2str(c),
                 freesasa_classifier_class2str(a.class));
         ck_assert_msg(c == a.class, buf);
