@@ -258,6 +258,9 @@ freesasa_alg_name(freesasa_algorithm alg)
         return "Shrake & Rupley";
     case FREESASA_LEE_RICHARDS:
         return "Lee & Richards";
+    default:
+        // This should never happen
+        assert(0 && "Illegal algorithm");
+        return "Unknown algorithm";
     }
-    assert(0 && "Illegal algorithm");
 }
