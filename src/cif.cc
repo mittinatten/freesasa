@@ -441,10 +441,14 @@ append_freesasa_rsa_residue_to_block(gemmi::cif::Block &block, freesasa_node *re
     assert(freesasa_node_type(residue) == FREESASA_NODE_RESIDUE);
 
     const freesasa_nodearea *abs, *reference;
+    freesasa_node *structure, *chain;
     freesasa_nodearea rel;
 
     abs = freesasa_node_area(residue);
     reference = freesasa_node_residue_reference(residue);
+
+    chain = freesasa_node_parent(residue);
+    structure = freesasa_node_parent(chain);
 
     if (reference)
         freesasa_residue_rel_nodearea(&rel, abs, reference);
@@ -453,6 +457,7 @@ append_freesasa_rsa_residue_to_block(gemmi::cif::Block &block, freesasa_node *re
 
     std::string rsa_prefix{"_freeSASA_rsa."};
     std::vector<std::string> rsa_tags{
+        "pdbx_PDB_model_num",
         "asym_id",
         "seq_id",
         "comp_id",
@@ -469,6 +474,7 @@ append_freesasa_rsa_residue_to_block(gemmi::cif::Block &block, freesasa_node *re
     };
 
     std::vector<std::string> rsa_data{
+        std::to_string(freesasa_node_structure_model(structure)),
         std::string{freesasa_node_name(freesasa_node_parent(residue))[0]},
         std::string{freesasa_node_residue_number(residue)},
         std::string{freesasa_node_name(residue)},
