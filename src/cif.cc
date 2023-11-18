@@ -432,7 +432,7 @@ correct_inf_nan_values(const double value)
 {
     if (std::isnan(value)) return ".";
     if (std::isinf(value)) return "?";
-    return std::to_string(value);
+    return std::to_string(value).substr(0, 5);
 }
 
 static void
@@ -612,8 +612,8 @@ populate_freesasa_result_vectors(gemmi::cif::Block &block, freesasa_node *result
                             "In %s(), unable to find freesasa_node atom (%d, %s, %s, %s, %s) in cif %s",
                             __func__, model, cName.c_str(), rNum.c_str(), rName, aName, table.bloc.name.c_str());
 
-                    sasa_vals[rowNum] = std::to_string(area->total);
-                    sasa_radii[rowNum] = std::to_string(radius);
+                    sasa_vals[rowNum] = std::to_string(area->total).substr(0, 5);
+                    sasa_radii[rowNum] = std::to_string(radius).substr(0, 5);
 
                     atom = freesasa_node_next(atom);
                 }
@@ -774,7 +774,7 @@ write_result(std::ostream &out, freesasa_node *root)
             if (added_sasa_cols == FREESASA_FAIL)
                 return freesasa_fail("Unable to add freesasa columns to atom_site table.");
             else
-                gemmi::cif::write_cif_block_to_stream(out, block);
+                gemmi::cif::write_cif_block_to_stream(out, block, gemmi::cif::Style::Aligned);
         }
     }
     return FREESASA_SUCCESS;
