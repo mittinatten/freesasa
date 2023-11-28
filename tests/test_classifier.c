@@ -298,7 +298,7 @@ START_TEST(test_class)
             ck_assert(a.class == UNK);
             continue;
         }
-        sprintf(buf, "Classification error for %s %s %s %s",
+        snprintf(buf, sizeof buf, "Classification error for %s %s %s %s",
                 a.a, a.b, freesasa_classifier_class2str(c),
                 freesasa_classifier_class2str(a.class));
         ck_assert_msg(c == a.class, buf);
@@ -415,8 +415,12 @@ START_TEST(test_backbone)
 }
 END_TEST
 
+
 START_TEST(test_memerr)
 {
+    // the mocking of malloc, etc doesn't work with clang
+    #ifndef __clang__
+
     freesasa_set_verbosity(FREESASA_V_SILENT);
     set_fail_after(1);
     void *ptr[] = {freesasa_classifier_types_new(),
@@ -466,12 +470,14 @@ START_TEST(test_memerr)
     }
     fclose(config);
     freesasa_set_verbosity(FREESASA_V_NORMAL);
+    #endif // __clang__
 }
 END_TEST
 
-extern TCase *test_classifier_static();
 
-Suite *classifier_suite()
+extern TCase *test_classifier_static(void);
+
+Suite *classifier_suite(void)
 {
     Suite *s = suite_create("Classify");
     TCase *tc_core = tcase_create("Core");
@@ -480,7 +486,9 @@ Suite *classifier_suite()
     tcase_add_test(tc_core, test_residue);
     tcase_add_test(tc_core, test_user);
     tcase_add_test(tc_core, test_backbone);
-    tcase_add_test(tc_core, test_memerr);
+    if (INCLUDE_MEMERR_TESTS) {
+      tcase_add_test(tc_core, test_memerr);
+    }
 
     TCase *tc_static = test_classifier_static();
 

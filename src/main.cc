@@ -335,7 +335,7 @@ run_analysis(std::vector<freesasa_structure *> structures,
     for (auto structure : structures) {
         strcpy(name_i, name);
         if (structures.size() > 1 && (state->structure_options & FREESASA_SEPARATE_MODELS))
-            sprintf(name_i + strlen(name_i), ":%d", freesasa_structure_model(structure));
+            snprintf(name_i + strlen(name_i), 9, ":%d", freesasa_structure_model(structure));
 
         tmp_tree = freesasa_calc_tree(structure, &state->parameters, name_i);
         if (tmp_tree == NULL) abort_msg("can't calculate SASA");
@@ -530,7 +530,7 @@ static int
 parse_arg(int argc, char **argv, struct cli_state *state)
 {
     int alg_set = 0;
-    char opt;
+    int opt;
     int n_opt = 'z' + 1;
     char opt_set['z' + 1];
     int option_index = 0;
@@ -540,7 +540,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
 
     while ((opt = getopt_long(argc, argv, options_string,
                               long_options, &option_index)) != -1) {
-        opt_set[(int)opt] = 1;
+        opt_set[opt] = 1;
         /* Assume arguments starting with dash are actually missing arguments */
         if (optarg != NULL && optarg[0] == '-') {
             if (option_index > 0)

@@ -1,5 +1,5 @@
 .\" Man page for FressSASA
-.TH man 1 "2017" "@PACKAGE_VERSION@" "FreeSASA man page"
+.TH freesasa 1 "2017" "@PACKAGE_VERSION@" "FreeSASA man page"
 .SH NAME
 FreeSASA @PACKAGE_VERSION@ - calculate Solvent Accessible Surface Areas from PDB files
 .SH SYNOPSIS

@@ -31,7 +31,7 @@ realloc(void * ptr, size_t s)
     return real_realloc(ptr, s);
 }
 
-void*
+char*
 strdup(const char *s)
 {
     if (fail_after > 0) {
@@ -40,7 +40,7 @@ strdup(const char *s)
             return NULL;
         }
     }
-    void *(*real_strdup)(const char*) = dlsym(RTLD_NEXT, "strdup");
+    char *(*real_strdup)(const char*) = dlsym(RTLD_NEXT, "strdup");
     return real_strdup(s);
 }
 
@@ -51,7 +51,7 @@ set_fail_after(int limit) {
     n_fails = 0;
 }
 
-int float_eq(double a, double b, double tolerance) 
+int float_eq(double a, double b, double tolerance)
 {
     if (fabs(a-b) < tolerance) return 1;
     printf("floats not equal: a = %f, b = %f, diff = %f, tolerance = %f\n",

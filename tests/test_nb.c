@@ -43,15 +43,17 @@ START_TEST(test_memerr)
 }
 END_TEST
 
-extern TCase *test_nb_static();
+extern TCase *test_nb_static(void);
 
-Suite *nb_suite()
+Suite *nb_suite(void)
 {
     Suite *s = suite_create("Neighbor lists");
 
     TCase *tc_nb = tcase_create("Basic");
     tcase_add_test(tc_nb, test_nb);
-    tcase_add_test(tc_nb, test_memerr);
+    if (INCLUDE_MEMERR_TESTS) {
+      tcase_add_test(tc_nb, test_memerr);
+    }
 
     TCase *tc_static = test_nb_static();
 

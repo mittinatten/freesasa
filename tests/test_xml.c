@@ -168,13 +168,16 @@ START_TEST(test_memerr)
 }
 END_TEST
 
-Suite *xml_suite()
+Suite *xml_suite(void)
 {
     Suite *s = suite_create("XML");
     TCase *tc_core = tcase_create("Core");
     tcase_add_checked_fixture(tc_core, setup, teardown);
     tcase_add_test(tc_core, test_libxmlerr);
-    tcase_add_test(tc_core, test_memerr);
+
+    if (INCLUDE_MEMERR_TESTS) {
+      tcase_add_test(tc_core, test_memerr);
+    }
 
     suite_add_tcase(s, tc_core);
 

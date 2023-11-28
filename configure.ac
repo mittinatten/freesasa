@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([FreeSASA], [2.1.0-beta])
+AC_INIT([FreeSASA], [2.1.2])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
@@ -167,6 +167,18 @@ if test "x$enable_check" = "xyes" ; then
     [AC_MSG_ERROR[Library Check not available, install libary or configure without flag --enable-check]])
   AC_DEFINE([USE_CHECK], [1])
   AM_CONDITIONAL([USE_CHECK], true)
+fi
+
+# Enable memerr  tests
+AC_ARG_ENABLE([memerr-tests],
+  [AS_HELP_STRING([--enable-memerr-tests],
+        [Enable memory error tests that replace malloc])])
+AM_CONDITIONAL([INCLUDE_MEMERR_TESTS], false)
+AC_DEFINE([INCLUDE_MEMERR_TESTS],[0],[Include memory error tests that require mocking malloc])
+
+if test "x$enable_memerr_tests" = "xyes" ; then
+   AC_DEFINE([INCLUDE_MEMERR_TESTS], [1])
+   AM_CONDITIONAL([INCLUDE_MEMERR_TESTS], true)
 fi
 
 # Enable gcov

@@ -121,13 +121,15 @@ START_TEST(test_memerr)
 }
 END_TEST
 
-Suite *result_node_suite()
+Suite *result_node_suite(void)
 {
     Suite *s = suite_create("Result-node");
 
     TCase *tc_core = tcase_create("Core");
     tcase_add_test(tc_core, test_result_node);
-    tcase_add_test(tc_core, test_memerr);
+    if (INCLUDE_MEMERR_TESTS) {
+      tcase_add_test(tc_core, test_memerr);
+    }
 
     suite_add_tcase(s, tc_core);
 

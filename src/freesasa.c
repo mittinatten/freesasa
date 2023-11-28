@@ -28,7 +28,7 @@ const char *freesasa_string = "FreeSASA";
 /* Allows compilation with different defaults
    depending on USE_THREADS. but still exposing the value in a header
    that doesn't depend on USE_THREADS */
-#ifdef USE_THREADS
+#if USE_THREADS
 #define DEF_NUMBER_THREADS 2
 #else
 #define DEF_NUMBER_THREADS 1
@@ -258,6 +258,9 @@ freesasa_alg_name(freesasa_algorithm alg)
         return "Shrake & Rupley";
     case FREESASA_LEE_RICHARDS:
         return "Lee & Richards";
+    default:
+        // This should never happen
+        assert(0 && "Illegal algorithm");
+        return "Unknown algorithm";
     }
-    assert(0 && "Illegal algorithm");
 }

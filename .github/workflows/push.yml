@@ -1,0 +1,51 @@
+name: Run tests
+run-name: ${{ github.actor }} testing freesasa
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+    branches:
+      - master
+jobs:
+  Test:
+    strategy:
+      matrix:
+        include:
+          - CC: gcc
+            CXX: g++
+            enable: "--disable-json --disable-xml"
+            deps: "libc++-dev libc++abi-dev"
+          - CC: gcc
+            CXX: g++
+            enable: "--enable-check --enable-json --enable-xml"
+            deps: "check libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev"
+          - CC: clang
+            CXX: clang
+            enable: "--enable-check --enable-json --enable-xml"
+            deps: "check libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Check out code"
+        uses: actions/checkout@v3
+      - name: "Install dependencies"
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq ${{ matrix.deps }}
+          git submodule init
+          git submodule update
+      - name: "Configure"
+        run: |
+          autoreconf -i
+          ./configure ${{ matrix.enable }} CC=${{ matrix.CC }} CXX=${{ matrix.CXX }}
+      - name: "Build"
+        run: make
+      - name: "Test"
+        run: make check
+      - name: "Log errors"
+        if: ${{ failure() }}
+        run: |
+          echo "\n>>> Test API log <<<"
+          cat tests/test-api.log
+          echo "\n>>> Test CLI log <<<"
+          cat tests/test-cli.log

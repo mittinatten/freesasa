@@ -84,6 +84,9 @@ END_TEST
 
 START_TEST(test_memerr)
 {
+    // the mocking of malloc, etc doesn't work with clang
+    #ifndef __clang__
+
     set_fail_after(0);
     static double v[18] = {0, 0, 0, 1, 1, 1, -1, 1, -1, 2, 0, -2, 2, 2, 0, -5, 5, 5};
     struct coord_t coord = {.xyz = v, .n = 6, .is_linked = 0};
@@ -104,16 +107,20 @@ START_TEST(test_memerr)
     freesasa_set_verbosity(FREESASA_V_NORMAL);
     freesasa_coord_free(coord_dyn);
     set_fail_after(0);
+    #endif // __clang__
 }
 END_TEST
 
-Suite *coord_suite()
+Suite *coord_suite(void)
 {
     Suite *s = suite_create("Coord");
     TCase *tc_core = tcase_create("Core");
     tcase_add_checked_fixture(tc_core, setup, teardown);
     tcase_add_test(tc_core, test_coord);
-    tcase_add_test(tc_core, test_memerr);
+    if (INCLUDE_MEMERR_TESTS) {
+      tcase_add_test(tc_core, test_memerr);
+    }
+
     suite_add_tcase(s, tc_core);
     return s;
 }

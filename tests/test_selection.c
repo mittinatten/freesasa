@@ -445,9 +445,9 @@ START_TEST(test_memerr)
 }
 END_TEST
 
-extern TCase *test_selection_static();
+extern TCase *test_selection_static(void);
 
-Suite *selector_suite()
+Suite *selector_suite(void)
 {
     Suite *s = suite_create("Selector");
 
@@ -459,7 +459,9 @@ Suite *selector_suite()
     tcase_add_test(tc_core, test_resn);
     tcase_add_test(tc_core, test_resi);
     tcase_add_test(tc_core, test_chain);
-    tcase_add_test(tc_core, test_memerr);
+    if (INCLUDE_MEMERR_TESTS) {
+      tcase_add_test(tc_core, test_memerr);
+    }
 
     TCase *tc_static = test_selection_static();
 
