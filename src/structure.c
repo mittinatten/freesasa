@@ -29,24 +29,24 @@
 #define CHAINS_CHUNK 64
 
 struct atom {
-    char *res_name;
-    char *res_number;
-    char *atom_name;
-    char *symbol;
+    char res_name[PDB_ATOM_RES_NAME_STRL + 1];
+    char res_number[PDB_ATOM_RES_NUMBER_STRL + 1];
+    char atom_name[PDB_ATOM_NAME_STRL + 1];
+    char symbol[PDB_ATOM_SYMBOL_STRL + 1];
     char *line;
     int res_index;
-    char chain_label;
+    char chain_label[4];
     freesasa_atom_class the_class;
 };
 
 static const struct atom empty_atom = {
-    NULL,                 /* res_name */
-    NULL,                 /* res_number */
-    NULL,                 /* atom_name */
-    NULL,                 /* symbol */
+    "",                   /* res_name */
+    "",                   /* res_number */
+    "",                   /* atom_name */
+    "",                   /* symbol */
     NULL,                 /* line */
     -1,                   /* res_index */
-    '\0',                 /* chain_label */
+    "",                   /* chain_label */
     FREESASA_ATOM_UNKNOWN /* the_class */
 };
 
@@ -90,13 +90,9 @@ static void
 atom_free(struct atom *a)
 {
     if (a != NULL) {
-        free(a->res_name);
-        free(a->res_number);
-        free(a->atom_name);
-        free(a->symbol);
-        free(a->line);
-        free(a);
+       free(a->line);
     }
+    free(a);
 }
 
 struct atoms
@@ -173,31 +169,27 @@ atom_new(const char *residue_name,
          char chain_label)
 {
     struct atom *a = malloc(sizeof(struct atom));
-    if (a == NULL) goto memerr;
 
-    *a = empty_atom;
+    if (a == NULL) {
+        mem_fail();
+        free(a);
+    } else {
+        *a = empty_atom;
 
-    a->line = NULL;
-    a->chain_label = chain_label;
-    a->res_index = -1;
+        a->line = NULL       ;
+        a->chain_label[0] = chain_label;
+        a->chain_label[1] = '\0';
+        a->res_index = -1;
 
-    a->res_name = strdup(residue_name);
-    a->res_number = strdup(residue_number);
-    a->atom_name = strdup(atom_name);
-    a->symbol = strdup(symbol);
-    a->the_class = FREESASA_ATOM_UNKNOWN;
+        strncpy(a->atom_name, atom_name, sizeof(a->atom_name));
+        strncpy(a->res_name, residue_name, sizeof(a->res_name));
+        strncpy(a->res_number, residue_number, sizeof(a->res_number));
+        strncpy(a->symbol, symbol, sizeof(a->symbol));
 
-    if (!a->res_name || !a->res_number || !a->atom_name ||
-        !a->symbol) {
-        goto memerr;
+        a->the_class = FREESASA_ATOM_UNKNOWN;
     }
 
     return a;
-
-memerr:
-    mem_fail();
-    atom_free(a);
-    return NULL;
 }
 
 static struct atom *
@@ -474,7 +466,7 @@ structure_add_residue(freesasa_structure *s,
     if (!(s->residues.n == 0 ||
           (i_latest_atom > 0 &&
            (strcmp(a->res_number, s->atoms.atom[i_latest_atom - 1]->res_number) ||
-            a->chain_label != s->atoms.atom[i_latest_atom - 1]->chain_label)))) {
+            a->chain_label[0] != s->atoms.atom[i_latest_atom - 1]->chain_label[0])))) {
         return FREESASA_SUCCESS;
     }
 
@@ -603,7 +595,7 @@ structure_add_atom(freesasa_structure *structure,
         return mem_fail();
 
     /* Check if this is a new chain and if so add it */
-    if (structure_add_chain(structure, atom->chain_label, na - 1) == FREESASA_FAIL)
+    if (structure_add_chain(structure, atom->chain_label[0], na - 1) == FREESASA_FAIL)
         return mem_fail();
 
     /* Check if this is a new residue, and if so add it */
@@ -933,7 +925,7 @@ freesasa_structure_get_chains(const freesasa_structure *structure,
 
     for (i = 0; i < structure->atoms.n; ++i) {
         ai = structure->atoms.atom[i];
-        c = ai->chain_label;
+        c = ai->chain_label[0];
         if (strchr(chains, c) != NULL) {
             v = freesasa_coord_i(structure->xyz, i);
             res = structure_add_atom_wopt_impl(new_s, ai->atom_name,
@@ -1022,7 +1014,7 @@ char freesasa_structure_atom_chain(const freesasa_structure *structure,
 {
     assert(structure);
     assert(i < structure->atoms.n && i >= 0);
-    return structure->atoms.atom[i]->chain_label;
+    return structure->atoms.atom[i]->chain_label[0];
 }
 const char *
 freesasa_structure_atom_symbol(const freesasa_structure *structure,
@@ -1125,7 +1117,7 @@ char freesasa_structure_residue_chain(const freesasa_structure *structure,
     assert(structure);
     assert(r_i < structure->residues.n && r_i >= 0);
 
-    return structure->atoms.atom[structure->residues.first_atom[r_i]]->chain_label;
+    return structure->atoms.atom[structure->residues.first_atom[r_i]]->chain_label[0];
 }
 
 int freesasa_structure_n_chains(const freesasa_structure *structure)
