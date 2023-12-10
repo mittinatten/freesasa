@@ -1182,6 +1182,16 @@ char freesasa_structure_residue_chain(const freesasa_structure *structure,
     return structure->atoms.atom[structure->residues.first_atom[r_i]]->chain_label[0];
 }
 
+const char *
+freesasa_structure_residue_chain_lcl(const freesasa_structure *structure,
+                                     int r_i)
+{
+    assert(structure);
+    assert(r_i < structure->residues.n && r_i >= 0);
+
+    return structure->atoms.atom[structure->residues.first_atom[r_i]]->chain_label;
+}
+
 int freesasa_structure_n_chains(const freesasa_structure *structure)
 {
     return structure->chains.n;

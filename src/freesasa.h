@@ -945,6 +945,9 @@ int freesasa_structure_add_cif_atom(freesasa_structure *structure,
     \private
     Add atoms from a mmCIF file to a structure using strings for chain labels (LCL)
 
+    This is an intermediate function added in the process of migrating to long chain labels.
+    It is not meant to be part of the public API for now.
+
     @param structure The structure to add to.
     @param atom An atom site from a mmCIF file with long chain labels
     @param classifier A ::freesasa_classifier to determine radius of atom and to
@@ -1136,6 +1139,9 @@ char freesasa_structure_atom_chain(const freesasa_structure *structure,
 
     Asserts that index i is within bounds.
 
+    This is an intermediate function added in the process of migrating to long chain labels.
+    It is not meant to be part of the public API for now.
+
     @param structure The structure.
     @param i Atom index.
     @return Chain label (`'A'`, `'B'`, etc.)
@@ -1231,6 +1237,22 @@ freesasa_structure_residue_number(const freesasa_structure *structure,
 char freesasa_structure_residue_chain(const freesasa_structure *structure,
                                       int r_i);
 
+/**
+    \private
+    Get long form chain residue belongs to.
+
+    This is an intermediate function added in the process of migrating to long chain labels.
+    It is not meant to be part of the public API for now.
+
+    @param structure The structure.
+    @param r_i Residue index (in whole structure).
+    @return Chain label.
+
+    @ingroup structure
+ */
+const char *
+freesasa_structure_residue_chain_lcl(const freesasa_structure *structure,
+                                     int r_i);
 /**
     Get model number for structure.
 

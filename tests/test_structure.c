@@ -148,6 +148,8 @@ START_TEST(test_cif)
         ck_assert_int_eq(freesasa_structure_atom_chain(s, i), lcl[i][0]);
         ck_assert_str_eq(freesasa_structure_atom_chain_lcl(s, i), lcl[i]);
     }
+    ck_assert_int_eq(freesasa_structure_residue_chain(s, 0), lcl[0][0]);
+    ck_assert_str_eq(freesasa_structure_residue_chain_lcl(s, 0), lcl[0]);
 
     struct freesasa_cif_atom_lcl atom = {
         .group_PDB = "",
