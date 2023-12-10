@@ -447,7 +447,8 @@ guess_symbol(char *symbol,
 
 int structure_has_chain(freesasa_structure *s, const chain_label_t chain_label)
 {
-    for (int i = 0; i < s->chains.n; ++i) {
+    int i;
+    for (i = 0; i < s->chains.n; ++i) {
         if (strncmp(s->chains.labels[i], chain_label, sizeof(chain_label_t)) == 0) {
             return 1;
         }
@@ -1197,29 +1198,40 @@ int freesasa_structure_n_chains(const freesasa_structure *structure)
     return structure->chains.n;
 }
 
-int freesasa_structure_chain_index(const freesasa_structure *structure,
-                                   char chain)
+int freesasa_structure_chain_index_lcl(const freesasa_structure *structure,
+                                       const char *chain)
 {
     int i;
 
     assert(structure);
 
     for (i = 0; i < structure->chains.n; ++i) {
-        if (structure->chains.labels[i][0] == chain) return i;
+        if (strncmp(structure->chains.labels[i], chain, sizeof(chain_label_t)) == 0) {
+            return i;
+        }
     }
-    return fail_msg("chain %c not found", chain);
+
+    return fail_msg("chain '%s' not found", chain);
 }
 
-int freesasa_structure_chain_atoms(const freesasa_structure *structure,
-                                   char chain,
-                                   int *first,
-                                   int *last)
+/** Not public */
+int freesasa_structure_chain_index(const freesasa_structure *structure,
+                                   char chain)
+{
+    chain_label_t chain_label = {chain, '\0'};
+    return freesasa_structure_chain_index_lcl(structure, chain_label);
+}
+
+int freesasa_structure_chain_atoms_lcl(const freesasa_structure *structure,
+                                       const char *chain,
+                                       int *first,
+                                       int *last)
 {
     int c_i, n;
 
     assert(structure);
 
-    c_i = freesasa_structure_chain_index(structure, chain);
+    c_i = freesasa_structure_chain_index_lcl(structure, chain);
     n = freesasa_structure_n_chains(structure);
 
     if (c_i < 0) return fail_msg("");
@@ -1234,22 +1246,40 @@ int freesasa_structure_chain_atoms(const freesasa_structure *structure,
     return FREESASA_SUCCESS;
 }
 
-int freesasa_structure_chain_residues(const freesasa_structure *structure,
-                                      char chain,
-                                      int *first,
-                                      int *last)
+int freesasa_structure_chain_atoms(const freesasa_structure *structure,
+                                   char chain,
+                                   int *first,
+                                   int *last)
+{
+    chain_label_t chain_label = {chain, '\0'};
+    return freesasa_structure_chain_atoms_lcl(structure, chain_label, first, last);
+}
+
+int freesasa_structure_chain_residues_lcl(const freesasa_structure *structure,
+                                          const char *chain,
+                                          int *first,
+                                          int *last)
 {
     int first_atom, last_atom;
 
     assert(structure);
 
-    if (freesasa_structure_chain_atoms(structure, chain, &first_atom, &last_atom))
+    if (freesasa_structure_chain_atoms_lcl(structure, chain, &first_atom, &last_atom))
         return fail_msg("");
 
     *first = structure->atoms.atom[first_atom]->res_index;
     *last = structure->atoms.atom[last_atom]->res_index;
 
     return FREESASA_SUCCESS;
+}
+
+int freesasa_structure_chain_residues(const freesasa_structure *structure,
+                                      char chain,
+                                      int *first,
+                                      int *last)
+{
+    chain_label_t chain_label = {chain, '\0'};
+    return freesasa_structure_chain_residues_lcl(structure, chain_label, first, last);
 }
 
 const char *

@@ -1313,6 +1313,28 @@ int freesasa_structure_chain_atoms(const freesasa_structure *structure,
                                    int *last);
 
 /**
+    \private
+    Get indices of first and last atoms of a chain
+
+    Uses long form chain labels.
+
+    This is an intermediate function added in the process of migrating to long chain labels.
+    It is not meant to be part of the public API for now.
+
+    @param structure A structure.
+    @param chain The chain label.
+    @param first First atom of `chain` will be stored here.
+    @param last Last atom of `chain` will be stored here.
+    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if `chain` not found.
+
+    @ingroup structure
+ */
+int freesasa_structure_chain_atoms_lcl(const freesasa_structure *structure,
+                                       const char *chain,
+                                       int *first,
+                                       int *last);
+
+/**
     Get indices of first and last residues of a chain
 
     @param structure A structure.
@@ -1327,6 +1349,28 @@ int freesasa_structure_chain_residues(const freesasa_structure *structure,
                                       char chain,
                                       int *first,
                                       int *last);
+
+/**
+    \private
+    Get indices of first and last residues of a chain
+
+    Uses long form chain labels.
+
+    This is an intermediate function added in the process of migrating to long chain labels.
+    It is not meant to be part of the public API for now.
+
+    @param structure A structure.
+    @param chain The chain label.
+    @param first First residue of `chain` will be stored here.
+    @param last Last residue of `chain` will be stored here.
+    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if `chain` not found.
+
+    @ingroup structure
+ */
+int freesasa_structure_chain_residues_lcl(const freesasa_structure *structure,
+                                          const char *chain,
+                                          int *first,
+                                          int *last);
 
 /**
     Name of classifier used to generate structure.

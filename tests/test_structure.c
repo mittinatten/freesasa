@@ -122,6 +122,7 @@ END_TEST
 
 START_TEST(test_cif)
 {
+    int first, last;
     s = freesasa_structure_new();
     for (int i = 0; i < N; ++i) {
         struct freesasa_cif_atom_lcl atom = {
@@ -150,6 +151,14 @@ START_TEST(test_cif)
     }
     ck_assert_int_eq(freesasa_structure_residue_chain(s, 0), lcl[0][0]);
     ck_assert_str_eq(freesasa_structure_residue_chain_lcl(s, 0), lcl[0]);
+
+    ck_assert_int_eq(freesasa_structure_chain_atoms_lcl(s, "AAA", &first, &last), FREESASA_SUCCESS);
+    ck_assert_int_eq(first, 0);
+    ck_assert_int_eq(last, N - 1);
+
+    ck_assert_int_eq(freesasa_structure_chain_residues_lcl(s, "AAA", &first, &last), FREESASA_SUCCESS);
+    ck_assert_int_eq(first, 0);
+    ck_assert_int_eq(last, 1);
 
     struct freesasa_cif_atom_lcl atom = {
         .group_PDB = "",
