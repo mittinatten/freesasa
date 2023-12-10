@@ -1068,6 +1068,16 @@ char freesasa_structure_atom_chain(const freesasa_structure *structure,
     assert(i < structure->atoms.n && i >= 0);
     return structure->atoms.atom[i]->chain_label[0];
 }
+
+const char *
+freesasa_structure_atom_chain_lcl(const freesasa_structure *structure,
+                                  int i)
+{
+    assert(structure);
+    assert(i < structure->atoms.n && i >= 0);
+    return structure->atoms.atom[i]->chain_label;
+}
+
 const char *
 freesasa_structure_atom_symbol(const freesasa_structure *structure,
                                int i)

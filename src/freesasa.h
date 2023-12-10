@@ -1131,6 +1131,22 @@ char freesasa_structure_atom_chain(const freesasa_structure *structure,
                                    int i);
 
 /**
+    \private
+    Get long form chain label.
+
+    Asserts that index i is within bounds.
+
+    @param structure The structure.
+    @param i Atom index.
+    @return Chain label (`'A'`, `'B'`, etc.)
+
+    @ingroup structure
+ */
+const char *
+freesasa_structure_atom_chain_lcl(const freesasa_structure *structure,
+                                  int i);
+
+/**
     Get atom symbol.
 
     If the structure was initialized from a PDB file the symbol field

@@ -146,6 +146,7 @@ START_TEST(test_cif)
         ck_assert_str_eq(freesasa_structure_atom_res_number(s, i), rnu[i]);
         ck_assert_str_eq(freesasa_structure_atom_symbol(s, i), symbol[i]);
         ck_assert_int_eq(freesasa_structure_atom_chain(s, i), lcl[i][0]);
+        ck_assert_str_eq(freesasa_structure_atom_chain_lcl(s, i), lcl[i]);
     }
 
     struct freesasa_cif_atom_lcl atom = {
