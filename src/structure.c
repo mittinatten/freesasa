@@ -468,6 +468,7 @@ structure_add_chain(freesasa_structure *s,
         n = s->chains.n;
         strncpy(s->chains.labels[n - 1], chain_label, sizeof(chain_label_t));
         s->chains.short_labels[n - 1] = chain_label[0];
+        s->chains.short_labels[n] = '\0';
 
         s->chains.first_atom[n - 1] = i_latest_atom;
     }
