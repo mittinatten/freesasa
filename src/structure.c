@@ -170,7 +170,7 @@ atom_new(const char *residue_name,
          const char *residue_number,
          const char *atom_name,
          const char *symbol,
-         chain_label_t chain_label)
+         const chain_label_t chain_label)
 {
     struct atom *a = malloc(sizeof(struct atom));
 
@@ -183,11 +183,11 @@ atom_new(const char *residue_name,
         a->line = NULL;
         a->res_index = -1;
 
-        strncpy(a->atom_name, atom_name, sizeof(a->atom_name));
-        strncpy(a->res_name, residue_name, sizeof(a->res_name));
-        strncpy(a->res_number, residue_number, sizeof(a->res_number));
-        strncpy(a->symbol, symbol, sizeof(a->symbol));
-        strncpy(a->chain_label, chain_label, sizeof(chain_label_t));
+        snprintf(a->atom_name, sizeof(a->atom_name), "%s", atom_name);
+        snprintf(a->res_name, sizeof(a->res_name), "%s", residue_name);
+        snprintf(a->res_number, sizeof(a->res_number), "%s", residue_number);
+        snprintf(a->symbol, sizeof(a->symbol), "%s", symbol);
+        snprintf(a->chain_label, sizeof(chain_label_t), "%s", chain_label);
 
         a->the_class = FREESASA_ATOM_UNKNOWN;
     }
@@ -445,7 +445,7 @@ guess_symbol(char *symbol,
     return FREESASA_SUCCESS;
 }
 
-int structure_has_chain(freesasa_structure *s, chain_label_t chain_label)
+int structure_has_chain(freesasa_structure *s, const chain_label_t chain_label)
 {
     for (int i = 0; i < s->chains.n; ++i) {
         if (strncmp(s->chains.labels[i], chain_label, sizeof(chain_label_t)) == 0) {
@@ -457,7 +457,7 @@ int structure_has_chain(freesasa_structure *s, chain_label_t chain_label)
 
 static int
 structure_add_chain(freesasa_structure *s,
-                    chain_label_t chain_label,
+                    const chain_label_t chain_label,
                     int i_latest_atom)
 {
     int n;
@@ -467,7 +467,7 @@ structure_add_chain(freesasa_structure *s,
             return fail_msg("");
 
         n = s->chains.n;
-        strncpy(s->chains.labels[n - 1], chain_label, sizeof(chain_label_t));
+        snprintf(s->chains.labels[n - 1], sizeof(chain_label_t), "%s", chain_label);
         s->chains.short_labels[n - 1] = chain_label[0];
         s->chains.short_labels[n] = '\0';
 
@@ -726,7 +726,7 @@ structure_add_atom_wopt_impl(freesasa_structure *structure,
                              const char *residue_name,
                              const char *residue_number,
                              const char *symbol,
-                             chain_label_t chain_label,
+                             const char *chain_label,
                              double x, double y, double z,
                              const freesasa_classifier *classifier,
                              int options)
@@ -740,6 +740,7 @@ structure_add_atom_wopt_impl(freesasa_structure *structure,
     assert(atom_name);
     assert(residue_name);
     assert(residue_number);
+    assert(chain_label);
 
     /* this option can not be used here, and needs to be unset */
     options &= ~FREESASA_RADIUS_FROM_OCCUPANCY;
@@ -779,6 +780,7 @@ int freesasa_structure_add_atom_wopt(freesasa_structure *structure,
     return structure_add_atom_wopt_impl(structure, atom_name, residue_name, residue_number, NULL,
                                         my_chain_label, x, y, z, classifier, options);
 }
+
 int freesasa_structure_add_atom(freesasa_structure *structure,
                                 const char *atom_name,
                                 const char *residue_name,
@@ -809,6 +811,25 @@ int freesasa_structure_add_cif_atom(freesasa_structure *structure,
 
     return structure_add_atom_wopt_impl(structure, atom->auth_atom_id, atom->auth_comp_id,
                                         res_number, atom->type_symbol, chain_label,
+                                        atom->Cartn_x, atom->Cartn_y, atom->Cartn_z,
+                                        classifier, options);
+}
+
+int freesasa_structure_add_cif_atom_lcl(freesasa_structure *structure,
+                                        freesasa_cif_atom_lcl *atom,
+                                        const freesasa_classifier *classifier,
+                                        int options)
+{
+    char res_number[PDB_ATOM_RES_NUMBER_STRL + 1];
+
+    if (atom->pdbx_PDB_ins_code[0] != '?') {
+        snprintf(res_number, sizeof res_number, "%s%c", atom->auth_seq_id, atom->pdbx_PDB_ins_code[0]);
+    } else {
+        snprintf(res_number, sizeof res_number, "%s", atom->auth_seq_id);
+    }
+
+    return structure_add_atom_wopt_impl(structure, atom->auth_atom_id, atom->auth_comp_id,
+                                        res_number, atom->type_symbol, atom->auth_asym_id,
                                         atom->Cartn_x, atom->Cartn_y, atom->Cartn_z,
                                         classifier, options);
 }

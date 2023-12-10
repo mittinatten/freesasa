@@ -20,6 +20,7 @@ const char rna[N][PDB_ATOM_RES_NAME_STRL + 1] = {
 const char rnu[N][PDB_ATOM_RES_NUMBER_STRL + 1] = {"   1", "   1", "   1", "   1", "   1", "   2"};
 const char symbol[N][PDB_ATOM_SYMBOL_STRL + 1] = {" C", " C", " O", " C", " S", "SE"};
 const char cl[N] = {'A', 'A', 'A', 'A', 'A', 'A'};
+const char *lcl[N] = {"AAA", "AAA", "AAA", "AAA", "AAA", "AAA"};
 const double bfactors[N] = {1., 1., 1., 1., 1., 1.};
 
 freesasa_structure *s;
@@ -118,6 +119,53 @@ START_TEST(test_add_atom)
     freesasa_structure_free(s);
 }
 END_TEST
+
+START_TEST(test_cif)
+{
+    s = freesasa_structure_new();
+    for (int i = 0; i < N; ++i) {
+        struct freesasa_cif_atom_lcl atom = {
+            .group_PDB = "",
+            .auth_asym_id = lcl[i],
+            .auth_seq_id = rnu[i],
+            .pdbx_PDB_ins_code = "?",
+            .auth_comp_id = rna[i],
+            .auth_atom_id = an[i],
+            .label_alt_id = "",
+            .type_symbol = symbol[i],
+            .Cartn_x = i,
+            .Cartn_y = i,
+            .Cartn_z = i,
+        };
+        ck_assert_int_eq(freesasa_structure_add_cif_atom_lcl(s, &atom, NULL, 0),
+                         FREESASA_SUCCESS);
+    }
+    for (int i = 0; i < N; ++i) {
+        ck_assert_str_eq(freesasa_structure_atom_name(s, i), an[i]);
+        ck_assert_str_eq(freesasa_structure_atom_res_name(s, i), rna[i]);
+        ck_assert_str_eq(freesasa_structure_atom_res_number(s, i), rnu[i]);
+        ck_assert_str_eq(freesasa_structure_atom_symbol(s, i), symbol[i]);
+        ck_assert_int_eq(freesasa_structure_atom_chain(s, i), lcl[i][0]);
+    }
+
+    struct freesasa_cif_atom_lcl atom = {
+        .group_PDB = "",
+        .auth_asym_id = lcl[0],
+        .auth_seq_id = rnu[0],
+        .pdbx_PDB_ins_code = "A",
+        .auth_comp_id = rna[0],
+        .auth_atom_id = an[0],
+        .label_alt_id = "",
+        .type_symbol = symbol[0],
+        .Cartn_x = 1,
+        .Cartn_y = 1,
+        .Cartn_z = 1,
+    };
+
+    ck_assert_int_eq(freesasa_structure_add_cif_atom_lcl(s, &atom, NULL, 0),
+                     FREESASA_SUCCESS);
+    ck_assert_str_eq(freesasa_structure_atom_res_number(s, N), "   1A");
+}
 
 double a2r(const char *rn, const char *am)
 {
@@ -472,8 +520,9 @@ Suite *structure_suite(void)
     TCase *tc_core = tcase_create("Core");
     tcase_add_test(tc_core, test_structure_api);
     tcase_add_test(tc_core, test_add_atom);
+    tcase_add_test(tc_core, test_cif);
     if (INCLUDE_MEMERR_TESTS) {
-      tcase_add_test(tc_core, test_memerr);
+        tcase_add_test(tc_core, test_memerr);
     }
 
     TCase *tc_pdb = tcase_create("PDB");

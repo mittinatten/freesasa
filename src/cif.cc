@@ -131,7 +131,7 @@ static const auto atom_site_columns = std::vector<std::string>({
  * TODO: Better solution needed. A previous version with std::move didn't work as expected,
  * and sometimes caused seg-faults.
  */
-static freesasa_cif_atom
+static freesasa_cif_atom_lcl
 freesasa_atom_from_site(const gemmi::cif::Table::Row &site)
 {
     const char *auth_atom_id;
@@ -142,9 +142,9 @@ freesasa_atom_from_site(const gemmi::cif::Table::Row &site)
         auth_atom_id = site[5].c_str();
     }
 
-    return {
+    return freesasa_cif_atom_lcl {
         .group_PDB = site[0].c_str(),
-        .auth_asym_id = site[1][0],
+        .auth_asym_id = site[1].c_str(),
         .auth_seq_id = site[2].c_str(),
         .pdbx_PDB_ins_code = site[3].c_str(),
         .auth_comp_id = site[4].c_str(),
@@ -175,7 +175,7 @@ structure_from_pred(const gemmi::cif::Document &doc,
 
             if (discriminator(site)) continue;
 
-            freesasa_cif_atom atom = freesasa_atom_from_site(site);
+            auto atom = freesasa_atom_from_site(site);
 
             if (!(structure_options & FREESASA_INCLUDE_HYDROGEN) && std::string(atom.type_symbol) == "H") {
                 continue;
@@ -189,7 +189,7 @@ structure_from_pred(const gemmi::cif::Document &doc,
                 continue;
             }
 
-            freesasa_structure_add_cif_atom(structure, &atom, classifier, structure_options);
+            freesasa_structure_add_cif_atom_lcl(structure, &atom, classifier, structure_options);
 
             // since this is in the interface between C and C++ code, some hackery is needed
             free((void *)atom.auth_atom_id);

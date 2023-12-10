@@ -337,8 +337,34 @@ struct freesasa_cif_atom {
     const double Cartn_z;
 };
 
+/**
+   \private
+   Struct to store data about a mmCIF atom site.
+
+   With `auth_sym_id` as string (long chain label/LCL)
+
+   This is an intermediate type added in the process of migrating to long chain labels.
+   In the next major release `freesasa_cif_atom` will be changed to this form.
+
+   @ingroup structure
+ */
+struct freesasa_cif_atom_lcl {
+    const char *group_PDB;
+    const char *auth_asym_id;
+    const char *auth_seq_id;
+    const char *pdbx_PDB_ins_code;
+    const char *auth_comp_id;
+    const char *auth_atom_id;
+    const char *label_alt_id;
+    const char *type_symbol;
+    const double Cartn_x;
+    const double Cartn_y;
+    const double Cartn_z;
+};
+
 #ifndef __cplusplus
 typedef struct freesasa_cif_atom freesasa_cif_atom;
+typedef struct freesasa_cif_atom_lcl freesasa_cif_atom_lcl;
 #endif
 
 /**
@@ -914,6 +940,27 @@ int freesasa_structure_add_cif_atom(freesasa_structure *structure,
                                     freesasa_cif_atom *atom,
                                     const freesasa_classifier *classifier,
                                     int options);
+
+/**
+    \private
+    Add atoms from a mmCIF file to a structure using strings for chain labels (LCL)
+
+    @param structure The structure to add to.
+    @param atom An atom site from a mmCIF file with long chain labels
+    @param classifier A ::freesasa_classifier to determine radius of atom and to
+      decide if to keep atom or not (see options).
+    @param options Structure options as in freesasa_structure_add_atom_wopt()
+
+    @return ::FREESASA_SUCCESS on normal execution. ::FREESASA_FAIL if
+       if memory allocation fails or if halting at unknown
+       atom. ::FREESASA_WARN if skipping atom.
+
+    @ingroup structure
+ */
+int freesasa_structure_add_cif_atom_lcl(freesasa_structure *structure,
+                                        freesasa_cif_atom_lcl *atom,
+                                        const freesasa_classifier *classifier,
+                                        int options);
 /**
     Create new structure consisting of a selection chains from the
     provided structure.
