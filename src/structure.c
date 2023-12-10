@@ -27,6 +27,9 @@
 #define ATOMS_CHUNK 512
 #define RESIDUES_CHUNK 64
 #define CHAINS_CHUNK 64
+#define CHAIN_LABEL_LENGTH 3
+
+typedef char chain_label_t[CHAIN_LABEL_LENGTH + 1];
 
 struct atom {
     char res_name[PDB_ATOM_RES_NAME_STRL + 1];
@@ -35,7 +38,7 @@ struct atom {
     char symbol[PDB_ATOM_SYMBOL_STRL + 1];
     char *line;
     int res_index;
-    char chain_label[4];
+    chain_label_t chain_label;
     freesasa_atom_class the_class;
 };
 
@@ -67,7 +70,8 @@ struct residues {
 struct chains {
     int n;
     int n_alloc;
-    char *labels;    /* all chain labels found (as string) */
+    chain_label_t *labels;
+    char* short_labels; /* NULL-terminated string */
     int *first_atom; /* first atom of each chain */
 };
 
@@ -166,7 +170,7 @@ atom_new(const char *residue_name,
          const char *residue_number,
          const char *atom_name,
          const char *symbol,
-         char chain_label)
+         chain_label_t chain_label)
 {
     struct atom *a = malloc(sizeof(struct atom));
 
@@ -176,15 +180,14 @@ atom_new(const char *residue_name,
     } else {
         *a = empty_atom;
 
-        a->line = NULL       ;
-        a->chain_label[0] = chain_label;
-        a->chain_label[1] = '\0';
+        a->line = NULL;
         a->res_index = -1;
 
         strncpy(a->atom_name, atom_name, sizeof(a->atom_name));
         strncpy(a->res_name, residue_name, sizeof(a->res_name));
         strncpy(a->res_number, residue_number, sizeof(a->res_number));
         strncpy(a->symbol, symbol, sizeof(a->symbol));
+        strncpy(a->chain_label, chain_label, sizeof(chain_label_t));
 
         a->the_class = FREESASA_ATOM_UNKNOWN;
     }
@@ -198,6 +201,7 @@ atom_new_from_line(const char *line,
 {
     char aname[PDB_ATOM_NAME_STRL + 1], rname[PDB_ATOM_RES_NAME_STRL + 1],
         rnumber[PDB_ATOM_RES_NUMBER_STRL + 1], symbol[PDB_ATOM_SYMBOL_STRL + 1];
+    chain_label_t chain_label;
     int flag;
     struct atom *a;
 
@@ -208,13 +212,15 @@ atom_new_from_line(const char *line,
     freesasa_pdb_get_atom_name(aname, line);
     freesasa_pdb_get_res_name(rname, line);
     freesasa_pdb_get_res_number(rnumber, line);
+    chain_label[0] = freesasa_pdb_get_chain_label(line);
+    chain_label[1] = '\0';
 
     flag = freesasa_pdb_get_symbol(symbol, line);
     if (flag == FREESASA_FAIL || (symbol[0] == ' ' && symbol[1] == ' ')) {
         guess_symbol(symbol, aname);
     }
 
-    a = atom_new(rname, rnumber, aname, symbol, freesasa_pdb_get_chain_label(line));
+    a = atom_new(rname, rnumber, aname, symbol, chain_label);
 
     if (a != NULL) {
         a->line = strdup(line);
@@ -301,6 +307,7 @@ chains_init(void)
     ch.n_alloc = 0;
     ch.first_atom = NULL;
     ch.labels = NULL;
+    ch.short_labels = NULL;
 
     return ch;
 }
@@ -309,7 +316,7 @@ static int
 chains_alloc(struct chains *chains)
 {
     int new_size;
-    void *fa, *lbl;
+    void *fa, *lbl, *short_lbl;
 
     assert(chains);
     assert(chains->n <= chains->n_alloc);
@@ -318,6 +325,7 @@ chains_alloc(struct chains *chains)
         new_size = chains->n_alloc + CHAINS_CHUNK;
         fa = chains->first_atom;
         lbl = chains->labels;
+        short_lbl = chains->short_labels;
 
         chains->first_atom = realloc(chains->first_atom,
                                      sizeof(int) * new_size);
@@ -326,9 +334,15 @@ chains_alloc(struct chains *chains)
             return mem_fail();
         }
 
-        chains->labels = realloc(chains->labels, new_size + 1);
+        chains->labels = realloc(chains->labels, sizeof(chain_label_t) * new_size);
         if (chains->labels == NULL) {
             chains->labels = lbl;
+            return mem_fail();
+        }
+
+        chains->short_labels = realloc(chains->short_labels, new_size + 1);
+        if (chains->short_labels == NULL) {
+            chains->short_labels = short_lbl;
             return mem_fail();
         }
 
@@ -344,6 +358,7 @@ chains_dealloc(struct chains *chains)
     if (chains) {
         free(chains->first_atom);
         free(chains->labels);
+        free(chains->short_labels);
         *chains = chains_init();
     }
 }
@@ -429,22 +444,30 @@ guess_symbol(char *symbol,
     }
     return FREESASA_SUCCESS;
 }
+
+int structure_has_chain(freesasa_structure *s, chain_label_t chain_label) {
+    for (int i = 0; i < s->chains.n; ++i) {
+        if (strncmp(s->chains.labels[i], chain_label, sizeof(chain_label_t)) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static int
 structure_add_chain(freesasa_structure *s,
-                    char chain_label,
+                    chain_label_t chain_label,
                     int i_latest_atom)
 {
     int n;
-    if (s->chains.n == 0 || strchr(s->chains.labels, chain_label) == NULL) {
+    if (s->chains.n == 0 || structure_has_chain(s, chain_label) == 0) {
 
         if (chains_alloc(&s->chains) == FREESASA_FAIL)
             return fail_msg("");
 
         n = s->chains.n;
-        s->chains.labels[n - 1] = chain_label;
-        s->chains.labels[n] = '\0';
-
-        assert(strlen(s->chains.labels) == s->chains.n);
+        strncpy(s->chains.labels[n - 1], chain_label, sizeof(chain_label_t));
+        s->chains.short_labels[n - 1] = chain_label[0];
 
         s->chains.first_atom[n - 1] = i_latest_atom;
     }
@@ -466,7 +489,7 @@ structure_add_residue(freesasa_structure *s,
     if (!(s->residues.n == 0 ||
           (i_latest_atom > 0 &&
            (strcmp(a->res_number, s->atoms.atom[i_latest_atom - 1]->res_number) ||
-            a->chain_label[0] != s->atoms.atom[i_latest_atom - 1]->chain_label[0])))) {
+            strcmp(a->chain_label, s->atoms.atom[i_latest_atom - 1]->chain_label))))) {
         return FREESASA_SUCCESS;
     }
 
@@ -595,7 +618,7 @@ structure_add_atom(freesasa_structure *structure,
         return mem_fail();
 
     /* Check if this is a new chain and if so add it */
-    if (structure_add_chain(structure, atom->chain_label[0], na - 1) == FREESASA_FAIL)
+    if (structure_add_chain(structure, atom->chain_label, na - 1) == FREESASA_FAIL)
         return mem_fail();
 
     /* Check if this is a new residue, and if so add it */
@@ -701,7 +724,7 @@ structure_add_atom_wopt_impl(freesasa_structure *structure,
                              const char *residue_name,
                              const char *residue_number,
                              const char *symbol,
-                             char chain_label,
+                             chain_label_t chain_label,
                              double x, double y, double z,
                              const freesasa_classifier *classifier,
                              int options)
@@ -749,8 +772,10 @@ int freesasa_structure_add_atom_wopt(freesasa_structure *structure,
                                      const freesasa_classifier *classifier,
                                      int options)
 {
+    chain_label_t my_chain_label  = { chain_label, '\0'};
+
     return structure_add_atom_wopt_impl(structure, atom_name, residue_name, residue_number, NULL,
-                                        chain_label, x, y, z, classifier, options);
+                                        my_chain_label, x, y, z, classifier, options);
 }
 int freesasa_structure_add_atom(freesasa_structure *structure,
                                 const char *atom_name,
@@ -759,8 +784,10 @@ int freesasa_structure_add_atom(freesasa_structure *structure,
                                 char chain_label,
                                 double x, double y, double z)
 {
+    chain_label_t my_chain_label  = { chain_label, '\0'};
+
     return structure_add_atom_wopt_impl(structure, atom_name, residue_name, residue_number, NULL,
-                                        chain_label, x, y, z, NULL, 0);
+                                        my_chain_label, x, y, z, NULL, 0);
 }
 
 int freesasa_structure_add_cif_atom(freesasa_structure *structure,
@@ -776,8 +803,10 @@ int freesasa_structure_add_cif_atom(freesasa_structure *structure,
         snprintf(res_number, sizeof res_number, "%s", atom->auth_seq_id);
     }
 
+    chain_label_t chain_label = { atom->auth_asym_id, '\0'};
+
     return structure_add_atom_wopt_impl(structure, atom->auth_atom_id, atom->auth_comp_id,
-                                        res_number, atom->type_symbol, atom->auth_asym_id,
+                                        res_number, atom->type_symbol, chain_label,
                                         atom->Cartn_x, atom->Cartn_y, atom->Cartn_z,
                                         classifier, options);
 }
@@ -908,7 +937,7 @@ freesasa_structure_get_chains(const freesasa_structure *structure,
     freesasa_structure *new_s;
     struct atom *ai;
     int i, res;
-    char c;
+    char* c;
     const double *v;
 
     assert(structure);
@@ -925,8 +954,8 @@ freesasa_structure_get_chains(const freesasa_structure *structure,
 
     for (i = 0; i < structure->atoms.n; ++i) {
         ai = structure->atoms.atom[i];
-        c = ai->chain_label[0];
-        if (strchr(chains, c) != NULL) {
+        c = ai->chain_label;
+        if (strchr(chains, c[0]) != NULL) {
             v = freesasa_coord_i(structure->xyz, i);
             res = structure_add_atom_wopt_impl(new_s, ai->atom_name,
                                                ai->res_name, ai->res_number, ai->symbol,
@@ -943,7 +972,7 @@ freesasa_structure_get_chains(const freesasa_structure *structure,
     if (new_s->atoms.n == 0) {
         goto cleanup;
     }
-    if (strlen(new_s->chains.labels) != strlen(chains)) {
+    if (new_s->chains.n != strlen(chains)) {
         fail_msg("structure has chains '%s', but '%s' requested",
                  structure->chains.labels, chains);
         goto cleanup;
@@ -960,7 +989,7 @@ const char *
 freesasa_structure_chain_labels(const freesasa_structure *structure)
 {
     assert(structure);
-    return structure->chains.labels;
+    return structure->chains.short_labels;
 }
 
 const coord_t *
@@ -1133,7 +1162,7 @@ int freesasa_structure_chain_index(const freesasa_structure *structure,
     assert(structure);
 
     for (i = 0; i < structure->chains.n; ++i) {
-        if (structure->chains.labels[i] == chain) return i;
+        if (structure->chains.labels[i][0] == chain) return i;
     }
     return fail_msg("chain %c not found", chain);
 }
