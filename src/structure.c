@@ -71,8 +71,8 @@ struct chains {
     int n;
     int n_alloc;
     chain_label_t *labels;
-    char* short_labels; /* NULL-terminated string */
-    int *first_atom; /* first atom of each chain */
+    char *short_labels; /* NULL-terminated string */
+    int *first_atom;    /* first atom of each chain */
 };
 
 struct freesasa_structure {
@@ -94,7 +94,7 @@ static void
 atom_free(struct atom *a)
 {
     if (a != NULL) {
-       free(a->line);
+        free(a->line);
     }
     free(a);
 }
@@ -445,7 +445,8 @@ guess_symbol(char *symbol,
     return FREESASA_SUCCESS;
 }
 
-int structure_has_chain(freesasa_structure *s, chain_label_t chain_label) {
+int structure_has_chain(freesasa_structure *s, chain_label_t chain_label)
+{
     for (int i = 0; i < s->chains.n; ++i) {
         if (strncmp(s->chains.labels[i], chain_label, sizeof(chain_label_t)) == 0) {
             return 1;
@@ -773,7 +774,7 @@ int freesasa_structure_add_atom_wopt(freesasa_structure *structure,
                                      const freesasa_classifier *classifier,
                                      int options)
 {
-    chain_label_t my_chain_label  = { chain_label, '\0'};
+    chain_label_t my_chain_label = {chain_label, '\0'};
 
     return structure_add_atom_wopt_impl(structure, atom_name, residue_name, residue_number, NULL,
                                         my_chain_label, x, y, z, classifier, options);
@@ -785,7 +786,7 @@ int freesasa_structure_add_atom(freesasa_structure *structure,
                                 char chain_label,
                                 double x, double y, double z)
 {
-    chain_label_t my_chain_label  = { chain_label, '\0'};
+    chain_label_t my_chain_label = {chain_label, '\0'};
 
     return structure_add_atom_wopt_impl(structure, atom_name, residue_name, residue_number, NULL,
                                         my_chain_label, x, y, z, NULL, 0);
@@ -804,7 +805,7 @@ int freesasa_structure_add_cif_atom(freesasa_structure *structure,
         snprintf(res_number, sizeof res_number, "%s", atom->auth_seq_id);
     }
 
-    chain_label_t chain_label = { atom->auth_asym_id, '\0'};
+    chain_label_t chain_label = {atom->auth_asym_id, '\0'};
 
     return structure_add_atom_wopt_impl(structure, atom->auth_atom_id, atom->auth_comp_id,
                                         res_number, atom->type_symbol, chain_label,
@@ -938,7 +939,7 @@ freesasa_structure_get_chains(const freesasa_structure *structure,
     freesasa_structure *new_s;
     struct atom *ai;
     int i, res;
-    char* c;
+    char *c;
     const double *v;
 
     assert(structure);
