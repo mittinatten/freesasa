@@ -1016,6 +1016,22 @@ freesasa_structure_chain_labels(const freesasa_structure *structure)
     return structure->chains.short_labels;
 }
 
+int freesasa_structure_number_chains(const freesasa_structure *structure)
+{
+    assert(structure);
+
+    return structure->chains.n;
+}
+
+const char *
+freesasa_structure_chain_label(const freesasa_structure *structure, int index)
+{
+    assert(structure);
+    assert(index >= 0 && index < structure->chains.n);
+
+    return structure->chains.labels[index];
+}
+
 const coord_t *
 freesasa_structure_xyz(const freesasa_structure *structure)
 {

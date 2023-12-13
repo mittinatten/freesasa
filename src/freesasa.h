@@ -1003,6 +1003,28 @@ const char *
 freesasa_structure_chain_labels(const freesasa_structure *structure);
 
 /**
+    Get number of chains in structure
+
+    @param structure The structure.
+    @return number of chains
+
+    @ingroup structure
+ */
+int freesasa_structure_number_chains(const freesasa_structure *structure);
+
+/**
+    Get label of given chain (auth_asym_id)
+
+    @param structure The structure.
+    @param index Index of chain
+    @return chain-label
+
+    @ingroup structure
+ */
+const char *
+freesasa_structure_chain_label(const freesasa_structure *structure, int index);
+
+/**
     Get number of atoms.
 
     @param structure The structure.
