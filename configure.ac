@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.68])
-AC_INIT([FreeSASA], [2.1.2])
+AC_PREREQ([2.72])
+AC_INIT([FreeSASA],[2.1.2])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
@@ -37,9 +37,6 @@ AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 AC_TYPE_UINT8_T
-
-# use C99
-AC_PROG_CC_C99
 AC_C_INLINE
 
 # Checks for library functions.
@@ -120,7 +117,8 @@ AC_ARG_ENABLE([parser-generator],
 AM_CONDITIONAL([GENERATE_PARSER],false)
 
 if test "x$enable_parser_generator" = "xyes" ; then
-  AC_PROG_LEX
+  AC_PROG_LEX([noyywrap])
+  #AC_PROG_LEX
   AC_CHECK_PROGS([YACC], [bison byacc yacc])
   AM_CONDITIONAL([GENERATE_PARSER], [test -n $LEX && test "x$LEX" != "x:" && test -n $YACC])
   AM_COND_IF([GENERATE_PARSER],[],
