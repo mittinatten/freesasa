@@ -57,9 +57,9 @@ write_result(FILE *log,
     fprintf(log, "atoms   : %d\n", freesasa_node_structure_n_atoms(structure));
 
     fprintf(log, "\nRESULTS (A^2)\n");
-    fprintf(log, "Total   : %10.2f\n", area->total);
-    fprintf(log, "Apolar  : %10.2f\n", area->apolar);
-    fprintf(log, "Polar   : %10.2f\n", area->polar);
+    fprintf(log, "Total     : %10.2f\n", area->total);
+    fprintf(log, "Apolar    : %10.2f\n", area->apolar);
+    fprintf(log, "Polar     : %10.2f\n", area->polar);
     if (area->unknown > 0) {
         fprintf(log, "Unknown : %10.2f\n", area->unknown);
     }
@@ -68,7 +68,7 @@ write_result(FILE *log,
     while (chain) {
         area = freesasa_node_area(chain);
         assert(area);
-        fprintf(log, "CHAIN %s : %10.2f\n", freesasa_node_name(chain), area->total);
+        fprintf(log, "CHAIN %3s : %10.2f\n", freesasa_node_name(chain), area->total);
         chain = freesasa_node_next(chain);
     }
 

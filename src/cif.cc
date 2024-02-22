@@ -142,7 +142,7 @@ freesasa_atom_from_site(const gemmi::cif::Table::Row &site)
         auth_atom_id = site[5].c_str();
     }
 
-    return freesasa_cif_atom_lcl {
+    return freesasa_cif_atom_lcl{
         .group_PDB = site[0].c_str(),
         .auth_asym_id = site[1].c_str(),
         .auth_seq_id = site[2].c_str(),

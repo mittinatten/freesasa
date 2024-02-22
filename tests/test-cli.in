@@ -240,6 +240,7 @@ assert_pass "$cli --cif --format=cif --separate-chains $datadir/1ubq.cif > $dump
 assert_pass "$cli --cif --format=cif --separate-chains --separate-models $datadir/1ubq.cif > $dump"
 assert_fail "$cli --cif --format=pdb $datadir/1ubq.cif > $dump"
 assert_fail "$cli --format=cif $datadir/1ubq.pdb > $dump"
+assert_pass $cli --cif $datadir/7cma-assembly1.cif | grep 'CHAIN C-2 :    8980.86'
 
 echo
 echo "== Testing --separate-chains and --separate-models output are equal between cif and pdb"
