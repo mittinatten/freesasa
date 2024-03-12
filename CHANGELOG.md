@@ -2,6 +2,11 @@
 
 FreeSASA uses semantic versioning. Changelog added for versions 2.x
 
+## Upcoming release
+
+- Breaking: Support 3-letter chain labels (auth_sym_id) in CIF-files. Default and RSA output formats 
+  have changes in whitespace as a consequence, to give space to the larger labels.
+
 ## 2.1.2
 
 - Fix error where CLI options weren't parsed properly on ARM processors.

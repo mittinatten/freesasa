@@ -326,15 +326,12 @@ node_chain(const freesasa_structure *structure,
            const freesasa_result *result,
            int chain_index)
 {
-    const char *chains = freesasa_structure_chain_labels(structure);
-    char name[2] = {chains[chain_index], '\0'};
+    const char *name = freesasa_structure_chain_label(structure, chain_index);
     freesasa_node *chain = NULL;
     int first_atom, last_atom, first_residue, last_residue;
 
-    assert(strlen(chains) > chain_index);
-
-    freesasa_structure_chain_atoms(structure, chains[chain_index],
-                                   &first_atom, &last_atom);
+    freesasa_structure_chain_atoms_lcl(structure, name,
+                                       &first_atom, &last_atom);
 
     chain = node_new(name);
     if (chain == NULL) {
@@ -343,8 +340,8 @@ node_chain(const freesasa_structure *structure,
     }
 
     chain->type = FREESASA_NODE_CHAIN;
-    freesasa_structure_chain_residues(structure, name[0],
-                                      &first_residue, &last_residue);
+    freesasa_structure_chain_residues_lcl(structure, name,
+                                          &first_residue, &last_residue);
     chain->properties.chain.n_residues = last_residue - first_residue + 1;
 
     if (node_gen_children(chain, structure, result,

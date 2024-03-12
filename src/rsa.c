@@ -82,12 +82,12 @@ rsa_print_residue(FILE *output,
                   freesasa_node *residue)
 {
     const char *resi_str;
-    char chain;
+    const char *chain;
 
     resi_str = freesasa_node_residue_number(residue);
-    chain = freesasa_node_name(freesasa_node_parent(residue))[0];
+    chain = freesasa_node_name(freesasa_node_parent(residue));
 
-    fprintf(output, "RES %s %c%s ", abs->name, chain, resi_str);
+    fprintf(output, "RES %s %3s%-4s ", abs->name, chain, resi_str);
     if (rel->name != NULL) {
         rsa_print_abs_rel(output, abs->total, rel->total);
         rsa_print_abs_rel(output, abs->side_chain, rel->side_chain);
@@ -152,8 +152,8 @@ int freesasa_write_rsa(FILE *output,
         const char *name = freesasa_node_name(chain);
         abs = freesasa_node_area(chain);
 
-        fprintf(output, "CHAIN%3d %c %10.1f   %10.1f   %10.1f   %10.1f   %10.1f\n",
-                chain_index + 1, name[0], abs->total, abs->side_chain,
+        fprintf(output, "CHAIN%3d %3s %10.1f   %10.1f   %10.1f   %10.1f   %10.1f\n",
+                chain_index + 1, name, abs->total, abs->side_chain,
                 abs->main_chain, abs->apolar, abs->polar);
 
         ++chain_index;
@@ -162,7 +162,7 @@ int freesasa_write_rsa(FILE *output,
 
     abs = freesasa_node_area(structure_node);
     fprintf(output, "END  Absolute sums over all chains\n");
-    fprintf(output, "TOTAL      %10.1f   %10.1f   %10.1f   %10.1f   %10.1f\n",
+    fprintf(output, "TOTAL        %10.1f   %10.1f   %10.1f   %10.1f   %10.1f\n",
             abs->total, abs->side_chain, abs->main_chain, abs->apolar, abs->polar);
 
     fflush(output);

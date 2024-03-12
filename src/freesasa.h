@@ -337,8 +337,34 @@ struct freesasa_cif_atom {
     const double Cartn_z;
 };
 
+/**
+   \private
+   Struct to store data about a mmCIF atom site.
+
+   With `auth_sym_id` as string (long chain label/LCL)
+
+   This is an intermediate type added in the process of migrating to long chain labels.
+   In the next major release `freesasa_cif_atom` will be changed to this form.
+
+   @ingroup structure
+ */
+struct freesasa_cif_atom_lcl {
+    const char *group_PDB;
+    const char *auth_asym_id;
+    const char *auth_seq_id;
+    const char *pdbx_PDB_ins_code;
+    const char *auth_comp_id;
+    const char *auth_atom_id;
+    const char *label_alt_id;
+    const char *type_symbol;
+    const double Cartn_x;
+    const double Cartn_y;
+    const double Cartn_z;
+};
+
 #ifndef __cplusplus
 typedef struct freesasa_cif_atom freesasa_cif_atom;
+typedef struct freesasa_cif_atom_lcl freesasa_cif_atom_lcl;
 #endif
 
 /**
@@ -914,6 +940,30 @@ int freesasa_structure_add_cif_atom(freesasa_structure *structure,
                                     freesasa_cif_atom *atom,
                                     const freesasa_classifier *classifier,
                                     int options);
+
+/**
+    \private
+    Add atoms from a mmCIF file to a structure using strings for chain labels (LCL)
+
+    This is an intermediate function added in the process of migrating to long chain labels.
+    It is not meant to be part of the public API for now.
+
+    @param structure The structure to add to.
+    @param atom An atom site from a mmCIF file with long chain labels
+    @param classifier A ::freesasa_classifier to determine radius of atom and to
+      decide if to keep atom or not (see options).
+    @param options Structure options as in freesasa_structure_add_atom_wopt()
+
+    @return ::FREESASA_SUCCESS on normal execution. ::FREESASA_FAIL if
+       if memory allocation fails or if halting at unknown
+       atom. ::FREESASA_WARN if skipping atom.
+
+    @ingroup structure
+ */
+int freesasa_structure_add_cif_atom_lcl(freesasa_structure *structure,
+                                        freesasa_cif_atom_lcl *atom,
+                                        const freesasa_classifier *classifier,
+                                        int options);
 /**
     Create new structure consisting of a selection chains from the
     provided structure.
@@ -951,6 +1001,28 @@ freesasa_structure_get_chains(const freesasa_structure *structure,
  */
 const char *
 freesasa_structure_chain_labels(const freesasa_structure *structure);
+
+/**
+    Get number of chains in structure
+
+    @param structure The structure.
+    @return number of chains
+
+    @ingroup structure
+ */
+int freesasa_structure_number_chains(const freesasa_structure *structure);
+
+/**
+    Get label of given chain (auth_asym_id)
+
+    @param structure The structure.
+    @param index Index of chain
+    @return chain-label
+
+    @ingroup structure
+ */
+const char *
+freesasa_structure_chain_label(const freesasa_structure *structure, int index);
 
 /**
     Get number of atoms.
@@ -1084,6 +1156,25 @@ char freesasa_structure_atom_chain(const freesasa_structure *structure,
                                    int i);
 
 /**
+    \private
+    Get long form chain label.
+
+    Asserts that index i is within bounds.
+
+    This is an intermediate function added in the process of migrating to long chain labels.
+    It is not meant to be part of the public API for now.
+
+    @param structure The structure.
+    @param i Atom index.
+    @return Chain label (`'A'`, `'B'`, etc.)
+
+    @ingroup structure
+ */
+const char *
+freesasa_structure_atom_chain_lcl(const freesasa_structure *structure,
+                                  int i);
+
+/**
     Get atom symbol.
 
     If the structure was initialized from a PDB file the symbol field
@@ -1169,6 +1260,22 @@ char freesasa_structure_residue_chain(const freesasa_structure *structure,
                                       int r_i);
 
 /**
+    \private
+    Get long form chain residue belongs to.
+
+    This is an intermediate function added in the process of migrating to long chain labels.
+    It is not meant to be part of the public API for now.
+
+    @param structure The structure.
+    @param r_i Residue index (in whole structure).
+    @return Chain label.
+
+    @ingroup structure
+ */
+const char *
+freesasa_structure_residue_chain_lcl(const freesasa_structure *structure,
+                                     int r_i);
+/**
     Get model number for structure.
 
     Useful if structure was generated with freesasa_structure_array().
@@ -1228,6 +1335,28 @@ int freesasa_structure_chain_atoms(const freesasa_structure *structure,
                                    int *last);
 
 /**
+    \private
+    Get indices of first and last atoms of a chain
+
+    Uses long form chain labels.
+
+    This is an intermediate function added in the process of migrating to long chain labels.
+    It is not meant to be part of the public API for now.
+
+    @param structure A structure.
+    @param chain The chain label.
+    @param first First atom of `chain` will be stored here.
+    @param last Last atom of `chain` will be stored here.
+    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if `chain` not found.
+
+    @ingroup structure
+ */
+int freesasa_structure_chain_atoms_lcl(const freesasa_structure *structure,
+                                       const char *chain,
+                                       int *first,
+                                       int *last);
+
+/**
     Get indices of first and last residues of a chain
 
     @param structure A structure.
@@ -1242,6 +1371,28 @@ int freesasa_structure_chain_residues(const freesasa_structure *structure,
                                       char chain,
                                       int *first,
                                       int *last);
+
+/**
+    \private
+    Get indices of first and last residues of a chain
+
+    Uses long form chain labels.
+
+    This is an intermediate function added in the process of migrating to long chain labels.
+    It is not meant to be part of the public API for now.
+
+    @param structure A structure.
+    @param chain The chain label.
+    @param first First residue of `chain` will be stored here.
+    @param last Last residue of `chain` will be stored here.
+    @return ::FREESASA_SUCCESS. ::FREESASA_FAIL if `chain` not found.
+
+    @ingroup structure
+ */
+int freesasa_structure_chain_residues_lcl(const freesasa_structure *structure,
+                                          const char *chain,
+                                          int *first,
+                                          int *last);
 
 /**
     Name of classifier used to generate structure.
