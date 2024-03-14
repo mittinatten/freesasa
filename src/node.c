@@ -14,7 +14,7 @@ struct atom_properties {
     int is_bb;
     double radius;
     char *pdb_line;
-    char chain;
+    char *chain;
     char *res_number;
     char *res_name;
 };
@@ -231,7 +231,7 @@ node_atom(const freesasa_structure *structure,
     atom->properties.atom.is_polar = freesasa_structure_atom_class(structure, atom_index) == FREESASA_ATOM_POLAR;
     atom->properties.atom.is_bb = freesasa_atom_is_backbone(atom->name);
     atom->properties.atom.radius = freesasa_structure_atom_radius(structure, atom_index);
-    atom->properties.atom.chain = freesasa_structure_atom_chain(structure, atom_index);
+    atom->properties.atom.chain = freesasa_structure_atom_chain_lcl(structure, atom_index);
 
     atom->properties.atom.res_number = strdup(freesasa_structure_atom_res_number(structure, atom_index));
     if (atom->properties.atom.res_number == NULL) {
@@ -590,7 +590,7 @@ freesasa_node_atom_residue_name(const freesasa_node *node)
     return node->properties.atom.res_name;
 }
 
-char freesasa_node_atom_chain(const freesasa_node *node)
+char* freesasa_node_atom_chain(const freesasa_node *node)
 {
     assert(node->type == FREESASA_NODE_ATOM);
     return node->properties.atom.chain;
