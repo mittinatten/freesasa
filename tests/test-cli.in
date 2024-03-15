@@ -137,27 +137,27 @@ echo "== Testing S&R =="
 assert_pass "$cli -S <  $datadir/1ubq.pdb > $dump"
 echo
 #check that output message has required components, also verifies that basics of computation still work
-assert_pass "grep 'source\s\s*: stdin' $dump"
+assert_pass "grep 'source\s\s*: stdin' $dump -q"
 $cli -S  $datadir/1ubq.pdb > $dump
-assert_pass "grep 'source\s\s*: $datadir/1ubq.pdb' $dump"
-assert_pass "grep 'atoms\s\s*: 602' $dump"
-assert_pass "grep 'probe-radius\s\s*: [[:digit:]]' $dump"
-assert_pass "grep 'threads\s\s*: [[:digit:]]' $dump"
-assert_pass "grep 'testpoints\s\s*: [[:digit:]]' $dump"
-assert_pass "grep 'algorithm\s\s*: \w' $dump"
-assert_pass "grep 'Total\s\s*:\s\s*4834.72' $dump"
-assert_pass "grep 'Polar\s\s*:\s\s*2515.82' $dump"
-assert_pass "grep 'Apolar\s\s*:\s\s*2318.90' $dump"
+assert_pass "grep 'source\s\s*: $datadir/1ubq.pdb' $dump -q"
+assert_pass "grep 'atoms\s\s*: 602' $dump -q"
+assert_pass "grep 'probe-radius\s\s*: [[:digit:]]' $dump -q"
+assert_pass "grep 'threads\s\s*: [[:digit:]]' $dump -q"
+assert_pass "grep 'testpoints\s\s*: [[:digit:]]' $dump -q"
+assert_pass "grep 'algorithm\s\s*: \w' $dump -q"
+assert_pass "grep 'Total\s\s*:\s\s*4834.72' $dump -q"
+assert_pass "grep 'Polar\s\s*:\s\s*2515.82' $dump -q"
+assert_pass "grep 'Apolar\s\s*:\s\s*2318.90' $dump -q"
 # The above formulation of log output gives freedom in ordering and
 # whitespace, and also version. Allows non-essential details to change
 # without breaking the test. Will not be performed for variant
 # parameter values, those should be covered by tests.
 assert_pass "$cli -S -Y $datadir/1d3z.pdb -w > $dump"
-assert_pass "grep 'atoms\s\s*: 1231' $dump"
-assert_pass "grep 'Total\s\s*:\s\s*5035.61' $dump"
+assert_pass "grep 'atoms\s\s*: 1231' $dump -q"
+assert_pass "grep 'Total\s\s*:\s\s*5035.61' $dump -q"
 assert_pass "$cli -S -H -w $datadir/1ubq.pdb > $dump" # suppress warnings here
-assert_pass "grep 'atoms\s\s*: 660' $dump"
-assert_pass "grep 'Total\s\s*:\s\s*5656.65' $dump"
+assert_pass "grep 'atoms\s\s*: 660' $dump -q"
+assert_pass "grep 'Total\s\s*:\s\s*5656.65' $dump -q"
 assert_pass "$cli -S -n 50 < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli -S -n 0 < $datadir/1ubq.pdb > $dump"
 assert_fail "$cli -S -n \"-1\" < $datadir/1ubq.pdb > $dump"
@@ -217,9 +217,9 @@ assert_pass "diff tmp/bfactor.pdb $datadir/1ubq.B.pdb"
 echo
 echo "== Testing option --unknown =="
 assert_pass "$cli --unknown=guess -Y -w -n 2  $datadir/1d3z.pdb > $dump"
-assert_pass "grep 1231 $dump"
+assert_pass "grep 1231 $dump -q"
 assert_pass "$cli --unknown=skip -Y -w -n 2 $datadir/1d3z.pdb > $dump"
-assert_pass "grep 602 $dump"
+assert_pass "grep 602 $dump -q"
 assert_fail "$cli --unknown=halt -Y -w -n 2 $datadir/1d3z.pdb > $dump"
 # misspelling should fail
 assert_fail "$cli --unknown=haltt -Y -w -n 2 $datadir/1d3z.pdb > $dump"
@@ -240,7 +240,9 @@ assert_pass "$cli --cif --format=cif --separate-chains $datadir/1ubq.cif > $dump
 assert_pass "$cli --cif --format=cif --separate-chains --separate-models $datadir/1ubq.cif > $dump"
 assert_fail "$cli --cif --format=pdb $datadir/1ubq.cif > $dump"
 assert_fail "$cli --format=cif $datadir/1ubq.pdb > $dump"
-assert_pass $cli --cif $datadir/7cma-assembly1.cif | grep 'CHAIN C-2 :    8980.86'
+assert_pass "$cli --cif $datadir/7cma-assembly1.cif | grep -E 'CHAIN C-2 :\s+8980.86' -q"
+assert_pass "$cli --cif $datadir/7cma-assembly1.cif --format=cif | grep 'ATOM 2564 C CD1 . ILE B-2' -q"
+
 
 echo
 echo "== Testing --separate-chains and --separate-models output are equal between cif and pdb"
