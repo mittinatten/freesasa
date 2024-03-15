@@ -1670,7 +1670,7 @@ freesasa_node_atom_residue_name(const freesasa_node *node);
 
     @ingroup node
  */
-char freesasa_node_atom_chain(const freesasa_node *node);
+char* freesasa_node_atom_chain(const freesasa_node *node);
 
 /**
     Residue number.
