@@ -114,6 +114,7 @@ node_free(freesasa_node *node)
             free(node->properties.atom.pdb_line);
             free(node->properties.atom.res_name);
             free(node->properties.atom.res_number);
+            free(node->properties.atom.chain);
             break;
         case FREESASA_NODE_RESIDUE:
             free(node->properties.residue.reference);
@@ -231,7 +232,12 @@ node_atom(const freesasa_structure *structure,
     atom->properties.atom.is_polar = freesasa_structure_atom_class(structure, atom_index) == FREESASA_ATOM_POLAR;
     atom->properties.atom.is_bb = freesasa_atom_is_backbone(atom->name);
     atom->properties.atom.radius = freesasa_structure_atom_radius(structure, atom_index);
-    atom->properties.atom.chain = freesasa_structure_atom_chain_lcl(structure, atom_index);
+
+    atom->properties.atom.chain = strdup(freesasa_structure_atom_chain_lcl(structure, atom_index));
+    if (atom->properties.atom.chain == NULL) {
+        mem_fail();
+        goto cleanup;
+    }
 
     atom->properties.atom.res_number = strdup(freesasa_structure_atom_res_number(structure, atom_index));
     if (atom->properties.atom.res_number == NULL) {
@@ -590,7 +596,7 @@ freesasa_node_atom_residue_name(const freesasa_node *node)
     return node->properties.atom.res_name;
 }
 
-char* freesasa_node_atom_chain(const freesasa_node *node)
+char *freesasa_node_atom_chain(const freesasa_node *node)
 {
     assert(node->type == FREESASA_NODE_ATOM);
     return node->properties.atom.chain;
