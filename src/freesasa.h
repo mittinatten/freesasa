@@ -367,13 +367,13 @@ typedef struct freesasa_cif_atom freesasa_cif_atom;
 typedef struct freesasa_cif_atom_lcl freesasa_cif_atom_lcl;
 #endif
 
-struct freesasa_chain_list {
+struct freesasa_chain_group {
     const char **chains;
     size_t n;
 };
 
 #ifndef __cplusplus
-typedef struct freesasa_chain_list freesasa_chain_list;
+typedef struct freesasa_chain_group freesasa_chain_group;
 #endif
 
 /**
@@ -1025,7 +1025,7 @@ freesasa_structure_get_chains(const freesasa_structure *structure,
  */
 freesasa_structure *
 freesasa_structure_get_chains_lcl(const freesasa_structure *structure,
-                                  const freesasa_chain_list *chains,
+                                  const freesasa_chain_group *chains,
                                   const freesasa_classifier *classifier,
                                   int options);
 

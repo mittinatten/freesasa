@@ -1009,7 +1009,7 @@ cleanup:
     return NULL;
 }
 
-static int chain_list_has_chain(const freesasa_chain_list *chains, chain_label_t chain)
+static int chain_group_has_chain(const freesasa_chain_group *chains, chain_label_t chain)
 {
     assert(chains);
 
@@ -1024,7 +1024,7 @@ static int chain_list_has_chain(const freesasa_chain_list *chains, chain_label_t
 
 freesasa_structure *
 freesasa_structure_get_chains_lcl(const freesasa_structure *structure,
-                                  const freesasa_chain_list *chains,
+                                  const freesasa_chain_group *chains,
                                   const freesasa_classifier *classifier,
                                   int options)
 {
@@ -1050,7 +1050,7 @@ freesasa_structure_get_chains_lcl(const freesasa_structure *structure,
     for (i = 0; i < structure->atoms.n; ++i) {
         ai = structure->atoms.atom[i];
         c = ai->chain_label;
-        if (chain_list_has_chain(chains, c)) {
+        if (chain_group_has_chain(chains, c)) {
             v = freesasa_coord_i(structure->xyz, i);
             res = structure_add_atom_wopt_impl(new_s, ai->atom_name,
                                                ai->res_name, ai->res_number, ai->symbol,

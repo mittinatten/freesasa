@@ -94,17 +94,37 @@ struct cli_state {
     int static_classifier;
     int cif;
     int no_rel;
-    /* chain groups */
-    int n_chain_groups;
-    char **chain_groups;
+    std::vector<freesasa_chain_group> chain_groups;
+
     /* selection commands */
     int n_select;
     char **select_cmd;
+
     /* output settings */
     int output_format, output_depth;
+
     /* Files */
     char *output_filename;
     FILE *input, *output, *errlog;
+
+    cli_state()
+    {
+        parameters = freesasa_default_parameters;
+        classifier_from_file = NULL;
+        classifier = NULL;
+        structure_options = 0;
+        static_classifier = 0;
+        no_rel = 0;
+        chain_groups = std::vector<freesasa_chain_group>();
+        n_select = 0;
+        select_cmd = 0;
+        output_format = 0;
+        output_depth = FREESASA_OUTPUT_CHAIN;
+        output_filename = NULL;
+        output = NULL;
+        errlog = NULL;
+        cif = 0;
+    }
 };
 
 struct analysis_results {
@@ -113,28 +133,6 @@ struct analysis_results {
     int n_structures;
 };
 
-/* Defaults */
-static void
-init_state(struct cli_state *state)
-{
-    state->parameters = freesasa_default_parameters;
-    state->classifier_from_file = NULL;
-    state->classifier = NULL;
-    state->structure_options = 0;
-    state->static_classifier = 0;
-    state->no_rel = 0;
-    state->n_chain_groups = 0;
-    state->chain_groups = NULL;
-    state->n_select = 0;
-    state->select_cmd = 0;
-    state->output_format = 0;
-    state->output_depth = FREESASA_OUTPUT_CHAIN;
-    state->output_filename = NULL;
-    state->output = NULL;
-    state->errlog = NULL;
-    state->cif = 0;
-}
-
 static void
 release_state(struct cli_state *state)
 {
@@ -142,11 +140,10 @@ release_state(struct cli_state *state)
 
     if (state->classifier_from_file)
         freesasa_classifier_free(state->classifier_from_file);
-    if (state->chain_groups) {
-        for (i = 0; i < state->n_chain_groups; ++i) {
-            free(state->chain_groups[i]);
-        }
+    for (i = 0; i < state->chain_groups.size(); ++i) {
+        free(state->chain_groups[i].chains);
     }
+
     if (state->select_cmd) {
         for (i = 0; i < state->n_select; ++i) {
             free(state->select_cmd[i]);
@@ -291,19 +288,19 @@ get_structures(std::FILE *input,
     }
 
     /* get chain-groups (if requested) */
-    if (state->n_chain_groups > 0) {
+    if (state->chain_groups.size() > 0) {
         n2 = n;
-        for (int i = 0; i < state->n_chain_groups; ++i) {
+        for (int i = 0; i < state->chain_groups.size(); ++i) {
             for (int j = 0; j < n; ++j) {
                 // TODO make this function pdb and cif compatible.
-                tmp = freesasa_structure_get_chains(structures[j], state->chain_groups[i],
-                                                    state->classifier, state->structure_options);
+                tmp = freesasa_structure_get_chains_lcl(structures[j], &state->chain_groups[i],
+                                                        state->classifier, state->structure_options);
                 if (tmp != NULL) {
                     ++n2;
                     structures.reserve(n2);
                     structures.push_back(tmp);
                 } else {
-                    abort_msg("at least one of chain(s) '%s' not found", state->chain_groups[i]);
+                    abort_msg("at least one of the requested chains not found in structure");
                 }
             }
         }
@@ -404,12 +401,13 @@ state_add_chain_groups(const char *cmd, struct cli_state *state)
         str = strdup(cmd);
         token = strtok(str, "+");
         while (token) {
-            ++state->n_chain_groups;
-            state->chain_groups = (char **)realloc(state->chain_groups, sizeof(char *) * state->n_chain_groups);
-            if (state->chain_groups == NULL) {
-                abort_msg("out of memory");
+            size_t n = strlen(token);
+            const char **chains = (const char **)malloc(n * sizeof(char *));
+            for (size_t i = 0; i < n; ++i) {
+                const char chain[2] = {token[i], '\0'};
+                chains[i] = strdup(chain);
             }
-            state->chain_groups[state->n_chain_groups - 1] = strdup(token);
+            state->chain_groups.push_back({.n = n, .chains = chains});
             token = strtok(0, "+");
         }
         free(str);
@@ -730,8 +728,6 @@ int main(int argc,
 
     freesasa_node *tree = freesasa_tree_new(), *tmp;
     if (tree == NULL) abort_msg("error initializing calculation");
-
-    init_state(&state);
 
     optind = parse_arg(argc, argv, &state);
     std::vector<freesasa_structure *> structures;

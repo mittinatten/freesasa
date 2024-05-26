@@ -490,17 +490,17 @@ START_TEST(test_get_chains_lcl)
     freesasa_structure *s = freesasa_structure_from_pdb(pdb, NULL, 0);
     int first, last;
 
-    freesasa_chain_list selection = {.chains = NULL, .n = 0};
+    freesasa_chain_group selection = {.chains = NULL, .n = 0};
     freesasa_structure *s2 = freesasa_structure_get_chains_lcl(s, &selection, NULL, 0);
     ck_assert(s2 == NULL);
 
     const char *chains2[] = {"X"};
-    freesasa_chain_list selection2 = {.chains = chains2, .n = 1};
+    freesasa_chain_group selection2 = {.chains = chains2, .n = 1};
     s2 = freesasa_structure_get_chains_lcl(s, &selection2, NULL, 0);
     ck_assert(s2 == NULL);
 
     const char *chains3[] = {"A"};
-    freesasa_chain_list selection3 = {.chains = chains3, .n = 1};
+    freesasa_chain_group selection3 = {.chains = chains3, .n = 1};
     s2 = freesasa_structure_get_chains_lcl(s, &selection3, NULL, 0);
     ck_assert(freesasa_structure_n(s2) == 129);
     ck_assert(freesasa_structure_atom_chain(s2, 0) == 'A');
@@ -508,7 +508,7 @@ START_TEST(test_get_chains_lcl)
     freesasa_structure_free(s2);
 
     const char *chains4[] = {"D"};
-    freesasa_chain_list selection4 = {.chains = chains4, .n = 1};
+    freesasa_chain_group selection4 = {.chains = chains4, .n = 1};
     s2 = freesasa_structure_get_chains_lcl(s, &selection4, NULL, 0);
     ck_assert(freesasa_structure_n(s2) == 129);
     ck_assert(freesasa_structure_atom_chain(s2, 0) == 'D');
@@ -516,7 +516,7 @@ START_TEST(test_get_chains_lcl)
     freesasa_structure_free(s2);
 
     const char *chains5[] = {"A", "C"};
-    freesasa_chain_list selection5 = {.chains = chains5, .n = 2};
+    freesasa_chain_group selection5 = {.chains = chains5, .n = 2};
     s2 = freesasa_structure_get_chains_lcl(s, &selection5, NULL, 0);
     ck_assert(freesasa_structure_n(s2) == 2 * 129);
     ck_assert(freesasa_structure_atom_chain(s2, 0) == 'A');
@@ -525,12 +525,12 @@ START_TEST(test_get_chains_lcl)
     freesasa_structure_free(s2);
 
     const char *chains6[] = {"E"};
-    freesasa_chain_list selection6 = {.chains = chains6, .n = 1};
+    freesasa_chain_group selection6 = {.chains = chains6, .n = 1};
     s2 = freesasa_structure_get_chains_lcl(s, &selection6, NULL, 0);
     ck_assert_ptr_eq(s2, NULL);
 
     const char *chains7[] = {"A", "E"};
-    freesasa_chain_list selection7 = {.chains = chains7, .n = 2};
+    freesasa_chain_group selection7 = {.chains = chains7, .n = 2};
     s2 = freesasa_structure_get_chains_lcl(s, &selection7, NULL, 0);
     ck_assert_ptr_eq(s2, NULL);
 
