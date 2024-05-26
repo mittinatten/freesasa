@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <iostream>
+#include <regex>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -63,6 +64,7 @@ static struct option long_options[] = {
     {"separate-models", no_argument, 0, 'M'},
     {"join-models", no_argument, 0, 'm'},
     {"chain-groups", required_argument, 0, 'g'},
+    {"long-chain-groups", required_argument, 0, 'G'},
     {"error-file", required_argument, 0, 'e'},
     {"output", required_argument, 0, 'o'},
     {"format", required_argument, 0, 'f'},
@@ -82,7 +84,7 @@ static struct option long_options[] = {
 
 #define NOARG_OPTIONS "hvwLSHYOCMm"
 #define NOARG_DEPRECATED "BrRl"
-#define ARG_OPTIONS "c:n:t:p:g:e:o:f:"
+#define ARG_OPTIONS "c:n:t:p:g:G:e:o:f:"
 const char *options_string = ":" NOARG_OPTIONS NOARG_DEPRECATED ARG_OPTIONS;
 
 /* State of app (most settings are stored here) */
@@ -375,6 +377,14 @@ fopen_werr(const char *filename,
     return f;
 }
 
+static std::vector<std::string> split(const std::string str, const std::string regex_str)
+{
+    std::regex regexz(regex_str);
+    std::vector<std::string> list(std::sregex_token_iterator(str.begin(), str.end(), regexz, -1),
+                                  std::sregex_token_iterator());
+    return list;
+}
+
 static void
 state_add_chain_groups(const char *cmd, struct cli_state *state)
 {
@@ -398,21 +408,36 @@ state_add_chain_groups(const char *cmd, struct cli_state *state)
 
     /* extract chain groups */
     if (err == 0) {
-        str = strdup(cmd);
-        token = strtok(str, "+");
-        while (token) {
-            size_t n = strlen(token);
+        auto groups = split(cmd, "\\+");
+        for (auto &group : groups) {
+            size_t n = group.size();
             const char **chains = (const char **)malloc(n * sizeof(char *));
             for (size_t i = 0; i < n; ++i) {
-                const char chain[2] = {token[i], '\0'};
+                const char chain[2] = {group[i], '\0'};
                 chains[i] = strdup(chain);
             }
             state->chain_groups.push_back({.n = n, .chains = chains});
-            token = strtok(0, "+");
         }
-        free(str);
     } else {
         abort_msg("aborting");
+    }
+}
+
+static void
+state_add_long_chain_groups(const char *cmd, struct cli_state *state)
+{
+    auto groups = split(cmd, "\\+");
+    for (auto &group : groups) {
+        auto chains = split(group, "\\/");
+        size_t n = chains.size();
+        const char **c_chains = (const char **)malloc(n * sizeof(char *));
+        for (size_t i = 0; i < n; ++i) {
+            if (chains[i].size() > 3) {
+                abort_msg("Chain labels can not have more than 3 characters");
+            }
+            c_chains[i] = strdup(chains[i].c_str());
+        }
+        state->chain_groups.push_back({.n = n, .chains = c_chains});
     }
 }
 
@@ -645,6 +670,9 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             break;
         case 'g':
             state_add_chain_groups(optarg, state);
+            break;
+        case 'G':
+            state_add_long_chain_groups(optarg, state);
             break;
         case 't':
             if (USE_THREADS) {
