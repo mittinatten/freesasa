@@ -1,9 +1,9 @@
+#include "../src/pdb.h"
 #include "tools.h"
 #include <check.h>
 #include <freesasa.h>
 #include <freesasa_internal.h>
 #include <math.h>
-#include <pdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -484,6 +484,60 @@ START_TEST(test_get_chains)
 }
 END_TEST
 
+START_TEST(test_get_chains_lcl)
+{
+    FILE *pdb = fopen(DATADIR "2jo4.pdb", "r");
+    freesasa_structure *s = freesasa_structure_from_pdb(pdb, NULL, 0);
+    int first, last;
+
+    freesasa_chain_list selection = {.chains = NULL, .n = 0};
+    freesasa_structure *s2 = freesasa_structure_get_chains_lcl(s, &selection, NULL, 0);
+    ck_assert(s2 == NULL);
+
+    const char *chains2[] = {"X"};
+    freesasa_chain_list selection2 = {.chains = chains2, .n = 1};
+    s2 = freesasa_structure_get_chains_lcl(s, &selection2, NULL, 0);
+    ck_assert(s2 == NULL);
+
+    const char *chains3[] = {"A"};
+    freesasa_chain_list selection3 = {.chains = chains3, .n = 1};
+    s2 = freesasa_structure_get_chains_lcl(s, &selection3, NULL, 0);
+    ck_assert(freesasa_structure_n(s2) == 129);
+    ck_assert(freesasa_structure_atom_chain(s2, 0) == 'A');
+    ck_assert_str_eq(freesasa_structure_chain_labels(s2), "A");
+    freesasa_structure_free(s2);
+
+    const char *chains4[] = {"D"};
+    freesasa_chain_list selection4 = {.chains = chains4, .n = 1};
+    s2 = freesasa_structure_get_chains_lcl(s, &selection4, NULL, 0);
+    ck_assert(freesasa_structure_n(s2) == 129);
+    ck_assert(freesasa_structure_atom_chain(s2, 0) == 'D');
+    ck_assert_str_eq(freesasa_structure_chain_labels(s2), "D");
+    freesasa_structure_free(s2);
+
+    const char *chains5[] = {"A", "C"};
+    freesasa_chain_list selection5 = {.chains = chains5, .n = 2};
+    s2 = freesasa_structure_get_chains_lcl(s, &selection5, NULL, 0);
+    ck_assert(freesasa_structure_n(s2) == 2 * 129);
+    ck_assert(freesasa_structure_atom_chain(s2, 0) == 'A');
+    ck_assert(freesasa_structure_atom_chain(s2, 129) == 'C');
+    ck_assert_str_eq(freesasa_structure_chain_labels(s2), "AC");
+    freesasa_structure_free(s2);
+
+    const char *chains6[] = {"E"};
+    freesasa_chain_list selection6 = {.chains = chains6, .n = 1};
+    s2 = freesasa_structure_get_chains_lcl(s, &selection6, NULL, 0);
+    ck_assert_ptr_eq(s2, NULL);
+
+    const char *chains7[] = {"A", "E"};
+    freesasa_chain_list selection7 = {.chains = chains7, .n = 2};
+    s2 = freesasa_structure_get_chains_lcl(s, &selection7, NULL, 0);
+    ck_assert_ptr_eq(s2, NULL);
+
+    freesasa_structure_free(s);
+}
+END_TEST
+
 START_TEST(test_occupancy)
 {
     FILE *pdb = fopen(DATADIR "1ubq.occ.pdb", "r");
@@ -555,6 +609,7 @@ Suite *structure_suite(void)
     tcase_add_test(tc_pdb, test_hydrogen);
     tcase_add_test(tc_pdb, test_hetatm);
     tcase_add_test(tc_pdb, test_get_chains);
+    tcase_add_test(tc_pdb, test_get_chains_lcl);
     tcase_add_test(tc_pdb, test_occupancy);
 
     TCase *tc_array = tcase_create("Array");

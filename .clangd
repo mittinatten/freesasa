@@ -1,0 +1,5 @@
+CompileFlags:
+    Add:
+        - "--include=./src"
+        - "--include=./third-party"
+        - "-DDATADIR=./tests/data/"

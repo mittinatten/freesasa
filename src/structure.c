@@ -1009,6 +1009,77 @@ cleanup:
     return NULL;
 }
 
+static int chain_list_has_chain(const freesasa_chain_list *chains, chain_label_t chain)
+{
+    assert(chains);
+
+    for (size_t i = 0; i < chains->n; ++i) {
+        if (strncmp(chains->chains[i], chain, sizeof(chain_label_t)) == 0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+freesasa_structure *
+freesasa_structure_get_chains_lcl(const freesasa_structure *structure,
+                                  const freesasa_chain_list *chains,
+                                  const freesasa_classifier *classifier,
+                                  int options)
+{
+    freesasa_structure *new_s;
+    struct atom *ai;
+    int i, res;
+    char *c;
+    const double *v;
+
+    assert(structure);
+    assert(chains);
+    if (chains->n == 0) return NULL;
+
+    new_s = freesasa_structure_new();
+
+    if (!new_s) {
+        mem_fail();
+        return NULL;
+    }
+
+    new_s->model = structure->model;
+
+    for (i = 0; i < structure->atoms.n; ++i) {
+        ai = structure->atoms.atom[i];
+        c = ai->chain_label;
+        if (chain_list_has_chain(chains, c)) {
+            v = freesasa_coord_i(structure->xyz, i);
+            res = structure_add_atom_wopt_impl(new_s, ai->atom_name,
+                                               ai->res_name, ai->res_number, ai->symbol,
+                                               c, v[0], v[1], v[2], classifier, options);
+            if (res == FREESASA_FAIL) {
+                fail_msg("");
+                goto cleanup;
+            }
+        }
+    }
+
+    /* the following two tests could have been done by comparing the
+       chain-strings before the loop, but this logic is simpler. */
+    if (new_s->atoms.n == 0) {
+        goto cleanup;
+    }
+    if (new_s->chains.n != chains->n) {
+        fail_msg("structure has chains '%s', but '%s' requested",
+                 structure->chains.labels, chains);
+        goto cleanup;
+    }
+
+    return new_s;
+
+cleanup:
+    freesasa_structure_free(new_s);
+    return NULL;
+}
+
 const char *
 freesasa_structure_chain_labels(const freesasa_structure *structure)
 {

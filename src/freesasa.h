@@ -367,6 +367,15 @@ typedef struct freesasa_cif_atom freesasa_cif_atom;
 typedef struct freesasa_cif_atom_lcl freesasa_cif_atom_lcl;
 #endif
 
+struct freesasa_chain_list {
+    const char **chains;
+    size_t n;
+};
+
+#ifndef __cplusplus
+typedef struct freesasa_chain_list freesasa_chain_list;
+#endif
+
 /**
    @brief Result node
 
@@ -990,6 +999,35 @@ freesasa_structure_get_chains(const freesasa_structure *structure,
                               const char *chains,
                               const freesasa_classifier *classifier,
                               int options);
+
+/**
+    Create new structure consisting of a selection chains from the
+    provided structure.
+
+    This is an intermediate function added in the process of migrating to long chain labels.
+    It is not meant to be part of the public API for now.
+
+    Simply looks for chain labels that match the provided list.
+
+    Return value is dynamically allocated, should be freed with
+    freesasa_structure_free().
+
+    @param structure Input structure.
+    @param chains List of chains to include.
+    @param classifier A classifier to use to build the new structure
+    @param options Structure options as in freesasa_structure_add_atom_wopt()
+
+    @return A new structure consisting only of the specified
+    chains. Returns `NULL` if one or more of the requested chains don't
+    match any in the input structure or if memory allocation fails.
+
+    @ingroup structure
+ */
+freesasa_structure *
+freesasa_structure_get_chains_lcl(const freesasa_structure *structure,
+                                  const freesasa_chain_list *chains,
+                                  const freesasa_classifier *classifier,
+                                  int options);
 
 /**
     Get string listing all chains in structure.
@@ -1670,7 +1708,7 @@ freesasa_node_atom_residue_name(const freesasa_node *node);
 
     @ingroup node
  */
-char* freesasa_node_atom_chain(const freesasa_node *node);
+char *freesasa_node_atom_chain(const freesasa_node *node);
 
 /**
     Residue number.
