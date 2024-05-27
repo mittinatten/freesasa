@@ -416,7 +416,7 @@ state_add_chain_groups(const char *cmd, struct cli_state *state)
                 const char chain[2] = {group[i], '\0'};
                 chains[i] = strdup(chain);
             }
-            state->chain_groups.push_back({.n = n, .chains = chains});
+            state->chain_groups.push_back({.chains = chains, .n = n});
         }
     } else {
         abort_msg("aborting");
@@ -437,7 +437,7 @@ state_add_long_chain_groups(const char *cmd, struct cli_state *state)
             }
             c_chains[i] = strdup(chains[i].c_str());
         }
-        state->chain_groups.push_back({.n = n, .chains = c_chains});
+        state->chain_groups.push_back({.chains = c_chains, .n = n});
     }
 }
 
