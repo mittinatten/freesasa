@@ -89,6 +89,25 @@ For developers:
   repository, so no need to do this if you are not going to change
   the parser).
 
+### Installing using package managers
+
+You can install binaries that have already been built using the package managers.
+
+With homebrew on MacOS (amd64, arm64) or Linux (amd64):
+
+    brew install brewsci/bio/freesasa
+
+With conda, mamba or pixi on Linux (amd64, arm64, ppc64le) or MacOS (amd64, arm64):
+
+    # conda
+    conda install -c conda-forge freesasa-c
+
+    # mamba
+    mamba install -c conda-forge freesasa-c
+
+    # pixi
+    pixi add freesasa-c
+
 ## Python module
 
 The Python bindings are available from PyPi and can be installed using
