@@ -34,11 +34,6 @@ information.
 
 ## Building and installing
 
-After cloning the repository, add git submodules
-
-    git submodule init
-    git submodule update
-
 FreeSASA can be compiled and installed using the following
 
     autoreconf -i # only necessary if you're cloning git repo
@@ -136,8 +131,9 @@ explains how the commandline tool can be used.
 
 The library has been tested successfully with several versions of GNU
 C/C++ Compiler and Clang/LLVM. It can be built using only
-standard C and GNU libraries, in addition to
-[Gemmi](https://github.com/project-gemmi/gemmi) (as a git submodule).
+standard C and GNU libraries, in addition to the header files from
+[Gemmi](https://github.com/project-gemmi/gemmi) that are included 
+in the folder `third-party/gemmi/`.
 The standard build depends on
 [json-c](https://github.com/json-c/json-c) and
 [libxml2](http://xmlsoft.org/). These can be disabled by configuring
@@ -206,3 +202,9 @@ FreeSASA can be cited using the following publication
 
 The [DOI numbers from Zenodo](https://zenodo.org/badge/latestdoi/18467/mittinatten/freesasa)
 can be used to cite a specific version of FreeSASA.
+
+## License
+
+FreeSASA is available under the MIT License (see `LICENSE.txt`), except 
+for the bundled third-party Gemmi code, which is under the MPL license 
+(see that sub-directory for details).

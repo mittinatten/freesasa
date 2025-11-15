@@ -1,5 +1,14 @@
-[![CI](https://github.com/project-gemmi/gemmi/workflows/CI/badge.svg)](https://github.com/project-gemmi/gemmi/actions)
-[![Build status](https://ci.appveyor.com/api/projects/status/cv5hu6h6hmxd9k5a?svg=true)](https://ci.appveyor.com/project/wojdyr/gemmi)
+# Notes for FreeSASA
+
+This is a snapshot of GEMMI version 0.5.8 that has been included in FreeSASA.
+Only the header files that are actually used are included here. The reason 0.5.8
+is used, is that it's the newest version that is headers only, and thus can be included
+without a complicated build setup.
+
+Go to the [GEMMI GitHub pages](https://github.com/project-gemmi/gemmi) for
+the full source code and newer versions.
+
+# Original README
 
 GEMMI can help if you work with:
 
