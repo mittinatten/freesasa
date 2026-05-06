@@ -88,9 +88,9 @@ For developers:
 
 You can install binaries that have already been built using the package managers.
 
-With homebrew on MacOS (amd64, arm64) or Linux (amd64):
+With Homebrew on MacOS (amd64, arm64) or Linux (amd64):
 
-    brew install brewsci/bio/freesasa
+    brew install freesasa
 
 With conda, mamba or pixi on Linux (amd64, arm64, ppc64le) or MacOS (amd64, arm64):
 
