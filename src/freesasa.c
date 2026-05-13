@@ -25,10 +25,9 @@ const char *freesasa_string = PACKAGE_STRING;
 const char *freesasa_string = "FreeSASA";
 #endif
 
-/* Allows compilation with different defaults
-   depending on USE_THREADS. but still exposing the value in a header
-   that doesn't depend on USE_THREADS */
-#if USE_THREADS
+/* Allows compilation with different defaults depending on USE_OPENMP,
+   while still exposing the value via the extern declaration in freesasa.h. */
+#if USE_OPENMP
 #define DEF_NUMBER_THREADS 2
 #else
 #define DEF_NUMBER_THREADS 1
@@ -41,6 +40,7 @@ const freesasa_parameters freesasa_default_parameters = {
     FREESASA_DEF_SR_N,
     FREESASA_DEF_LR_N,
     DEF_NUMBER_THREADS};
+
 
 static freesasa_result *
 result_new(int n)
@@ -150,6 +150,63 @@ freesasa_calc_structure(const freesasa_structure *structure,
     return freesasa_calc(freesasa_structure_xyz(structure),
                          freesasa_structure_radius(structure),
                          parameters);
+}
+
+freesasa_result **
+freesasa_calc_structures_parallel(const freesasa_structure **structures,
+                                  const freesasa_parameters *parameters,
+                                  int n)
+{
+    if (n <= 0) {
+        fail_msg("freesasa_calc_structures_parallel: n must be > 0");
+        return NULL;
+    }
+    if (!structures) {
+        fail_msg("freesasa_calc_structures_parallel: structures is NULL");
+        return NULL;
+    }
+    if (parameters == NULL) parameters = &freesasa_default_parameters;
+
+    freesasa_result **results = calloc(n, sizeof(freesasa_result *));
+    if (!results) { mem_fail(); return NULL; }
+
+    /* Each frame uses a single-threaded calculation.
+     * n_threads from the parameters struct drives frame-level parallelism. */
+    int n_parallel = parameters->n_threads > 0 ? parameters->n_threads : 1;
+
+    /* Build single-threaded params for the inner calc */
+    freesasa_parameters frame_params = *parameters;
+    frame_params.n_threads = 1;
+
+    int had_error = 0;
+
+#if USE_OPENMP
+    #pragma omp parallel for schedule(dynamic, 1) num_threads(n_parallel) \
+        default(none) shared(structures, results, frame_params, n, had_error)
+    for (int i = 0; i < n; ++i) {
+        if (had_error) continue; /* don't launch more work after an error */
+        freesasa_result *r = freesasa_calc_structure(structures[i], &frame_params);
+        if (r == NULL) {
+            #pragma omp atomic write
+            had_error = 1;
+        }
+        results[i] = r;
+    }
+#else
+    for (int i = 0; i < n; ++i) {
+        results[i] = freesasa_calc_structure(structures[i], &frame_params);
+        if (results[i] == NULL) { had_error = 1; break; }
+    }
+#endif
+
+    if (had_error) {
+        for (int i = 0; i < n; ++i) freesasa_result_free(results[i]);
+        free(results);
+        fail_msg("freesasa_calc_structures_parallel: one or more frames failed");
+        return NULL;
+    }
+
+    return results;
 }
 
 freesasa_node *

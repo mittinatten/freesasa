@@ -4,6 +4,11 @@
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
+
+#if USE_OPENMP
+#include <omp.h>
+#endif
 
 #include "freesasa_internal.h"
 #include "nb.h"
@@ -253,6 +258,64 @@ max_array(const double *a,
     return max;
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   Thread-local pair buffer for parallel neighbor list construction
+   ───────────────────────────────────────────────────────────────────── */
+
+/** A neighbor pair discovered during cell scanning */
+typedef struct {
+    int i, j;      /** atom indices */
+    double dx, dy; /** signed displacements */
+} nb_pair;
+
+/** Growable buffer of pairs for one thread */
+typedef struct {
+    nb_pair *pairs;
+    int n;
+    int capacity;
+} pair_buffer;
+
+static int
+pair_buffer_init(pair_buffer *pb, int initial_cap)
+{
+    pb->pairs = malloc(sizeof(nb_pair) * initial_cap);
+    if (!pb->pairs) return mem_fail();
+    pb->n = 0;
+    pb->capacity = initial_cap;
+    return FREESASA_SUCCESS;
+}
+
+static void
+pair_buffer_free(pair_buffer *pb)
+{
+    free(pb->pairs);
+    pb->pairs = NULL;
+    pb->n = 0;
+    pb->capacity = 0;
+}
+
+static int
+pair_buffer_add(pair_buffer *pb, int i, int j, double dx, double dy)
+{
+    if (pb->n >= pb->capacity) {
+        int new_cap = pb->capacity * 2;
+        nb_pair *tmp = realloc(pb->pairs, sizeof(nb_pair) * new_cap);
+        if (!tmp) return mem_fail();
+        pb->pairs = tmp;
+        pb->capacity = new_cap;
+    }
+    nb_pair *p = &pb->pairs[pb->n++];
+    p->i = i;
+    p->j = j;
+    p->dx = dx;
+    p->dy = dy;
+    return FREESASA_SUCCESS;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Parallel neighbor list construction
+   ───────────────────────────────────────────────────────────────────── */
+
 /**
     Allocate memory for ::nb_list object. Tries to free everything
     and returns NULL if malloc somewhere along the way.
@@ -279,7 +342,7 @@ freesasa_nb_alloc(int n)
     nb->capacity = NULL;
     nb->xyd = nb->xd = nb->yd = NULL;
 
-    nb->nn = malloc(sizeof(int) * n);
+    nb->nn = calloc(n, sizeof(int));
     nb->nb = malloc(sizeof(int *) * n);
     nb->xyd = malloc(sizeof(double *) * n);
     nb->xd = malloc(sizeof(double *) * n);
@@ -300,22 +363,10 @@ freesasa_nb_alloc(int n)
     }
 
     for (i = 0; i < n; ++i) {
-        nb->nn[i] = 0;
-        nb->capacity[i] = FREESASA_NB_CHUNK;
-        /* again prepare for a potential cleanup */
+        nb->capacity[i] = 0;
+        /* prepare for a potential cleanup */
         nb->nb[i] = NULL;
         nb->xyd[i] = nb->xd[i] = nb->yd[i] = NULL;
-    }
-    for (i = 0; i < n; ++i) {
-        nb->nb[i] = malloc(sizeof(int) * FREESASA_NB_CHUNK);
-        nb->xyd[i] = malloc(sizeof(double) * FREESASA_NB_CHUNK);
-        nb->xd[i] = malloc(sizeof(double) * FREESASA_NB_CHUNK);
-        nb->yd[i] = malloc(sizeof(double) * FREESASA_NB_CHUNK);
-        if (!nb->nb[i] || !nb->xyd[i] || !nb->xd[i] || !nb->yd[i]) {
-            freesasa_nb_free(nb);
-            mem_fail();
-            return NULL;
-        }
     }
     return nb;
 }
@@ -349,148 +400,52 @@ void freesasa_nb_free(nb_list *nb)
 }
 
 /**
-    Increases sizes of arrays when they cross a threshold. Returns
-    FREESASA_FAIL if realloc fails, FREESASA_SUCCESS else
- */
-static int
-chunk_up(nb_list *nb_list,
-         int i)
-{
-    int nni = nb_list->nn[i];
-    int **nbi, *nbi_b, new_cap;
-    double **xydi, **xdi, **ydi, *xydi_b, *xdi_b, *ydi_b;
-
-    if (nni > nb_list->capacity[i]) {
-        nbi = &nb_list->nb[i];
-        nbi_b = *nbi;
-        xydi = &nb_list->xyd[i];
-        xdi = &nb_list->xd[i];
-        ydi = &nb_list->yd[i];
-        xydi_b = *xydi;
-        xdi_b = *xdi;
-        ydi_b = *ydi;
-        new_cap = (nb_list->capacity[i] += FREESASA_NB_CHUNK);
-
-        *nbi = realloc(*nbi, sizeof(int) * new_cap);
-        if (*nbi == NULL) {
-            nb_list->nb[i] = nbi_b;
-            return mem_fail();
-        }
-
-        *xydi = realloc(*xydi, sizeof(double) * new_cap);
-        if (*xydi == NULL) {
-            nb_list->xyd[i] = xydi_b;
-            return mem_fail();
-        }
-
-        *xdi = realloc(*xdi, sizeof(double) * new_cap);
-        if (*xdi == NULL) {
-            nb_list->xd[i] = xdi_b;
-            return mem_fail();
-        }
-
-        *ydi = realloc(*ydi, sizeof(double) * new_cap);
-        if (*ydi == NULL) {
-            nb_list->yd[i] = ydi_b;
-            return mem_fail();
-        }
-    }
-    return FREESASA_SUCCESS;
-}
-
-/**
-    Assumes the coordinates i and j have been determined to be
-    neighbors and adds them both to the provided nb lists,
-    symmetrically.
-
-    Returns FREESASA_FAIL if can't allocate memory. FREESASA_SUCCESS
-    else.
+    Scan cell pairs for a range of cells and collect neighbor pairs
+    into a thread-local buffer. No writes to shared data.
 */
 static int
-nb_add_pair(nb_list *nb_list,
-            int i,
-            int j,
-            double dx,
-            double dy)
-{
-    int **nb;
-    int *nn = nb_list->nn;
-    int nni, nnj;
-    double **xyd;
-    double **xd;
-    double **yd;
-    double d;
-
-    assert(i != j);
-
-    nni = nn[i]++;
-    nnj = nn[j]++;
-
-    if (chunk_up(nb_list, i)) return mem_fail();
-    if (chunk_up(nb_list, j)) return mem_fail();
-
-    nb = nb_list->nb;
-    xyd = nb_list->xyd;
-    xd = nb_list->xd;
-    yd = nb_list->yd;
-
-    nb[i][nni] = j;
-    nb[j][nnj] = i;
-
-    d = sqrt(dx * dx + dy * dy);
-
-    xyd[i][nni] = d;
-    xyd[j][nnj] = d;
-
-    xd[i][nni] = dx;
-    xd[j][nnj] = -dx;
-    yd[i][nni] = dy;
-    yd[j][nnj] = -dy;
-
-    return FREESASA_SUCCESS;
-}
-
-/**
-    Fills the nb list for all contacts between coordinates
-    belonging to the cells ci and cj. Handles the case ci == cj
-    correctly.
-*/
-static int
-nb_calc_cell_pair(nb_list *nb_list,
-                  const coord_t *coord,
-                  const double *radii,
-                  const cell *ci,
-                  const cell *cj)
+nb_scan_cells_range(pair_buffer *pb,
+                    cell_list *c,
+                    const coord_t *coord,
+                    const double *radii,
+                    int cell_start,
+                    int cell_end)
 {
     const double *restrict v = freesasa_coord_all(coord);
-    double ri, rj, xi, yi, zi, xj, yj, zj,
-        dx, dy, dz, cut2;
+    int ic, jc;
+    double ri, rj, xi, yi, zi, xj, yj, zj, dx, dy, dz, cut2;
     int i, j, ia, ja;
+    cell *ci, *cj;
 
-    for (i = 0; i < ci->n_atoms; ++i) {
-        ia = ci->atom[i];
-        ri = radii[ia];
-        xi = v[ia * 3];
-        yi = v[ia * 3 + 1];
-        zi = v[ia * 3 + 2];
-        if (ci == cj)
-            j = i + 1;
-        else
-            j = 0;
-        /** the following loop is performance critical */
-        for (; j < cj->n_atoms; ++j) {
-            ja = cj->atom[j];
-            rj = radii[ja];
-            xj = v[ja * 3];
-            yj = v[ja * 3 + 1];
-            zj = v[ja * 3 + 2];
-            cut2 = (ri + rj) * (ri + rj);
-            dx = xj - xi;
-            dy = yj - yi;
-            dz = zj - zi;
-            if (dx * dx + dy * dy + dz * dz < cut2) {
-                if (nb_add_pair(nb_list, ia, ja, dx, dy))
-                    return mem_fail();
+    for (ic = cell_start; ic < cell_end; ++ic) {
+        ci = &c->cell[ic];
+        for (jc = 0; jc < ci->n_nb; ++jc) {
+            cj = ci->nb[jc];
+            for (i = 0; i < ci->n_atoms; ++i) {
+                ia = ci->atom[i];
+                ri = radii[ia];
+                xi = v[ia * 3];
+                yi = v[ia * 3 + 1];
+                zi = v[ia * 3 + 2];
+                if (ci == cj)
+                    j = i + 1;
+                else
+                    j = 0;
+                for (; j < cj->n_atoms; ++j) {
+                    ja = cj->atom[j];
+                    rj = radii[ja];
+                    xj = v[ja * 3];
+                    yj = v[ja * 3 + 1];
+                    zj = v[ja * 3 + 2];
+                    cut2 = (ri + rj) * (ri + rj);
+                    dx = xj - xi;
+                    dy = yj - yi;
+                    dz = zj - zi;
+                    if (dx * dx + dy * dy + dz * dz < cut2) {
+                        if (pair_buffer_add(pb, ia, ja, dx, dy))
+                            return mem_fail();
+                    }
+                }
             }
         }
     }
@@ -498,26 +453,215 @@ nb_calc_cell_pair(nb_list *nb_list,
 }
 
 /**
-    Iterates through the cells and records all contacts in the
-    provided nb list
- */
-static int
-nb_fill_list(nb_list *nb_list,
-             cell_list *c,
-             const coord_t *coord,
-             const double *radii)
-{
-    int nc = c->n, ic, jc;
-    cell *ci, *cj;
+    Build neighbor list from pair buffers.
 
-    for (ic = 0; ic < nc; ++ic) {
-        ci = &c->cell[ic];
-        for (jc = 0; jc < ci->n_nb; ++jc) {
-            cj = ci->nb[jc];
-            if (nb_calc_cell_pair(nb_list, coord, radii, ci, cj))
-                return mem_fail();
+    Phase 1: Count neighbors for each atom (parallel-safe since each
+             pair contributes to two atoms)
+    Phase 2: Allocate per-atom arrays
+    Phase 3: Fill per-atom arrays from pairs
+*/
+static int
+nb_build_from_pairs(nb_list *nb,
+                    pair_buffer *buffers,
+                    int n_buffers)
+{
+    int b, p, n = nb->n;
+    int *nn = nb->nn;
+
+    /* Phase 1: count neighbors per atom */
+    for (b = 0; b < n_buffers; ++b) {
+        pair_buffer *pb = &buffers[b];
+        for (p = 0; p < pb->n; ++p) {
+            nn[pb->pairs[p].i]++;
+            nn[pb->pairs[p].j]++;
         }
     }
+
+    /* Phase 2: allocate per-atom arrays */
+    {
+        int i;
+        for (i = 0; i < n; ++i) {
+            int cap = nn[i] > 0 ? nn[i] : 1;
+            nb->capacity[i] = cap;
+            nb->nb[i] = malloc(sizeof(int) * cap);
+            nb->xyd[i] = malloc(sizeof(double) * cap);
+            nb->xd[i] = malloc(sizeof(double) * cap);
+            nb->yd[i] = malloc(sizeof(double) * cap);
+            if (!nb->nb[i] || !nb->xyd[i] || !nb->xd[i] || !nb->yd[i]) {
+                return mem_fail();
+            }
+            nn[i] = 0; /* reset counts for fill phase */
+        }
+    }
+
+    /* Phase 3: fill per-atom arrays from pairs (symmetric) */
+    for (b = 0; b < n_buffers; ++b) {
+        pair_buffer *pb = &buffers[b];
+        for (p = 0; p < pb->n; ++p) {
+            int i = pb->pairs[p].i;
+            int j = pb->pairs[p].j;
+            double dx = pb->pairs[p].dx;
+            double dy = pb->pairs[p].dy;
+            double d = sqrt(dx * dx + dy * dy);
+            int nni = nn[i]++;
+            int nnj = nn[j]++;
+
+            nb->nb[i][nni] = j;
+            nb->nb[j][nnj] = i;
+
+            nb->xyd[i][nni] = d;
+            nb->xyd[j][nnj] = d;
+
+            nb->xd[i][nni] = dx;
+            nb->xd[j][nnj] = -dx;
+
+            nb->yd[i][nni] = dy;
+            nb->yd[j][nnj] = -dy;
+        }
+    }
+
+    return FREESASA_SUCCESS;
+}
+
+/**
+    Parallelized neighbor list fill using OpenMP.
+    Falls back to serial if OpenMP is not available or n_cells is small.
+*/
+static int
+nb_fill_list_parallel(nb_list *nb,
+                      cell_list *c,
+                      const coord_t *coord,
+                      const double *radii)
+{
+    int nc = c->n;
+    int ret = FREESASA_SUCCESS;
+
+#if USE_OPENMP
+    int n_threads = omp_get_max_threads();
+    if (n_threads < 1) n_threads = 1;
+    /* For very small cell lists, don't bother with parallelism overhead */
+    if (nc < 64) n_threads = 1;
+#else
+    int n_threads = 1;
+#endif
+
+    pair_buffer *buffers = calloc(n_threads, sizeof(pair_buffer));
+    if (!buffers) return mem_fail();
+
+    {
+        int t;
+        for (t = 0; t < n_threads; ++t) {
+            if (pair_buffer_init(&buffers[t], 4096)) {
+                int u;
+                for (u = 0; u < t; ++u) pair_buffer_free(&buffers[u]);
+                free(buffers);
+                return mem_fail();
+            }
+        }
+    }
+
+#if USE_OPENMP
+    if (n_threads > 1) {
+        int shared_error = 0;
+        #pragma omp parallel num_threads(n_threads) default(none) \
+            shared(buffers, c, coord, radii, nc, shared_error)
+        {
+            int tid = omp_get_thread_num();
+            int nthreads = omp_get_num_threads();
+            int cells_per_thread = (nc + nthreads - 1) / nthreads;
+            int start = tid * cells_per_thread;
+            int end = start + cells_per_thread;
+            if (end > nc) end = nc;
+            if (start < nc) {
+                if (nb_scan_cells_range(&buffers[tid], c, coord, radii,
+                                        start, end)) {
+                    #pragma omp atomic write
+                    shared_error = 1;
+                }
+            }
+        }
+        if (shared_error) {
+            ret = FREESASA_FAIL;
+            goto cleanup;
+        }
+    } else
+#endif
+    {
+        /* Single-threaded path */
+        if (nb_scan_cells_range(&buffers[0], c, coord, radii, 0, nc)) {
+            ret = FREESASA_FAIL;
+            goto cleanup;
+        }
+    }
+
+    /* Merge phase: build the neighbor list from collected pairs */
+    if (nb_build_from_pairs(nb, buffers, n_threads)) {
+        ret = FREESASA_FAIL;
+    }
+
+cleanup:
+    {
+        int t;
+        for (t = 0; t < n_threads; ++t) {
+            pair_buffer_free(&buffers[t]);
+        }
+        free(buffers);
+    }
+    return ret;
+}
+
+/* Legacy serial fill for reference and fallback */
+static int
+nb_add_pair_serial(nb_list *nb_list,
+                   int i,
+                   int j,
+                   double dx,
+                   double dy)
+{
+    int *nn = nb_list->nn;
+    int nni, nnj;
+    double d;
+
+    assert(i != j);
+
+    nni = nn[i]++;
+    nnj = nn[j]++;
+
+    /* grow arrays if needed */
+    if (nni >= nb_list->capacity[i]) {
+        int new_cap = nb_list->capacity[i] + FREESASA_NB_CHUNK;
+        nb_list->capacity[i] = new_cap;
+        nb_list->nb[i] = realloc(nb_list->nb[i], sizeof(int) * new_cap);
+        nb_list->xyd[i] = realloc(nb_list->xyd[i], sizeof(double) * new_cap);
+        nb_list->xd[i] = realloc(nb_list->xd[i], sizeof(double) * new_cap);
+        nb_list->yd[i] = realloc(nb_list->yd[i], sizeof(double) * new_cap);
+        if (!nb_list->nb[i] || !nb_list->xyd[i] || !nb_list->xd[i] || !nb_list->yd[i])
+            return mem_fail();
+    }
+    if (nnj >= nb_list->capacity[j]) {
+        int new_cap = nb_list->capacity[j] + FREESASA_NB_CHUNK;
+        nb_list->capacity[j] = new_cap;
+        nb_list->nb[j] = realloc(nb_list->nb[j], sizeof(int) * new_cap);
+        nb_list->xyd[j] = realloc(nb_list->xyd[j], sizeof(double) * new_cap);
+        nb_list->xd[j] = realloc(nb_list->xd[j], sizeof(double) * new_cap);
+        nb_list->yd[j] = realloc(nb_list->yd[j], sizeof(double) * new_cap);
+        if (!nb_list->nb[j] || !nb_list->xyd[j] || !nb_list->xd[j] || !nb_list->yd[j])
+            return mem_fail();
+    }
+
+    nb_list->nb[i][nni] = j;
+    nb_list->nb[j][nnj] = i;
+
+    d = sqrt(dx * dx + dy * dy);
+
+    nb_list->xyd[i][nni] = d;
+    nb_list->xyd[j][nnj] = d;
+
+    nb_list->xd[i][nni] = dx;
+    nb_list->xd[j][nnj] = -dx;
+    nb_list->yd[i][nni] = dy;
+    nb_list->yd[j][nnj] = -dy;
+
     return FREESASA_SUCCESS;
 }
 
@@ -544,7 +688,7 @@ freesasa_nb_new(const coord_t *coord,
     assert(cell_size > 0);
     c = cell_list_new(cell_size, coord);
     if (c == NULL ||
-        nb_fill_list(nb, c, coord, radii)) {
+        nb_fill_list_parallel(nb, c, coord, radii)) {
         mem_fail();
         freesasa_nb_free(nb);
         nb = NULL;

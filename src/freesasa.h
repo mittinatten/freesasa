@@ -457,6 +457,46 @@ freesasa_calc_structure(const freesasa_structure *structure,
                         const freesasa_parameters *parameters);
 
 /**
+    Calculates SASA for multiple structures in parallel (trajectory mode).
+
+    Each structure is computed independently using a single-threaded
+    calculation internally; the `n_threads` field in `parameters`
+    controls how many structures are computed concurrently.
+
+    This gives near-linear speedup with frame count and is the
+    recommended approach for MD trajectory analysis.
+
+    Example — process a trajectory of N frames:
+    @code
+    freesasa_result **results =
+        freesasa_calc_structures_parallel(frames, params, N);
+    for (int i = 0; i < N; ++i) {
+        double total = results[i]->total;
+        freesasa_result_free(results[i]);
+    }
+    free(results);
+    @endcode
+
+    Return value is a dynamically allocated array of n pointers.
+    Each element is a dynamically allocated ::freesasa_result.
+    Caller must free each result with freesasa_result_free() and then
+    free the outer array itself.  Returns `NULL` on error (all
+    partially-computed results are freed internally before returning).
+
+    @param structures Array of `n` structure pointers (read-only).
+    @param parameters Calculation parameters. `n_threads` controls
+                      frame-level concurrency. If `NULL`, defaults are used.
+    @param n          Number of structures.
+    @return Array of n ::freesasa_result pointers, or `NULL` on error.
+
+    @ingroup core
+ */
+freesasa_result **
+freesasa_calc_structures_parallel(const freesasa_structure **structures,
+                                  const freesasa_parameters *parameters,
+                                  int n);
+
+/**
     Calculates SASA based on a given set of coordinates and radii.
 
     Return value is dynamically allocated, should be freed with

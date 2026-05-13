@@ -12,6 +12,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#if USE_OPENMP
+#include <omp.h>
+#endif
+
 #include "cif.hh"
 #include "freesasa.h"
 
@@ -112,6 +116,13 @@ struct cli_state {
     cli_state()
     {
         parameters = freesasa_default_parameters;
+        /* Auto-detect thread count via OpenMP at startup */
+#if USE_OPENMP
+        parameters.n_threads = omp_get_max_threads();
+        if (parameters.n_threads < 1) parameters.n_threads = 1;
+#else
+        parameters.n_threads = 1;
+#endif
         classifier_from_file = NULL;
         classifier = NULL;
         structure_options = 0;
@@ -675,12 +686,8 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             state_add_long_chain_groups(optarg, state);
             break;
         case 't':
-            if (USE_THREADS) {
-                state->parameters.n_threads = atoi(optarg);
-                if (state->parameters.n_threads < 1) abort_msg("number of threads must be 1 or larger");
-            } else {
-                abort_msg("option '-t' only defined if program compiled with thread support");
-            }
+            state->parameters.n_threads = atoi(optarg);
+            if (state->parameters.n_threads < 1) abort_msg("number of threads must be 1 or larger");
             break;
         /* Deprecated options */
         case 'r':
