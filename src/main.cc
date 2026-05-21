@@ -675,7 +675,7 @@ parse_arg(int argc, char **argv, struct cli_state *state)
             state_add_long_chain_groups(optarg, state);
             break;
         case 't':
-            if (USE_THREADS) {
+            if (USE_THREADS || USE_OPENMP) {
                 state->parameters.n_threads = atoi(optarg);
                 if (state->parameters.n_threads < 1) abort_msg("number of threads must be 1 or larger");
             } else {

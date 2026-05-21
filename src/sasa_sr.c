@@ -11,7 +11,9 @@
 #endif
 #include <math.h>
 
-#if USE_THREADS
+#if USE_OPENMP
+#include <omp.h>
+#elif USE_THREADS
 #include <pthread.h>
 #define MAX_SR_THREADS 16
 #else
@@ -37,34 +39,51 @@ typedef struct {
     double probe_radius;
     const coord_t *xyz;
     coord_t *srp;                      /* test-points */
+#if USE_OPENMP
+    coord_t **tp_local;                /* dynamically allocated per-thread */
+    int **spcount;
+#else
     coord_t *tp_local[MAX_SR_THREADS]; /* coord object for storing intermediates */
     int *spcount[MAX_SR_THREADS];
+#endif
     double *r;
     double *r2;
     nb_list *nb;
     double *sasa;
 } sr_data;
 
-#if USE_THREADS
+#if USE_THREADS && !USE_OPENMP
 static int sr_do_threads(int n_threads, sr_data *sr);
 static void *sr_thread(void *arg);
 #endif
 
-static double
-sr_atom_area(int i, const sr_data *sr, int thread_index) __attrib_pure__;
+static double __attrib_pure__
+sr_atom_area(int i,
+             const sr_data *sr,
+             int thread_index);
 
 static coord_t *
 test_points(int N)
 {
-    /* Golden section spiral on a sphere
-       from http://web.archive.org/web/20120421191837/http://www.cgafaq.info/wiki/Evenly_distributed_points_on_sphere */
-    double dlong = M_PI * (3 - sqrt(5)), dz = 2.0 / N, longitude = 0, z = 1 - dz / 2, r;
     coord_t *coord = freesasa_coord_new();
-    double *tp = malloc(3 * N * sizeof(double)), *p;
-    if (tp == NULL || coord == NULL) {
-        mem_fail();
-        goto cleanup;
+    double *tp;
+    double z, dz, dlong, longitude, r;
+    double *p;
+
+    if (N <= 0) return NULL;
+    if (coord == NULL) return NULL;
+
+    tp = malloc(sizeof(double) * 3 * N);
+    if (tp == NULL) {
+        freesasa_coord_free(coord);
+        return NULL;
     }
+
+    dlong = M_PI * (3 - sqrt(5));
+    dz = 2.0 / N;
+    longitude = 0;
+    z = 1 - dz / 2;
+    p = tp;
 
     for (p = tp; p - tp < 3 * N; p += 3) {
         r = sqrt(1 - z * z);
@@ -103,6 +122,11 @@ void release_sr(sr_data *sr)
         freesasa_coord_free(sr->tp_local[i]);
         free(sr->spcount[i]);
     }
+
+#if USE_OPENMP
+    free(sr->tp_local);
+    free(sr->spcount);
+#endif
 }
 
 int init_sr(sr_data *sr,
@@ -129,11 +153,17 @@ int init_sr(sr_data *sr,
     sr->sasa = sasa;
     sr->nb = NULL;
 
+#if USE_OPENMP
+    sr->tp_local = calloc(n_threads, sizeof(coord_t *));
+    sr->spcount = calloc(n_threads, sizeof(int *));
+    if (sr->tp_local == NULL || sr->spcount == NULL) goto cleanup;
+#else
     /* should be done before any mallocs (to avoid problems in potential cleanup) */
     for (i = 0; i < n_threads; ++i) {
         sr->tp_local[i] = NULL;
         sr->spcount[i] = NULL;
     }
+#endif
 
     sr->r = malloc(sizeof(double) * n_atoms);
     sr->r2 = malloc(sizeof(double) * n_atoms);
@@ -185,9 +215,11 @@ int freesasa_shrake_rupley(double *sasa,
     resolution = param->shrake_rupley_n_points;
     return_value = FREESASA_SUCCESS;
 
+#if !USE_OPENMP
     if (n_threads > MAX_SR_THREADS) {
         return fail_msg("S&R does not support more than %d threads", MAX_SR_THREADS);
     }
+#endif
     if (resolution <= 0) {
         return fail_msg("%f test points invalid resolution in S&R, must be > 0\n", resolution);
     }
@@ -202,16 +234,22 @@ int freesasa_shrake_rupley(double *sasa,
         return FREESASA_FAIL;
 
     /* calculate SASA */
+#if USE_OPENMP
     if (n_threads > 1) {
-#if USE_THREADS
+        #pragma omp parallel for schedule(dynamic) num_threads(n_threads) \
+            default(none) shared(sr, sasa, n_atoms)
+        for (i = 0; i < n_atoms; ++i) {
+            int tid = omp_get_thread_num();
+            sasa[i] = sr_atom_area(i, &sr, tid);
+        }
+    } else {
+        for (i = 0; i < n_atoms; ++i) {
+            sasa[i] = sr_atom_area(i, &sr, 0);
+        }
+    }
+#elif USE_THREADS
+    if (n_threads > 1) {
         return_value = sr_do_threads(n_threads, &sr);
-#else
-        return_value = freesasa_warn("in %s(): program compiled for single-threaded use, "
-                                     "but multiple threads were requested, will "
-                                     "proceed in single-threaded mode\n",
-                                     __func__);
-        n_threads = 1;
-#endif
     }
     if (n_threads == 1) {
         /* don't want the overhead of generating threads if only one is used */
@@ -219,11 +257,22 @@ int freesasa_shrake_rupley(double *sasa,
             sasa[i] = sr_atom_area(i, &sr, 0);
         }
     }
+#else
+    if (n_threads > 1) {
+        return_value = freesasa_warn("in %s(): program compiled for single-threaded use, "
+                                     "but multiple threads were requested, will "
+                                     "proceed in single-threaded mode\n",
+                                     __func__);
+    }
+    for (i = 0; i < n_atoms; ++i) {
+        sasa[i] = sr_atom_area(i, &sr, 0);
+    }
+#endif
     release_sr(&sr);
     return return_value;
 }
 
-#if USE_THREADS
+#if USE_THREADS && !USE_OPENMP
 static int
 sr_do_threads(int n_threads,
               sr_data *sr)
