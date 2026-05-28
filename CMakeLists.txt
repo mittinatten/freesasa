@@ -286,6 +286,15 @@ if(ENABLE_TESTS AND CHECK_FOUND)
         tests/tools.c
         $<TARGET_OBJECTS:freesasa_check_objs>)
 
+    # test_json.c and test_xml.c are only compiled when those features are on,
+    # matching the autotools conditional (test_api_SOURCES += test_json.c etc.)
+    if(ENABLE_JSON)
+        target_sources(freesasa_tests PRIVATE tests/test_json.c)
+    endif()
+    if(ENABLE_XML)
+        target_sources(freesasa_tests PRIVATE tests/test_xml.c)
+    endif()
+
     target_compile_definitions(freesasa_tests PRIVATE ${TEST_DEFS})
     target_include_directories(freesasa_tests PRIVATE
         ${CMAKE_SOURCE_DIR}/src
@@ -295,12 +304,32 @@ if(ENABLE_TESTS AND CHECK_FOUND)
         ${CMAKE_SOURCE_DIR}/third-party/gemmi/include)
 
     find_package(Threads REQUIRED)
+
+    # Ubuntu's libcheck is built with subunit support and requires -lsubunit.
+    # Other platforms (macOS homebrew, conda) do not ship it — find optionally.
+    find_library(SUBUNIT_LIBRARY NAMES subunit)
+
     target_link_libraries(freesasa_tests PRIVATE
         freesasa_test_static
         ${CHECK_LIBRARY}
         ${MATH_LIBRARY}
         Threads::Threads
         ${CMAKE_DL_LIBS})
+
+    if(SUBUNIT_LIBRARY)
+        target_link_libraries(freesasa_tests PRIVATE ${SUBUNIT_LIBRARY})
+    endif()
+
+    # When JSON/XML are enabled the test binary also links those libs directly
+    # (same as autotools: test_api_LDADD += -ljson-c / ${libxml2_LIBS})
+    if(ENABLE_JSON)
+        target_link_directories(freesasa_tests PRIVATE ${JSON_C_LIBRARY_DIRS})
+        target_link_libraries(freesasa_tests PRIVATE ${JSON_C_LINK_LIBRARIES})
+    endif()
+    if(ENABLE_XML)
+        target_link_directories(freesasa_tests PRIVATE ${LIBXML2_LIBRARY_DIRS})
+        target_link_libraries(freesasa_tests PRIVATE ${LIBXML2_LINK_LIBRARIES})
+    endif()
 
     # Unit tests (test-api)
     add_test(NAME test-api

@@ -61,11 +61,11 @@ jobs:
           - CC: gcc
             CXX: g++
             cmake_flags: "-DENABLE_TESTS=ON -DENABLE_JSON=ON -DENABLE_XML=ON"
-            deps: "check libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev"
+            deps: "check libsubunit-dev libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev"
           - CC: clang
             CXX: clang++
             cmake_flags: "-DENABLE_TESTS=ON -DENABLE_JSON=ON -DENABLE_XML=ON"
-            deps: "check libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev"
+            deps: "check libsubunit-dev libjson-c-dev libxml2-dev libxml2-utils libc++-dev libc++abi-dev"
     runs-on: ubuntu-latest
     steps:
       - name: "Check out code"
