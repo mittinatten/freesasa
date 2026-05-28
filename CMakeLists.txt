@@ -1,18 +1,30 @@
 cmake_minimum_required(VERSION 3.14)
 project(FreeSASA VERSION 2.1.3 LANGUAGES C CXX)
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 99)   # codebase uses C99 features (restrict, // comments)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ── Options ───────────────────────────────────────────────────────────────────
-option(ENABLE_JSON   "Build with JSON output support (requires json-c)"   OFF)
-option(ENABLE_XML    "Build with XML output support (requires libxml2)"   OFF)
-option(ENABLE_TESTS  "Build the unit test suite (requires Check)"         ON)
+option(ENABLE_JSON              "Build with JSON output support (requires json-c)"   OFF)
+option(ENABLE_XML               "Build with XML output support (requires libxml2)"   OFF)
+option(ENABLE_THREADS           "Build with pthreads support"                        ON)
+option(ENABLE_TESTS             "Build the unit test suite (requires Check)"         ON)
+option(ENABLE_DOXYGEN           "Build API documentation with Doxygen"               OFF)
+option(ENABLE_PARSER_GENERATOR  "Regenerate lexer/parser with Flex and Bison"        OFF)
+option(ENABLE_GCOV              "Enable coverage instrumentation (gcov)"             OFF)
 
 # ── Math library ──────────────────────────────────────────────────────────────
 find_library(MATH_LIBRARY m)
+
+# ── Threads (pthreads) ────────────────────────────────────────────────────────
+if(ENABLE_THREADS)
+    find_package(Threads REQUIRED)
+    set(USE_THREADS 1)
+else()
+    set(USE_THREADS 0)
+endif()
 
 # ── Optional: JSON ─────────────────────────────────────────────────────────────
 if(ENABLE_JSON)
@@ -30,6 +42,43 @@ if(ENABLE_XML)
     set(USE_XML 1)
 else()
     set(USE_XML 0)
+endif()
+
+# ── Optional: Doxygen ─────────────────────────────────────────────────────────
+if(ENABLE_DOXYGEN)
+    find_package(Doxygen REQUIRED)
+    set(PACKAGE_NAME    "${PROJECT_NAME}")
+    set(PACKAGE_VERSION "${PROJECT_VERSION}")
+    set(top_srcdir      "${CMAKE_SOURCE_DIR}")
+    configure_file(
+        ${CMAKE_SOURCE_DIR}/doc/Doxyfile.in
+        ${CMAKE_BINARY_DIR}/doc/Doxyfile
+        @ONLY)
+    add_custom_target(doc
+        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/doc/Doxyfile
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Generating API documentation with Doxygen"
+        VERBATIM)
+endif()
+
+# ── Optional: Parser generator (Flex/Bison) ───────────────────────────────────
+if(ENABLE_PARSER_GENERATOR)
+    find_package(FLEX REQUIRED)
+    find_package(BISON REQUIRED)
+    flex_target(FreesasaLexer
+        ${CMAKE_SOURCE_DIR}/src/lexer.l
+        ${CMAKE_SOURCE_DIR}/src/lexer.c)
+    bison_target(FreesasaParser
+        ${CMAKE_SOURCE_DIR}/src/parser.y
+        ${CMAKE_SOURCE_DIR}/src/parser.c)
+    add_flex_bison_dependency(FreesasaLexer FreesasaParser)
+endif()
+
+# ── Optional: gcov coverage ──────────────────────────────────────────────────
+if(ENABLE_GCOV)
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   --coverage")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
 endif()
 
 # ── Optional: Check (unit tests) ──────────────────────────────────────────────
@@ -65,7 +114,7 @@ else()
     if(ENABLE_TESTS)
         message(WARNING
             "Check not found — tests disabled. "
-            "Install with: brew install check  OR  conda install -c conda-forge check")
+            "Install with:  apt install check  |  brew install check  |  conda install -c conda-forge check")
         set(ENABLE_TESTS OFF)
     endif()
 endif()
@@ -83,7 +132,7 @@ message(STATUS "Generated config.h in source root")
 # ── Compile definitions shared by all targets ─────────────────────────────────
 set(FREESASA_COMPILE_DEFS
     HAVE_CONFIG_H=1
-    USE_THREADS=0             # threading off in base CMake build; add OpenMP separately
+    USE_THREADS=${USE_THREADS}
     USE_JSON=${USE_JSON}
     USE_XML=${USE_XML}
     FREESASA_DEF_ALGORITHM=FREESASA_LEE_RICHARDS
@@ -121,6 +170,25 @@ if(ENABLE_XML)
     list(APPEND LIBFREESASA_SOURCES src/xml.c)
 endif()
 
+# ── Helper: apply JSON/XML link flags to a target ─────────────────────────────
+# pkg_check_modules sets _INCLUDE_DIRS, _LIBRARY_DIRS and _LINK_LIBRARIES.
+# We need _LIBRARY_DIRS for the linker to find the .dylib/.so on macOS/Linux.
+function(freesasa_link_optional_deps target)
+    if(ENABLE_JSON)
+        target_include_directories(${target} PUBLIC ${JSON_C_INCLUDE_DIRS})
+        target_link_directories(${target}    PUBLIC ${JSON_C_LIBRARY_DIRS})
+        target_link_libraries(${target}      PUBLIC ${JSON_C_LINK_LIBRARIES})
+    endif()
+    if(ENABLE_XML)
+        target_include_directories(${target} PUBLIC ${LIBXML2_INCLUDE_DIRS})
+        target_link_directories(${target}    PUBLIC ${LIBXML2_LIBRARY_DIRS})
+        target_link_libraries(${target}      PUBLIC ${LIBXML2_LINK_LIBRARIES})
+    endif()
+    if(ENABLE_THREADS)
+        target_link_libraries(${target} PUBLIC Threads::Threads)
+    endif()
+endfunction()
+
 # ── Static library ────────────────────────────────────────────────────────────
 add_library(freesasa_static STATIC ${LIBFREESASA_SOURCES})
 set_target_properties(freesasa_static PROPERTIES OUTPUT_NAME freesasa)
@@ -132,14 +200,7 @@ target_include_directories(freesasa_static PUBLIC
 if(MATH_LIBRARY)
     target_link_libraries(freesasa_static PUBLIC ${MATH_LIBRARY})
 endif()
-if(ENABLE_JSON)
-    target_include_directories(freesasa_static PUBLIC ${JSON_C_INCLUDE_DIRS})
-    target_link_libraries(freesasa_static PUBLIC ${JSON_C_LIBRARIES})
-endif()
-if(ENABLE_XML)
-    target_include_directories(freesasa_static PUBLIC ${LIBXML2_INCLUDE_DIRS})
-    target_link_libraries(freesasa_static PUBLIC ${LIBXML2_LIBRARIES})
-endif()
+freesasa_link_optional_deps(freesasa_static)
 
 # ── Shared library ────────────────────────────────────────────────────────────
 add_library(freesasa_shared SHARED ${LIBFREESASA_SOURCES})
@@ -155,14 +216,7 @@ target_include_directories(freesasa_shared PUBLIC
 if(MATH_LIBRARY)
     target_link_libraries(freesasa_shared PUBLIC ${MATH_LIBRARY})
 endif()
-if(ENABLE_JSON)
-    target_include_directories(freesasa_shared PUBLIC ${JSON_C_INCLUDE_DIRS})
-    target_link_libraries(freesasa_shared PUBLIC ${JSON_C_LIBRARIES})
-endif()
-if(ENABLE_XML)
-    target_include_directories(freesasa_shared PUBLIC ${LIBXML2_INCLUDE_DIRS})
-    target_link_libraries(freesasa_shared PUBLIC ${LIBXML2_LIBRARIES})
-endif()
+freesasa_link_optional_deps(freesasa_shared)
 
 # ── CLI executable ────────────────────────────────────────────────────────────
 add_executable(freesasa_bin src/main.cc src/cif.cc)
@@ -174,6 +228,8 @@ target_include_directories(freesasa_bin PRIVATE
 target_link_libraries(freesasa_bin PRIVATE freesasa_static)
 
 # ── Test suite ────────────────────────────────────────────────────────────────
+enable_testing()
+
 if(ENABLE_TESTS AND CHECK_FOUND)
     # TEST_DATADIR and TEST_SHAREDIR are set above for configure_file()
 
@@ -215,6 +271,7 @@ if(ENABLE_TESTS AND CHECK_FOUND)
     if(MATH_LIBRARY)
         target_link_libraries(freesasa_test_static PUBLIC ${MATH_LIBRARY})
     endif()
+    freesasa_link_optional_deps(freesasa_test_static)
 
     add_executable(freesasa_tests
         tests/test_main.c
@@ -245,10 +302,71 @@ if(ENABLE_TESTS AND CHECK_FOUND)
         Threads::Threads
         ${CMAKE_DL_LIBS})
 
-    enable_testing()
-    add_test(NAME freesasa_unit_tests
+    # Unit tests (test-api)
+    add_test(NAME test-api
         COMMAND freesasa_tests
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+    # ── CLI test suite (test-cli) ─────────────────────────────────────────
+    # Substitute autotools-style @VAR@ placeholders in test-cli.in
+    set(top_srcdir "${CMAKE_SOURCE_DIR}")
+    if(ENABLE_XML)
+        set(USE_XML_STR "yes")
+    else()
+        set(USE_XML_STR "no")
+    endif()
+    if(ENABLE_JSON)
+        set(USE_JSON_STR "yes")
+    else()
+        set(USE_JSON_STR "no")
+    endif()
+    find_program(XMLLINT_PROG xmllint)
+    if(XMLLINT_PROG)
+        set(XMLLINT "xmllint")
+    else()
+        set(XMLLINT "")
+    endif()
+    find_program(JSONLINT_PROG jsonlint)
+    if(JSONLINT_PROG)
+        set(JSONLINT "jsonlint")
+    else()
+        set(JSONLINT "")
+    endif()
+
+    # test-cli.in uses @USE_XML@ and @USE_JSON@ (not _STR), so alias them
+    set(USE_XML_CONF  "${USE_XML_STR}")
+    set(USE_JSON_CONF "${USE_JSON_STR}")
+
+    # Read template file, substitute, write output
+    # We do manual substitution because the template uses @USE_XML@ not @USE_XML_STR@
+    file(READ ${CMAKE_SOURCE_DIR}/tests/test-cli.in TEST_CLI_CONTENT)
+    string(REPLACE "@top_srcdir@" "${CMAKE_SOURCE_DIR}"  TEST_CLI_CONTENT "${TEST_CLI_CONTENT}")
+    string(REPLACE "@USE_XML@"    "${USE_XML_STR}"       TEST_CLI_CONTENT "${TEST_CLI_CONTENT}")
+    string(REPLACE "@USE_JSON@"   "${USE_JSON_STR}"      TEST_CLI_CONTENT "${TEST_CLI_CONTENT}")
+    string(REPLACE "@XMLLINT@"    "${XMLLINT}"           TEST_CLI_CONTENT "${TEST_CLI_CONTENT}")
+    string(REPLACE "@JSONLINT@"   "${JSONLINT}"          TEST_CLI_CONTENT "${TEST_CLI_CONTENT}")
+    file(WRITE ${CMAKE_BINARY_DIR}/tests/test-cli "${TEST_CLI_CONTENT}")
+    file(CHMOD ${CMAKE_BINARY_DIR}/tests/test-cli
+         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                     GROUP_READ GROUP_EXECUTE
+                     WORLD_READ WORLD_EXECUTE)
+
+    # Create tmp/ directory needed by the test script
+    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/tests/tmp)
+
+    # The test-cli script expects the freesasa binary at ../src/freesasa
+    # relative to the tests/ working directory.  Create a symlink so
+    # the CMake build layout matches what the script expects.
+    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/src)
+    add_custom_command(TARGET freesasa_bin POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+            $<TARGET_FILE:freesasa_bin>
+            ${CMAKE_BINARY_DIR}/src/freesasa
+        COMMENT "Symlinking freesasa binary for CLI tests")
+
+    add_test(NAME test-cli
+        COMMAND bash ${CMAKE_BINARY_DIR}/tests/test-cli
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
 
     message(STATUS "Tests: ENABLED (Check: ${CHECK_LIBRARY})")
 else()
@@ -271,6 +389,10 @@ message(STATUS "")
 message(STATUS "FreeSASA ${PROJECT_VERSION} — CMake configuration summary")
 message(STATUS "  JSON output:  ${ENABLE_JSON}")
 message(STATUS "  XML output:   ${ENABLE_XML}")
+message(STATUS "  Threads:      ${ENABLE_THREADS}")
 message(STATUS "  Unit tests:   ${ENABLE_TESTS}")
+message(STATUS "  Doxygen:      ${ENABLE_DOXYGEN}")
+message(STATUS "  Parser gen:   ${ENABLE_PARSER_GENERATOR}")
+message(STATUS "  Coverage:     ${ENABLE_GCOV}")
 message(STATUS "  C compiler:   ${CMAKE_C_COMPILER}")
 message(STATUS "")

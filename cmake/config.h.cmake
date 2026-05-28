@@ -16,9 +16,8 @@
 /* Feature flags — set at configure time.
    These may be overridden per-target with -D on the command line. */
 #ifndef USE_THREADS
-#define USE_THREADS 0
+#define USE_THREADS @USE_THREADS@
 #endif
-
 #ifndef USE_JSON
 #define USE_JSON @USE_JSON@
 #endif
