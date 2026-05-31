@@ -123,7 +123,7 @@ write_parameters(FILE *log,
 
     fprintf(log, "algorithm    : %s\n", freesasa_alg_name(p->alg));
     fprintf(log, "probe-radius : %.3f\n", p->probe_radius);
-#if USE_THREADS
+#if USE_THREADS || USE_OPENMP
     fprintf(log, "threads      : %d\n", p->n_threads);
 #endif
 

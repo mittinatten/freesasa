@@ -55,18 +55,40 @@ AC_ARG_ENABLE([threads],
   AS_HELP_STRING([--disable-threads],
     [Build without support for multiple threads]))
 
-if test "x$enable_threads" != "xno"; then
-  AC_CHECK_LIB([pthread], [pthread_create])
-  AC_CHECK_HEADER([pthread.h])
-fi
-if test "$ac_cv_header_pthread_h" != yes || \
-   test "$ac_cv_lib_pthread_pthread_create" != yes; then
-  AC_DEFINE([USE_THREADS], [0], [])
-  AM_CONDITIONAL([USE_THREADS], false)
-  echo "Building without thread support"
+# Optionally use OpenMP instead of pthreads
+AC_ARG_ENABLE([openmp],
+  AS_HELP_STRING([--enable-openmp],
+    [Use OpenMP for parallelism instead of pthreads (optional)]))
+
+AC_DEFINE([USE_OPENMP], [0], [Define if OpenMP should be used.])
+
+if test "x$enable_openmp" = "xyes"; then
+  AC_OPENMP
+  if test "x$ac_cv_prog_c_openmp" != "xunsupported" && \
+     test "x$ac_cv_prog_c_openmp" != "x"; then
+    CFLAGS="$CFLAGS $OPENMP_CFLAGS"
+    CXXFLAGS="$CXXFLAGS $OPENMP_CFLAGS"
+    AC_DEFINE([USE_OPENMP], [1], [Define if OpenMP should be used.])
+    AC_DEFINE([USE_THREADS], [0], [])
+    AM_CONDITIONAL([USE_THREADS], false)
+    echo "Building with OpenMP support (replaces pthreads)"
+  else
+    AC_MSG_ERROR([OpenMP requested but compiler does not support it.])
+  fi
 else
-  AC_DEFINE([USE_THREADS], [1], [Define if threads should be used.])
-  AM_CONDITIONAL([USE_THREADS], true)
+  if test "x$enable_threads" != "xno"; then
+    AC_CHECK_LIB([pthread], [pthread_create])
+    AC_CHECK_HEADER([pthread.h])
+  fi
+  if test "$ac_cv_header_pthread_h" != yes || \
+     test "$ac_cv_lib_pthread_pthread_create" != yes; then
+    AC_DEFINE([USE_THREADS], [0], [])
+    AM_CONDITIONAL([USE_THREADS], false)
+    echo "Building without thread support"
+  else
+    AC_DEFINE([USE_THREADS], [1], [Define if threads should be used.])
+    AM_CONDITIONAL([USE_THREADS], true)
+  fi
 fi
 
 # disable XML

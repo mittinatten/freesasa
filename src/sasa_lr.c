@@ -12,7 +12,9 @@
 #endif
 #include <math.h>
 
-#if USE_THREADS
+#if USE_OPENMP
+#include <omp.h>
+#elif USE_THREADS
 #include <pthread.h>
 #define MAX_LR_THREADS 16
 #else
@@ -32,10 +34,15 @@ typedef struct {
     nb_list *adj;
     int n_slices_per_atom;
     double *sasa; /* results */
+#if USE_OPENMP
+    double **arc, **z_nb, **R_nb; /* dynamically allocated per-thread arrays */
+#else
     double *arc[MAX_LR_THREADS], *z_nb[MAX_LR_THREADS], *R_nb[MAX_LR_THREADS];
+#endif
     int n_threads;
 } lr_data;
 
+#if USE_THREADS && !USE_OPENMP
 typedef struct {
     int first_atom;
     int last_atom;
@@ -43,12 +50,11 @@ typedef struct {
     lr_data *lr;
 } lr_thread_interval;
 
-#if USE_THREADS
 static int lr_do_threads(int n_threads, lr_data *);
 static void *lr_thread(void *arg);
 #endif
 
-/** Returns the are of atom i */
+/** Returns the area of atom i */
 static double
 atom_area(lr_data *lr, int i, int thread_id);
 
@@ -57,7 +63,7 @@ atom_area(lr_data *lr, int i, int thread_id);
 static double
 exposed_arc_length(double *restrict arc, int n);
 
-/** Release contenst of lr_data pointer*/
+/** Release contents of lr_data pointer*/
 static void
 release_lr(lr_data *lr)
 {
@@ -68,11 +74,32 @@ release_lr(lr_data *lr)
     lr->radii = NULL;
     lr->adj = NULL;
 
+#if USE_OPENMP
+    if (lr->arc) {
+        for (i = 0; i < lr->n_threads; ++i) {
+            free(lr->arc[i]);
+        }
+        free(lr->arc);
+    }
+    if (lr->z_nb) {
+        for (i = 0; i < lr->n_threads; ++i) {
+            free(lr->z_nb[i]);
+        }
+        free(lr->z_nb);
+    }
+    if (lr->R_nb) {
+        for (i = 0; i < lr->n_threads; ++i) {
+            free(lr->R_nb[i]);
+        }
+        free(lr->R_nb);
+    }
+#else
     for (i = 0; i < lr->n_threads; ++i) {
         free(lr->arc[i]);
         free(lr->z_nb[i]);
         free(lr->R_nb[i]);
     }
+#endif
 }
 
 /* Allocate some helper arrays in area calculation that need to be pre-allocated */
@@ -86,6 +113,16 @@ alloc_lr_calc_arrays(lr_data *lr, int n_threads)
         nni = lr->adj->nn[i];
         max_nni = max_nni < nni ? nni : max_nni;
     }
+
+#if USE_OPENMP
+    lr->arc = calloc(n_threads, sizeof(double *));
+    lr->z_nb = calloc(n_threads, sizeof(double *));
+    lr->R_nb = calloc(n_threads, sizeof(double *));
+
+    if (!lr->arc || !lr->z_nb || !lr->R_nb) {
+        return mem_fail();
+    }
+#endif
 
     for (i = 0; i < n_threads; ++i) {
         lr->arc[i] = malloc(sizeof(double) * 4 * max_nni);
@@ -120,11 +157,17 @@ init_lr(lr_data *lr,
     lr->sasa = sasa;
     lr->n_threads = n_threads;
 
+#if USE_OPENMP
+    lr->arc = NULL;
+    lr->z_nb = NULL;
+    lr->R_nb = NULL;
+#else
     for (i = 0; i < n_threads; ++i) {
         lr->arc[i] = NULL;
         lr->z_nb[i] = NULL;
         lr->R_nb[i] = NULL;
     }
+#endif
 
     lr->radii = malloc(sizeof(double) * n_atoms);
     if (lr->radii == NULL) {
@@ -174,9 +217,11 @@ int freesasa_lee_richards(double *sasa,
     resolution = param->lee_richards_n_slices;
     probe_radius = param->probe_radius;
 
+#if !USE_OPENMP
     if (n_threads > MAX_LR_THREADS) {
         return fail_msg("L&R does not support more than %d threads", MAX_LR_THREADS);
     }
+#endif
 
     if (resolution <= 0) {
         return fail_msg("%f slices per atom invalid resolution in L&R, must be > 0\n", resolution);
@@ -195,27 +240,45 @@ int freesasa_lee_richards(double *sasa,
     if (init_lr(&lr, sasa, xyz, atom_radii, probe_radius, resolution, n_threads))
         return FREESASA_FAIL;
 
+#if USE_OPENMP
     if (n_threads > 1) {
-#if USE_THREADS
+        #pragma omp parallel for schedule(dynamic, 64) num_threads(n_threads) \
+            default(none) shared(lr, n_atoms)
+        for (i = 0; i < n_atoms; ++i) {
+            int tid = omp_get_thread_num();
+            lr.sasa[i] = atom_area(&lr, i, tid);
+        }
+    } else {
+        for (i = 0; i < lr.n_atoms; ++i) {
+            lr.sasa[i] = atom_area(&lr, i, 0);
+        }
+    }
+#elif USE_THREADS
+    if (n_threads > 1) {
         return_value = lr_do_threads(n_threads, &lr);
-#else
-        return_value = freesasa_warn("in %s(): program compiled for single-threaded use, "
-                                     "but multiple threads were requested, will "
-                                     "proceed in single-threaded mode\n",
-                                     __func__);
-        n_threads = 1;
-#endif /* pthread */
     }
     if (n_threads == 1) {
         for (i = 0; i < lr.n_atoms; ++i) {
             lr.sasa[i] = atom_area(&lr, i, 0);
         }
     }
+#else
+    if (n_threads > 1) {
+        return_value = freesasa_warn("in %s(): program compiled for single-threaded use, "
+                                     "but multiple threads were requested, will "
+                                     "proceed in single-threaded mode\n",
+                                     __func__);
+    }
+    for (i = 0; i < lr.n_atoms; ++i) {
+        lr.sasa[i] = atom_area(&lr, i, 0);
+    }
+#endif
+
     release_lr(&lr);
     return return_value;
 }
 
-#if USE_THREADS
+#if USE_THREADS && !USE_OPENMP
 static int
 lr_do_threads(int n_threads,
               lr_data *lr)
@@ -265,7 +328,7 @@ lr_thread(void *arg)
     }
     pthread_exit(NULL);
 }
-#endif /* USE_THREADS */
+#endif /* USE_THREADS && !USE_OPENMP */
 
 static double
 atom_area(lr_data *lr,
