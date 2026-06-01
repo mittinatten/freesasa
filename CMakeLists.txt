@@ -50,15 +50,12 @@ if(ENABLE_DOXYGEN)
     set(PACKAGE_NAME    "${PROJECT_NAME}")
     set(PACKAGE_VERSION "${PROJECT_VERSION}")
     set(top_srcdir      "${CMAKE_SOURCE_DIR}")
-    # Doxygen paths: HTML_HEADER/FOOTER must be absolute so doxygen finds them
-    # regardless of which directory it is run from.
-    set(DOXY_HTML_HEADER "${CMAKE_SOURCE_DIR}/doc/doxygen-header.html")
-    set(DOXY_HTML_FOOTER "${CMAKE_SOURCE_DIR}/doc/doxygen-footer.html")
-    set(DOXY_OUTPUT_DIR  "${CMAKE_SOURCE_DIR}/doc")
     configure_file(
         ${CMAKE_SOURCE_DIR}/doc/Doxyfile.in
         ${CMAKE_BINARY_DIR}/doc/Doxyfile
         @ONLY)
+    # Doxyfile.in uses relative paths (doxygen-header.html, html/doxygen, etc.)
+    # so doxygen must run from the doc/ directory for them to resolve correctly.
     add_custom_target(doc
         COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/doc/Doxyfile
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/doc
@@ -69,19 +66,22 @@ endif()
 # ── Optional: Parser generator (Flex/Bison) ───────────────────────────────────
 if(ENABLE_PARSER_GENERATOR)
     # Bison 3+ required; macOS ships Bison 2.3 which is too old.
-    # Install via: brew install bison  (then ensure it's first in PATH)
+    # Use -DBISON_ROOT=/opt/homebrew/opt/bison (or wherever Bison 3 is)
+    # to point CMake at the right binary.
     find_package(FLEX REQUIRED)
-    find_package(BISON 3.0 REQUIRED)
-    if(BISON_FOUND)
-        flex_target(FreesasaLexer
-            ${CMAKE_SOURCE_DIR}/src/lexer.l
-            ${CMAKE_SOURCE_DIR}/src/lexer.c)
-        bison_target(FreesasaParser
-            ${CMAKE_SOURCE_DIR}/src/parser.y
-            ${CMAKE_SOURCE_DIR}/src/parser.c
-            COMPILE_FLAGS "-d")
-        add_flex_bison_dependency(FreesasaLexer FreesasaParser)
+    if(BISON_ROOT)
+        find_package(BISON 3.0 REQUIRED PATHS ${BISON_ROOT} NO_DEFAULT_PATH)
+    else()
+        find_package(BISON 3.0 REQUIRED)
     endif()
+    flex_target(FreesasaLexer
+        ${CMAKE_SOURCE_DIR}/src/lexer.l
+        ${CMAKE_SOURCE_DIR}/src/lexer.c)
+    bison_target(FreesasaParser
+        ${CMAKE_SOURCE_DIR}/src/parser.y
+        ${CMAKE_SOURCE_DIR}/src/parser.c
+        COMPILE_FLAGS "-d")
+    add_flex_bison_dependency(FreesasaLexer FreesasaParser)
 endif()
 
 # ── Optional: gcov coverage ──────────────────────────────────────────────────
