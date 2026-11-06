@@ -135,6 +135,56 @@ START_TEST(test_sasa_alg_basic)
 }
 END_TEST
 
+static double sphere_area(double r)
+{
+    return 4 * M_PI * r * r;
+}
+
+// check that flagged atoms have full sphere area, caller frees result
+static freesasa_result *
+check_isolated(const double *xyz, const double *r, int n, const int *isolated)
+{
+    freesasa_result *result = freesasa_calc_coord(xyz, r, n, &parameters);
+    double probe = parameters.probe_radius;
+
+    ck_assert_ptr_ne(result, NULL);
+    for (int i = 0; i < n; ++i) {
+        if (isolated[i]) {
+            ck_assert_msg(rel_err(result->sasa[i], sphere_area(r[i] + probe)) < tolerance,
+                          "atom %d: expected %f, got %f", i,
+                          sphere_area(r[i] + probe), result->sasa[i]);
+        }
+    }
+    return result;
+}
+
+START_TEST(test_isolated_atoms)
+{
+    // atoms without neighbors should have full sphere area
+    double probe = parameters.probe_radius;
+    freesasa_result *result;
+
+    // single atom
+    {
+        double xyz[3] = {0, 0, 0};
+        double r[1] = {1.88};
+        int iso[1] = {1};
+        freesasa_result_free(check_isolated(xyz, r, 1, iso));
+    }
+
+    // a pair in contact and one isolated atom
+    {
+        double xyz[9] = {0, 0, 0, 2, 0, 0, 50, 50, 50};
+        double r[3] = {1, 2, 1.88};
+        int iso[3] = {0, 0, 1};
+        result = check_isolated(xyz, r, 3, iso);
+        ck_assert(rel_err(result->sasa[0] + result->sasa[1],
+                          surface_two_spheres(xyz, r, probe)) < tolerance);
+        freesasa_result_free(result);
+    }
+}
+END_TEST
+
 START_TEST(test_minimal_calc)
 {
     double coord[3] = {0, 0, 0};
@@ -537,6 +587,7 @@ Suite *sasa_suite(void)
     TCase *tc_sr_basic = tcase_create("Basic S&R");
     tcase_add_checked_fixture(tc_sr_basic, setup_sr_precision, teardown_sr_precision);
     tcase_add_test(tc_sr_basic, test_sasa_alg_basic);
+    tcase_add_test(tc_sr_basic, test_isolated_atoms);
 
     TCase *tc_lr = tcase_create("1UBQ-L&R");
     tcase_add_checked_fixture(tc_lr, setup_lr, teardown_lr);
