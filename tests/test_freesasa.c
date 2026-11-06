@@ -146,7 +146,7 @@ START_TEST(test_minimal_calc)
 
     // access areas
     ck_assert(fabs(result->sasa[0] - result->total) < 1e-10);
-    ck_assert(fabs(result->total - (4 * M_PI * M_PI * 2.4 * 2.4)));
+    ck_assert(fabs(result->total - (4 * M_PI * 2.4 * 2.4)) < 1e-10);
 
     freesasa_result_free(result);
 }
