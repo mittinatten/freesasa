@@ -294,8 +294,7 @@ sr_atom_area(int i,
     /* testpoints for this atom */
     coord_t *restrict tp_coord_ri = sr->tp_local[thread_index];
 
-    /* No neighbors, so all test points exposed, 
-       area of the full probe-expanded sphere */
+    /* no neighbors, so the whole sphere is exposed */
     if (nni == 0) return 4.0 * M_PI * ri * ri;
 
     freesasa_coord_copy(tp_coord_ri, sr->srp);
