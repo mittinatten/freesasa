@@ -296,6 +296,9 @@ atom_area(lr_data *lr,
     double z, delta, sasa = 0, alpha, beta, inf, sup;
     double zj, di, dj, dij, Rj, Ri_prime2, Ri_prime, Rj_prime2, Rj_prime;
 
+    /* no neighbors, so the whole sphere is exposed */
+    if (nni == 0) return 4.0 * M_PI * Ri * Ri;
+
     for (j = 0; j < nni; ++j) {
         z_nb[j] = v[3 * nbi[j] + 2];
         R_nb[j] = R[nbi[j]];

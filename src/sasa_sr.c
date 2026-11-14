@@ -294,6 +294,9 @@ sr_atom_area(int i,
     /* testpoints for this atom */
     coord_t *restrict tp_coord_ri = sr->tp_local[thread_index];
 
+    /* no neighbors, so the whole sphere is exposed */
+    if (nni == 0) return 4.0 * M_PI * ri * ri;
+
     freesasa_coord_copy(tp_coord_ri, sr->srp);
     freesasa_coord_scale(tp_coord_ri, ri);
     freesasa_coord_translate(tp_coord_ri, vi);
