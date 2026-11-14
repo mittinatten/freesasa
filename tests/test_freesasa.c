@@ -135,13 +135,13 @@ START_TEST(test_sasa_alg_basic)
 }
 END_TEST
 
-static double sphere_area(double r)
+double sphere_area(double r)
 {
     return 4 * M_PI * r * r;
 }
 
 // check that flagged atoms have full sphere area, caller frees result
-static freesasa_result *
+freesasa_result *
 check_isolated(const double *xyz, const double *r, int n, const int *isolated)
 {
     freesasa_result *result = freesasa_calc_coord(xyz, r, n, &parameters);
@@ -581,6 +581,7 @@ Suite *sasa_suite(void)
     TCase *tc_lr_basic = tcase_create("Basic L&R");
     tcase_add_checked_fixture(tc_lr_basic, setup_lr_precision, teardown_lr_precision);
     tcase_add_test(tc_lr_basic, test_sasa_alg_basic);
+    tcase_add_test(tc_lr_basic, test_isolated_atoms);
 
     TCase *tc_lr_static = test_LR_static();
 
@@ -588,7 +589,7 @@ Suite *sasa_suite(void)
     tcase_add_checked_fixture(tc_sr_basic, setup_sr_precision, teardown_sr_precision);
     tcase_add_test(tc_sr_basic, test_sasa_alg_basic);
     tcase_add_test(tc_sr_basic, test_isolated_atoms);
-
+    
     TCase *tc_lr = tcase_create("1UBQ-L&R");
     tcase_add_checked_fixture(tc_lr, setup_lr, teardown_lr);
     tcase_add_test(tc_lr, test_sasa_1ubq);
